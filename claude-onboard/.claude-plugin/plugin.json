@@ -1,0 +1,20 @@
+{
+  "name": "claude-onboard",
+  "version": "0.1.0",
+  "description": "Interactive wizard that analyzes your codebase and generates complete Claude tooling infrastructure for AI-assisted development",
+  "author": {
+    "name": "Apurv Bazari"
+  },
+  "repository": "https://github.com/apurvbazari/claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "onboarding",
+    "setup",
+    "wizard",
+    "claude-md",
+    "agentic-workflow",
+    "codebase-analysis",
+    "tooling-infrastructure",
+    "AI-assisted-development"
+  ]
+}

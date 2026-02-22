@@ -1,0 +1,11 @@
+{
+  "name": "apurvbazari-plugins",
+  "description": "Claude Code plugins by Apurv Bazari",
+  "plugins": [
+    {
+      "name": "claude-onboard",
+      "path": "./claude-onboard",
+      "description": "Interactive wizard that analyzes your codebase and generates complete Claude tooling for AI-assisted development"
+    }
+  ]
+}

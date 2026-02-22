@@ -1,0 +1,20 @@
+# Claude local settings
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors/IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Dependencies & build (future-proofing)
+node_modules/
+dist/
+build/
+__pycache__/
+*.pyc
