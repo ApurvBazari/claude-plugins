@@ -6,6 +6,11 @@
       "name": "claude-onboard",
       "path": "./claude-onboard",
       "description": "Interactive wizard that analyzes your codebase and generates complete Claude tooling for AI-assisted development"
+    },
+    {
+      "name": "claude-notify",
+      "path": "./claude-notify",
+      "description": "macOS system notifications for Claude Code — get notified when tasks complete or need attention"
     }
   ]
 }
