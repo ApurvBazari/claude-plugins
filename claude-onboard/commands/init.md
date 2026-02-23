@@ -69,14 +69,28 @@ Once analysis completes, present a concise summary to the developer:
 
 Wait for confirmation. Incorporate any corrections before proceeding.
 
+### Step 1.4: Choose Wizard Mode
+
+After the analysis summary is confirmed, offer the developer a choice:
+
+> How would you like to set up your Claude tooling?
+>
+> 1. **Quick setup** — I'll infer most settings from your codebase analysis and ask just a couple of key questions
+> 2. **Guided walkthrough** (recommended) — I'll walk you through a short wizard to capture your preferences
+
+If the developer chooses **Quick setup**, the wizard runs in Quick Mode (see wizard skill for inference rules). If they choose **Guided walkthrough**, proceed to Phase 2 (which includes preset selection).
+
 ---
 
 ## Phase 2: Interactive Wizard
 
-Use the `wizard` skill to guide the developer through adaptive questions. The skill contains the full question bank and branching logic.
+Use the `wizard` skill to guide the developer through adaptive questions. The skill contains the full question bank, branching logic, and workflow presets.
+
+The wizard starts with **preset selection** — offering Minimal, Standard, Comprehensive, or Custom profiles. If a preset is chosen, most questions are pre-answered and the wizard moves quickly to project description and confirmation.
 
 Key reminders:
-- **Group questions** to keep the wizard to 5-6 exchanges
+- **Offer presets first** to fast-track the wizard for developers who want quick setup
+- **Group questions** to keep the Custom path to 5-6 exchanges
 - **Reference analysis results** when asking questions
 - **Skip questions** that the analysis already answered clearly
 - **Adapt** based on prior answers

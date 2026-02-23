@@ -171,6 +171,53 @@ The command can:
 7. **Guard with file extension checks** — Don't run prettier on .py files or black on .ts files
 8. **Keep commands simple** — Complex logic should be in a separate script file
 
+## Autonomy-Based Hook Selection
+
+The developer's `autonomyLevel` determines which hooks are auto-generated:
+
+### "Always Ask" — No auto hooks
+Do not generate any hooks that run automatically. Instead, add a comment block in `settings.json` listing available hooks the developer can enable manually:
+
+```json
+{
+  "_available_hooks_comment": "Uncomment hooks below to enable auto-formatting and linting. See .claude/rules/ for details.",
+  "hooks": {}
+}
+```
+
+### "Balanced" — Auto-format only
+Generate PostToolUse hooks for auto-formatting on Write only:
+- Prettier, Black, gofmt, rustfmt (whichever is detected)
+- No lint hooks — linting feedback is advisory, not enforced
+
+### "Autonomous" — Auto-format + lint + pre-commit
+Generate the full hook suite:
+- Auto-format on Write (PostToolUse)
+- Lint check on Edit (PostToolUse)
+- Pre-commit validation if a pre-commit framework is detected
+
+## Shared vs Personal Hooks
+
+### Shared Hooks (`.claude/settings.json` — committed to repo)
+
+Team-wide hooks that enforce shared conventions:
+- Auto-format on Write (team's chosen formatter)
+- Lint check on Edit (team's linter configuration)
+- Any hooks that enforce team standards
+
+These are committed to the repository so all team members and Claude get the same behavior.
+
+### Personal Hooks (`.claude/settings.local.json` — gitignored)
+
+Individual developer overrides:
+- Disable a shared hook that conflicts with personal workflow
+- Add personal productivity hooks
+- Override timeout values for slower machines
+
+Personal settings merge with shared settings. When both define a hook for the same matcher/event, the personal version takes precedence.
+
+Note this distinction in the generated root CLAUDE.md so developers know where to configure hooks.
+
 ## Settings Merge Strategy
 
 When the project already has `.claude/settings.json`:

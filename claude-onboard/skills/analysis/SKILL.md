@@ -24,7 +24,7 @@ Capture and parse all output from these scripts.
 
 Go beyond what the scripts detect. Use Read, Glob, and Grep to:
 
-1. **Examine configuration files** — Read `package.json`, `tsconfig.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, etc. in detail. Extract exact versions, compiler options, and settings that affect development patterns.
+1. **Examine configuration files** — Follow `references/config-extraction-guide.md` for detailed config file extraction. Read every detected linter, formatter, type checker, and style config file. Extract enforced rules, severity levels, and settings that affect how code should be written. Distinguish between formatter settings (auto-fixed, document in CLAUDE.md) and linter rules (enforced, generate path-scoped rules). Also read `package.json`, `tsconfig.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, etc. for exact versions, compiler options, and settings that affect development patterns.
 
 2. **Identify project conventions** — Look for:
    - Naming patterns (camelCase, snake_case, kebab-case for files/directories)
@@ -46,7 +46,9 @@ Go beyond what the scripts detect. Use Read, Glob, and Grep to:
    - Coverage configuration
    - Testing utilities and helpers
 
-5. **Check existing Claude config** — If CLAUDE.md or `.claude/` directory exists:
+5. **Scan codebase usage patterns** — Beyond detecting tools, understand HOW they're used. Sample 5-10 representative source files to identify: component/module patterns, import conventions, styling usage, error handling style, naming conventions, architectural layer boundaries. Follow Section 3 of `references/config-extraction-guide.md`. Report observed patterns with evidence (file paths, line counts, ratios).
+
+6. **Check existing Claude config** — If CLAUDE.md or `.claude/` directory exists:
    - Read every existing file
    - Note what's already configured
    - Identify gaps vs. what a full setup would include
@@ -99,6 +101,13 @@ Compile everything into a clear, organized report with these sections:
 ## Conventions Detected
 - Naming, imports, code organization, error handling
 
+## Config & Pattern Analysis
+### Tooling Configs Found
+### Enforced Rules
+### Observed Patterns
+### Formatter Settings
+### Rule Generation Hints
+
 ## Complexity Assessment
 - Score and category from measure-complexity.sh
 - Model recommendation with reasoning
@@ -120,3 +129,4 @@ Compile everything into a clear, organized report with these sections:
 
 - `references/tech-stack-patterns.md` — Maps detected stacks to optimal configurations
 - `references/model-recommendations.md` — Project complexity → model recommendation logic
+- `references/config-extraction-guide.md` — Config file extraction and pattern scanning guide

@@ -40,6 +40,20 @@ For JSON files, add a `_generated` field:
 }
 ```
 
+## Autonomy Cascade
+
+The developer's `autonomyLevel` preference cascades across all generated artifacts. Use this table to determine defaults:
+
+| Aspect | Always-Ask | Balanced | Autonomous |
+|--------|-----------|----------|------------|
+| **Hooks** | No auto hooks (comment listing available hooks) | Auto-format on Write | Auto-format + auto-lint on Edit |
+| **Rule language** | "consider", "discuss with developer" | "should", "recommended" | "must", "always", "never" |
+| **Agent tool access** | All agents read-only (output as suggestions) | Reviewers read-only, generators read-write | All agents read-write including Bash |
+| **CLAUDE.md rules** | 8-12 extensive items including "check with developer" | 4-6 moderate items | 2-3 hard safety rules only |
+| **Skill detail** | Verbose with examples + alternatives + checkpoints | Standard with key examples | Concise, pattern-focused templates |
+
+**Conflict resolution**: When `autonomyLevel` and `codeStyleStrictness` produce conflicting tone verbs, `autonomyLevel` overrides for tone (how assertive the language is), while `codeStyleStrictness` controls quantity (how many rules/checks are generated).
+
 ## Artifact Generation Rules
 
 ### Root CLAUDE.md
@@ -50,14 +64,21 @@ Follow `references/claude-md-guide.md` for structure and best practices.
 - **Sections**: Project overview, tech stack summary, build/test/lint/deploy commands, key conventions, critical rules, directory structure overview
 - **Include `@imports`** where subdirectory CLAUDE.md files are created
 - **Tone matches autonomy level**: "always-ask" = more guardrails and "check with developer" language; "autonomous" = more empowering and "go ahead" language; "balanced" = mix
+- **Formatter conventions**: Include formatter settings (from Prettier/Black/rustfmt configs) as explicit conventions in Key Conventions section rather than as path-scoped rules
 - **Commands section**: List every discovered build/test/lint/deploy command with brief descriptions
 
 ### Subdirectory CLAUDE.md Files
 
 Follow `references/claude-md-guide.md` for content guidance.
 
-- **Only create where justified** — A directory needs distinct conventions worth documenting
+- **Create when all three criteria are met**: (1) directory contains a meaningful share of source files, (2) has distinct conventions not covered by root, (3) represents an architectural boundary
+- **File share thresholds scaled by project size**:
+  - Small projects (<100 source files): directory has >20% of total source files
+  - Medium projects (100-500 source files): directory has >10% of total source files
+  - Large projects (>500 source files): directory has >5% of total source files
+- **Monorepo packages are automatic candidates** — each package is an architectural boundary by definition
 - **Typical candidates**: `src/components/`, `src/api/`, `src/lib/`, `app/`, `tests/`, `scripts/`, per-package in monorepos
+- **Always confirm** candidate directories with the developer before creating subdirectory CLAUDE.md files
 - **Content**: Conventions specific to that directory, patterns to follow, common mistakes to avoid
 - **Keep short** — 30-80 lines each
 
@@ -73,6 +94,7 @@ Follow `references/rules-guide.md` for patterns and YAML frontmatter.
   - `components.md` — Component patterns, naming, structure (if frontend)
   - `security.md` — Security rules (if elevated/high security)
   - `styling.md` — Styling conventions (if specific approach detected)
+- **Config-derived rules**: When the analysis report includes a `Config & Pattern Analysis` section, use the extracted configs and observed patterns to generate rules that reflect the project's actual enforced standards. Follow the "Deriving Rules from Config Analysis" section in `references/rules-guide.md`. Never generate generic template rules when project-specific config data is available.
 - **Rule strictness matches `codeStyleStrictness`**: relaxed = guidelines, moderate = should, strict = must
 
 ### Skills (.claude/skills/)
@@ -83,6 +105,16 @@ Follow `references/skills-guide.md` for SKILL.md structure.
 - **Workflow-specific**: Based on detected patterns and pain points
 - **Each skill** has `SKILL.md` and optional `references/` directory
 - **Focus on the 2-3 most valuable skills** based on pain points and primary tasks
+
+### Skill Selection Priority
+
+When choosing which 2-3 skills to generate, use this weighting:
+
+1. **Pain point match** (highest) — Skill directly addresses a developer-reported pain point
+2. **Detected stack fit** — Skill matches a framework/tool found in analysis (e.g., React component skill for React projects)
+3. **Workflow gap** — Skill fills a gap in the development workflow (e.g., deployment skill when deploy is manual)
+
+**Combined scoring**: A skill that matches both a pain point AND the detected stack gets the highest combined score. When more than 3 candidate skills exist, pain point matches always win over stack-based candidates.
 
 ### Agents (.claude/agents/)
 
@@ -104,6 +136,16 @@ Follow `references/hooks-guide.md` for hook configuration.
   - Auto-format on Write (if formatter detected: prettier, black, rustfmt, gofmt)
   - Lint check on Edit (if linter detected: eslint, ruff, clippy)
 - **Only add hooks for tools that are actually installed and configured**
+
+### Collaboration Artifacts
+
+Follow `references/collaboration-guide.md` for templates and conventions.
+
+**Always generate** regardless of team size — solo developers benefit from consistency:
+
+- **PR Template** (`.github/PULL_REQUEST_TEMPLATE.md`) — Structured PR template with summary, type-of-change checkboxes, and checklist. Add stack-specific items based on analysis. Add security items if `securitySensitivity` is elevated/high. Include a note for the developer to customize after reviewing.
+- **Commit Conventions** (`.claude/rules/commit-conventions.md`) — Path-scoped rule (`paths: **`) for Conventional Commits format. Strictness of language matches `codeStyleStrictness`.
+- **Shared vs Local Settings Guidance** — Include a section in root CLAUDE.md explaining `.claude/settings.json` (shared, committed) vs `.claude/settings.local.json` (personal, gitignored).
 
 ### Metadata (.claude/onboard-meta.json)
 
@@ -127,6 +169,12 @@ Before finishing generation, verify:
 - [ ] Hooks reference tools that are actually installed
 - [ ] settings.json is merged, not overwritten (if it existed)
 - [ ] onboard-meta.json is complete and accurate
+- [ ] PR template exists with stack-appropriate checklist items
+- [ ] Commit conventions rule matches `codeStyleStrictness` level
+- [ ] Root CLAUDE.md includes shared vs local settings guidance
+- [ ] Rules reflect actual config settings, not generic defaults
+- [ ] Formatter-enforced settings are in CLAUDE.md Key Conventions, not duplicated in rules
+- [ ] Observed codebase patterns are captured in architectural rules
 
 ## Reference Files
 
@@ -135,3 +183,4 @@ Before finishing generation, verify:
 - `references/hooks-guide.md` — Hook configuration patterns
 - `references/skills-guide.md` — Skill creation patterns
 - `references/agents-guide.md` — Agent creation patterns
+- `references/collaboration-guide.md` — PR template, commit conventions, shared/local settings

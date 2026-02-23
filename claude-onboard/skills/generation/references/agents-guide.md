@@ -62,12 +62,38 @@ Restrict tools based on agent purpose:
 - Bash
 ```
 
+## Autonomy-Based Tool Access
+
+The developer's `autonomyLevel` determines default tool access for generated agents:
+
+### "Always Ask" — All agents read-only
+All agents (including generators and fixers) use read-only tools. Their output is presented as suggestions for the developer to review and apply manually.
+
+```
+All agents: Read, Glob, Grep, Bash (read-only: ls, cat, git log, git diff)
+```
+
+### "Balanced" (default) — Reviewers read-only, generators read-write
+Reviewer/analyzer agents stay read-only. Generator/fixer agents get write access.
+
+```
+Reviewers/analyzers: Read, Glob, Grep, Bash (read-only)
+Generators/fixers:   Read, Write, Edit, Glob, Grep, Bash
+```
+
+### "Autonomous" — All agents read-write
+All agents get full tool access including Bash for maximum autonomy.
+
+```
+All agents: Read, Write, Edit, Glob, Grep, Bash
+```
+
 ## Common Agents
 
 ### Code Reviewer
 
 **Purpose**: Reviews code changes for quality, consistency, and potential issues.
-**When to generate**: Team size >1, or if code review is part of workflow.
+**When to generate**: Always. Valuable even for solo developers for self-review and consistency checks.
 **Tools**: Read, Glob, Grep, Bash (read-only)
 
 ```markdown
@@ -240,12 +266,56 @@ Generate or update documentation for the specified area. Follow these principles
 - Setup documentation: installation, configuration
 ```
 
+### Cross-Package Impact Reviewer (Monorepo Only)
+
+**Purpose**: Reviews changes for cross-package impact in monorepo setups — checks dependency graphs, shared types, API contracts, build order, and test scope.
+**When to generate**: Monorepo detected (workspaces, Turborepo, Nx, Lerna).
+**Tools**: Read, Glob, Grep, Bash (read-only)
+
+```markdown
+# Cross-Package Impact Reviewer
+
+Reviews code changes for cross-package side effects in monorepo setups.
+
+## Model
+
+<!-- Set your preferred model: sonnet or opus -->
+
+## Tools
+
+- Read
+- Glob
+- Grep
+- Bash
+
+## Instructions
+
+When a change is made in a monorepo package, assess cross-package impact:
+
+1. **Dependency Graph**: Identify which other packages depend on the changed package
+2. **Shared Types**: Check if modified types/interfaces are used across packages
+3. **API Contracts**: Verify that exported APIs remain compatible
+4. **Build Order**: Confirm the change doesn't break the build pipeline order
+5. **Test Scope**: Identify which packages need re-testing due to the change
+
+### Output Format
+- **Impact Radius**: List of affected packages
+- **Breaking Changes**: Any API or type changes that require downstream updates
+- **Build Impact**: Whether build order or configuration needs adjustment
+- **Test Scope**: Which packages need re-testing
+
+### Rules
+- Only flag genuine cross-package concerns, not internal changes
+- Reference the dependency graph from package.json / workspace config
+- Distinguish between "must update" and "should verify" downstream packages
+```
+
 ## Generation Guidelines
 
 1. **Scale with team size**:
-   - Solo: 1-2 agents (test-writer if testing philosophy != minimal, code-reviewer if reviews exist)
-   - Small team (2-5): 2-3 agents
-   - Medium+ team (6+): 3-4 agents
+   - Solo: 1-2 agents (code-reviewer always, test-writer if testing philosophy != minimal)
+   - Small team (2-5): 2-3 agents (add security-checker if elevated security)
+   - Medium+ team (6+): 3-4 agents (add docs-writer, cross-package reviewer for monorepos)
 2. **Always leave model field empty** with a comment for the developer to set
 3. **Restrict tools to minimum needed** — Reviewers shouldn't have Write access
 4. **Tailor instructions to the project** — Reference actual frameworks, patterns, and conventions

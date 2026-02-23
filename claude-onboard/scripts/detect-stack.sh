@@ -5,6 +5,19 @@
 
 set -euo pipefail
 
+# Check Python 3 availability
+PYTHON3_AVAILABLE=false
+if command -v python3 &>/dev/null; then
+  PYTHON3_AVAILABLE=true
+fi
+
+# Structured warning for skipped/degraded operations
+warn_skip() {
+  local operation="$1"
+  local reason="$2"
+  echo "[WARN] Skipped: $operation — $reason" >&2
+}
+
 PROJECT_ROOT="${1:-.}"
 PROJECT_ROOT="$(cd "$PROJECT_ROOT" && pwd)"
 
@@ -233,7 +246,8 @@ echo "## Build System & Scripts"
 if [ -f "$PROJECT_ROOT/package.json" ]; then
   echo "  ### npm scripts ###"
   # Extract script names from package.json
-  python3 -c "
+  if $PYTHON3_AVAILABLE; then
+    python3 -c "
 import json, sys
 try:
     with open('$PROJECT_ROOT/package.json') as f:
@@ -243,6 +257,14 @@ try:
         print(f'  {name}: {cmd}')
 except: pass
 " 2>/dev/null || true
+  else
+    # Fallback: extract script names using grep/sed
+    warn_skip "python3 JSON parse for npm scripts" "python3 not available, using grep fallback"
+    sed -n '/"scripts"/,/}/p' "$PROJECT_ROOT/package.json" 2>/dev/null \
+      | grep -E '^\s*"[^"]+"\s*:' \
+      | sed 's/^\s*"\([^"]*\)"\s*:\s*"\(.*\)".*/  \1: \2/' \
+      | head -30 || true
+  fi
 fi
 
 if [ -f "$PROJECT_ROOT/Makefile" ]; then

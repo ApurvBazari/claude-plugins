@@ -5,6 +5,19 @@
 
 set -euo pipefail
 
+# Check Python 3 availability
+PYTHON3_AVAILABLE=false
+if command -v python3 &>/dev/null; then
+  PYTHON3_AVAILABLE=true
+fi
+
+# Structured warning for skipped/degraded operations
+warn_skip() {
+  local operation="$1"
+  local reason="$2"
+  echo "[WARN] Skipped: $operation — $reason" >&2
+}
+
 PROJECT_ROOT="${1:-.}"
 PROJECT_ROOT="$(cd "$PROJECT_ROOT" && pwd)"
 
@@ -126,7 +139,8 @@ echo "## Dependency Count"
 DEP_COUNT=0
 
 if [ -f "$PROJECT_ROOT/package.json" ]; then
-  NPM_DEPS=$(python3 -c "
+  if $PYTHON3_AVAILABLE; then
+    NPM_DEPS=$(python3 -c "
 import json
 try:
     with open('$PROJECT_ROOT/package.json') as f:
@@ -136,6 +150,15 @@ try:
     print(f'{deps + devdeps}')
 except: print('0')
 " 2>/dev/null || echo "0")
+  else
+    # Fallback: count dependency entries using grep
+    warn_skip "python3 JSON parse for npm deps" "python3 not available, using grep fallback"
+    DEPS_COUNT=$(sed -n '/"dependencies"/,/}/p' "$PROJECT_ROOT/package.json" 2>/dev/null \
+      | grep -c '"[^"]*"\s*:' 2>/dev/null || echo "0")
+    DEVDEPS_COUNT=$(sed -n '/"devDependencies"/,/}/p' "$PROJECT_ROOT/package.json" 2>/dev/null \
+      | grep -c '"[^"]*"\s*:' 2>/dev/null || echo "0")
+    NPM_DEPS=$((DEPS_COUNT + DEVDEPS_COUNT))
+  fi
   echo "npm dependencies: $NPM_DEPS"
   DEP_COUNT=$((DEP_COUNT + NPM_DEPS))
 fi

@@ -120,7 +120,21 @@ Use sparingly — only for files that should always be loaded with the root cont
 
 ## Subdirectory CLAUDE.md Guidelines
 
-- **Only create when the directory has distinct conventions** not covered by root
+Create a subdirectory CLAUDE.md only when **all three criteria** are met:
+1. The directory contains a meaningful share of source files (thresholds below)
+2. It has distinct conventions not covered by the root CLAUDE.md
+3. It represents an architectural boundary (e.g., separate concern, different tech, independent module)
+
+**File share thresholds by project size**:
+- Small projects (<100 source files): directory has >20% of total source files
+- Medium projects (100-500 source files): directory has >10% of total source files
+- Large projects (>500 source files): directory has >5% of total source files
+
+**Monorepo packages** are automatic candidates — each package is an architectural boundary.
+
+**Always confirm** candidate directories with the developer before creating subdirectory CLAUDE.md files.
+
+Additional guidelines:
 - **Keep short** — 30-80 lines
 - **Don't repeat root content** — Only add what's specific to this directory
 - **Focus on patterns** — What files look like here, what conventions apply here
@@ -140,6 +154,23 @@ Components follow this structure:
 - Use `forwardRef` for components that accept refs
 - Accessibility: all interactive elements need aria labels
 ```
+
+## Shared vs Local Settings Guidance
+
+Every generated root CLAUDE.md should include a section explaining the two settings files:
+
+```markdown
+## Claude Settings
+
+- **Shared settings** (`.claude/settings.json`): Team hooks and permissions — committed to repo
+- **Personal settings** (`.claude/settings.local.json`): Your individual overrides — gitignored
+- Personal settings merge with and override shared settings
+```
+
+This helps developers understand:
+- Where team-wide hooks (auto-format, lint) are configured
+- Where to put personal overrides without affecting teammates
+- That `.claude/settings.local.json` should be in `.gitignore`
 
 ## Tone by Autonomy Level
 
@@ -163,3 +194,26 @@ Components follow this structure:
 - Make implementation decisions based on codebase conventions
 - Only ask when genuinely ambiguous or potentially destructive
 ```
+
+## Critical Rules Density by Autonomy Level
+
+The number and tone of rules in the "Critical Rules" section of root CLAUDE.md should match the autonomy level:
+
+### "Always Ask" — 8-12 rules
+Include guardrails and "check with developer" items:
+- Hard safety rules (never commit secrets, etc.)
+- Process rules ("check with developer before modifying shared utilities")
+- Confirmation rules ("present options for architectural decisions")
+- Scope rules ("discuss before changes affecting multiple files")
+
+### "Balanced" — 4-6 rules
+Include important guidelines:
+- Hard safety rules
+- Key process rules ("discuss architectural decisions")
+- Leave routine decisions to Claude's judgment
+
+### "Autonomous" — 2-3 rules
+Only hard safety boundaries:
+- Never commit secrets or credentials
+- Never delete data without explicit confirmation
+- Stop and ask only when genuinely ambiguous or destructive

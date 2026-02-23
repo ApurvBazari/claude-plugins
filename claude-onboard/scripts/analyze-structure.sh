@@ -5,6 +5,19 @@
 
 set -euo pipefail
 
+# Check Python 3 availability
+PYTHON3_AVAILABLE=false
+if command -v python3 &>/dev/null; then
+  PYTHON3_AVAILABLE=true
+fi
+
+# Structured warning for skipped/degraded operations
+warn_skip() {
+  local operation="$1"
+  local reason="$2"
+  echo "[WARN] Skipped: $operation — $reason" >&2
+}
+
 PROJECT_ROOT="${1:-.}"
 PROJECT_ROOT="$(cd "$PROJECT_ROOT" && pwd)"
 

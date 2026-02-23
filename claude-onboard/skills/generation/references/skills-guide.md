@@ -157,3 +157,25 @@ When asked to deploy, prepare for deployment, or troubleshoot deployment issues.
 5. **Keep skills focused** — One task type per skill
 6. **Add references only when needed** — If the skill is self-contained in SKILL.md, no references directory needed
 7. **Use the maintenance header** — So Claude knows to flag when the skill drifts from actual code patterns
+
+## Autonomy-Based Detail Level
+
+Adapt the verbosity and structure of generated skills based on the developer's `autonomyLevel`:
+
+### "Always Ask" — Verbose with checkpoints
+- Include detailed step-by-step instructions with examples at each step
+- Add alternative approaches: "Option A: ..., Option B: ..."
+- Include checkpoints: "Pause and confirm with the developer before proceeding to step N"
+- Provide rationale for each pattern choice
+
+### "Balanced" — Standard with key examples
+- Clear step-by-step instructions
+- Include 1-2 key examples for non-obvious patterns
+- No checkpoints — trust Claude's judgment for standard tasks
+- Brief rationale for important pattern choices only
+
+### "Autonomous" — Concise pattern templates
+- Minimal instructions — focus on patterns and templates
+- Show the target output format, not the reasoning process
+- No alternatives or checkpoints
+- Trust Claude to apply patterns correctly based on context

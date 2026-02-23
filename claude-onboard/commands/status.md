@@ -29,6 +29,18 @@ Extract from `onboard-meta.json`:
 - `modelApprovedByUser` — Whether the developer approved
 - `updateHistory` — Previous updates (if any)
 
+### JSON Parse Error Handling
+
+If `onboard-meta.json` cannot be parsed (corrupted, malformed JSON, or unreadable):
+
+> The metadata file `.claude/onboard-meta.json` appears to be corrupted and couldn't be parsed.
+>
+> You can:
+> 1. **Re-initialize** — Run `/claude-onboard:init` to start fresh with a new analysis and wizard
+> 2. **Continue without metadata** — I'll check artifact integrity only (file existence and headers), but skip drift detection and preference display
+
+Wait for the developer's choice before proceeding. If they choose option 2, skip Steps 4 and 6 (drift check and preferences summary) and note the limitation in the status report.
+
 ---
 
 ## Step 3: Check Artifact Integrity
@@ -49,12 +61,19 @@ Classify each file:
 
 ## Step 4: Quick Drift Check
 
-Do a lightweight check for obvious drift (don't run full analysis):
+Do a lightweight check for drift against the state captured in `onboard-meta.json`. Use these concrete thresholds:
 
-- Check if `package.json` dependencies have changed significantly since last run
-- Check if new major directories have been created
-- Check if new CLAUDE.md files were added manually
-- Check if `.claude/settings.json` has been modified outside of onboard
+- **Dependency drift**: 3+ new dependencies added to package.json / requirements.txt / go.mod since last run
+- **Structural drift**: New top-level directory created that didn't exist at last run
+- **Test drift**: Test file count changed by >20% (up or down) since last run
+- **CI drift**: New CI/CD pipeline file added (e.g., new GitHub Actions workflow)
+- **Framework drift**: Major framework version bump detected (e.g., Next.js 14 → 15)
+- **Config drift**: `.claude/settings.json` has been modified outside of onboard
+- **Manual CLAUDE.md**: New CLAUDE.md files were added manually
+
+**"Significant drift"** = 2 or more of the above detected simultaneously.
+
+**Always confirm** drift findings with the developer before recommending action — false positives are possible.
 
 ---
 

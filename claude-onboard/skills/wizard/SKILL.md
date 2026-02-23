@@ -12,7 +12,16 @@ You are guiding a developer through an interactive onboarding wizard for Claude 
 
 ## Wizard Flow
 
-Follow this sequence, adapting based on analysis results and prior answers. See `references/question-bank.md` for the full question catalog with branching logic.
+Follow this sequence, adapting based on analysis results and prior answers. See `references/question-bank.md` for the full question catalog with branching logic. See `references/workflow-presets.md` for preset definitions and pre-filled values.
+
+### Phase 0: Preset Selection (Always)
+
+Present the four workflow presets: Minimal, Standard, Comprehensive, and Custom. See `references/workflow-presets.md` for details and pre-filled values.
+
+- If a preset is selected → load pre-filled values, ask Q1.1 (project description is always project-specific), then skip directly to Phase 6 summary for confirmation.
+- If Custom is selected → proceed with the full wizard flow starting at Phase 1.
+
+**Preset path is fast** — only project description + summary if a preset is selected.
 
 ### Phase 1: Project Context (Always)
 Establish what this project is and who works on it.
@@ -57,14 +66,62 @@ Present everything gathered (analysis + wizard answers) and ask for confirmation
 4. **Reference the analysis** — Always connect questions to what the analyzer found. This demonstrates value and reduces redundant questions.
 5. **Capture autonomy preference carefully** — This determines how much Claude asks vs acts independently. Get this right.
 
+## Skip Behavior
+
+When a developer skips a question or section:
+
+1. **Use neutral defaults** for skipped fields:
+   - `autonomyLevel` → `"balanced"`
+   - `codeStyleStrictness` → `"moderate"`
+   - `testingPhilosophy` → `"write-after"`
+   - `securitySensitivity` → `"standard"`
+   - Other fields → omit from wizard answers or use analysis inference if available
+2. **Record skipped fields** — Add a `skippedFields` array in `onboard-meta.json` listing every field that was skipped (e.g., `["testingPhilosophy", "securitySensitivity"]`)
+3. **Flag in generated artifacts** — Add `<!-- TODO: Developer skipped this preference during setup. Review and adjust if needed. -->` comments in generated artifacts where a skipped field affects the output content
+
+## Quick Mode
+
+Quick Mode infers most wizard fields from the codebase analysis, asks only what cannot be inferred, and presents a summary for tweaking.
+
+### Inference Rules
+
+From analysis data, infer:
+
+| Field | Inference Rule |
+|-------|---------------|
+| `teamSize` | Git contributor count: 1 = solo, 2-5 = small, 6-15 = medium, 15+ = large |
+| `projectMaturity` | Source file count: <10 = new, 10-100 = early, 100-500 = established, >500 = legacy |
+| `testingPhilosophy` | Test file ratio (test files / source files): <5% = minimal, 5-20% = write-after, 20-50% = comprehensive, >50% = tdd |
+| `codeStyleStrictness` | Linter config: none found = relaxed, linter present = moderate, linter + strict config (e.g., `"strict": true` in tsconfig, strict ESLint rules) = strict |
+| `securitySensitivity` | Code detection: auth/payment/session code found = elevated, HIPAA/PCI/compliance patterns = high, otherwise = standard |
+| `codeReviewProcess` | PR-related CI detected = formal-pr, team >1 = informal, solo = none |
+| `branchingStrategy` | Git branch patterns: many feature branches = feature-branches, develop + release branches = gitflow, only main = trunk-based |
+| `deployFrequency` | CI/CD with auto-deploy = continuous, CI without auto-deploy = manual, no CI = none |
+| `painPoints` | **Cannot infer** — left empty, flagged as `<!-- TODO: ask developer about pain points -->` in generated artifacts |
+| `autonomyLevel` | **NEVER infer — always ask explicitly** |
+
+### Quick Mode Flow
+
+1. **Infer** — Apply inference rules to analysis data, fill wizard answers
+2. **Ask autonomy** — Always ask the developer their autonomy preference (Q7.4)
+3. **Ask project description** — Always ask Q1.1
+4. **Present summary** — Show all inferred + asked values with clear "[inferred]" labels
+5. **Allow tweaks** — Developer can adjust any value before confirming
+
+### Combining with Presets
+
+Quick mode inference can refine preset defaults. If a developer chose Quick setup after seeing the analysis summary, inference runs first. If any inferred value differs from what a preset would provide, the inferred (more accurate) value wins.
+
 ## Output
 
 After the wizard completes, compile all answers into a structured JSON format:
 
 ```json
 {
+  "selectedPreset": "minimal | standard | comprehensive | custom",
   "projectDescription": "...",
   "teamSize": "solo | small (2-5) | medium (6-15) | large (15+)",
+  "sharedStandards": "none | informal | documented | enforced",
   "projectMaturity": "new | early | established | legacy",
   "primaryTasks": ["feature-dev", "bug-fixes", "maintenance", "refactoring"],
   "codeReviewProcess": "none | informal | formal-pr",

@@ -215,6 +215,56 @@ Adapt rule language based on the developer's code style strictness preference:
 - Comprehensive coverage of conventions
 - Include style preferences and formatting rules
 
+## Deriving Rules from Config Analysis
+
+**Principle**: Generated rules should capture the project's actual enforced standards and extend them with architectural intent that linters can't check.
+
+### From linter configs → path-scoped rules
+
+Extract enforced rules (error severity) and translate them into Claude-understandable guidance:
+- ESLint `no-unused-vars: error` → "Remove unused variables and imports before committing"
+- `@typescript-eslint/naming-convention` configured → state the exact convention explicitly
+- `react-hooks/exhaustive-deps: warn` → "Review hook dependency arrays — the project warns on missing deps"
+- Ruff `select = ["E", "F", "I"]` → "Follow pycodestyle, pyflakes, and isort rules"
+
+### From formatter configs → CLAUDE.md conventions (NOT rules)
+
+Formatter settings are auto-fixed, so they don't need rules enforcement. Document them in CLAUDE.md so Claude writes code that already matches the formatter:
+- Prettier `singleQuote: true, semi: false` → add to CLAUDE.md Key Conventions: "Use single quotes, no semicolons (auto-formatted by Prettier)"
+- Black `line-length = 88` → add to CLAUDE.md: "Line length limit is 88 characters (enforced by Black)"
+- rustfmt `max_width = 100` → add to CLAUDE.md: "Max line width is 100 (enforced by rustfmt)"
+
+### From tsconfig/mypy/strict settings → type safety rules
+
+- `strict: true` → "Never use `any` type — use `unknown` and narrow. Always handle potential `null`/`undefined`"
+- `paths` aliases → "Use path aliases (e.g., `@/components`) instead of relative imports deeper than 2 levels"
+- `mypy strict` → "All functions must have type annotations. No `# type: ignore` without a comment explaining why"
+
+### From observed patterns → architectural rules
+
+- Barrel exports detected → "Export public API through index files; do not import from internal module files directly"
+- Custom error classes detected → "Throw domain-specific error classes (e.g., `NotFoundError`, `ValidationError`), not raw strings"
+- Layer boundary pattern → "Services must not import from controllers. Components must not import from pages"
+- Tailwind utility-only → "Use Tailwind utility classes. Do not create custom CSS files unless for complex animations"
+
+### Anti-duplication principle
+
+Never create rules that simply restate what a formatter auto-fixes. Rules should cover what tools CANNOT enforce: architectural patterns, naming intent, error handling philosophy, component composition patterns, import boundaries.
+
+---
+
+## Connecting Strictness to Autonomy
+
+When both `codeStyleStrictness` and `autonomyLevel` are set, use this matrix to determine rule tone and density:
+
+| | Relaxed | Moderate | Strict |
+|---|---------|----------|--------|
+| **Always-Ask** | "consider", few rules, "discuss with developer" | "should", moderate rules, "check first" | "must", many rules, "verify with developer" |
+| **Balanced** | "prefer", minimal rules | "should", standard rules | "must", comprehensive rules |
+| **Autonomous** | "prefer", minimal rules, no checkpoints | "follow", standard rules, no checkpoints | "must"/"always", comprehensive rules, no checkpoints |
+
+**Key principle**: Autonomy controls **tone** (how assertive and whether to include "check with developer" language). Strictness controls **quantity** (how many rules and how much coverage). A "strict + autonomous" project gets many rules but with assertive language and no confirmation checkpoints.
+
 ## Generation Guidelines
 
 1. **Only generate rules for detected patterns** — Don't create API rules if there's no API

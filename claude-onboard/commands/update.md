@@ -68,6 +68,11 @@ Check two knowledge sources:
 - Fetch the latest Claude Code documentation for any new features or changed best practices
 - Check for new Claude Code capabilities that the existing setup doesn't leverage
 
+**Web fetch failure fallback**: If the web fetch fails (network error, timeout, or content unavailable):
+- Use the built-in reference guides only (claude-md-guide.md, rules-guide.md, hooks-guide.md, skills-guide.md, agents-guide.md)
+- Note in the findings output: "Live best practices check unavailable — recommendations based on built-in reference guides only"
+- Continue the update process normally with plugin knowledge alone
+
 ---
 
 ## Findings Report
