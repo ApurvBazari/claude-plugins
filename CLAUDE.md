@@ -4,8 +4,8 @@ This is a Claude Code plugin marketplace repository containing multiple plugins.
 
 ## Structure
 
-- `claude-onboard/` — Codebase analysis and Claude tooling generator plugin
-- `claude-notify/` — macOS notification hooks plugin
+- `onboard/` — Codebase analysis and Claude tooling generator plugin
+- `notify/` — macOS notification hooks plugin
 - Each plugin follows the `.claude-plugin` manifest convention
 
 ## Conventions

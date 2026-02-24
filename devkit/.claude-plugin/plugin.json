@@ -1,0 +1,21 @@
+{
+  "name": "devkit",
+  "version": "0.1.0",
+  "description": "Unified developer workflow toolkit — commit, review, lint, test, and ship with config-driven commands that adapt to any project",
+  "author": {
+    "name": "Apurv Bazari"
+  },
+  "repository": "https://github.com/apurvbazari/claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "devkit",
+    "workflow",
+    "commit",
+    "review",
+    "lint",
+    "test",
+    "ship",
+    "developer-tools",
+    "agentic-workflow"
+  ]
+}

@@ -1,0 +1,124 @@
+# /devkit:review — Code Review
+
+You are performing a multi-category code review on the developer's changes against the main branch.
+
+## Guard
+
+Read `.claude/devkit.json` in the project root. If not found:
+
+> Run `/devkit:setup` first to configure your project.
+
+Stop and do not proceed.
+
+## Config
+
+Extract from `devkit.json`:
+- `tooling.linter` — for stack-aware style checks
+- `tooling.testRunner` — for test coverage analysis
+- `tooling.formatter` — for formatting checks
+
+## Step 1: Identify Changes
+
+Determine the base branch and get the diff:
+
+```bash
+git branch --show-current
+git merge-base main HEAD
+git diff main...HEAD --stat
+git diff main...HEAD
+```
+
+If the current branch is `main`, ask the user what to review:
+
+> You're on `main`. Would you like me to review:
+> 1. Uncommitted changes (`git diff`)
+> 2. The last N commits
+> 3. A specific branch compared to main
+
+## Step 2: Read Changed Files
+
+Read each changed file in full to understand context. Don't just look at the diff — understand the surrounding code, imports, and how the changed code fits into the broader module.
+
+## Step 3: Multi-Category Review
+
+Review the changes across these categories. See `references/review-checklist.md` for detailed check items per category.
+
+### Category 1: Code Quality & Style
+
+- Naming conventions — are names clear and consistent with the codebase?
+- Code organization — is the code well-structured?
+- DRY violations — is there unnecessary duplication?
+- Complexity — are there overly complex functions that should be broken down?
+- Dead code — are there unused variables, imports, or functions?
+- Stack-specific patterns — does the code follow idioms for the detected language/framework?
+
+### Category 2: Security (OWASP-Aware)
+
+- Input validation — are user inputs validated and sanitized?
+- Authentication/authorization — are access controls correct?
+- Injection risks — SQL injection, XSS, command injection, path traversal
+- Sensitive data — are secrets, tokens, or PII exposed?
+- Error handling — do error messages leak internal details?
+- Dependencies — are there known vulnerable packages being added?
+
+### Category 3: Test Coverage
+
+- Are new code paths covered by tests?
+- Are edge cases tested?
+- Are error paths tested?
+- Do tests actually assert meaningful behavior (not just "it runs")?
+- Are there integration tests where needed?
+
+### Category 4: Performance & Correctness
+
+- Are there obvious performance issues (N+1 queries, unnecessary loops, missing indexes)?
+- Race conditions or concurrency issues
+- Resource leaks (unclosed connections, file handles, subscriptions)
+- Correct error handling (are errors caught, propagated, or silently swallowed?)
+- Edge cases (null, empty, boundary values)
+
+## Step 4: Present Review
+
+Present the review organized by severity:
+
+```
+Code Review — <branch> vs main
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CRITICAL — Must fix before merging
+  <issues that would cause bugs, security vulnerabilities, or data loss>
+
+WARNING — Should fix
+  <issues that are problematic but not blocking>
+
+SUGGESTION — Consider improving
+  <nice-to-haves and style improvements>
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Summary: <X> critical, <Y> warnings, <Z> suggestions
+Files reviewed: <count>
+```
+
+For each issue, include:
+- **File and line reference** — `path/to/file.ts:42`
+- **Category** — which review category it falls under
+- **Description** — what the issue is
+- **Suggestion** — how to fix it (with code snippet if helpful)
+
+## Step 5: Offer Fixes
+
+If there are critical or warning issues:
+
+> Would you like me to fix any of these issues? I can address them one by one or all at once.
+
+If the user wants fixes, apply them and re-run the review on the fixed code to verify.
+
+## Key Rules
+
+- **Read full files** — don't review diffs in isolation, understand context
+- **Be specific** — always cite file paths and line numbers
+- **Prioritize correctly** — critical issues first, style nits last
+- **No false positives** — only flag real issues, not style preferences unless they violate the project's configured linter rules
+- **Respect the codebase** — review against the project's own patterns, not abstract ideals

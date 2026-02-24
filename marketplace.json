@@ -3,14 +3,19 @@
   "description": "Claude Code plugins by Apurv Bazari",
   "plugins": [
     {
-      "name": "claude-onboard",
-      "path": "./claude-onboard",
+      "name": "onboard",
+      "path": "./onboard",
       "description": "Interactive wizard that analyzes your codebase and generates complete Claude tooling for AI-assisted development"
     },
     {
-      "name": "claude-notify",
-      "path": "./claude-notify",
+      "name": "notify",
+      "path": "./notify",
       "description": "macOS system notifications for Claude Code — get notified when tasks complete or need attention"
+    },
+    {
+      "name": "devkit",
+      "path": "./devkit",
+      "description": "Unified developer workflow toolkit — config-driven commit, review, lint, test, and ship commands that adapt to any project"
     }
   ]
 }
