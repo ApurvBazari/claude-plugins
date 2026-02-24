@@ -28,13 +28,37 @@ If the developer declines, explain that the plugin requires `terminal-notifier` 
 
 ---
 
-## Step 2: Detect Existing Configuration
+## Step 2: Choose Install Scope
+
+Ask the developer to choose an install scope:
+
+> Where should notifications be configured?
+>
+> 1. **Global** (default) — Notifications for all projects (`~/.claude/`)
+> 2. **This project only** — Notifications scoped to this project directory (`$PWD/.claude/`)
+
+If the developer picks "Global" (or accepts the default), set:
+- `BASE_DIR` = the absolute path of `$HOME/.claude`
+
+If the developer picks "This project only", set:
+- `BASE_DIR` = the absolute path of `$PWD/.claude`
+
+Resolve `BASE_DIR` to a fully expanded absolute path (no `~` or relative segments).
+
+Show confirmation:
+> Installing to: `<resolved BASE_DIR>` (<global|this project only>)
+
+All subsequent steps use `$BASE_DIR` for file paths.
+
+---
+
+## Step 3: Detect Existing Configuration
 
 Check for existing notification hooks:
 
-1. Read `~/.claude/settings.json` — look for hooks with `Stop`, `Notification`, or `SubagentStop` events that reference `notify.sh`
-2. Check if `~/.claude/hooks/notify.sh` exists
-3. Check if `~/.claude/notify-config.json` exists
+1. Read `$BASE_DIR/settings.json` — look for hooks with `Stop`, `Notification`, or `SubagentStop` events that reference `notify.sh`
+2. Check if `$BASE_DIR/hooks/notify.sh` exists
+3. Check if `$BASE_DIR/notify-config.json` exists
 
 **If existing config found:**
 > I found an existing notification setup:
@@ -51,7 +75,7 @@ If "Cancel", stop. If "Update" or "Replace", continue (Replace removes old confi
 
 ---
 
-## Step 3: Present Defaults & Offer Customization
+## Step 4: Present Defaults & Offer Customization
 
 Present the default configuration:
 
@@ -69,7 +93,7 @@ Present the default configuration:
 
 ---
 
-## Step 4: Customization (if requested)
+## Step 5: Customization (if requested)
 
 If the developer chooses "Customize", use the `wizard` skill to walk through each event's preferences. The wizard will return the final configuration.
 
@@ -104,13 +128,17 @@ If "Use defaults", use these values:
 
 ---
 
-## Step 5: Generate Artifacts
+## Step 6: Generate Artifacts
 
 Generate the following files based on the configuration:
 
-### 5a: Write `~/.claude/hooks/notify.sh`
+### 6a: Write `$BASE_DIR/hooks/notify.sh`
 
-Write the notification script and make it executable (`chmod +x`):
+Create the directory and write the notification script, then make it executable (`chmod +x`):
+
+```bash
+mkdir -p $BASE_DIR/hooks
+```
 
 ```bash
 #!/bin/bash
@@ -121,18 +149,18 @@ ACTIVATE="${4:-com.microsoft.VSCode}"
 terminal-notifier -title "$TITLE" -message "$MESSAGE" -sound "$SOUND" -activate "$ACTIVATE"
 ```
 
-### 5b: Merge hooks into `~/.claude/settings.json`
+### 6b: Merge hooks into `$BASE_DIR/settings.json`
 
-Read the existing `~/.claude/settings.json` (create if it doesn't exist). Merge hook entries into the `hooks` object **non-destructively** — preserve all existing keys and hooks.
+Read the existing `$BASE_DIR/settings.json` (create if it doesn't exist). Merge hook entries into the `hooks` object **non-destructively** — preserve all existing keys and hooks.
 
-For each **enabled** event, add a hook entry:
+For each **enabled** event, add a hook entry. Use the fully resolved absolute `$BASE_DIR` path in all command strings (no `~`):
 
 **Stop event:**
 ```json
 {
   "type": "command",
   "event": "Stop",
-  "command": "~/.claude/hooks/notify.sh 'Claude Code' 'Task completed' 'Hero' 'com.microsoft.VSCode'"
+  "command": "$BASE_DIR/hooks/notify.sh 'Claude Code' 'Task completed' 'Hero' 'com.microsoft.VSCode'"
 }
 ```
 
@@ -141,7 +169,7 @@ For each **enabled** event, add a hook entry:
 {
   "type": "command",
   "event": "Notification",
-  "command": "~/.claude/hooks/notify.sh 'Claude Code' 'Needs your attention' 'Glass' 'com.microsoft.VSCode'",
+  "command": "$BASE_DIR/hooks/notify.sh 'Claude Code' 'Needs your attention' 'Glass' 'com.microsoft.VSCode'",
   "matcher": "permission_prompt|idle_prompt"
 }
 ```
@@ -151,24 +179,24 @@ For each **enabled** event, add a hook entry:
 {
   "type": "command",
   "event": "SubagentStop",
-  "command": "~/.claude/hooks/notify.sh 'Claude Code' 'Subagent task completed' 'Ping' 'com.microsoft.VSCode'"
+  "command": "$BASE_DIR/hooks/notify.sh 'Claude Code' 'Subagent task completed' 'Ping' 'com.microsoft.VSCode'"
 }
 ```
 
-Use the message, sound, and activate values from the developer's configuration. Replace `~` with the actual home directory path in the command strings.
+Use the message, sound, and activate values from the developer's configuration. All command strings must use the fully resolved absolute `$BASE_DIR` path.
 
-### 5c: Write `~/.claude/notify-config.json`
+### 6c: Write `$BASE_DIR/notify-config.json`
 
 Write the full configuration JSON for future reference and editing.
 
 ---
 
-## Step 6: Test
+## Step 7: Test
 
 Run a test notification:
 
 ```bash
-~/.claude/hooks/notify.sh "Claude Code" "Setup complete — notifications are working!" "Glass" "<activate-app>"
+$BASE_DIR/hooks/notify.sh "Claude Code" "Setup complete — notifications are working!" "Glass" "<activate-app>"
 ```
 
 Ask the developer if they saw the notification.
@@ -184,13 +212,18 @@ Ask the developer if they saw the notification.
 
 ---
 
-## Step 7: Handoff
+## Step 8: Handoff
 
 > **What was set up:**
-> - `~/.claude/hooks/notify.sh` — The notification script
-> - `~/.claude/settings.json` — Hooks that trigger notifications on Claude events
-> - `~/.claude/notify-config.json` — Your preferences (edit this to change settings)
+> - `$BASE_DIR/hooks/notify.sh` — The notification script
+> - `$BASE_DIR/settings.json` — Hooks that trigger notifications on Claude events
+> - `$BASE_DIR/notify-config.json` — Your preferences (edit this to change settings)
+>
+> **Scope:** <global | this project only (`$BASE_DIR`)>
 >
 > **To change settings later:**
-> - Edit `~/.claude/notify-config.json` directly and re-run `/claude-notify:setup`
+> - Edit `$BASE_DIR/notify-config.json` directly and re-run `/claude-notify:setup`
 > - Run `/claude-notify:notify-status` to check everything is working
+
+If the scope is per-project, add:
+> **Note:** These hooks only fire when Claude Code is running inside this project directory. Global hooks (if any) still apply alongside project-level hooks.

@@ -1,8 +1,11 @@
 #!/bin/bash
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-CONFIG_FILE="$HOME/.claude/notify-config.json"
+# Accept optional base directory as first argument (default: ~/.claude)
+BASE_DIR="${1:-$HOME/.claude}"
+
+NOTIFY_SCRIPT="$BASE_DIR/hooks/notify.sh"
+CONFIG_FILE="$BASE_DIR/notify-config.json"
 
 # Check terminal-notifier
 if ! command -v terminal-notifier &>/dev/null; then
@@ -11,13 +14,12 @@ if ! command -v terminal-notifier &>/dev/null; then
 fi
 
 # Check notify.sh
-NOTIFY_SCRIPT="$HOME/.claude/hooks/notify.sh"
 if [ ! -x "$NOTIFY_SCRIPT" ]; then
   echo "ERROR: $NOTIFY_SCRIPT not found or not executable."
   exit 1
 fi
 
-echo "Sending test notification..."
+echo "Sending test notification (base: $BASE_DIR)..."
 "$NOTIFY_SCRIPT" "Claude Code" "Test notification — setup is working!" "Glass" "com.microsoft.VSCode"
 
 EXIT_CODE=$?

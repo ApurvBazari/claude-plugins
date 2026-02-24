@@ -28,9 +28,21 @@ Add this plugin to your Claude Code plugins, then run:
 
 The setup command will:
 1. Install `terminal-notifier` if needed
-2. Let you choose default or custom notification preferences
-3. Configure hooks in `~/.claude/settings.json`
-4. Send a test notification to verify everything works
+2. Let you choose an install scope (global or per-project)
+3. Let you choose default or custom notification preferences
+4. Configure hooks in the chosen scope's `settings.json`
+5. Send a test notification to verify everything works
+
+## Install Scopes
+
+Notifications can be installed globally or per-project:
+
+| Scope | Path | When hooks fire |
+|-------|------|-----------------|
+| **Global** (default) | `~/.claude/` | Every Claude Code session |
+| **Per-project** | `<project>/.claude/` | Only when running in that project directory |
+
+Both scopes can coexist — per-project hooks add to global hooks, they don't replace them. This lets you set up global defaults and override or extend them for specific projects (e.g., a different sound for a particular repo).
 
 ## Commands
 
@@ -41,7 +53,7 @@ The setup command will:
 
 ## Configuration
 
-Settings are stored in `~/.claude/notify-config.json`. Edit directly and re-run `/claude-notify:setup` to apply changes.
+Settings are stored in `notify-config.json` within the chosen scope directory (`~/.claude/` for global, `<project>/.claude/` for per-project). Edit directly and re-run `/claude-notify:setup` to apply changes.
 
 ## Customization
 
