@@ -1,6 +1,12 @@
 # Model Recommendation Logic
 
-Only recommend **Sonnet** or **Opus**. The developer must explicitly approve any recommendation.
+Only recommend **Sonnet** or **Opus** from the Claude 4 family. The developer must explicitly approve any recommendation.
+
+Current model IDs:
+- **Sonnet**: `claude-sonnet-4-6` (Claude Sonnet 4.6)
+- **Opus**: `claude-opus-4-6` (Claude Opus 4.6)
+
+Note: Haiku (`claude-haiku-4-5`) exists but is not recommended for development workflows — it lacks the depth needed for codebase analysis and generation tasks.
 
 ---
 

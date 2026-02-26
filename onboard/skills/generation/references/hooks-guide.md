@@ -62,6 +62,24 @@ The command can:
 - **Exit non-zero** — Block the action (for PreToolUse) or signal failure
 - **Output to stdout** — Message shown to Claude as feedback
 
+## Parsing Event Data
+
+Hook commands receive JSON via stdin. Use `jq` if available, with a `grep`/`sed` fallback:
+
+```bash
+# Preferred (requires jq)
+file=$(cat - | jq -r '.tool_input.file_path')
+
+# Fallback (no jq dependency)
+file=$(cat - | grep -o '"file_path": *"[^"]*"' | head -1 | sed 's/.*: *"//;s/"//')
+```
+
+When generating hooks, prefer the fallback-safe version to avoid `jq` as a hard dependency:
+
+```bash
+file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '"file_path": *"[^"]*"' | head -1 | sed 's/.*: *"//;s/"//')
+```
+
 ## Common Hook Patterns
 
 ### Auto-Format on Write (Prettier)
@@ -72,7 +90,7 @@ The command can:
     "PostToolUse": [
       {
         "matcher": "Write",
-        "command": "file=$(cat - | jq -r '.tool_input.file_path') && case \"$file\" in *.ts|*.tsx|*.js|*.jsx|*.json|*.css|*.md) npx prettier --write \"$file\" 2>/dev/null ;; esac; exit 0",
+        "command": "file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '\"file_path\": *\"[^\"]*\"' | head -1 | sed 's/.*: *\"//;s/\"//') && case \"$file\" in *.ts|*.tsx|*.js|*.jsx|*.json|*.css|*.md) npx prettier --write \"$file\" 2>/dev/null ;; esac; exit 0",
         "timeout": 10000
       }
     ]
@@ -88,7 +106,7 @@ The command can:
     "PostToolUse": [
       {
         "matcher": "Write",
-        "command": "file=$(cat - | jq -r '.tool_input.file_path') && case \"$file\" in *.py) black --quiet \"$file\" 2>/dev/null ;; esac; exit 0",
+        "command": "file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '\"file_path\": *\"[^\"]*\"' | head -1 | sed 's/.*: *\"//;s/\"//') && case \"$file\" in *.py) black --quiet \"$file\" 2>/dev/null ;; esac; exit 0",
         "timeout": 10000
       }
     ]
@@ -104,7 +122,7 @@ The command can:
     "PostToolUse": [
       {
         "matcher": "Write",
-        "command": "file=$(cat - | jq -r '.tool_input.file_path') && case \"$file\" in *.go) gofmt -w \"$file\" 2>/dev/null ;; esac; exit 0",
+        "command": "file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '\"file_path\": *\"[^\"]*\"' | head -1 | sed 's/.*: *\"//;s/\"//') && case \"$file\" in *.go) gofmt -w \"$file\" 2>/dev/null ;; esac; exit 0",
         "timeout": 10000
       }
     ]

@@ -60,7 +60,12 @@
 - Check .gitignore for sensitive files
 
 ### Dependencies
-- Check for known vulnerabilities in new dependencies
+- Check for known vulnerabilities in new dependencies using the appropriate audit tool:
+  - **npm/pnpm/yarn**: `npm audit` / `pnpm audit` / `yarn audit`
+  - **Python**: `pip-audit` or `safety check`
+  - **Go**: `govulncheck ./...`
+  - **Rust**: `cargo audit`
+  - **Ruby**: `bundle audit`
 - Avoid unnecessary new dependencies
 - Pin dependency versions appropriately
 

@@ -60,7 +60,6 @@ The plugin uses three specialized components:
 - Python (Django, Flask, FastAPI, etc.)
 - Go
 - Rust
-- Java / Kotlin (Spring Boot, Android)
 - Ruby (Rails)
 - Monorepos (npm/yarn/pnpm workspaces, Turborepo, Nx, Lerna)
 - Mixed-language projects

@@ -65,6 +65,21 @@ Top issues:
   3. <rule-name> — <count> occurrences — <brief description>
 ```
 
+### Parsing Output Per Linter
+
+Each linter has a different output format. Use these patterns to categorize issues:
+
+| Linter | Error format | How to categorize |
+|--------|-------------|-------------------|
+| eslint | `file:line:col: message (rule-id)` — errors and warnings labeled | Lines with `error` → Error, `warning` → Warning |
+| biome | `file:line:col category LEVEL[rule]` | `error` → Error, `warning` → Warning, `info` → Info |
+| ruff | `file:line:col: RULE message` | All are errors by default; `--select` controls which rules run |
+| rubocop | `file:line:col: C/W/E/F: message` | `C` (convention) → Info, `W` → Warning, `E`/`F` → Error |
+| golangci-lint | `file:line:col: message (linter)` | All are errors unless `--severity` configured |
+| clippy | `warning[lint-name]: message --> file:line:col` | `warning` → Warning, `error` → Error |
+
+If the output format is unrecognized, present raw output and let the developer interpret.
+
 ## Step 3: Offer Auto-Fix
 
 If the linter supports auto-fix, offer it:

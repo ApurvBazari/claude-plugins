@@ -52,6 +52,28 @@ All subsequent steps use `$BASE_DIR` for file paths.
 
 ---
 
+## Step 2.5: Check for Hook Conflicts
+
+Read `$BASE_DIR/settings.json` if it exists. Check for any existing hooks on `Stop`, `Notification`, or `SubagentStop` events that are NOT from notify (i.e., their `command` does not contain `notify.sh`).
+
+**If conflicting hooks found:**
+> I found existing hooks on these events that aren't from notify:
+>
+> | Event | Command (truncated) |
+> |-------|-------------------|
+> | Stop | `<first 60 chars of command>` |
+> | Notification | `<first 60 chars of command>` |
+>
+> Notify hooks will be **added alongside** these — they won't be replaced. Both will fire on the same events.
+>
+> Is that okay, or would you like to review your existing hooks first?
+
+If the developer wants to review, show the full hook entries and let them decide. If they confirm, proceed.
+
+**If no conflicts**, proceed silently.
+
+---
+
 ## Step 3: Detect Existing Configuration
 
 Check for existing notification hooks:

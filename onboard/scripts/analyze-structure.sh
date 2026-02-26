@@ -93,6 +93,7 @@ KEY_FILES=(
   ".github/workflows" ".gitlab-ci.yml" ".circleci/config.yml" "Jenkinsfile" "bitbucket-pipelines.yml"
   ".eslintrc.js" ".eslintrc.json" ".eslintrc.yml" ".eslintrc.cjs" "eslint.config.js" "eslint.config.mjs"
   ".prettierrc" ".prettierrc.json" ".prettierrc.js" "prettier.config.js"
+  "biome.json" "biome.jsonc"
   "jest.config.js" "jest.config.ts" "vitest.config.ts" "vitest.config.js"
   "pytest.ini" "conftest.py" "tox.ini" ".coveragerc"
   "webpack.config.js" "vite.config.ts" "vite.config.js" "rollup.config.js" "next.config.js" "next.config.mjs" "next.config.ts"
@@ -100,6 +101,7 @@ KEY_FILES=(
   "CLAUDE.md" ".claude/settings.json" ".claude/settings.local.json"
   "turbo.json" "nx.json" "lerna.json"
   ".env" ".env.example" ".env.local"
+  ".nvmrc" ".node-version" ".python-version" ".tool-versions"
 )
 
 for f in "${KEY_FILES[@]}"; do

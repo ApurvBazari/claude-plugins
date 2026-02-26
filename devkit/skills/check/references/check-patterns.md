@@ -31,10 +31,39 @@ Patterns to search for during production readiness scans. Use with Grep tool, ex
 
 | Pattern | Category | Notes |
 |---------|----------|-------|
-| `SELECT\s+\*\s+FROM(?!.*LIMIT)` | Unbounded query | Multi-line check needed |
+| `SELECT\s+\*\s+FROM(?!.*LIMIT)` | Unbounded query | Multi-line check needed — use `Grep` with `multiline: true` |
 | `readFileSync\|writeFileSync` | Sync I/O in async | Check if in async context |
 | `import\s+\w+\s+from\s+['"]lodash['"]` | Full library import | Should use lodash/specific |
 | `import\s+\*\s+as` | Wildcard import | May prevent tree-shaking |
+
+### N+1 Query Patterns
+
+These are structural patterns — grep alone can't catch all cases. Look for:
+
+| Pattern | Language | Notes |
+|---------|----------|-------|
+| `for.*\n.*\.(find\|query\|fetch\|get\|select)` | JS/TS | Loop containing DB call — use `multiline: true` |
+| `for.*\n.*\.objects\.(get\|filter\|all)` | Python/Django | ORM query inside loop |
+| `\.each\s*do.*\n.*\.(find\|where\|joins)` | Ruby/Rails | ActiveRecord query in loop |
+| `for.*range.*\n.*\.Query\|\.Find\|\.First` | Go/GORM | DB query inside range loop |
+
+Note: These are heuristic patterns with high false-positive rates. Always read surrounding context before flagging.
+
+### Size-Based Checks
+
+Use Bash to identify oversized functions and files:
+
+```bash
+# Files >500 lines (excluding tests, generated files)
+find . -name "*.ts" -o -name "*.js" -o -name "*.py" -o -name "*.go" -o -name "*.rs" | \
+  grep -v node_modules | grep -v dist | grep -v test | grep -v spec | \
+  xargs wc -l 2>/dev/null | awk '$1 > 500 {print}' | sort -rn
+
+# Functions >50 lines — look for function/method definitions and count lines to next definition
+# This is language-specific and best done by reading flagged files manually
+```
+
+Flag files >500 lines for review. For functions >50 lines, read the large files and identify long functions manually — there's no reliable cross-language grep pattern for this.
 
 ## Code Quality
 
