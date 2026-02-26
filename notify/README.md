@@ -71,6 +71,10 @@ Settings are stored in `notify-config.json` within the chosen scope directory (`
 - **Setup partially completed** — Re-run `/notify:setup`. It detects existing config and offers to update or replace.
 - **Permissions issues** — If `terminal-notifier` was installed but notifications don't appear, try removing and re-adding it: `brew reinstall terminal-notifier`, then open it once from Finder to trigger the macOS permission prompt.
 
+## Works Well With
+
+- **devkit** — The ship pipeline (`/devkit:ship`) can trigger notifications on completion. When both plugins are installed, you get notified when your quality gates pass and code is committed.
+
 ## Customization
 
 During setup, you can customize per event:
