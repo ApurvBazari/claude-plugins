@@ -13,9 +13,9 @@ Perform deep, read-only analysis of a project to produce a structured report tha
 Execute the three analysis scripts against the project root to gather baseline metrics:
 
 ```bash
-bash <plugin-dir>/scripts/analyze-structure.sh <project-root>
-bash <plugin-dir>/scripts/detect-stack.sh <project-root>
-bash <plugin-dir>/scripts/measure-complexity.sh <project-root>
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/analyze-structure.sh" <project-root>
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh" <project-root>
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/measure-complexity.sh" <project-root>
 ```
 
 Capture and parse all output from these scripts.

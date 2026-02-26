@@ -185,15 +185,15 @@ Do not generate any hooks that run automatically. Instead, add a comment block i
 }
 ```
 
-### "Balanced" — Auto-format only
-Generate PostToolUse hooks for auto-formatting on Write only:
+### "Balanced" — Auto-format + lint check (advisory)
+Generate PostToolUse hooks for auto-formatting and advisory lint checks on Write:
 - Prettier, Black, gofmt, rustfmt (whichever is detected)
-- No lint hooks — linting feedback is advisory, not enforced
+- Lint check on Edit (PostToolUse) — advisory only, does not block
 
-### "Autonomous" — Auto-format + lint + pre-commit
+### "Autonomous" — Auto-format + lint + pre-commit validation
 Generate the full hook suite:
 - Auto-format on Write (PostToolUse)
-- Lint check on Edit (PostToolUse)
+- Lint check on Edit (PostToolUse) — enforced
 - Pre-commit validation if a pre-commit framework is detected
 
 ## Shared vs Personal Hooks

@@ -82,7 +82,7 @@ Determine the auto-fix command based on the linter:
 | biome | `<packageManager> biome check --write` |
 | ruff | `<packageManager> ruff check --fix` |
 | rubocop | `<lintCommand> -A` |
-| golangci-lint | No auto-fix available |
+| golangci-lint | `golangci-lint run --fix` |
 | clippy | `cargo clippy --fix` |
 
 If the user confirms, run the auto-fix command.

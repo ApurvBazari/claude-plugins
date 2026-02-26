@@ -113,6 +113,28 @@ Report if found and its path.
 
 Check for `Makefile` or `Taskfile.yml`. If present, read them and report available targets that might override standard commands.
 
+### 9. Monorepo Workspace Detection
+
+Check if the project is a monorepo:
+
+1. **Detect monorepo type**:
+   - `package.json` with `"workspaces"` field → npm/yarn workspaces
+   - `pnpm-workspace.yaml` → pnpm workspaces
+   - `turbo.json` → Turborepo
+   - `nx.json` → Nx
+
+2. **If monorepo detected**, list workspace packages:
+   - Parse the workspace glob patterns from the config
+   - Use Glob to find matching `package.json` files (or equivalent per ecosystem)
+   - List each workspace package with its name and path
+
+3. **Scan each workspace for local tooling overrides**:
+   - Check if any workspace has its own test runner config (e.g., `vitest.config.ts` in a package)
+   - Check for workspace-local linter configs that differ from root
+   - Check for workspace-specific `scripts.test` or `scripts.lint` in their `package.json`
+
+4. **Report workspace tooling** in the output under a new section. Only report overrides — if a workspace uses the root tooling, don't repeat it.
+
 ## Output Format
 
 Return a structured report:
@@ -153,6 +175,11 @@ Return a structured report:
 
 ## Task Runner Overrides
 - <any Makefile/Taskfile targets that override standard commands>
+
+## Monorepo
+- Type: <none | npm workspaces | pnpm workspaces | turborepo | nx>
+- Workspaces: <list of workspace names and paths>
+- Workspace overrides: <any workspace-specific tooling that differs from root>
 
 ## Notes
 - <any ambiguities, conflicts, or items needing user attention>

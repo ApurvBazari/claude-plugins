@@ -16,21 +16,24 @@ Extract from `devkit.json`:
 - `tooling.linter` — for stack-aware style checks
 - `tooling.testRunner` — for test coverage analysis
 - `tooling.formatter` — for formatting checks
+- `baseBranch` — the default branch to compare against (defaults to `main` if not set)
 
 ## Step 1: Identify Changes
 
-Determine the base branch and get the diff:
+Read `baseBranch` from config. If not set, default to `main`.
+
+Determine the current branch and get the diff:
 
 ```bash
 git branch --show-current
-git merge-base main HEAD
-git diff main...HEAD --stat
-git diff main...HEAD
+git merge-base <baseBranch> HEAD
+git diff <baseBranch>...HEAD --stat
+git diff <baseBranch>...HEAD
 ```
 
-If the current branch is `main`, ask the user what to review:
+If the current branch is the base branch, ask the user what to review:
 
-> You're on `main`. Would you like me to review:
+> You're on the base branch (`<baseBranch>`). Would you like me to review:
 > 1. Uncommitted changes (`git diff`)
 > 2. The last N commits
 > 3. A specific branch compared to main

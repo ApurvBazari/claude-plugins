@@ -15,6 +15,22 @@ See `references/notification-options.md` for available sounds, hook events, matc
 
 ## Wizard Flow
 
+### Step 0: Detect Editor
+
+Before presenting event defaults, detect the user's editor for the "Activate" default. Check for running processes:
+
+```bash
+ps aux | grep -i -E 'Cursor|Code|Windsurf' | grep -v grep | head -1
+```
+
+Map to bundle IDs:
+- "Cursor" → `com.todesktop.230313mzl4w4u92`
+- "Code" (VS Code) → `com.microsoft.VSCode`
+- "Windsurf" → `com.codeium.windsurf`
+- If none detected, default to `com.microsoft.VSCode` and ask the user to confirm.
+
+Use the detected editor as the default "Activate" value for all events below.
+
 Walk through each of the three hook events. For each event, ask as a group:
 
 ### Event 1: Task Completed (Stop hook)
@@ -25,7 +41,7 @@ Present:
 > Current defaults:
 > - Message: "Task completed"
 > - Sound: Hero
-> - Activate: VS Code
+> - Activate: <detected editor>
 >
 > Would you like to keep these defaults, or customize the message, sound, or app?
 
