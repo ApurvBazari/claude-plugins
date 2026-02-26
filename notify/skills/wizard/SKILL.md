@@ -15,6 +15,22 @@ See `references/notification-options.md` for available sounds, hook events, matc
 
 ## Wizard Flow
 
+### Step 0: Detect Editor
+
+Before presenting event defaults, detect the user's editor for the "Activate" default. Check for running processes:
+
+```bash
+ps aux | grep -i -E 'Cursor|Code|Windsurf' | grep -v grep | head -1
+```
+
+Map to bundle IDs:
+- "Cursor" → `com.todesktop.230313mzl4w4u92`
+- "Code" (VS Code) → `com.microsoft.VSCode`
+- "Windsurf" → `com.codeium.windsurf`
+- If none detected, default to `com.microsoft.VSCode` and ask the user to confirm.
+
+Use the detected editor as the default "Activate" value for all events below.
+
 Walk through each of the three hook events. For each event, ask as a group:
 
 ### Event 1: Task Completed (Stop hook)
@@ -25,11 +41,20 @@ Present:
 > Current defaults:
 > - Message: "Task completed"
 > - Sound: Hero
-> - Activate: VS Code
+> - Activate: <detected editor>
 >
 > Would you like to keep these defaults, or customize the message, sound, or app?
 
 If the developer wants to customize, present sound options from the reference and ask which app to activate.
+
+When the developer specifies a custom app, validate the bundle ID exists on their system:
+
+```bash
+mdfind "kMDItemCFBundleIdentifier == '<bundle-id>'" | head -1
+```
+
+If no result is returned, warn:
+> That bundle ID wasn't found on your system. Double-check the ID, or proceed and update it later in `notify-config.json`.
 
 ### Event 2: Needs Attention (Notification hook)
 
@@ -54,6 +79,15 @@ Present:
 > Would you like to enable notifications for subagent completion?
 
 If enabled, ask for message, sound, and app preferences.
+
+When the developer specifies a custom sound, validate it exists:
+
+```bash
+ls /System/Library/Sounds/ | sed 's/\.aiff$//' | grep -ix '<sound-name>'
+```
+
+If no match is found, warn:
+> That sound name wasn't found in macOS system sounds. Available sounds include: Basso, Blow, Bottle, Frog, Funk, Glass, Hero, Morse, Ping, Pop, Purr, Sosumi, Submarine, Tink. Proceed anyway?
 
 ## Output
 

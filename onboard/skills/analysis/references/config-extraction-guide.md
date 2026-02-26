@@ -85,9 +85,34 @@ Extract settings — these become CLAUDE.md conventions, NOT path-scoped rules (
 
 ### Biome
 
-Similar to ESLint + Prettier combined. Extract:
-- Linter rules: enabled rules and their severity
-- Formatter settings: indent style, line width, quote style
+Config file: `biome.json` or `biome.jsonc`. Combines linter + formatter in one tool.
+
+**Formatter settings** (key: `formatter`):
+- `indentStyle` — `"tab"` or `"space"` → document in CLAUDE.md
+- `indentWidth` — indentation size → document in CLAUDE.md
+- `lineWidth` — max line width → document in CLAUDE.md
+- `enabled` — whether formatting is active
+
+**Linter settings** (key: `linter`):
+- `rules.recommended` — whether recommended rules are enabled
+- `rules.style`, `rules.suspicious`, `rules.correctness`, `rules.complexity`, `rules.security` — per-category rule overrides with severity (`"error"`, `"warn"`, `"off"`)
+- Any rule set to `"error"` → generate as an enforced Claude rule
+- Any rule set to `"off"` that overrides recommended → note as intentional exception
+
+**Organize imports** (key: `organizeImports`):
+- `enabled` — whether import sorting is active → if true, document import order convention
+
+**JavaScript/TypeScript specific** (key: `javascript` / `typescript`):
+- `quoteStyle` — `"single"` or `"double"`
+- `trailingCommas` — `"all"`, `"es5"`, `"none"`
+- `semicolons` — `"always"` or `"asNeeded"`
+
+| Biome Setting | Rule Type | Claude Action |
+|---|---|---|
+| `formatter.*` | Enforced (auto-fixed) | Document in CLAUDE.md only |
+| `linter.rules.*.error` | Enforced | Generate path-scoped rule |
+| `linter.rules.*.warn` | Advisory | Document as hint in CLAUDE.md |
+| `organizeImports.enabled: true` | Enforced (auto-fixed) | Document import convention |
 
 ### Ruff / Black (Python)
 

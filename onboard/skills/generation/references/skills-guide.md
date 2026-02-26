@@ -83,6 +83,11 @@ When asked to create a new React component or UI element.
 - Use React Testing Library
 - Test rendering, user interactions, and edge cases
 - Mock external dependencies, not internal components
+
+## Anti-Patterns
+- Don't use `any` for props — define a proper `{ComponentName}Props` interface
+- Don't use `useEffect` for derived state — compute it during render
+- Don't fetch data inside components — use server components or data-fetching hooks
 ```
 
 ### API Endpoint Skill
@@ -107,6 +112,11 @@ When asked to create a new API route, endpoint, or handler.
 - Return consistent response format
 - Handle errors with try-catch and structured error responses
 - Log errors server-side
+
+## Anti-Patterns
+- Don't return raw error objects to clients — always map to structured error responses
+- Don't mix validation logic into handlers — use a schema layer (Zod/Pydantic)
+- Don't use string concatenation for SQL — always use parameterized queries
 ```
 
 ### Database Migration Skill

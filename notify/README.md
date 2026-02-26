@@ -63,6 +63,14 @@ Both scopes can coexist — per-project hooks add to global hooks, they don't re
 
 Settings are stored in `notify-config.json` within the chosen scope directory (`~/.claude/` for global, `<project>/.claude/` for per-project). Edit directly and re-run `/notify:setup` to apply changes.
 
+## Troubleshooting
+
+- **No notifications appearing** — Open System Settings > Notifications > terminal-notifier and ensure notifications are allowed. Also check that "Do Not Disturb" / Focus mode is off.
+- **Wrong app activates on click** — Edit `notify-config.json` and update the `activate` bundle ID for the affected event. Run `/notify:setup` to re-apply.
+- **Notification sound not playing** — Verify the sound name is valid by running: `terminal-notifier -title "Test" -message "Test" -sound "<SoundName>"`. See macOS `/System/Library/Sounds/` for available names.
+- **Setup partially completed** — Re-run `/notify:setup`. It detects existing config and offers to update or replace.
+- **Permissions issues** — If `terminal-notifier` was installed but notifications don't appear, try removing and re-adding it: `brew reinstall terminal-notifier`, then open it once from Finder to trigger the macOS permission prompt.
+
 ## Customization
 
 During setup, you can customize per event:

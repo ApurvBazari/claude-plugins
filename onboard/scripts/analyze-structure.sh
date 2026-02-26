@@ -5,12 +5,6 @@
 
 set -euo pipefail
 
-# Check Python 3 availability
-PYTHON3_AVAILABLE=false
-if command -v python3 &>/dev/null; then
-  PYTHON3_AVAILABLE=true
-fi
-
 # Structured warning for skipped/degraded operations
 warn_skip() {
   local operation="$1"
@@ -99,6 +93,7 @@ KEY_FILES=(
   ".github/workflows" ".gitlab-ci.yml" ".circleci/config.yml" "Jenkinsfile" "bitbucket-pipelines.yml"
   ".eslintrc.js" ".eslintrc.json" ".eslintrc.yml" ".eslintrc.cjs" "eslint.config.js" "eslint.config.mjs"
   ".prettierrc" ".prettierrc.json" ".prettierrc.js" "prettier.config.js"
+  "biome.json" "biome.jsonc"
   "jest.config.js" "jest.config.ts" "vitest.config.ts" "vitest.config.js"
   "pytest.ini" "conftest.py" "tox.ini" ".coveragerc"
   "webpack.config.js" "vite.config.ts" "vite.config.js" "rollup.config.js" "next.config.js" "next.config.mjs" "next.config.ts"
@@ -106,6 +101,7 @@ KEY_FILES=(
   "CLAUDE.md" ".claude/settings.json" ".claude/settings.local.json"
   "turbo.json" "nx.json" "lerna.json"
   ".env" ".env.example" ".env.local"
+  ".nvmrc" ".node-version" ".python-version" ".tool-versions"
 )
 
 for f in "${KEY_FILES[@]}"; do
@@ -142,6 +138,7 @@ echo ""
 
 # --- Largest directories by file count ---
 echo "## Largest Directories (by file count, top 10)"
+# Note: This awk command is POSIX-compatible and works on both BSD (macOS) and GNU (Linux) awk.
 find "$PROJECT_ROOT" -type f \
   -not -path '*/node_modules/*' \
   -not -path '*/.git/*' \

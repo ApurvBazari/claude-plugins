@@ -46,6 +46,13 @@ claude plugin install onboard
 claude plugin add /path/to/onboard
 ```
 
+## Prerequisites
+
+- **bash** — analysis scripts require bash (macOS and Linux have it by default)
+- **git** — required for repository analysis and contributor detection
+- **tree** (optional) — used for directory visualization; falls back to `find` if unavailable
+- **jq** (optional) — used for JSON parsing in hooks; generated hooks include a fallback for systems without `jq`
+
 ## How It Works
 
 The plugin uses three specialized components:
@@ -60,7 +67,6 @@ The plugin uses three specialized components:
 - Python (Django, Flask, FastAPI, etc.)
 - Go
 - Rust
-- Java / Kotlin (Spring Boot, Android)
 - Ruby (Rails)
 - Monorepos (npm/yarn/pnpm workspaces, Turborepo, Nx, Lerna)
 - Mixed-language projects

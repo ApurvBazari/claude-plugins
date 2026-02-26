@@ -104,6 +104,18 @@ Only show steps for which the user has tooling configured. If no test command wa
 
 ---
 
+## Step 5.5: Base Branch Detection
+
+Auto-detect the default branch:
+
+```bash
+git remote show origin 2>/dev/null | grep 'HEAD branch' | awk '{print $NF}'
+```
+
+If detection fails (no remote, no origin), fall back to checking which of `main` or `master` exists locally. Store the result as `baseBranch` in the config. This is used by `/devkit:review` and `/devkit:pr`.
+
+---
+
 ## Step 6: PR Template
 
 Check for an existing PR template:
@@ -157,7 +169,8 @@ Create `.claude/devkit.json` with all verified values:
     "formatter": "<formatter name or null>"
   },
   "commitStyle": "<conventional | simple | ticket | freeform>",
-  "shipPipeline": ["test", "lint", "check"],
+  "baseBranch": "<detected default branch — main, master, develop, etc.>",
+  "shipPipeline": ["<steps selected by user in Step 5, in order>"],
   "prTemplate": "<existing | builtin>"
 }
 ```

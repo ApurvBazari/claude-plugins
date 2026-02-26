@@ -65,8 +65,9 @@ Check two knowledge sources:
 - Check if the existing artifacts use deprecated patterns
 
 **Live web fetch** (latest):
-- Fetch the latest Claude Code documentation for any new features or changed best practices
-- Check for new Claude Code capabilities that the existing setup doesn't leverage
+- Fetch the official Claude Code documentation at `https://docs.anthropic.com/en/docs/claude-code` using WebFetch to check for new features or changed best practices
+- Also check `https://docs.anthropic.com/en/docs/claude-code/settings` for settings and hooks updates
+- Compare fetched documentation against the existing setup to identify new capabilities not yet leveraged
 
 **Web fetch failure fallback**: If the web fetch fails (network error, timeout, or content unavailable):
 - Use the built-in reference guides only (claude-md-guide.md, rules-guide.md, hooks-guide.md, skills-guide.md, agents-guide.md)
@@ -143,6 +144,12 @@ For each approved update:
 2. Apply changes (merge or replace based on user choice)
 3. Ensure maintenance header is present on all updated files
 4. Update the date in maintenance headers
+
+**Merge strategy for CLAUDE.md and markdown artifacts:**
+- **User-added sections** — preserve in place, do not modify or reorder
+- **Generated sections** (identified by maintenance header) — update content in-place, keep same position
+- **New sections** — append after the last generated section, before any user-added trailing sections
+- **Deleted sections** — do not re-add sections the user explicitly removed (check onboard-meta.json for previously generated sections)
 
 ### Step 8: Update Metadata
 

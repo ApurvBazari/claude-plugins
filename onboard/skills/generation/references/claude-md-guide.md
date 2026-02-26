@@ -157,20 +157,7 @@ Components follow this structure:
 
 ## Shared vs Local Settings Guidance
 
-Every generated root CLAUDE.md should include a section explaining the two settings files:
-
-```markdown
-## Claude Settings
-
-- **Shared settings** (`.claude/settings.json`): Team hooks and permissions — committed to repo
-- **Personal settings** (`.claude/settings.local.json`): Your individual overrides — gitignored
-- Personal settings merge with and override shared settings
-```
-
-This helps developers understand:
-- Where team-wide hooks (auto-format, lint) are configured
-- Where to put personal overrides without affecting teammates
-- That `.claude/settings.local.json` should be in `.gitignore`
+See `collaboration-guide.md` for the definitive reference on shared vs personal settings, `.gitignore` entries, and team hook conventions. Every generated root CLAUDE.md should include a brief settings section — use the format from the collaboration guide to avoid drift between the two references.
 
 ## Tone by Autonomy Level
 

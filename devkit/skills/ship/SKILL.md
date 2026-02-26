@@ -16,9 +16,23 @@ Extract from `devkit.json`:
 - `shipPipeline` — ordered array of steps to run (e.g., `["test", "lint", "check"]`)
 - All `tooling.*` values — needed by individual steps
 
+## Argument Parsing
+
+Check if the user passed any `--skip-<step>` arguments (e.g., `--skip-test`, `--skip-lint`). Remove those steps from the pipeline for this run only. Example:
+
+> `/devkit:ship --skip-test` → pipeline becomes: lint → check → commit
+
+If all steps are skipped, proceed directly to commit (see empty pipeline handling below).
+
 ## Overview
 
-Tell the developer:
+If the pipeline is empty after argument parsing (all steps skipped or `shipPipeline: []`):
+
+> No pipeline steps configured — skipping directly to commit.
+
+Proceed directly to the commit step.
+
+Otherwise, tell the developer:
 
 > Running ship pipeline: <step1> → <step2> → ... → commit
 

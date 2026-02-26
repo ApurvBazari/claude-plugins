@@ -17,9 +17,9 @@ You will receive the project root path as input. Follow these steps:
 Execute all three scripts and capture their output:
 
 ```bash
-bash <plugin-scripts-dir>/analyze-structure.sh <project-root>
-bash <plugin-scripts-dir>/detect-stack.sh <project-root>
-bash <plugin-scripts-dir>/measure-complexity.sh <project-root>
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/analyze-structure.sh" <project-root>
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh" <project-root>
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/measure-complexity.sh" <project-root>
 ```
 
 ### 2. Deep Exploration

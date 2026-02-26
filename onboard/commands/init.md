@@ -48,6 +48,10 @@ Spawn the `codebase-analyzer` agent to perform deep analysis. The agent will:
 - Check testing setup, CI/CD, conventions
 - Produce a structured analysis report
 
+**Data handoff**: The analyzer agent's full structured report remains in the conversational context. Do not write it to a file — it will be passed to the config-generator agent via the conversation in Phase 3.
+
+**Script failure fallback**: If any analysis script fails (permission denied, timeout, or unsupported environment), log the failure and continue with deep codebase exploration only. Do not block the wizard — the scripts provide supplementary data, not required data.
+
 While waiting, inform the developer:
 
 > Analyzing your codebase... This reads your project structure, detects your tech stack, and assesses complexity. Nothing is modified.
@@ -136,9 +140,10 @@ Wait for the developer to choose. Record their choice.
 
 ### Step 3.2: Generate Artifacts
 
-Spawn the `config-generator` agent with:
-- The full analysis report
-- The wizard answers (as structured JSON)
+Spawn the `config-generator` agent. Include the following in the agent prompt — all of this is already available in the conversational context from prior phases:
+- The full analysis report (from Phase 1)
+- The wizard answers as structured JSON (from Phase 2)
+- The chosen model (from Step 3.1)
 - The project root path
 - The current date for maintenance headers
 

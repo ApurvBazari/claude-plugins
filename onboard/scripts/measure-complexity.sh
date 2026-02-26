@@ -25,9 +25,6 @@ echo "=== PROJECT COMPLEXITY ANALYSIS ==="
 echo "Root: $PROJECT_ROOT"
 echo ""
 
-# Exclusion pattern for find
-EXCLUDE="-not -path */node_modules/* -not -path */.git/* -not -path */__pycache__/* -not -path */.venv/* -not -path */venv/* -not -path */dist/* -not -path */build/* -not -path */target/* -not -path */vendor/* -not -path */.next/*"
-
 # --- File counts ---
 echo "## File Metrics"
 

@@ -73,7 +73,10 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 Types: `feat`, `fix`, `refactor`, `test`, `docs`, `style`, `perf`, `chore`, `ci`, `build`
 
-Scope: auto-detected from changed file directories. If changes span multiple directories, use the most relevant common ancestor or omit scope.
+Scope: auto-detected from changed file directories:
+- **1-2 directories** — use the most specific common directory (e.g., `src/auth/` → `auth`)
+- **3+ directories** — find the lowest common ancestor directory (e.g., changes in `src/auth/`, `src/users/`, `src/utils/` → `src`). If the common ancestor is the project root, omit scope entirely
+- **Single file** — use the immediate parent directory as scope
 
 ### simple
 ```

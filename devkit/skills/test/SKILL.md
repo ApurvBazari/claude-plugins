@@ -63,9 +63,9 @@ Construct the test command based on the mode and runner:
 |--------|--------------|
 | vitest | `<testCommand> --watch` |
 | jest | `<testCommand> --watch` |
-| pytest | `<testCommand> -f` (with pytest-watch) or `ptw` |
-| go test | Not natively supported — inform user |
-| cargo test | `cargo watch -x test` (if installed) |
+| pytest | `<testCommand> -f` (with pytest-watch) or `ptw`. Fallback: `while true; do <testCommand>; echo "Press enter to re-run..."; read; done` |
+| go test | `gotestsum --watch ./...` (if installed). Fallback: `while true; do go test ./...; echo "Press enter to re-run..."; read; done` |
+| cargo test | `cargo watch -x test` (if installed). Fallback: `while true; do cargo test; echo "Press enter to re-run..."; read; done` |
 
 ### Specific
 
@@ -81,6 +81,15 @@ Ask the user which test(s) to run. Accept:
 | go test | `go test -run <pattern> ./...` |
 | cargo test | `cargo test <pattern>` |
 | rspec | `<testCommand> <path>` |
+
+## Pre-Test Setup Note
+
+Before running tests, check if the project requires setup steps:
+- **Database migrations** — if the project uses an ORM (Prisma, Django, etc.), migrations may need to run first
+- **Seed data** — some test suites require `npm run seed` or equivalent
+- **Environment variables** — check for `.env.test` or `.env.example` and ensure test env vars are set
+
+If pre-test setup fails, report the error and suggest fixes before running the test suite.
 
 ## Step 3: Run Tests
 
