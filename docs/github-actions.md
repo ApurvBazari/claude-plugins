@@ -66,10 +66,11 @@ Produces a structured audit covering OWASP Top 10, plugin-specific concerns (she
 
 ### Changing models
 
-Edit `claude_args` in the workflow file:
+Edit the `model` and `max_turns` inputs in the workflow file:
 
 ```yaml
-claude_args: "--model claude-sonnet-4-6 --max-turns 5"
+model: claude-sonnet-4-6
+max_turns: 5
 ```
 
 Available models: `claude-opus-4-6`, `claude-sonnet-4-6`, `claude-haiku-4-5-20251001`

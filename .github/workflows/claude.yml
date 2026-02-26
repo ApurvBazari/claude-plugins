@@ -23,8 +23,9 @@ jobs:
       - uses: anthropics/claude-code-action@beta
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          claude_args: "--model claude-opus-4-6 --max-turns 5"
-          review_comment_prompt: |
+          model: claude-opus-4-6
+          max_turns: 5
+          custom_instructions: |
             Review this PR thoroughly. Focus on:
             - Correctness and potential bugs
             - Security concerns
@@ -42,7 +43,8 @@ jobs:
       - uses: anthropics/claude-code-action@beta
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          claude_args: "--model claude-sonnet-4-6 --max-turns 10"
+          model: claude-sonnet-4-6
+          max_turns: 10
           trigger_phrase: "@claude"
 
   claude-opus:
@@ -54,5 +56,6 @@ jobs:
       - uses: anthropics/claude-code-action@beta
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          claude_args: "--model claude-opus-4-6 --max-turns 10"
+          model: claude-opus-4-6
+          max_turns: 10
           trigger_phrase: "@claude-opus"
