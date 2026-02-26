@@ -134,6 +134,22 @@ Ship complete!
 Committed: <short hash> on <branch>
 ```
 
+## Notify Integration
+
+After the commit succeeds (or the pipeline fails), check if the `notify` plugin is installed by looking for `notify-config.json` in either `~/.claude/` (global) or `<project>/.claude/` (per-project).
+
+If notify is installed, send a notification using `terminal-notifier`:
+
+**On success:**
+- Title: `Ship complete`
+- Message: `<short hash> on <branch> — <commit message>`
+
+**On failure:**
+- Title: `Ship pipeline failed`
+- Message: `Failed at <step name>: <brief reason>`
+
+If notify is not installed, skip silently — do not prompt the user to install it.
+
 ## Key Rules
 
 - **Sequential execution** — steps run in order, each must complete before the next

@@ -119,6 +119,15 @@ Config lives at `.claude/devkit.json`:
 
 Edit directly or re-run `/devkit:setup` to reconfigure.
 
+## Works Well With
+
+- **feature-dev** — Structured 7-phase development workflow. Use feature-dev to implement, then devkit to ship.
+- **code-review** — Posts async review comments directly on PRs. Complements devkit's local `/devkit:review`.
+- **pr-review-toolkit** — Deep specialist review with focused agents (security, performance, correctness) for thorough pre-merge analysis.
+- **notify** — Sends macOS notifications when the ship pipeline completes (success or failure).
+
+See [docs/best-practices.md](../docs/best-practices.md) for decision trees on when to use each review tool.
+
 ## License
 
 MIT

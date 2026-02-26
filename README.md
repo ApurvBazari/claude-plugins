@@ -63,6 +63,10 @@ Supports npm, pnpm, yarn, bun, pipenv, poetry, Go, Rust, and Ruby toolchains.
 
 [Full documentation →](./devkit/README.md)
 
+## Recommended Stack
+
+These plugins are designed to work alongside official marketplace companions for a complete AI-driven dev environment. See the [Recommended Stack guide](./docs/recommended-stack.md) for a full workflow map, installation order, and companion plugin pairings — from setup through shipping to monitoring.
+
 ## Links
 
 - [Claude Code documentation](https://docs.anthropic.com/en/docs/claude-code)

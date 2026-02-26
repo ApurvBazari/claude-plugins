@@ -71,6 +71,13 @@ The plugin uses three specialized components:
 - Monorepos (npm/yarn/pnpm workspaces, Turborepo, Nx, Lerna)
 - Mixed-language projects
 
+## Works Well With
+
+- **claude-md-management** — Maintains the CLAUDE.md files that onboard generates. onboard bootstraps, claude-md-management handles ongoing quality scoring and revision as your project evolves.
+- **hookify** — Adds behavioral rules incrementally after onboard's initial setup. onboard writes hooks to `settings.json`; hookify uses `.local.md` rule files for on-the-fly additions.
+
+See [docs/best-practices.md](../docs/best-practices.md) for handoff workflows and coexistence details.
+
 ## License
 
 MIT
