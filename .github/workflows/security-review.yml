@@ -1,0 +1,63 @@
+name: Claude Security Review
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  id-token: write
+  actions: read
+
+jobs:
+  security-review:
+    if: >
+      (github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment') &&
+      contains(github.event.comment.body, '@claude security-review')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: anthropics/claude-code-action@beta
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: "--model claude-opus-4-6 --max-turns 5"
+          trigger_phrase: "@claude security-review"
+          prompt: |
+            Perform a comprehensive security audit of the changes in this PR. Analyze for:
+
+            ## OWASP Top 10
+            - Injection flaws (SQL, NoSQL, OS command, LDAP)
+            - Broken authentication and session management
+            - Sensitive data exposure
+            - XML external entities (XXE)
+            - Broken access control
+            - Security misconfiguration
+            - Cross-site scripting (XSS)
+            - Insecure deserialization
+            - Using components with known vulnerabilities
+            - Insufficient logging and monitoring
+
+            ## Plugin-Specific Concerns
+            - Shell command injection via plugin manifests or hook scripts
+            - Unsafe interpolation in shell commands (unquoted variables, eval usage)
+            - Credential handling (tokens, API keys, secrets in code or config)
+            - Plugin manifest integrity (unexpected permissions, overly broad file access)
+            - Path traversal in file operations
+            - Unsafe use of user-supplied input in skill/agent prompts
+
+            ## General
+            - Hardcoded secrets or credentials
+            - Insecure file permissions
+            - Unsafe dependency usage
+            - Missing input validation at system boundaries
+
+            Format your review as:
+            1. **Critical** — must fix before merge
+            2. **High** — strongly recommended fixes
+            3. **Medium** — should address soon
+            4. **Low/Informational** — minor improvements
+
+            If no issues are found, confirm the changes pass security review.
