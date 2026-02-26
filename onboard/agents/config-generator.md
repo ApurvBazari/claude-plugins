@@ -23,6 +23,12 @@ Your job is to generate all Claude tooling artifacts. Follow the `generation` sk
 
 Generate artifacts in this order:
 
+0. **Create directory structure** — Before writing any files, ensure all target directories exist:
+   ```bash
+   mkdir -p .claude/rules .claude/skills .claude/agents
+   ```
+   This prevents write failures when generating artifacts into directories that don't exist yet.
+
 1. **Root CLAUDE.md** — The most important file. 100-200 lines. Includes project overview, tech stack, all commands, conventions, and critical rules. Adapt tone to the developer's autonomy preference.
 
 2. **Subdirectory CLAUDE.md files** — Only where justified. Check the project structure and only create these for directories with distinct conventions. Typical candidates: `src/components/`, `src/api/`, `app/`, `tests/`, or per-package in monorepos.

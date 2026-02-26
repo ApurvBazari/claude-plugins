@@ -24,6 +24,8 @@ Unified developer workflow toolkit for Claude Code. Config-driven commands that 
 - **git** — required for all skills (commit, review, PR)
 - **gh** (GitHub CLI) — required for `/devkit:pr` to create pull requests. Install: `brew install gh` or see [cli.github.com](https://cli.github.com)
 
+**Troubleshooting**: If `/devkit:setup` detection misidentifies your tooling, edit `.claude/devkit.json` directly — all skills read from this file at runtime.
+
 ## Quick Start
 
 ```bash

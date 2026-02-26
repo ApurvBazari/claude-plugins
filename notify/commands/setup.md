@@ -10,6 +10,17 @@ Tell the developer:
 
 ---
 
+## Dry-Run Mode
+
+If the user includes "dry-run" or "--dry-run" in their command arguments:
+- Run all steps normally (dependency check, scope selection, customization)
+- At Step 6 (Generate Artifacts), instead of writing files, **display** what would be written:
+  - Show the `notify.sh` script content
+  - Show the hook entries that would be merged into `settings.json`
+  - Show the `notify-config.json` content
+- Skip Step 7 (Test) and Step 8 (Handoff)
+- End with: "Dry run complete — no files were written. Re-run without `--dry-run` to apply."
+
 ## Step 1: Dependency Check
 
 Run `which terminal-notifier` via Bash.
@@ -108,6 +119,8 @@ Present the default configuration:
 > | Task completed | "Task completed" | Hero | VS Code |
 > | Needs attention | "Needs your attention" | Glass | VS Code |
 > | Subagent done | *(off by default)* | — | — |
+>
+> The "Needs attention" event uses a **matcher** (`permission_prompt|idle_prompt`) to filter which Notification events trigger it. You can customize this during setup or edit `notify-config.json` later.
 >
 > Would you like to:
 > 1. **Use these defaults** — Set up immediately
@@ -249,3 +262,5 @@ Ask the developer if they saw the notification.
 
 If the scope is per-project, add:
 > **Note:** These hooks only fire when Claude Code is running inside this project directory. Global hooks (if any) still apply alongside project-level hooks.
+
+**Scope migration**: To move notifications from global to per-project (or vice versa), run `/notify:setup` again with the new scope. Then run `/notify:uninstall` against the old scope to clean up the previous configuration.

@@ -96,7 +96,10 @@ Classify based on patterns:
 | `TICKET-123: message` or `[TICKET-123] message` | ticket |
 | No consistent pattern | freeform |
 
-Report the detected style with confidence (high/medium/low) based on how many of the 20 commits match the pattern.
+Report the detected style with confidence based on how many of the 20 commits match the pattern:
+- **High** — 15+ of 20 commits match the detected pattern
+- **Medium** — 10-14 of 20 commits match
+- **Low** — fewer than 10 commits match (suggest the user verify)
 
 ### 7. PR Template
 

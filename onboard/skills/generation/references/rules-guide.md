@@ -196,6 +196,33 @@ paths:
 - Never expose stack traces or internal errors to users
 ```
 
+### Commit Conventions Rule Example
+
+```yaml
+---
+paths:
+  - "**"
+---
+
+# Commit Conventions
+
+## Commit Message Format
+- Use conventional commits: `type(scope): description`
+- Types: feat, fix, refactor, test, docs, style, perf, chore, ci, build
+- Scope: the module or directory affected (e.g., `auth`, `api`, `components`)
+- Description: imperative mood, lowercase, no period at end
+
+## Branching
+- Feature branches: `feature/<ticket>-<short-description>`
+- Bug fixes: `fix/<ticket>-<short-description>`
+- Keep branches short-lived — merge within a few days
+
+## PR Standards
+- Every PR needs a description explaining the "why"
+- Link related issues
+- Self-review the diff before requesting review
+```
+
 ## Strictness Levels
 
 Adapt rule language based on the developer's code style strictness preference:

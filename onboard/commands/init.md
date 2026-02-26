@@ -50,6 +50,8 @@ Spawn the `codebase-analyzer` agent to perform deep analysis. The agent will:
 
 **Data handoff**: The analyzer agent's full structured report remains in the conversational context. Do not write it to a file — it will be passed to the config-generator agent via the conversation in Phase 3.
 
+**Script failure fallback**: If any analysis script fails (permission denied, timeout, or unsupported environment), log the failure and continue with deep codebase exploration only. Do not block the wizard — the scripts provide supplementary data, not required data.
+
 While waiting, inform the developer:
 
 > Analyzing your codebase... This reads your project structure, detects your tech stack, and assesses complexity. Nothing is modified.

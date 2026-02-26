@@ -62,7 +62,7 @@ Present everything gathered (analysis + wizard answers) and ask for confirmation
 
 1. **Never skip the summary** — Always show the developer what you've gathered before proceeding to generation.
 2. **Respect "skip"** — If a developer says they want to skip a section, move on. Don't push.
-3. **No more than 5-6 exchanges** — The entire wizard should complete in 5-6 back-and-forth exchanges. Group questions to achieve this.
+3. **Hard 6-exchange limit** — The entire wizard must complete within 6 back-and-forth exchanges. If you reach exchange 5 without completing all phases, consolidate remaining questions into a single final exchange. At exchange 6, wrap up: present the summary with any unanswered fields set to defaults, and proceed to confirmation.
 4. **Reference the analysis** — Always connect questions to what the analyzer found. This demonstrates value and reduces redundant questions.
 5. **Capture autonomy preference carefully** — This determines how much Claude asks vs acts independently. Get this right.
 
@@ -127,9 +127,24 @@ After the wizard completes, compile all answers into a structured JSON format:
   "codeReviewProcess": "none | informal | formal-pr",
   "branchingStrategy": "trunk-based | gitflow | feature-branches",
   "deployFrequency": "continuous | daily | weekly | manual | none",
-  "frontendPatterns": { ... },
-  "backendPatterns": { ... },
-  "devopsPatterns": { ... },
+  "frontendPatterns": {
+    "componentLibrary": "e.g., MUI, Radix, Shadcn, custom",
+    "stateManagement": "e.g., Redux, Zustand, Context, Jotai",
+    "styling": "e.g., Tailwind, CSS Modules, Styled Components",
+    "routing": "e.g., Next.js App Router, React Router, TanStack Router"
+  },
+  "backendPatterns": {
+    "apiStyle": "e.g., REST, GraphQL, tRPC, gRPC",
+    "orm": "e.g., Prisma, Drizzle, SQLAlchemy, GORM",
+    "auth": "e.g., NextAuth, Passport, custom JWT",
+    "errorHandling": "e.g., Result pattern, exceptions, error codes"
+  },
+  "devopsPatterns": {
+    "ci": "e.g., GitHub Actions, GitLab CI, CircleCI",
+    "hosting": "e.g., Vercel, AWS, GCP, self-hosted",
+    "containerization": "e.g., Docker, Podman, none",
+    "iac": "e.g., Terraform, Pulumi, CDK, none"
+  },
   "painPoints": {
     "timeSinks": "...",
     "errorProne": "...",

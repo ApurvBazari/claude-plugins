@@ -2,7 +2,6 @@
 
 Use this template when the project has no existing PR template (`prTemplate: "builtin"`).
 
-```markdown
 ## Summary
 
 <1-3 bullet points describing what this PR does and why>
@@ -41,4 +40,3 @@ Closes #<issue number, if applicable>
 - [ ] No debug artifacts (console.logs, debugger statements)
 - [ ] Self-reviewed the diff
 - [ ] Breaking changes documented (if any)
-```

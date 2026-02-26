@@ -31,7 +31,7 @@ Patterns to search for during production readiness scans. Use with Grep tool, ex
 
 | Pattern | Category | Notes |
 |---------|----------|-------|
-| `SELECT\s+\*\s+FROM(?!.*LIMIT)` | Unbounded query | Multi-line check needed — use `Grep` with `multiline: true` |
+| `SELECT\s+\*\s+FROM(?!.*LIMIT)` | Unbounded query | Use `Grep` with `multiline: true` and pattern `SELECT\s+\*\s+FROM[\s\S]*?(?:;|\))`  to capture the full query span and check for missing LIMIT/WHERE clauses |
 | `readFileSync\|writeFileSync` | Sync I/O in async | Check if in async context |
 | `import\s+\w+\s+from\s+['"]lodash['"]` | Full library import | Should use lodash/specific |
 | `import\s+\*\s+as` | Wildcard import | May prevent tree-shaking |
@@ -64,6 +64,16 @@ find . -name "*.ts" -o -name "*.js" -o -name "*.py" -o -name "*.go" -o -name "*.
 ```
 
 Flag files >500 lines for review. For functions >50 lines, read the large files and identify long functions manually — there's no reliable cross-language grep pattern for this.
+
+## Commented-Out Code
+
+| Pattern | Language | Notes |
+|---------|----------|-------|
+| `//\s*(if\|for\|while\|return\|function\|const\|let\|var)\b` | JS/TS | Commented-out code statements |
+| `#\s*(if\|for\|while\|return\|def\|class\|import)\b` | Python | Commented-out code statements |
+| `//\s*(if\|for\|func\|return\|var\|type)\b` | Go | Commented-out code statements |
+
+Note: These patterns have high false-positive rates. Only flag blocks of 3+ consecutive commented lines that look like code, not individual explanatory comments.
 
 ## Code Quality
 

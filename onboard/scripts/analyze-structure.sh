@@ -138,6 +138,7 @@ echo ""
 
 # --- Largest directories by file count ---
 echo "## Largest Directories (by file count, top 10)"
+# Note: This awk command is POSIX-compatible and works on both BSD (macOS) and GNU (Linux) awk.
 find "$PROJECT_ROOT" -type f \
   -not -path '*/node_modules/*' \
   -not -path '*/.git/*' \

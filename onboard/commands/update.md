@@ -145,6 +145,12 @@ For each approved update:
 3. Ensure maintenance header is present on all updated files
 4. Update the date in maintenance headers
 
+**Merge strategy for CLAUDE.md and markdown artifacts:**
+- **User-added sections** — preserve in place, do not modify or reorder
+- **Generated sections** (identified by maintenance header) — update content in-place, keep same position
+- **New sections** — append after the last generated section, before any user-added trailing sections
+- **Deleted sections** — do not re-add sections the user explicitly removed (check onboard-meta.json for previously generated sections)
+
 ### Step 8: Update Metadata
 
 Update `.claude/onboard-meta.json`:

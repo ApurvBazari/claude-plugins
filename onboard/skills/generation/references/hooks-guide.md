@@ -178,6 +178,38 @@ file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '"fi
 }
 ```
 
+### Auto-Fix on Write (RuboCop — Ruby)
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "command": "file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '\"file_path\": *\"[^\"]*\"' | head -1 | sed 's/.*: *\"//;s/\"//') && case \"$file\" in *.rb) rubocop -a --fail-level fatal \"$file\" 2>/dev/null ;; esac; exit 0",
+        "timeout": 15000
+      }
+    ]
+  }
+}
+```
+
+### Auto-Fix on Write (Ruff — Python)
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "command": "file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '\"file_path\": *\"[^\"]*\"' | head -1 | sed 's/.*: *\"//;s/\"//') && case \"$file\" in *.py) ruff check --fix --quiet \"$file\" 2>/dev/null ;; esac; exit 0",
+        "timeout": 10000
+      }
+    ]
+  }
+}
+```
+
 ## Generation Guidelines
 
 1. **Only add hooks for tools that exist** — Check that prettier/eslint/black/etc. are actually installed (detected in analysis)
