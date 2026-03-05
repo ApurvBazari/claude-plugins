@@ -175,63 +175,200 @@ Create the directory and write the notification script, then make it executable 
 mkdir -p $BASE_DIR/hooks
 ```
 
+Write the dynamic notification script. This script reads config and stdin JSON at runtime — the hook command only passes the event name:
+
 ```bash
 #!/bin/bash
-TITLE="${1:-Claude Code}"
-MESSAGE="${2:-Notification}"
-SOUND="${3:-Ping}"
-ACTIVATE="${4:-com.microsoft.VSCode}"
-terminal-notifier -title "$TITLE" -message "$MESSAGE" -sound "$SOUND" -activate "$ACTIVATE"
+# notify.sh — Dynamic notification script for Claude Code hooks
+# Usage: echo '<stdin_json>' | notify.sh <event>
+# Events: stop, notification, subagentStop
+
+EVENT="${1:-stop}"
+BASE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+CONFIG_FILE="$BASE_DIR/notify-config.json"
+
+# --- JSON helper: tries jq, falls back to python3 ---
+json_get() {
+  local json="$1" path="$2"
+  local result=""
+
+  if command -v jq &>/dev/null; then
+    result="$(echo "$json" | jq -r "$path" 2>/dev/null)"
+  elif command -v python3 &>/dev/null; then
+    result="$(echo "$json" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    keys = '''$path'''.strip('.').split('.')
+    val = data
+    for k in keys:
+        val = val[k]
+    print(val if val is not None else '')
+except Exception:
+    print('')
+" 2>/dev/null)"
+  fi
+
+  # jq returns "null" for missing keys
+  if [ "$result" = "null" ] || [ -z "$result" ]; then
+    echo ""
+  else
+    echo "$result"
+  fi
+}
+
+# --- Read config ---
+ENABLED="true"
+SOUND="Ping"
+ACTIVATE="com.microsoft.VSCode"
+FALLBACK_MESSAGE="Notification"
+
+if [ -f "$CONFIG_FILE" ]; then
+  CONFIG="$(cat "$CONFIG_FILE")"
+  EVENT_ENABLED="$(json_get "$CONFIG" ".events.${EVENT}.enabled")"
+  EVENT_SOUND="$(json_get "$CONFIG" ".events.${EVENT}.sound")"
+  EVENT_ACTIVATE="$(json_get "$CONFIG" ".events.${EVENT}.activate")"
+  EVENT_MESSAGE="$(json_get "$CONFIG" ".events.${EVENT}.message")"
+
+  [ -n "$EVENT_ENABLED" ] && ENABLED="$EVENT_ENABLED"
+  [ -n "$EVENT_SOUND" ] && SOUND="$EVENT_SOUND"
+  [ -n "$EVENT_ACTIVATE" ] && ACTIVATE="$EVENT_ACTIVATE"
+  [ -n "$EVENT_MESSAGE" ] && FALLBACK_MESSAGE="$EVENT_MESSAGE"
+else
+  # No config file — use hardcoded defaults per event
+  case "$EVENT" in
+    stop)
+      ENABLED="true"; SOUND="Hero"; FALLBACK_MESSAGE="Task completed" ;;
+    notification)
+      ENABLED="true"; SOUND="Glass"; FALLBACK_MESSAGE="Needs your attention" ;;
+    subagentStop)
+      ENABLED="false"; SOUND="Ping"; FALLBACK_MESSAGE="Subagent task completed" ;;
+  esac
+fi
+
+# Exit silently if disabled
+if [ "$ENABLED" = "false" ]; then
+  exit 0
+fi
+
+# --- Read stdin JSON (Claude Code passes context via stdin) ---
+STDIN_JSON=""
+if ! [ -t 0 ]; then
+  STDIN_JSON="$(cat)"
+fi
+
+# --- Extract contextual message ---
+MESSAGE=""
+TITLE="Claude Code"
+
+case "$EVENT" in
+  stop)
+    MESSAGE="$(json_get "$STDIN_JSON" ".last_assistant_message")"
+    ;;
+  subagentStop)
+    MESSAGE="$(json_get "$STDIN_JSON" ".last_assistant_message")"
+    AGENT_TYPE="$(json_get "$STDIN_JSON" ".agent_type")"
+    if [ -n "$AGENT_TYPE" ]; then
+      TITLE="Claude Code ($AGENT_TYPE)"
+    fi
+    ;;
+  notification)
+    MESSAGE="$(json_get "$STDIN_JSON" ".message")"
+    ;;
+esac
+
+# Fall back to config message if extraction failed
+if [ -z "$MESSAGE" ]; then
+  MESSAGE="$FALLBACK_MESSAGE"
+fi
+
+# Sanitize: replace newlines with spaces
+MESSAGE="$(echo "$MESSAGE" | tr '\n' ' ' | tr '\r' ' ')"
+
+# Truncate to 80 chars
+if [ "${#MESSAGE}" -gt 80 ]; then
+  MESSAGE="${MESSAGE:0:80}..."
+fi
+
+# --- Build subtitle from git context ---
+SUBTITLE=""
+GIT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
+if [ -n "$GIT_ROOT" ]; then
+  REPO_NAME="$(basename "$GIT_ROOT")"
+  BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
+  SUBTITLE="📦 $REPO_NAME  🔀 ${BRANCH:-detached}"
+else
+  SUBTITLE="📂 $(basename "$PWD")"
+fi
+
+# --- Send notification ---
+terminal-notifier -title "$TITLE" -subtitle "$SUBTITLE" -message "$MESSAGE" -sound "$SOUND" -activate "$ACTIVATE"
+
+# Always exit 0 — never block Claude
+exit 0
 ```
 
 ### 6b: Merge hooks into `$BASE_DIR/settings.json`
 
 Read the existing `$BASE_DIR/settings.json` (create if it doesn't exist). Merge hook entries into the `hooks` object **non-destructively** — preserve all existing keys and hooks.
 
-For each **enabled** event, add a hook entry. Use the fully resolved absolute `$BASE_DIR` path in all command strings (no `~`):
+**Always register all three events.** The hook command only passes the event name — all preferences (enabled, sound, message fallback, activate) are read from `notify-config.json` at runtime. Use the fully resolved absolute `$BASE_DIR` path in all command strings (no `~`):
 
-**Stop event:**
 ```json
 {
-  "type": "command",
-  "event": "Stop",
-  "command": "$BASE_DIR/hooks/notify.sh 'Claude Code' 'Task completed' 'Hero' 'com.microsoft.VSCode'"
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$BASE_DIR/hooks/notify.sh stop",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "permission_prompt|idle_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$BASE_DIR/hooks/notify.sh notification",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$BASE_DIR/hooks/notify.sh subagentStop",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
 }
 ```
 
-**Notification event** (with matcher):
-```json
-{
-  "type": "command",
-  "event": "Notification",
-  "command": "$BASE_DIR/hooks/notify.sh 'Claude Code' 'Needs your attention' 'Glass' 'com.microsoft.VSCode'",
-  "matcher": "permission_prompt|idle_prompt"
-}
-```
-
-**SubagentStop event** (only if enabled):
-```json
-{
-  "type": "command",
-  "event": "SubagentStop",
-  "command": "$BASE_DIR/hooks/notify.sh 'Claude Code' 'Subagent task completed' 'Ping' 'com.microsoft.VSCode'"
-}
-```
-
-Use the message, sound, and activate values from the developer's configuration. All command strings must use the fully resolved absolute `$BASE_DIR` path.
+The `matcher` stays in `settings.json` (Claude Code evaluates it before invoking the hook). All other preferences come from `notify-config.json` at runtime.
 
 ### 6c: Write `$BASE_DIR/notify-config.json`
 
-Write the full configuration JSON for future reference and editing.
+Write the full configuration JSON. The `message` field in each event is the **fallback message** — it's used only when contextual information can't be extracted from Claude's response. Normally, notifications show a truncated version of Claude's actual response.
 
 ---
 
 ## Step 7: Test
 
-Run a test notification:
+Run a test notification by piping mock JSON through the new script:
 
 ```bash
-$BASE_DIR/hooks/notify.sh "Claude Code" "Setup complete — notifications are working!" "Glass" "<activate-app>"
+echo '{"last_assistant_message":"Setup complete — notifications are working!"}' | $BASE_DIR/hooks/notify.sh stop
 ```
 
 Ask the developer if they saw the notification.
@@ -257,7 +394,9 @@ Ask the developer if they saw the notification.
 > **Scope:** <global | this project only (`$BASE_DIR`)>
 >
 > **To change settings later:**
-> - Edit `$BASE_DIR/notify-config.json` directly and re-run `/notify:setup`
+> - Edit `$BASE_DIR/notify-config.json` — changes take effect immediately (no need to re-run setup)
+> - Toggle events on/off by setting `"enabled": true/false` in the config
+> - The only setting that requires re-running setup is the Notification `matcher` (stored in `settings.json`)
 > - Run `/notify:status` to check everything is working
 
 If the scope is per-project, add:

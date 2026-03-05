@@ -38,12 +38,14 @@ Walk through each of the three hook events. For each event, ask as a group:
 Present:
 > **Task Completed** — fires when Claude finishes a response.
 >
+> Notifications show a truncated version of Claude's actual response. The "message" below is a **fallback** — it only appears when contextual information can't be extracted.
+>
 > Current defaults:
-> - Message: "Task completed"
+> - Fallback message: "Task completed"
 > - Sound: Hero
 > - Activate: <detected editor>
 >
-> Would you like to keep these defaults, or customize the message, sound, or app?
+> Would you like to keep these defaults, or customize the fallback message, sound, or app?
 
 If the developer wants to customize, present sound options from the reference and ask which app to activate.
 
@@ -61,8 +63,10 @@ If no result is returned, warn:
 Present:
 > **Needs Attention** — fires when Claude needs your input (permission prompts, idle).
 >
+> The notification message comes from Claude's notification payload. The "message" below is a **fallback** for when that payload is unavailable.
+>
 > Current defaults:
-> - Message: "Needs your attention"
+> - Fallback message: "Needs your attention"
 > - Sound: Glass
 > - Activate: VS Code
 > - Matcher: permission_prompt|idle_prompt

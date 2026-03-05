@@ -37,24 +37,29 @@ Check if `$SCOPE_DIR/hooks/notify.sh` exists and is executable.
 
 Read `$SCOPE_DIR/settings.json` and check for notification hooks (Stop, Notification, SubagentStop events referencing `notify.sh`).
 
-- **Pass**: Found hooks for [list events]
+Validate that hook commands use the new simplified format (`notify.sh stop`, `notify.sh notification`, `notify.sh subagentStop`) rather than the old format with positional args (`notify.sh 'Claude Code' 'Task completed' ...`).
+
+- **Pass**: Found hooks for [list events] with dynamic command format
+- **Warn**: Found hooks but using old static format — re-run `/notify:setup` to upgrade
 - **Fail**: No notification hooks found in settings.json. Run `/notify:setup` to configure them.
 
 ### 4. Config File
 
 Read `$SCOPE_DIR/notify-config.json` and display current settings.
 
-- **Pass**: Config found. Display as a table:
+- **Pass**: Config found. Display as a table, highlighting the `enabled` flag prominently:
 
 > **Current notification settings:**
 >
-> | Event | Enabled | Message | Sound | App |
-> |-------|---------|---------|-------|-----|
+> | Event | Enabled | Fallback Message | Sound | App |
+> |-------|---------|------------------|-------|-----|
 > | Task completed | ... | ... | ... | ... |
 > | Needs attention | ... | ... | ... | ... |
 > | Subagent done | ... | ... | ... | ... |
+>
+> Edit `notify-config.json` to change these — changes take effect immediately.
 
-- **Fail**: Config file not found. Settings may have been configured manually.
+- **Fail**: Config file not found. The script will use hardcoded defaults. Run `/notify:setup` to generate a config file.
 
 ### Summary
 
@@ -91,9 +96,9 @@ If any fail:
 
 If the developer requests a test:
 
-**Single scope:** Run the test against that scope's notify.sh:
+**Single scope:** Run the test against that scope's notify.sh by piping mock JSON:
 ```bash
-$SCOPE_DIR/hooks/notify.sh "Claude Code" "Health check — notifications working!" "Glass" "<activate-from-config>"
+echo '{"last_assistant_message":"Health check — notifications working!"}' | $SCOPE_DIR/hooks/notify.sh stop
 ```
 
 **Both scopes active:** Ask which scope to test:
