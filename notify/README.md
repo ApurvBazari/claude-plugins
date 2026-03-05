@@ -6,16 +6,17 @@ macOS system notifications for Claude Code. Get notified when tasks complete or 
 
 Configures Claude Code hooks to send native macOS notifications via `terminal-notifier`:
 
-- **Task completed** — notified when Claude finishes a response
+- **Task completed** — notified with a truncated summary of Claude's response
 - **Needs attention** — notified when Claude needs your input (permission prompts, idle)
 - **Subagent done** — optionally notified when subagents finish (off by default)
 
-Clicking a notification brings your editor (VS Code, Cursor, etc.) to the foreground.
+Notifications show contextual messages extracted from Claude's actual response, not generic static text. Each notification also displays the current repository and branch as a subtitle (e.g., `📦 my-app  🔀 feature/auth`). Clicking a notification brings your editor (VS Code, Cursor, etc.) to the foreground.
 
 ## Requirements
 
 - macOS
 - [Homebrew](https://brew.sh) (for installing terminal-notifier)
+- `jq` (recommended, installed during setup) or `python3` (fallback for JSON parsing)
 - Claude Code
 
 ## Installation
@@ -61,7 +62,7 @@ Both scopes can coexist — per-project hooks add to global hooks, they don't re
 
 ## Configuration
 
-Settings are stored in `notify-config.json` within the chosen scope directory (`~/.claude/` for global, `<project>/.claude/` for per-project). Edit directly and re-run `/notify:setup` to apply changes.
+Settings are stored in `notify-config.json` within the chosen scope directory (`~/.claude/` for global, `<project>/.claude/` for per-project). Edit `notify-config.json` — changes take effect immediately, no need to re-run setup. The only setting that requires re-running setup is the Notification `matcher` (stored in `settings.json`).
 
 ## Troubleshooting
 
@@ -78,6 +79,7 @@ Settings are stored in `notify-config.json` within the chosen scope directory (`
 ## Customization
 
 During setup, you can customize per event:
-- **Message text** — what the notification says
+- **Fallback message** — shown when contextual information can't be extracted from Claude's response
 - **Sound** — Hero, Glass, Ping, Purr, Pop, Submarine, and more
 - **App to activate** — VS Code, Cursor, Terminal, iTerm2, or none
+- **Enabled/disabled** — toggle any event on/off without re-running setup

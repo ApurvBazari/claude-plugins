@@ -20,7 +20,7 @@ if [ ! -x "$NOTIFY_SCRIPT" ]; then
 fi
 
 echo "Sending test notification (base: $BASE_DIR)..."
-"$NOTIFY_SCRIPT" "Claude Code" "Test notification — setup is working!" "Glass" "com.microsoft.VSCode"
+echo '{"last_assistant_message":"Test notification — setup is working!"}' | "$NOTIFY_SCRIPT" stop
 
 EXIT_CODE=$?
 if [ $EXIT_CODE -eq 0 ]; then
