@@ -1,0 +1,36 @@
+{
+  "name": "apurvbazari-plugins",
+  "owner": {
+    "name": "Apurv Bazari"
+  },
+  "metadata": {
+    "description": "Claude Code plugins by Apurv Bazari",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "onboard",
+      "source": "./onboard",
+      "description": "Interactive wizard that analyzes your codebase and generates complete Claude tooling for AI-assisted development",
+      "version": "1.0.0",
+      "keywords": ["onboarding", "setup", "wizard", "claude-md", "codebase-analysis"],
+      "license": "MIT"
+    },
+    {
+      "name": "notify",
+      "source": "./notify",
+      "description": "macOS system notifications for Claude Code — get notified when tasks complete or need attention",
+      "version": "1.0.0",
+      "keywords": ["notifications", "macos", "hooks", "terminal-notifier"],
+      "license": "MIT"
+    },
+    {
+      "name": "devkit",
+      "source": "./devkit",
+      "description": "Unified developer workflow toolkit — config-driven commit, review, lint, test, and ship commands",
+      "version": "1.0.0",
+      "keywords": ["devkit", "workflow", "commit", "review", "lint", "test", "ship"],
+      "license": "MIT"
+    }
+  ]
+}

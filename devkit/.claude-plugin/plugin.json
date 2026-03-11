@@ -1,6 +1,6 @@
 {
   "name": "devkit",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Unified developer workflow toolkit — commit, review, lint, test, and ship with config-driven commands that adapt to any project",
   "author": {
     "name": "Apurv Bazari"

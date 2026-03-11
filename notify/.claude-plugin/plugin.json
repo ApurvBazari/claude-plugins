@@ -1,6 +1,6 @@
 {
   "name": "notify",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "macOS system notifications for Claude Code via terminal-notifier — get notified when tasks complete or need attention",
   "author": {
     "name": "Apurv Bazari"
