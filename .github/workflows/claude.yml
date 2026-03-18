@@ -26,10 +26,20 @@ jobs:
           model: claude-opus-4-6
           max_turns: 5
           custom_instructions: |
-            Review this PR thoroughly. Focus on:
-            - Correctness and potential bugs
-            - Security concerns
-            - Code style and consistency with existing patterns
+            This is a Claude Code plugin marketplace repository (markdown + shell + JSON, no compiled code).
+            It contains 3 plugins: onboard (codebase analyzer), notify (macOS notifications), devkit (dev workflow toolkit).
+
+            Review this PR against the repo conventions in .claude/rules/:
+            - plugin-structure.md: plugin directory requirements, self-contained plugins
+            - skills-authoring.md: SKILL.md H1 naming, Guard pattern, step numbering, Key Rules section
+            - agents-authoring.md: Tools section, read-only default, structured output
+            - shell-scripts.md: set -euo pipefail for utilities, exit 0 for hooks, ShellCheck, POSIX compat
+            - manifests.md: required fields, version sync between plugin.json and marketplace.json
+
+            Also check:
+            - Correctness and potential bugs in shell scripts
+            - Security concerns (command injection in scripts, unsafe variable expansion)
+            - Cross-plugin integration consistency (notify ↔ devkit)
             - Missing edge cases or error handling
 
   claude-sonnet:

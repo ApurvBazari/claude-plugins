@@ -1,5 +1,7 @@
-# Claude local settings
-.claude/
+# Claude local settings (personal, not shared)
+.claude/settings.local.json
+.claude/plans/
+.claude/plugins/
 
 # OS
 .DS_Store
