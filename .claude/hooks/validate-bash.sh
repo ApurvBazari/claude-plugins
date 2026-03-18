@@ -36,7 +36,7 @@ case "$COMMAND" in
     echo "BLOCKED: Hard reset discards uncommitted work. Confirm with the user first."
     exit 1
     ;;
-  *"git clean -f"*|*"git clean -fd"*|*"git clean -fdx"*)
+  *"git clean -f"*)
     echo "BLOCKED: git clean removes untracked files permanently. Confirm with the user first."
     exit 1
     ;;

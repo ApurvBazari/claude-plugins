@@ -5,7 +5,6 @@ set -e
 BASE_DIR="${1:-$HOME/.claude}"
 
 NOTIFY_SCRIPT="$BASE_DIR/hooks/notify.sh"
-CONFIG_FILE="$BASE_DIR/notify-config.json"
 
 # Check terminal-notifier
 if ! command -v terminal-notifier &>/dev/null; then

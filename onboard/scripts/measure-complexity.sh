@@ -85,7 +85,7 @@ for ext in $SOURCE_EXTENSIONS; do
     -not -path '*/target/*' \
     -not -path '*/vendor/*' \
     -not -path '*/.next/*' \
-    2>/dev/null -exec cat {} + 2>/dev/null | wc -l | tr -d ' ')
+    -exec cat {} + 2>/dev/null | wc -l | tr -d ' ')
   if [ "$LOC" -gt 0 ]; then
     TOTAL_LOC=$((TOTAL_LOC + LOC))
   fi

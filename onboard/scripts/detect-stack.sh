@@ -55,7 +55,7 @@ detect_lang() {
       -not -path '*/build/*' \
       -not -path '*/target/*' \
       -not -path '*/vendor/*' \
-      2>/dev/null -exec cat {} + 2>/dev/null | wc -l | tr -d ' ')
+      -exec cat {} + 2>/dev/null | wc -l | tr -d ' ')
     echo "  ${label}: $COUNT files, ~$LOC lines"
   fi
 }
