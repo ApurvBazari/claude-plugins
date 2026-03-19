@@ -31,6 +31,14 @@
       "version": "1.0.0",
       "keywords": ["devkit", "workflow", "commit", "review", "lint", "test", "ship"],
       "license": "MIT"
+    },
+    {
+      "name": "observe",
+      "source": "./observe",
+      "description": "Zero-infrastructure observability for Claude Code — tracks tool usage, skill invocations, subagent spawns, and session behavior",
+      "version": "0.1.0",
+      "keywords": ["observability", "analytics", "hooks", "telemetry", "metrics"],
+      "license": "MIT"
     }
   ]
 }
