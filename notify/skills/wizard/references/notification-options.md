@@ -1,5 +1,12 @@
 # Notification Options Reference
 
+## Platform Support
+
+| Platform | Backend | Sound Control | Click-to-Focus |
+|----------|---------|---------------|----------------|
+| macOS | `terminal-notifier` | Full (14 sounds) | Yes (bundle ID) |
+| Linux | `notify-send` (libnotify) | No (urgency levels only) | No |
+
 ## macOS Sounds
 
 Available sounds for `terminal-notifier -sound`:
@@ -23,6 +30,17 @@ Available sounds for `terminal-notifier -sound`:
 
 **Defaults**: Hero (task completed), Glass (needs attention), Ping (subagent)
 
+## Linux Urgency Levels
+
+On Linux, the `sound` config is mapped to notification urgency:
+
+| Urgency | Mapped from sounds | Behavior |
+|---------|-------------------|----------|
+| `critical` | Glass, Basso, Sosumi, Funk | Persistent notification, may play system sound |
+| `normal` | All other sounds | Standard notification |
+
+Note: Linux notification behavior depends on the desktop environment and notification daemon. Custom sounds are not supported via `notify-send`.
+
 ## Hook Events
 
 | Event | Hook Type | When It Fires |
@@ -30,6 +48,36 @@ Available sounds for `terminal-notifier -sound`:
 | Task completed | `Stop` | Claude finishes a response/task |
 | Needs attention | `Notification` | Claude needs user input (permission prompt, idle) |
 | Subagent done | `SubagentStop` | A spawned subagent finishes its work |
+
+## Duration Filtering
+
+Each event supports a `minDurationSeconds` field that suppresses notifications for fast responses:
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `minDurationSeconds` | int | `0` (disabled) | Minimum elapsed seconds before notification fires |
+
+When set, the `stop` and `subagentStop` events check how long has passed since the last activity. If the elapsed time is less than the threshold, the notification is silently skipped.
+
+**Recommended values:**
+- `0` — Always notify (default)
+- `10` — Skip trivial responses, notify for real work
+- `30` — Only notify for substantial tasks
+- `60` — Only notify for long-running operations
+
+Example config:
+```json
+{
+  "events": {
+    "stop": {
+      "enabled": true,
+      "message": "Task completed",
+      "sound": "Hero",
+      "minDurationSeconds": 30
+    }
+  }
+}
+```
 
 ## Notification Matcher Patterns
 
@@ -41,7 +89,7 @@ For the `Notification` hook, the `matcher` field filters which notification type
 | `idle_prompt` | Idle/waiting prompts only |
 | `permission_prompt\|idle_prompt` | Both (recommended default) |
 
-## Common App Bundle IDs
+## Common App Bundle IDs (macOS only)
 
 Used for `-activate` to bring an app to the foreground when the notification is clicked:
 
@@ -53,3 +101,5 @@ Used for `-activate` to bring an app to the foreground when the notification is 
 | iTerm2 | `com.googlecode.iterm2` |
 | WezTerm | `com.github.wez.wezterm` |
 | None | _(leave empty)_ |
+
+Note: The `activate` field is ignored on Linux since `notify-send` does not support click-to-focus.

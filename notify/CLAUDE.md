@@ -1,6 +1,13 @@
 # notify — Internal Conventions
 
-macOS system notifications for Claude Code via `terminal-notifier`.
+Cross-platform system notifications for Claude Code. macOS via `terminal-notifier`, Linux via `notify-send`.
+
+## Platform Support
+
+| Platform | Backend | Sound | Click-to-Focus | Duration Filter |
+|----------|---------|-------|----------------|-----------------|
+| macOS | `terminal-notifier` | 14 system sounds | Yes (bundle ID) | Yes |
+| Linux | `notify-send` (libnotify) | Urgency levels only | No | Yes |
 
 ## Hook Event Model
 
@@ -11,6 +18,14 @@ Three notification events, each independently configurable:
 | `stop` | Claude finishes a response | Enabled, "Hero" sound |
 | `notification` | Claude needs user attention | Enabled, "Glass" sound |
 | `subagentStop` | A subagent finishes work | Disabled (too noisy) |
+
+## Duration Filtering
+
+Each event supports `minDurationSeconds` to suppress notifications for fast responses:
+- Tracks last activity timestamp in a temp file (`$TMPDIR/claude-notify-session-start`)
+- On `stop`/`subagentStop`: compares elapsed time against threshold
+- If elapsed < threshold, notification is silently skipped
+- `notification` event should keep `minDurationSeconds: 0` (attention prompts should always fire)
 
 ## Config Resolution
 
@@ -23,7 +38,7 @@ Three notification events, each independently configurable:
 
 - `notify.sh` is a hook script — it MUST always `exit 0`
 - Never block Claude execution, even on notification failure
-- `terminal-notifier` absence should fail silently
+- Missing notification backend (terminal-notifier or notify-send) should fail silently
 
 ## JSON Parsing Pattern
 
@@ -53,4 +68,4 @@ Notifications show repo + branch context:
 - **Global** (`~/.claude/settings.json`): hooks fire in every project
 - **Per-project** (`<project>/.claude/settings.json`): hooks fire only in that project
 - Per-project extends/overrides global — both can coexist
-- The wizard detects the running editor (VS Code, Cursor, Windsurf, iTerm2) for bundle ID
+- The wizard detects the running editor (VS Code, Cursor, Windsurf, iTerm2) for bundle ID (macOS only)

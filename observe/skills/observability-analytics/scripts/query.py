@@ -517,6 +517,72 @@ def quality_signals(events):
                 }
             )
 
+        # Error-retry cycles: same tool invoked 3+ times within 60s
+        tool_timestamps = defaultdict(list)
+        for e in evts:
+            if e.get("event") == "PreToolUse":
+                tn = e.get("data", {}).get("tool_name", "")
+                ts = parse_ts(e.get("ts", ""))
+                if tn and ts:
+                    tool_timestamps[tn].append(ts)
+
+        for tn, ts_list in tool_timestamps.items():
+            if len(ts_list) < 3:
+                continue
+            ts_list.sort()
+            # Sliding window: check for 3+ invocations within 60s
+            for i in range(len(ts_list) - 2):
+                window = (ts_list[i + 2] - ts_list[i]).total_seconds()
+                if window <= 60:
+                    # Count how many fit in this 60s window
+                    burst = 2
+                    for j in range(i + 3, len(ts_list)):
+                        if (ts_list[j] - ts_list[i]).total_seconds() <= 60:
+                            burst += 1
+                        else:
+                            break
+                    signals.append(
+                        {
+                            "type": "error_retry_cycle",
+                            "session": sid,
+                            "tool": tn,
+                            "count": burst + 1,
+                            "window_seconds": round(window),
+                            "message": f"'{tn}' invoked {burst + 1} times within {round(window)}s — possible retry loop",
+                        }
+                    )
+                    break  # One signal per tool per session
+
+        # Low tool completion rate within session
+        pre_counter = Counter()
+        post_counter = Counter()
+        for e in evts:
+            tn = e.get("data", {}).get("tool_name", "")
+            if not tn:
+                continue
+            if e.get("event") == "PreToolUse":
+                pre_counter[tn] += 1
+            elif e.get("event") == "PostToolUse":
+                post_counter[tn] += 1
+
+        for tn, pre_count in pre_counter.items():
+            if pre_count < 3:
+                continue  # Need enough data to be meaningful
+            post_count = post_counter.get(tn, 0)
+            completion_rate = post_count / pre_count if pre_count > 0 else 0
+            if completion_rate < 0.7:
+                signals.append(
+                    {
+                        "type": "low_completion_rate",
+                        "session": sid,
+                        "tool": tn,
+                        "invocations": pre_count,
+                        "completions": post_count,
+                        "rate": round(completion_rate * 100, 1),
+                        "message": f"'{tn}' completed {post_count}/{pre_count} times ({round(completion_rate * 100, 1)}% rate)",
+                    }
+                )
+
     # Rarely-used skills (across all sessions)
     skill_counter = Counter()
     for evts in sessions.values():

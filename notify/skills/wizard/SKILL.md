@@ -1,6 +1,6 @@
 # Wizard Skill — Notification Preferences
 
-You are guiding a developer through customizing their Claude Code notification preferences. This wizard configures which events trigger macOS notifications, what sounds play, and which app activates on click.
+You are guiding a developer through customizing their Claude Code notification preferences. This wizard configures which events trigger notifications, what sounds play, duration filtering, and which app activates on click. Works on macOS (terminal-notifier) and Linux (notify-send).
 
 ## Conversation Style
 
@@ -15,9 +15,18 @@ See `references/notification-options.md` for available sounds, hook events, matc
 
 ## Wizard Flow
 
-### Step 0: Detect Editor
+### Step 0: Detect Platform & Editor
 
-Before presenting event defaults, detect the user's editor for the "Activate" default. Check for running processes:
+Detect the platform first:
+
+```bash
+uname -s
+```
+
+- `Darwin` → macOS (uses `terminal-notifier` with sounds and app activation)
+- `Linux` → Linux (uses `notify-send` with urgency levels, no custom sounds or app activation)
+
+On macOS, detect the user's editor for the "Activate" default. Check for running processes:
 
 ```bash
 ps aux | grep -i -E 'Cursor|Code|Windsurf' | grep -v grep | head -1
@@ -29,7 +38,9 @@ Map to bundle IDs:
 - "Windsurf" → `com.codeium.windsurf`
 - If none detected, default to `com.microsoft.VSCode` and ask the user to confirm.
 
-Use the detected editor as the default "Activate" value for all events below.
+On Linux, skip the editor/bundle-ID detection and `activate` config — `notify-send` does not support click-to-focus.
+
+Use the detected editor as the default "Activate" value for all events below (macOS only).
 
 Walk through each of the three hook events. For each event, ask as a group:
 
@@ -57,6 +68,21 @@ mdfind "kMDItemCFBundleIdentifier == '<bundle-id>'" | head -1
 
 If no result is returned, warn:
 > That bundle ID wasn't found on your system. Double-check the ID, or proceed and update it later in `notify-config.json`.
+
+### Duration Filtering
+
+After configuring Event 1, ask about duration filtering:
+
+> **Duration filtering** — suppress notifications for fast responses.
+>
+> If set, the `stop` notification only fires when Claude has been working for at least this many seconds. This prevents notification spam for quick follow-up questions.
+>
+> Recommended: `30` seconds (skips trivial responses, notifies for real work).
+> Set to `0` to always notify (default).
+>
+> What minimum duration would you like? (0/10/30/60, or a custom value)
+
+Apply the chosen `minDurationSeconds` to the `stop` event. The `notification` event should keep `minDurationSeconds: 0` since attention prompts should always fire immediately.
 
 ### Event 2: Needs Attention (Notification hook)
 
@@ -99,13 +125,14 @@ After all three events are configured, compile the settings into the notify-conf
 
 ```json
 {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "events": {
     "stop": {
       "enabled": true,
       "message": "...",
       "sound": "...",
-      "activate": "..."
+      "activate": "...",
+      "minDurationSeconds": 30
     },
     "notification": {
       "enabled": true,
@@ -124,17 +151,21 @@ After all three events are configured, compile the settings into the notify-conf
 }
 ```
 
+Note: On Linux, omit the `activate` field from each event (not supported by `notify-send`).
+
 Present a summary table before confirming:
 
 > Here are your notification settings:
 >
-> | Event | Enabled | Message | Sound | App |
-> |-------|---------|---------|-------|-----|
-> | Task completed | ... | ... | ... | ... |
-> | Needs attention | ... | ... | ... | ... |
-> | Subagent done | ... | ... | ... | ... |
+> | Event | Enabled | Message | Sound | Min Duration | App |
+> |-------|---------|---------|-------|-------------|-----|
+> | Task completed | ... | ... | ... | ...s | ... |
+> | Needs attention | ... | ... | ... | — | ... |
+> | Subagent done | ... | ... | ... | — | ... |
 >
 > Look good?
+
+On Linux, replace the "App" column with "Urgency" and show the mapped urgency level instead.
 
 Wait for confirmation before returning to the setup command.
 
@@ -142,4 +173,5 @@ Wait for confirmation before returning to the setup command.
 
 1. **Always show defaults** — Never assume. Let the developer see what they're getting.
 2. **Respect "keep defaults"** — If they say defaults are fine, move on immediately.
-3. **3 exchanges max** — The wizard should complete in at most 3 back-and-forth exchanges (one per event, or fewer if defaults are accepted).
+3. **4 exchanges max** — The wizard should complete in at most 4 back-and-forth exchanges (events + duration, or fewer if defaults are accepted).
+4. **Platform-aware** — On Linux, skip sound selection (show urgency mapping), skip `activate` config, skip `mdfind` validation. On macOS, full customization.

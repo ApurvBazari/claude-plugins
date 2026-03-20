@@ -19,9 +19,9 @@
     {
       "name": "notify",
       "source": "./notify",
-      "description": "macOS system notifications for Claude Code — get notified when tasks complete or need attention",
-      "version": "1.0.0",
-      "keywords": ["notifications", "macos", "hooks", "terminal-notifier"],
+      "description": "Cross-platform system notifications for Claude Code — macOS (terminal-notifier) and Linux (notify-send) with duration filtering",
+      "version": "1.1.0",
+      "keywords": ["notifications", "macos", "linux", "hooks", "terminal-notifier", "notify-send"],
       "license": "MIT"
     },
     {
@@ -36,7 +36,7 @@
       "name": "observe",
       "source": "./observe",
       "description": "Zero-infrastructure observability for Claude Code — tracks tool usage, skill invocations, subagent spawns, and session behavior",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "keywords": ["observability", "analytics", "hooks", "telemetry", "metrics"],
       "license": "MIT"
     }

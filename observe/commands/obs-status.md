@@ -44,9 +44,32 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/observability-analytics/scripts/query.py" 
 
 ---
 
-## Step 3: Present Results
+## Step 3: Data Health
 
-Parse the JSON output and present as a formatted summary:
+Run via Bash to get storage info:
+
+```
+python3 -c "
+import glob, os, json
+data_dir = os.path.expanduser('~/.claude/observability/data')
+config_path = os.path.expanduser('~/.claude/observability/config.json')
+files = sorted(glob.glob(os.path.join(data_dir, 'events-*.ndjson')))
+total = sum(os.path.getsize(f) for f in files)
+retention = 6
+if os.path.isfile(config_path):
+    try:
+        retention = json.load(open(config_path)).get('retention_months', 6)
+    except Exception: pass
+size = f'{total / (1024*1024):.1f} MB' if total >= 1024*1024 else f'{total / 1024:.1f} KB'
+print(json.dumps({'files': len(files), 'size': size, 'retention_months': retention}))
+"
+```
+
+---
+
+## Step 4: Present Results
+
+Parse the JSON outputs and present as a formatted summary:
 
 > **Session Summary**
 >
@@ -64,6 +87,10 @@ Parse the JSON output and present as a formatted summary:
 > **Top tools:** `<tool1>` (Nx), `<tool2>` (Nx), ...
 >
 > **Skills used:** `<skill1>`, `<skill2>`, ...
+>
+> **Data health:** `<files>` files, `<size>` total, `<retention_months>`-month retention
+>
+> To clean up old data: `python3 <plugin_root>/scripts/cleanup.py --dry-run`
 
 If the query returns an error message, show it directly.
 

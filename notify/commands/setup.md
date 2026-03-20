@@ -1,12 +1,12 @@
 # /notify:setup — Notification Setup
 
-You are running the notify setup command. This installs and configures macOS system notifications for Claude Code using `terminal-notifier`.
+You are running the notify setup command. This installs and configures system notifications for Claude Code. Supports macOS (`terminal-notifier`) and Linux (`notify-send`).
 
 ## Overview
 
 Tell the developer:
 
-> Starting **notify** setup — I'll check dependencies, walk you through notification preferences, and configure hooks so you get native macOS notifications when Claude completes tasks or needs your attention.
+> Starting **notify** setup — I'll check dependencies, walk you through notification preferences, and configure hooks so you get native system notifications when Claude completes tasks or needs your attention.
 
 ---
 
@@ -21,21 +21,21 @@ If the user includes "dry-run" or "--dry-run" in their command arguments:
 - Skip Step 7 (Test) and Step 8 (Handoff)
 - End with: "Dry run complete — no files were written. Re-run without `--dry-run` to apply."
 
-## Step 1: Dependency Check
+## Step 1: Detect Platform & Check Dependencies
 
+Run `uname -s` to detect the platform.
+
+**macOS (Darwin):**
 Run `which terminal-notifier` via Bash.
+- If installed: `terminal-notifier is installed. Good to go.`
+- If missing: offer to install via `scripts/install-notifier.sh`. If Homebrew is also missing, show install instructions and stop.
 
-**If installed:**
-> `terminal-notifier` is installed. Good to go.
+**Linux:**
+Run `which notify-send` via Bash.
+- If installed: `notify-send is available. Good to go.`
+- If missing: show installation instructions from `scripts/install-notifier.sh` output (distro-specific `apt`/`dnf`/`pacman` commands) and stop.
 
-**If missing:**
-> `terminal-notifier` is not installed. It's a lightweight macOS utility that sends native notifications from the command line.
->
-> Would you like me to install it via Homebrew? (`brew install terminal-notifier`)
-
-If yes, run `scripts/install-notifier.sh`. If Homebrew is also missing, show the install instructions and stop.
-
-If the developer declines, explain that the plugin requires `terminal-notifier` and stop.
+Note: On Linux, sounds are not supported (mapped to urgency levels) and click-to-focus (`activate`) is not available. Inform the developer of these differences.
 
 ---
 
@@ -132,17 +132,18 @@ Present the default configuration:
 
 If the developer chooses "Customize", use the `wizard` skill to walk through each event's preferences. The wizard will return the final configuration.
 
-If "Use defaults", use these values:
+If "Use defaults", use these values (omit `activate` on Linux):
 
 ```json
 {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "events": {
     "stop": {
       "enabled": true,
       "message": "Task completed",
       "sound": "Hero",
-      "activate": "com.microsoft.VSCode"
+      "activate": "com.microsoft.VSCode",
+      "minDurationSeconds": 0
     },
     "notification": {
       "enabled": true,
@@ -169,144 +170,15 @@ Generate the following files based on the configuration:
 
 ### 6a: Write `$BASE_DIR/hooks/notify.sh`
 
-Create the directory and write the notification script, then make it executable (`chmod +x`):
+Create the directory and copy the notification script from the plugin's source, then make it executable:
 
 ```bash
 mkdir -p $BASE_DIR/hooks
+cp "${CLAUDE_PLUGIN_ROOT}/scripts/notify.sh" "$BASE_DIR/hooks/notify.sh"
+chmod +x "$BASE_DIR/hooks/notify.sh"
 ```
 
-Write the dynamic notification script. This script reads config and stdin JSON at runtime — the hook command only passes the event name:
-
-```bash
-#!/bin/bash
-# notify.sh — Dynamic notification script for Claude Code hooks
-# Usage: echo '<stdin_json>' | notify.sh <event>
-# Events: stop, notification, subagentStop
-
-EVENT="${1:-stop}"
-BASE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-CONFIG_FILE="$BASE_DIR/notify-config.json"
-
-# --- JSON helper: tries jq, falls back to python3 ---
-json_get() {
-  local json="$1" path="$2"
-  local result=""
-
-  if command -v jq &>/dev/null; then
-    result="$(echo "$json" | jq -r "$path" 2>/dev/null)"
-  elif command -v python3 &>/dev/null; then
-    result="$(echo "$json" | python3 -c "
-import sys, json
-try:
-    data = json.load(sys.stdin)
-    keys = '''$path'''.strip('.').split('.')
-    val = data
-    for k in keys:
-        val = val[k]
-    print(val if val is not None else '')
-except Exception:
-    print('')
-" 2>/dev/null)"
-  fi
-
-  # jq returns "null" for missing keys
-  if [ "$result" = "null" ] || [ -z "$result" ]; then
-    echo ""
-  else
-    echo "$result"
-  fi
-}
-
-# --- Read config ---
-ENABLED="true"
-SOUND="Ping"
-ACTIVATE="com.microsoft.VSCode"
-FALLBACK_MESSAGE="Notification"
-
-if [ -f "$CONFIG_FILE" ]; then
-  CONFIG="$(cat "$CONFIG_FILE")"
-  EVENT_ENABLED="$(json_get "$CONFIG" ".events.${EVENT}.enabled")"
-  EVENT_SOUND="$(json_get "$CONFIG" ".events.${EVENT}.sound")"
-  EVENT_ACTIVATE="$(json_get "$CONFIG" ".events.${EVENT}.activate")"
-  EVENT_MESSAGE="$(json_get "$CONFIG" ".events.${EVENT}.message")"
-
-  [ -n "$EVENT_ENABLED" ] && ENABLED="$EVENT_ENABLED"
-  [ -n "$EVENT_SOUND" ] && SOUND="$EVENT_SOUND"
-  [ -n "$EVENT_ACTIVATE" ] && ACTIVATE="$EVENT_ACTIVATE"
-  [ -n "$EVENT_MESSAGE" ] && FALLBACK_MESSAGE="$EVENT_MESSAGE"
-else
-  # No config file — use hardcoded defaults per event
-  case "$EVENT" in
-    stop)
-      ENABLED="true"; SOUND="Hero"; FALLBACK_MESSAGE="Task completed" ;;
-    notification)
-      ENABLED="true"; SOUND="Glass"; FALLBACK_MESSAGE="Needs your attention" ;;
-    subagentStop)
-      ENABLED="false"; SOUND="Ping"; FALLBACK_MESSAGE="Subagent task completed" ;;
-  esac
-fi
-
-# Exit silently if disabled
-if [ "$ENABLED" = "false" ]; then
-  exit 0
-fi
-
-# --- Read stdin JSON (Claude Code passes context via stdin) ---
-STDIN_JSON=""
-if ! [ -t 0 ]; then
-  STDIN_JSON="$(cat)"
-fi
-
-# --- Extract contextual message ---
-MESSAGE=""
-TITLE="Claude Code"
-
-case "$EVENT" in
-  stop)
-    MESSAGE="$(json_get "$STDIN_JSON" ".last_assistant_message")"
-    ;;
-  subagentStop)
-    MESSAGE="$(json_get "$STDIN_JSON" ".last_assistant_message")"
-    AGENT_TYPE="$(json_get "$STDIN_JSON" ".agent_type")"
-    if [ -n "$AGENT_TYPE" ]; then
-      TITLE="Claude Code ($AGENT_TYPE)"
-    fi
-    ;;
-  notification)
-    MESSAGE="$(json_get "$STDIN_JSON" ".message")"
-    ;;
-esac
-
-# Fall back to config message if extraction failed
-if [ -z "$MESSAGE" ]; then
-  MESSAGE="$FALLBACK_MESSAGE"
-fi
-
-# Sanitize: replace newlines with spaces
-MESSAGE="$(echo "$MESSAGE" | tr '\n' ' ' | tr '\r' ' ')"
-
-# Truncate to 80 chars
-if [ "${#MESSAGE}" -gt 80 ]; then
-  MESSAGE="${MESSAGE:0:80}..."
-fi
-
-# --- Build subtitle from git context ---
-SUBTITLE=""
-GIT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
-if [ -n "$GIT_ROOT" ]; then
-  REPO_NAME="$(basename "$GIT_ROOT")"
-  BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
-  SUBTITLE="📦 $REPO_NAME  🔀 ${BRANCH:-detached}"
-else
-  SUBTITLE="📂 $(basename "$PWD")"
-fi
-
-# --- Send notification ---
-terminal-notifier -title "$TITLE" -subtitle "$SUBTITLE" -message "$MESSAGE" -sound "$SOUND" -activate "$ACTIVATE"
-
-# Always exit 0 — never block Claude
-exit 0
-```
+The script supports both macOS (`terminal-notifier`) and Linux (`notify-send`), auto-detects the platform, reads config from `notify-config.json` at runtime, and supports duration-based filtering via `minDurationSeconds`.
 
 ### 6b: Merge hooks into `$BASE_DIR/settings.json`
 
@@ -374,13 +246,20 @@ echo '{"last_assistant_message":"Setup complete — notifications are working!"}
 Ask the developer if they saw the notification.
 
 **If yes:**
-> Setup complete! You'll now get native macOS notifications when Claude finishes tasks or needs your attention.
+> Setup complete! You'll now get native system notifications when Claude finishes tasks or needs your attention.
 
-**If no:**
+**If no (macOS):**
 > Let's troubleshoot:
 > 1. Check System Settings > Notifications > terminal-notifier — make sure notifications are allowed
 > 2. Try running manually: `terminal-notifier -title "Test" -message "Hello" -sound "Glass"`
 > 3. Run `/notify:status` for a full health check
+
+**If no (Linux):**
+> Let's troubleshoot:
+> 1. Make sure a notification daemon is running (e.g., `dunst`, `mako`, or your desktop environment's built-in)
+> 2. Try running manually: `notify-send "Test" "Hello"`
+> 3. If running in SSH/headless, notifications require a display server
+> 4. Run `/notify:status` for a full health check
 
 ---
 

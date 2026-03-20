@@ -236,6 +236,87 @@ def compute_summary(events, costs):
     }
 
 
+def quality_signals_summary(events):
+    """Compute quality signal counts by type for dashboard display."""
+    sessions = defaultdict(list)
+    for ev in events:
+        sessions[ev.get("sid", "unknown")].append(ev)
+
+    signal_counts = Counter()
+    for sid, evts in sessions.items():
+        evts.sort(key=lambda e: e.get("ts", ""))
+        compactions = [e for e in evts if e.get("event") == "PreCompact"]
+        if len(compactions) > 3:
+            signal_counts["high_compaction"] += 1
+
+        timestamps = [parse_ts(e.get("ts", "")) for e in evts]
+        timestamps = [t for t in timestamps if t]
+        if len(timestamps) >= 2:
+            dur = (max(timestamps) - min(timestamps)).total_seconds()
+            pre = [e for e in evts if e.get("event") == "PreToolUse"]
+            if dur > 7200 and len(pre) > 50:
+                signal_counts["long_session"] += 1
+
+        pre_c = Counter()
+        post_c = Counter()
+        for e in evts:
+            tn = e.get("data", {}).get("tool_name", "")
+            if e.get("event") == "PreToolUse":
+                pre_c[tn] += 1
+            elif e.get("event") == "PostToolUse":
+                post_c[tn] += 1
+        for tn, cnt in pre_c.items():
+            if cnt >= 3 and (post_c.get(tn, 0) / cnt) < 0.7:
+                signal_counts["low_completion"] += 1
+
+    labels = list(signal_counts.keys()) if signal_counts else ["No issues"]
+    values = list(signal_counts.values()) if signal_counts else [0]
+    return {"labels": labels, "values": values, "total": sum(signal_counts.values())}
+
+
+def activity_heatmap(events):
+    """Count events per hour-of-day for an activity heatmap."""
+    hour_counts = [0] * 24
+    for ev in events:
+        dt = parse_ts(ev.get("ts", ""))
+        if dt:
+            hour_counts[dt.hour] += 1
+    labels = [f"{h:02d}:00" for h in range(24)]
+    return {"labels": labels, "values": hour_counts}
+
+
+def week_over_week(events):
+    """Compare this week vs last week metrics."""
+    now = datetime.now(timezone.utc)
+    week_start = now - timedelta(days=now.weekday())  # Monday
+    last_week_start = week_start - timedelta(days=7)
+
+    this_week = {"sessions": set(), "tools": 0, "compactions": 0}
+    last_week = {"sessions": set(), "tools": 0, "compactions": 0}
+
+    for ev in events:
+        dt = parse_ts(ev.get("ts", ""))
+        if not dt:
+            continue
+        if dt >= week_start:
+            bucket = this_week
+        elif dt >= last_week_start:
+            bucket = last_week
+        else:
+            continue
+        bucket["sessions"].add(ev.get("sid", ""))
+        if ev.get("event") == "PreToolUse":
+            bucket["tools"] += 1
+        elif ev.get("event") == "PreCompact":
+            bucket["compactions"] += 1
+
+    return {
+        "labels": ["Sessions", "Tool Uses", "Compactions"],
+        "this_week": [len(this_week["sessions"]), this_week["tools"], this_week["compactions"]],
+        "last_week": [len(last_week["sessions"]), last_week["tools"], last_week["compactions"]],
+    }
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -265,6 +346,9 @@ def main():
         "compactions_per_session": compactions_per_session(events),
         "project_comparison": project_comparison(events),
         "skill_usage": skill_usage_table(events),
+        "quality_signals": quality_signals_summary(events),
+        "activity_heatmap": activity_heatmap(events),
+        "week_over_week": week_over_week(events),
         "summary": compute_summary(events, costs),
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "range": range_arg,

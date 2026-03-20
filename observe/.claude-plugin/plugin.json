@@ -1,6 +1,6 @@
 {
   "name": "observe",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Zero-infrastructure observability for Claude Code — tracks tool usage, skill invocations, subagent spawns, and session behavior",
   "author": {
     "name": "Apurv Bazari"
