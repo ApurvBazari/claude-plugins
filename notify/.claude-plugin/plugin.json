@@ -1,7 +1,7 @@
 {
   "name": "notify",
-  "version": "1.0.0",
-  "description": "macOS system notifications for Claude Code via terminal-notifier — get notified when tasks complete or need attention",
+  "version": "1.1.0",
+  "description": "Cross-platform system notifications for Claude Code — macOS (terminal-notifier) and Linux (notify-send) with duration filtering",
   "author": {
     "name": "Apurv Bazari"
   },
@@ -10,7 +10,9 @@
   "keywords": [
     "notifications",
     "macos",
+    "linux",
     "hooks",
-    "terminal-notifier"
+    "terminal-notifier",
+    "notify-send"
   ]
 }

@@ -178,6 +178,80 @@ After generation completes, list every file that was created:
 
 ---
 
+## Phase 3.5: Ecosystem Setup
+
+If the wizard answers include `ecosystemPlugins`, set up the requested plugins.
+
+### Step 3.5.1: Check Plugin Availability
+
+For each requested plugin, check if it's installed by looking for its plugin root:
+
+```bash
+# Check if notify is available
+ls "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh" 2>/dev/null
+
+# Check if observe is available
+ls "${CLAUDE_PLUGIN_ROOT}/../observe/scripts/install.sh" 2>/dev/null
+```
+
+If a plugin is not found, skip it silently — it may not be installed.
+
+### Step 3.5.2: Set Up Notify (if requested and available)
+
+If `ecosystemPlugins.notify` is `true` and notify is available:
+
+1. Run notify's install script to check dependencies:
+   ```bash
+   bash "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/install-notifier.sh"
+   ```
+2. Copy the notification script to the config scope:
+   ```bash
+   mkdir -p "$BASE_DIR/hooks"
+   cp "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh" "$BASE_DIR/hooks/notify.sh"
+   chmod +x "$BASE_DIR/hooks/notify.sh"
+   ```
+3. Write a default `notify-config.json` to `$BASE_DIR/`:
+   ```json
+   {
+     "version": "0.2.0",
+     "events": {
+       "stop": { "enabled": true, "message": "Task completed", "sound": "Hero", "minDurationSeconds": 0 },
+       "notification": { "enabled": true, "matcher": "permission_prompt|idle_prompt", "message": "Needs your attention", "sound": "Glass" },
+       "subagentStop": { "enabled": false, "message": "Subagent task completed", "sound": "Ping" }
+     }
+   }
+   ```
+4. Merge notify hooks into `$BASE_DIR/settings.json` (Stop, Notification, SubagentStop events)
+
+Where `$BASE_DIR` is the same scope used for the generated Claude tooling (typically `$PWD/.claude` for per-project or `~/.claude` for global).
+
+Report: `Notify plugin configured — you'll get system notifications when Claude finishes tasks.`
+
+### Step 3.5.3: Set Up Observe (if requested and available)
+
+If `ecosystemPlugins.observe` is `true` and observe is available:
+
+1. Run observe's install script:
+   ```bash
+   bash "${CLAUDE_PLUGIN_ROOT}/../observe/scripts/install.sh"
+   ```
+2. Read observe's `hooks/hooks.json` and merge its hook entries into `$BASE_DIR/settings.json`
+
+Report: `Observe plugin configured — usage analytics will be collected passively.`
+
+### Step 3.5.4: Report Ecosystem Setup
+
+> **Ecosystem plugins set up:**
+> - [list what was configured]
+>
+> You can customize these later:
+> - Notify: edit `notify-config.json` or run `/notify:setup`
+> - Observe: run `/observe:status` to check data collection
+
+If no plugins were set up (none requested or none available), skip this report entirely.
+
+---
+
 ## Phase 4: Education & Handoff
 
 ### Step 4.1: Explain Key Artifacts
@@ -212,6 +286,10 @@ Based on what was generated, suggest what to try first:
 > - Run `/onboard:status` anytime to check the health of your setup
 > - Run `/onboard:update` periodically to align with latest Claude best practices
 > - All generated files have maintenance headers — Claude will let you know when they need updating
+
+If ecosystem plugins were set up, add:
+> - Run `/notify:status` to verify notifications are working
+> - Run `/observe:status` after a few sessions to see your usage analytics
 
 ### Step 4.4: Closing
 

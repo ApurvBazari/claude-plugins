@@ -63,6 +63,11 @@
             "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/collect.py\"",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/alert-check.py\" --session \"${SESSION_ID}\"",
+            "timeout": 10
           }
         ]
       }

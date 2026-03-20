@@ -517,6 +517,72 @@ def quality_signals(events):
                 }
             )
 
+        # Error-retry cycles: same tool invoked 3+ times within 60s
+        tool_timestamps = defaultdict(list)
+        for e in evts:
+            if e.get("event") == "PreToolUse":
+                tn = e.get("data", {}).get("tool_name", "")
+                ts = parse_ts(e.get("ts", ""))
+                if tn and ts:
+                    tool_timestamps[tn].append(ts)
+
+        for tn, ts_list in tool_timestamps.items():
+            if len(ts_list) < 3:
+                continue
+            ts_list.sort()
+            # Sliding window: check for 3+ invocations within 60s
+            for i in range(len(ts_list) - 2):
+                window = (ts_list[i + 2] - ts_list[i]).total_seconds()
+                if window <= 60:
+                    # Count how many fit in this 60s window
+                    burst = 2
+                    for j in range(i + 3, len(ts_list)):
+                        if (ts_list[j] - ts_list[i]).total_seconds() <= 60:
+                            burst += 1
+                        else:
+                            break
+                    signals.append(
+                        {
+                            "type": "error_retry_cycle",
+                            "session": sid,
+                            "tool": tn,
+                            "count": burst + 1,
+                            "window_seconds": round(window),
+                            "message": f"'{tn}' invoked {burst + 1} times within {round(window)}s — possible retry loop",
+                        }
+                    )
+                    break  # One signal per tool per session
+
+        # Low tool completion rate within session
+        pre_counter = Counter()
+        post_counter = Counter()
+        for e in evts:
+            tn = e.get("data", {}).get("tool_name", "")
+            if not tn:
+                continue
+            if e.get("event") == "PreToolUse":
+                pre_counter[tn] += 1
+            elif e.get("event") == "PostToolUse":
+                post_counter[tn] += 1
+
+        for tn, pre_count in pre_counter.items():
+            if pre_count < 3:
+                continue  # Need enough data to be meaningful
+            post_count = post_counter.get(tn, 0)
+            completion_rate = post_count / pre_count if pre_count > 0 else 0
+            if completion_rate < 0.7:
+                signals.append(
+                    {
+                        "type": "low_completion_rate",
+                        "session": sid,
+                        "tool": tn,
+                        "invocations": pre_count,
+                        "completions": post_count,
+                        "rate": round(completion_rate * 100, 1),
+                        "message": f"'{tn}' completed {post_count}/{pre_count} times ({round(completion_rate * 100, 1)}% rate)",
+                    }
+                )
+
     # Rarely-used skills (across all sessions)
     skill_counter = Counter()
     for evts in sessions.values():
@@ -538,6 +604,193 @@ def quality_signals(events):
     return {
         "signal_count": len(signals),
         "signals": signals,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Mode: pipeline-summary
+# ---------------------------------------------------------------------------
+
+DEVKIT_SKILLS = {"devkit:test", "devkit:lint", "devkit:check", "devkit:review", "devkit:commit"}
+PIPELINE_GAP_SECONDS = 300  # 5 minutes — max gap between steps in one pipeline run
+
+
+def pipeline_summary(events):
+    """Detect and summarize devkit ship pipeline runs from skill invocation patterns."""
+    sessions = defaultdict(list)
+    for ev in events:
+        sessions[ev.get("sid", "unknown")].append(ev)
+
+    pipelines = []
+
+    for sid, evts in sessions.items():
+        evts.sort(key=lambda e: e.get("ts", ""))
+
+        # Collect devkit skill invocations with timestamps
+        devkit_events = []
+        for e in evts:
+            data = e.get("data", {})
+            if not data.get("is_skill"):
+                continue
+            skill_name = data.get("skill_name", "")
+            if skill_name in DEVKIT_SKILLS:
+                ts = parse_ts(e.get("ts", ""))
+                if ts:
+                    devkit_events.append({
+                        "skill": skill_name,
+                        "ts": ts,
+                        "event_type": e.get("event", ""),
+                    })
+
+        if len(devkit_events) < 2:
+            continue
+
+        # Group into pipeline runs by temporal proximity
+        runs = []
+        current_run = [devkit_events[0]]
+
+        for i in range(1, len(devkit_events)):
+            gap = (devkit_events[i]["ts"] - devkit_events[i - 1]["ts"]).total_seconds()
+            if gap <= PIPELINE_GAP_SECONDS:
+                current_run.append(devkit_events[i])
+            else:
+                if len(current_run) >= 2:
+                    runs.append(current_run)
+                current_run = [devkit_events[i]]
+
+        if len(current_run) >= 2:
+            runs.append(current_run)
+
+        # Build pipeline summaries
+        for run in runs:
+            # Deduplicate: group Pre+Post pairs per skill into steps
+            steps = []
+            seen_skills = set()
+            for ev_item in run:
+                skill = ev_item["skill"]
+                if skill not in seen_skills:
+                    seen_skills.add(skill)
+                    # Find matching Pre/Post pair for duration
+                    pre_ts = None
+                    post_ts = None
+                    for r in run:
+                        if r["skill"] == skill:
+                            if r["event_type"] == "PreToolUse" and pre_ts is None:
+                                pre_ts = r["ts"]
+                            elif r["event_type"] == "PostToolUse" and post_ts is None:
+                                post_ts = r["ts"]
+                    duration = None
+                    if pre_ts and post_ts:
+                        duration = round((post_ts - pre_ts).total_seconds(), 1)
+                    steps.append({
+                        "skill": skill.replace("devkit:", ""),
+                        "duration_seconds": duration,
+                    })
+
+            start_ts = run[0]["ts"]
+            end_ts = run[-1]["ts"]
+            total_duration = round((end_ts - start_ts).total_seconds(), 1)
+
+            # Infer result: if commit step present, likely succeeded
+            step_names = [s["skill"] for s in steps]
+            has_commit = "commit" in step_names
+            result = "completed" if has_commit else "incomplete"
+
+            project = ""
+            for e in evts:
+                if e.get("project"):
+                    project = e["project"]
+                    break
+
+            pipelines.append({
+                "session": sid,
+                "project": project,
+                "date": start_ts.strftime("%Y-%m-%d %H:%M"),
+                "steps": steps,
+                "step_names": step_names,
+                "total_duration_seconds": total_duration,
+                "total_duration_human": format_duration(total_duration),
+                "result": result,
+            })
+
+    # Sort by date descending
+    pipelines.sort(key=lambda p: p["date"], reverse=True)
+
+    # Compute summary stats
+    total = len(pipelines)
+    completed = sum(1 for p in pipelines if p["result"] == "completed")
+    avg_duration = (
+        round(sum(p["total_duration_seconds"] for p in pipelines) / total, 1)
+        if total > 0
+        else 0
+    )
+
+    # Step frequency
+    step_counter = Counter()
+    step_durations = defaultdict(list)
+    for p in pipelines:
+        for s in p["steps"]:
+            step_counter[s["skill"]] += 1
+            if s["duration_seconds"] is not None:
+                step_durations[s["skill"]].append(s["duration_seconds"])
+
+    step_stats = []
+    for step, count in step_counter.most_common():
+        durs = step_durations.get(step, [])
+        avg_dur = round(sum(durs) / len(durs), 1) if durs else None
+        step_stats.append({"step": step, "count": count, "avg_duration": avg_dur})
+
+    # Trend analysis: step pass rates and suggestions
+    trends = []
+    if total >= 3:
+        completion_rate = completed / total if total > 0 else 0
+        if completion_rate == 1.0 and total >= 5:
+            trends.append({
+                "type": "all_passing",
+                "message": f"All {total} pipeline runs completed successfully.",
+            })
+
+        # Per-step analysis across recent pipelines (last 10)
+        recent = pipelines[:10]
+        for stat in step_stats:
+            step_name = stat["step"]
+            # Count how many recent pipelines include this step
+            step_in_recent = sum(1 for p in recent if step_name in p["step_names"])
+            if step_in_recent >= 5 and stat["avg_duration"] is not None:
+                if stat["avg_duration"] > 60:
+                    trends.append({
+                        "type": "slow_step",
+                        "step": step_name,
+                        "avg_seconds": stat["avg_duration"],
+                        "message": f"'{step_name}' averages {format_duration(stat['avg_duration'])} — consider if it can be optimized.",
+                    })
+
+        # Check if a step consistently appears but pipeline is incomplete
+        incomplete_runs = [p for p in recent if p["result"] == "incomplete"]
+        if len(incomplete_runs) >= 3:
+            # Find common last step in incomplete runs
+            last_steps = Counter()
+            for p in incomplete_runs:
+                if p["step_names"]:
+                    last_steps[p["step_names"][-1]] += 1
+            if last_steps:
+                blocker, count = last_steps.most_common(1)[0]
+                trends.append({
+                    "type": "frequent_blocker",
+                    "step": blocker,
+                    "count": count,
+                    "message": f"Pipeline often stops at '{blocker}' ({count}/{len(incomplete_runs)} incomplete runs).",
+                })
+
+    return {
+        "total_pipelines": total,
+        "completed": completed,
+        "incomplete": total - completed,
+        "avg_duration_seconds": avg_duration,
+        "avg_duration_human": format_duration(avg_duration),
+        "step_stats": step_stats,
+        "trends": trends,
+        "pipelines": pipelines[:20],  # Last 20 runs
     }
 
 
@@ -666,6 +919,28 @@ def format_text(data, mode):
             for s in data["signals"]:
                 lines.append(f"  [{s['type']}] {s['message']}")
 
+    elif mode == "pipeline-summary":
+        lines.append(f"Pipelines: {data['total_pipelines']}  |  Completed: {data['completed']}  |  Incomplete: {data['incomplete']}  |  Avg duration: {data['avg_duration_human']}")
+        if data["step_stats"]:
+            lines.append("")
+            lines.append(f"{'Step':<15} {'Count':>7} {'Avg Duration':>14}")
+            lines.append("-" * 38)
+            for s in data["step_stats"]:
+                dur_str = format_duration(s["avg_duration"]) if s["avg_duration"] is not None else "N/A"
+                lines.append(f"{s['step']:<15} {s['count']:>7} {dur_str:>14}")
+        if data.get("trends"):
+            lines.append("")
+            lines.append("Trends:")
+            for t in data["trends"]:
+                lines.append(f"  • {t['message']}")
+        if data["pipelines"]:
+            lines.append("")
+            lines.append(f"{'Date':<18} {'Steps':<30} {'Duration':>10} {'Result':>12}")
+            lines.append("-" * 72)
+            for p in data["pipelines"]:
+                steps_str = " → ".join(p["step_names"])
+                lines.append(f"{p['date']:<18} {steps_str:<30} {p['total_duration_human']:>10} {p['result']:>12}")
+
     return "\n".join(lines)
 
 
@@ -688,6 +963,7 @@ def main():
             "tool-detail",
             "skill-usage",
             "quality-signals",
+            "pipeline-summary",
             "export-csv",
         ],
         help="Analysis mode",
@@ -739,6 +1015,8 @@ def main():
         result = skill_usage(events)
     elif args.mode == "quality-signals":
         result = quality_signals(events)
+    elif args.mode == "pipeline-summary":
+        result = pipeline_summary(events)
     elif args.mode == "export-csv":
         export_csv(events)
         return

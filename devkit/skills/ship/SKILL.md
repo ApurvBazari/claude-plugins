@@ -36,6 +36,40 @@ Otherwise, tell the developer:
 
 > Running ship pipeline: <step1> → <step2> → ... → commit
 
+## Observe Integration (Optional)
+
+Before running the pipeline, check if observe data exists by running:
+
+```bash
+python3 -c "
+import glob, os, json
+data_dir = os.path.expanduser('~/.claude/observability/data')
+if not os.path.isdir(data_dir): exit(1)
+files = glob.glob(os.path.join(data_dir, 'events-*.ndjson'))
+if not files: exit(1)
+print('available')
+" 2>/dev/null
+```
+
+If observe data is available, run a quick pipeline history query:
+
+```bash
+python3 "<observe-plugin-root>/skills/observability-analytics/scripts/query.py" \
+    --mode pipeline-summary --range last-30d --format json 2>/dev/null
+```
+
+To find the observe plugin root, check common plugin locations or skip if not found.
+
+If the query returns results with `total_pipelines > 0`, show a brief one-line context before the pipeline runs:
+
+> **Pipeline history** (last 30d): <completed>/<total> completed, avg <duration>
+
+If trends are available, show the most relevant one:
+
+> **Trend**: <trend message>
+
+This is purely informational — never auto-skip steps or change pipeline behavior based on observe data. If observe is not installed or the query fails, skip this section silently.
+
 ## Step Execution
 
 Execute each step in the configured `shipPipeline` order. Each step maps to a devkit skill:

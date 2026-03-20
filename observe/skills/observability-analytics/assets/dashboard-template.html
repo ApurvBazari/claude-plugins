@@ -149,6 +149,26 @@
     <h2>Skill Usage</h2>
     <div id="skillTable"></div>
   </div>
+  <div class="card">
+    <h2>Quality Signals</h2>
+    <canvas id="qualityChart"></canvas>
+  </div>
+  <div class="card">
+    <h2>Activity by Hour</h2>
+    <canvas id="heatmapChart"></canvas>
+  </div>
+  <div class="card" style="grid-column: span 2;">
+    <h2>Week over Week</h2>
+    <canvas id="wowChart"></canvas>
+  </div>
+  <div class="card">
+    <h2>Pipeline Success Rate</h2>
+    <canvas id="pipelineSuccessChart"></canvas>
+  </div>
+  <div class="card">
+    <h2>Pipeline Step Frequency</h2>
+    <canvas id="pipelineStepsChart"></canvas>
+  </div>
 </div>
 
 <div class="footer" id="footer"></div>
@@ -387,6 +407,140 @@ function init() {
     emptyMsg.className = 'empty';
     emptyMsg.textContent = 'No skill invocations recorded';
     tableContainer.appendChild(emptyMsg);
+  }
+
+  // Quality signals (horizontal bar)
+  var qs = DATA.quality_signals;
+  if (qs && qs.total > 0) {
+    new Chart(document.getElementById('qualityChart'), {
+      type: 'bar',
+      data: {
+        labels: qs.labels,
+        datasets: [{ data: qs.values, backgroundColor: COLORS.redBg, borderColor: COLORS.red, borderWidth: 1 }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: COLORS.text, stepSize: 1 }, grid: { color: COLORS.grid }, beginAtZero: true },
+          y: { ticks: { color: COLORS.text }, grid: { display: false } },
+        },
+      },
+    });
+  } else {
+    document.getElementById('qualityChart').style.display = 'none';
+    var qEmpty = document.createElement('div');
+    qEmpty.className = 'empty';
+    qEmpty.textContent = 'No quality issues detected';
+    document.getElementById('qualityChart').parentElement.appendChild(qEmpty);
+  }
+
+  // Activity heatmap (bar chart by hour)
+  var hm = DATA.activity_heatmap;
+  if (hm && hm.values.some(function(v) { return v > 0; })) {
+    new Chart(document.getElementById('heatmapChart'), {
+      type: 'bar',
+      data: {
+        labels: hm.labels,
+        datasets: [{ data: hm.values, backgroundColor: COLORS.greenBg, borderColor: COLORS.green, borderWidth: 1 }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: COLORS.text, maxRotation: 45, font: { size: 10 } }, grid: { display: false } },
+          y: { ticks: { color: COLORS.text }, grid: { color: COLORS.grid }, beginAtZero: true },
+        },
+      },
+    });
+  }
+
+  // Week-over-week comparison (grouped bar)
+  var wow = DATA.week_over_week;
+  if (wow) {
+    new Chart(document.getElementById('wowChart'), {
+      type: 'bar',
+      data: {
+        labels: wow.labels,
+        datasets: [
+          { label: 'This Week', data: wow.this_week, backgroundColor: COLORS.blueBg, borderColor: COLORS.blue, borderWidth: 1 },
+          { label: 'Last Week', data: wow.last_week, backgroundColor: 'rgba(113, 113, 122, 0.4)', borderColor: '#71717a', borderWidth: 1 },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: true, labels: { color: COLORS.text } } },
+        scales: {
+          x: { ticks: { color: COLORS.text }, grid: { color: COLORS.grid } },
+          y: { ticks: { color: COLORS.text }, grid: { color: COLORS.grid }, beginAtZero: true },
+        },
+      },
+    });
+  }
+
+  // Pipeline success rate
+  var pr = DATA.pipeline_runs;
+  if (pr && pr.total > 0 && pr.success_labels.length > 0) {
+    new Chart(document.getElementById('pipelineSuccessChart'), {
+      type: 'line',
+      data: {
+        labels: pr.success_labels,
+        datasets: [{
+          data: pr.success_values,
+          borderColor: COLORS.green,
+          backgroundColor: COLORS.greenBg,
+          fill: true,
+          tension: 0.3,
+          pointRadius: 3,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: COLORS.text, maxRotation: 45 }, grid: { color: COLORS.grid } },
+          y: { ticks: { color: COLORS.text, callback: function(v) { return v + '%'; } }, grid: { color: COLORS.grid }, beginAtZero: true, max: 100 },
+        },
+      },
+    });
+  } else {
+    document.getElementById('pipelineSuccessChart').style.display = 'none';
+    var prEmpty = document.createElement('div');
+    prEmpty.className = 'empty';
+    prEmpty.textContent = 'No pipeline runs detected';
+    document.getElementById('pipelineSuccessChart').parentElement.appendChild(prEmpty);
+  }
+
+  // Pipeline step frequency
+  if (pr && pr.step_labels.length > 0) {
+    new Chart(document.getElementById('pipelineStepsChart'), {
+      type: 'bar',
+      data: {
+        labels: pr.step_labels,
+        datasets: [{ data: pr.step_values, backgroundColor: COLORS.blueBg, borderColor: COLORS.blue, borderWidth: 1 }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: COLORS.text, stepSize: 1 }, grid: { color: COLORS.grid }, beginAtZero: true },
+          y: { ticks: { color: COLORS.text }, grid: { display: false } },
+        },
+      },
+    });
+  } else {
+    document.getElementById('pipelineStepsChart').style.display = 'none';
+    var psEmpty = document.createElement('div');
+    psEmpty.className = 'empty';
+    psEmpty.textContent = 'No pipeline steps recorded';
+    document.getElementById('pipelineStepsChart').parentElement.appendChild(psEmpty);
   }
 
   // Footer

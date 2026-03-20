@@ -108,6 +108,20 @@ File: `~/.claude/observability/config.json` (optional, created on demand)
 | `enabled` | bool | `true` | Master kill switch for data collection |
 | `retention_months` | int | `6` | How many months of data to keep |
 | `capture_prompts` | bool | `false` | Whether to store full prompt text |
+| `alerts` | object | see below | Pattern-based alert configuration |
+
+### Alerts Config
+
+Nested under `alerts` in config.json:
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `enabled` | bool | `true` | Enable/disable observe-driven alerts |
+| `compaction_threshold` | int | `4` | Alert after N compactions in one session |
+| `session_duration_hours` | int | `3` | Alert after N hours in one session |
+| `error_rate_threshold` | int | `5` | Alert after N tool failures in window |
+| `error_rate_window_minutes` | int | `10` | Window for error rate calculation |
+| `tool_failure_rate` | float | `0.5` | Alert if tool fails >50% of invocations |
 
 ## Cost Log Format
 
@@ -136,6 +150,7 @@ Modes:
   tool-detail        Per-tool usage breakdown
   skill-usage        Per-skill invocation analysis
   quality-signals    Error patterns, context waste, workflow issues
+  pipeline-summary   Devkit ship pipeline run detection and history
   export-csv         Filtered data export
 
 Options:
