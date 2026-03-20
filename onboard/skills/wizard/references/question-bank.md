@@ -201,6 +201,28 @@ Complete catalog of questions with branching logic. The wizard skill selects and
 
 ---
 
+## Category 8: Ecosystem Plugins (Always Ask)
+
+### Q8.1: Notifications
+**Ask**: "Would you like system notifications when Claude finishes tasks or needs your attention? This uses the **notify** plugin — works on macOS and Linux."
+**Options**: Yes (recommended) / No
+**Purpose**: Sets up the notify plugin with default config during onboarding.
+**Map to**: `ecosystemPlugins.notify`
+**Default**: `true`
+**Skip if**: notify plugin is not installed in Claude Code.
+**Note**: If accepted, the init command will run notify's install script, write a default `notify-config.json`, and merge hooks into `settings.json`.
+
+### Q8.2: Usage Analytics
+**Ask**: "Would you like usage analytics to track tool usage patterns and workflow efficiency? This uses the **observe** plugin — all data stays local, no external services."
+**Options**: Yes (recommended) / No
+**Purpose**: Sets up the observe plugin's hooks during onboarding.
+**Map to**: `ecosystemPlugins.observe`
+**Default**: `true`
+**Skip if**: observe plugin is not installed in Claude Code.
+**Note**: If accepted, the init command will run observe's install script and merge observe hooks into `settings.json`.
+
+---
+
 ## Branching Logic Summary
 
 ```

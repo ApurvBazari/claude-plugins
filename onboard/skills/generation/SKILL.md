@@ -66,6 +66,7 @@ Follow `references/claude-md-guide.md` for structure and best practices.
 - **Tone matches autonomy level**: "always-ask" = more guardrails and "check with developer" language; "autonomous" = more empowering and "go ahead" language; "balanced" = mix
 - **Formatter conventions**: Include formatter settings (from Prettier/Black/rustfmt configs) as explicit conventions in Key Conventions section rather than as path-scoped rules
 - **Commands section**: List every discovered build/test/lint/deploy command with brief descriptions
+- **Ecosystem plugins section** (if any were set up): If `ecosystemPlugins` is present in wizard answers, add a brief "Ecosystem Plugins" section noting which plugins are active (e.g., "notify: system notifications on task completion", "observe: passive usage analytics at `~/.claude/observability/`"). Include relevant commands (`/notify:status`, `/observe:status`, `/observe:pipeline`).
 
 ### Subdirectory CLAUDE.md Files
 

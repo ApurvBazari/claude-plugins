@@ -136,6 +136,7 @@ Modes:
   tool-detail        Per-tool usage breakdown
   skill-usage        Per-skill invocation analysis
   quality-signals    Error patterns, context waste, workflow issues
+  pipeline-summary   Devkit ship pipeline run detection and history
   export-csv         Filtered data export
 
 Options:

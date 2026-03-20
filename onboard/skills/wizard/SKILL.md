@@ -55,6 +55,13 @@ Calibrate the generated tooling.
 - Security sensitivity
 - Claude autonomy level
 
+### Phase 5.5: Ecosystem Plugins (Always)
+Offer complementary plugins from the ecosystem.
+- Notifications (notify plugin) — get alerted when Claude finishes tasks or needs attention
+- Usage analytics (observe plugin) — track tool usage patterns and workflow efficiency
+
+Only offer plugins that are available (installed in Claude Code). If a plugin is not installed, skip it silently.
+
 ### Phase 6: Summary & Confirmation
 Present everything gathered (analysis + wizard answers) and ask for confirmation before generation.
 
@@ -153,8 +160,12 @@ After the wizard completes, compile all answers into a structured JSON format:
   "testingPhilosophy": "tdd | write-after | minimal | comprehensive",
   "codeStyleStrictness": "relaxed | moderate | strict",
   "securitySensitivity": "standard | elevated | high",
-  "autonomyLevel": "always-ask | balanced | autonomous"
+  "autonomyLevel": "always-ask | balanced | autonomous",
+  "ecosystemPlugins": {
+    "notify": true,
+    "observe": true
+  }
 }
 ```
 
-This gets passed to the config-generator agent along with the analysis report.
+The `ecosystemPlugins` field captures which ecosystem plugins the developer wants set up. This gets passed to the config-generator agent along with the analysis report. The init command acts on these choices in Phase 3.5.
