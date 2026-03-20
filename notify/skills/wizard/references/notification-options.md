@@ -79,6 +79,29 @@ Example config:
 }
 ```
 
+## Observe-Driven Alerts
+
+When the observe plugin detects patterns (high compaction, long sessions, error spikes, tool failure rates), it sends alerts through notify's `notification` event. These alerts:
+
+- Use the `notification` event's configured sound and urgency
+- Are sent at most once per pattern per Stop event (no spam)
+- Can be configured via `~/.claude/observability/config.json` under the `alerts` key:
+
+```json
+{
+  "alerts": {
+    "enabled": true,
+    "compaction_threshold": 4,
+    "session_duration_hours": 3,
+    "error_rate_threshold": 5,
+    "error_rate_window_minutes": 10,
+    "tool_failure_rate": 0.5
+  }
+}
+```
+
+Set `"enabled": false` to disable observe-driven alerts entirely.
+
 ## Notification Matcher Patterns
 
 For the `Notification` hook, the `matcher` field filters which notification types trigger the hook:

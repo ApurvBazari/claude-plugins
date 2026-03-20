@@ -740,6 +740,48 @@ def pipeline_summary(events):
         avg_dur = round(sum(durs) / len(durs), 1) if durs else None
         step_stats.append({"step": step, "count": count, "avg_duration": avg_dur})
 
+    # Trend analysis: step pass rates and suggestions
+    trends = []
+    if total >= 3:
+        completion_rate = completed / total if total > 0 else 0
+        if completion_rate == 1.0 and total >= 5:
+            trends.append({
+                "type": "all_passing",
+                "message": f"All {total} pipeline runs completed successfully.",
+            })
+
+        # Per-step analysis across recent pipelines (last 10)
+        recent = pipelines[:10]
+        for stat in step_stats:
+            step_name = stat["step"]
+            # Count how many recent pipelines include this step
+            step_in_recent = sum(1 for p in recent if step_name in p["step_names"])
+            if step_in_recent >= 5 and stat["avg_duration"] is not None:
+                if stat["avg_duration"] > 60:
+                    trends.append({
+                        "type": "slow_step",
+                        "step": step_name,
+                        "avg_seconds": stat["avg_duration"],
+                        "message": f"'{step_name}' averages {format_duration(stat['avg_duration'])} — consider if it can be optimized.",
+                    })
+
+        # Check if a step consistently appears but pipeline is incomplete
+        incomplete_runs = [p for p in recent if p["result"] == "incomplete"]
+        if len(incomplete_runs) >= 3:
+            # Find common last step in incomplete runs
+            last_steps = Counter()
+            for p in incomplete_runs:
+                if p["step_names"]:
+                    last_steps[p["step_names"][-1]] += 1
+            if last_steps:
+                blocker, count = last_steps.most_common(1)[0]
+                trends.append({
+                    "type": "frequent_blocker",
+                    "step": blocker,
+                    "count": count,
+                    "message": f"Pipeline often stops at '{blocker}' ({count}/{len(incomplete_runs)} incomplete runs).",
+                })
+
     return {
         "total_pipelines": total,
         "completed": completed,
@@ -747,6 +789,7 @@ def pipeline_summary(events):
         "avg_duration_seconds": avg_duration,
         "avg_duration_human": format_duration(avg_duration),
         "step_stats": step_stats,
+        "trends": trends,
         "pipelines": pipelines[:20],  # Last 20 runs
     }
 
@@ -885,6 +928,11 @@ def format_text(data, mode):
             for s in data["step_stats"]:
                 dur_str = format_duration(s["avg_duration"]) if s["avg_duration"] is not None else "N/A"
                 lines.append(f"{s['step']:<15} {s['count']:>7} {dur_str:>14}")
+        if data.get("trends"):
+            lines.append("")
+            lines.append("Trends:")
+            for t in data["trends"]:
+                lines.append(f"  • {t['message']}")
         if data["pipelines"]:
             lines.append("")
             lines.append(f"{'Date':<18} {'Steps':<30} {'Duration':>10} {'Result':>12}")
