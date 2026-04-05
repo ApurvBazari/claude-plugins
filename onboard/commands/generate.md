@@ -84,7 +84,9 @@ The caller must provide a context JSON object in the conversation. This object c
   },
 
   "callerExtras": {
-    "description": "object — opaque extra context from the caller, passed through to metadata"
+    "description": "object — extra context from the caller, passed through to metadata",
+    "installedPlugins": ["string — plugin names installed by the caller (e.g., 'superpowers', 'feature-dev')"],
+    "coveredCapabilities": ["string — capabilities covered by installed plugins (e.g., 'code-review', 'test-generation', 'feature-development')"]
   }
 }
 ```

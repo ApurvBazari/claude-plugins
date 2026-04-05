@@ -31,6 +31,24 @@ When the prompt includes `"headlessMode": true`, the inputs come from an externa
 
 All other generation behavior — artifact order, quality checks, maintenance headers, autonomy cascade — remains identical to standard mode.
 
+### Plugin-Aware Agent Generation
+
+When `callerExtras.coveredCapabilities` is present, check it before generating each agent. If a capability is already covered by an installed plugin, **skip generating that agent** — the plugin's version is superior and a project-level agent would shadow it.
+
+| Capability in list | Agent to SKIP |
+|---|---|
+| `code-review` | `code-reviewer.md` |
+| `test-generation` | `test-writer.md` |
+| `security-audit` | `security-checker.md` |
+| `feature-development` | `feature-builder.md` |
+| `documentation` | `documentation-writer.md` |
+
+**Always generate** regardless of installed plugins: CLAUDE.md, path-scoped rules, project-specific skills, hooks, PR template, metadata. These provide project-specific context that no generic plugin can replicate.
+
+**Gap-filling agents**: Only generate agents for capabilities NOT listed in `coveredCapabilities`. For example, if the project uses a database with Prisma but no plugin covers database migrations, generate a `db-migration.md` agent.
+
+When `callerExtras.coveredCapabilities` is absent (standard `/onboard:init` mode or callers that don't provide it), generate all agents as usual — this maintains backward compatibility.
+
 ### Generation Order
 
 Generate artifacts in this order:

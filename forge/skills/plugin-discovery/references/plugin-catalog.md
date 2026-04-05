@@ -84,6 +84,46 @@ Aim for 5-8 total recommendations. If more than 8 match, prioritize:
 3. Official Anthropic plugins over community
 4. Community plugins with high GitHub stars
 
+## Capability Mapping
+
+Each plugin covers specific capabilities. When a plugin is installed, its capabilities are added to the `coveredCapabilities` list, which tells onboard headless to skip generating agents for those capabilities.
+
+| Plugin | Capabilities Covered |
+|---|---|
+| **superpowers** | `test-generation`, `debugging`, `planning`, `code-review` |
+| **feature-dev** | `feature-development`, `code-review` |
+| **code-review** | `code-review` |
+| **pr-review-toolkit** | `code-review`, `code-simplification` |
+| **security-guidance** | `security-audit` |
+| **commit-commands** | `git-workflow` |
+| **hookify** | `behavioral-guardrails` |
+| **claude-md-management** | `documentation` |
+| **frontend-design** | `ui-development` |
+| **playwright** | `e2e-testing` |
+| **context7** | `docs-lookup` |
+| **Trail of Bits skills** | `security-audit` |
+| **github** | `vcs-integration` |
+| **gitlab** | `vcs-integration` |
+
+### How to Build the coveredCapabilities List
+
+After the developer selects plugins to install (Step 2 of plugin-discovery skill):
+
+1. For each selected plugin, look up its capabilities in the table above
+2. Combine all capabilities into a deduplicated list
+3. Pass the list to the tooling-generation skill as `coveredCapabilities`
+4. The tooling-generation skill passes it to onboard headless via `callerExtras`
+
+Example: Developer installs `superpowers` + `feature-dev` + `security-guidance`:
+```json
+{
+  "installedPlugins": ["superpowers", "feature-dev", "security-guidance"],
+  "coveredCapabilities": ["test-generation", "debugging", "planning", "code-review", "feature-development", "security-audit"]
+}
+```
+
+Result: onboard skips generating `code-reviewer.md`, `test-writer.md`, `security-checker.md`, and `feature-builder.md`. Only generates gap-filling, project-specific agents.
+
 ## Catalog Freshness
 
 This catalog is a point-in-time snapshot. For discovering new plugins not listed here, use the web search step in the plugin-discovery skill. Update this catalog periodically as the ecosystem evolves.

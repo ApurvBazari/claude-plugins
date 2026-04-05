@@ -136,3 +136,76 @@ AFTER (forge adds):
   hooks.FileChanged = [{ dep hook }, { config hook }, { structure hook }]  ← added
   hooks.SessionStart = [{ drift summary hook }]  ← added
 ```
+
+## Agent Team Quality Hooks
+
+**Conditional**: Only generate these when the project is production-scale with a team (`isProduction && hasTeam`) or when agent teams are explicitly enabled.
+
+### TaskCreated Hook
+
+Enforce descriptive task subjects to maintain clarity in the shared task list:
+
+```json
+{
+  "TaskCreated": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash -c 'INPUT=$(cat); SUBJECT=$(echo \"$INPUT\" | python3 -c \"import json,sys; print(json.load(sys.stdin).get('\\''task_subject'\\'' ,'\\'''\\''))\" 2>/dev/null || echo \"\"); if [ ${#SUBJECT} -lt 10 ]; then echo \"Task subject too vague (${#SUBJECT} chars). Use a descriptive subject like: [Build login API endpoint with JWT validation]\" >&2; exit 2; fi; exit 0'"
+        }
+      ]
+    }
+  ]
+}
+```
+
+Exit code 2 blocks task creation and feeds the error message back to Claude.
+
+### TaskCompleted Hook
+
+Require tests to pass before a task can be marked complete:
+
+```json
+{
+  "TaskCompleted": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "[TEST_COMMAND] 2>&1 || { echo 'Tests must pass before completing a task. Fix failing tests first.' >&2; exit 2; }"
+        }
+      ]
+    }
+  ]
+}
+```
+
+Replace `[TEST_COMMAND]` with the project's actual test command:
+- Node.js: `npm test` or `npx vitest run`
+- Python: `pytest`
+- Go: `go test ./...`
+- Rust: `cargo test`
+
+Exit code 2 prevents task completion and sends the test failure output back to the teammate.
+
+### TeammateIdle Hook (Optional)
+
+Keep teammates working if there are still pending tasks:
+
+```json
+{
+  "TeammateIdle": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash -c 'PENDING=$(cat .claude/tasks/*/?.json 2>/dev/null | python3 -c \"import json,sys; tasks=[json.loads(l) for l in sys.stdin if l.strip()]; print(sum(1 for t in tasks if t.get('\\''status'\\'')=='\\''pending'\\'' ))\" 2>/dev/null || echo 0); if [ \"$PENDING\" -gt 0 ]; then echo \"$PENDING tasks still pending. Check the task list for unclaimed work.\" >&2; exit 2; fi; exit 0'"
+        }
+      ]
+    }
+  ]
+}
+```
+
+Exit code 2 prevents the teammate from going idle and sends feedback to keep working.

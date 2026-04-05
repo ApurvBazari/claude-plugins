@@ -63,7 +63,17 @@ claude plugin install [plugin-name]
 
 Report success or failure for each installation.
 
-## Step 5: Update CLAUDE.md
+## Step 5: Compile Covered Capabilities
+
+After installation, build the `coveredCapabilities` list using the capability mapping table in `references/plugin-catalog.md`:
+
+1. For each successfully installed plugin, look up its capabilities in the "Capability Mapping" table
+2. Combine all capabilities into a deduplicated list
+3. Return both `installedPlugins` (list of plugin names) and `coveredCapabilities` (list of capability strings) to the calling skill (tooling-generation)
+
+This data is passed to onboard headless via `callerExtras`, telling it which agents to skip generating. Without this step, onboard would generate generic agents that shadow the superior plugin versions.
+
+## Step 6: Update CLAUDE.md
 
 After installation, append an "Installed Plugins" section to the project's CLAUDE.md:
 

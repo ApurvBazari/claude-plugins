@@ -138,6 +138,24 @@ Follow `references/agents-guide.md` for agent file structure.
   - Large team: 3-4 agents (add documentation-writer, architecture-reviewer)
 - **Each agent** is a single markdown file with clear instructions, allowed tools, and purpose
 
+#### Plugin-Aware Agent Generation (Headless Mode)
+
+When `callerExtras.coveredCapabilities` is present in the headless context, **skip agents whose capability is already covered by an installed plugin**. Project-level agents in `.claude/agents/` take priority over plugin agents, so generating a generic `code-reviewer.md` would shadow a superior plugin implementation.
+
+**Capability → Agent skip map:**
+
+| If `coveredCapabilities` includes | Skip generating |
+|---|---|
+| `code-review` | `code-reviewer.md` |
+| `test-generation` | `test-writer.md` |
+| `security-audit` | `security-checker.md` |
+| `feature-development` | `feature-builder.md` |
+| `documentation` | `documentation-writer.md` |
+
+**What to generate instead**: Focus on gap-filling, project-specific agents that no plugin covers — e.g., a `db-migration.md` agent for Prisma projects, or a stack-specific scaffolding agent. These provide value that generic plugins cannot.
+
+**When `coveredCapabilities` is absent**: Generate all agents as usual (backward compatible with standard `/onboard:init` and callers that don't provide capability data).
+
 ### Hooks (.claude/settings.json)
 
 Follow `references/hooks-guide.md` for hook configuration.
