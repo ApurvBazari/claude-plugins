@@ -206,11 +206,63 @@ Before finishing generation, verify:
 - [ ] Formatter-enforced settings are in CLAUDE.md Key Conventions, not duplicated in rules
 - [ ] Observed codebase patterns are captured in architectural rules
 
+## Extended Generation (Enriched Mode)
+
+When the wizard or headless context includes extended preferences (CI/CD, harness, evolution, verification), generate these additional artifacts. These are universally useful — not limited to any specific caller.
+
+### CI/CD Pipelines (if `willDeploy` and no existing CI/CD detected)
+
+Follow `references/ci-cd-templates.md`:
+- `.github/workflows/ci.yml` — application CI (lint, test, build, deploy)
+- `.github/workflows/tooling-audit.yml` — structural drift checks + semantic analysis
+- `.github/workflows/pr-review.yml` — AI-powered PR review (claude-code-action)
+- `.github/scripts/audit-tooling.sh` — bundled audit script
+- `.github/dependabot.yml` or `renovate.json` (if automated dep management)
+
+### Harness Artifacts (if `enableHarness`)
+
+Follow `references/harness-design.md`:
+- `docs/progress.md` — cross-session progress tracker
+- `docs/HARNESS-GUIDE.md` — multi-session development guide
+- `docs/verification-reports/` — directory for evaluator reports
+- Session startup protocol reference in CLAUDE.md
+- Test immutability rule in CLAUDE.md
+- Context anxiety mitigation in CLAUDE.md
+
+### Auto-Evolution Hooks (if `enableEvolution`)
+
+Follow `references/evolution-hooks-guide.md`:
+- FileChanged hooks for drift detection
+- SessionStart hook for drift summary
+- Copy detection scripts to `.claude/scripts/`
+- Initialize `.claude/drift.json`
+
+### Sprint Contracts (if `enableSprintContracts`)
+
+Follow `references/sprint-contracts.md`:
+- `docs/sprint-contracts/` directory
+- First sprint contract (negotiated or auto-generated)
+
+### Agent Teams (if `enableTeams`)
+
+Follow `references/agent-teams-guide.md`:
+- Team quality hooks (TaskCreated, TaskCompleted)
+- `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in settings.json
+
 ## Reference Files
 
+### Core (always used)
 - `references/claude-md-guide.md` — CLAUDE.md structure and best practices
 - `references/rules-guide.md` — Path-scoped rules patterns
-- `references/hooks-guide.md` — Hook configuration patterns
+- `references/hooks-guide.md` — Hook configuration patterns (format, lint)
 - `references/skills-guide.md` — Skill creation patterns
 - `references/agents-guide.md` — Agent creation patterns
-- `references/collaboration-guide.md` — PR template, commit conventions, shared/local settings
+- `references/collaboration-guide.md` — PR template, commit conventions
+
+### Extended (used when enriched features enabled)
+- `references/harness-design.md` — Long-running development harness pattern
+- `references/ci-cd-templates.md` — GitHub Actions pipeline templates
+- `references/evolution-hooks-guide.md` — Auto-evolution hook patterns
+- `references/sprint-contracts.md` — Sprint contract format and negotiation
+- `references/agent-teams-guide.md` — Agent team compositions and quality hooks
+- `references/worktree-workflow.md` — Git worktree development pattern

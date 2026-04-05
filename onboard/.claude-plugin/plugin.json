@@ -1,7 +1,7 @@
 {
   "name": "onboard",
-  "version": "1.1.0",
-  "description": "Interactive wizard that analyzes your codebase and generates complete Claude tooling infrastructure for AI-assisted development",
+  "version": "2.0.0",
+  "description": "Interactive wizard that analyzes your codebase and generates complete Claude tooling infrastructure — including CI/CD, harness, evolution hooks, and feature verification",
   "author": {
     "name": "Apurv Bazari"
   },

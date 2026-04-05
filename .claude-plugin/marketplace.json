@@ -11,8 +11,8 @@
     {
       "name": "onboard",
       "source": "./onboard",
-      "description": "Interactive wizard that analyzes your codebase and generates complete Claude tooling for AI-assisted development",
-      "version": "1.1.0",
+      "description": "Interactive wizard that analyzes your codebase and generates complete Claude tooling — including CI/CD, harness, evolution hooks, and feature verification",
+      "version": "2.0.0",
       "keywords": ["onboarding", "setup", "wizard", "claude-md", "codebase-analysis"],
       "license": "MIT"
     },

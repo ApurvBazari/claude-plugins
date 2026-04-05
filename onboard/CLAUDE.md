@@ -1,6 +1,6 @@
 # onboard — Internal Conventions
 
-Interactive wizard that analyzes codebases and generates complete Claude tooling infrastructure.
+Interactive wizard that analyzes codebases and generates complete Claude tooling infrastructure. Supports both standalone use (`/onboard:init`) and headless mode for programmatic consumers like Forge.
 
 ## Phased Architecture
 
@@ -17,7 +17,8 @@ Phase 2: Wizard ──→ wizard skill (adaptive Q&A, presets)
      │
      ▼
 Phase 3: Generation ──→ config-generator agent (write)
-     │                   └── reads analysis report + wizard answers from context
+     │                   ├── Core: CLAUDE.md, rules, skills, agents, hooks
+     │                   └── Enriched: CI/CD, harness, evolution, teams (if enabled)
      ▼
 Phase 4: Handoff ──→ explains generated artifacts, suggests next steps
 ```
@@ -27,59 +28,83 @@ Phase 4: Handoff ──→ explains generated artifacts, suggests next steps
 - `codebase-analyzer` runs first (read-only) — produces structured analysis report
 - Report stays in conversation context — NOT written to a file
 - `config-generator` runs second (write) — receives analysis + wizard answers via prompt
-- Both agents are spawned from the `/onboard:init` command
+- `feature-evaluator` is available for independent feature testing (spawned by `/onboard:verify`)
 
 ## Headless Mode (`/onboard:generate`)
 
-External plugins (e.g., Forge) can invoke onboard's generation without the wizard or analysis:
+External plugins (e.g., Forge) invoke generation without the wizard or analysis:
 
 ```
 /onboard:generate (headless)
      │
      ▼
 Pre-seeded context JSON ──→ config-generator agent (write)
-     │                        └── reads analysis + answers from context JSON
-     ▼
-Ecosystem setup ──→ notify/observe (if requested)
-     │
+     │                        ├── Core artifacts (always)
+     │                        └── Enriched artifacts (based on enriched flags)
      ▼
 Results report ──→ lists generated artifacts
 ```
 
-- Caller provides a context JSON with `analysis`, `wizardAnswers`, `modelChoice`, and `ecosystemPlugins`
-- Codebase-analyzer agent is NOT spawned — analysis data comes from the caller
-- Wizard skill is NOT invoked — preferences come from the caller
-- Config-generator receives `headlessMode: true` flag and the caller's `source` identifier
-- `onboard-meta.json` records `headlessMode: true` and `source` for provenance
-- Merge-aware: hooks in settings.json are merged, never overwritten (critical when caller pre-populates hooks)
+- Context JSON includes `analysis`, `wizardAnswers`, `enriched` flags, and `callerExtras`
+- `enriched` flags control: CI/CD, harness, evolution hooks, sprint contracts, teams, verification
+- Plugin-aware: `callerExtras.coveredCapabilities` prevents agent shadowing
+
+## Generation Tiers
+
+### Core (always generated)
+- Root CLAUDE.md (100-200 lines)
+- Subdirectory CLAUDE.md files (if justified)
+- Path-scoped rules (.claude/rules/*.md)
+- Project-specific skills (.claude/skills/)
+- Agents (.claude/agents/) — plugin-aware, skips covered capabilities
+- PostToolUse hooks (format, lint)
+- PR template + commit conventions
+- onboard-meta.json
+
+### Enriched (when enabled via wizard or headless flags)
+- CI/CD pipelines (GitHub Actions: ci, tooling-audit, pr-review)
+- Harness artifacts (docs/progress.md, docs/HARNESS-GUIDE.md)
+- Auto-evolution hooks (FileChanged + SessionStart) + drift detection scripts
+- Sprint contracts (docs/sprint-contracts/)
+- Agent team support (quality hooks, env var)
 
 ## Skill Hierarchy
 
 - `wizard/SKILL.md` — drives the interactive Q&A (presets: Minimal/Standard/Comprehensive/Custom)
 - `analysis/SKILL.md` — tech stack pattern matching, model recommendations
-- `generation/SKILL.md` — artifact generation logic, references contain authoritative guides
+- `generation/SKILL.md` — artifact generation logic, core + enriched modes
+- `verify/SKILL.md` — independent feature verification via feature-evaluator agent
+- `evolve/SKILL.md` — apply pending tooling drift updates
 
-The `generation/references/` directory is the single source of truth for how Claude tooling artifacts should be structured. Other plugins and external users reference these guides.
+## Commands
+
+- `/onboard:init` — full interactive wizard + generation
+- `/onboard:generate` — headless generation from pre-seeded context
+- `/onboard:status` — tooling health check
+- `/onboard:update` — align with latest best practices
+- `/onboard:verify` — independent feature verification
+- `/onboard:evolve` — apply pending drift updates
 
 ## Script Conventions
 
 - Scripts are supplementary — if they fail, the wizard continues with deep exploration only
 - POSIX-compatible: must work on macOS (BSD) and Linux (GNU)
-- `analyze-structure.sh`: uses `find`, `wc`, `awk` — beware BSD vs GNU awk differences
-- `detect-stack.sh`: checks for lock files, config files, framework markers
-- `measure-complexity.sh`: LOC counting, file counts, directory depth analysis
-- All scripts output structured text with `## Section` headers for parsing
+- Analysis scripts: `analyze-structure.sh`, `detect-stack.sh`, `measure-complexity.sh`
+- Evolution scripts: `detect-dep-changes.sh`, `detect-config-changes.sh`, `detect-structure-changes.sh`
+- CI audit script: `audit-tooling.sh`
 
 ## Reference Organization
 
-Each skill's `references/` directory contains domain-specific guides:
-- `analysis/references/`: tech-stack-patterns, model-recommendations, config-extraction-guide
-- `generation/references/`: claude-md-guide, rules-guide, hooks-guide, skills-guide, agents-guide, collaboration-guide
-- `wizard/references/`: question-bank, workflow-presets
+`generation/references/` is the single source of truth:
+
+**Core guides**: claude-md-guide, rules-guide, hooks-guide, skills-guide, agents-guide, collaboration-guide
+**Extended guides**: harness-design, ci-cd-templates, evolution-hooks-guide, sprint-contracts, agent-teams-guide, worktree-workflow
 
 ## Key Patterns
 
-- Maintenance headers on all generated artifacts (version + date) — prompt users to re-run when patterns drift
+- Maintenance headers on all generated artifacts (version + date)
 - Quick Mode: infers wizard answers from analysis results + one autonomy question
 - Preset path: pre-filled values for Minimal/Standard/Comprehensive profiles
 - Script failure fallback: log failure, continue with codebase exploration only
+- Plugin-aware agent generation: check coveredCapabilities before generating agents
+- Merge-aware hooks: always read settings.json first, never overwrite

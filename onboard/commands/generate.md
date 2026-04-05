@@ -83,10 +83,25 @@ The caller must provide a context JSON object in the conversation. This object c
     "observe": "boolean"
   },
 
+  "enriched": {
+    "enableCICD": "boolean — generate CI/CD pipelines if project has no existing CI",
+    "enableHarness": "boolean — generate harness artifacts (progress.md, HARNESS-GUIDE.md)",
+    "enableEvolution": "boolean — add auto-evolution hooks for drift detection",
+    "enableSprintContracts": "boolean — generate sprint contract infrastructure",
+    "enableTeams": "boolean — add agent team support (quality hooks, env var)",
+    "enableVerification": "boolean — set up feature-evaluator agent access",
+    "willDeploy": "boolean — whether the project will be deployed (gates CI/CD)",
+    "ciAuditAction": "string — auto-fix-pr | comment-only | create-issue",
+    "prReviewTrigger": "string — auto | on-demand | auto-with-skip",
+    "autoEvolutionMode": "string — auto-update | manual | notify-only",
+    "verificationStrategy": "string — browser-automation | api-testing | cli-execution | test-runner | combination",
+    "deployTarget": "string — vercel | aws | docker | railway | etc."
+  },
+
   "callerExtras": {
-    "description": "object — extra context from the caller, passed through to metadata",
-    "installedPlugins": ["string — plugin names installed by the caller (e.g., 'superpowers', 'feature-dev')"],
-    "coveredCapabilities": ["string — capabilities covered by installed plugins (e.g., 'code-review', 'test-generation', 'feature-development')"]
+    "description": "object — opaque extra context from the caller, passed through to metadata",
+    "installedPlugins": ["string — plugin names installed by the caller"],
+    "coveredCapabilities": ["string — capabilities covered by installed plugins"]
   }
 }
 ```

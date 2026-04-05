@@ -36,6 +36,14 @@ Checks whether your Claude tooling is aligned with the latest best practices. Co
 
 Headless generation mode for programmatic consumers. Accepts pre-seeded context (analysis data + wizard answers) and generates all Claude tooling artifacts without running the interactive wizard or codebase analysis. Designed for plugins like Forge that gather their own project context and delegate tooling generation to onboard.
 
+### `/onboard:verify`
+
+Independent feature verification. Spawns a feature-evaluator agent (in worktree isolation) to test features against `docs/feature-list.json`. Supports single feature, sprint, or all-incomplete modes. Includes sprint contract gate checking.
+
+### `/onboard:evolve`
+
+Apply pending tooling drift updates. Reads `.claude/drift.json` (populated by auto-evolution hooks) and updates CLAUDE.md, rules, and skills to stay in sync with codebase changes.
+
 ### `/onboard:status`
 
 Quick health check showing last run date, generated artifacts, integrity status, and recommendations.

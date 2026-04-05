@@ -1,49 +1,25 @@
-# Tooling Generation Skill — AI Infrastructure & CI/CD
+# Tooling Generation Skill — Delegate to Enriched Onboard
 
-You are executing Phase 3a of Forge: generating AI tooling infrastructure, CI/CD pipelines, and auto-evolution hooks. This phase is mostly automated from Phase 1 context, with minimal developer interaction.
+You are executing Phase 3 of Forge: generating all AI tooling, CI/CD, harness, and evolution infrastructure by delegating to onboard's enriched headless mode. Forge prepares the context; onboard generates the artifacts.
 
 ## Purpose
 
-Equip the scaffolded project with Claude Code tooling (via onboard headless), GitHub Actions CI/CD pipelines, and auto-evolution hooks that keep tooling in sync with the codebase.
+Pass the complete Phase 1 context to onboard headless with enriched flags enabled. Onboard handles ALL generation — CLAUDE.md, rules, skills, agents, hooks, CI/CD, harness, evolution, sprint contracts, and team support. Forge only generates two artifacts itself: `init.sh` and `docs/feature-list.json` (both require scaffold-specific knowledge that onboard doesn't have).
 
 ## Inputs
 
 You receive:
-1. The complete Phase 1 context object
-2. The scaffolded project (Phase 2 output)
-3. The `.claude/forge-meta.json` metadata file
+1. The complete Phase 1 context object (from context-gathering skill)
+2. The scaffolded project (from Phase 2)
+3. The `installedPlugins` and `coveredCapabilities` (from plugin-discovery skill)
 
 ## Step 1: Prepare Onboard Context
 
-Map the Phase 1 context to onboard's expected format. The context JSON must include:
+### Build the analysis object
 
-```json
-{
-  "source": "forge",
-  "version": "1.0.0",
-  "projectPath": "[absolute path]",
-  "analysis": {
-    "structure": {},
-    "stack": {},
-    "complexity": {},
-    "configs": {}
-  },
-  "wizardAnswers": {},
-  "modelChoice": "sonnet",
-  "ecosystemPlugins": {},
-  "callerExtras": {}
-}
-```
+Spawn the `scaffold-analyzer` agent to scan the freshly scaffolded project. The agent produces the structured `analysis` object matching onboard's expected format.
 
-### Building the analysis object
-
-Spawn the `scaffold-analyzer` agent to scan the freshly scaffolded project. Pass it the project root path and Phase 1 context (stack details). The agent produces the structured `analysis` object matching onboard's expected format — covering structure, stack, complexity, and config extraction.
-
-This is a read-only, lightweight analysis — the project was just scaffolded, so it's small. The agent's output slots directly into the context JSON's `analysis` field.
-
-### Mapping wizard answers
-
-Map Phase 1 context fields to onboard's wizard answer format:
+### Map wizard answers
 
 | Forge field | Onboard field | Notes |
 |---|---|---|
@@ -56,185 +32,107 @@ Map Phase 1 context fields to onboard's wizard answer format:
 | `codeStyleStrictness` | `codeStyleStrictness` | Direct map |
 | `securitySensitivity` | `securitySensitivity` | Direct map |
 | `autonomyLevel` | `autonomyLevel` | Direct map |
-| `painPoints` | `painPoints` | Direct map (timeSinks, errorProne, automationWishes) |
-| `frontendPatterns` | `frontendPatterns` | Direct map (if frontend project) |
-| `backendPatterns` | `backendPatterns` | Direct map (if backend project) |
-| (inferred from scaffold) | `projectMaturity` | Always "new" for freshly scaffolded projects |
-| `deployTarget` | `devopsPatterns.hosting` | Map platform name |
-| `dockerStrategy` | `devopsPatterns.containerization` | Map Docker choice |
+| `painPoints` | `painPoints` | Direct map |
+| `frontendPatterns` | `frontendPatterns` | If frontend project |
+| `backendPatterns` | `backendPatterns` | If backend project |
+| (inferred) | `projectMaturity` | Always "new" for scaffolded projects |
 
-Fields specific to Forge that don't map to onboard (CI/CD audit behavior, auto-evolution mode, installed plugins) are passed through in `callerExtras`.
+### Set enriched flags
 
-### Validate before invoking onboard
+Based on Phase 1 context, set the `enriched` object:
 
-Before calling `/onboard:generate`, verify the context JSON has all required fields:
+```json
+{
+  "enriched": {
+    "enableCICD": true,          // false if willDeploy === false
+    "enableHarness": true,       // always true for Forge projects
+    "enableEvolution": true,     // always true
+    "enableSprintContracts": true, // always true for Forge
+    "enableTeams": false,        // true if isProduction && hasTeam
+    "enableVerification": true,  // always true
+    "willDeploy": true,          // from Phase 1
+    "ciAuditAction": "auto-fix-pr", // from Phase 1
+    "prReviewTrigger": "auto",   // from Phase 1
+    "autoEvolutionMode": "manual", // from Phase 1
+    "verificationStrategy": "combination", // from Phase 1
+    "deployTarget": "vercel"     // from Phase 1
+  }
+}
+```
 
-**Required** (fail if missing):
+### Set caller extras
+
+```json
+{
+  "callerExtras": {
+    "installedPlugins": ["superpowers", "feature-dev", ...],
+    "coveredCapabilities": ["code-review", "test-generation", ...]
+  }
+}
+```
+
+### Validate
+
+Before calling onboard, verify required fields:
 - `analysis.stack.languages` — at least one language
 - `wizardAnswers.projectDescription` — non-empty
 - `wizardAnswers.autonomyLevel` — one of: always-ask, balanced, autonomous
 - `projectPath` — absolute path that exists
 
-**Required with defaults** (use default if missing):
-- `wizardAnswers.teamSize` → default: "solo"
-- `wizardAnswers.testingPhilosophy` → default: "write-after"
-- `wizardAnswers.codeStyleStrictness` → default: "moderate"
-- `wizardAnswers.securitySensitivity` → default: "standard"
-- `wizardAnswers.projectMaturity` → default: "new"
-- `wizardAnswers.deployFrequency` → default: "none"
-- `wizardAnswers.painPoints` → default: `{}` (empty, flagged in generated artifacts)
-
-If a required field is missing and has no default, report the error clearly and stop. Do not invoke onboard with incomplete data.
+Defaults for optional fields: teamSize→"solo", testingPhilosophy→"write-after", codeStyleStrictness→"moderate", securitySensitivity→"standard", projectMaturity→"new".
 
 ## Step 2: Invoke Onboard Headless
 
-Call `/onboard:generate` with the prepared context. Onboard generates:
-- Root CLAUDE.md
-- Subdirectory CLAUDE.md files (if applicable)
-- Path-scoped rules (`.claude/rules/*.md`)
-- Skills (`.claude/skills/*/SKILL.md`)
-- Agents (`.claude/agents/*.md`)
+Call `/onboard:generate` with the prepared context. Onboard now generates EVERYTHING:
+
+**Core (always):**
+- Root CLAUDE.md (with harness sections: session protocol, test immutability, context management)
+- Subdirectory CLAUDE.md files
+- Path-scoped rules
+- Project-specific skills
+- Agents (plugin-aware — skips shadowed capabilities)
 - PostToolUse hooks (format, lint)
 - PR template
-- `onboard-meta.json`
+- onboard-meta.json
 
-After generation, present a brief summary to the developer:
+**Enriched (based on flags):**
+- CI/CD pipelines (if enableCICD)
+- Harness artifacts: docs/progress.md, docs/HARNESS-GUIDE.md (if enableHarness)
+- Auto-evolution hooks + scripts (if enableEvolution)
+- Sprint contracts infrastructure (if enableSprintContracts)
+- Agent team support (if enableTeams)
 
-> Onboard generated your AI tooling:
-> - CLAUDE.md ([N] lines)
-> - [N] rules: [names]
-> - [N] skills: [names]
-> - [N] agents: [names]
-> - Format + lint hooks configured
->
-> Quick review — anything you want to adjust before I continue?
+Present a brief summary after generation. Offer optional review.
 
-Options: **Continue** | **Let me review CLAUDE.md first** | **Adjust**
+## Step 3: Forge-Specific Artifacts
 
-If the developer wants to review or adjust, accommodate their changes before proceeding.
+These two artifacts require scaffold-specific knowledge that only Forge has:
 
-## Step 3: Generate CI/CD Pipelines
+### 3.1: `init.sh` (project root)
 
-**Skip entirely if `willDeploy === false`.**
+Generate a stack-specific environment bootstrap script using the install and dev commands from the scaffolded project. Made executable.
 
-Generate GitHub Actions workflows based on Phase 1 context. See `references/ci-cd-templates.md` for patterns.
+For CLI tools: simpler script that installs deps and runs a smoke test.
 
-### Pipeline 1: Application CI (`.github/workflows/ci.yml`)
-- **Trigger**: push to main, PR to main (adjust for branching strategy)
-- **Jobs**: lint, test, build (parallel where possible), deploy (conditional on main)
-- **Stack-aware**: use the correct commands from the scaffold (npm test, pytest, go test, etc.)
+### 3.2: `docs/feature-list.json`
 
-### Pipeline 2: Tooling Audit (`.github/workflows/tooling-audit.yml`)
-- **Trigger**: push to main (paths: package.json, configs, src/**), weekly schedule, manual
-- **Layer 1**: Structural checks via bundled shell script (`.github/scripts/audit-tooling.sh`)
-- **Layer 2**: Semantic analysis via `anthropics/claude-code-action@v1` (only if drift detected)
-- **Action**: configurable from Phase 1 (`ciAuditAction`): auto-fix PR / comment / issue
+Write the feature list from Phase 1 feature decomposition. JSON format with sprints, features, steps, `passes: false`.
 
-### Pipeline 3: PR Review (`.github/workflows/pr-review.yml`)
-- **Trigger**: configurable from Phase 1 (`prReviewTrigger`)
-- **Uses**: `anthropics/claude-code-action@v1`
-- **Reviews against**: CLAUDE.md + `.claude/rules/`
+If developer skipped feature decomposition: generate a minimal 3-5 feature list.
 
-Also generate:
-- `.github/scripts/audit-tooling.sh` — Copy from Forge's `scripts/audit-tooling.sh`
-- `.github/dependabot.yml` or `renovate.json` (if `depManagement` ≠ "manual")
-
-## Step 4: Add Auto-Evolution Hooks
-
-Based on `autoEvolutionMode` from Phase 1:
-
-### If "auto-update":
-- FileChanged hooks that directly update CLAUDE.md and rules when config/deps/structure change
-- SessionStart hook that summarizes changes since last session
-
-### If "manual" (default):
-- FileChanged hooks that log changes to `.claude/forge-drift.json`
-- SessionStart hook that summarizes drift and suggests running `/forge:evolve`
-- The evolve skill handles actual updates
-
-### If "notify-only":
-- FileChanged hooks that log to drift file
-- SessionStart hook that shows drift summary (no evolve skill)
-
-**Hook scripts to copy into the project:**
-- `.claude/scripts/detect-dep-changes.sh` — from Forge's `scripts/detect-dep-changes.sh`
-- `.claude/scripts/detect-config-changes.sh` — from Forge's `scripts/detect-config-changes.sh`
-- `.claude/scripts/detect-structure-changes.sh` — from Forge's `scripts/detect-structure-changes.sh`
-
-**Merge into `.claude/settings.json`**: Read existing file first (onboard may have already written hooks). Add Forge's hooks alongside, never overwrite.
-
-## Step 5: Generate Harness Artifacts
-
-See `references/harness-design.md` for the full harness pattern. Generate these artifacts to enable effective long-running development across multiple Claude sessions:
-
-### 5.1: `init.sh` (project root)
-
-Generate a stack-specific environment bootstrap script. Uses the install command and dev server command from the scaffolded project. Made executable (`chmod +x`).
-
-For CLI tools (no dev server): generate a simpler script that installs deps and runs a smoke test.
-
-### 5.2: `docs/feature-list.json`
-
-Write the feature list from the Phase 1 feature decomposition (the developer validated this during the confirmation step). Format as JSON with sprints, features, steps, and `passes: false`.
-
-If the developer skipped feature decomposition, generate a minimal list (3-5 obvious features from the app description) with a comment encouraging them to add more.
-
-### 5.3: `docs/progress.md`
-
-Initialize the progress file with the Session 1 (Forge init) entry. Record what was scaffolded, what tooling was generated, what plugins were installed, and the initial commit hash.
-
-### 5.4: Session Startup Protocol + E2E Guidance (in CLAUDE.md)
-
-Pass these sections to onboard headless via `callerExtras.claudeMdSections`:
-- Session Startup Protocol (read init.sh, progress.md, git log, feature-list.json, focus on ONE feature)
-- Feature Verification guidance (test end-to-end before marking passes: true)
-- Feature list immutability constraint ("do not remove or edit features")
-
-Onboard appends these sections to the generated CLAUDE.md. Also add the worktree workflow section (see `references/worktree-workflow.md`).
-
-### 5.5: Generate Sprint Contract for Sprint 1
-
-See `references/sprint-contracts.md` for the full pattern.
-
-1. Create `docs/sprint-contracts/` directory
-2. Propose Sprint 1 criteria based on project context (testing philosophy, security sensitivity, etc.)
-3. Interactively negotiate with the developer — they can adjust criteria before locking
-4. Write `docs/sprint-contracts/sprint-1.json`
-
-### 5.6: Configure Feature Evaluator
-
-The `feature-evaluator` agent (in `forge/agents/`) is a template. During generation, note the project's `verificationStrategy` in `forge-meta.json` so that `/forge:verify` knows how to configure the evaluator at runtime.
-
-If `verificationStrategy` is `browser-automation` and Playwright MCP is not in the installed plugins, add a note to CLAUDE.md:
-> Consider installing the Playwright plugin for browser-based feature verification: `claude plugin install playwright`
-
-## Step 6: Update Forge Metadata
+## Step 4: Update Forge Metadata
 
 Update `.claude/forge-meta.json` with:
-- `generated.tooling`: list of all tooling files created
-- `generated.cicd`: list of CI/CD workflow files
-- `generated.hooks`: list of hook scripts and settings entries
-- `generated.harness`: list of harness artifacts (`init.sh`, `docs/feature-list.json`, `docs/progress.md`, `docs/verification-reports/`, `docs/sprint-contracts/`)
-- `generated.sprintContracts`: list of sprint contract files
-- `context.verificationStrategy`: the chosen verification approach
-- `costs.forgeInit`: estimated token usage and duration for the Forge init session
-
-Also ensure these sections are added to the generated CLAUDE.md (via onboard `callerExtras.claudeMdSections`):
-- Session startup protocol (with single-feature focus rule)
-- Feature verification guidance
-- Test immutability rule
-- Context anxiety mitigation
-- Cost awareness estimates
-- Worktree workflow recommendation
+- `generated.tooling`: from onboard's response
+- `generated.cicd`: from onboard's response
+- `generated.harness`: init.sh + feature-list.json + onboard's harness artifacts
+- `context.verificationStrategy`: the chosen approach
+- `costs.forgeInit`: estimated token usage
 
 ## Key Rules
 
-1. **Onboard generates Claude tooling, Forge generates CI/CD + harness + evaluator** — Clear responsibility boundary.
-2. **Merge, never overwrite** — settings.json is touched by both onboard and Forge. Always read first.
-3. **Skip CI/CD for local projects** — If `willDeploy === false`, do not generate any GitHub Actions workflows.
-4. **Always generate harness** — init.sh, feature-list.json, and progress.md are generated for ALL projects (even local/CLI). The harness pattern applies universally.
-5. **Light confirmation after onboard** — Show what was generated, let developer review if they want.
-6. **Copy scripts, don't reference** — Hook and audit scripts are copied into the project (self-contained).
-7. **JSON for feature list** — Never markdown. Models are less likely to inappropriately modify JSON.
-8. **Sprint contracts are negotiated, not imposed** — Always let the developer adjust criteria before locking.
-9. **Evaluator runs in isolation** — feature-evaluator uses `isolation: worktree` to prevent source modification.
+1. **Onboard generates everything except init.sh and feature-list.json** — Forge is a thin orchestrator.
+2. **Validate before calling onboard** — Don't invoke headless with incomplete data.
+3. **JSON for feature list** — Never markdown. Less prone to model drift.
+4. **Sprint contracts are negotiated** — Onboard handles the negotiation in enriched mode.
+5. **Light confirmation after onboard** — Show what was generated, let developer review.

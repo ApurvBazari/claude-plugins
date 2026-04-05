@@ -1,10 +1,10 @@
-# /forge:evolve — Apply Pending Tooling Updates
+# /onboard:evolve — Apply Pending Tooling Updates
 
-You are running the Forge evolve command. This reads accumulated drift from `.claude/forge-drift.json` and applies targeted updates to keep AI tooling in sync with your codebase.
+You are running the onboard evolve command. This reads accumulated drift from `.claude/drift.json` and applies targeted updates to keep AI tooling in sync with your codebase.
 
 ## Guard
 
-Read `.claude/forge-drift.json` in the project root. If not found or has no entries:
+Read `.claude/drift.json` in the project root. If not found or has no entries:
 
 > No pending drift detected. Your AI tooling is in sync with your codebase.
 >
@@ -28,4 +28,4 @@ Use the `evolve` skill to process the drift entries. The skill:
 
 ## After Evolve
 
-> Tooling updated. Run `/forge:evolve` again after your next batch of changes, or check `/forge:status` for an overview.
+> Tooling updated. Run `/onboard:evolve` again after your next batch of changes, or check `/onboard:status` for an overview.
