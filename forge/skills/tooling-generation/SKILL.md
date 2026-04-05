@@ -190,7 +190,23 @@ Pass these sections to onboard headless via `callerExtras.claudeMdSections`:
 - Feature Verification guidance (test end-to-end before marking passes: true)
 - Feature list immutability constraint ("do not remove or edit features")
 
-Onboard appends these sections to the generated CLAUDE.md.
+Onboard appends these sections to the generated CLAUDE.md. Also add the worktree workflow section (see `references/worktree-workflow.md`).
+
+### 5.5: Generate Sprint Contract for Sprint 1
+
+See `references/sprint-contracts.md` for the full pattern.
+
+1. Create `docs/sprint-contracts/` directory
+2. Propose Sprint 1 criteria based on project context (testing philosophy, security sensitivity, etc.)
+3. Interactively negotiate with the developer — they can adjust criteria before locking
+4. Write `docs/sprint-contracts/sprint-1.json`
+
+### 5.6: Configure Feature Evaluator
+
+The `feature-evaluator` agent (in `forge/agents/`) is a template. During generation, note the project's `verificationStrategy` in `forge-meta.json` so that `/forge:verify` knows how to configure the evaluator at runtime.
+
+If `verificationStrategy` is `browser-automation` and Playwright MCP is not in the installed plugins, add a note to CLAUDE.md:
+> Consider installing the Playwright plugin for browser-based feature verification: `claude plugin install playwright`
 
 ## Step 6: Update Forge Metadata
 
@@ -199,13 +215,17 @@ Update `.claude/forge-meta.json` with:
 - `generated.cicd`: list of CI/CD workflow files
 - `generated.hooks`: list of hook scripts and settings entries
 - `generated.harness`: list of harness artifacts (`init.sh`, `docs/feature-list.json`, `docs/progress.md`)
+- `generated.sprintContracts`: list of sprint contract files
+- `context.verificationStrategy`: the chosen verification approach
 
 ## Key Rules
 
-1. **Onboard generates Claude tooling, Forge generates CI/CD + harness** — Clear responsibility boundary.
+1. **Onboard generates Claude tooling, Forge generates CI/CD + harness + evaluator** — Clear responsibility boundary.
 2. **Merge, never overwrite** — settings.json is touched by both onboard and Forge. Always read first.
 3. **Skip CI/CD for local projects** — If `willDeploy === false`, do not generate any GitHub Actions workflows.
 4. **Always generate harness** — init.sh, feature-list.json, and progress.md are generated for ALL projects (even local/CLI). The harness pattern applies universally.
 5. **Light confirmation after onboard** — Show what was generated, let developer review if they want.
 6. **Copy scripts, don't reference** — Hook and audit scripts are copied into the project (self-contained).
 7. **JSON for feature list** — Never markdown. Models are less likely to inappropriately modify JSON.
+8. **Sprint contracts are negotiated, not imposed** — Always let the developer adjust criteria before locking.
+9. **Evaluator runs in isolation** — feature-evaluator uses `isolation: worktree` to prevent source modification.

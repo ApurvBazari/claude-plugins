@@ -228,6 +228,18 @@ Each answer updates this context. Questions use the context to determine whether
 - **Condition**: `isProduction`
 - **Updates**: `releaseStrategy`
 
+### Q4.7: "How should features be independently verified?"
+- **Type**: Choice (informed by stack research)
+- **Options**: Dynamically generated based on stack:
+  - "Browser automation (Playwright MCP)" — if frontend project
+  - "API testing (curl/HTTP requests)" — if API/backend project
+  - "CLI execution (run commands, check output)" — if CLI project
+  - "Test runner ([detected framework])" — if test framework detected
+  - "Combination (recommended for fullstack)" — adapts per feature category
+- **Condition**: Always (every project needs verification)
+- **Updates**: `verificationStrategy`
+- **Downstream**: Configures the feature-evaluator agent's testing approach
+
 ---
 
 ## Category 5: CI/CD & Auto-Evolution (conditional: `willDeploy`)

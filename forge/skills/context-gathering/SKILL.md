@@ -104,6 +104,20 @@ Ask Q4.1 through Q4.5. For Q4.1 (branching), recommend based on team size from Q
 
 Q4.6 (releases) is only asked for production apps.
 
+**Q4.7: Verification strategy** (always ask). Based on the stack research, present the available verification approaches:
+
+> Based on your stack, here are the ways features can be independently verified:
+>
+> 1. **Browser automation** (Playwright MCP) — for UI features, user flows
+> 2. **API testing** (curl/HTTP) — for endpoints, server actions
+> 3. **CLI execution** — for command-line tools
+> 4. **Test runner** ([detected framework]) — for integration/unit tests
+> 5. **Combination** (recommended for fullstack) — adapts per feature type
+>
+> Which approach works for your project?
+
+Store the choice as `verificationStrategy` in the context object. This configures the feature-evaluator agent.
+
 ### Step 5: CI/CD & Auto-Evolution (Category 5)
 
 **Skip entirely if `willDeploy = false`** (except Q5.2 which applies even to local projects).
@@ -215,7 +229,12 @@ After the wizard completes, compile all answers into a structured context object
   "ciAuditAction": "string",
   "autoEvolutionMode": "string",
   "prReviewTrigger": "string",
+  "verificationStrategy": "browser-automation | api-testing | cli-execution | test-runner | combination",
   "pluginsToInstall": [],
+  "featureDecomposition": {
+    "sprints": [],
+    "validated": "boolean — whether developer validated the decomposition"
+  },
   "webResearch": {}
 }
 ```

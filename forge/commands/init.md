@@ -151,14 +151,17 @@ After all three phases complete, present the completion summary:
 > - `init.sh` — run at the start of every session to bootstrap your environment
 > - `docs/feature-list.json` — [N] features across [N] sprints (all starting as failing)
 > - `docs/progress.md` — cross-session progress tracker
-> - Session startup protocol in CLAUDE.md
+> - `docs/sprint-contracts/sprint-1.json` — Sprint 1 completion criteria (negotiated)
+> - Session startup protocol + worktree workflow in CLAUDE.md
 >
 > **What to do next:**
 > 1. Review CLAUDE.md — it's the source of truth for how Claude understands your project
-> 2. Start your next session by running `bash init.sh` — Claude will read the progress file and feature list automatically
-> 3. Features are tracked in `docs/feature-list.json` — work through them one at a time, marking each as passing after E2E verification
-> 4. Your tooling evolves — [auto-updates / run /forge:evolve when notified] to keep tooling current
-> 5. Check health — run /forge:status anytime to verify tooling is in sync
+> 2. Start your next session: `bash init.sh` → read progress → pick a feature from Sprint 1
+> 3. Use worktrees for isolation: `git worktree add ../project-feat-F001 -b feat/F001-[name]`
+> 4. After implementing a feature, run `/forge:verify F001` for independent evaluation
+> 5. When Sprint 1 features are done, run `/forge:verify --sprint 1` to check the sprint contract
+> 6. Your tooling evolves — [auto-updates / run /forge:evolve when notified] to keep AI tooling current
+> 7. Check health — run `/forge:status` anytime to verify tooling is in sync
 
 ---
 

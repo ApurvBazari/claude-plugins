@@ -38,11 +38,13 @@ Forge handles CI/CD pipelines, auto-evolution hooks, git branching, and plugin d
 - `tooling-generation/SKILL.md` — Phase 3a: invoke onboard headless, generate CI/CD, add hooks
 - `plugin-discovery/SKILL.md` — Phase 3b: curated catalog + web search, interactive checklist
 - `evolve/SKILL.md` — apply pending drift updates from forge-drift.json
+- `verify/SKILL.md` — independent feature verification via feature-evaluator agent + sprint gate checking
 
 ## Agents
 
 - `stack-researcher.md` — web search agent (sonnet) for researching tech stacks during Phase 1
 - `scaffold-analyzer.md` — read-only agent that scans the freshly scaffolded project and produces the structured analysis object for onboard headless (runs between Phase 2 and Phase 3)
+- `feature-evaluator.md` — independent evaluation agent (sonnet, worktree-isolated) that tests features against docs/feature-list.json. Spawned by `/forge:verify`. Reports PASS/FAIL with evidence. Cannot modify source code.
 
 ## Script Conventions
 
