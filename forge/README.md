@@ -1,0 +1,98 @@
+# forge
+
+Scaffold new projects with AI-native tooling that evolves with your code.
+
+## What It Does
+
+Forge is a guided project bootstrapper for Claude Code. It takes you from "I want to build X" to a running application with auto-evolving AI tooling — in one conversation.
+
+Think of it as `create-react-app` for the AI-assisted development era: it scaffolds your app, sets up Claude Code tooling, configures CI/CD pipelines, and installs ecosystem plugins. The tooling it generates doesn't just sit there — it detects changes in your codebase and evolves alongside your code.
+
+### What Gets Created
+
+- **A running application** — Scaffolded with your chosen tech stack, verified with Hello World
+- **Claude Code tooling** — CLAUDE.md, path-scoped rules, skills, agents, hooks (via onboard)
+- **CI/CD pipelines** — GitHub Actions for testing, deployment, AI-powered PR review, and tooling audit
+- **Auto-evolution hooks** — Detect dependency, config, and structural changes; keep tooling in sync
+- **Ecosystem plugins** — Curated recommendations installed based on your stack and workflow
+
+## Commands
+
+### `/forge:init`
+
+Main entry point. Runs a 3-phase guided workflow:
+
+1. **Context Gathering** — Adaptive wizard that discusses your app idea, researches your tech stack via web search, and captures all preferences (testing, security, CI/CD behavior, etc.)
+2. **Scaffold** — Creates the application using the agreed approach (CLI tool, from scratch, or your template), sets up git branching, configures branch protection
+3. **AI Tooling** — Invokes onboard headless for Claude tooling, generates GitHub Actions pipelines, adds auto-evolution hooks, discovers and installs ecosystem plugins
+
+### `/forge:evolve`
+
+Apply pending tooling updates. When auto-evolution hooks detect changes (new dependencies, config changes, new directories), they log to `.claude/forge-drift.json`. This command reads the drift log, updates CLAUDE.md and rules, and shows what changed.
+
+## Installation
+
+```bash
+# From the marketplace
+claude plugin install forge
+
+# Or from a local path (for development)
+claude plugin add /path/to/forge
+```
+
+## Prerequisites
+
+- **Claude Code** with the **onboard** plugin installed (forge delegates tooling generation to onboard)
+- **git** — required for repository setup and branching
+- **gh** (GitHub CLI) — required for branch protection and CI/CD setup (optional if not using GitHub)
+
+## How It Works
+
+### Phase 1: Context Gathering
+
+An adaptive wizard asks about your project one question at a time. Questions adapt based on prior answers — a CLI tool developer answers ~10 questions, while a full-stack production team answers ~20.
+
+The wizard pauses after learning your tech stack to **research current best practices** via web search — ensuring scaffold commands, version pins, and recommendations are up-to-date, not based on stale training data.
+
+### Phase 2: Scaffold
+
+Executes the agreed scaffold approach, adds project infrastructure (.env, Docker, i18n, etc.), sets up git with your chosen branching strategy, and verifies the app runs.
+
+### Phase 3: AI Tooling
+
+- **Claude tooling** via onboard headless — CLAUDE.md, rules, skills, agents, hooks
+- **CI/CD pipelines** — Application CI, tooling audit (detects drift), AI PR review
+- **Auto-evolution hooks** — FileChanged hooks log drift, SessionStart summarizes changes
+- **Plugin discovery** — Curated + web-searched recommendations, interactive selection
+
+## Auto-Evolution
+
+After Forge sets up your project, hooks keep tooling in sync:
+
+- **FileChanged hooks** detect when `package.json`, config files, or project structure change
+- Changes are logged to `.claude/forge-drift.json`
+- **SessionStart hook** summarizes drift at the start of each Claude session
+- Run `/forge:evolve` to apply updates (or configure auto-updates during setup)
+- **Weekly CI audit** catches drift that local hooks miss
+
+## Supported Stacks
+
+Forge is stack-agnostic — it works with any technology the developer describes. It researches the stack via web search rather than relying on built-in templates. Common stacks include:
+
+- JavaScript/TypeScript (Next.js, React, Vue, Svelte, Express, NestJS)
+- Python (FastAPI, Django, Flask)
+- Go (Gin, Echo, Chi)
+- Rust (Axum, Actix)
+- Ruby (Rails)
+- Monorepos (Turborepo, Nx)
+
+## Works Well With
+
+- **onboard** — Forge delegates Claude tooling generation to onboard's headless mode
+- **feature-dev** — After Forge sets up your project, use feature-dev for guided feature development
+- **superpowers** — Planning, TDD, debugging skills complement Forge's generated tooling
+- **commit-commands** — Git workflow automation for the scaffolded project
+
+## License
+
+MIT

@@ -33,6 +33,14 @@
       "license": "MIT"
     },
     {
+      "name": "forge",
+      "source": "./forge",
+      "description": "Scaffold new projects with AI-native tooling that evolves with your code",
+      "version": "1.0.0",
+      "keywords": ["scaffold", "project-generator", "ai-tooling", "auto-evolving", "ci-cd"],
+      "license": "MIT"
+    },
+    {
       "name": "observe",
       "source": "./observe",
       "description": "Zero-infrastructure observability for Claude Code — tracks tool usage, skill invocations, subagent spawns, and session behavior",
