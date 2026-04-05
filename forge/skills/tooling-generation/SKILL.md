@@ -37,13 +37,9 @@ Map the Phase 1 context to onboard's expected format. The context JSON must incl
 
 ### Building the analysis object
 
-Run a lightweight scan of the scaffolded project to populate the analysis:
-- Count files and directories
-- Read generated config files (tsconfig, eslint, prettier)
-- Detect the project structure and entry points
-- Calculate a basic complexity score
+Spawn the `scaffold-analyzer` agent to scan the freshly scaffolded project. Pass it the project root path and Phase 1 context (stack details). The agent produces the structured `analysis` object matching onboard's expected format — covering structure, stack, complexity, and config extraction.
 
-This is NOT a full codebase analysis — the project was just scaffolded, so it's small. Just enough for onboard to generate accurate tooling.
+This is a read-only, lightweight analysis — the project was just scaffolded, so it's small. The agent's output slots directly into the context JSON's `analysis` field.
 
 ### Mapping wizard answers
 
