@@ -79,7 +79,25 @@ Capture evidence for every feature:
 - Browser state (page content, element presence)
 - Error messages if any
 
-### 6. Check Sprint Contract (if sprint mode)
+### 6. Compare Against Previous Runs (Trend Detection)
+
+Read `docs/verification-reports/` for the most recent previous report matching the same scope (sprint N, or all-features). If a previous report exists:
+
+1. Extract the previous pass rate (passed / tested)
+2. Compare to current pass rate
+3. Determine trend:
+   - **Improving**: pass rate increased by ≥1 feature
+   - **Stalled**: pass rate unchanged across 2+ consecutive runs
+   - **Declining**: pass rate decreased (regression detected)
+
+If no previous report exists, trend is "baseline" (first run).
+
+Include the trend in the output report and use it for the REFINE vs PIVOT recommendation:
+- Improving → REFINE
+- Stalled → PIVOT
+- Declining → ESCALATE (investigate what regressed before continuing)
+
+### 7. Check Sprint Contract (if sprint mode)
 
 Evaluate each criterion in the sprint contract:
 - **functional**: Do all features in the sprint pass their verification steps?
@@ -190,9 +208,18 @@ After completing evaluation, include a strategic recommendation in the report:
 **Recommendation**: REFINE | PIVOT
 
 REFINE if: scores are trending up, failures are specific and fixable, overall direction is sound.
+  → When recommending REFINE, also suggest ways to ESCALATE QUALITY:
+    not just fix bugs, but increase polish — animations, better error states,
+    more sophisticated interactions, improved visual design. Each iteration
+    should be more ambitious than the last, not just bug-free.
+
 PIVOT if: scores are stalled/declining, failures are systemic (not isolated bugs), the current approach has fundamental issues.
 
-**Rationale**: [explain why refine or pivot]
+ESCALATE if: scores are declining (regressions detected). Something that worked before is now broken.
+  → Investigate what changed before continuing. Do not add new features
+    until regressions are resolved.
+
+**Rationale**: [explain why refine, pivot, or escalate]
 ```
 
 This helps the generator (developer + Claude) decide whether to continue iterating on the current approach or try something fundamentally different.

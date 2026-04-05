@@ -147,6 +147,13 @@ Before the confirmation step, decompose the app description into testable featur
 2. Each feature must be concrete, testable, and have verification steps
 3. Sprint 1 is always the minimal viable foundation
 4. Scale depth by project type: CLI (5-10 features), web app (15-25), production (30-50)
+5. **AI feature weaving**: Look for opportunities to suggest AI-powered capabilities that enhance the app. Examples:
+   - Task manager → AI task prioritization, smart categorization
+   - E-commerce → AI product recommendations, search enhancement
+   - Content app → AI writing assistance, auto-tagging, summarization
+   - Dashboard → AI anomaly detection, predictive analytics
+   - Social app → AI content moderation, smart feeds
+   Present AI features as optional suggestions — the developer decides whether to include them.
 
 Include the feature breakdown in the confirmation summary (see below). The developer can adjust, add, remove, or skip entirely. If skipped, generate a minimal 3-5 feature list from the app description.
 

@@ -111,7 +111,31 @@ Developer confirms. Claude writes `docs/sprint-contracts/sprint-2.json`.
 
 ### Step 4: Begin Sprint
 
-Claude references the locked contract throughout the sprint. At sprint end, `/forge:verify --sprint 2` checks all criteria.
+Claude references the locked contract throughout the sprint. At sprint end, `/onboard:verify --sprint 2` checks all criteria.
+
+## Language Priming in Criteria
+
+From Anthropic: "Including phrases like 'the best designs are museum quality' pushed designs toward a particular visual convergence." Criteria wording is a steering mechanism — subtle language shapes output quality.
+
+### Guidelines for Criteria Wording
+
+**Push quality higher** with aspirational language:
+
+| Weak (just passes) | Strong (pushes quality) |
+|---|---|
+| "UI renders correctly" | "UI is polished with consistent spacing, smooth transitions, and a coherent visual identity" |
+| "API returns correct data" | "API responses are well-structured, properly paginated, include appropriate error codes, and have sub-200ms response times" |
+| "Tests pass" | "Tests cover happy paths, edge cases, and error states with descriptive names that serve as documentation" |
+| "Feature works" | "Feature is intuitive — a new user can complete the task without reading documentation" |
+
+**Be specific** — vague criteria produce vague output:
+
+| Vague | Specific |
+|---|---|
+| "Good code quality" | "No ESLint errors, TypeScript strict mode clean, no `any` types, functions under 50 lines" |
+| "Secure authentication" | "Passwords bcrypt-hashed (cost 12+), tokens httpOnly + SameSite=Strict, CSRF protection on state-changing routes" |
+
+**Criteria influence implementation ambition** — if you want Claude to reach for sophisticated solutions, say so in the criteria.
 
 ## How the Evaluator Uses Contracts
 

@@ -258,6 +258,7 @@ Follow `references/agent-teams-guide.md`:
 - `references/skills-guide.md` — Skill creation patterns
 - `references/agents-guide.md` — Agent creation patterns
 - `references/collaboration-guide.md` — PR template, commit conventions
+- `references/aci-design-guide.md` — Agent-Computer Interface best practices (tool design, error handling, ground truth)
 
 ### Extended (used when enriched features enabled)
 - `references/harness-design.md` — Long-running development harness pattern

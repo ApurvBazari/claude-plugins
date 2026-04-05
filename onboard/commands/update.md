@@ -94,6 +94,14 @@ Organize findings into categories:
 > ### New Artifacts Recommended
 > - [New rules, skills, or agents that would be valuable based on codebase changes]
 >
+> ### Enriched Capabilities Check
+> - **CI/CD Pipelines**: [present and current / outdated / missing — offer to generate]
+> - **Harness Artifacts**: [present and healthy / stale progress file / missing — offer to generate]
+> - **Evolution Hooks**: [present / missing — offer to add drift detection]
+> - **Sprint Contracts**: [active sprint / no contracts — offer to create]
+> - **Feature Verification**: [evaluator available / not set up — offer to enable]
+> - **Agent Teams**: [configured / not applicable]
+>
 > ### Deprecated Patterns
 > - [Anything in current setup that's outdated]
 >
@@ -111,10 +119,18 @@ For each finding, offer a specific action:
 
 > I can make the following updates:
 >
+> **Core tooling:**
 > 1. **Update CLAUDE.md** — Add new commands discovered, update tech stack section
 > 2. **Add .claude/rules/security.md** — Your project now has auth code that wasn't there before
 > 3. **Update .claude/skills/react-component/SKILL.md** — New patterns detected in recent components
-> 4. **[etc.]**
+>
+> **Enriched capabilities** (if not already set up):
+> 4. **Add CI/CD pipelines** — Generate GitHub Actions for testing, deployment, and PR review
+> 5. **Add harness artifacts** — progress.md, HARNESS-GUIDE.md for multi-session development
+> 6. **Add evolution hooks** — Auto-detect when deps/configs/structure change
+> 7. **Add sprint contracts** — Quality gates for feature development
+> 8. **Add feature verification** — Independent evaluator agent + /onboard:verify
+> 9. **[etc.]**
 >
 > Which updates would you like me to apply? (all / specific numbers / none)
 

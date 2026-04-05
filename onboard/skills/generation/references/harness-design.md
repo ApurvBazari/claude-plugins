@@ -193,6 +193,75 @@ Before marking any feature as `passes: true` in docs/feature-list.json:
 Do NOT remove or edit feature descriptions or steps. Only change `passes` from false to true.
 ```
 
+## Ground Truth Protocol (added to CLAUDE.md)
+
+From Anthropic: "It's crucial for agents to gain ground truth from the environment at each step."
+
+```markdown
+## Ground Truth Protocol
+
+After each implementation step, verify reality — never assume code works from reading it:
+
+1. **After writing code**: Run the build/compile command. Fix errors before continuing.
+2. **After adding UI**: Navigate to the page — verify it renders and functions.
+3. **After adding an API endpoint**: curl/fetch the endpoint — verify the response.
+4. **After modifying data/schema**: Run migrations, query the database — verify changes took effect.
+5. **After writing tests**: Run the test suite — verify they pass (and fail when expected).
+
+If verification fails at any step, fix the issue BEFORE moving to the next step.
+Do not accumulate unverified changes — each step should be verified independently.
+```
+
+## Feature List Lifecycle
+
+### Adding New Features
+New features can be added to `docs/feature-list.json` at any time:
+- Developer or Claude can propose new features
+- Add to the next sprint (or create a new sprint)
+- Must include verification `steps`
+- Existing features are NEVER modified — only `passes` field changes
+
+### Completion (All Features Pass)
+When all features in feature-list.json pass:
+- Project enters **maintenance mode**
+- Focus shifts from feature building to regression testing
+- Periodically run `/onboard:verify` to confirm existing features stay passing
+- New feature requests go through a new sprint cycle
+
+### Scope Changes Mid-Sprint
+If the developer needs features not in the current sprint:
+- Do NOT modify the current sprint's feature list
+- Option 1: Finish current sprint first, add features to the next sprint
+- Option 2: Abandon current sprint, re-decompose with updated scope, create new sprint contract
+- Current sprint contract can be re-negotiated if scope changes invalidate criteria
+
+### AI Feature Weaving
+When decomposing features (Forge Phase 1) or adding new features, look for opportunities to weave AI-powered capabilities into the product:
+- Task manager → AI-powered task prioritization, smart categorization
+- E-commerce → AI product recommendations, search enhancement
+- Content app → AI writing assistance, auto-tagging
+- Dashboard → AI anomaly detection, predictive analytics
+
+Suggest these as optional features. The developer decides whether to include them.
+
+## Trend-Based Plateau Detection
+
+The evaluator tracks verification trends across runs by reading previous reports from `docs/verification-reports/`. Comparison method:
+
+1. Read the most recent previous report for the same scope (sprint or all-features)
+2. Compare pass rates: current vs. previous
+3. Determine trend:
+   - **Improving**: pass rate increased by ≥1 feature
+   - **Stalled**: pass rate unchanged for 2+ consecutive runs
+   - **Declining**: pass rate decreased
+
+4. Recommendation based on trend:
+   - Improving → REFINE (keep going, fix remaining failures)
+   - Stalled → PIVOT (current approach isn't working, try something different)
+   - Declining → ESCALATE (something broke — investigate regressions before continuing)
+
+When the evaluator runs and no previous report exists, trend is "baseline" (no comparison available).
+
 ## Two-Layer Persistence Model
 
 ```
