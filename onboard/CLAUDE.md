@@ -29,6 +29,30 @@ Phase 4: Handoff ──→ explains generated artifacts, suggests next steps
 - `config-generator` runs second (write) — receives analysis + wizard answers via prompt
 - Both agents are spawned from the `/onboard:init` command
 
+## Headless Mode (`/onboard:generate`)
+
+External plugins (e.g., Forge) can invoke onboard's generation without the wizard or analysis:
+
+```
+/onboard:generate (headless)
+     │
+     ▼
+Pre-seeded context JSON ──→ config-generator agent (write)
+     │                        └── reads analysis + answers from context JSON
+     ▼
+Ecosystem setup ──→ notify/observe (if requested)
+     │
+     ▼
+Results report ──→ lists generated artifacts
+```
+
+- Caller provides a context JSON with `analysis`, `wizardAnswers`, `modelChoice`, and `ecosystemPlugins`
+- Codebase-analyzer agent is NOT spawned — analysis data comes from the caller
+- Wizard skill is NOT invoked — preferences come from the caller
+- Config-generator receives `headlessMode: true` flag and the caller's `source` identifier
+- `onboard-meta.json` records `headlessMode: true` and `source` for provenance
+- Merge-aware: hooks in settings.json are merged, never overwritten (critical when caller pre-populates hooks)
+
 ## Skill Hierarchy
 
 - `wizard/SKILL.md` — drives the interactive Q&A (presets: Minimal/Standard/Comprehensive/Custom)

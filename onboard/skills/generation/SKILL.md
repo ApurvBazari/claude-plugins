@@ -9,9 +9,19 @@ Generate all Claude Code artifacts for a project based on analysis data and deve
 ## Inputs
 
 You receive:
-1. **Codebase Analysis Report** — From the codebase-analyzer agent
-2. **Wizard Answers** — Structured JSON from the wizard phase
+1. **Codebase Analysis Report** — From the codebase-analyzer agent, or from pre-seeded context in headless mode
+2. **Wizard Answers** — Structured JSON from the wizard phase, or from pre-seeded context in headless mode
 3. **Project Root Path** — Where to write artifacts
+
+## Headless Mode Guard
+
+When `headlessMode` is `true` in the input context, this skill is being invoked via `/onboard:generate` from an external caller (e.g., the Forge plugin). In headless mode:
+
+- **Skip all interactive steps** — Do not ask the developer any questions, present confirmation prompts, or wait for user input. All decisions have already been made by the caller.
+- **Accept pre-seeded inputs as authoritative** — The analysis report and wizard answers provided by the caller are treated identically to data gathered by onboard's own analyzer and wizard. Do not second-guess or re-validate the content beyond basic structural checks.
+- **Merge hooks carefully** — The caller may have already written hooks to `.claude/settings.json`. Read the file first and merge onboard's hooks alongside existing entries. This is the most common source of conflicts in headless mode.
+- **Record provenance** — Include `headlessMode: true` and the caller's `source` identifier in `onboard-meta.json`.
+- **All generation rules still apply** — Artifact order, quality checks, maintenance headers, autonomy cascade, reference guides — everything in this skill applies equally in headless mode. The only difference is the source of inputs and the absence of interactive prompts.
 
 ## Maintenance Header
 

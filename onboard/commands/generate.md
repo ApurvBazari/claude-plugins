@@ -1,0 +1,183 @@
+# /onboard:generate — Headless Tooling Generation
+
+You are running the onboard headless generation command. This generates Claude tooling artifacts from pre-seeded context without running the interactive wizard or codebase analysis.
+
+This command is designed for programmatic consumers (e.g., the Forge plugin) that have already gathered project context through their own workflow and need onboard's generation capabilities directly.
+
+---
+
+## Step 1: Read Context Input
+
+The caller must provide a context JSON object in the conversation. This object contains all the information that the wizard and analyzer would normally produce.
+
+### Required Context Structure
+
+```json
+{
+  "source": "string — identifier of the calling plugin (e.g., 'forge')",
+  "version": "string — semver of the context format",
+  "projectPath": "string — absolute path to the project root",
+
+  "analysis": {
+    "structure": {
+      "totalFiles": "number",
+      "totalDirs": "number",
+      "directoryTree": "string — directory tree output",
+      "keyFiles": ["string — notable config/entry files"],
+      "entryPoints": ["string — main entry point files"],
+      "monorepo": "boolean"
+    },
+    "stack": {
+      "languages": [{"name": "string", "percentage": "number"}],
+      "frameworks": [{"name": "string", "version": "string"}],
+      "buildTools": ["string"],
+      "testingSetup": {
+        "framework": "string",
+        "configFile": "string",
+        "testFileCount": "number"
+      },
+      "linters": [{"name": "string", "configFile": "string"}],
+      "formatters": [{"name": "string", "configFile": "string"}],
+      "cicd": ["string — CI/CD tools detected"],
+      "packageManager": "string"
+    },
+    "complexity": {
+      "score": "number (0-100)",
+      "category": "string — small | medium | large | enterprise",
+      "fileCount": "number",
+      "locEstimate": "number"
+    },
+    "configs": {
+      "typescript": "object — parsed tsconfig settings (optional)",
+      "eslint": "object — parsed eslint config (optional)",
+      "prettier": "object — parsed prettier config (optional)"
+    }
+  },
+
+  "wizardAnswers": {
+    "projectDescription": "string",
+    "teamSize": "string — solo | small (2-5) | medium (6-15) | large (15+)",
+    "projectMaturity": "string — new | early | established | legacy",
+    "primaryTasks": ["string"],
+    "codeReviewProcess": "string — none | informal | formal-pr",
+    "branchingStrategy": "string — trunk-based | gitflow | feature-branches",
+    "deployFrequency": "string — continuous | daily | weekly | manual | none",
+    "testingPhilosophy": "string — tdd | write-after | minimal | comprehensive",
+    "codeStyleStrictness": "string — relaxed | moderate | strict",
+    "securitySensitivity": "string — standard | elevated | high",
+    "autonomyLevel": "string — always-ask | balanced | autonomous",
+    "painPoints": {
+      "timeSinks": "string (optional)",
+      "errorProne": "string (optional)",
+      "automationWishes": "string (optional)"
+    },
+    "frontendPatterns": "object (optional — same shape as wizard output)",
+    "backendPatterns": "object (optional — same shape as wizard output)",
+    "devopsPatterns": "object (optional — same shape as wizard output)"
+  },
+
+  "modelChoice": "string — sonnet | opus | haiku",
+
+  "ecosystemPlugins": {
+    "notify": "boolean",
+    "observe": "boolean"
+  },
+
+  "callerExtras": {
+    "description": "object — opaque extra context from the caller, passed through to metadata"
+  }
+}
+```
+
+### Validation
+
+Verify the context has:
+1. `source` — must be a non-empty string
+2. `projectPath` �� must be an absolute path that exists
+3. `analysis.stack` — must have at least one language
+4. `wizardAnswers.autonomyLevel` — must be one of: always-ask, balanced, autonomous
+5. `wizardAnswers.projectDescription` — must be non-empty
+
+If any required field is missing, report the error clearly:
+
+> Headless generation failed: missing required field `[field name]`.
+> The calling plugin must provide a complete context object.
+
+Stop and do not proceed.
+
+---
+
+## Step 2: Map Context to Onboard Format
+
+The headless context uses the same field names and values as the standard wizard output (see wizard skill's Output section). Map the context directly:
+
+1. **Analysis report**: Construct the same structured report format that the codebase-analyzer agent produces, using the `analysis` object from the context. The config-generator agent expects sections like `## Languages`, `## Frameworks & Libraries`, `## Build System & Commands`, etc.
+
+2. **Wizard answers**: The `wizardAnswers` object already matches the wizard skill's output format. Pass it through directly.
+
+3. **Model choice**: Map `modelChoice` to the model recommendation format.
+
+4. **Ecosystem plugins**: Pass `ecosystemPlugins` through for Phase 3.5 setup.
+
+---
+
+## Step 3: Generate Artifacts
+
+Spawn the `config-generator` agent with the mapped context. Include in the agent prompt:
+
+1. The analysis report (constructed from context in Step 2)
+2. The wizard answers JSON (from context)
+3. The model choice
+4. The project root path
+5. The current date for maintenance headers
+6. A flag indicating headless mode: `"headlessMode": true, "source": "[source]"`
+
+The config-generator agent follows the `generation` skill as usual. In headless mode, the only behavioral difference is:
+
+- **Merge-aware hooks**: The caller may have already added hooks to `.claude/settings.json`. The generator must read existing settings first and merge, never overwrite. This applies in normal mode too, but is especially critical in headless mode since the caller may have set up its own hooks before invoking generation.
+
+---
+
+## Step 4: Ecosystem Setup
+
+If `ecosystemPlugins` is present in the context, set up the requested plugins following the same process as Phase 3.5 in `/onboard:init`:
+
+- Check plugin availability
+- Set up notify (if requested and available)
+- Set up observe (if requested and available)
+
+---
+
+## Step 5: Report Results
+
+After generation completes, compile and return a results summary:
+
+> **Headless generation complete** (source: [source])
+>
+> Generated artifacts:
+> | File | Purpose |
+> |---|---|
+> | [list each file created] | [brief description] |
+>
+> Metadata saved to `.claude/onboard-meta.json`
+
+The `onboard-meta.json` file records:
+- `source`: the calling plugin identifier
+- `headlessMode`: true
+- `pluginVersion`: onboard version
+- `lastRun`: current timestamp
+- `wizardAnswers`: from context
+- `generatedArtifacts`: list of files created
+- `modelRecommendation`: from context
+- `callerExtras`: passed through from context
+
+---
+
+## Key Rules
+
+1. **No interactive prompts** — This command never asks the user questions. All context comes from the input.
+2. **No analysis scripts** — The codebase-analyzer agent is not spawned. Analysis data comes from the context.
+3. **No wizard** — The wizard skill is not invoked. Preferences come from the context.
+4. **Merge, never overwrite** — Always read existing files (settings.json, .gitignore) before writing.
+5. **Same generation quality** — The artifacts produced must be identical in quality to those from `/onboard:init`. The only difference is where the input data comes from.
+6. **Transparent provenance** — The `onboard-meta.json` records that this was a headless generation and which plugin triggered it.

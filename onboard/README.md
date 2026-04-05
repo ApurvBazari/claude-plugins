@@ -32,6 +32,10 @@ Main entry point. Runs a 4-phase guided workflow:
 
 Checks whether your Claude tooling is aligned with the latest best practices. Compares your current setup against both the plugin's built-in knowledge and live Claude Code documentation. Preserves your manual customizations.
 
+### `/onboard:generate`
+
+Headless generation mode for programmatic consumers. Accepts pre-seeded context (analysis data + wizard answers) and generates all Claude tooling artifacts without running the interactive wizard or codebase analysis. Designed for plugins like Forge that gather their own project context and delegate tooling generation to onboard.
+
 ### `/onboard:status`
 
 Quick health check showing last run date, generated artifacts, integrity status, and recommendations.
