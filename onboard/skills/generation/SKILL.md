@@ -9,9 +9,19 @@ Generate all Claude Code artifacts for a project based on analysis data and deve
 ## Inputs
 
 You receive:
-1. **Codebase Analysis Report** — From the codebase-analyzer agent
-2. **Wizard Answers** — Structured JSON from the wizard phase
+1. **Codebase Analysis Report** — From the codebase-analyzer agent, or from pre-seeded context in headless mode
+2. **Wizard Answers** — Structured JSON from the wizard phase, or from pre-seeded context in headless mode
 3. **Project Root Path** — Where to write artifacts
+
+## Headless Mode Guard
+
+When `headlessMode` is `true` in the input context, this skill is being invoked via `/onboard:generate` from an external caller (e.g., the Forge plugin). In headless mode:
+
+- **Skip all interactive steps** — Do not ask the developer any questions, present confirmation prompts, or wait for user input. All decisions have already been made by the caller.
+- **Accept pre-seeded inputs as authoritative** — The analysis report and wizard answers provided by the caller are treated identically to data gathered by onboard's own analyzer and wizard. Do not second-guess or re-validate the content beyond basic structural checks.
+- **Merge hooks carefully** — The caller may have already written hooks to `.claude/settings.json`. Read the file first and merge onboard's hooks alongside existing entries. This is the most common source of conflicts in headless mode.
+- **Record provenance** — Include `headlessMode: true` and the caller's `source` identifier in `onboard-meta.json`.
+- **All generation rules still apply** — Artifact order, quality checks, maintenance headers, autonomy cascade, reference guides — everything in this skill applies equally in headless mode. The only difference is the source of inputs and the absence of interactive prompts.
 
 ## Maintenance Header
 
@@ -128,6 +138,24 @@ Follow `references/agents-guide.md` for agent file structure.
   - Large team: 3-4 agents (add documentation-writer, architecture-reviewer)
 - **Each agent** is a single markdown file with clear instructions, allowed tools, and purpose
 
+#### Plugin-Aware Agent Generation (Headless Mode)
+
+When `callerExtras.coveredCapabilities` is present in the headless context, **skip agents whose capability is already covered by an installed plugin**. Project-level agents in `.claude/agents/` take priority over plugin agents, so generating a generic `code-reviewer.md` would shadow a superior plugin implementation.
+
+**Capability → Agent skip map:**
+
+| If `coveredCapabilities` includes | Skip generating |
+|---|---|
+| `code-review` | `code-reviewer.md` |
+| `test-generation` | `test-writer.md` |
+| `security-audit` | `security-checker.md` |
+| `feature-development` | `feature-builder.md` |
+| `documentation` | `documentation-writer.md` |
+
+**What to generate instead**: Focus on gap-filling, project-specific agents that no plugin covers — e.g., a `db-migration.md` agent for Prisma projects, or a stack-specific scaffolding agent. These provide value that generic plugins cannot.
+
+**When `coveredCapabilities` is absent**: Generate all agents as usual (backward compatible with standard `/onboard:init` and callers that don't provide capability data).
+
 ### Hooks (.claude/settings.json)
 
 Follow `references/hooks-guide.md` for hook configuration.
@@ -178,11 +206,64 @@ Before finishing generation, verify:
 - [ ] Formatter-enforced settings are in CLAUDE.md Key Conventions, not duplicated in rules
 - [ ] Observed codebase patterns are captured in architectural rules
 
+## Extended Generation (Enriched Mode)
+
+When the wizard or headless context includes extended preferences (CI/CD, harness, evolution, verification), generate these additional artifacts. These are universally useful — not limited to any specific caller.
+
+### CI/CD Pipelines (if `willDeploy` and no existing CI/CD detected)
+
+Follow `references/ci-cd-templates.md`:
+- `.github/workflows/ci.yml` — application CI (lint, test, build, deploy)
+- `.github/workflows/tooling-audit.yml` — structural drift checks + semantic analysis
+- `.github/workflows/pr-review.yml` — AI-powered PR review (claude-code-action)
+- `.github/scripts/audit-tooling.sh` — bundled audit script
+- `.github/dependabot.yml` or `renovate.json` (if automated dep management)
+
+### Harness Artifacts (if `enableHarness`)
+
+Follow `references/harness-design.md`:
+- `docs/progress.md` — cross-session progress tracker
+- `docs/HARNESS-GUIDE.md` — multi-session development guide
+- `docs/verification-reports/` — directory for evaluator reports
+- Session startup protocol reference in CLAUDE.md
+- Test immutability rule in CLAUDE.md
+- Context anxiety mitigation in CLAUDE.md
+
+### Auto-Evolution Hooks (if `enableEvolution`)
+
+Follow `references/evolution-hooks-guide.md`:
+- FileChanged hooks for drift detection
+- SessionStart hook for drift summary
+- Copy detection scripts to `.claude/scripts/`
+- Initialize `.claude/drift.json`
+
+### Sprint Contracts (if `enableSprintContracts`)
+
+Follow `references/sprint-contracts.md`:
+- `docs/sprint-contracts/` directory
+- First sprint contract (negotiated or auto-generated)
+
+### Agent Teams (if `enableTeams`)
+
+Follow `references/agent-teams-guide.md`:
+- Team quality hooks (TaskCreated, TaskCompleted)
+- `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in settings.json
+
 ## Reference Files
 
+### Core (always used)
 - `references/claude-md-guide.md` — CLAUDE.md structure and best practices
 - `references/rules-guide.md` — Path-scoped rules patterns
-- `references/hooks-guide.md` — Hook configuration patterns
+- `references/hooks-guide.md` — Hook configuration patterns (format, lint)
 - `references/skills-guide.md` — Skill creation patterns
 - `references/agents-guide.md` — Agent creation patterns
-- `references/collaboration-guide.md` — PR template, commit conventions, shared/local settings
+- `references/collaboration-guide.md` — PR template, commit conventions
+- `references/aci-design-guide.md` — Agent-Computer Interface best practices (tool design, error handling, ground truth)
+
+### Extended (used when enriched features enabled)
+- `references/harness-design.md` — Long-running development harness pattern
+- `references/ci-cd-templates.md` — GitHub Actions pipeline templates
+- `references/evolution-hooks-guide.md` — Auto-evolution hook patterns
+- `references/sprint-contracts.md` — Sprint contract format and negotiation
+- `references/agent-teams-guide.md` — Agent team compositions and quality hooks
+- `references/worktree-workflow.md` — Git worktree development pattern

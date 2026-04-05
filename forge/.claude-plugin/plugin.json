@@ -1,0 +1,20 @@
+{
+  "name": "forge",
+  "version": "1.0.0",
+  "description": "Scaffold new projects with AI-native tooling that evolves with your code",
+  "author": {
+    "name": "Apurv Bazari"
+  },
+  "repository": "https://github.com/apurvbazari/claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "scaffold",
+    "project-generator",
+    "ai-tooling",
+    "auto-evolving",
+    "ci-cd",
+    "github-actions",
+    "onboarding",
+    "greenfield"
+  ]
+}
