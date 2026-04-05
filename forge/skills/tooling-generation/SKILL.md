@@ -214,9 +214,18 @@ Update `.claude/forge-meta.json` with:
 - `generated.tooling`: list of all tooling files created
 - `generated.cicd`: list of CI/CD workflow files
 - `generated.hooks`: list of hook scripts and settings entries
-- `generated.harness`: list of harness artifacts (`init.sh`, `docs/feature-list.json`, `docs/progress.md`)
+- `generated.harness`: list of harness artifacts (`init.sh`, `docs/feature-list.json`, `docs/progress.md`, `docs/verification-reports/`, `docs/sprint-contracts/`)
 - `generated.sprintContracts`: list of sprint contract files
 - `context.verificationStrategy`: the chosen verification approach
+- `costs.forgeInit`: estimated token usage and duration for the Forge init session
+
+Also ensure these sections are added to the generated CLAUDE.md (via onboard `callerExtras.claudeMdSections`):
+- Session startup protocol (with single-feature focus rule)
+- Feature verification guidance
+- Test immutability rule
+- Context anxiety mitigation
+- Cost awareness estimates
+- Worktree workflow recommendation
 
 ## Key Rules
 

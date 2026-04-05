@@ -14,6 +14,21 @@ Gather all context needed to scaffold a project and generate AI tooling. Every d
 - **Skip intelligently** — Never ask a question whose answer is already clear from prior context.
 - **Research-informed** — After learning the stack, pause for web research before continuing. Use findings to inform subsequent questions and recommendations.
 
+## Planner Scope Principle
+
+From Anthropic's harness design: "If the planner tried to specify granular technical details upfront and got something wrong, the errors in the spec would cascade into the downstream implementation."
+
+Phase 1 acts as the **Planner** in the three-agent pattern. It should:
+- Focus on WHAT to build (product features, user flows, requirements)
+- Capture high-level technical decisions (framework, language, database type)
+- Let the Generator (implementation sessions) figure out HOW (specific patterns, file organization, internal architecture)
+- Be ambitious about scope — suggest features beyond the minimum viable product
+
+Do NOT over-prescribe:
+- Don't specify internal code architecture (folder structure beyond top-level, specific design patterns)
+- Don't dictate implementation approaches for individual features
+- Don't make granular technical decisions that could cascade if wrong (specific library APIs, internal data structures)
+
 ## Adaptive State Machine
 
 Maintain a running context object that tracks what you know. See `references/question-bank.md` for the complete question catalog with conditions and downstream effects.

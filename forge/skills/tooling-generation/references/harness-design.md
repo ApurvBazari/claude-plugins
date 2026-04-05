@@ -207,6 +207,148 @@ VISIBILITY: git, CI, other devs         VISIBILITY: Claude sessions only
 UPDATED: end of every session           UPDATED: when insights emerge
 ```
 
+## Single Feature Focus (Critical)
+
+Anthropic found this "critical to addressing the agent's tendency to do too much at once."
+
+Add to CLAUDE.md session startup protocol:
+
+```markdown
+6. **Focus**: Work on ONE feature only per session — don't try to do everything at once.
+   If you finish early, commit and update progress before starting another.
+```
+
+For stronger enforcement, add a SessionStart hook reminder:
+
+```json
+{
+  "SessionStart": [{
+    "hooks": [{
+      "type": "prompt",
+      "prompt": "Remind the developer to focus on ONE feature at a time from docs/feature-list.json. Read the feature list and suggest which feature to work on next."
+    }]
+  }]
+}
+```
+
+## Test Immutability
+
+From Anthropic: "It is unacceptable to remove or edit tests because this could lead to missing or buggy functionality."
+
+Claude commonly rewrites tests to make them pass instead of fixing the underlying code. Add to CLAUDE.md:
+
+```markdown
+## Test Immutability Rule
+
+Do NOT modify existing tests to make them pass. If a test fails, fix the implementation, not the test.
+Tests are immutable once written — they define the expected behavior.
+
+The only acceptable test changes are:
+- Adding NEW tests for new features
+- Fixing a test that was genuinely wrong (wrong expected value, testing the wrong thing)
+  — but this requires explaining WHY the test was wrong, not just that it failed
+```
+
+## Context Anxiety Mitigation
+
+Sonnet models may prematurely wrap up work near perceived context limits — rushing to finish instead of maintaining quality. Add to CLAUDE.md:
+
+```markdown
+## Context Management
+
+If you notice the conversation is getting long:
+- Do NOT rush to finish the current feature. Quality matters more than completion.
+- Commit your current progress with a descriptive message.
+- Update docs/progress.md with what's done and what's remaining.
+- It's better to end a session with a well-committed partial feature than a rushed complete one.
+- The next session will pick up exactly where you left off via the progress file.
+```
+
+For developers using Sonnet for teammates: the agent teams guide should recommend context resets (clearing and re-spawning teammates) for sprints with many features.
+
+## Verification Reports (File-Based Communication)
+
+Anthropic uses files for inter-agent communication: "one agent would write a file, another would read it."
+
+The evaluator writes reports to `docs/verification-reports/`:
+```
+docs/
+├── verification-reports/
+│   ├── sprint-1-2026-04-05.md      ← evaluator writes
+│   ├── sprint-1-2026-04-08.md      ← second run after fixes
+│   └── feature-F003-2026-04-07.md  ← single feature check
+```
+
+These create an auditable trail. Previous reports can be compared to determine whether the REFINE or PIVOT recommendation makes sense.
+
+## Cost Tracking
+
+Add to `forge-meta.json` and `docs/progress.md`:
+
+```json
+// forge-meta.json
+{
+  "costs": {
+    "forgeInit": {
+      "duration": "25 minutes",
+      "estimatedTokens": "~150K",
+      "phases": {
+        "contextGathering": "~30K",
+        "scaffold": "~20K",
+        "toolingGeneration": "~100K"
+      }
+    }
+  }
+}
+```
+
+Add to `docs/progress.md` session log:
+```markdown
+### Session 2 — [date]
+- Implemented F001 (user dashboard)
+- Duration: ~45 minutes
+- Tokens: ~80K (estimated)
+```
+
+Add to CLAUDE.md:
+```markdown
+## Cost Awareness
+
+Each Claude session uses tokens. Rough estimates:
+- Simple feature implementation: ~50-100K tokens (~$3-8)
+- Complex feature with debugging: ~100-200K tokens (~$8-15)
+- /forge:verify run: ~20-80K tokens (~$1-8)
+- Sprint verification: ~50-150K tokens (~$3-12)
+
+To minimize costs: focus on one feature per session, commit frequently, use the progress file to avoid re-orientation.
+```
+
+## Stress-Testing Harness Assumptions
+
+From Anthropic: "Every component in a harness encodes an assumption about what the model can't do on its own, and those assumptions are worth stress testing."
+
+### Which Components Are Assumptions
+
+| Component | Assumption | Test by removing |
+|---|---|---|
+| Feature list | Claude won't track what's done/remaining without a list | Try without: does Claude attempt too much or forget features? |
+| Sprint contracts | Claude won't maintain quality standards without explicit criteria | Try without: does quality degrade? |
+| Evaluator agent | Claude can't honestly evaluate its own work | Try self-evaluation: does it inflate results? |
+| Single-feature focus | Claude will try to do too much at once | Try multi-feature: does quality drop? |
+| Worktree isolation | Claude will accidentally break main | Try direct-branch: do conflicts/accidents increase? |
+| init.sh | Claude will waste time figuring out how to run the app | Try without: how long does orientation take? |
+| Progress file | Claude can't maintain context across sessions without a file | Try without: does it repeat work or miss context? |
+
+### When to Re-Evaluate
+
+- After a major model upgrade (e.g., new Sonnet or Opus release)
+- After completing 3+ sprints on a project (real-world data)
+- When a component feels like overhead rather than help
+
+### How to Test
+
+Remove one component at a time and observe impact over 2-3 sessions. If removing it doesn't degrade quality, simplify the harness. Models improve fast — what was essential for Sonnet 4.5 may be unnecessary for Opus 4.6.
+
 ## When to Generate
 
 All harness artifacts are generated during Phase 3 (AI Tooling), after scaffold is complete:
@@ -214,5 +356,10 @@ All harness artifacts are generated during Phase 3 (AI Tooling), after scaffold 
 1. `init.sh` — written to project root, made executable
 2. `docs/feature-list.json` — written from Phase 1 feature decomposition
 3. `docs/progress.md` — initialized with Session 1 (Forge init) entry
-4. Session startup protocol — added to CLAUDE.md via onboard headless `callerExtras`
-5. E2E verification guidance — added to CLAUDE.md
+4. `docs/verification-reports/` — directory created (empty until first /forge:verify run)
+5. Session startup protocol — added to CLAUDE.md via onboard headless `callerExtras`
+6. E2E verification guidance — added to CLAUDE.md
+7. Single feature focus rule — added to CLAUDE.md
+8. Test immutability rule — added to CLAUDE.md
+9. Context anxiety mitigation — added to CLAUDE.md
+10. Cost awareness section — added to CLAUDE.md

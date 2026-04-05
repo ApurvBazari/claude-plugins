@@ -55,8 +55,20 @@ Stored in `docs/sprint-contracts/sprint-N.json`:
 | `accessibility` | A11y compliance | axe-core 0 violations at target level |
 | `security` | Security checks pass | No high/critical vulnerabilities |
 | `documentation` | API docs updated | OpenAPI spec matches routes (if API project) |
+| `design-quality` | UI has coherent visual identity | Colors, typography, layout create distinct mood (frontend only) |
+| `originality` | Evidence of custom decisions vs defaults | No unmodified stock components or AI-slop patterns (frontend only) |
+| `craft` | Technical execution of design | Typography hierarchy, spacing, color harmony, contrast (frontend only) |
 
-Not all criteria apply to every sprint. Select based on the project's Phase 1 context (a11yLevel, perfTargets, securitySensitivity, apiDocs).
+Not all criteria apply to every sprint. Select based on the project's Phase 1 context (a11yLevel, perfTargets, securitySensitivity, apiDocs, hasFrontend).
+
+### Design Criteria (Frontend Projects)
+
+From Anthropic's harness research, Claude already scores well on craft and functionality by default, but struggles with design quality and originality. For frontend projects, emphasize:
+
+1. **Design Quality** (required for UI sprints): "Does the design feel like a coherent whole rather than a collection of parts?"
+2. **Originality** (recommended): "Is there evidence of custom decisions, or is this template layouts and library defaults?"
+
+These criteria are only included for sprints that contain `ui` category features. Calibrate the evaluator's design judgment via the few-shot examples in the feature-evaluator agent.
 
 ## Interactive Negotiation Flow
 

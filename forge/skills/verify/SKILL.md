@@ -76,7 +76,35 @@ If running in sprint mode, evaluate the sprint contract criteria from the evalua
   >
   > Fix the failing features/criteria and run `/forge:verify --sprint [N]` again.
 
-## Step 6: Summary
+## Step 6: Write Report to File
+
+Write the evaluator's full report to `docs/verification-reports/`:
+
+```bash
+mkdir -p docs/verification-reports
+```
+
+File naming: `[mode]-[date].md` (e.g., `sprint-1-2026-04-05.md`, `feature-F001-2026-04-05.md`, `all-incomplete-2026-04-05.md`)
+
+This creates an auditable trail of verification runs across sessions. Previous reports can be compared to see if scores are trending up or stalling.
+
+## Step 7: Refine vs Pivot Guidance
+
+The evaluator's report includes a strategic recommendation (REFINE or PIVOT). Present this to the developer:
+
+If **REFINE**:
+> The evaluator recommends **continuing the current approach**. Scores are trending well and failures are specific, fixable issues. Focus on:
+> [list specific failures to fix]
+
+If **PIVOT**:
+> The evaluator recommends **reconsidering the approach**. Scores are stalled or declining, and failures appear systemic. Consider:
+> - Trying a different architectural pattern for [area]
+> - Revisiting the design decisions for [component]
+> - Discussing the approach before continuing
+
+This implements the GAN-inspired iteration loop: build → evaluate → decide (refine/pivot) → build again.
+
+## Step 8: Summary
 
 Present the overall results:
 
@@ -88,8 +116,11 @@ Present the overall results:
 > | F002: [description] | FAIL | [brief reason] |
 >
 > **Results**: [N] passed, [N] failed out of [N] tested
+> **Trend**: [improving/stalled/declining] vs previous run
+> **Recommendation**: [REFINE/PIVOT] — [rationale]
 > [Sprint contract status if applicable]
 >
+> Report saved to: docs/verification-reports/[filename].md
 > Updated: docs/feature-list.json, docs/progress.md
 
 ## Key Rules
@@ -98,4 +129,5 @@ Present the overall results:
 2. **Update feature-list.json only on PASS** — Failed features stay as `passes: false`.
 3. **Honest reporting** — Show failures prominently. Don't bury bad news in summary stats.
 4. **Sprint gates are hard** — If a required criterion fails, the sprint is NOT complete. No exceptions.
-5. **Log everything** — Every verification run is logged to docs/progress.md for cross-session context.
+5. **Log everything** — Every verification run is logged to docs/progress.md and docs/verification-reports/ for cross-session context.
+6. **Write reports to files** — Always persist the full report to `docs/verification-reports/` for auditability and trend comparison.
