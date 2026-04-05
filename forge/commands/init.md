@@ -2,6 +2,22 @@
 
 You are running the Forge initialization wizard. This is a guided, 3-phase process that discusses what the developer wants to build, scaffolds the application, and equips it with auto-evolving Claude Code tooling.
 
+## Guard
+
+Before starting, verify the onboard plugin is installed. Check if `/onboard:generate` is available by looking for the onboard plugin in installed plugins.
+
+If onboard is not installed:
+
+> Forge requires the **onboard** plugin for AI tooling generation.
+>
+> Install it with: `claude plugin install onboard`
+>
+> Then run `/forge:init` again.
+
+Stop and do not proceed.
+
+---
+
 ## Overview
 
 Tell the developer:
@@ -66,14 +82,27 @@ After scaffolding completes, confirm:
 
 ## Phase 3: AI Tooling
 
-### Step 3.1: Generate Claude Tooling
+### Step 3.1: Plugin Discovery (MUST run first)
 
-Use the `tooling-generation` skill which:
-- Maps Phase 1 context to onboard's format
+Use the `plugin-discovery` skill which:
+- Matches curated catalog against project context
+- Presents an interactive checklist of recommended plugins
+- Optionally searches the web for additional plugins
+- Installs selected plugins
+- **Compiles `coveredCapabilities`** — the list of capabilities covered by installed plugins
+
+This step MUST complete before Step 3.2 because onboard needs `coveredCapabilities` to avoid generating agents that shadow installed plugins. The plugin-discovery skill returns both `installedPlugins` and `coveredCapabilities` for use in the next step.
+
+### Step 3.2: Generate Claude Tooling
+
+Use the `tooling-generation` skill, passing it the `installedPlugins` and `coveredCapabilities` from Step 3.1. The skill:
+- Spawns the `scaffold-analyzer` agent to scan the scaffolded project
+- Maps Phase 1 context + analysis + `coveredCapabilities` to onboard's format
 - Invokes `/onboard:generate` (headless) for CLAUDE.md, rules, skills, agents, hooks
+- Onboard skips agents for capabilities already covered by installed plugins
 - Presents a brief summary for optional developer review
 
-### Step 3.2: Generate CI/CD Pipelines
+### Step 3.3: Generate CI/CD Pipelines
 
 The tooling-generation skill also handles:
 - Application CI pipeline (lint → test → build → deploy)
@@ -81,17 +110,15 @@ The tooling-generation skill also handles:
 - PR review pipeline (claude-code-action)
 - Dependency management (Dependabot/Renovate)
 - Auto-evolution hooks (FileChanged + SessionStart)
+- Agent team quality hooks (if production team project)
 
 **Skip CI/CD entirely if the developer chose not to deploy.**
 
-### Step 3.3: Plugin Discovery
+### Step 3.4: Update CLAUDE.md with Plugin References
 
-Use the `plugin-discovery` skill which:
-- Matches curated catalog against project context
-- Presents an interactive checklist of recommended plugins
-- Optionally searches the web for additional plugins
-- Installs selected plugins
-- Updates CLAUDE.md with plugin references
+After all generation is complete, update the project's CLAUDE.md with:
+- Installed plugins section (what's available, key commands)
+- Agent team guide section (if team hooks were generated)
 
 ---
 

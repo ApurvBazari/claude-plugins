@@ -45,18 +45,46 @@ This is a read-only, lightweight analysis — the project was just scaffolded, s
 
 Map Phase 1 context fields to onboard's wizard answer format:
 
-| Forge field | Onboard field |
-|---|---|
-| `appDescription` | `projectDescription` |
-| `teamSize` | `teamSize` |
-| `testingPhilosophy` | `testingPhilosophy` |
-| `codeStyleStrictness` | `codeStyleStrictness` |
-| `securitySensitivity` | `securitySensitivity` |
-| `autonomyLevel` | `autonomyLevel` |
-| `branchingStrategy` | `branchingStrategy` |
-| `deployTarget` → frequency | `deployFrequency` |
+| Forge field | Onboard field | Notes |
+|---|---|---|
+| `appDescription` | `projectDescription` | Direct map |
+| `teamSize` | `teamSize` | Direct map |
+| `primaryTasks` | `primaryTasks` | Direct map |
+| `branchingStrategy` | `branchingStrategy` | Direct map |
+| `deployFrequency` | `deployFrequency` | Direct map |
+| `testingPhilosophy` | `testingPhilosophy` | Direct map |
+| `codeStyleStrictness` | `codeStyleStrictness` | Direct map |
+| `securitySensitivity` | `securitySensitivity` | Direct map |
+| `autonomyLevel` | `autonomyLevel` | Direct map |
+| `painPoints` | `painPoints` | Direct map (timeSinks, errorProne, automationWishes) |
+| `frontendPatterns` | `frontendPatterns` | Direct map (if frontend project) |
+| `backendPatterns` | `backendPatterns` | Direct map (if backend project) |
+| (inferred from scaffold) | `projectMaturity` | Always "new" for freshly scaffolded projects |
+| `deployTarget` | `devopsPatterns.hosting` | Map platform name |
+| `dockerStrategy` | `devopsPatterns.containerization` | Map Docker choice |
 
-Fields not directly mappable are passed through in `callerExtras`.
+Fields specific to Forge that don't map to onboard (CI/CD audit behavior, auto-evolution mode, installed plugins) are passed through in `callerExtras`.
+
+### Validate before invoking onboard
+
+Before calling `/onboard:generate`, verify the context JSON has all required fields:
+
+**Required** (fail if missing):
+- `analysis.stack.languages` — at least one language
+- `wizardAnswers.projectDescription` — non-empty
+- `wizardAnswers.autonomyLevel` — one of: always-ask, balanced, autonomous
+- `projectPath` — absolute path that exists
+
+**Required with defaults** (use default if missing):
+- `wizardAnswers.teamSize` → default: "solo"
+- `wizardAnswers.testingPhilosophy` → default: "write-after"
+- `wizardAnswers.codeStyleStrictness` → default: "moderate"
+- `wizardAnswers.securitySensitivity` → default: "standard"
+- `wizardAnswers.projectMaturity` → default: "new"
+- `wizardAnswers.deployFrequency` → default: "none"
+- `wizardAnswers.painPoints` → default: `{}` (empty, flagged in generated artifacts)
+
+If a required field is missing and has no default, report the error clearly and stop. Do not invoke onboard with incomplete data.
 
 ## Step 2: Invoke Onboard Headless
 

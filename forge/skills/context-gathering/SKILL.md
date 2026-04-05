@@ -72,6 +72,32 @@ Key branching points:
 
 For frontend projects, also ask Q3.F1 (styling) and Q3.F2 (component library).
 
+Also capture during this step (can be inferred or asked directly):
+- **`primaryTasks`**: What will the developer mostly do? (feature dev, bug fixes, maintenance, refactoring). Infer from project maturity + type, or ask.
+- **`deployFrequency`**: How often will they deploy? (continuous, daily, weekly, manual, none). Ask alongside Q3.4 if deploying.
+- **`frontendPatterns`**: If frontend project — component library, state management, styling, routing. Partially captured by Q3.F1/Q3.F2, fill in the rest from stack research.
+- **`backendPatterns`**: If backend project — API style (from Q3.7), ORM (from Q3.2/database choice), auth (from Q3.3), error handling. Compose from existing answers.
+
+### Step 3.5: Pain Points (always ask)
+
+Ask about where Claude can help most:
+- "What takes the most time in your development workflow?"
+- "What areas of code are most error-prone?"
+- "What would you most want automated?"
+
+Capture as:
+```json
+{
+  "painPoints": {
+    "timeSinks": "...",
+    "errorProne": "...",
+    "automationWishes": "..."
+  }
+}
+```
+
+This feeds directly into onboard's skill and agent selection — skills matching pain points get highest priority.
+
 ### Step 4: Workflow Preferences (Category 4)
 
 Ask Q4.1 through Q4.5. For Q4.1 (branching), recommend based on team size from Q3.1.
@@ -128,12 +154,31 @@ After the wizard completes, compile all answers into a structured context object
   "database": { "type": "string", "orm": "string" },
   "auth": { "strategy": "string", "provider": "string" },
   "deployTarget": "string",
+  "deployFrequency": "continuous | daily | weekly | manual | none",
   "teamSize": "string",
+  "primaryTasks": ["feature-dev", "bug-fixes", "maintenance", "refactoring"],
   "branchingStrategy": "string",
   "testingPhilosophy": "string",
   "codeStyleStrictness": "string",
   "securitySensitivity": "string",
   "autonomyLevel": "string",
+  "painPoints": {
+    "timeSinks": "string",
+    "errorProne": "string",
+    "automationWishes": "string"
+  },
+  "frontendPatterns": {
+    "componentLibrary": "string",
+    "stateManagement": "string",
+    "styling": "string",
+    "routing": "string"
+  },
+  "backendPatterns": {
+    "apiStyle": "string",
+    "orm": "string",
+    "auth": "string",
+    "errorHandling": "string"
+  },
   "monitoring": [],
   "apiStyle": "string",
   "apiDocs": "string",
