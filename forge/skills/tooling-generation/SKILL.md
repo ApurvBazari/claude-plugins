@@ -163,17 +163,49 @@ Based on `autoEvolutionMode` from Phase 1:
 
 **Merge into `.claude/settings.json`**: Read existing file first (onboard may have already written hooks). Add Forge's hooks alongside, never overwrite.
 
-## Step 5: Update Forge Metadata
+## Step 5: Generate Harness Artifacts
+
+See `references/harness-design.md` for the full harness pattern. Generate these artifacts to enable effective long-running development across multiple Claude sessions:
+
+### 5.1: `init.sh` (project root)
+
+Generate a stack-specific environment bootstrap script. Uses the install command and dev server command from the scaffolded project. Made executable (`chmod +x`).
+
+For CLI tools (no dev server): generate a simpler script that installs deps and runs a smoke test.
+
+### 5.2: `docs/feature-list.json`
+
+Write the feature list from the Phase 1 feature decomposition (the developer validated this during the confirmation step). Format as JSON with sprints, features, steps, and `passes: false`.
+
+If the developer skipped feature decomposition, generate a minimal list (3-5 obvious features from the app description) with a comment encouraging them to add more.
+
+### 5.3: `docs/progress.md`
+
+Initialize the progress file with the Session 1 (Forge init) entry. Record what was scaffolded, what tooling was generated, what plugins were installed, and the initial commit hash.
+
+### 5.4: Session Startup Protocol + E2E Guidance (in CLAUDE.md)
+
+Pass these sections to onboard headless via `callerExtras.claudeMdSections`:
+- Session Startup Protocol (read init.sh, progress.md, git log, feature-list.json, focus on ONE feature)
+- Feature Verification guidance (test end-to-end before marking passes: true)
+- Feature list immutability constraint ("do not remove or edit features")
+
+Onboard appends these sections to the generated CLAUDE.md.
+
+## Step 6: Update Forge Metadata
 
 Update `.claude/forge-meta.json` with:
 - `generated.tooling`: list of all tooling files created
 - `generated.cicd`: list of CI/CD workflow files
 - `generated.hooks`: list of hook scripts and settings entries
+- `generated.harness`: list of harness artifacts (`init.sh`, `docs/feature-list.json`, `docs/progress.md`)
 
 ## Key Rules
 
-1. **Onboard generates Claude tooling, Forge generates CI/CD** — Clear responsibility boundary.
+1. **Onboard generates Claude tooling, Forge generates CI/CD + harness** — Clear responsibility boundary.
 2. **Merge, never overwrite** — settings.json is touched by both onboard and Forge. Always read first.
 3. **Skip CI/CD for local projects** — If `willDeploy === false`, do not generate any GitHub Actions workflows.
-4. **Light confirmation after onboard** — Show what was generated, let developer review if they want.
-5. **Copy scripts, don't reference** — Hook and audit scripts are copied into the project (self-contained).
+4. **Always generate harness** — init.sh, feature-list.json, and progress.md are generated for ALL projects (even local/CLI). The harness pattern applies universally.
+5. **Light confirmation after onboard** — Show what was generated, let developer review if they want.
+6. **Copy scripts, don't reference** — Hook and audit scripts are copied into the project (self-contained).
+7. **JSON for feature list** — Never markdown. Models are less likely to inappropriately modify JSON.

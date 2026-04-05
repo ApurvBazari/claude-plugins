@@ -110,7 +110,18 @@ Q4.6 (releases) is only asked for production apps.
 
 Ask Q5.1 (audit behavior), Q5.2 (auto-evolution mode), Q5.3 (PR review trigger).
 
-### Step 6: Confirmation (Category 7)
+### Step 6: Feature Decomposition (Harness Preparation)
+
+Before the confirmation step, decompose the app description into testable features. This feeds the harness design's `feature-list.json`.
+
+1. From `appDescription` and all gathered context, generate a sprint-organized feature list
+2. Each feature must be concrete, testable, and have verification steps
+3. Sprint 1 is always the minimal viable foundation
+4. Scale depth by project type: CLI (5-10 features), web app (15-25), production (30-50)
+
+Include the feature breakdown in the confirmation summary (see below). The developer can adjust, add, remove, or skip entirely. If skipped, generate a minimal 3-5 feature list from the app description.
+
+### Step 7: Confirmation (Category 7)
 
 Present a structured summary of everything gathered:
 
@@ -130,7 +141,12 @@ Present a structured summary of everything gathered:
 > **CI/CD**: [audit behavior + PR review trigger] (or "N/A — local project")
 > **Auto-evolution**: [mode]
 >
-> Ready to scaffold? Or want to change anything?
+> **Initial Feature Breakdown** ([N] features across [N] sprints):
+> Sprint 1 — [name]: [feature list summary]
+> Sprint 2 — [name]: [feature list summary]
+> ...
+>
+> Ready to scaffold? Or want to adjust the features/settings?
 
 Wait for confirmation before returning.
 
