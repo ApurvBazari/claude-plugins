@@ -14,7 +14,7 @@ Best for: Solo developers, side projects, prototypes, or developers who prefer C
 |---------|-------|
 | Autonomy | Autonomous |
 | Code Style Strictness | Relaxed |
-| Testing Philosophy | Write-after |
+| Testing Philosophy | TDD |
 | Security Sensitivity | Standard |
 | Agents | 1 (code-reviewer) |
 | Skills | 2 (stack-specific) |
@@ -25,7 +25,7 @@ Best for: Solo developers, side projects, prototypes, or developers who prefer C
   "selectedPreset": "minimal",
   "autonomyLevel": "autonomous",
   "codeStyleStrictness": "relaxed",
-  "testingPhilosophy": "write-after",
+  "testingPhilosophy": "tdd",
   "securitySensitivity": "standard",
   "codeReviewProcess": "informal",
   "branchingStrategy": "feature-branches",
@@ -41,7 +41,7 @@ Best for: Small teams, active projects with established workflows, balanced over
 |---------|-------|
 | Autonomy | Balanced |
 | Code Style Strictness | Moderate |
-| Testing Philosophy | Comprehensive |
+| Testing Philosophy | TDD |
 | Security Sensitivity | Elevated |
 | Agents | 3 (code-reviewer, test-writer, security-checker) |
 | Skills | 2-3 (stack + workflow) |
@@ -52,7 +52,7 @@ Best for: Small teams, active projects with established workflows, balanced over
   "selectedPreset": "standard",
   "autonomyLevel": "balanced",
   "codeStyleStrictness": "moderate",
-  "testingPhilosophy": "comprehensive",
+  "testingPhilosophy": "tdd",
   "securitySensitivity": "elevated",
   "codeReviewProcess": "formal-pr",
   "branchingStrategy": "feature-branches",

@@ -62,7 +62,7 @@ The caller must provide a context JSON object in the conversation. This object c
     "codeReviewProcess": "string — none | informal | formal-pr",
     "branchingStrategy": "string — trunk-based | gitflow | feature-branches",
     "deployFrequency": "string — continuous | daily | weekly | manual | none",
-    "testingPhilosophy": "string — tdd | write-after | minimal | comprehensive",
+    "testingPhilosophy": "string — always 'tdd' (hard-wired, included for schema compatibility)",
     "codeStyleStrictness": "string — relaxed | moderate | strict",
     "securitySensitivity": "string — standard | elevated | high",
     "autonomyLevel": "string — always-ask | balanced | autonomous",
