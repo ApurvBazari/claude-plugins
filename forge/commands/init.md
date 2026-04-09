@@ -1,6 +1,6 @@
 # /forge:init — Scaffold a New Project with AI-Native Tooling
 
-You are running the Forge initialization wizard. This is a guided, 3-phase process that discusses what the developer wants to build, scaffolds the application, and equips it with auto-evolving Claude Code tooling.
+You are running the Forge initialization wizard. This is a guided, 4-phase process that discusses what the developer wants to build, scaffolds the application, equips it with auto-evolving Claude Code tooling, and optionally generates engineering lifecycle documents.
 
 ## Guard
 
@@ -24,12 +24,13 @@ Tell the developer:
 
 > Starting **Forge** — I'll help you create a new project from scratch with AI-native tooling built in from day one.
 >
-> This runs in 3 phases:
+> This runs in 4 phases:
 > 1. **Context Gathering** — We'll discuss what you want to build, your tech stack, and preferences
 > 2. **Scaffold** — I'll create the application and set up git
 > 3. **AI Tooling** — I'll generate Claude tooling, CI/CD pipelines, and auto-evolution hooks
+> 4. **Lifecycle Setup** — I'll generate engineering documents (ADRs, testing strategy, deploy checklists) using your project context
 >
-> By the end, you'll have a running app with world-class AI tooling that evolves alongside your code.
+> By the end, you'll have a running app with world-class AI tooling and engineering documents that evolve alongside your code.
 
 ---
 
@@ -122,9 +123,29 @@ After all generation is complete, update the project's CLAUDE.md with:
 
 ---
 
+## Phase 4: Lifecycle Setup (Optional)
+
+Use the `lifecycle-setup` skill, passing it the full Phase 1 context, Phase 2 scaffold metadata, and Phase 3 installed plugins list.
+
+The skill handles:
+- Checking if the `engineering` plugin is installed (graceful skip if not)
+- Presenting a context-aware checklist of engineering documents to generate
+- Invoking `engineering:*` skills with composed context arguments
+- Saving outputs to `docs/engineering/`
+- Updating CLAUDE.md with an Engineering Documents section
+- Updating `forge-meta.json` with lifecycle document metadata
+
+Phase 4 is entirely optional. If the engineering plugin is not installed and the developer declines to install it, or if the developer deselects all documents, skip directly to Handoff.
+
+Inform the developer before starting:
+
+> **Phase 4: Lifecycle Setup** — I can generate engineering documents (ADRs, testing strategy, deploy checklists) using the project context we gathered earlier. This uses the `engineering` plugin.
+
+---
+
 ## Handoff
 
-After all three phases complete, present the completion summary:
+After all phases complete, present the completion summary:
 
 > **Forge complete!**
 >
@@ -147,6 +168,9 @@ After all three phases complete, present the completion summary:
 > **Plugins Installed**
 > - [list installed plugins with key commands]
 >
+> **Engineering Documents** [if any generated in Phase 4]
+> - [list each generated document with path, e.g., "docs/engineering/adr-001-tech-stack.md — Architecture Decision Record"]
+>
 > **Development Harness**
 > - `init.sh` — run at the start of every session to bootstrap your environment
 > - `docs/feature-list.json` — [N] features across [N] sprints (all starting as failing)
@@ -155,7 +179,7 @@ After all three phases complete, present the completion summary:
 > - Session startup protocol + worktree workflow in CLAUDE.md
 >
 > **What to do next:**
-> 1. Review CLAUDE.md — it's the source of truth for how Claude understands your project
+> 1. Review CLAUDE.md and engineering documents in `docs/engineering/` — they capture your project's architectural decisions and strategies
 > 2. Start your next session: `bash init.sh` → read progress → pick a feature from Sprint 1
 > 3. Use worktrees for isolation: `git worktree add ../project-feat-F001 -b feat/F001-[name]`
 > 4. After implementing a feature, run `/forge:verify F001` for independent evaluation
@@ -171,5 +195,6 @@ If any phase fails:
 - **Phase 1 failure**: Unlikely (it's conversational). If the developer abandons, stop gracefully.
 - **Phase 2 failure**: Leave partial files, show the error, diagnose, offer retry or alternative approach. Record failure in forge-meta.json.
 - **Phase 3 failure**: If onboard headless fails, report the error. CI/CD and hooks can still be generated independently. Continue with what works.
+- **Phase 4 failure**: If the engineering plugin is not installed, skip Phase 4 gracefully. If individual document generation fails, report the error and continue with remaining documents. Phase 4 failures never block Handoff.
 
 Never auto-clean partial state. The developer should be able to inspect what happened.

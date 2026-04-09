@@ -74,7 +74,7 @@ Settings are stored in `notify-config.json` within the chosen scope directory (`
 
 ## Works Well With
 
-- **devkit** — The ship pipeline (`/devkit:ship`) can trigger notifications on completion. When both plugins are installed, you get notified when your quality gates pass and code is committed.
+- **observe** — Pair with notify for full session awareness (analytics + notifications)
 
 ## Customization
 

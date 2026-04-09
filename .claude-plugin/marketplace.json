@@ -25,14 +25,6 @@
       "license": "MIT"
     },
     {
-      "name": "devkit",
-      "source": "./devkit",
-      "description": "Unified developer workflow toolkit — config-driven commit, review, lint, test, and ship commands",
-      "version": "1.0.0",
-      "keywords": ["devkit", "workflow", "commit", "review", "lint", "test", "ship"],
-      "license": "MIT"
-    },
-    {
       "name": "forge",
       "source": "./forge",
       "description": "Scaffold new projects with AI-native tooling that evolves with your code",

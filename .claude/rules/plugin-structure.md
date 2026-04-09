@@ -1,8 +1,9 @@
 ---
 paths:
   - "onboard/**"
+  - "forge/**"
+  - "observe/**"
   - "notify/**"
-  - "devkit/**"
 ---
 
 # Plugin Structure
@@ -28,7 +29,7 @@ All component directories live at the plugin root, never inside `.claude-plugin/
 
 - No cross-plugin file imports — each plugin must be independently installable
 - Shared patterns should be documented in conventions, not shared via file references
-- If plugin A integrates with plugin B (e.g., devkit → notify), check for B's existence at runtime and skip silently if absent
+- If plugin A integrates with plugin B (e.g., forge → onboard), check for B's existence at runtime and skip silently if absent
 
 ## Adding Components
 

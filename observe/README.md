@@ -77,4 +77,4 @@ Data is stored at `~/.claude/observability/data/` in monthly NDJSON files (`even
 
 ## Works Well With
 
-- **devkit** — future integration for observability-aware ship pipeline metrics
+- **notify** — pair with observe for full session awareness (analytics + notifications)

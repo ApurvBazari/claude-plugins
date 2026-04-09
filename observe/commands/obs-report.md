@@ -67,7 +67,7 @@ Parse the JSON output and present as a formatted report:
 >
 > | Skill | Count |
 > |-------|-------|
-> | devkit:commit | N |
+> | onboard:init | N |
 >
 > **Subagent Types:** Explore (N), Plan (N)
 
