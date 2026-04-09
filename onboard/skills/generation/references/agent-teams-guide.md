@@ -92,6 +92,34 @@ For large-scale refactoring:
 - **Teammate 1**: migrates module A (file ownership: src/moduleA/)
 - **Teammate 2**: migrates module B (file ownership: src/moduleB/)
 - **[plugin] superpowers:verification**: verifies tests pass after each migration
+
+### TDD Feature Development Team
+For building features with test-driven development:
+- **Lead**: orchestrates work, breaks feature into red-green-refactor cycles
+- **[plugin] feature-dev:code-explorer**: analyzes existing patterns + test conventions
+- **[plugin] feature-dev:code-architect**: designs architecture with testability focus
+- **Teammate (TDD implementer)**: follows red-green-refactor cycle (file ownership: [source paths])
+- **[plugin] superpowers:test-driven-development**: guides the implementation phase
+- **[plugin] feature-dev:code-reviewer**: reviews for quality + TDD compliance
+
+**Workflow sequence:**
+feature-dev Phases 1-4          superpowers TDD          feature-dev Phase 6
+Discovery → Exploration →       Red → Green →            Quality Review
+Clarification → Architecture    Refactor → Repeat
+
+**Task dependency chain:**
+1. Explore codebase (code-explorer) → no dependencies
+2. Design architecture (code-architect) → depends on 1
+3. Implement with TDD (teammate + superpowers) → depends on 2
+4. Review (code-reviewer) → depends on 3
+
+**When feature-dev is NOT installed:**
+Lead handles discovery, architecture, and review directly. Replace plugin agent
+references with lead-driven phases in the task descriptions.
+
+**When superpowers is NOT installed:**
+Teammate follows inline TDD instructions from the project's `testing.md` rule
+instead of referencing the superpowers skill.
 ```
 
 ### 4. Adapting Compositions to Installed Plugins
@@ -104,6 +132,7 @@ The team compositions MUST reference actual installed plugins. Use `callerExtras
 | `code-review` | `code-review` command for orchestrated review |
 | `pr-review-toolkit` | Individual agents: `code-reviewer`, `pr-test-analyzer`, `silent-failure-hunter`, `type-design-analyzer`, `comment-analyzer`, `code-simplifier` |
 | `superpowers` | Skills: `test-driven-development`, `systematic-debugging`, `writing-plans`, `verification-before-completion` |
+| `superpowers` + `feature-dev` | TDD Feature Development team (combined workflow — see composition above) |
 | `security-guidance` | Passive hook (no agent reference needed) |
 
 If a plugin is NOT installed, omit it from team compositions. Replace with a note: "Consider installing [plugin] for [capability]."

@@ -292,6 +292,118 @@ When both `codeStyleStrictness` and `autonomyLevel` are set, use this matrix to 
 
 **Key principle**: Autonomy controls **tone** (how assertive and whether to include "check with developer" language). Strictness controls **quantity** (how many rules and how much coverage). A "strict + autonomous" project gets many rules but with assertive language and no confirmation checkpoints.
 
+## TDD Testing Rule
+
+All projects use test-driven development (red-green-refactor). The generated `testing.md` rule enforces TDD as the standard testing approach. Content adapts based on whether the `superpowers` plugin is installed.
+
+### Path Scope
+
+TDD rules apply to **all code**, not just test directories:
+
+```yaml
+---
+paths:
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "tests/**"
+  - "src/**"
+---
+```
+
+### When superpowers IS installed
+
+Generate a concise rule (~30 lines) that states the TDD principles and defers to the superpowers skill for the full workflow:
+
+```markdown
+# Test-Driven Development
+
+## The Iron Law
+No production code without a failing test first. For the full TDD workflow,
+use `/superpowers:test-driven-development`.
+
+## Red-Green-Refactor
+1. **RED**: Write a failing test that describes the desired behavior
+2. **GREEN**: Write the minimal code to make it pass
+3. **REFACTOR**: Clean up while keeping tests green
+
+## Verification
+- Watch each test fail before writing implementation
+- Confirm the failure is for the expected reason (not a typo or import error)
+- Run the full test suite after each green phase
+- [Test command from analysis]
+
+## Existing Code
+- Bug fix → write a failing test that reproduces the bug first
+- Refactor → ensure existing tests cover the behavior, then refactor
+- New feature in existing module → add the test first, then implement
+```
+
+### When superpowers is NOT installed
+
+Generate an expanded rule (~55 lines) with inline TDD guidance:
+
+```markdown
+# Test-Driven Development
+
+## The Iron Law
+No production code without a failing test first.
+
+## Red-Green-Refactor Cycle
+
+### 1. RED — Write a Failing Test
+- Write ONE test that describes the next desired behavior
+- Run the test — it MUST fail
+- Verify it fails for the expected reason (missing function, wrong return value)
+- If it passes immediately, you're testing existing behavior — revise the test
+
+### 2. GREEN — Make It Pass
+- Write the SIMPLEST code that makes the failing test pass
+- No optimization, no generalization, no "while I'm here" additions
+- Run all tests — they must all pass
+
+### 3. REFACTOR — Clean Up
+- Improve code structure without changing behavior
+- Keep all tests green throughout
+- Extract duplicates, rename for clarity, simplify logic
+
+### 4. REPEAT
+- Pick the next behavior. Write the next failing test. Continue.
+
+## Common Rationalizations (All Wrong)
+| Rationalization | Why it's wrong |
+|---|---|
+| "This is too simple to test first" | Simple code is the fastest to TDD — no excuse to skip |
+| "I'll write tests after" | Tests written after are weaker — they test what you wrote, not what you need |
+| "I need to see the shape of the code first" | The test IS the shape — it defines the interface |
+| "Testing this would be too slow" | Slow tests reveal design problems — fix the design |
+| "This is just a refactor" | Refactors need existing tests as a safety net — verify first |
+
+## Verification Checklist
+- [ ] Every new function/method has a corresponding test
+- [ ] Watched each test fail before implementing
+- [ ] Each test failed for the expected reason
+- [ ] Wrote minimal code to pass
+- [ ] All tests pass after each green phase
+- [ ] Tests use real code (minimal mocking)
+- [ ] Edge cases and error paths covered
+
+## Existing Code
+- Bug fix → write a failing test that reproduces the bug first
+- Refactor → ensure existing tests cover the behavior, then refactor
+- New feature in existing module → add the test first, then implement
+
+[Test command from analysis]
+```
+
+### Strictness Adaptation
+
+The TDD rule tone adapts to `codeStyleStrictness`:
+- **Relaxed**: Use "prefer", "aim for" — TDD as guidance
+- **Moderate**: Use "should", "follow" — TDD as convention
+- **Strict**: Use "must", "always", "never" — TDD as mandate
+
+---
+
 ## Generation Guidelines
 
 1. **Only generate rules for detected patterns** — Don't create API rules if there's no API

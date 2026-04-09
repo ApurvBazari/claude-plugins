@@ -137,16 +137,17 @@ Provide a structured review:
 - Focus on logic and architecture over formatting
 ```
 
-### Test Writer
+### TDD Test Writer
 
-**Purpose**: Generates tests for existing or new code.
-**When to generate**: If testing is part of the workflow (testing philosophy != minimal).
+**Purpose**: Writes failing tests first, then guides minimal implementation to pass them.
+**When to generate**: Skip if `superpowers` plugin is installed (it handles the TDD workflow via `superpowers:test-driven-development`). Generate only when superpowers is NOT installed.
 **Tools**: Read, Write, Edit, Glob, Grep, Bash
 
 ```markdown
-# Test Writer
+# TDD Test Writer
 
-Writes tests for specified code following project testing conventions.
+Writes failing tests first, then guides minimal implementation to pass them.
+Follows the red-green-refactor cycle for every change.
 
 ## Model
 
@@ -163,24 +164,30 @@ Writes tests for specified code following project testing conventions.
 
 ## Instructions
 
-Write tests for the specified code. Follow these steps:
+Follow the red-green-refactor cycle for every change:
 
-1. Read the source code and understand its behavior
-2. Identify test cases: happy path, edge cases, error cases
-3. Follow the project's testing patterns (check existing tests for conventions)
-4. Write tests using the project's testing framework
-5. Run the tests to verify they pass
+1. Read the feature requirements or bug description
+2. Design test cases: happy path, edge cases, error cases
+3. Write the FIRST failing test
+4. Run the test — verify it fails for the expected reason
+5. Write the minimal code to make it pass
+6. Run the test — verify it passes
+7. Refactor if needed (keep tests green)
+8. Repeat for the next test case
 
-### Patterns
-- Co-locate test files with source files (or follow project convention)
+### Critical Rules
+- NEVER write implementation code before a failing test exists
+- Each test should test ONE behavior
+- Write the simplest code to pass — no premature optimization
+- If a test passes immediately, it's testing existing behavior — revise it
+- Co-locate test files with source (or follow project convention)
 - Use descriptive test names that explain the expected behavior
-- Mock external dependencies, not internal modules
-- Test behavior, not implementation details
 
 ### Output
-- The test file(s) created
-- Brief summary of what's covered
-- Any edge cases intentionally not tested (with reasoning)
+- The test file(s) created (RED phase)
+- The implementation that passes them (GREEN phase)
+- Any refactoring applied (REFACTOR phase)
+- Summary of what's covered and what edge cases remain
 ```
 
 ### Security Checker
@@ -313,7 +320,8 @@ When a change is made in a monorepo package, assess cross-package impact:
 ## Generation Guidelines
 
 1. **Scale with team size**:
-   - Solo: 1-2 agents (code-reviewer always, test-writer if testing philosophy != minimal)
+   - Solo + superpowers installed: 1 agent (code-reviewer only — superpowers handles TDD)
+   - Solo + no superpowers: 2 agents (code-reviewer, tdd-test-writer)
    - Small team (2-5): 2-3 agents (add security-checker if elevated security)
    - Medium+ team (6+): 3-4 agents (add docs-writer, cross-package reviewer for monorepos)
 2. **Always leave model field empty** with a comment for the developer to set

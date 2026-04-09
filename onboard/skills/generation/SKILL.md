@@ -133,7 +133,8 @@ Follow `references/agents-guide.md` for agent file structure.
 
 - **Model field left empty** — Comment says "set your preferred model"
 - **Scale with team size**:
-  - Solo: 1-2 agents max (test-writer, code-reviewer if code review is informal/formal)
+  - Solo + superpowers installed: 1 agent (code-reviewer only — superpowers handles TDD)
+  - Solo + no superpowers: 2 agents (code-reviewer, tdd-test-writer)
   - Small team: 2-3 agents (add security-checker if elevated security)
   - Large team: 3-4 agents (add documentation-writer, architecture-reviewer)
 - **Each agent** is a single markdown file with clear instructions, allowed tools, and purpose
@@ -147,7 +148,7 @@ When `callerExtras.coveredCapabilities` is present in the headless context, **sk
 | If `coveredCapabilities` includes | Skip generating |
 |---|---|
 | `code-review` | `code-reviewer.md` |
-| `test-generation` | `test-writer.md` |
+| `test-generation` | `tdd-test-writer.md` |
 | `security-audit` | `security-checker.md` |
 | `feature-development` | `feature-builder.md` |
 | `documentation` | `documentation-writer.md` |
@@ -155,6 +156,50 @@ When `callerExtras.coveredCapabilities` is present in the headless context, **sk
 **What to generate instead**: Focus on gap-filling, project-specific agents that no plugin covers — e.g., a `db-migration.md` agent for Prisma projects, or a stack-specific scaffolding agent. These provide value that generic plugins cannot.
 
 **When `coveredCapabilities` is absent**: Generate all agents as usual (backward compatible with standard `/onboard:init` and callers that don't provide capability data).
+
+### Plugin-Aware TDD Workflow
+
+All projects use TDD (red-green-refactor). Generation adapts based on which workflow plugins are installed. Resolve installed plugins from `callerExtras.installedPlugins` (headless mode) or fall back to "no plugins installed" (standard mode).
+
+| superpowers? | feature-dev? | Strategy |
+|---|---|---|
+| Yes | Yes | Reference both: `superpowers:test-driven-development` for implementation, `feature-dev` phases for discovery/design/review. No standalone TDD artifacts. TDD Feature Development team if teams enabled. |
+| Yes | No | Reference superpowers TDD skill in CLAUDE.md + testing.md. Standalone workflow guidance for discovery/design/review phases. Recommend installing feature-dev. |
+| No | Yes | Reference feature-dev for phases 1-4 & 6. Generate standalone TDD skill + TDD test-writer agent. Recommend installing superpowers. |
+| No | No | Recommend both plugins. Fully self-contained: standalone TDD skill, TDD test-writer, inline workflow guidance. |
+
+**Key principles**:
+- Never duplicate what an installed plugin provides
+- When a plugin is missing, recommend it AND generate standalone fallback
+- Add "Recommended Plugins" section to CLAUDE.md when any plugin is missing
+- When superpowers is installed, its TDD skill is authoritative — do not generate a competing `.claude/skills/tdd-workflow/SKILL.md`
+
+**Plugin recommendation message** (shown during generation when plugins are missing):
+
+> For the best TDD workflow, install these plugins:
+>
+> - **superpowers** (`obra/superpowers`) — Full TDD skill with red-green-refactor enforcement, verification gates, and anti-pattern detection. Install: `claude plugins add obra/superpowers`
+> - **feature-dev** (official Anthropic plugin) — Structured feature development with code-explorer, code-architect, and code-reviewer agents. Install: `claude plugins add anthropic/feature-dev`
+>
+> Generating standalone TDD artifacts as fallback...
+
+Only show recommendations for plugins that are actually missing. If both are installed, skip this entirely.
+
+**CLAUDE.md "Recommended Plugins" section** (only when plugins are missing):
+
+```markdown
+## Recommended Plugins
+
+This project uses TDD. Install these plugins for the best workflow:
+
+- **superpowers** (`obra/superpowers`) — Full TDD skill with red-green-refactor
+  enforcement, verification gates, and testing anti-patterns guide.
+- **feature-dev** (official Anthropic plugin) — Structured feature development
+  with code-explorer, code-architect, and code-reviewer agents.
+
+After installing, re-run `/onboard:init` to upgrade from standalone TDD
+artifacts to the integrated plugin-based workflow.
+```
 
 ### Hooks (.claude/settings.json)
 
@@ -205,6 +250,14 @@ Before finishing generation, verify:
 - [ ] Rules reflect actual config settings, not generic defaults
 - [ ] Formatter-enforced settings are in CLAUDE.md Key Conventions, not duplicated in rules
 - [ ] Observed codebase patterns are captured in architectural rules
+- [ ] testing.md rule mandates test-first development (red-green-refactor)
+- [ ] If superpowers installed: no standalone TDD skill generated (would conflict)
+- [ ] If superpowers NOT installed: standalone TDD skill + TDD test-writer agent exist
+- [ ] If any plugin missing: CLAUDE.md includes "Recommended Plugins" section with install commands
+- [ ] If both plugins installed: no "Recommended Plugins" section in CLAUDE.md
+- [ ] CLAUDE.md "Development Workflow" references match actually installed plugins (no dangling refs)
+- [ ] PR template includes TDD checklist item ("Tests written first, all pass")
+- [ ] No stale references to `minimal`, `write-after`, or `comprehensive` testing philosophies
 
 ## Extended Generation (Enriched Mode)
 
@@ -248,6 +301,19 @@ Follow `references/sprint-contracts.md`:
 Follow `references/agent-teams-guide.md`:
 - Team quality hooks (TaskCreated, TaskCompleted)
 - `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in settings.json
+- TDD Feature Development team composition (always included when teams enabled)
+
+### TDD Workflow Artifacts (Always Generated)
+
+TDD is the standard testing approach for all onboarded projects. These artifacts are always generated, adapting content based on installed plugins (see Plugin-Aware TDD Workflow above):
+
+1. **CLAUDE.md "Development Workflow" section** — Describes the combined feature-dev + superpowers TDD phased approach. Adapts references based on installed plugins.
+2. **testing.md rule** — Mandates red-green-refactor with the Iron Law. Content varies by plugin availability (see `references/rules-guide.md` TDD Testing Rule section).
+3. **Standalone TDD skill** (only if superpowers NOT installed) — Generate `.claude/skills/tdd-workflow/SKILL.md` with red-green-refactor cycle, verification checklist, and common rationalizations.
+4. **TDD test-writer agent** (only if superpowers NOT installed) — Generate `.claude/agents/tdd-test-writer.md` following `references/agents-guide.md` TDD variant.
+5. **TDD Feature Development team** (only if `enableTeams`) — Follow `references/agent-teams-guide.md` TDD team composition.
+6. **PR template** — Checklist includes "Tests written first (TDD), all pass".
+7. **Plugin recommendations** — If superpowers or feature-dev is missing, add "Recommended Plugins" section to CLAUDE.md with install commands.
 
 ## Reference Files
 

@@ -50,7 +50,6 @@ Understand where Claude can help most.
 
 ### Phase 5: Preferences (Always)
 Calibrate the generated tooling.
-- Testing philosophy
 - Code style strictness
 - Security sensitivity
 - Claude autonomy level
@@ -80,7 +79,6 @@ When a developer skips a question or section:
 1. **Use neutral defaults** for skipped fields:
    - `autonomyLevel` → `"balanced"`
    - `codeStyleStrictness` → `"moderate"`
-   - `testingPhilosophy` → `"write-after"`
    - `securitySensitivity` → `"standard"`
    - Other fields → omit from wizard answers or use analysis inference if available
 2. **Record skipped fields** — Add a `skippedFields` array in `onboard-meta.json` listing every field that was skipped (e.g., `["testingPhilosophy", "securitySensitivity"]`)
@@ -98,7 +96,7 @@ From analysis data, infer:
 |-------|---------------|
 | `teamSize` | Git contributor count: 1 = solo, 2-5 = small, 6-15 = medium, 15+ = large |
 | `projectMaturity` | Source file count: <10 = new, 10-100 = early, 100-500 = established, >500 = legacy |
-| `testingPhilosophy` | Test file ratio (test files / source files): <5% = minimal, 5-20% = write-after, 20-50% = comprehensive, >50% = tdd |
+| `testingPhilosophy` | Always `"tdd"` — hard-wired, not inferred |
 | `codeStyleStrictness` | Linter config: none found = relaxed, linter present = moderate, linter + strict config (e.g., `"strict": true` in tsconfig, strict ESLint rules) = strict |
 | `securitySensitivity` | Code detection: auth/payment/session code found = elevated, HIPAA/PCI/compliance patterns = high, otherwise = standard |
 | `codeReviewProcess` | PR-related CI detected = formal-pr, team >1 = informal, solo = none |
@@ -110,7 +108,7 @@ From analysis data, infer:
 ### Quick Mode Flow
 
 1. **Infer** — Apply inference rules to analysis data, fill wizard answers
-2. **Ask autonomy** — Always ask the developer their autonomy preference (Q7.4)
+2. **Ask autonomy** — Always ask the developer their autonomy preference (Q7.3)
 3. **Ask project description** — Always ask Q1.1
 4. **Present summary** — Show all inferred + asked values with clear "[inferred]" labels
 5. **Allow tweaks** — Developer can adjust any value before confirming
@@ -157,7 +155,7 @@ After the wizard completes, compile all answers into a structured JSON format:
     "errorProne": "...",
     "automationWishes": "..."
   },
-  "testingPhilosophy": "tdd | write-after | minimal | comprehensive",
+  "testingPhilosophy": "tdd",
   "codeStyleStrictness": "relaxed | moderate | strict",
   "securitySensitivity": "standard | elevated | high",
   "autonomyLevel": "always-ask | balanced | autonomous",

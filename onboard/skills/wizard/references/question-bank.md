@@ -175,25 +175,19 @@ Complete catalog of questions with branching logic. The wizard skill selects and
 
 ## Category 7: Preferences (Always Ask)
 
-### Q7.1: Testing Philosophy
-**Ask**: "How do you approach testing? TDD, write tests after implementation, minimal testing, or comprehensive coverage?"
-**Purpose**: Calibrates testing rules strictness and test-writer agent behavior.
-**Map to**: `testingPhilosophy`
-**Inference rule**: Test file ratio (test files / source files) — <5% = minimal, 5-20% = write-after, 20-50% = comprehensive, >50% = tdd.
-
-### Q7.2: Code Style Strictness
+### Q7.1: Code Style Strictness
 **Ask**: "How strict should Claude be about code style and conventions? Relaxed (just make it work), moderate (follow conventions but don't nitpick), or strict (enforce everything)?"
 **Purpose**: Calibrates rule strictness across all generated rules.
 **Map to**: `codeStyleStrictness`
 **Inference rule**: Linter config — none = relaxed, linter present = moderate, linter + strict config (e.g., `"strict": true` in tsconfig) = strict.
 
-### Q7.3: Security Sensitivity
+### Q7.2: Security Sensitivity
 **Ask**: "How security-sensitive is this project? Standard (typical web app), elevated (handles user data/payments), or high (financial/healthcare/compliance)?"
 **Purpose**: Determines whether to generate security-focused rules and agents.
 **Map to**: `securitySensitivity`
 **Inference rule**: Auth/payment/session code found = elevated, HIPAA/PCI/compliance patterns = high, otherwise = standard.
 
-### Q7.4: Claude Autonomy Level
+### Q7.3: Claude Autonomy Level
 **Ask**: "When working with Claude, do you prefer it to always ask before acting, take a balanced approach (ask for big decisions, act on small ones), or be as autonomous as possible?"
 **Purpose**: This is the single most important preference. It shapes the tone and assertiveness of all generated CLAUDE.md content and rules.
 **Map to**: `autonomyLevel`
@@ -268,5 +262,5 @@ Analysis Results → Question Selection (Custom path only):
 3. **Exchange 3**: Q2.1 + Q2.2 + Q2.3 + Q2.4 (Workflow — grouped together)
 4. **Exchange 4**: Conditional tech-specific questions (Category 3/4/5 — only what applies)
 5. **Exchange 5**: Q6.1 + Q6.2 + Q6.3 (Pain Points — grouped together)
-6. **Exchange 6**: Q7.1 + Q7.2 + Q7.3 + Q7.4 (Preferences — grouped together)
+6. **Exchange 6**: Q7.1 + Q7.2 + Q7.3 (Preferences — grouped together)
 7. **Exchange 7**: Summary & confirmation
