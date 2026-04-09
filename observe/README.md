@@ -1,5 +1,7 @@
 # observe
 
+> **Work in Progress** — Data collection is functional, but analytics and dashboard features are still under development. Expect breaking changes.
+
 Zero-infrastructure observability for Claude Code. Tracks tool usage, skill invocations, subagent spawns, context management, and session behavior — all locally, with no external services.
 
 ## What It Does
