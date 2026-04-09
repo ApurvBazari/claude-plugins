@@ -1,10 +1,10 @@
 # notify
 
-macOS system notifications for Claude Code. Get notified when tasks complete or Claude needs your attention.
+Cross-platform system notifications for Claude Code. Get notified when tasks complete or Claude needs your attention.
 
 ## What It Does
 
-Configures Claude Code hooks to send native macOS notifications via `terminal-notifier`:
+Configures Claude Code hooks to send native system notifications — macOS via `terminal-notifier`, Linux via `notify-send`:
 
 - **Task completed** — notified with a truncated summary of Claude's response
 - **Needs attention** — notified when Claude needs your input (permission prompts, idle)
@@ -14,10 +14,15 @@ Notifications show contextual messages extracted from Claude's actual response, 
 
 ## Requirements
 
-- macOS
-- [Homebrew](https://brew.sh) (for installing terminal-notifier)
+**macOS:**
+- [Homebrew](https://brew.sh) (for installing `terminal-notifier`)
 - `jq` (recommended, installed during setup) or `python3` (fallback for JSON parsing)
-- Claude Code
+
+**Linux:**
+- `notify-send` (from `libnotify`, available on most distributions)
+- `jq` (recommended) or `python3` (fallback for JSON parsing)
+
+**Both platforms:** Claude Code
 
 ## Installation
 
@@ -72,11 +77,6 @@ Settings are stored in `notify-config.json` within the chosen scope directory (`
 - **Notification sound not playing** — Verify the sound name is valid by running: `terminal-notifier -title "Test" -message "Test" -sound "<SoundName>"`. See macOS `/System/Library/Sounds/` for available names.
 - **Setup partially completed** — Re-run `/notify:setup`. It detects existing config and offers to update or replace.
 - **Permissions issues** — If `terminal-notifier` was installed but notifications don't appear, try removing and re-adding it: `brew reinstall terminal-notifier`, then open it once from Finder to trigger the macOS permission prompt.
-
-## Works Well With
-
-- **observe** — Pair with notify for full session awareness (analytics + notifications)
-
 ## Customization
 
 During setup, you can customize per event:
