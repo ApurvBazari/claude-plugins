@@ -59,6 +59,7 @@ Both scopes can coexist — per-project hooks add to global hooks, they don't re
 |---------|-------------|
 | `/notify:setup` | Install and configure notifications |
 | `/notify:status` | Health check and test notifications |
+| `/notify:uninstall` | Remove hooks and clean up configuration |
 
 ## Configuration
 
