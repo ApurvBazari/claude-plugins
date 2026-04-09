@@ -61,27 +61,27 @@ Supports Node.js/TypeScript, Python, Go, Rust, Java/Kotlin, Ruby, monorepos, and
 
 Guided project bootstrapper for Claude Code. Takes you from "I want to build X" to a running application with auto-evolving AI tooling — in one conversation. Think of it as `create-react-app` for the AI-assisted development era.
 
-**3-phase flow:**
+**4-phase flow:**
 
 ```
-Phase 1: Context Gathering     Phase 2: Scaffold          Phase 3: AI Tooling
-┌─────────────────────┐       ┌──────────────────┐       ┌──────────────────────┐
-│ Adaptive wizard      │  →   │ Scaffold app      │  →   │ Claude tooling (via   │
-│ Stack research       │      │ Git + branching   │      │   onboard headless)   │
-│ Preference capture   │      │ Verify Hello World│      │ CI/CD pipelines       │
-└─────────────────────┘       └──────────────────┘       │ Auto-evolution hooks  │
-                                                          │ Plugin discovery      │
-                                                          └──────────────────────┘
+Phase 1: Context        Phase 2: Scaffold    Phase 3: AI Tooling    Phase 4: Lifecycle
+┌────────────────┐     ┌────────────────┐   ┌────────────────┐     ┌────────────────┐
+│ Adaptive wizard │ →  │ Scaffold app   │ → │ Claude tooling │ →   │ ADRs, testing  │
+│ Stack research  │    │ Git + branching│   │ CI/CD pipelines│     │ strategy, deploy│
+│ Preferences     │    │ Verify Hello   │   │ Plugin install │     │ checklists,    │
+└────────────────┘     │ World          │   │ Evolution hooks│     │ runbooks       │
+                       └────────────────┘   └────────────────┘     │ (optional)     │
+                                                                    └────────────────┘
 ```
 
 **Commands:**
 
 | Command | What it does |
 |---------|-------------|
-| `/forge:init` | Full 3-phase guided workflow |
+| `/forge:init` | Full 4-phase guided workflow |
 | `/forge:evolve` | Apply pending tooling updates from drift detection |
 
-**Prerequisites:** Requires the `onboard` plugin (forge delegates all tooling generation to it).
+**Prerequisites:** Requires the `onboard` plugin. The `engineering` plugin (optional) enables Phase 4 lifecycle document generation.
 
 Stack-agnostic — works with any technology. Researches your stack via web search rather than relying on built-in templates.
 
@@ -159,7 +159,7 @@ These plugins cover different phases of the development lifecycle. Here's how th
 
 ### Setup
 
-**`onboard`** bootstraps your project's Claude tooling in one pass — CLAUDE.md, rules, skills, agents, hooks. For new projects, **`forge`** scaffolds the entire app and then calls onboard for tooling. After initial setup, **`hookify`** (companion) lets you add behavioral rules incrementally without re-running onboard. **`engineering:architecture`** (companion) can create ADRs documenting tech stack decisions made during setup.
+**`onboard`** bootstraps your project's Claude tooling in one pass — CLAUDE.md, rules, skills, agents, hooks. For new projects, **`forge`** scaffolds the entire app, calls onboard for tooling, and optionally generates engineering lifecycle documents (ADRs, testing strategies, deploy checklists) via its Phase 4 integration with the **`engineering`** plugin. After initial setup, **`hookify`** (companion) lets you add behavioral rules incrementally without re-running onboard.
 
 ### Develop
 
