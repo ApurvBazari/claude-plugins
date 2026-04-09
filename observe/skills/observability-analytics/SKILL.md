@@ -35,7 +35,6 @@ Determine what the user is asking about and select the appropriate query mode:
 | "Am I being efficient?" / "optimize" | `quality-signals` | — | optimization-advisor |
 | "Deep analysis" / "patterns" / "trends" | `full-report` | — | usage-analyst |
 | "Compare projects" | `full-report` | `--project <name>` | usage-analyst |
-| "Pipeline history" / "ship results" / "devkit runs" | `pipeline-summary` | `--range` if specified | usage-analyst |
 
 If the user's request doesn't clearly match a category, default to `full-report` for a broad overview.
 

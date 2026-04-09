@@ -317,82 +317,6 @@ def week_over_week(events):
     }
 
 
-def pipeline_runs(events):
-    """Detect devkit pipeline runs and compute dashboard metrics."""
-    devkit_skills = {"devkit:test", "devkit:lint", "devkit:check", "devkit:review", "devkit:commit"}
-    sessions = defaultdict(list)
-    for ev in events:
-        sessions[ev.get("sid", "unknown")].append(ev)
-
-    pipelines = []
-    for sid, evts in sessions.items():
-        evts.sort(key=lambda e: e.get("ts", ""))
-        devkit_evts = []
-        for e in evts:
-            data = e.get("data", {})
-            if data.get("is_skill") and data.get("skill_name", "") in devkit_skills:
-                ts = parse_ts(e.get("ts", ""))
-                if ts:
-                    devkit_evts.append({"skill": data["skill_name"], "ts": ts})
-
-        if len(devkit_evts) < 2:
-            continue
-
-        runs = []
-        current = [devkit_evts[0]]
-        for i in range(1, len(devkit_evts)):
-            if (devkit_evts[i]["ts"] - devkit_evts[i - 1]["ts"]).total_seconds() <= 300:
-                current.append(devkit_evts[i])
-            else:
-                if len(current) >= 2:
-                    runs.append(current)
-                current = [devkit_evts[i]]
-        if len(current) >= 2:
-            runs.append(current)
-
-        for run in runs:
-            steps = list(dict.fromkeys(e["skill"].replace("devkit:", "") for e in run))
-            start = run[0]["ts"]
-            dur = round((run[-1]["ts"] - start).total_seconds(), 1)
-            has_commit = "commit" in steps
-            pipelines.append({
-                "date": start.strftime("%Y-%m-%d"),
-                "steps": steps,
-                "duration": dur,
-                "result": "completed" if has_commit else "incomplete",
-            })
-
-    # Success rate by day
-    day_total = Counter()
-    day_completed = Counter()
-    step_durations_map = defaultdict(list)
-    for p in pipelines:
-        day_total[p["date"]] += 1
-        if p["result"] == "completed":
-            day_completed[p["date"]] += 1
-
-    days = sorted(set(day_total.keys()))
-    success_rates = []
-    for d in days:
-        rate = round(day_completed.get(d, 0) / day_total[d] * 100) if day_total[d] > 0 else 0
-        success_rates.append(rate)
-
-    # Step frequency
-    step_counter = Counter()
-    for p in pipelines:
-        for s in p["steps"]:
-            step_counter[s] += 1
-    top_steps = step_counter.most_common(10)
-
-    return {
-        "total": len(pipelines),
-        "success_labels": days,
-        "success_values": success_rates,
-        "step_labels": [s for s, _ in top_steps],
-        "step_values": [c for _, c in top_steps],
-    }
-
-
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -425,7 +349,6 @@ def main():
         "quality_signals": quality_signals_summary(events),
         "activity_heatmap": activity_heatmap(events),
         "week_over_week": week_over_week(events),
-        "pipeline_runs": pipeline_runs(events),
         "summary": compute_summary(events, costs),
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "range": range_arg,
