@@ -84,14 +84,37 @@ After Forge sets up your project, hooks keep tooling in sync:
 
 ## Supported Stacks
 
-Forge is stack-agnostic — it works with any technology the developer describes. It researches the stack via web search rather than relying on built-in templates. Common stacks include:
+Forge is stack-agnostic in principle — it researches whatever stack you describe via web search rather than relying on built-in templates. But some stacks are verified end-to-end, some are known to work, and some are experimental. Be honest about which is which:
 
-- JavaScript/TypeScript (Next.js, React, Vue, Svelte, Express, NestJS)
-- Python (FastAPI, Django, Flask)
-- Go (Gin, Echo, Chi)
+### Verified (tested end-to-end)
+
+These stacks have been scaffolded through the full forge workflow and the generated tooling has been validated:
+
+- **Next.js (App Router)** — TypeScript, Tailwind, Prisma, NextAuth
+- **Python FastAPI** — Pydantic, SQLAlchemy, pytest
+- **Go HTTP services** — chi/gin routers, standard project layout
+
+### Known to work (community-reported)
+
+These stacks work but haven't been formally validated in CI:
+
+- React (Vite), Vue, Svelte
+- Express, NestJS
 - Rust (Axum, Actix)
-- Ruby (Rails)
-- Monorepos (Turborepo, Nx)
+- Ruby on Rails
+- Monorepos (Turborepo, Nx, pnpm workspaces)
+
+### Experimental (walking-skeleton mode recommended)
+
+These stacks lack a mature scaffold CLI or have significantly different architecture from web/server projects. Forge can still help but works best with `scaffoldMode: walking-skeleton`:
+
+- **Android native (Kotlin + Compose + Hilt + Room)** — no `create-*` CLI; use walking skeleton, let AI tooling guide the expansion
+- **iOS native (Swift + SwiftUI)** — similar pattern
+- **Desktop (Tauri, Electron)** — partial CLI coverage
+- **Game engines (Unity, Godot, Bevy)** — architecture is framework-specific
+- **Custom backends without an obvious scaffold tool**
+
+If your stack isn't listed here, forge will still try. Use `scaffoldMode: walking-skeleton` if you're unsure — it produces a minimal representative project forge's AI tooling can analyze, rather than guessing at a full scaffold and getting it wrong.
 
 ## Works Well With
 

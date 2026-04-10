@@ -2,20 +2,53 @@
 
 You are executing Phase 4 of Forge: generating engineering lifecycle documents by delegating to the `engineering` plugin's skills. This phase is entirely optional — if the developer skips all documents or the engineering plugin is not installed, proceed directly to Handoff.
 
-## Guard
+## Guard: engineering prerequisite
 
-Check if the `engineering` plugin is installed. Look for any `engineering:*` skill being available (e.g., `engineering:architecture`).
+The `engineering` plugin is **optional** for Phase 4. It lives in a different marketplace (`knowledge-work-plugins`), so probe its common install locations first, then fall back to asking the developer if detection is inconclusive.
 
-If the engineering plugin is NOT installed:
+### Step 1: Detect
 
-> The **engineering** plugin can generate project-specific documents — Architecture Decision Records,
-> testing strategies, deploy checklists, and more — using the context we gathered in Phase 1.
+Try the filesystem probe. The engineering plugin may be installed as a sibling of forge (same marketplace parent) or under a separate marketplace directory one level up:
+
+```bash
+ls "${CLAUDE_PLUGIN_ROOT}/../engineering" 2>/dev/null || \
+ls "${CLAUDE_PLUGIN_ROOT}/../../engineering" 2>/dev/null
+```
+
+**If either probe finds the directory**, treat engineering as installed and proceed to Step 1 of the main skill flow.
+
+**If both probes fail**, the engineering plugin is either missing or installed somewhere we can't detect automatically (e.g., a user-local path). Ask the developer with AskUserQuestion:
+
+> I couldn't auto-detect the **engineering** plugin (it lives in the separate `knowledge-work-plugins` marketplace, so location varies).
 >
-> Install it with: `claude plugin install engineering` (from `knowledge-work-plugins` marketplace)
->
-> Want to install it now, or skip Phase 4?
+> Is it already installed and available?
 
-If the developer chooses to install, run the install command via Bash and continue. If they choose to skip, proceed directly to Handoff — do not present the lifecycle menu.
+Options:
+- **Yes, it's installed** — treat as present, proceed to Step 1
+- **No, install it now (Recommended)** — go to Step 2 below
+- **Skip Phase 4** — proceed directly to Handoff
+
+### Step 2: Offer inline install (when confirmed missing)
+
+Tell the developer what engineering does and offer install:
+
+> The **engineering** plugin generates project-specific engineering documents — Architecture Decision Records, testing strategies, deploy checklists, system designs, runbooks, and incident playbooks — using the context we gathered in Phase 1.
+>
+> Install it now? (runs: `claude plugin install engineering`)
+
+Use AskUserQuestion with options: **Install now (Recommended)**, **Skip Phase 4**.
+
+### Step 3: Handle install outcome
+
+**If the developer installs:**
+1. Run `claude plugin install engineering` via the Bash tool.
+2. Re-run the detection probes from Step 1.
+3. **On success** — proceed to Step 1 of the main skill flow. If engineering's slash commands aren't immediately available in this session, tell the developer: "Engineering is installed, but its skills may not be available until you restart the session. If the first `engineering:*` skill invocation fails, restart Claude Code and rerun `/forge:init` Phase 4 manually."
+4. **On install failure** — surface the underlying error verbatim (common causes: `knowledge-work-plugins` marketplace not added, network issue, auth). Then skip Phase 4 gracefully and proceed directly to Handoff. Do not block the rest of the flow — Phase 4 is optional.
+
+**If the developer skips** (explicitly declines install, or says "no" to the detection question):
+
+Proceed directly to Handoff — do not present the lifecycle menu. Tell the developer: "Skipping Phase 4. You can install engineering later with `claude plugin install engineering` and run `/engineering:architecture`, `/engineering:testing-strategy`, etc. directly on this project."
 
 ---
 

@@ -59,7 +59,19 @@ Offer complementary plugins from the ecosystem.
 - Notifications (notify plugin) — get alerted when Claude finishes tasks or needs attention
 - Usage analytics (observe plugin) — track tool usage patterns and workflow efficiency
 
-Only offer plugins that are available (installed in Claude Code). If a plugin is not installed, skip it silently.
+**Offer all ecosystem plugins regardless of install status.** For each one, probe the filesystem and include an install-status marker in the presentation so the developer knows up front what's already installed vs. what will need to be installed later:
+
+```bash
+ls "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh" 2>/dev/null
+ls "${CLAUDE_PLUGIN_ROOT}/../observe/scripts/install.sh" 2>/dev/null
+```
+
+Present each plugin with:
+- A one-line capability description
+- `[installed]` or `[not installed]` marker based on the probe result
+- For `[not installed]`, a note: "Selecting this will prompt you to install it in Phase 3.5."
+
+The developer can select any plugin regardless of install status. Phase 3.5 (`Resolve Requested Ecosystem Plugins` in the init command) handles the inline install for anything selected but missing — the wizard never hides options just because they aren't installed yet.
 
 ### Phase 6: Summary & Confirmation
 Present everything gathered (analysis + wizard answers) and ask for confirmation before generation.
