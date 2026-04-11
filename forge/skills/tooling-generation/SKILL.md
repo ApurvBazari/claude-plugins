@@ -235,9 +235,9 @@ Update `.claude/forge-meta.json` with:
 - `generated.tooling`: from onboard's response
 - `generated.cicd`: from onboard's response
 - `generated.harness`: init.sh + feature-list.json + onboard's harness artifacts
-- `generated.toolingFlags`: **the full `callerExtras` object built in Step 1** (mirror it verbatim). This persists `installedPlugins`, `coveredCapabilities`, `qualityGates`, `phaseSkills`, and `allowPluginReferences` so `/forge:status` can later report Plugin Integration Coverage without re-deriving them. Required by the `/forge:status` Step 4.5 coverage report. Shape:
+- `generated.toolingFlags`: **the full `callerExtras` object built in Step 1 + the `hookStatus` object from onboard's response**. This persists `installedPlugins`, `coveredCapabilities`, `qualityGates`, `phaseSkills`, and `allowPluginReferences` so `/forge:status` can later report Plugin Integration Coverage without re-deriving them, and mirrors onboard's `hookStatus` telemetry so the coverage report can show planned-vs-generated-vs-skipped counts. Required by the `/forge:status` Step 4.5 coverage report. Shape:
 
-  ```json
+  ```jsonc
   {
     "installedPlugins": ["superpowers", "code-review", ...],
     "coveredCapabilities": ["code-review", ...],
@@ -255,11 +255,21 @@ Update `.claude/forge-meta.json` with:
       "review":   [ ... ],
       "commit":   [ ... ],
       "post-phase": [ ... ]
+    },
+    "hookStatus": {                          // NEW — mirrored from /onboard:generate response
+      "planned":   { "SessionStart": 1, "PreToolUse:Write": 1, "PreToolUse:Bash": 1, "Stop": 1 },
+      "generated": { "SessionStart": 1, "PreToolUse:Write": 1, "PreToolUse:Bash": 1, "Stop": 1 },
+      "skipped":   [],
+      "warnings":  []
     }
   }
   ```
 
-  **Write rule**: copy from the in-memory `callerExtras` object exactly as it was sent to `/onboard:generate` — including the autonomyLevel-downgraded `preCommit[].mode` values. Do not re-derive; the persisted value should match what onboard actually received.
+  **Write rules**:
+  - Copy `installedPlugins`, `coveredCapabilities`, `allowPluginReferences`, `qualityGates`, `phaseSkills` from the in-memory `callerExtras` object exactly as it was sent to `/onboard:generate` — including the autonomyLevel-downgraded `preCommit[].mode` values. Do not re-derive.
+  - Copy `hookStatus` verbatim from the `/onboard:generate` response object (see `onboard/commands/generate.md` § Step 5). Do not reshape.
+  - If onboard's response lacks `hookStatus` (e.g. talking to an older onboard), synthesize a minimal fallback: `{"planned": {}, "generated": {}, "skipped": [], "warnings": ["hookStatus unavailable — onboard < 2.2.0"]}`. This keeps `/forge:status` consumable.
+  - **Invariant**: `toolingFlags.hookStatus.planned` keys should match what onboard expected to generate from `toolingFlags.qualityGates`. A mismatch signals a contract drift between forge and onboard.
 
 - `context.verificationStrategy`: the chosen approach
 - `costs.forgeInit`: estimated token usage

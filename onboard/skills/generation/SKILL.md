@@ -301,6 +301,52 @@ When `callerExtras.qualityGates` is present in headless mode, generate boundary-
 
 **Merge semantics**: All quality-gate hooks merge into `.claude/settings.json` following the existing merge strategy (see `references/hooks-guide.md` § Settings Merge Strategy). If a hook with the same matcher/event already exists, skip don't duplicate.
 
+**Hook Status Telemetry**: While walking through the 4 hook categories (`sessionStart`, `preCommit`, `featureStart`, `postFeature`), onboard MUST record what was planned, what was actually generated, and what was skipped (and why) into a structured `hookStatus` object. This object is:
+
+1. Returned from `/onboard:generate` in the result summary (see `onboard/commands/generate.md` § Step 5)
+2. Recorded inside `.claude/onboard-meta.json` under the top-level `hookStatus` key
+3. Mirrored by forge into `.claude/forge-meta.json.generated.toolingFlags.hookStatus` (see `forge/skills/tooling-generation/SKILL.md` § Step 4)
+
+This telemetry enables `/forge:status` to report "X/Y hooks wired" and lays the foundation for future adaptive behaviors (e.g. suppress SessionStart reminder after the user dismissed it N times).
+
+**Canonical `hookStatus` shape** (the source of truth — all downstream consumers use this exact layout):
+
+```jsonc
+"hookStatus": {
+  "planned": {
+    "SessionStart": 1,               // count of planned hooks per event key
+    "PreToolUse:Write": 1,           // keys use <Event>[:<Matcher>] format
+    "PreToolUse:Bash": 1,
+    "Stop": 1
+  },
+  "generated": {
+    "SessionStart": 1,               // count of hooks actually written to settings.json
+    "PreToolUse:Write": 1,
+    "PreToolUse:Bash": 1,            // may be < planned if a skill's plugin was missing
+    "Stop": 1
+  },
+  "skipped": [                       // one entry per hook that was planned but NOT generated
+    {
+      "event": "PreToolUse:Bash",    // event:matcher key from `planned`
+      "skill": "superpowers:verification-before-completion",
+      "reason": "plugin-not-installed"
+    }
+  ],
+  "warnings": [                      // free-text warnings emitted during hook generation
+    "featureStart.criticalDirs was empty; detector hook not generated"
+  ]
+}
+```
+
+**Counting rules**:
+- `planned[event]` = number of entries in `callerExtras.qualityGates.<field>[]` that map to that event (e.g. `qualityGates.preCommit[]` length contributes to `PreToolUse:Bash` because pre-commit hooks attach to Bash tool calls)
+- `generated[event]` = number of `<Event>[:<Matcher>]` hook entries actually written to `.claude/settings.json` (before merge — so only new entries, not pre-existing ones)
+- `skipped[]` = a record for every entry in `planned` that did NOT produce a corresponding `generated` entry, with the reason (`plugin-not-installed`, `condition-unsatisfied`, `empty-critical-dirs`, etc.)
+- `warnings[]` = operator-facing messages (not user-facing) about soft issues during generation
+- **Invariant**: `sum(planned) - sum(generated) == len(skipped)` for every hook category. If a skipped entry is missing, the telemetry is broken — treat as a generation bug.
+
+**Backward compat**: downstream consumers (forge status, etc.) MUST treat `hookStatus` as optional. When absent (e.g. pre-2.2.0 onboard runs), fall back to comparing `qualityGates` spec against actual `.claude/settings.json` content.
+
 See `references/hooks-guide.md` for generated script templates, ShellCheck requirements, and concrete examples of sessionStart + featureStart + preCommit hooks.
 
 #### O6 — SessionStart reminder hook

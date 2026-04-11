@@ -226,7 +226,27 @@ After generation completes, compile and return a results summary:
 > |---|---|
 > | [list each file created] | [brief description] |
 >
+> Hook status: [N] planned, [M] generated, [K] skipped
+>
 > Metadata saved to `.claude/onboard-meta.json`
+
+In addition to the human-readable summary, the results object returned to the caller MUST include a `hookStatus` object with the canonical shape documented in `skills/generation/SKILL.md` § Quality-Gate Hooks § Hook Status Telemetry. Callers (notably forge) rely on this field to persist hook wiring data in their own metadata files — do not omit it even when all hooks were generated successfully (in that case, `skipped: []` and `warnings: []`).
+
+Example results object shape:
+
+```jsonc
+{
+  "source": "forge",
+  "headlessMode": true,
+  "artifactsGenerated": ["CLAUDE.md", ".claude/rules/...", ".claude/hooks/..."],
+  "hookStatus": {
+    "planned":   { "SessionStart": 1, "PreToolUse:Write": 1, "PreToolUse:Bash": 1, "Stop": 1 },
+    "generated": { "SessionStart": 1, "PreToolUse:Write": 1, "PreToolUse:Bash": 1, "Stop": 1 },
+    "skipped":   [],
+    "warnings":  []
+  }
+}
+```
 
 The `onboard-meta.json` file records:
 - `source`: the calling plugin identifier
@@ -237,6 +257,7 @@ The `onboard-meta.json` file records:
 - `generatedArtifacts`: list of files created
 - `modelRecommendation`: from context
 - `callerExtras`: passed through from context
+- `hookStatus`: **new** — the same canonical-shape object returned in the results summary. Recording it in both places gives callers two independent provenance sources.
 
 ---
 
