@@ -235,6 +235,32 @@ Update `.claude/forge-meta.json` with:
 - `generated.tooling`: from onboard's response
 - `generated.cicd`: from onboard's response
 - `generated.harness`: init.sh + feature-list.json + onboard's harness artifacts
+- `generated.toolingFlags`: **the full `callerExtras` object built in Step 1** (mirror it verbatim). This persists `installedPlugins`, `coveredCapabilities`, `qualityGates`, `phaseSkills`, and `allowPluginReferences` so `/forge:status` can later report Plugin Integration Coverage without re-deriving them. Required by the `/forge:status` Step 4.5 coverage report. Shape:
+
+  ```json
+  {
+    "installedPlugins": ["superpowers", "code-review", ...],
+    "coveredCapabilities": ["code-review", ...],
+    "allowPluginReferences": true,
+    "qualityGates": {
+      "sessionStart": [ ... ],
+      "preCommit":    [ ... ],
+      "featureStart": [ ... ],
+      "postFeature":  [ ... ]
+    },
+    "phaseSkills": {
+      "research": [ ... ],
+      "planning": [ ... ],
+      "feature":  [ ... ],
+      "review":   [ ... ],
+      "commit":   [ ... ],
+      "post-phase": [ ... ]
+    }
+  }
+  ```
+
+  **Write rule**: copy from the in-memory `callerExtras` object exactly as it was sent to `/onboard:generate` — including the autonomyLevel-downgraded `preCommit[].mode` values. Do not re-derive; the persisted value should match what onboard actually received.
+
 - `context.verificationStrategy`: the chosen approach
 - `costs.forgeInit`: estimated token usage
 
