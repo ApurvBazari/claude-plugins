@@ -232,6 +232,8 @@ After generation completes, compile and return a results summary:
 
 In addition to the human-readable summary, the results object returned to the caller MUST include a `hookStatus` object with the canonical shape documented in `skills/generation/SKILL.md` § Quality-Gate Hooks § Hook Status Telemetry. Callers (notably forge) rely on this field to persist hook wiring data in their own metadata files — do not omit it even when all hooks were generated successfully (in that case, `skipped: []` and `warnings: []`).
 
+**Scope reminder**: `hookStatus` tracks **only** hooks derived from `callerExtras.qualityGates`. Format/lint hooks (Prettier, ESLint, etc.) and onboard-internal hooks (forge-evolution-check, etc.) are deliberately **excluded** from these counts — they still land in `.claude/settings.json` but do not appear in `hookStatus.planned` or `hookStatus.generated`. See SKILL.md § Hook Status Telemetry § Scope boundary for the full rationale.
+
 Example results object shape:
 
 ```jsonc
@@ -240,10 +242,17 @@ Example results object shape:
   "headlessMode": true,
   "artifactsGenerated": ["CLAUDE.md", ".claude/rules/...", ".claude/hooks/..."],
   "hookStatus": {
-    "planned":   { "SessionStart": 1, "PreToolUse:Write": 1, "PreToolUse:Bash": 1, "Stop": 1 },
-    "generated": { "SessionStart": 1, "PreToolUse:Write": 1, "PreToolUse:Bash": 1, "Stop": 1 },
+    "planned":   { "SessionStart": 1, "PreToolUse:Write": 1, "PreToolUse:Bash": 2, "Stop": 1 },
+    "generated": {
+      // list-of-script-basenames per event key — richer than a count map
+      "SessionStart":     ["plugin-integration-reminder.sh"],
+      "PreToolUse:Write": ["feature-start-detector.sh"],
+      "PreToolUse:Bash":  ["pre-commit-code-review.sh", "pre-commit-verification-before-completion.sh"],
+      "Stop":             ["post-feature-revise-claude-md.sh"]
+    },
     "skipped":   [],
-    "warnings":  []
+    "warnings":  [],
+    "downgradeApplied": null  // optional — set to an object when autonomyLevel forced a preCommit mode downgrade
   }
 }
 ```

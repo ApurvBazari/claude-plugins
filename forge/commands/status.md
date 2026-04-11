@@ -85,11 +85,12 @@ For projects where `forge-meta.json.installedPlugins` is non-empty, assess how w
 
 1. **Read root `CLAUDE.md`** — look for `<!-- onboard:plugin-integration:start -->` marker. If present, record line count of the delimited region. If absent, mark Plugin Integration section as **missing**.
 2. **Read `.claude/settings.json`** — inspect `hooks.SessionStart`, `hooks.PreToolUse`, `hooks.Stop` for quality-gate entries generated from `qualityGates` (script paths matching `plugin-integration-reminder.sh`, `feature-start-detector.sh`, `pre-commit-*.sh`, `post-feature-*.sh`). Record which are present.
-3. **Read `forge-meta.json.generated.toolingFlags.hookStatus`** (preferred path) — onboard 2.2.0+ persists a canonical `hookStatus` telemetry object with `planned` / `generated` / `skipped` / `warnings` fields. If present, use it directly for the coverage report — it's more accurate than reconstructing the picture from `qualityGates` + `settings.json`. Fields:
-   - `planned[event]` — how many hooks onboard expected to generate for that event key
-   - `generated[event]` — how many it actually wrote to `.claude/settings.json`
+3. **Read `forge-meta.json.generated.toolingFlags.hookStatus`** (preferred path) — onboard 2.2.0+ persists a canonical `hookStatus` telemetry object. If present, use it directly for the coverage report — it's more accurate than reconstructing the picture from `qualityGates` + `settings.json`. Fields:
+   - `planned[event]` — **integer** — how many hooks onboard expected to generate for that event key (only counts `qualityGates`-derived hooks; format/lint/forge-internal hooks are out of scope)
+   - `generated[event]` — **array of script basenames** (canonical shape) — list of hook scripts actually wired under that event. Use `len(generated[event])` to get the count. (Legacy tolerance: some older onboard builds emit a count integer instead of an array — detect the shape and handle both.)
    - `skipped[]` — list of `{event, skill, reason}` entries for hooks that were dropped (e.g., plugin missing, condition unsatisfied, empty critical-dirs)
    - `warnings[]` — operator-facing messages about soft issues during generation
+   - `downgradeApplied` (optional) — object of `{rule, affectedEntries}` present only when autonomyLevel forced a `preCommit[].mode` downgrade. Absent or `null` means no downgrade fired.
 4. **Fallback (no `hookStatus`)** — if `generated.toolingFlags.hookStatus` is absent (e.g. project was set up with onboard < 2.2.0), fall back to comparing `forge-meta.json.generated.toolingFlags.qualityGates` against the hook entries actually wired in `.claude/settings.json`. Flag drift inferentially (e.g., `qualityGates.preCommit` listed 2 entries but only 1 hook script exists → 1 missing).
 5. **Check phase-recommended plugins**: derive the expected plugin set from `forge-meta.json.context` (stack, autonomyLevel, etc.) using the Step 1 match logic from `plugin-discovery/SKILL.md`. Any phase-recommended plugin NOT in `installedPlugins` is reported as "missing".
 6. **Check critical dirs**: if `qualityGates.featureStart.criticalDirs` was populated, verify those directories exist on disk. If any are missing, the feature-start detector will never fire for them.
@@ -144,7 +145,7 @@ Compare `webResearch.stackVersion` from metadata against current `package.json` 
 > | Covered capabilities | [N] [list] |
 > | Phase-recommended missing | [list, or "none"] |
 > | Plugin Integration section in CLAUDE.md | [ok ([line count] lines) / missing] |
-> | Hook wiring (planned → generated) | [sum(planned)/sum(generated)] [from hookStatus if available, else reconstructed] |
+> | Hook wiring (planned → generated) | [sum(planned) / sum(len(generated[event]))] [from hookStatus if available, else reconstructed] |
 > | SessionStart reminder hook | [wired / not wired] [optional: (N skipped)] |
 > | Feature-start detector hook | [wired / not wired / (no critical dirs configured)] |
 > | preCommit blocking hooks | [N wired / 0 wired (autonomy=exploratory)] [optional: (M skipped, reasons: ...)] |
@@ -161,6 +162,11 @@ Compare `webResearch.stackVersion` from metadata against current `package.json` 
 > **Warnings**:
 > - [warning text]
 > - ...
+>
+> [If `hookStatus.downgradeApplied` is present and non-null — list the rule + affected entries]:
+> **Mode downgrades applied**:
+> - Rule: [hookStatus.downgradeApplied.rule]
+> - Affected entries: [hookStatus.downgradeApplied.affectedEntries joined with ", "]
 >
 > [If Plugin Integration section is missing but installedPlugins is non-empty]:
 > Plugin Integration section is stale or missing. Run `/onboard:update` to refresh it.

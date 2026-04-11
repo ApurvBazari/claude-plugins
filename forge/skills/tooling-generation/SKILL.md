@@ -257,18 +257,27 @@ Update `.claude/forge-meta.json` with:
       "post-phase": [ ... ]
     },
     "hookStatus": {                          // NEW — mirrored from /onboard:generate response
-      "planned":   { "SessionStart": 1, "PreToolUse:Write": 1, "PreToolUse:Bash": 1, "Stop": 1 },
-      "generated": { "SessionStart": 1, "PreToolUse:Write": 1, "PreToolUse:Bash": 1, "Stop": 1 },
+      "planned":   { "SessionStart": 1, "PreToolUse:Write": 1, "PreToolUse:Bash": 2, "Stop": 1 },
+      "generated": {                         // list-of-script-basenames per event key
+        "SessionStart":     ["plugin-integration-reminder.sh"],
+        "PreToolUse:Write": ["feature-start-detector.sh"],
+        "PreToolUse:Bash":  ["pre-commit-code-review.sh", "pre-commit-verification-before-completion.sh"],
+        "Stop":             ["post-feature-revise-claude-md.sh"]
+      },
       "skipped":   [],
-      "warnings":  []
+      "warnings":  [],
+      "downgradeApplied": null              // optional — object with rule + affectedEntries when autonomyLevel forced a downgrade
     }
   }
   ```
 
+  **Scope reminder**: `hookStatus` only tracks hooks derived from `callerExtras.qualityGates`. Format/lint hooks, forge-internal hooks, and any other non-Plugin-Integration hooks stay out of these counts even though they're written to `.claude/settings.json`. See `onboard/skills/generation/SKILL.md` § Hook Status Telemetry § Scope boundary for the rationale.
+
   **Write rules**:
   - Copy `installedPlugins`, `coveredCapabilities`, `allowPluginReferences`, `qualityGates`, `phaseSkills` from the in-memory `callerExtras` object exactly as it was sent to `/onboard:generate` — including the autonomyLevel-downgraded `preCommit[].mode` values. Do not re-derive.
-  - Copy `hookStatus` verbatim from the `/onboard:generate` response object (see `onboard/commands/generate.md` § Step 5). Do not reshape.
-  - If onboard's response lacks `hookStatus` (e.g. talking to an older onboard), synthesize a minimal fallback: `{"planned": {}, "generated": {}, "skipped": [], "warnings": ["hookStatus unavailable — onboard < 2.2.0"]}`. This keeps `/forge:status` consumable.
+  - Copy `hookStatus` verbatim from the `/onboard:generate` response object (see `onboard/commands/generate.md` § Step 5). Do not reshape. `generated` is a **list-of-basenames map**, not a count map.
+  - If onboard's response lacks `hookStatus` (e.g. talking to an older onboard), synthesize a minimal fallback: `{"planned": {}, "generated": {}, "skipped": [], "warnings": ["hookStatus unavailable — onboard < 2.2.0"], "downgradeApplied": null}`. This keeps `/forge:status` consumable.
+  - **Tolerate legacy count-map form**: if an older onboard build emits `generated[event]` as an integer (count) instead of an array (list-of-basenames), forge should store whatever it receives verbatim and let `/forge:status` handle the shape check at read time. The canonical form going forward is list-of-basenames.
   - **Invariant**: `toolingFlags.hookStatus.planned` keys should match what onboard expected to generate from `toolingFlags.qualityGates`. A mismatch signals a contract drift between forge and onboard.
 
 - `context.verificationStrategy`: the chosen approach

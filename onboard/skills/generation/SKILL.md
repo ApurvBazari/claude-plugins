@@ -309,6 +309,10 @@ When `callerExtras.qualityGates` is present in headless mode, generate boundary-
 
 This telemetry enables `/forge:status` to report "X/Y hooks wired" and lays the foundation for future adaptive behaviors (e.g. suppress SessionStart reminder after the user dismissed it N times).
 
+**Scope boundary** (load-bearing — read this carefully): `hookStatus` tracks **only** hooks derived from `callerExtras.qualityGates`. Pre-existing format/lint hooks (Prettier, ESLint, Black, rustfmt, etc.), forge-internal hooks (like `forge-evolution-check.sh`), and any other non-Plugin-Integration hooks are **out of scope** for this telemetry. They still get written to `.claude/settings.json` via the normal merge path, but they do **not** appear in `hookStatus.planned` or `hookStatus.generated`. This keeps Plugin Integration Coverage reporting clean — `/forge:status` should never show a confusing "wired 2 hooks but planned 0" because format hooks inflated the count.
+
+The mental model: `hookStatus` answers "how well did the Plugin Integration contract land?", not "how many shell hooks does this project have total?".
+
 **Canonical `hookStatus` shape** (the source of truth — all downstream consumers use this exact layout):
 
 ```jsonc
@@ -316,36 +320,47 @@ This telemetry enables `/forge:status` to report "X/Y hooks wired" and lays the 
   "planned": {
     "SessionStart": 1,               // count of planned hooks per event key
     "PreToolUse:Write": 1,           // keys use <Event>[:<Matcher>] format
-    "PreToolUse:Bash": 1,
+    "PreToolUse:Bash": 2,            // multiple entries possible (e.g. 2 preCommit scripts)
     "Stop": 1
   },
   "generated": {
-    "SessionStart": 1,               // count of hooks actually written to settings.json
-    "PreToolUse:Write": 1,
-    "PreToolUse:Bash": 1,            // may be < planned if a skill's plugin was missing
-    "Stop": 1
+    // list-of-script-basenames per event key (NOT a count map).
+    // Richer than a count: you can see which script is wired to which event without
+    // cross-referencing .claude/settings.json.
+    "SessionStart":     ["plugin-integration-reminder.sh"],
+    "PreToolUse:Write": ["feature-start-detector.sh"],
+    "PreToolUse:Bash":  [
+      "pre-commit-code-review.sh",
+      "pre-commit-verification-before-completion.sh"
+    ],
+    "Stop":             ["post-feature-revise-claude-md.sh"]
   },
   "skipped": [                       // one entry per hook that was planned but NOT generated
     {
-      "event": "PreToolUse:Bash",    // event:matcher key from `planned`
-      "skill": "superpowers:verification-before-completion",
+      "event": "Stop",               // event:matcher key from `planned`
+      "skill": "claude-md-management:revise-claude-md",
       "reason": "plugin-not-installed"
     }
   ],
   "warnings": [                      // free-text warnings emitted during hook generation
     "featureStart.criticalDirs was empty; detector hook not generated"
-  ]
+  ],
+  "downgradeApplied": {              // OPTIONAL — only present when autonomyLevel forced a mode change
+    "rule": "autonomyLevel=always-ask → preCommit[].mode=advisory",
+    "affectedEntries": ["code-review:code-review", "superpowers:verification-before-completion"]
+  }
 }
 ```
 
 **Counting rules**:
-- `planned[event]` = number of entries in `callerExtras.qualityGates.<field>[]` that map to that event (e.g. `qualityGates.preCommit[]` length contributes to `PreToolUse:Bash` because pre-commit hooks attach to Bash tool calls)
-- `generated[event]` = number of `<Event>[:<Matcher>]` hook entries actually written to `.claude/settings.json` (before merge — so only new entries, not pre-existing ones)
-- `skipped[]` = a record for every entry in `planned` that did NOT produce a corresponding `generated` entry, with the reason (`plugin-not-installed`, `condition-unsatisfied`, `empty-critical-dirs`, etc.)
-- `warnings[]` = operator-facing messages (not user-facing) about soft issues during generation
-- **Invariant**: `sum(planned) - sum(generated) == len(skipped)` for every hook category. If a skipped entry is missing, the telemetry is broken — treat as a generation bug.
+- `planned[event]` = **integer** — number of entries in `callerExtras.qualityGates.<field>[]` that map to that event (e.g. `qualityGates.preCommit[]` length contributes to `PreToolUse:Bash` because pre-commit hooks attach to Bash tool calls). **Only counts qualityGates-derived hooks, never format/lint/forge-internal.**
+- `generated[event]` = **array of script basenames** (relative to `.claude/hooks/`) for hooks actually written to `.claude/settings.json` **from the qualityGates spec**. Not the total event count in settings.json — exclude format/lint/forge-internal scripts.
+- `skipped[]` = a record for every entry in `planned` that did NOT produce a corresponding `generated` entry, with the reason (`plugin-not-installed`, `condition-unsatisfied`, `empty-critical-dirs`, etc.).
+- `warnings[]` = operator-facing messages (not user-facing) about soft issues during generation.
+- `downgradeApplied` (optional) = records the autonomyLevel-aware preCommit mode downgrade rule when it fires. Only present when the downgrade actually ran — absent means no downgrade was applied. Gives downstream tooling (status reports, adaptive suppression) provenance without re-deriving.
+- **Invariant**: for every event key, `planned[event] - len(generated[event]) == (number of skipped[] entries whose `event` matches)`. If this doesn't balance, the telemetry is broken — treat as a generation bug.
 
-**Backward compat**: downstream consumers (forge status, etc.) MUST treat `hookStatus` as optional. When absent (e.g. pre-2.2.0 onboard runs), fall back to comparing `qualityGates` spec against actual `.claude/settings.json` content.
+**Backward compat**: downstream consumers (forge status, etc.) MUST treat `hookStatus` as optional. When absent (e.g. pre-2.2.0 onboard runs), fall back to comparing `qualityGates` spec against actual `.claude/settings.json` content. Consumers SHOULD also tolerate the legacy count-map form of `generated` (produced by pre-`fix(forge,onboard): refine hookStatus scope...` onboard builds) by detecting whether `generated[event]` is an integer vs an array and handling both; the canonical form going forward is list-of-paths.
 
 See `references/hooks-guide.md` for generated script templates, ShellCheck requirements, and concrete examples of sessionStart + featureStart + preCommit hooks.
 
@@ -357,7 +372,7 @@ When `qualityGates.sessionStart` is non-empty AND at least one entry's `conditio
 
    ```bash
    #!/usr/bin/env bash
-   set -euo pipefail
+   set -u  # no -e / -o pipefail — see "Shell options for hook scripts" below
 
    # Generated by onboard — plugin integration session-start reminder
    # Advisory only. Always exits 0.
@@ -390,7 +405,7 @@ When `qualityGates.sessionStart` is non-empty AND at least one entry's `conditio
 - `superpowers` not installed → the default "superpowers-installed" condition fails; the entry is dropped.
 
 **Script requirements**:
-- `#!/usr/bin/env bash` + `set -euo pipefail`
+- `#!/usr/bin/env bash` + `set -u` (NOT `set -euo pipefail` — see "Shell options for hook scripts" in O7 for why)
 - `shellcheck -x` must pass
 - Keep under 10 lines total (excluding comments)
 - Reference pattern: `.claude/hooks/post-edit.sh` in the repo root
@@ -433,7 +448,7 @@ Use this as the starting point. The `critical_regex` value and the reminder text
 
 ```bash
 #!/usr/bin/env bash
-set -euo pipefail
+set -u  # no -e / -o pipefail — see "Shell options for hook scripts" below
 
 # Generated by onboard — feature-start detector
 # Advisory only. Always exits 0. Non-blocking.
@@ -526,10 +541,31 @@ These apply at generation time — if they're true, do not write the script or t
 
 ##### Script requirements
 
-- `#!/usr/bin/env bash` + `set -euo pipefail` — match the conventions in `.claude/rules/shell-scripts.md`
+- `#!/usr/bin/env bash` + `set -u` (NOT `set -euo pipefail` — see "Shell options for hook scripts" below). This matches `.claude/rules/shell-scripts.md`, which already says hook scripts must not use `set -e`.
 - `shellcheck -x` must pass cleanly — zero warnings, zero errors
 - Never `exit 2` — this hook is always advisory. Exit code other than 0 is a bug.
 - Reference patterns: `.claude/hooks/validate-bash.sh` for stdin JSON parsing, `.claude/hooks/post-edit.sh` for the advisory exit pattern
+
+##### Shell options for hook scripts (load-bearing)
+
+Use `set -u` alone, **not** `set -euo pipefail`. Here's why this matters:
+
+Hook scripts use the `cat 2>/dev/null || true` pattern to drain stdin when no payload is present (harness-invoked case, or when invoked interactively with no piped input). Under `set -e`:
+
+- If the stdin source is a closed pipe, bash can exit with SIGPIPE (exit code 141) — the hook appears to "fail" even though the drain is intentional
+- Any `grep` / `sed` pipeline that returns no matches (exit 1) would abort the whole script
+
+Under `set -o pipefail`:
+
+- Pipe failures inside conditional logic get promoted to script failures, breaking the jq-preferred + grep/sed fallback pattern (when jq succeeds but its stdout is empty, the next stage in the pipe sees nothing and reports a failure that pipefail surfaces as the script's exit code)
+
+Using `set -u` alone:
+
+- Still catches undefined-variable bugs (the actual safety we want)
+- Leaves error handling to explicit checks inline (`[ -z "$var" ] && exit 0`)
+- Works correctly with the stdin-drain and jq-fallback patterns the hooks rely on
+
+**Rule**: hook scripts use `set -u`. Utility scripts (`scripts/*.sh`, `install*.sh`, analysis/detection tooling) use `set -euo pipefail`. This distinction is documented in `.claude/rules/shell-scripts.md` and is authoritative — this spec section only restates it for the generation-time audience.
 
 ### Collaboration Artifacts
 
