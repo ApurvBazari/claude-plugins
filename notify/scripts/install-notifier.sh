@@ -22,6 +22,7 @@ if [[ "$PLATFORM" = "macos" ]]; then
     echo "ERROR: Homebrew is not installed."
     echo ""
     echo "Install Homebrew first:"
+    # shellcheck disable=SC2016  # intentional: literal copy-paste instruction for user
     echo '  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
     echo ""
     echo "Then re-run this script."

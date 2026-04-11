@@ -342,8 +342,8 @@ echo ""
 echo "## CI/CD Pipelines"
 if [ -d "$PROJECT_ROOT/.github/workflows" ]; then
   echo "  [ci] GitHub Actions"
-  ls "$PROJECT_ROOT/.github/workflows/" 2>/dev/null | while read -r f; do
-    echo "    - $f"
+  find "$PROJECT_ROOT/.github/workflows" -maxdepth 1 -type f 2>/dev/null | while read -r f; do
+    echo "    - $(basename "$f")"
   done
 fi
 if [ -f "$PROJECT_ROOT/.gitlab-ci.yml" ]; then
@@ -379,7 +379,7 @@ fi
 if [ -d "$PROJECT_ROOT/.claude" ]; then
   echo "  [claude] .claude/ directory found"
   find "$PROJECT_ROOT/.claude" -type f 2>/dev/null | while read -r f; do
-    echo "    - ${f#$PROJECT_ROOT/}"
+    echo "    - ${f#"$PROJECT_ROOT"/}"
   done
 fi
 # Check for subdirectory CLAUDE.md files
@@ -388,7 +388,7 @@ SUBDIR_CLAUDE=$(find "$PROJECT_ROOT" -name "CLAUDE.md" -not -path "$PROJECT_ROOT
 if [ -n "$SUBDIR_CLAUDE" ]; then
   echo "  [claude] Subdirectory CLAUDE.md files:"
   echo "$SUBDIR_CLAUDE" | while read -r f; do
-    echo "    - ${f#$PROJECT_ROOT/}"
+    echo "    - ${f#"$PROJECT_ROOT"/}"
   done
 fi
 echo ""
