@@ -1,10 +1,37 @@
 # /forge:status — Project Health Check
 
-You are running the Forge status command. This provides a quick overview of the project's AI tooling health, pending drift, and setup metadata.
+You are running the Forge status command. This provides a quick overview of the project's state — whether a forge session is in progress, whether setup completed, and (if complete) the project's AI tooling health, pending drift, and setup metadata.
 
 ---
 
-## Step 1: Check for Setup
+## Step 1: Check for in-flight session
+
+Before checking completed setup, check for an in-progress session at `.claude/forge-state.json`.
+
+**If it exists and `currentPhase !== "complete"`**: there's an in-progress session. Report it prominently at the top of the status output:
+
+> **🟡 Forge session in progress** (not yet complete)
+>
+> **Project**: [context.appDescription or "unnamed"]
+> **Started**: [createdAt]
+> **Last updated**: [updatedAt] ([time delta])
+> **Currently at**: [currentPhase] / [currentStep]
+> **Completed steps**: [list from completedSteps]
+> **Next action**: [nextAction]
+> **Research mode**: [research.mode]
+>
+> **To continue**: run `/forge:resume`
+> **To abandon and start over**: delete `.claude/forge-state.json` (irreversible — will lose all gathered context)
+
+Then stop here — do not try to also report post-scaffold health, because the scaffold may not exist yet.
+
+**If it exists and `currentPhase === "complete"`**: the session finished. Proceed to Step 2 to report the full post-scaffold health.
+
+**If it doesn't exist**: proceed to Step 2 (the project may have been set up before forge had state tracking, so `forge-meta.json` alone is sufficient).
+
+---
+
+## Step 2: Check for Setup
 
 Read `.claude/forge-meta.json`:
 
@@ -18,7 +45,7 @@ Stop here.
 
 ---
 
-## Step 2: Parse Metadata
+## Step 3: Parse Metadata
 
 Extract from `forge-meta.json`:
 - `version` — Forge version used
@@ -33,7 +60,7 @@ Extract from `forge-meta.json`:
 
 ---
 
-## Step 3: Check Artifact Integrity
+## Step 4: Check Artifact Integrity
 
 Verify all generated artifacts still exist and are non-empty:
 
@@ -50,7 +77,7 @@ Report any missing or empty files.
 
 ---
 
-## Step 4: Check Pending Drift
+## Step 5: Check Pending Drift
 
 Read `.claude/forge-drift.json`:
 
@@ -59,7 +86,7 @@ Read `.claude/forge-drift.json`:
 
 ---
 
-## Step 5: Check Stack Freshness
+## Step 6: Check Stack Freshness
 
 Compare `webResearch.stackVersion` from metadata against current `package.json` (or equivalent manifest):
 - If the framework version has been bumped since scaffold, note it
@@ -67,7 +94,7 @@ Compare `webResearch.stackVersion` from metadata against current `package.json` 
 
 ---
 
-## Step 6: Present Summary
+## Step 7: Present Summary
 
 > **Forge Status**
 >

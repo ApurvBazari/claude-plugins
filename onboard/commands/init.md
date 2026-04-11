@@ -182,9 +182,11 @@ After generation completes, list every file that was created:
 
 If the wizard answers include `ecosystemPlugins`, set up the requested plugins.
 
-### Step 3.5.1: Check Plugin Availability
+### Step 3.5.1: Resolve Requested Ecosystem Plugins
 
-For each requested plugin, check if it's installed by looking for its plugin root:
+For each plugin the developer selected in the wizard (`ecosystemPlugins.notify`, `ecosystemPlugins.observe`, etc.), verify it's installed. If it's missing, **offer inline install** — do not skip silently, because the developer explicitly asked for it.
+
+For each requested plugin, probe the filesystem:
 
 ```bash
 # Check if notify is available
@@ -194,7 +196,35 @@ ls "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh" 2>/dev/null
 ls "${CLAUDE_PLUGIN_ROOT}/../observe/scripts/install.sh" 2>/dev/null
 ```
 
-If a plugin is not found, skip it silently — it may not be installed.
+Characteristic files per plugin:
+- `notify` → `scripts/notify.sh`
+- `observe` → `scripts/install.sh`
+
+**If the probe finds the file**, the plugin is installed — proceed to Step 3.5.2 (for notify) or Step 3.5.3 (for observe).
+
+**If the probe returns nothing**, the plugin is missing. Tell the developer:
+
+> You selected the **<plugin>** plugin during the wizard, but it's not installed yet.
+>
+> Install it now? (runs: `claude plugin install <plugin>`)
+
+Use AskUserQuestion with two options:
+- **Install now (Recommended)** — run the install command via Bash, then continue
+- **Skip setup** — don't configure this plugin; continue with the rest of the flow
+
+**If the developer installs:**
+1. Run `claude plugin install <plugin>` via the Bash tool.
+2. Re-run the detection probe to verify.
+3. **On success** — proceed to the corresponding setup step. If the plugin's slash commands/scripts aren't immediately available, note: "Plugin installed, but its scripts may not be on disk yet until you restart the session. If setup fails, restart Claude Code and rerun `/onboard:init`."
+4. **On install failure** — surface the underlying error verbatim. Then emit the explicit skip message below and continue with the next requested plugin.
+
+**If the developer skips or install fails**, emit a clear skip message (never silent):
+
+> Skipping **<plugin>** setup. You can install it later with `claude plugin install <plugin>` and run its setup command directly (`/notify:setup`, `/observe:status`, etc.).
+
+Then continue to the next requested plugin. Repeat for each entry in `ecosystemPlugins`.
+
+**Edge case** — if a plugin was NOT requested in the wizard (`ecosystemPlugins.<plugin>` is `false` or absent), skip it entirely. Do not probe, do not prompt. This step only acts on what the developer explicitly asked for.
 
 ### Step 3.5.2: Set Up Notify (if requested and available)
 

@@ -52,33 +52,110 @@ Maintain a running context object that tracks what you know. See `references/que
 
 Update this after every answer. Before asking each question, check its condition in the question bank. If the condition is not met, skip silently.
 
+## Progress Indicator Protocol
+
+At the start of every Step (and whenever the user asks "where are we?"), emit a one-line progress indicator so both Claude and the user can see wizard progress:
+
+> **Wizard progress: Step [X] of 8 — [step name]**
+> Completed: [list of step names from completedSteps]
+> Up next: [name of the next step, if known]
+
+This is NOT optional. Long sessions derail without this anchor.
+
+## Deep Research Park — the scope-creep escape hatch
+
+Some questions in this wizard can trigger deep architectural research that takes significant time (30+ minutes). Examples from real sessions:
+- "Which on-device LLM tier for an Android finance tracker?"
+- "How should we structure a multi-tenant database for a SaaS?"
+- "What's the best real-time sync architecture for a collaborative editor?"
+
+The wizard is NOT the place for deep research. If you (Claude) detect a question that requires it, **STOP and offer the user a choice** before going deeper:
+
+> This question is deeper than a typical wizard question. I can handle it three ways:
+>
+> 1. **Park it** (recommended if you're not sure) — I capture a placeholder answer with a default assumption, we continue the wizard to the end, then after Phase 1 completes we enter a dedicated "Architectural Research" sub-phase to deep-dive on all parked questions with full attention. This keeps the wizard short and focused.
+> 2. **Deep-dive now** — I pause the wizard, research this thoroughly (may take 20-40 minutes), then resume the wizard where we left off. Good if the decision blocks everything else.
+> 3. **Take a default** — I pick the most common reasonable answer and move on. Good if you don't actually care about the decision and just want to ship.
+
+Use `AskUserQuestion` with these three options. On "Park it":
+- Capture the question, your best-effort placeholder answer, and a one-sentence "why this needs research" note into `parkedQuestions[]` in `forge-state.json`
+- Continue the wizard with the placeholder
+- At end of Phase 1, if `parkedQuestions.length > 0`, enter **Phase 1.5: Architectural Research** (new optional sub-phase, see below)
+
+On "Deep-dive now": do the research inline, capture findings to `researchFindings`, then resume the wizard.
+
+On "Take a default": note the default choice and any assumptions made, then move on.
+
+## Signs of derailment (stop and course-correct)
+
+If any of these happen, you've lost the wizard thread:
+- More than 10 back-and-forth messages inside a single Step
+- You've started doing WebFetch calls not explicitly for stack research
+- The user has asked "where were we?" or similar
+- You're about to spawn a research agent for a question that wasn't part of the Tech Stack step
+
+When you notice any of these, STOP and:
+1. Summarize what context has been gathered so far
+2. Explicitly name the current Step and how many questions remain in it
+3. Offer the "Park it" escape hatch if a research rabbit hole is brewing
+4. Checkpoint to `forge-state.json` immediately (don't wait for Step completion)
+
 ## Flow
 
-### Step 1: Project Vision (Category 1)
+### Step 1 of 8: Project Vision (Category 1)
 
-Start with Q1.1: "What do you want to build?"
+Emit the progress indicator. Then start with Q1.1: "What do you want to build?"
 
 Listen carefully. From the answer, infer:
 - `appType` (web-app, api, cli, library, fullstack, mobile-backend)
 - `hasFrontend`, `hasBackend`, `hasAPI`
 - Whether follow-up Q1.2 is needed (if the answer is vague)
 
-### Step 2: Tech Stack (Category 2)
+### Step 2 of 8: Tech Stack (Category 2)
 
-Ask Q2.1 about their stack preference. If they know, ask Q2.2 for details.
+Emit the progress indicator. Ask Q2.1 about their stack preference. If they know, ask Q2.2 for details.
 
-**Research pause**: After gathering the stack, spawn the `stack-researcher` agent to research:
-- Current versions and scaffold CLIs
-- Best practices and recommended patterns
-- Deployment options and companion ecosystem
+**Research pause**: After gathering the stack, dispatch the `stack-researcher` agent with a clear research brief. The agent runs a probe protocol first (see its file for details) and may return a `BLOCKED` status if web tools are unavailable in the sub-agent sandbox.
 
-Wait for research results. Then ask Q2.3 about the scaffold approach, informed by the research findings.
+**Handling the two possible agent outcomes**:
 
-Present research findings naturally: "I looked into [framework] — the current stable version is [X]. The official scaffold CLI `[command]` now supports [features]. I'd recommend using that."
+#### Outcome A — Agent returns a full research report
+Proceed normally. Present findings naturally: *"I looked into [framework] — the current stable version is [X]. The official scaffold CLI `[command]` now supports [features]. I'd recommend using that."*
 
-### Step 3: Project Details (Category 3)
+#### Outcome B — Agent returns `BLOCKED` (sub-agent web access denied)
+Do NOT silently fail. Instead, **fall back to main-session research**:
 
-Work through Category 3 questions adaptively. The question bank specifies conditions for each — only ask what's relevant.
+1. Tell the user what happened, concisely:
+   > "The background research agent doesn't have web access in this session. I'll run the same research in our main conversation so you can see and approve each web call."
+
+2. Run the same research questions directly using `WebSearch` and `WebFetch` in the main session. Permission prompts for specific URLs will appear to the user; ask them to approve so research can proceed.
+
+3. If the user denies web access entirely, offer a degraded path:
+   > "Without web research, I'll use my training data to make stack recommendations, but please verify versions and scaffold CLIs manually before we proceed with scaffolding — my knowledge may be months out of date."
+
+4. Checkpoint the fallback mode in `forge-state.json` under `research.mode = "main-session" | "training-data-only"` so downstream skills know the research provenance.
+
+Wait for research results (either via agent or main session). Then ask Q2.3 about the scaffold approach, informed by the research findings.
+
+### Step 3 of 8: Project Details (Category 3)
+
+Emit the progress indicator. Work through Category 3 questions adaptively. The question bank specifies conditions for each — only ask what's relevant.
+
+**Scaffold mode question (new, ask once)** — after capturing the basic project details but before asking about database/auth/deploy, ask:
+
+> **Scaffold mode**: How much should I scaffold in Phase 2?
+>
+> 1. **Full scaffold** (recommended for most projects) — I scaffold the complete starter app using the official CLI (or from scratch for stacks without one). Phase 3 AI tooling runs against the finished scaffold. Best for Next.js, FastAPI, Go, Rust, and any stack with a `create-*` CLI tool.
+> 2. **Walking skeleton** — I scaffold only one representative of each architectural pattern (one entity, one DAO, one route, one test, one service), enough for the AI tooling to derive project-specific rules from. Then Phase 3 generates CLAUDE.md and hooks from those patterns. Then Phase 2b expands the scaffold under AI-tooling guidance. Best for native mobile (Android/iOS), custom backends, complex architectures, or stacks without a mature CLI.
+> 3. **Not sure, pick for me** — I look at your stack and recommend. Default: full scaffold.
+
+Capture the answer as `context.scaffoldMode = "full" | "walking-skeleton"`.
+
+**Auto-recommendation logic** if user picks option 3:
+- If stack has a well-maintained official CLI (`create-next-app`, `npm create vite`, `uv init`, `cargo new`, `go mod init` + template, etc.) → recommend `full`
+- If stack is native mobile (Android Kotlin, iOS Swift) → recommend `walking-skeleton`
+- If stack is an unusual combination or user explicitly said "something custom" → recommend `walking-skeleton`
+- Explain the recommendation and wait for confirmation.
 
 Key branching points:
 - Q3.1 (scale) → updates `isProduction`, `hasTeam`
@@ -93,9 +170,9 @@ Also capture during this step (can be inferred or asked directly):
 - **`frontendPatterns`**: If frontend project — component library, state management, styling, routing. Partially captured by Q3.F1/Q3.F2, fill in the rest from stack research.
 - **`backendPatterns`**: If backend project — API style (from Q3.7), ORM (from Q3.2/database choice), auth (from Q3.3), error handling. Compose from existing answers.
 
-### Step 3.5: Pain Points (always ask)
+### Step 3.5 of 8: Pain Points (always ask)
 
-Ask about where Claude can help most:
+Emit the progress indicator. Ask about where Claude can help most:
 - "What takes the most time in your development workflow?"
 - "What areas of code are most error-prone?"
 - "What would you most want automated?"
@@ -113,9 +190,9 @@ Capture as:
 
 This feeds directly into onboard's skill and agent selection — skills matching pain points get highest priority.
 
-### Step 4: Workflow Preferences (Category 4)
+### Step 4 of 8: Workflow Preferences (Category 4)
 
-Ask Q4.1 through Q4.5. For Q4.1 (branching), recommend based on team size from Q3.1.
+Emit the progress indicator. Ask Q4.1 through Q4.5. For Q4.1 (branching), recommend based on team size from Q3.1.
 
 Q4.6 (releases) is only asked for production apps.
 
@@ -133,13 +210,15 @@ Q4.6 (releases) is only asked for production apps.
 
 Store the choice as `verificationStrategy` in the context object. This configures the feature-evaluator agent.
 
-### Step 5: CI/CD & Auto-Evolution (Category 5)
+### Step 5 of 8: CI/CD & Auto-Evolution (Category 5)
 
-**Skip entirely if `willDeploy = false`** (except Q5.2 which applies even to local projects).
+Emit the progress indicator. **Skip entirely if `willDeploy = false`** (except Q5.2 which applies even to local projects).
 
 Ask Q5.1 (audit behavior), Q5.2 (auto-evolution mode), Q5.3 (PR review trigger).
 
-### Step 6: Feature Decomposition (Harness Preparation)
+### Step 6 of 8: Feature Decomposition (Harness Preparation) — REQUIRED
+
+Emit the progress indicator. **This step is mandatory** — downstream phases (tooling generation, onboard's harness mode) depend on a feature list existing. Do NOT skip this silently. If the user explicitly declines feature decomposition, generate a minimal 3-5 feature skeleton from the app description so the JSON file still exists.
 
 Before the confirmation step, decompose the app description into testable features. This feeds the harness design's `feature-list.json`.
 
@@ -155,11 +234,15 @@ Before the confirmation step, decompose the app description into testable featur
    - Social app → AI content moderation, smart feeds
    Present AI features as optional suggestions — the developer decides whether to include them.
 
-Include the feature breakdown in the confirmation summary (see below). The developer can adjust, add, remove, or skip entirely. If skipped, generate a minimal 3-5 feature list from the app description.
+Include the feature breakdown in the confirmation summary (see below). The developer can adjust, add, remove, but NOT skip entirely — a skeletal decomposition must exist. If the developer says "skip", generate a minimal 3-5 feature list yourself from the app description, present it as "I generated a starter decomposition you can refine later", and proceed.
 
-### Step 7: Confirmation (Category 7)
+**Pre-Phase-1.5 check**: before handing off to Step 7, if `parkedQuestions.length > 0`, inform the user:
 
-Present a structured summary of everything gathered:
+> Before we wrap Phase 1, note: you parked **N** questions for deeper research earlier. When we finish the wizard, I'll enter a short "Architectural Research" sub-phase to deep-dive on those before we scaffold. If you'd rather skip that and just go with the placeholder answers, say "skip research" now.
+
+### Step 7 of 8: Confirmation (Category 7)
+
+Emit the progress indicator. Present a structured summary of everything gathered:
 
 > **Here's everything we've discussed:**
 >
@@ -185,6 +268,31 @@ Present a structured summary of everything gathered:
 > Ready to scaffold? Or want to adjust the features/settings?
 
 Wait for confirmation before returning.
+
+### Step 8 of 8: Phase 1.5 Architectural Research (conditional)
+
+Emit the progress indicator **only if** `parkedQuestions.length > 0` AND the user didn't say "skip research". Otherwise skip Step 8 and go straight to Output.
+
+This is a dedicated sub-phase for deep research on questions parked during the wizard. The goal is to produce informed answers for parkedQuestions BEFORE scaffolding begins, so downstream phases aren't building on placeholder assumptions.
+
+For each parked question:
+
+1. State the question and the placeholder answer from the wizard
+2. Run the research — use `stack-researcher` agent if it's a tech-stack question; use main-session WebSearch/WebFetch for architectural questions; use both if needed
+3. Report findings to the user with sources
+4. Confirm the final answer (user can accept your research, override with a different decision, or defer even further)
+5. Update `context` with the final answer
+6. Save to `researchFindings.parkedResearch[questionId]` in `forge-state.json`
+7. Remove the question from `parkedQuestions[]`
+
+Checkpoint after each parked question is resolved. This keeps the research phase resumable too.
+
+**Research scope guardrails** to prevent derailment:
+- Time-box each parked question to ~20 minutes of research
+- If research hits its time box without a clear answer, present what was found and let the user decide
+- Don't spawn new parked questions during architectural research — flag them for post-Phase-1.5 decisions instead
+
+When all parked questions are resolved, set `currentPhase: "phase-2-scaffold"` in the state file and hand off to the scaffolding skill.
 
 ## Output
 
@@ -263,6 +371,38 @@ After the wizard completes, compile all answers into a structured context object
 
 Fields that were skipped are set to `null` or omitted.
 
+## Checkpoint Protocol (for resume support)
+
+This skill MUST write `.claude/forge-state.json` after each Step so that `/forge:resume` can pick up mid-wizard if the session is interrupted. See `commands/init.md` for the full state schema.
+
+### When to checkpoint
+Write a checkpoint **after each named Step completes** (not after each individual question within a step):
+
+| After Step | Write to state file |
+|---|---|
+| Step 1 complete (Project Vision) | `completedSteps: ["step-1-vision"]`, `currentStep: "step-2-stack"`, `context.appDescription`, `context.appType` |
+| Step 2 complete (Tech Stack) | Add `"step-2-stack"`, `currentStep: "step-3-details"`, `context.stack`, `researchFindings`, `research.mode` |
+| Step 3 complete (Project Details) | Add `"step-3-details"`, `currentStep: "step-3.5-pain-points"`, all category-3 context fields |
+| Step 3.5 complete (Pain Points) | Add `"step-3.5-pain-points"`, `currentStep: "step-4-workflow"`, `context.painPoints` |
+| Step 4 complete (Workflow Preferences) | Add `"step-4-workflow"`, `currentStep: "step-5-cicd"`, all category-4 context fields |
+| Step 5 complete (CI/CD) | Add `"step-5-cicd"`, `currentStep: "step-6-feature-decomp"`, CI/CD fields |
+| Step 6 complete (Feature Decomposition) | Add `"step-6-feature-decomp"`, `currentStep: "step-7-confirmation"`, `context.featureDecomposition` |
+| Step 7 complete (Confirmation) | Add `"step-7-confirmation"`, `currentPhase: "phase-2-scaffold"`, `currentStep: "pre-validation"` (handoff to scaffolding skill) |
+
+### Atomic write
+Always write to `.claude/forge-state.json.tmp` first, then `mv` to `.claude/forge-state.json`. This avoids corrupted state if the session is killed mid-write. If the tmp file exists from a prior interrupted write, remove it before starting.
+
+### Resume entry contract
+When this skill is invoked via `/forge:resume`, it receives a `completedSteps` list. At the start of the flow, check this list and **skip any Step whose identifier is already in `completedSteps`**. Never re-ask questions whose answers are already in the `context` object.
+
+### First write (new sessions)
+On the very first checkpoint of a new session, also populate:
+- `version: 1`
+- `createdAt: <now>`
+- `updatedAt: <now>`
+- `currentPhase: "phase-1-context-gathering"`
+- `research.mode: "agent"` (defaults; updated later if fallback triggers)
+
 ## Key Rules
 
 1. **One question per message** — Do not overwhelm with multiple questions.
@@ -271,3 +411,4 @@ Fields that were skipped are set to `null` or omitted.
 4. **Adaptive, not rigid** — The question order is a guide, not a script. If the developer volunteers information, capture it and skip the corresponding question.
 5. **Never ask what you already know** — If Q1.1 reveals the stack, don't re-ask in Q2.
 6. **Recommend with reasoning** — Always explain why you suggest something, referencing research when available.
+7. **Checkpoint after every Step** — Always write `forge-state.json` at Step boundaries so resume works.
