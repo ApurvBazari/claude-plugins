@@ -101,10 +101,60 @@ The caller must provide a context JSON object in the conversation. This object c
   "callerExtras": {
     "description": "object — opaque extra context from the caller, passed through to metadata",
     "installedPlugins": ["string — plugin names installed by the caller"],
-    "coveredCapabilities": ["string — capabilities covered by installed plugins"]
+    "coveredCapabilities": ["string — capabilities covered by installed plugins"],
+    "allowPluginReferences": "boolean (optional) — permit rules/skills to reference installed plugins instead of duplicating their guidance. Defaults to true when installedPlugins is non-empty.",
+    "qualityGates": {
+      "description": "object (optional) — boundary-enforcement hook spec. Onboard translates these into .claude/settings.json hook entries. See generation/SKILL.md § Quality-Gate Hooks for the full schema.",
+      "sessionStart": [
+        {
+          "type": "reminder",
+          "message": "string — ≤ 1 line; concatenated + truncated to 3 lines total across all entries",
+          "condition": "string (optional) — e.g., 'superpowers-installed'; entry is dropped if condition fails"
+        }
+      ],
+      "preCommit": [
+        {
+          "skill": "string — e.g., 'code-review:code-review'",
+          "triggerOn": "string — 'commit'",
+          "mode": "string — 'blocking' (exit 2, default) or 'advisory' (exit 0)"
+        }
+      ],
+      "featureStart": [
+        {
+          "type": "reminder",
+          "criticalDirs": ["string — directory path prefix, e.g., 'domain/parser/'"],
+          "message": "string — reminder text, {dir} is substituted"
+        }
+      ],
+      "postFeature": [
+        {
+          "skill": "string — e.g., 'claude-md-management:revise-claude-md'",
+          "triggerOn": "string — 'session-end'",
+          "mode": "string — 'advisory' (default for postFeature)"
+        }
+      ]
+    },
+    "phaseSkills": {
+      "description": "object (optional) — per-phase recommended skills for multi-phase builds. Onboard uses this to compose Plugin Integration CLAUDE.md narrative and subdirectory skill annotations.",
+      "research": ["string — skill identifiers, e.g., 'superpowers:brainstorming'"],
+      "planning": ["string"],
+      "feature": ["string"],
+      "review": ["string"],
+      "commit": ["string"],
+      "post-phase": ["string"]
+    }
   }
 }
 ```
+
+**`qualityGates` semantics** (in brief — full spec in `generation/SKILL.md`):
+
+- `mode: "blocking"` → generated hook script exits 2 with stderr feedback. Claude cannot proceed without addressing the block. Default for `preCommit`.
+- `mode: "advisory"` → generated hook script exits 0 with stdout. Claude sees the message and continues. Default for everything else.
+- **autonomyLevel downgrade**: callers are expected to downgrade `preCommit[].mode` to `"advisory"` when `wizardAnswers.autonomyLevel === "always-ask"`. Onboard honors whatever mode it receives — it does not second-guess the caller's autonomy derivation.
+- **Plugin availability**: onboard checks that each referenced skill's plugin is in `installedPlugins` before writing a hook entry. Missing → entry is dropped + warning recorded in `onboard-meta.json`.
+
+**Backward compat**: `callerExtras.qualityGates`, `phaseSkills`, and `allowPluginReferences` are all optional. Callers that omit them get the pre-upgrade behavior (no quality-gate hooks, no Plugin Integration section, no plugin cross-references in rules).
 
 ### Validation
 

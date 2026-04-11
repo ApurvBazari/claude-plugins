@@ -138,6 +138,7 @@ Additional guidelines:
 - **Keep short** — 30-80 lines
 - **Don't repeat root content** — Only add what's specific to this directory
 - **Focus on patterns** — What files look like here, what conventions apply here
+- **Skill recommendations block** (plugin-aware): When `callerExtras.installedPlugins` is non-empty and the directory's role maps to an installed-plugin capability, append a `## Skill recommendations` block after the conventions section. Rules in `generation/SKILL.md` § Per-Directory Skill Annotations.
 
 Example subdirectory CLAUDE.md:
 ```markdown
@@ -153,7 +154,21 @@ Components follow this structure:
 - Props interface named `{ComponentName}Props`
 - Use `forwardRef` for components that accept refs
 - Accessibility: all interactive elements need aria labels
+
+## Skill recommendations
+
+Before adding a new component, run `/superpowers:brainstorming` to confirm the
+design. For new screens, use `frontend-design:frontend-design` to avoid generic
+AI aesthetics. Follow TDD via `superpowers:test-driven-development`. Run
+`/code-review:code-review` before committing.
 ```
+
+**Per-directory skill annotation patterns** (more examples):
+
+- **Parser/protocol directories** → *"When adding a new parser, run `/superpowers:brainstorming` first to confirm the approach, then `feature-dev:code-architect` to draft the contract, then `superpowers:test-driven-development` for the test harness."*
+- **Data/migration directories** → *"Schema changes must update exported schemas; run `/code-review:code-review` before committing migrations."*
+- **Script directories** → typically no skill recommendations block (shell scripts rarely map to feature-dev plugins). Omit the block entirely — do NOT stub "Skill recommendations: none".
+- **Test directories** → *"Tests in this directory follow TDD via `superpowers:test-driven-development`. New test files get brainstormed via `/superpowers:brainstorming` only if the scenario is non-trivial."*
 
 ## Shared vs Local Settings Guidance
 
