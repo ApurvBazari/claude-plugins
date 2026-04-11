@@ -27,9 +27,9 @@
     {
       "name": "forge",
       "source": "./forge",
-      "description": "Scaffold new projects with AI-native tooling that evolves with your code",
-      "version": "1.0.0",
-      "keywords": ["scaffold", "project-generator", "ai-tooling", "auto-evolving", "ci-cd"],
+      "description": "Scaffold new projects with AI-native tooling that evolves with your code, with plugin-integration quality gates (requires onboard >= 2.2.0)",
+      "version": "1.1.0",
+      "keywords": ["scaffold", "project-generator", "ai-tooling", "auto-evolving", "ci-cd", "plugin-integration", "quality-gates"],
       "license": "MIT"
     },
     {

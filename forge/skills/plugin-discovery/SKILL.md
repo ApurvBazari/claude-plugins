@@ -23,14 +23,34 @@ Read `references/plugin-catalog.md` and match plugins against the project contex
 For each matched plugin, note:
 - Why it matches (which context field triggered it)
 - Whether it's "recommended" (universal) or "matches your stack/workflow"
+- Which **build phase** it most applies to (for phase-grouped presentation — see Step 2)
+
+### Phase grouping for presentation
+
+When presenting the interactive checklist in Step 2, group plugins by the build phase they most apply to. This is pedagogical — a plugin can appear in multiple groups if it's multi-purpose (e.g., superpowers is a meta-plugin). It still only gets installed once.
+
+| Phase | Plugins |
+|---|---|
+| Research & brainstorming (mandatory first phase) | `superpowers` (brainstorming, dispatching-parallel-agents), `context7` |
+| Core discipline (applies to all phases) | `superpowers` (TDD, verification, debugging), `claude-md-management`, `commit-commands` |
+| Per-feature work | `feature-dev`, `code-review` |
+| Review & PR | `code-review`, `pr-review-toolkit` |
+| Engineering lifecycle (Phase 4) | `engineering` (from `knowledge-work-plugins` marketplace) |
+| Behavioral guardrails | `hookify`, `security-guidance` |
 
 ## Step 2: Present Interactive Checklist
 
-Present the matched plugins as a checklist using the AskUserQuestion tool with multiSelect:
+Present the matched plugins as a checklist using the AskUserQuestion tool with multiSelect.
 
-> Based on your stack and workflow, these Claude Code plugins would complement your setup:
+**Grouping for the checklist UI**: render plugins under the phase headers from Step 1 (Research & brainstorming → Core discipline → Per-feature work → Review → Engineering → Guardrails). Superpowers and other multi-purpose plugins appear in every group they serve. The first phase header must be:
 
-Group by: Recommended (universal) first, then stack-specific, then workflow-specific.
+> **Research & brainstorming (mandatory first phase for any new feature work)**
+
+Explicitly flag it as mandatory so developers understand why superpowers is the highest-priority recommendation.
+
+Present the matched plugins with:
+
+> Based on your stack and workflow, these Claude Code plugins would complement your setup. The order is phase-aware — Research phase first, then core discipline, then per-feature work.
 
 For each plugin, show:
 - Name
@@ -72,20 +92,6 @@ After installation, build the `coveredCapabilities` list using the capability ma
 3. Return both `installedPlugins` (list of plugin names) and `coveredCapabilities` (list of capability strings) to the calling skill (tooling-generation)
 
 This data is passed to onboard headless via `callerExtras`, telling it which agents to skip generating. Without this step, onboard would generate generic agents that shadow the superior plugin versions.
-
-## Step 6: Update CLAUDE.md
-
-After installation, append an "Installed Plugins" section to the project's CLAUDE.md:
-
-```markdown
-## Installed Plugins
-
-- **superpowers** — Use `/plan` for planning, `/tdd` for test-driven development
-- **commit-commands** — Use `/commit` for git workflow, `/commit-push-pr` for full PR flow
-- **security-guidance** — Active hook: warns about security issues on file edits
-```
-
-List each installed plugin with its key commands or behaviors so the developer (and Claude) know what's available.
 
 ## Key Rules
 

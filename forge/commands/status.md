@@ -43,6 +43,8 @@ Read `.claude/forge-meta.json`:
 
 Stop here.
 
+**Note on file distinction**: `.claude/forge-meta.json` is the persistent setup metadata (stack, context, generated artifacts, plugin list) used for health checks and status reporting. `.claude/forge-state.json` is ephemeral resume state, written during an in-flight session and only relevant for `/forge:resume`. Step 1 checks `forge-state.json`; Step 2 onward checks `forge-meta.json`. If both exist with `forge-state.json.currentPhase === "complete"`, the session finished successfully and `forge-state.json` can be removed as garbage (optional — it's harmless to keep).
+
 ---
 
 ## Step 3: Parse Metadata
@@ -74,6 +76,20 @@ Verify all generated artifacts still exist and are non-empty:
 8. **Drift scripts** — `.claude/scripts/detect-*.sh` files exist
 
 Report any missing or empty files.
+
+---
+
+## Step 4.5: Check Plugin Integration Coverage
+
+For projects where `forge-meta.json.installedPlugins` is non-empty, assess how well the Plugin Integration layer is wired:
+
+1. **Read root `CLAUDE.md`** — look for `<!-- onboard:plugin-integration:start -->` marker. If present, record line count of the delimited region. If absent, mark Plugin Integration section as **missing**.
+2. **Read `.claude/settings.json`** — inspect `hooks.SessionStart`, `hooks.PreToolUse`, `hooks.Stop` for quality-gate entries generated from `qualityGates` (script paths matching `plugin-integration-reminder.sh`, `feature-start-detector.sh`, `pre-commit-*.sh`, `post-feature-*.sh`). Record which are present.
+3. **Read `forge-meta.json.generated.toolingFlags.qualityGates`** if available — compare against the hook entries actually wired. Flag drift (e.g., `qualityGates.preCommit` listed 2 entries but only 1 hook script exists → 1 missing).
+4. **Check phase-recommended plugins**: derive the expected plugin set from `forge-meta.json.context` (stack, autonomyLevel, etc.) using the Step 1 match logic from `plugin-discovery/SKILL.md`. Any phase-recommended plugin NOT in `installedPlugins` is reported as "missing".
+5. **Check critical dirs**: if `qualityGates.featureStart.criticalDirs` was populated, verify those directories exist on disk. If any are missing, the feature-start detector will never fire for them.
+
+Build a structured report block for inclusion in Step 7's summary.
 
 ---
 
@@ -116,4 +132,25 @@ Compare `webResearch.stackVersion` from metadata against current `package.json` 
 > **Pending Drift**: [N entries] or "None"
 > [If drift exists]: Run `/forge:evolve` to apply updates.
 >
-> **Installed Plugins**: [list from metadata]
+> **Plugin Integration Coverage**
+> | Field | Status |
+> |---|---|
+> | Installed plugins | [N] [comma-separated list] |
+> | Covered capabilities | [N] [list] |
+> | Phase-recommended missing | [list, or "none"] |
+> | Plugin Integration section in CLAUDE.md | [ok ([line count] lines) / missing] |
+> | SessionStart reminder hook | [wired / not wired] |
+> | Feature-start detector hook | [wired / not wired / (no critical dirs configured)] |
+> | preCommit blocking hooks | [N wired / 0 wired (autonomy=exploratory)] |
+> | postFeature advisory hook | [wired / not wired] |
+> | Critical dirs exist on disk | [all / N missing: list] |
+>
+> [If Plugin Integration section is missing but installedPlugins is non-empty]:
+> Plugin Integration section is stale or missing. Run `/onboard:update` to refresh it.
+>
+> [If Phase 4 was skipped due to engineering plugin absence]:
+> Phase 4 skipped: engineering plugin not installed. Install from `knowledge-work-plugins` marketplace if you want lifecycle docs:
+> ```
+> claude marketplace add knowledge-work-plugins
+> claude plugin install engineering
+> ```

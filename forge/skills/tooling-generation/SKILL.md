@@ -106,14 +106,79 @@ Based on Phase 1 context, set the `enriched` object:
 
 ### Set caller extras
 
-```json
+```jsonc
 {
   "callerExtras": {
     "installedPlugins": ["superpowers", "feature-dev", ...],
-    "coveredCapabilities": ["code-review", "test-generation", ...]
+    "coveredCapabilities": ["code-review", "test-generation", ...],
+    "allowPluginReferences": true,   // default true when installedPlugins is non-empty
+
+    "qualityGates": {
+      "sessionStart": [
+        {
+          "type": "reminder",
+          "message": "Starting new feature work? Begin with /superpowers:brainstorming.",
+          "condition": "superpowers-installed"
+        }
+      ],
+      "preCommit": [
+        { "skill": "code-review:code-review", "triggerOn": "commit", "mode": "blocking" },
+        { "skill": "superpowers:verification-before-completion", "triggerOn": "commit", "mode": "blocking" }
+      ],
+      "featureStart": [
+        {
+          "type": "reminder",
+          "criticalDirs": [],  // populated from scaffold-analyzer directory roles (see below)
+          "message": "New file in {dir}. Consider /superpowers:brainstorming first."
+        }
+      ],
+      "postFeature": [
+        { "skill": "claude-md-management:revise-claude-md", "triggerOn": "session-end", "mode": "advisory" }
+      ]
+    },
+
+    "phaseSkills": {
+      "research":   ["superpowers:brainstorming", "superpowers:dispatching-parallel-agents", "context7"],
+      "planning":   ["superpowers:writing-plans"],
+      "feature":    ["feature-dev:code-architect", "superpowers:test-driven-development"],
+      "review":     ["code-review:code-review", "pr-review-toolkit:review-pr"],
+      "commit":     ["commit-commands:commit"],
+      "post-phase": ["claude-md-management:revise-claude-md"]
+    }
   }
 }
 ```
+
+### Derivation rules — `qualityGates` + `phaseSkills`
+
+The two new fields are NOT blindly included — build them from Phase 1 context + actual installed plugins:
+
+1. **Start from the defaults above**, then filter out any skill whose plugin is not in `installedPlugins`. Example: if `code-review` is not installed, drop `code-review:code-review` from `preCommit` and `phaseSkills.review`.
+
+2. **`qualityGates.sessionStart` is seeded only if `superpowers` is in `installedPlugins`.** Without superpowers, the `"superpowers-installed"` condition fails and onboard drops the entry. You can optionally include a generic fallback entry without the condition, but keep the total message count small to respect the ≤ 3-line budget.
+
+3. **`qualityGates.featureStart.criticalDirs`** is populated from scaffold-analyzer's identified directory roles. Map roles to paths:
+   - `domain` → `domain/`, `lib/domain/`, `internal/domain/`
+   - `parser` → `domain/parser/`, `src/parser/`, `internal/parser/`
+   - `data-layer` → `data/`, `lib/data/`, `data/db/`
+   - `compose-ui` → `ui/compose/`, `src/ui/`, `app/ui/`
+   - `api` → `api/`, `src/api/`, `internal/api/`
+
+   If scaffold-analyzer identifies no matching roles, pass an empty array. Onboard skips the featureStart hook entirely when `criticalDirs` is empty (no false positives).
+
+4. **autonomyLevel downgrade — `preCommit[].mode`**:
+
+   | `autonomyLevel` | Action on `preCommit[].mode` |
+   |---|---|
+   | `always-ask` (exploratory) | Downgrade ALL to `"advisory"` |
+   | `balanced` (standard) | Keep as seeded (default `"blocking"`) |
+   | `autonomous` (production) | Keep as seeded (default `"blocking"`) |
+
+   This is mechanical — apply it in-place before sending callerExtras to onboard. Onboard honors whatever mode it receives and does not re-derive.
+
+5. **Never fabricate plugin references**. If `superpowers`, `feature-dev`, `code-review`, `pr-review-toolkit`, `claude-md-management`, or `commit-commands` is missing from `installedPlugins`, drop all references to it from `qualityGates` and `phaseSkills`. Onboard also does plugin-availability checks, but filtering at the caller keeps the context clean and prevents confusing warnings in `onboard-meta.json`.
+
+6. **Research phase is always seeded when `superpowers` is in `installedPlugins`** — brainstorming is treated as mandatory pre-work for any new feature, not optional. Its hard-gate is a feature, not a bug: it prevents drift between "what I asked for" and "what got built".
 
 ### Validate
 
