@@ -94,6 +94,7 @@ For projects where `forge-meta.json.installedPlugins` is non-empty, assess how w
 4. **Fallback (no `hookStatus`)** — if `generated.toolingFlags.hookStatus` is absent (e.g. project was set up with onboard < 2.2.0), fall back to comparing `forge-meta.json.generated.toolingFlags.qualityGates` against the hook entries actually wired in `.claude/settings.json`. Flag drift inferentially (e.g., `qualityGates.preCommit` listed 2 entries but only 1 hook script exists → 1 missing).
 5. **Check phase-recommended plugins**: derive the expected plugin set from `forge-meta.json.context` (stack, autonomyLevel, etc.) using the Step 1 match logic from `plugin-discovery/SKILL.md`. Any phase-recommended plugin NOT in `installedPlugins` is reported as "missing".
 6. **Check critical dirs**: if `qualityGates.featureStart.criticalDirs` was populated, verify those directories exist on disk. If any are missing, the feature-start detector will never fire for them.
+7. **Check plugin drift**: compare `forge-meta.json.generated.toolingFlags.installedPlugins` against currently-installed plugins via filesystem probe (same strategy as `/onboard:evolve` Step 0: probe `${CLAUDE_PLUGIN_ROOT}/../<plugin>` for each known plugin). Record added/removed counts for the summary.
 
 Build a structured report block for inclusion in Step 7's summary.
 
@@ -168,8 +169,12 @@ Compare `webResearch.stackVersion` from metadata against current `package.json` 
 > - Rule: [hookStatus.downgradeApplied.rule]
 > - Affected entries: [hookStatus.downgradeApplied.affectedEntries joined with ", "]
 >
+> [If installedPlugins differs from currently-installed plugins (filesystem probe)]:
+> Plugin drift detected: [N added, M removed] since last generation.
+> Run `/onboard:evolve` to update Plugin Integration section and quality-gate hooks.
+>
 > [If Plugin Integration section is missing but installedPlugins is non-empty]:
-> Plugin Integration section is stale or missing. Run `/onboard:update` to refresh it.
+> Plugin Integration section is stale or missing. Run `/onboard:evolve` for a lightweight refresh, or `/onboard:update` for a full re-analysis.
 >
 > [If Phase 4 was skipped due to engineering plugin absence]:
 > Phase 4 skipped: engineering plugin not installed. Install from `knowledge-work-plugins` marketplace if you want lifecycle docs:
