@@ -608,7 +608,7 @@ Follow `references/collaboration-guide.md` for templates and conventions.
 - **PR Template** (`.github/PULL_REQUEST_TEMPLATE.md`) — Structured PR template with summary, type-of-change checkboxes, and checklist. Add stack-specific items based on analysis. Add security items if `securitySensitivity` is elevated/high. Include a note for the developer to customize after reviewing.
 - **Commit Conventions** (`.claude/rules/commit-conventions.md`) — Path-scoped rule (`paths: **`) for Conventional Commits format. Strictness of language matches `codeStyleStrictness`.
 - **Shared vs Local Settings Guidance** — Include a section in root CLAUDE.md explaining `.claude/settings.json` (shared, committed) vs `.claude/settings.local.json` (personal, gitignored).
-- **Gitignore Entry** — If `.gitignore` exists in the project root, append `.claude/settings.local.json` to it (if not already present). This ensures personal settings are never committed.
+- **Gitignore Entry** — If `.gitignore` exists in the project root, append these entries (if not already present): `.claude/settings.local.json` (personal settings) and `CLAUDE.md.pre-onboard` (backup files left by merge-aware CLAUDE.md generation). This ensures personal settings and onboard backup artifacts are never committed.
 
 ### Metadata (.claude/onboard-meta.json)
 
