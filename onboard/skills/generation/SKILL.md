@@ -533,8 +533,46 @@ fi
   echo "[onboard] New file in a domain-critical directory: $file_path"
   echo "[onboard] Consider /superpowers:brainstorming and the relevant feature-dev skill first."
 } >&2
+
+# Worktree offer (addon — fires only when brainstorm reminder also fires)
+# Not a new invariant — additive output after invariant 7+8 message.
+# Only generated when enableHarness is true in the generation context.
+wt_pref="ask"
+if [ -f ".claude/session-state/worktree-preference" ]; then
+  wt_pref=$(cat ".claude/session-state/worktree-preference" 2>/dev/null || echo "ask")
+fi
+
+# Skip worktree offer if preference is "never" or already in a worktree
+in_worktree=false
+case "$PWD" in */.claude/worktrees/*) in_worktree=true ;; esac
+
+if [ "$wt_pref" != "never" ] && [ "$in_worktree" = "false" ]; then
+  {
+    echo "[onboard] Worktree isolation recommended. Follow CLAUDE.md § Worktree Workflow to create one."
+    if [ "$wt_pref" = "ask" ]; then
+      echo "[onboard] Save preference: echo 'always' > .claude/session-state/worktree-preference"
+    fi
+  } >&2
+fi
+
 exit 0
 ```
+
+##### Worktree offer addon (conditional — `enableHarness` only)
+
+The worktree offer block (lines after invariant 7+8 in the reference implementation above) is **only generated when `enableHarness` is true** in the generation context. Non-harness projects skip this block entirely — the script ends at `exit 0` after the brainstorm reminder.
+
+This addon is **additive to invariants 7+8**, not a replacement. The 8 invariants remain untouched and mandatory. The worktree offer fires only when all 8 invariants have already passed (i.e., the brainstorm reminder was emitted).
+
+**Preference file contract**:
+- Path: `.claude/session-state/worktree-preference`
+- Values: `always` (auto-create without asking), `never` (suppress offer), `ask` (prompt each time — default if file missing)
+- Written by Claude after the developer responds to the first offer, or manually via `echo "always" > .claude/session-state/worktree-preference`
+- The hook only reads this file — it never writes it
+
+**In-worktree detection**: `case "$PWD" in */.claude/worktrees/*)` detects if the session is already inside a Claude Code worktree. Claude Code stores worktrees at `.claude/worktrees/<name>/`, so this pattern is reliable. If already in a worktree, the offer is suppressed (Claude Code refuses nested worktrees anyway).
+
+**Feature-list.json name lookup**: The hook does NOT parse `docs/feature-list.json` — that complexity belongs in the CLAUDE.md instructions, not in a shell script. The hook emits a generic "follow CLAUDE.md § Worktree Workflow" message. Claude reads the CLAUDE.md section, looks up the feature ID from `docs/feature-list.json` if it exists, constructs the name (e.g., `F001-user-dashboard`), and calls `EnterWorktree(name: "...")`.
 
 ##### PreToolUse entry in settings.json
 
@@ -598,6 +636,20 @@ Using `set -u` alone:
 - Works correctly with the stdin-drain and jq-fallback patterns the hooks rely on
 
 **Rule**: hook scripts use `set -u`. Utility scripts (`scripts/*.sh`, `install*.sh`, analysis/detection tooling) use `set -euo pipefail`. This distinction is documented in `.claude/rules/shell-scripts.md` and is authoritative — this spec section only restates it for the generation-time audience.
+
+#### Utility Hooks (non-telemetry)
+
+Utility hooks are generated alongside quality-gate hooks but are **NOT** tracked in `hookStatus`. They serve infrastructure purposes. They follow the same shell conventions (`set -u`, `shellcheck -x`, always `exit 0`).
+
+##### WorktreeCreate hook — init.sh auto-runner
+
+When `enableHarness` is true in the generation context, generate a `WorktreeCreate` hook that runs `init.sh` when the developer enters a worktree via `EnterWorktree`.
+
+**What to generate**: The script and settings.json entry from `references/hooks-guide.md` § WorktreeCreate hook (init.sh auto-runner).
+
+**Why this is not in hookStatus**: `hookStatus` tracks only quality-gate hooks derived from `callerExtras.qualityGates` (see scope boundary above). The WorktreeCreate hook is infrastructure — it bootstraps development environments, not Plugin Integration discipline.
+
+**Merge behavior**: Same as all hooks — merge into existing `.claude/settings.json`. If a `WorktreeCreate` hook already exists, skip (don't duplicate).
 
 ### Collaboration Artifacts
 
@@ -720,4 +772,4 @@ TDD is the standard testing approach for all onboarded projects. These artifacts
 - `references/evolution-hooks-guide.md` — Auto-evolution hook patterns
 - `references/sprint-contracts.md` — Sprint contract format and negotiation
 - `references/agent-teams-guide.md` — Agent team compositions and quality hooks
-- `references/worktree-workflow.md` — Git worktree development pattern
+- `references/worktree-workflow.md` — Proactive worktree workflow using Claude Code native tools (EnterWorktree/ExitWorktree)

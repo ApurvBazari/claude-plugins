@@ -285,7 +285,7 @@ After all phases complete, present the completion summary:
 > **What to do next:**
 > 1. Review CLAUDE.md and engineering documents in `docs/engineering/` — they capture your project's architectural decisions and strategies
 > 2. Start your next session: `bash init.sh` → read progress → pick a feature from Sprint 1
-> 3. Use worktrees for isolation: `git worktree add ../project-feat-F001 -b feat/F001-[name]`
+> 3. Use worktrees for isolation: `EnterWorktree(name: "F001-[name]")` — see CLAUDE.md § Worktree Workflow
 > 4. After implementing a feature, run `/forge:verify F001` for independent evaluation
 > 5. When Sprint 1 features are done, run `/forge:verify --sprint 1` to check the sprint contract
 > 6. Your tooling evolves — [auto-updates / run /forge:evolve when notified] to keep AI tooling current
