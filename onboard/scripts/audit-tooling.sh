@@ -30,7 +30,7 @@ if [ -f "CLAUDE.md" ]; then
           add_drift "CLAUDE.md references 'npm run $script_name' but script not found in package.json"
         fi
       fi
-    done < <(grep -oP '(?:npm run |pnpm run |yarn )\K[\w:-]+' CLAUDE.md 2>/dev/null || true)
+    done < <(grep -oE '(npm run |pnpm run |yarn )[a-zA-Z0-9_:-]+' CLAUDE.md 2>/dev/null | sed 's/^.*run //; s/^yarn //' || true)
   fi
 fi
 
@@ -45,7 +45,7 @@ if [ -d ".claude/rules" ]; then
       if [ -n "$rule_path" ] && [ "$rule_path" != "**" ]; then
         # Check if the glob pattern matches any files
         # shellcheck disable=SC2086
-        if ! compgen -G "$rule_path" >/dev/null 2>&1; then
+        if ! ls $rule_path >/dev/null 2>&1; then
           add_drift "Rule '$rule_file' targets path '$rule_path' but no matching files found"
         fi
       fi
@@ -95,13 +95,13 @@ echo ""
 if [ "$DRIFT_FOUND" -eq 1 ]; then
   echo "### Drift Detected"
   echo ""
-  echo -e "$REPORT"
+  printf '%b\n' "$REPORT"
   # GitHub Actions output
   if [ -n "${GITHUB_OUTPUT:-}" ]; then
     {
       echo "has_drift=true"
       echo "report<<EOF"
-      echo -e "$REPORT"
+      printf '%b\n' "$REPORT"
       echo "EOF"
     } >> "$GITHUB_OUTPUT"
   fi

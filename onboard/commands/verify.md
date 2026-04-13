@@ -1,12 +1,12 @@
-# /forge:verify — Independent Feature Verification
+# /onboard:verify — Independent Feature Verification
 
 You are running the Forge verification command. This spawns an independent evaluator agent to test features against `docs/feature-list.json`.
 
 ## Usage
 
-- **`/forge:verify`** — Verify all incomplete features (where `passes` is `false`)
-- **`/forge:verify F001`** — Verify a single feature by ID
-- **`/forge:verify --sprint 1`** — Verify all features in Sprint 1 and check sprint contract criteria
+- **`/onboard:verify`** — Verify all incomplete features (where `passes` is `false`)
+- **`/onboard:verify F001`** — Verify a single feature by ID
+- **`/onboard:verify --sprint 1`** — Verify all features in Sprint 1 and check sprint contract criteria
 
 ## Run
 

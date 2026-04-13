@@ -42,7 +42,7 @@ Independent feature verification. Spawns a feature-evaluator agent (in worktree 
 
 ### `/onboard:evolve`
 
-Apply pending tooling drift updates. Reads `.claude/drift.json` (populated by auto-evolution hooks) and updates CLAUDE.md, rules, and skills to stay in sync with codebase changes.
+Apply pending tooling drift updates. Reads `.claude/forge-drift.json` (populated by auto-evolution hooks) and updates CLAUDE.md, rules, and skills to stay in sync with codebase changes.
 
 ### `/onboard:status`
 
@@ -87,8 +87,7 @@ The plugin uses three specialized components:
 
 - **claude-md-management** — Maintains the CLAUDE.md files that onboard generates. onboard bootstraps, claude-md-management handles ongoing quality scoring and revision as your project evolves.
 - **hookify** — Adds behavioral rules incrementally after onboard's initial setup. onboard writes hooks to `settings.json`; hookify uses `.local.md` rule files for on-the-fly additions.
-
-See [docs/best-practices.md](../docs/best-practices.md) for handoff workflows and coexistence details.
+- **security-guidance** — Passive security warnings during development. Complements onboard's generated hooks with OWASP-aware file-edit checks.
 
 ## License
 

@@ -19,7 +19,7 @@ skills/<skill-name>/
 
 Every skill must include these sections in order:
 
-1. **H1 title**: `# /plugin:skill-name — Short Description`
+1. **H1 title**: `# Descriptive Name — Short Description` (e.g., `# Wizard Skill — Interactive Onboarding Flow`)
 2. **Guard section** (if config-dependent): read config, exit with setup instructions if missing
 3. **Overview**: brief introduction shown to user
 4. **Numbered steps**: `## Step N: Action` — each step is a discrete action

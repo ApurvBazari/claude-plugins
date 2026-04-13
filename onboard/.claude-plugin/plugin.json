@@ -1,7 +1,7 @@
 {
   "name": "onboard",
   "version": "2.2.0",
-  "description": "Interactive wizard that analyzes your codebase and generates complete Claude tooling infrastructure — including CI/CD, harness, evolution hooks, and feature verification",
+  "description": "Analyze codebases and generate tailored Claude tooling — CLAUDE.md, rules, skills, agents, hooks, and CI/CD",
   "author": {
     "name": "Apurv Bazari"
   },
@@ -12,9 +12,9 @@
     "setup",
     "wizard",
     "claude-md",
-    "agentic-workflow",
     "codebase-analysis",
-    "tooling-infrastructure",
-    "AI-assisted-development"
+    "plugin-integration",
+    "quality-gates",
+    "ai-assisted-development"
   ]
 }
