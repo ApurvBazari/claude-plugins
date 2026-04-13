@@ -26,6 +26,20 @@ claude plugin install onboard
 - **Existing project?** Install `onboard` — it analyzes your codebase and generates Claude tooling tailored to what's already there
 - **Already have Claude tooling set up?** Add `notify` for system notifications
 
+**See it in action:**
+
+```
+> /onboard:init
+
+Scanning codebase... TypeScript, Next.js 15, Vitest, Tailwind CSS
+Wizard: 6 adaptive questions about your workflow and preferences
+Generating: CLAUDE.md, 4 rules, 2 skills, 1 agent, 3 hooks
+
+Your project is now set up for AI-assisted development.
+```
+
+Each plugin README has a full walkthrough — see [onboard](./onboard/), [forge](./forge/), or [notify](./notify/).
+
 ---
 
 ## onboard

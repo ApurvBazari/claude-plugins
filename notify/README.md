@@ -12,6 +12,58 @@ Configures Claude Code hooks to send native system notifications — macOS via `
 
 Notifications show contextual messages extracted from Claude's actual response, not generic static text. Each notification also displays the current repository and branch as a subtitle (e.g., `📦 my-app  🔀 feature/auth`). Clicking a notification brings your editor (VS Code, Cursor, etc.) to the foreground.
 
+## Example
+
+Running `/notify:setup` on macOS:
+
+```
+> /notify:setup
+
+Claude: Detected platform: macOS
+        Checking for terminal-notifier... found (/opt/homebrew/bin/terminal-notifier)
+        Detected editor: VS Code (com.microsoft.VSCode)
+
+        Where should notifications be installed?
+        (a) Global — fire in every Claude Code session
+        (b) This project only — fire only in my-app/
+
+You: (a) Global
+
+Claude: Configure notification preferences:
+
+        Stop event (task completed):
+          Sound: Hero       Activate: VS Code    Enabled: yes
+
+        Notification event (needs attention):
+          Sound: Glass      Activate: VS Code    Enabled: yes
+
+        SubagentStop event (subagent done):
+          Sound: Ping       Activate: VS Code    Enabled: no
+
+        Use these defaults, or customize?
+
+You: Defaults are fine
+
+Claude: Writing notify-config.json to ~/.claude/
+        Adding hooks to ~/.claude/settings.json (Stop, Notification)
+        Sending test notification...
+
+        ✓ Notification sent — you should see it on screen now.
+
+        Setup complete. Notifications will fire in all Claude Code sessions.
+        Edit ~/.claude/notify-config.json to adjust settings anytime.
+```
+
+**What you see:**
+
+A native macOS notification appears with:
+- **Title**: `Claude Code`
+- **Subtitle**: `my-app` `main`
+- **Message**: `Test notification — setup is working!`
+- **Sound**: Hero chime
+
+Clicking the notification brings VS Code to the foreground.
+
 ## Requirements
 
 **macOS:**
