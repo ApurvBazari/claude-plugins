@@ -28,8 +28,10 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           model: claude-opus-4-6
           max_turns: 20
+          track_progress: true
           direct_prompt: |
             Security audit for a Claude Code plugin repo (markdown + shell scripts + JSON manifests — no compiled code, no web frontend, no database).
+            It contains 3 plugins: onboard (codebase analyzer), forge (project scaffolder), notify (system notifications).
 
             Focus on what matters for this codebase:
 
@@ -41,7 +43,7 @@ jobs:
 
             Skip categories irrelevant to this repo: SQL/NoSQL/LDAP injection, XXE, XSS, CSRF, deserialization, authentication, session management.
 
-            Format: list findings as Critical / High / Medium / Low. If clean, confirm the changes pass review. Be concise.
+            Format: list findings as Critical / High / Medium / Low. If clean, confirm the changes pass review.
 
   security-review:
     if: >
@@ -73,4 +75,3 @@ jobs:
             Skip categories irrelevant to this repo: SQL/NoSQL/LDAP injection, XXE, XSS, CSRF, deserialization, authentication, session management.
 
             Format: list findings as Critical / High / Medium / Low. If clean, confirm the changes pass review.
-            Post your final findings directly. Do not create a checklist or in-progress plan — your response IS the final comment.
