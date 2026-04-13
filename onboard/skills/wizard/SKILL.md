@@ -57,13 +57,11 @@ Calibrate the generated tooling.
 ### Phase 5.5: Ecosystem Plugins (Always)
 Offer complementary plugins from the ecosystem.
 - Notifications (notify plugin) — get alerted when Claude finishes tasks or needs attention
-- Usage analytics (observe plugin) — track tool usage patterns and workflow efficiency
 
 **Offer all ecosystem plugins regardless of install status.** For each one, probe the filesystem and include an install-status marker in the presentation so the developer knows up front what's already installed vs. what will need to be installed later:
 
 ```bash
 ls "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh" 2>/dev/null
-ls "${CLAUDE_PLUGIN_ROOT}/../observe/scripts/install.sh" 2>/dev/null
 ```
 
 Present each plugin with:
@@ -172,8 +170,7 @@ After the wizard completes, compile all answers into a structured JSON format:
   "securitySensitivity": "standard | elevated | high",
   "autonomyLevel": "always-ask | balanced | autonomous",
   "ecosystemPlugins": {
-    "notify": true,
-    "observe": true
+    "notify": true
   }
 }
 ```

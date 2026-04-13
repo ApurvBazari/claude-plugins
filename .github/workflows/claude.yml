@@ -30,7 +30,7 @@ jobs:
           max_turns: 12
           custom_instructions: |
             This is a Claude Code plugin marketplace repository (markdown + shell + JSON, no compiled code).
-            It contains 4 plugins: onboard (codebase analyzer), forge (project scaffolder), observe (observability), notify (system notifications).
+            It contains 3 plugins: onboard (codebase analyzer), forge (project scaffolder), notify (system notifications).
 
             Review this PR against the repo conventions in .claude/rules/:
             - plugin-structure.md: plugin directory requirements, self-contained plugins

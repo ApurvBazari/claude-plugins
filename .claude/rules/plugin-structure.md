@@ -2,7 +2,6 @@
 paths:
   - "onboard/**"
   - "forge/**"
-  - "observe/**"
   - "notify/**"
 ---
 

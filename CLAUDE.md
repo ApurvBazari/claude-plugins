@@ -1,6 +1,6 @@
 # claude-plugins
 
-Claude Code plugin marketplace by Apurv Bazari. Four plugins — all markdown + shell + JSON, no compiled code.
+Claude Code plugin marketplace by Apurv Bazari. Three plugins — all markdown + shell + JSON, no compiled code.
 
 ## Repository
 
@@ -22,11 +22,6 @@ Claude Code plugin marketplace by Apurv Bazari. Four plugins — all markdown + 
          │      ├── skills/ (context-gathering, scaffolding, tooling-generation, plugin-discovery)
          │      ├── agents/ (stack-researcher, scaffold-analyzer)
          │      └── commands/ (init, status)
-         │
-         ├──→ observe/                   ← zero-infrastructure observability
-         │      ├── skills/ (observability-analytics)
-         │      ├── commands/ (status, report, pipeline)
-         │      └── scripts/ (collect.py, install.sh, query.py, generate_dashboard.py)
          │
          └──→ notify/                    ← cross-platform system notifications
                 ├── skills/ (wizard)
@@ -57,7 +52,7 @@ Components live at the plugin root, NOT inside `.claude-plugin/`. Only `plugin.j
 ## Naming Conventions
 
 - File names: kebab-case (`codebase-analyzer.md`, `validate-bash.sh`)
-- Plugin directories: lowercase (`onboard`, `forge`, `observe`, `notify`)
+- Plugin directories: lowercase (`onboard`, `forge`, `notify`)
 - Manifest names: match directory name
 - Skill references: always in `references/` subdirectory inside the skill
 
@@ -76,7 +71,7 @@ Components live at the plugin root, NOT inside `.claude-plugin/`. Only `plugin.j
 ## Git Discipline
 
 - Conventional commits: `type(scope): description` — types: `feat`, `fix`, `refactor`, `docs`, `chore`
-- Branch naming: `type/short-description` (e.g., `feat/observe-plugin`, `fix/notify-subtitle`)
+- Branch naming: `type/short-description` (e.g., `feat/notify-setup`, `fix/notify-subtitle`)
 - One logical change per commit — don't mix plugin changes across plugins
 - Scope = plugin name when change is plugin-specific (e.g., `feat(onboard): add verify skill`)
 
