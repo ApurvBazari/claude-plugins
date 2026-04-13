@@ -84,3 +84,12 @@ During setup, you can customize per event:
 - **Sound** — Hero, Glass, Ping, Purr, Pop, Submarine, and more
 - **App to activate** — VS Code, Cursor, Terminal, iTerm2, or none
 - **Enabled/disabled** — toggle any event on/off without re-running setup
+
+## Works Well With
+
+- **forge** — When forge scaffolds a new project, it can recommend and configure notify as part of plugin discovery
+- **onboard** — After onboard generates your Claude tooling, add notify to get alerted when tasks complete or need attention
+
+## License
+
+MIT

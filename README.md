@@ -165,6 +165,7 @@ These are plugins from the broader Claude Code ecosystem that pair well with thi
 | `pr-review-toolkit` | Ship | Multi-agent code review with specialist reviewers |
 | `code-review` | Ship | PR review comments |
 | `hookify` | Setup | Incremental behavioral rules for Claude Code |
+| `security-guidance` | Setup, Develop | Passive hook-based security warnings on file edits |
 | `claude-md-management` | Maintain | CLAUDE.md quality scoring and revision |
 | `code-simplifier` | Refine | Post-implementation code cleanup |
 | `plugin-dev` | Meta | Plugin authoring toolkit (for plugin authors) |

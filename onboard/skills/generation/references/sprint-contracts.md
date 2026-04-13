@@ -18,7 +18,7 @@ Stored in `docs/sprint-contracts/sprint-N.json`:
     {
       "name": "functional",
       "description": "All features pass their verification steps end-to-end",
-      "threshold": "ALL features in this sprint must pass /forge:verify",
+      "threshold": "ALL features in this sprint must pass /onboard:verify",
       "weight": "required"
     },
     {
@@ -139,7 +139,7 @@ From Anthropic: "Including phrases like 'the best designs are museum quality' pu
 
 ## How the Evaluator Uses Contracts
 
-When `/forge:verify --sprint N` runs:
+When `/onboard:verify --sprint N` runs:
 
 1. Feature evaluator tests each feature in the sprint (standard verification)
 2. After feature testing, evaluator checks each contract criterion:

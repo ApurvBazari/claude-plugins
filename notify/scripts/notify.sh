@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # notify.sh — Dynamic notification script for Claude Code hooks
 # Usage: echo '<stdin_json>' | notify.sh <event>
 # Events: stop, notification, subagentStop

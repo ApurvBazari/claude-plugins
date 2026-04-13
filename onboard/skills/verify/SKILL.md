@@ -16,9 +16,9 @@ Stop and do not proceed.
 
 Parse the command arguments:
 
-- **`/forge:verify`** (no args) — verify all features where `passes` is `false`
-- **`/forge:verify F001`** — verify a single feature by ID
-- **`/forge:verify --sprint 1`** — verify all features in Sprint 1 and check sprint contract
+- **`/onboard:verify`** (no args) — verify all features where `passes` is `false`
+- **`/onboard:verify F001`** — verify a single feature by ID
+- **`/onboard:verify --sprint 1`** — verify all features in Sprint 1 and check sprint contract
 
 Read `docs/feature-list.json` and identify the target features based on the mode.
 
@@ -74,7 +74,7 @@ If running in sprint mode, evaluate the sprint contract criteria from the evalua
   > [N] criteria failing:
   > - [criterion]: [reason]
   >
-  > Fix the failing features/criteria and run `/forge:verify --sprint [N]` again.
+  > Fix the failing features/criteria and run `/onboard:verify --sprint [N]` again.
 
 ## Step 6: Write Report to File
 

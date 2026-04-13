@@ -173,6 +173,8 @@ If your stack isn't listed here, forge will still try. Use `scaffoldMode: walkin
 - **feature-dev** — After Forge sets up your project, use feature-dev for guided feature development
 - **superpowers** — Planning, TDD, debugging skills complement Forge's generated tooling
 - **commit-commands** — Git workflow automation for the scaffolded project
+- **notify** — System notifications when Claude finishes tasks or needs input — recommended for long-running scaffold sessions
+- **security-guidance** — Passive security warnings on file edits — pairs well with forge-generated CI/CD
 
 ## License
 
