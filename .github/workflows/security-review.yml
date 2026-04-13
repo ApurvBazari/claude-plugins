@@ -27,43 +27,21 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           model: claude-opus-4-6
-          max_turns: 12
+          max_turns: 20
           direct_prompt: |
-            Perform a comprehensive security audit of the changes in this PR. Analyze for:
+            Security audit for a Claude Code plugin repo (markdown + shell scripts + JSON manifests — no compiled code, no web frontend, no database).
 
-            ## OWASP Top 10
-            - Injection flaws (SQL, NoSQL, OS command, LDAP)
-            - Broken authentication and session management
-            - Sensitive data exposure
-            - XML external entities (XXE)
-            - Broken access control
-            - Security misconfiguration
-            - Cross-site scripting (XSS)
-            - Insecure deserialization
-            - Using components with known vulnerabilities
-            - Insufficient logging and monitoring
+            Focus on what matters for this codebase:
 
-            ## Plugin-Specific Concerns
-            - Shell command injection via plugin manifests or hook scripts
-            - Unsafe interpolation in shell commands (unquoted variables, eval usage)
-            - Credential handling (tokens, API keys, secrets in code or config)
-            - Plugin manifest integrity (unexpected permissions, overly broad file access)
-            - Path traversal in file operations
-            - Unsafe use of user-supplied input in skill/agent prompts
+            1. **Shell injection** — unquoted variables, eval usage, unsafe interpolation in hook scripts (.sh files)
+            2. **Command injection** — user-controlled input flowing into shell commands via stdin JSON parsing
+            3. **Path traversal** — file operations using unsanitized paths from tool input
+            4. **Credential exposure** — hardcoded secrets, tokens, or API keys in code or config
+            5. **Unsafe file operations** — insecure permissions, symlink attacks, TOCTOU races in hook scripts
 
-            ## General
-            - Hardcoded secrets or credentials
-            - Insecure file permissions
-            - Unsafe dependency usage
-            - Missing input validation at system boundaries
+            Skip categories irrelevant to this repo: SQL/NoSQL/LDAP injection, XXE, XSS, CSRF, deserialization, authentication, session management.
 
-            Format your review as:
-            1. **Critical** — must fix before merge
-            2. **High** — strongly recommended fixes
-            3. **Medium** — should address soon
-            4. **Low/Informational** — minor improvements
-
-            If no issues are found, confirm the changes pass security review.
+            Format: list findings as Critical / High / Medium / Low. If clean, confirm the changes pass review. Be concise.
 
   security-review:
     if: >
@@ -78,41 +56,19 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           model: claude-opus-4-6
-          max_turns: 12
+          max_turns: 20
           trigger_phrase: "@claude security-review"
           direct_prompt: |
-            Perform a comprehensive security audit of the changes in this PR. Analyze for:
+            Security audit for a Claude Code plugin repo (markdown + shell scripts + JSON manifests — no compiled code, no web frontend, no database).
 
-            ## OWASP Top 10
-            - Injection flaws (SQL, NoSQL, OS command, LDAP)
-            - Broken authentication and session management
-            - Sensitive data exposure
-            - XML external entities (XXE)
-            - Broken access control
-            - Security misconfiguration
-            - Cross-site scripting (XSS)
-            - Insecure deserialization
-            - Using components with known vulnerabilities
-            - Insufficient logging and monitoring
+            Focus on what matters for this codebase:
 
-            ## Plugin-Specific Concerns
-            - Shell command injection via plugin manifests or hook scripts
-            - Unsafe interpolation in shell commands (unquoted variables, eval usage)
-            - Credential handling (tokens, API keys, secrets in code or config)
-            - Plugin manifest integrity (unexpected permissions, overly broad file access)
-            - Path traversal in file operations
-            - Unsafe use of user-supplied input in skill/agent prompts
+            1. **Shell injection** — unquoted variables, eval usage, unsafe interpolation in hook scripts (.sh files)
+            2. **Command injection** — user-controlled input flowing into shell commands via stdin JSON parsing
+            3. **Path traversal** — file operations using unsanitized paths from tool input
+            4. **Credential exposure** — hardcoded secrets, tokens, or API keys in code or config
+            5. **Unsafe file operations** — insecure permissions, symlink attacks, TOCTOU races in hook scripts
 
-            ## General
-            - Hardcoded secrets or credentials
-            - Insecure file permissions
-            - Unsafe dependency usage
-            - Missing input validation at system boundaries
+            Skip categories irrelevant to this repo: SQL/NoSQL/LDAP injection, XXE, XSS, CSRF, deserialization, authentication, session management.
 
-            Format your review as:
-            1. **Critical** — must fix before merge
-            2. **High** — strongly recommended fixes
-            3. **Medium** — should address soon
-            4. **Low/Informational** — minor improvements
-
-            If no issues are found, confirm the changes pass security review.
+            Format: list findings as Critical / High / Medium / Low. If clean, confirm the changes pass review. Be concise.
