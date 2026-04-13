@@ -15,13 +15,23 @@ You receive the complete Phase 1 context object containing: stack details, scaff
 Before creating any files:
 
 1. **Verify target directory** — Check if the current directory is empty. If not, ask the developer: overwrite, pick a different directory, or abort.
-2. **Check required CLIs** — Based on the stack, verify necessary tools are installed:
-   - Node.js projects: `node`, `npm`/`pnpm`/`yarn`
-   - Python projects: `python3`, `pip`/`poetry`/`uv`
+2. **Check required CLIs** — Run the bundled detector script to enumerate all available scaffold CLIs on the system:
+
+   ```bash
+   "${CLAUDE_PLUGIN_ROOT}/scripts/detect-scaffold-cli.sh"
+   ```
+
+   The script emits section headers (`## Available Scaffold CLIs`, `### Package Managers`, `### Runtimes`, `### Scaffold Tools`, `### Container Tools`, `### Version Control`) and a line per available tool with its version. Parse the output and verify the stack's required CLIs are listed:
+
+   - Node.js projects: `node`, at least one of `npm`/`pnpm`/`yarn`/`bun`
+   - Python projects: `python3`, at least one of `pip`/`poetry`/`uv`
    - Go projects: `go`
    - Rust projects: `cargo`
-   - If a required CLI is missing: show the install command and wait for the developer to install it.
-3. **Check git** — Verify `git` is installed and available.
+   - Ruby projects: `ruby` + `gem`
+
+   If a required CLI is missing from the detector output, show the appropriate install command and wait for the developer to install it before proceeding. Do not attempt to scaffold with missing prerequisites.
+
+3. **Check git** — The detector script includes git under `### Version Control`. Verify it's present; if missing, halt and tell the developer git is required for repo setup.
 
 ## Step 1.5: Sibling Project Detection
 

@@ -11,9 +11,9 @@
     {
       "name": "onboard",
       "source": "./onboard",
-      "description": "Interactive wizard that analyzes your codebase and generates complete Claude tooling — including CI/CD, harness, evolution hooks, and feature verification",
-      "version": "2.1.0",
-      "keywords": ["onboarding", "setup", "wizard", "claude-md", "codebase-analysis"],
+      "description": "Interactive wizard that analyzes your codebase and generates complete Claude tooling — including CI/CD, harness, evolution hooks, feature verification, and plugin-aware quality-gate hooks",
+      "version": "2.2.0",
+      "keywords": ["onboarding", "setup", "wizard", "claude-md", "codebase-analysis", "plugin-integration", "quality-gates"],
       "license": "MIT"
     },
     {
@@ -27,9 +27,9 @@
     {
       "name": "forge",
       "source": "./forge",
-      "description": "Scaffold new projects with AI-native tooling that evolves with your code",
-      "version": "1.0.0",
-      "keywords": ["scaffold", "project-generator", "ai-tooling", "auto-evolving", "ci-cd"],
+      "description": "Scaffold new projects with AI-native tooling that evolves with your code, with plugin-integration quality gates (requires onboard >= 2.2.0)",
+      "version": "1.1.0",
+      "keywords": ["scaffold", "project-generator", "ai-tooling", "auto-evolving", "ci-cd", "plugin-integration", "quality-gates"],
       "license": "MIT"
     },
     {

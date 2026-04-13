@@ -58,7 +58,14 @@ claude plugin add /path/to/forge
 - **Claude Code** with the **onboard** plugin installed (forge delegates tooling generation to onboard)
 - **git** — required for repository setup and branching
 - **gh** (GitHub CLI) — required for branch protection and CI/CD setup (optional if not using GitHub)
-- **engineering** plugin (optional) — enables Phase 4 lifecycle document generation (ADRs, testing strategy, deploy checklists). Install from `knowledge-work-plugins` marketplace.
+- **engineering** plugin (optional) — enables Phase 4 lifecycle document generation (ADRs, testing strategy, deploy checklists, system designs, runbooks, incident playbooks). Install from the `knowledge-work-plugins` marketplace:
+
+  ```bash
+  claude marketplace add knowledge-work-plugins
+  claude plugin install engineering
+  ```
+
+  If you skip this, Phase 4 is gracefully skipped and you can install engineering later and run its skills directly on the project.
 
 ## How It Works
 

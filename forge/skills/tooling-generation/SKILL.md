@@ -106,14 +106,79 @@ Based on Phase 1 context, set the `enriched` object:
 
 ### Set caller extras
 
-```json
+```jsonc
 {
   "callerExtras": {
     "installedPlugins": ["superpowers", "feature-dev", ...],
-    "coveredCapabilities": ["code-review", "test-generation", ...]
+    "coveredCapabilities": ["code-review", "test-generation", ...],
+    "allowPluginReferences": true,   // default true when installedPlugins is non-empty
+
+    "qualityGates": {
+      "sessionStart": [
+        {
+          "type": "reminder",
+          "message": "Starting new feature work? Begin with /superpowers:brainstorming.",
+          "condition": "superpowers-installed"
+        }
+      ],
+      "preCommit": [
+        { "skill": "code-review:code-review", "triggerOn": "commit", "mode": "blocking" },
+        { "skill": "superpowers:verification-before-completion", "triggerOn": "commit", "mode": "blocking" }
+      ],
+      "featureStart": [
+        {
+          "type": "reminder",
+          "criticalDirs": [],  // populated from scaffold-analyzer directory roles (see below)
+          "message": "New file in {dir}. Consider /superpowers:brainstorming first."
+        }
+      ],
+      "postFeature": [
+        { "skill": "claude-md-management:revise-claude-md", "triggerOn": "session-end", "mode": "advisory" }
+      ]
+    },
+
+    "phaseSkills": {
+      "research":   ["superpowers:brainstorming", "superpowers:dispatching-parallel-agents", "context7"],
+      "planning":   ["superpowers:writing-plans"],
+      "feature":    ["feature-dev:code-architect", "superpowers:test-driven-development"],
+      "review":     ["code-review:code-review", "pr-review-toolkit:review-pr"],
+      "commit":     ["commit-commands:commit"],
+      "post-phase": ["claude-md-management:revise-claude-md"]
+    }
   }
 }
 ```
+
+### Derivation rules — `qualityGates` + `phaseSkills`
+
+The two new fields are NOT blindly included — build them from Phase 1 context + actual installed plugins:
+
+1. **Start from the defaults above**, then filter out any skill whose plugin is not in `installedPlugins`. Example: if `code-review` is not installed, drop `code-review:code-review` from `preCommit` and `phaseSkills.review`.
+
+2. **`qualityGates.sessionStart` is seeded only if `superpowers` is in `installedPlugins`.** Without superpowers, the `"superpowers-installed"` condition fails and onboard drops the entry. You can optionally include a generic fallback entry without the condition, but keep the total message count small to respect the ≤ 3-line budget.
+
+3. **`qualityGates.featureStart.criticalDirs`** is populated from scaffold-analyzer's identified directory roles. Map roles to paths:
+   - `domain` → `domain/`, `lib/domain/`, `internal/domain/`
+   - `parser` → `domain/parser/`, `src/parser/`, `internal/parser/`
+   - `data-layer` → `data/`, `lib/data/`, `data/db/`
+   - `compose-ui` → `ui/compose/`, `src/ui/`, `app/ui/`
+   - `api` → `api/`, `src/api/`, `internal/api/`
+
+   If scaffold-analyzer identifies no matching roles, pass an empty array. Onboard skips the featureStart hook entirely when `criticalDirs` is empty (no false positives).
+
+4. **autonomyLevel downgrade — `preCommit[].mode`**:
+
+   | `autonomyLevel` | Action on `preCommit[].mode` |
+   |---|---|
+   | `always-ask` (exploratory) | Downgrade ALL to `"advisory"` |
+   | `balanced` (standard) | Keep as seeded (default `"blocking"`) |
+   | `autonomous` (production) | Keep as seeded (default `"blocking"`) |
+
+   This is mechanical — apply it in-place before sending callerExtras to onboard. Onboard honors whatever mode it receives and does not re-derive.
+
+5. **Never fabricate plugin references**. If `superpowers`, `feature-dev`, `code-review`, `pr-review-toolkit`, `claude-md-management`, or `commit-commands` is missing from `installedPlugins`, drop all references to it from `qualityGates` and `phaseSkills`. Onboard also does plugin-availability checks, but filtering at the caller keeps the context clean and prevents confusing warnings in `onboard-meta.json`.
+
+6. **Research phase is always seeded when `superpowers` is in `installedPlugins`** — brainstorming is treated as mandatory pre-work for any new feature, not optional. Its hard-gate is a feature, not a bug: it prevents drift between "what I asked for" and "what got built".
 
 ### Validate
 
@@ -170,6 +235,51 @@ Update `.claude/forge-meta.json` with:
 - `generated.tooling`: from onboard's response
 - `generated.cicd`: from onboard's response
 - `generated.harness`: init.sh + feature-list.json + onboard's harness artifacts
+- `generated.toolingFlags`: **the full `callerExtras` object built in Step 1 + the `hookStatus` object from onboard's response**. This persists `installedPlugins`, `coveredCapabilities`, `qualityGates`, `phaseSkills`, and `allowPluginReferences` so `/forge:status` can later report Plugin Integration Coverage without re-deriving them, and mirrors onboard's `hookStatus` telemetry so the coverage report can show planned-vs-generated-vs-skipped counts. Required by the `/forge:status` Step 4.5 coverage report. Shape:
+
+  ```jsonc
+  {
+    "installedPlugins": ["superpowers", "code-review", ...],
+    "coveredCapabilities": ["code-review", ...],
+    "allowPluginReferences": true,
+    "qualityGates": {
+      "sessionStart": [ ... ],
+      "preCommit":    [ ... ],
+      "featureStart": [ ... ],
+      "postFeature":  [ ... ]
+    },
+    "phaseSkills": {
+      "research": [ ... ],
+      "planning": [ ... ],
+      "feature":  [ ... ],
+      "review":   [ ... ],
+      "commit":   [ ... ],
+      "post-phase": [ ... ]
+    },
+    "hookStatus": {                          // NEW — mirrored from /onboard:generate response
+      "planned":   { "SessionStart": 1, "PreToolUse:Write": 1, "PreToolUse:Bash": 2, "Stop": 1 },
+      "generated": {                         // list-of-script-basenames per event key
+        "SessionStart":     ["plugin-integration-reminder.sh"],
+        "PreToolUse:Write": ["feature-start-detector.sh"],
+        "PreToolUse:Bash":  ["pre-commit-code-review.sh", "pre-commit-verification-before-completion.sh"],
+        "Stop":             ["post-feature-revise-claude-md.sh"]
+      },
+      "skipped":   [],
+      "warnings":  [],
+      "downgradeApplied": null              // optional — object with rule + affectedEntries when autonomyLevel forced a downgrade
+    }
+  }
+  ```
+
+  **Scope reminder**: `hookStatus` only tracks hooks derived from `callerExtras.qualityGates`. Format/lint hooks, forge-internal hooks, and any other non-Plugin-Integration hooks stay out of these counts even though they're written to `.claude/settings.json`. See `onboard/skills/generation/SKILL.md` § Hook Status Telemetry § Scope boundary for the rationale.
+
+  **Write rules**:
+  - Copy `installedPlugins`, `coveredCapabilities`, `allowPluginReferences`, `qualityGates`, `phaseSkills` from the in-memory `callerExtras` object exactly as it was sent to `/onboard:generate` — including the autonomyLevel-downgraded `preCommit[].mode` values. Do not re-derive.
+  - Copy `hookStatus` verbatim from the `/onboard:generate` response object (see `onboard/commands/generate.md` § Step 5). Do not reshape. `generated` is a **list-of-basenames map**, not a count map.
+  - If onboard's response lacks `hookStatus` (e.g. talking to an older onboard), synthesize a minimal fallback: `{"planned": {}, "generated": {}, "skipped": [], "warnings": ["hookStatus unavailable — onboard < 2.2.0"], "downgradeApplied": null}`. This keeps `/forge:status` consumable.
+  - **Tolerate legacy count-map form**: if an older onboard build emits `generated[event]` as an integer (count) instead of an array (list-of-basenames), forge should store whatever it receives verbatim and let `/forge:status` handle the shape check at read time. The canonical form going forward is list-of-basenames.
+  - **Invariant**: `toolingFlags.hookStatus.planned` keys should match what onboard expected to generate from `toolingFlags.qualityGates`. A mismatch signals a contract drift between forge and onboard.
+
 - `context.verificationStrategy`: the chosen approach
 - `costs.forgeInit`: estimated token usage
 

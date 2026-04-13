@@ -30,13 +30,28 @@ Options:
 
 ### Step 2: Offer inline install (when confirmed missing)
 
-Tell the developer what engineering does and offer install:
+Tell the developer what engineering does, where it lives, and offer install:
 
-> The **engineering** plugin generates project-specific engineering documents — Architecture Decision Records, testing strategies, deploy checklists, system designs, runbooks, and incident playbooks — using the context we gathered in Phase 1.
+> The **engineering** plugin is an optional Anthropic-official plugin that generates project-specific engineering documents — Architecture Decision Records, testing strategies, deploy checklists, system designs, runbooks, and incident playbooks — using the context we gathered in Phase 1.
 >
-> Install it now? (runs: `claude plugin install engineering`)
+> It lives in the **`knowledge-work-plugins`** marketplace (separate from Apurv Bazari's plugins), so you may need to add the marketplace first:
+>
+> ```
+> claude marketplace add knowledge-work-plugins
+> claude plugin install engineering
+> ```
+>
+> Install it now, or skip Phase 4 and install later?
 
 Use AskUserQuestion with options: **Install now (Recommended)**, **Skip Phase 4**.
+
+When the developer chooses "Install now", run both commands in sequence via the Bash tool:
+
+```bash
+claude marketplace add knowledge-work-plugins 2>&1 && claude plugin install engineering
+```
+
+If the marketplace is already added, the first command is a no-op and the second still succeeds.
 
 ### Step 3: Handle install outcome
 

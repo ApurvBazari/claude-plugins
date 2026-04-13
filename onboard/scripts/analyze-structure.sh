@@ -21,6 +21,7 @@ echo ""
 
 # --- Top-level directory listing ---
 echo "## Top-Level Contents"
+# shellcheck disable=SC2012  # intentional: ls -1F for type-annotated human listing
 ls -1F "$PROJECT_ROOT" | head -50
 echo ""
 
