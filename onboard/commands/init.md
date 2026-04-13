@@ -184,23 +184,19 @@ If the wizard answers include `ecosystemPlugins`, set up the requested plugins.
 
 ### Step 3.5.1: Resolve Requested Ecosystem Plugins
 
-For each plugin the developer selected in the wizard (`ecosystemPlugins.notify`, `ecosystemPlugins.observe`, etc.), verify it's installed. If it's missing, **offer inline install** — do not skip silently, because the developer explicitly asked for it.
+For each plugin the developer selected in the wizard (`ecosystemPlugins.notify`, etc.), verify it's installed. If it's missing, **offer inline install** — do not skip silently, because the developer explicitly asked for it.
 
 For each requested plugin, probe the filesystem:
 
 ```bash
 # Check if notify is available
 ls "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh" 2>/dev/null
-
-# Check if observe is available
-ls "${CLAUDE_PLUGIN_ROOT}/../observe/scripts/install.sh" 2>/dev/null
 ```
 
 Characteristic files per plugin:
 - `notify` → `scripts/notify.sh`
-- `observe` → `scripts/install.sh`
 
-**If the probe finds the file**, the plugin is installed — proceed to Step 3.5.2 (for notify) or Step 3.5.3 (for observe).
+**If the probe finds the file**, the plugin is installed — proceed to Step 3.5.2 (for notify).
 
 **If the probe returns nothing**, the plugin is missing. Tell the developer:
 
@@ -220,7 +216,7 @@ Use AskUserQuestion with two options:
 
 **If the developer skips or install fails**, emit a clear skip message (never silent):
 
-> Skipping **<plugin>** setup. You can install it later with `claude plugin install <plugin>` and run its setup command directly (`/notify:setup`, `/observe:status`, etc.).
+> Skipping **<plugin>** setup. You can install it later with `claude plugin install <plugin>` and run its setup command directly (`/notify:setup`, etc.).
 
 Then continue to the next requested plugin. Repeat for each entry in `ecosystemPlugins`.
 
@@ -257,26 +253,13 @@ Where `$BASE_DIR` is the same scope used for the generated Claude tooling (typic
 
 Report: `Notify plugin configured — you'll get system notifications when Claude finishes tasks.`
 
-### Step 3.5.3: Set Up Observe (if requested and available)
-
-If `ecosystemPlugins.observe` is `true` and observe is available:
-
-1. Run observe's install script:
-   ```bash
-   bash "${CLAUDE_PLUGIN_ROOT}/../observe/scripts/install.sh"
-   ```
-2. Read observe's `hooks/hooks.json` and merge its hook entries into `$BASE_DIR/settings.json`
-
-Report: `Observe plugin configured — usage analytics will be collected passively.`
-
-### Step 3.5.4: Report Ecosystem Setup
+### Step 3.5.3: Report Ecosystem Setup
 
 > **Ecosystem plugins set up:**
 > - [list what was configured]
 >
 > You can customize these later:
 > - Notify: edit `notify-config.json` or run `/notify:setup`
-> - Observe: run `/observe:status` to check data collection
 
 If no plugins were set up (none requested or none available), skip this report entirely.
 
@@ -319,7 +302,6 @@ Based on what was generated, suggest what to try first:
 
 If ecosystem plugins were set up, add:
 > - Run `/notify:status` to verify notifications are working
-> - Run `/observe:status` after a few sessions to see your usage analytics
 
 ### Step 4.4: Closing
 

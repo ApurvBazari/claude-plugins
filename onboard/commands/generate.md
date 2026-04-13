@@ -79,8 +79,7 @@ The caller must provide a context JSON object in the conversation. This object c
   "modelChoice": "string — sonnet | opus | haiku",
 
   "ecosystemPlugins": {
-    "notify": "boolean",
-    "observe": "boolean"
+    "notify": "boolean"
   },
 
   "enriched": {
@@ -211,7 +210,6 @@ If `ecosystemPlugins` is present in the context, set up the requested plugins fo
 
 - Check plugin availability
 - Set up notify (if requested and available)
-- Set up observe (if requested and available)
 
 ---
 

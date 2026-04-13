@@ -31,14 +31,6 @@
       "version": "1.1.0",
       "keywords": ["scaffold", "project-generator", "ai-tooling", "auto-evolving", "ci-cd", "plugin-integration", "quality-gates"],
       "license": "MIT"
-    },
-    {
-      "name": "observe",
-      "source": "./observe",
-      "description": "Zero-infrastructure observability for Claude Code — tracks tool usage, skill invocations, subagent spawns, and session behavior",
-      "version": "0.2.0",
-      "keywords": ["observability", "analytics", "hooks", "telemetry", "metrics"],
-      "license": "MIT"
     }
   ]
 }

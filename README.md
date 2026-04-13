@@ -8,7 +8,6 @@ A curated collection of plugins for [Claude Code](https://docs.anthropic.com/en/
 |--------|-------------|
 | [onboard](./onboard/) | Analyzes your codebase and generates tailored Claude tooling — CLAUDE.md files, rules, skills, agents, and hooks |
 | [forge](./forge/) | Scaffolds new projects with AI-native tooling that evolves with your code |
-| [observe](./observe/) | Zero-infrastructure local observability — tracks tool usage, skill invocations, and session behavior |
 | [notify](./notify/) | Cross-platform system notifications for Claude Code (macOS + Linux) |
 
 ## Quick Start
@@ -25,7 +24,7 @@ claude plugin install onboard
 
 - **New project from scratch?** Install `forge` — it scaffolds your app and generates all Claude tooling in one conversation
 - **Existing project?** Install `onboard` — it analyzes your codebase and generates Claude tooling tailored to what's already there
-- **Already have Claude tooling set up?** Add `observe` for usage analytics and `notify` for system notifications
+- **Already have Claude tooling set up?** Add `notify` for system notifications
 
 ---
 
@@ -89,31 +88,6 @@ Stack-agnostic — works with any technology. Researches your stack via web sear
 
 ---
 
-## observe
-
-Zero-infrastructure observability for Claude Code. Hooks into Claude Code events and passively records telemetry to local NDJSON files — no external services, no network calls.
-
-**What gets tracked:**
-
-- Tool invocations (with MCP/skill/subagent classification)
-- Session lifecycle (start, end, compaction)
-- Prompt metrics (length and word count — full text is opt-in)
-- Subagent spawn and completion events
-
-**Commands:**
-
-| Command | What it does |
-|---------|-------------|
-| `/observe:status` | Check data collection status |
-
-**Privacy:** All data stays local at `~/.claude/observability/data/`. Prompt text is not captured by default.
-
-**Requirements:** Python 3.7+
-
-[Full documentation →](./observe/README.md)
-
----
-
 ## notify
 
 Cross-platform system notifications for Claude Code. Get notified when tasks complete, Claude needs your input, or subagents finish work.
@@ -146,9 +120,9 @@ These plugins cover different phases of the development lifecycle. Here's how th
 ┌──────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐
 │  Setup   │ ──→ │ Develop  │ ──→ │  Refine  │ ──→ │   Ship   │ ──→ │ Monitor  │
 │          │     │          │     │          │     │          │     │          │
-│ onboard  │     │feature-  │     │code-     │     │commit-   │     │ observe  │
-│ hookify  │     │dev       │     │simplifier│     │commands  │     │ notify   │
-│ forge *  │     │superpow- │     │          │     │pr-review-│     │          │
+│ onboard  │     │feature-  │     │code-     │     │commit-   │     │ notify   │
+│ hookify  │     │dev       │     │simplifier│     │commands  │     │ Native   │
+│ forge *  │     │superpow- │     │          │     │pr-review-│     │ OTEL     │
 │          │     │ers       │     │          │     │toolkit   │     │          │
 └──────────┘     └──────────┘     └──────────┘     └──────────┘     └──────────┘
       │                │                                  │
@@ -175,7 +149,7 @@ The development phase is handled by companion plugins. **`feature-dev`** provide
 
 ### Monitor
 
-**`observe`** passively records Claude Code telemetry for usage analytics. **`notify`** sends system notifications when Claude finishes tasks or needs your attention. **`engineering:incident-response`** and **`engineering:tech-debt`** (companion) help with post-deploy triage and periodic code health audits. **`engineering:standup`** helps track progress across projects.
+**`notify`** sends system notifications when Claude finishes tasks or needs your attention. For usage analytics, Claude Code has **native OpenTelemetry support** — set `OTEL_LOGS_EXPORTER=otlp` to export tool calls, token usage, costs, and session traces to any OTEL backend. **`engineering:incident-response`** and **`engineering:tech-debt`** (companion) help with post-deploy triage and periodic code health audits. **`engineering:standup`** helps track progress across projects.
 
 ## Companion Plugins
 
