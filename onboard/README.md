@@ -73,6 +73,67 @@ The plugin uses three specialized components:
 - **Wizard Skill** — Adaptive question flow that tailors questions based on what the analyzer found
 - **Config Generator Agent** — Takes analysis + your answers and produces all Claude tooling artifacts
 
+## Example
+
+Running `/onboard:init` on an existing Next.js project:
+
+```
+> /onboard:init
+
+Phase 1: Analysis
+━━━━━━━━━━━━━━━━━
+Scanning codebase...
+
+  Languages:    TypeScript (94%), CSS (6%)
+  Framework:    Next.js 15 (App Router)
+  Testing:      Vitest + React Testing Library
+  Styling:      Tailwind CSS + shadcn/ui
+  Linting:      ESLint (flat config) + Prettier
+  CI/CD:        GitHub Actions (1 workflow)
+  Size:         48 files, 3,200 LOC
+
+Phase 2: Wizard
+━━━━━━━━━━━━━━━
+Claude: I detected Next.js 15 with App Router. A few questions to tailor
+        your tooling:
+
+        What's your testing philosophy?
+        (a) TDD — write tests first, always
+        (b) Test after — write tests for completed features
+        (c) Coverage targets — aim for a % threshold
+        (d) Minimal — only test critical paths
+
+You: (a) TDD
+
+Claude: What level of autonomy should Claude have?
+        (a) Always ask — suggest but never act without confirmation
+        (b) Balanced — auto-format, advisory lint, blocking pre-commit
+        (c) Autonomous — auto-format, auto-lint, enforce all gates
+
+You: (b) Balanced
+
+Phase 3: Generation
+━━━━━━━━━━━━━━━━━━━
+Generated 12 artifacts:
+
+  CLAUDE.md                          — 142 lines (project overview + conventions)
+  src/CLAUDE.md                      — 38 lines (component patterns)
+  .claude/rules/testing.md           — TDD workflow with vitest patterns
+  .claude/rules/components.md        — React component conventions
+  .claude/rules/api-routes.md        — Next.js route handler patterns
+  .claude/skills/run-tests/SKILL.md  — Project-specific test runner
+  .claude/agents/code-reviewer.md    — Review agent with project context
+  .claude/settings.json              — Prettier on Write, ESLint on Edit
+  + 4 more files
+
+Phase 4: Handoff
+━━━━━━━━━━━━━━━━
+Your project is now set up for AI-assisted development. Try these:
+  1. Open a file and notice how Claude has context about your conventions
+  2. Ask Claude to create a new component — it will follow your patterns
+  3. Run /onboard:status anytime to check the health of your setup
+```
+
 ## Supported Project Types
 
 - Node.js / TypeScript (React, Next.js, Express, NestJS, etc.)
@@ -82,6 +143,10 @@ The plugin uses three specialized components:
 - Ruby (Rails)
 - Monorepos (npm/yarn/pnpm workspaces, Turborepo, Nx, Lerna)
 - Mixed-language projects
+
+## Used By
+
+- **forge** — Uses onboard's headless mode (`/onboard:generate`) to generate all Claude tooling for newly scaffolded projects. If you install forge, onboard is a required dependency.
 
 ## Works Well With
 

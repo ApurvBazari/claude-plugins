@@ -360,8 +360,6 @@ The mental model: `hookStatus` answers "how well did the Plugin Integration cont
 - `downgradeApplied` (optional) = records the autonomyLevel-aware preCommit mode downgrade rule when it fires. Only present when the downgrade actually ran — absent means no downgrade was applied. Gives downstream tooling (status reports, adaptive suppression) provenance without re-deriving.
 - **Invariant**: for every event key, `planned[event] - len(generated[event]) == (number of skipped[] entries whose `event` matches)`. If this doesn't balance, the telemetry is broken — treat as a generation bug.
 
-**Backward compat**: downstream consumers (forge status, etc.) MUST treat `hookStatus` as optional. When absent (e.g. pre-2.2.0 onboard runs), fall back to comparing `qualityGates` spec against actual `.claude/settings.json` content. Consumers SHOULD also tolerate the legacy count-map form of `generated` (produced by pre-`fix(forge,onboard): refine hookStatus scope...` onboard builds) by detecting whether `generated[event]` is an integer vs an array and handling both; the canonical form going forward is list-of-paths.
-
 See `references/hooks-guide.md` for generated script templates, ShellCheck requirements, and concrete examples of sessionStart + featureStart + preCommit hooks.
 
 #### O6 — SessionStart reminder hook

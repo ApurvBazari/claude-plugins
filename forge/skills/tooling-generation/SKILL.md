@@ -276,8 +276,6 @@ Update `.claude/forge-meta.json` with:
   **Write rules**:
   - Copy `installedPlugins`, `coveredCapabilities`, `allowPluginReferences`, `qualityGates`, `phaseSkills` from the in-memory `callerExtras` object exactly as it was sent to `/onboard:generate` — including the autonomyLevel-downgraded `preCommit[].mode` values. Do not re-derive.
   - Copy `hookStatus` verbatim from the `/onboard:generate` response object (see `onboard/commands/generate.md` § Step 5). Do not reshape. `generated` is a **list-of-basenames map**, not a count map.
-  - If onboard's response lacks `hookStatus` (e.g. talking to an older onboard), synthesize a minimal fallback: `{"planned": {}, "generated": {}, "skipped": [], "warnings": ["hookStatus unavailable — onboard < 2.2.0"], "downgradeApplied": null}`. This keeps `/forge:status` consumable.
-  - **Tolerate legacy count-map form**: if an older onboard build emits `generated[event]` as an integer (count) instead of an array (list-of-basenames), forge should store whatever it receives verbatim and let `/forge:status` handle the shape check at read time. The canonical form going forward is list-of-basenames.
   - **Invariant**: `toolingFlags.hookStatus.planned` keys should match what onboard expected to generate from `toolingFlags.qualityGates`. A mismatch signals a contract drift between forge and onboard.
 
 - `context.verificationStrategy`: the chosen approach
