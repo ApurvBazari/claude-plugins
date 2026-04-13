@@ -144,6 +144,10 @@ Your project is now set up for AI-assisted development. Try these:
 - Monorepos (npm/yarn/pnpm workspaces, Turborepo, Nx, Lerna)
 - Mixed-language projects
 
+## Used By
+
+- **forge** — Uses onboard's headless mode (`/onboard:generate`) to generate all Claude tooling for newly scaffolded projects. If you install forge, onboard is a required dependency.
+
 ## Works Well With
 
 - **claude-md-management** — Maintains the CLAUDE.md files that onboard generates. onboard bootstraps, claude-md-management handles ongoing quality scoring and revision as your project evolves.

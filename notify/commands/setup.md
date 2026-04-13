@@ -136,7 +136,7 @@ If "Use defaults", use these values (omit `activate` on Linux):
 
 ```json
 {
-  "version": "0.2.0",
+  "version": "1.0.0",
   "events": {
     "stop": {
       "enabled": true,

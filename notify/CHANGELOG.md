@@ -1,23 +1,18 @@
 # Changelog
 
-## 1.1.0
-
-- Add Linux support via `notify-send` (libnotify)
-- Add duration filtering (`minDurationSeconds`) to suppress notifications for fast responses
-- Add `/notify:uninstall` command for clean removal
-- Add hook conflict detection during setup
-- Add editor auto-detection for macOS app activation (VS Code, Cursor, Windsurf, iTerm2)
-- Add dry-run/preview mode during setup
-- Add scope migration support (global ↔ per-project)
-- Improve sound and bundle ID validation during setup
-
 ## 1.0.0
 
-- Initial release
-- macOS notifications via `terminal-notifier`
-- Three notification events: stop, notification, subagentStop
-- `/notify:setup` interactive wizard
-- `/notify:status` health check
-- Global and per-project install scopes
-- Contextual message extraction from Claude responses
-- Repo + branch subtitle display
+Initial release.
+
+- Cross-platform system notifications: macOS via `terminal-notifier`, Linux via `notify-send`
+- Three notification events: stop (task completed), notification (needs attention), subagentStop (subagent done)
+- Duration filtering (`minDurationSeconds`) to suppress notifications for fast responses
+- `/notify:setup` interactive wizard with editor auto-detection, sound/urgency customization
+- `/notify:status` health check and test notifications
+- `/notify:uninstall` for clean removal of hooks and config
+- Global and per-project install scopes (coexist)
+- Contextual message extraction from Claude's actual response (not generic text)
+- Repo + branch subtitle display on each notification
+- Hook conflict detection during setup
+- Dry-run/preview mode during setup
+- Scope migration support (global to per-project and vice versa)

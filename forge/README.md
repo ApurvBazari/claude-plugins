@@ -55,7 +55,7 @@ claude plugin add /path/to/forge
 
 ## Prerequisites
 
-- **Claude Code** with the **onboard** plugin installed (forge delegates tooling generation to onboard)
+- **onboard** plugin (required) — forge delegates all Claude tooling generation to onboard's headless mode. Install from this same marketplace: `claude plugin install onboard`
 - **git** — required for repository setup and branching
 - **gh** (GitHub CLI) — required for branch protection and CI/CD setup (optional if not using GitHub)
 - **engineering** plugin (optional) — enables Phase 4 lifecycle document generation (ADRs, testing strategy, deploy checklists, system designs, runbooks, incident playbooks). Install from the `knowledge-work-plugins` marketplace:

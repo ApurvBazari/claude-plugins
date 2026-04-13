@@ -239,7 +239,7 @@ If `ecosystemPlugins.notify` is `true` and notify is available:
 3. Write a default `notify-config.json` to `$BASE_DIR/`:
    ```json
    {
-     "version": "0.2.0",
+     "version": "1.0.0",
      "events": {
        "stop": { "enabled": true, "message": "Task completed", "sound": "Hero", "minDurationSeconds": 0 },
        "notification": { "enabled": true, "matcher": "permission_prompt|idle_prompt", "message": "Needs your attention", "sound": "Glass" },

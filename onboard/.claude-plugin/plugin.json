@@ -1,6 +1,6 @@
 {
   "name": "onboard",
-  "version": "2.2.0",
+  "version": "1.0.0",
   "description": "Analyze codebases and generate tailored Claude tooling — CLAUDE.md, rules, skills, agents, hooks, and CI/CD",
   "author": {
     "name": "Apurv Bazari"
