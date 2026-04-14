@@ -1,6 +1,6 @@
 {
   "name": "notify",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Cross-platform system notifications for Claude Code — macOS and Linux with duration filtering",
   "author": {
     "name": "Apurv Bazari"
