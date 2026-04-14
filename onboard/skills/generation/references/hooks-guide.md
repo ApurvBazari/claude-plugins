@@ -12,20 +12,71 @@ Hooks are shell commands that run automatically in response to Claude Code event
     "PreToolUse": [
       {
         "matcher": "Write",
-        "command": "...",
-        "timeout": 10000
+        "hooks": [
+          { "type": "command", "command": "...", "timeout": 10000 }
+        ]
       }
     ],
     "PostToolUse": [
       {
         "matcher": "Write",
-        "command": "...",
-        "timeout": 10000
+        "hooks": [
+          { "type": "command", "command": "...", "timeout": 10000 }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "...", "timeout": 5000 }
+        ]
       }
     ]
   }
 }
 ```
+
+### Schema — read carefully
+
+Each event (`PreToolUse`, `PostToolUse`, `Stop`, `SessionStart`, `WorktreeCreate`, etc.) maps to an **array of entries**. Each entry is an object with:
+
+- `matcher` (optional) — tool name pattern for `PreToolUse` / `PostToolUse`, or event-specific filter for others. Omit for events that don't filter (e.g., `Stop`, `SessionStart`).
+- `hooks` (**required**) — an array of command objects. Each command object has:
+  - `type` (required) — always `"command"` for shell hooks
+  - `command` (required) — the shell string to execute
+  - `timeout` (optional) — milliseconds before the hook is killed
+
+The nested `hooks: [...]` wrapper is **required**. A flat shape like `{ "type": "command", "command": "..." }` placed directly inside the event array is **invalid** and Claude Code will refuse to load the settings file.
+
+#### ❌ INVALID — Claude Code will reject this
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      { "type": "command", "command": "echo 'reminder'" }
+    ]
+  }
+}
+```
+
+#### ✅ VALID — the nested form
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "echo 'reminder'" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+When generating a `settings.json` entry for any event, always wrap command objects inside a `hooks:` array — never place them directly in the event array.
 
 ## Hook Events
 
@@ -106,8 +157,13 @@ file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '"fi
     "PostToolUse": [
       {
         "matcher": "Write",
-        "command": "file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '\"file_path\": *\"[^\"]*\"' | head -1 | sed 's/.*: *\"//;s/\"//') && case \"$file\" in *.ts|*.tsx|*.js|*.jsx|*.json|*.css|*.md) npx prettier --write \"$file\" 2>/dev/null ;; esac; exit 0",
-        "timeout": 10000
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '\"file_path\": *\"[^\"]*\"' | head -1 | sed 's/.*: *\"//;s/\"//') && case \"$file\" in *.ts|*.tsx|*.js|*.jsx|*.json|*.css|*.md) npx prettier --write \"$file\" 2>/dev/null ;; esac; exit 0",
+            "timeout": 10000
+          }
+        ]
       }
     ]
   }
@@ -122,8 +178,13 @@ file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '"fi
     "PostToolUse": [
       {
         "matcher": "Write",
-        "command": "file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '\"file_path\": *\"[^\"]*\"' | head -1 | sed 's/.*: *\"//;s/\"//') && case \"$file\" in *.py) black --quiet \"$file\" 2>/dev/null ;; esac; exit 0",
-        "timeout": 10000
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '\"file_path\": *\"[^\"]*\"' | head -1 | sed 's/.*: *\"//;s/\"//') && case \"$file\" in *.py) black --quiet \"$file\" 2>/dev/null ;; esac; exit 0",
+            "timeout": 10000
+          }
+        ]
       }
     ]
   }
@@ -138,8 +199,13 @@ file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '"fi
     "PostToolUse": [
       {
         "matcher": "Write",
-        "command": "file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '\"file_path\": *\"[^\"]*\"' | head -1 | sed 's/.*: *\"//;s/\"//') && case \"$file\" in *.go) gofmt -w \"$file\" 2>/dev/null ;; esac; exit 0",
-        "timeout": 10000
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '\"file_path\": *\"[^\"]*\"' | head -1 | sed 's/.*: *\"//;s/\"//') && case \"$file\" in *.go) gofmt -w \"$file\" 2>/dev/null ;; esac; exit 0",
+            "timeout": 10000
+          }
+        ]
       }
     ]
   }
@@ -154,8 +220,13 @@ file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '"fi
     "PostToolUse": [
       {
         "matcher": "Write",
-        "command": "file=$(cat - | jq -r '.tool_input.file_path') && case \"$file\" in *.rs) rustfmt \"$file\" 2>/dev/null ;; esac; exit 0",
-        "timeout": 10000
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=$(cat - | jq -r '.tool_input.file_path') && case \"$file\" in *.rs) rustfmt \"$file\" 2>/dev/null ;; esac; exit 0",
+            "timeout": 10000
+          }
+        ]
       }
     ]
   }
@@ -170,8 +241,13 @@ file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '"fi
     "PostToolUse": [
       {
         "matcher": "Edit",
-        "command": "file=$(cat - | jq -r '.tool_input.file_path') && case \"$file\" in *.ts|*.tsx|*.js|*.jsx) npx eslint --no-error-on-unmatched-pattern \"$file\" 2>&1 | head -20 ;; esac; exit 0",
-        "timeout": 15000
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=$(cat - | jq -r '.tool_input.file_path') && case \"$file\" in *.ts|*.tsx|*.js|*.jsx) npx eslint --no-error-on-unmatched-pattern \"$file\" 2>&1 | head -20 ;; esac; exit 0",
+            "timeout": 15000
+          }
+        ]
       }
     ]
   }
@@ -186,8 +262,13 @@ file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '"fi
     "PostToolUse": [
       {
         "matcher": "Edit",
-        "command": "file=$(cat - | jq -r '.tool_input.file_path') && case \"$file\" in *.py) ruff check \"$file\" 2>&1 | head -20 ;; esac; exit 0",
-        "timeout": 10000
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=$(cat - | jq -r '.tool_input.file_path') && case \"$file\" in *.py) ruff check \"$file\" 2>&1 | head -20 ;; esac; exit 0",
+            "timeout": 10000
+          }
+        ]
       }
     ]
   }
@@ -202,8 +283,13 @@ file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '"fi
     "PostToolUse": [
       {
         "matcher": "Write",
-        "command": "file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '\"file_path\": *\"[^\"]*\"' | head -1 | sed 's/.*: *\"//;s/\"//') && case \"$file\" in *.rb) rubocop -a --fail-level fatal \"$file\" 2>/dev/null ;; esac; exit 0",
-        "timeout": 15000
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '\"file_path\": *\"[^\"]*\"' | head -1 | sed 's/.*: *\"//;s/\"//') && case \"$file\" in *.rb) rubocop -a --fail-level fatal \"$file\" 2>/dev/null ;; esac; exit 0",
+            "timeout": 15000
+          }
+        ]
       }
     ]
   }
@@ -218,8 +304,13 @@ file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '"fi
     "PostToolUse": [
       {
         "matcher": "Write",
-        "command": "file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '\"file_path\": *\"[^\"]*\"' | head -1 | sed 's/.*: *\"//;s/\"//') && case \"$file\" in *.py) ruff check --fix --quiet \"$file\" 2>/dev/null ;; esac; exit 0",
-        "timeout": 10000
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '\"file_path\": *\"[^\"]*\"' | head -1 | sed 's/.*: *\"//;s/\"//') && case \"$file\" in *.py) ruff check --fix --quiet \"$file\" 2>/dev/null ;; esac; exit 0",
+            "timeout": 10000
+          }
+        ]
       }
     ]
   }
