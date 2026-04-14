@@ -18,6 +18,14 @@ CONFIG_FILE="$BASE_DIR/notify-config.json"
 # User-scoped timestamp file — prevents symlink attacks at a predictable shared path.
 TIMESTAMP_FILE="${TMPDIR:-/tmp}/claude-notify-session-start-${UID:-$(id -u)}"
 
+# Defensive: if another process (or attacker on a world-writable $TMPDIR) has
+# pre-created the path as a symlink, named pipe, or other non-regular file,
+# refuse to reuse it. Delete it and let the normal write create a fresh file.
+# Note: [[ -f ]] follows symlinks, so we test [[ -L ]] first to catch them.
+if [[ -L "$TIMESTAMP_FILE" ]] || { [[ -e "$TIMESTAMP_FILE" ]] && [[ ! -f "$TIMESTAMP_FILE" ]]; }; then
+  rm -f "$TIMESTAMP_FILE" 2>/dev/null
+fi
+
 # --- Detect platform ---
 PLATFORM="unknown"
 case "$(uname -s)" in
