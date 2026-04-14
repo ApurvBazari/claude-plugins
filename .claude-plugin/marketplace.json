@@ -12,24 +12,49 @@
       "name": "onboard",
       "source": "./onboard",
       "description": "Analyze codebases and generate tailored Claude tooling — CLAUDE.md, rules, skills, agents, hooks, and CI/CD",
-      "version": "1.0.0",
-      "keywords": ["onboarding", "setup", "wizard", "claude-md", "codebase-analysis", "plugin-integration", "quality-gates", "ai-assisted-development"],
+      "version": "1.1.0",
+      "keywords": [
+        "onboarding",
+        "setup",
+        "wizard",
+        "claude-md",
+        "codebase-analysis",
+        "plugin-integration",
+        "quality-gates",
+        "ai-assisted-development"
+      ],
       "license": "MIT"
     },
     {
       "name": "notify",
       "source": "./notify",
       "description": "Cross-platform system notifications for Claude Code — macOS and Linux with duration filtering",
-      "version": "1.0.0",
-      "keywords": ["notifications", "macos", "linux", "hooks", "terminal-notifier", "notify-send"],
+      "version": "1.1.0",
+      "keywords": [
+        "notifications",
+        "macos",
+        "linux",
+        "hooks",
+        "terminal-notifier",
+        "notify-send"
+      ],
       "license": "MIT"
     },
     {
       "name": "forge",
       "source": "./forge",
       "description": "Scaffold new projects with AI-native tooling that evolves with your code — delegates to onboard for generation",
-      "version": "1.0.0",
-      "keywords": ["scaffold", "project-generator", "ai-tooling", "auto-evolving", "ci-cd", "plugin-integration", "quality-gates", "greenfield"],
+      "version": "1.1.0",
+      "keywords": [
+        "scaffold",
+        "project-generator",
+        "ai-tooling",
+        "auto-evolving",
+        "ci-cd",
+        "plugin-integration",
+        "quality-gates",
+        "greenfield"
+      ],
       "license": "MIT"
     }
   ]
