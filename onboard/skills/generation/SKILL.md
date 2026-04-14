@@ -29,7 +29,7 @@ When `headlessMode` is `true` in the input context, this skill is being invoked 
 
 For Markdown files:
 ```markdown
-<!-- onboard v0.1.0 | Generated: YYYY-MM-DD -->
+<!-- onboard v{VERSION} | Generated: YYYY-MM-DD -->
 <!-- MAINTENANCE: Claude, while working in this codebase, if you notice that:
      - The patterns described here no longer match the actual code
      - New conventions have emerged that aren't captured here
@@ -44,11 +44,13 @@ For JSON files, add a `_generated` field:
 {
   "_generated": {
     "by": "onboard",
-    "version": "0.1.0",
+    "version": "{VERSION}",
     "date": "YYYY-MM-DD"
   }
 }
 ```
+
+**Version resolution**: `{VERSION}` must be read at generation time from `<plugin-root>/.claude-plugin/plugin.json` → `version` field. The plugin root is the directory containing the onboard skill (accessible via `${CLAUDE_PLUGIN_ROOT}` in hook scripts, or by navigating up from the generation skill's location). Never hardcode the version string — always read it from the manifest. Example: if `plugin.json` contains `"version": "1.0.1"`, the maintenance header becomes `<!-- onboard v1.0.1 | Generated: 2026-04-14 -->` and the JSON field becomes `"version": "1.0.1"`.
 
 ## Autonomy Cascade
 
@@ -56,7 +58,8 @@ The developer's `autonomyLevel` preference cascades across all generated artifac
 
 | Aspect | Always-Ask | Balanced | Autonomous |
 |--------|-----------|----------|------------|
-| **Hooks** | No auto hooks (comment listing available hooks) | Auto-format on Write | Auto-format + auto-lint on Edit |
+| **Format/Lint Hooks** | No auto hooks (comment listing available hooks) | Auto-format on Write | Auto-format + auto-lint on Edit |
+| **Quality-Gate Hooks** | Profile-dependent, all advisory mode (see Standalone Quality-Gate Hooks) | Profile-dependent, preCommit blocking rest advisory (see Standalone Quality-Gate Hooks) | Profile-dependent, preCommit + featureStart blocking rest advisory (see Standalone Quality-Gate Hooks) |
 | **Rule language** | "consider", "discuss with developer" | "should", "recommended" | "must", "always", "never" |
 | **Agent tool access** | All agents read-only (output as suggestions) | Reviewers read-only, generators read-write | All agents read-write including Bash |
 | **CLAUDE.md rules** | 8-12 extensive items including "check with developer" | 4-6 moderate items | 2-3 hard safety rules only |
@@ -65,6 +68,23 @@ The developer's `autonomyLevel` preference cascades across all generated artifac
 **Conflict resolution**: When `autonomyLevel` and `codeStyleStrictness` produce conflicting tone verbs, `autonomyLevel` overrides for tone (how assertive the language is), while `codeStyleStrictness` controls quantity (how many rules/checks are generated).
 
 ## Artifact Generation Rules
+
+### Effective Plugin List Resolution
+
+Before generating any artifacts, resolve the effective plugin list. This determines whether plugin-aware features (Plugin Integration section, per-directory skill annotations, plugin-aware agent skipping, plugin-referencing quality-gate hooks) are generated.
+
+1. If `callerExtras.installedPlugins` is present and non-empty → use it as `effectivePlugins` (headless mode — caller-provided data is authoritative)
+2. Else if `detectedPlugins.installedPlugins` is present and non-empty → use it as `effectivePlugins` (standalone mode — self-detected via `references/plugin-detection-guide.md`)
+3. Else → `effectivePlugins` is empty (no plugins available)
+
+Similarly resolve:
+- `effectiveCoveredCapabilities` from `callerExtras.coveredCapabilities` or `detectedPlugins.coveredCapabilities`
+- `effectiveQualityGates` from `callerExtras.qualityGates` or `detectedPlugins.qualityGates`
+- `effectivePhaseSkills` from `callerExtras.phaseSkills` or `detectedPlugins.phaseSkills`
+
+Record the resolution source as `pluginSource`: `"callerExtras"` | `"self-detected"` | `"none"`.
+
+Throughout this skill, **every reference to `callerExtras.installedPlugins` should be read as `effectivePlugins`**, and similarly for the other resolved fields. The source is transparent to generation logic — all downstream rules apply identically regardless of how the plugin list was obtained.
 
 ### Root CLAUDE.md
 
@@ -77,11 +97,11 @@ Follow `references/claude-md-guide.md` for structure and best practices.
 - **Formatter conventions**: Include formatter settings (from Prettier/Black/rustfmt configs) as explicit conventions in Key Conventions section rather than as path-scoped rules
 - **Commands section**: List every discovered build/test/lint/deploy command with brief descriptions
 - **Ecosystem plugins section** (if any were set up): If `ecosystemPlugins` is present in wizard answers, add a brief "Ecosystem Plugins" section noting which plugins are active (e.g., "notify: system notifications on task completion"). Include relevant commands (`/notify:status`).
-- **Plugin Integration section** (if `callerExtras.installedPlugins` is non-empty): Generate a dedicated `## Plugin Integration` section that documents the installed Claude Code plugins and how to use them on this specific project. See "Plugin Integration Section Generation" below for the full spec.
+- **Plugin Integration section** (if `effectivePlugins` is non-empty): Generate a dedicated `## Plugin Integration` section that documents the installed Claude Code plugins and how to use them on this specific project. See "Plugin Integration Section Generation" below for the full spec.
 
 #### Plugin Integration Section Generation
 
-When `callerExtras.installedPlugins.length > 0`, emit a `## Plugin Integration` section into the root CLAUDE.md. This section must be delimited by section markers so it can be safely regenerated by `/onboard:update` without clobbering user edits elsewhere in the file:
+When `effectivePlugins.length > 0`, emit a `## Plugin Integration` section into the root CLAUDE.md. This section must be delimited by section markers so it can be safely regenerated by `/onboard:update` without clobbering user edits elsewhere in the file:
 
 ```markdown
 <!-- onboard:plugin-integration:start -->
@@ -122,31 +142,45 @@ This project uses the following Claude Code plugins. Use them consistently.
 
 **Tone**: rich narrative voice, not a bulleted list of plugin names. Every subsection should answer "when do I use this?" tied to the project's actual tech stack.
 
-**Backward compat**: When `callerExtras` is absent entirely (onboard invoked via standalone `/onboard:init` rather than forge headless mode), skip this section. Do not generate a stub or placeholder.
+**When `effectivePlugins` is empty**: Skip this section entirely. Do not generate a stub or placeholder.
 
 ### Subdirectory CLAUDE.md Files
 
 Follow `references/claude-md-guide.md` for content guidance.
 
 - **Create when all three criteria are met**: (1) directory contains a meaningful share of source files, (2) has distinct conventions not covered by root, (3) represents an architectural boundary
-- **File share thresholds scaled by project size**:
-  - Small projects (<100 source files): directory has >20% of total source files
-  - Medium projects (100-500 source files): directory has >10% of total source files
-  - Large projects (>500 source files): directory has >5% of total source files
+- **File share thresholds scaled by project size and profile**:
+
+  | Project size | Minimal profile | Standard profile | Comprehensive profile |
+  |---|---|---|---|
+  | Small (<100 files) | >40% | >20% | >10% |
+  | Medium (100-500 files) | >20% | >10% | >5% |
+  | Large (>500 files) | >10% | >5% | >2.5% |
+
+  Standard profile uses the base thresholds. Comprehensive profile halves them (more subdirectory CLAUDE.md files for deeper coverage). Minimal profile doubles them (fewer candidates). When profile is "custom", use the standard thresholds unless the developer explicitly requests more or fewer coverage.
 - **Monorepo packages are automatic candidates** — each package is an architectural boundary by definition
+- **Recognized architecture pattern layers are automatic candidates** — same treatment as monorepo packages. When the analysis report identifies an architecture pattern (e.g., "Clean Architecture" in the Project Structure or Architecture sections), or when directory names match known patterns, those layer directories qualify by architectural role regardless of file-share thresholds. Known patterns:
+  - **Clean Architecture**: `data/`, `domain/`, `presentation/`, `service/`, `di/` (or `injection/`)
+  - **MVVM/MVC/MVP**: `model/` (or `models/`), `view/` (or `views/`), `viewmodel/` (or `viewmodels/`), `controller/` (or `controllers/`), `presenter/` (or `presenters/`)
+  - **Hexagonal**: `ports/`, `adapters/`, `core/`
+  - **Feature-based**: each feature module directory (identified by analysis report's module boundaries)
+  - **Backend layered**: `controllers/`, `services/`, `repositories/`, `middleware/`
+
+  Pattern matching is case-insensitive and works at any nesting depth (e.g., `app/src/main/java/com/example/data/` matches the `data/` pattern). If the analysis report explicitly identifies the architecture pattern, use that to determine which directories are layer candidates. If the report does not name the pattern, fall back to directory name matching against the patterns above. When both architecture patterns and file-share thresholds identify the same directory, it is just one candidate (no duplicates).
 - **Typical candidates**: `src/components/`, `src/api/`, `src/lib/`, `app/`, `tests/`, `scripts/`, per-package in monorepos
+- **Architecture-pattern candidates**: `data/`, `domain/`, `presentation/`, `service/`, `di/`, `model/`, `view/`, `viewmodel/`, `controller/`, `ports/`, `adapters/`, `core/`, `repositories/`, `middleware/` (when detected as part of a recognized architecture pattern)
 - **Always confirm** candidate directories with the developer before creating subdirectory CLAUDE.md files
 - **Content**: Conventions specific to that directory, patterns to follow, common mistakes to avoid
 - **Keep short** — 30-80 lines each
 
 #### Per-Directory Skill Annotations (Plugin-Aware)
 
-When `callerExtras.installedPlugins.length > 0`, extend each generated subdirectory CLAUDE.md with a `## Skill recommendations` block that maps the directory's role to installed-plugin skills. The block is additive — it supplements the directory's conventions, it does not replace them.
+When `effectivePlugins.length > 0`, extend each generated subdirectory CLAUDE.md with a `## Skill recommendations` block that maps the directory's role to installed-plugin skills. The block is additive — it supplements the directory's conventions, it does not replace them.
 
 **Rules**:
 
 1. **Only add the block when** an installed plugin's capability meaningfully applies to the directory's role. Never stub "Skill recommendations: none". Directories with no matching plugin capability get no block.
-2. **Derive mapping from** (a) directory role (identified by config-generator: `domain`, `parser`, `data-layer`, `compose-ui`, `api`, `tests`, `scripts`, etc.), and (b) `callerExtras.coveredCapabilities`.
+2. **Derive mapping from** (a) directory role (identified by config-generator: `domain`, `parser`, `data-layer`, `compose-ui`, `api`, `tests`, `scripts`, etc.), and (b) `effectiveCoveredCapabilities`.
 3. **Brainstorming first** (when superpowers is installed): every annotation that invites new code creation must reference `/superpowers:brainstorming` as the entry point — e.g., *"Before adding a new Parser, run `/superpowers:brainstorming` to explore approaches."*
 4. **Be specific** about *when* to invoke each skill. Vague references like "use feature-dev" are not helpful; *"use `feature-dev:code-architect` when drafting a new Parser contract, then TDD via `superpowers:test-driven-development`"* is.
 5. **Don't repeat root** — the subdirectory block assumes the reader has already seen the root Plugin Integration section.
@@ -157,7 +191,7 @@ When `callerExtras.installedPlugins.length > 0`, extend each generated subdirect
 - `ui/compose/CLAUDE.md` → *"For new screens, run `/superpowers:brainstorming` to explore layouts, then `frontend-design:frontend-design` to avoid generic AI aesthetics. Follow TDD via `superpowers:test-driven-development`."*
 - `data/db/CLAUDE.md` → *"Schema changes must update Room's exported schemas; run `/code-review:code-review` before committing migrations."*
 
-**Graceful degradation**: If `callerExtras.installedPlugins` is empty or `callerExtras` is absent, generate subdirectory CLAUDE.md files as usual without the Skill recommendations block. See `references/claude-md-guide.md` for the block format and additional examples.
+**Graceful degradation**: If `effectivePlugins` is empty, generate subdirectory CLAUDE.md files as usual without the Skill recommendations block. See `references/claude-md-guide.md` for the block format and additional examples.
 
 ### Path-Scoped Rules (.claude/rules/*.md)
 
@@ -173,7 +207,7 @@ Follow `references/rules-guide.md` for patterns and YAML frontmatter.
   - `styling.md` — Styling conventions (if specific approach detected)
 - **Config-derived rules**: When the analysis report includes a `Config & Pattern Analysis` section, use the extracted configs and observed patterns to generate rules that reflect the project's actual enforced standards. Follow the "Deriving Rules from Config Analysis" section in `references/rules-guide.md`. Never generate generic template rules when project-specific config data is available.
 - **Rule strictness matches `codeStyleStrictness`**: relaxed = guidelines, moderate = should, strict = must
-- **Plugin cross-references** (headless mode, `allowPluginReferences` flag): When `callerExtras.installedPlugins` is non-empty, rules MAY reference installed plugins instead of duplicating their guidance. For example, `testing.md` can say *"This project uses `superpowers:test-driven-development` — follow its red/green/refactor loop"* instead of restating TDD guidance inline. This is controlled by a new generation flag `allowPluginReferences: true` (default `true` when `installedPlugins` is non-empty, else `false`). Before referencing a plugin, verify it's in `installedPlugins` — never create dangling refs. If a rule references a plugin and that plugin is later uninstalled, `/onboard:update` should refresh the rule to its standalone version.
+- **Plugin cross-references** (`allowPluginReferences` flag): When `effectivePlugins` is non-empty, rules MAY reference installed plugins instead of duplicating their guidance. For example, `testing.md` can say *"This project uses `superpowers:test-driven-development` — follow its red/green/refactor loop"* instead of restating TDD guidance inline. This is controlled by a generation flag `allowPluginReferences: true` (default `true` when `effectivePlugins` is non-empty, else `false`). Before referencing a plugin, verify it's in `effectivePlugins` — never create dangling refs. If a rule references a plugin and that plugin is later uninstalled, `/onboard:update` should refresh the rule to its standalone version.
 
 ### Skills (.claude/skills/)
 
@@ -208,7 +242,7 @@ Follow `references/agents-guide.md` for agent file structure.
 
 #### Plugin-Aware Agent Generation (Headless Mode)
 
-When `callerExtras.coveredCapabilities` is present in the headless context, **skip agents whose capability is already covered by an installed plugin**. Project-level agents in `.claude/agents/` take priority over plugin agents, so generating a generic `code-reviewer.md` would shadow a superior plugin implementation.
+When `effectiveCoveredCapabilities` is non-empty, **skip agents whose capability is already covered by an installed plugin**. Project-level agents in `.claude/agents/` take priority over plugin agents, so generating a generic `code-reviewer.md` would shadow a superior plugin implementation.
 
 **Capability → Agent skip map:**
 
@@ -222,11 +256,11 @@ When `callerExtras.coveredCapabilities` is present in the headless context, **sk
 
 **What to generate instead**: Focus on gap-filling, project-specific agents that no plugin covers — e.g., a `db-migration.md` agent for Prisma projects, or a stack-specific scaffolding agent. These provide value that generic plugins cannot.
 
-**When `coveredCapabilities` is absent**: Generate all agents as usual (backward compatible with standard `/onboard:init` and callers that don't provide capability data).
+**When `effectiveCoveredCapabilities` is empty**: Generate all agents as usual.
 
 ### Plugin-Aware TDD Workflow
 
-All projects use TDD (red-green-refactor). Generation adapts based on which workflow plugins are installed. Resolve installed plugins from `callerExtras.installedPlugins` (headless mode) or fall back to "no plugins installed" (standard mode).
+All projects use TDD (red-green-refactor). Generation adapts based on which workflow plugins are installed. Resolve installed plugins from `effectivePlugins` (see Effective Plugin List Resolution above).
 
 | superpowers? | feature-dev? | Strategy |
 |---|---|---|
@@ -278,9 +312,9 @@ Follow `references/hooks-guide.md` for hook configuration.
   - Lint check on Edit (if linter detected: eslint, ruff, clippy)
 - **Only add hooks for tools that are actually installed and configured**
 
-#### Quality-Gate Hooks (from `callerExtras.qualityGates`)
+#### Quality-Gate Hooks (from `effectiveQualityGates`)
 
-When `callerExtras.qualityGates` is present in headless mode, generate boundary-enforcement hooks that reinforce the CLAUDE.md Plugin Integration discipline. Four hook categories are supported, each driven by a field on the `qualityGates` object:
+When `effectiveQualityGates` is present (from either `callerExtras.qualityGates` in headless mode or `detectedPlugins.qualityGates` in standalone mode with detected plugins), generate boundary-enforcement hooks that reinforce the CLAUDE.md Plugin Integration discipline. Four hook categories are supported, each driven by a field on the `qualityGates` object:
 
 | Field | Event | Default mode | What it does |
 |---|---|---|---|
@@ -297,7 +331,7 @@ When `callerExtras.qualityGates` is present in headless mode, generate boundary-
 
 **autonomyLevel downgrade**: When the mapped `autonomyLevel` is "always-ask" (exploratory equivalent), downgrade all `preCommit[].mode` values to `advisory`. Standard/autonomous retain blocking. This downgrade is mechanical — no heuristics.
 
-**Plugin availability check**: Before generating a hook entry for a `preCommit` / `postFeature` skill reference, verify the referenced plugin is actually in `callerExtras.installedPlugins`. If missing, skip that hook entry silently and append a warning to `onboard-meta.json` under `warnings[]`. Never fail the generation.
+**Plugin availability check**: Before generating a hook entry for a `preCommit` / `postFeature` skill reference, verify the referenced plugin is actually in `effectivePlugins`. If missing, skip that hook entry silently and append a warning to `onboard-meta.json` under `warnings[]`. Never fail the generation.
 
 **Merge semantics**: All quality-gate hooks merge into `.claude/settings.json` following the existing merge strategy (see `references/hooks-guide.md` § Settings Merge Strategy). If a hook with the same matcher/event already exists, skip don't duplicate.
 
@@ -635,6 +669,54 @@ Using `set -u` alone:
 
 **Rule**: hook scripts use `set -u`. Utility scripts (`scripts/*.sh`, `install*.sh`, analysis/detection tooling) use `set -euo pipefail`. This distinction is documented in `.claude/rules/shell-scripts.md` and is authoritative — this spec section only restates it for the generation-time audience.
 
+#### Standalone Quality-Gate Hooks (when no plugins detected)
+
+When `effectiveQualityGates` is NOT present AND `effectivePlugins` is empty — meaning no plugins were found either from a caller or from self-detection — derive default quality-gate hooks from the `selectedPreset` (profile) and `autonomyLevel` wizard answers. These hooks are simpler than their plugin-aware counterparts: they reference project rules from `.claude/rules/` and CLAUDE.md conventions rather than plugin skills.
+
+##### Profile determines WHICH hooks
+
+| Profile | SessionStart | preCommit | featureStart | postFeature |
+|---------|-------------|-----------|--------------|-------------|
+| minimal | — | — | — | — |
+| standard | Yes | — | — | — |
+| comprehensive | Yes | Yes | Yes | Yes |
+| custom | Follow comprehensive if autonomyLevel ≠ "always-ask"; follow standard otherwise |
+
+##### autonomyLevel determines MODE
+
+| autonomyLevel | SessionStart | preCommit | featureStart | postFeature |
+|---------------|-------------|-----------|--------------|-------------|
+| always-ask | advisory | advisory | advisory | advisory |
+| balanced | advisory | **blocking** | advisory | advisory |
+| autonomous | advisory | **blocking** | **blocking** | advisory |
+
+##### Standalone hook content (no plugin references)
+
+These hooks reference project conventions rather than installed plugins:
+
+- **SessionStart reminder**: Echo a 1-2 line reminder: "Review CLAUDE.md conventions and .claude/rules/ for path-specific guidance before starting work." No adaptive suppression counter — keep the script simple. Always `exit 0`.
+- **preCommit hook**: Run the project's test command discovered during analysis (from CLAUDE.md § Build Commands → testing). Attach to `PreToolUse:Bash(git commit*)`. In blocking mode, exit 2 with stderr feedback if the test command fails. If no test command was detected during analysis, skip preCommit generation entirely and record in `hookStatus.skipped[]` with reason `"no-test-command-detected"`.
+- **featureStart reminder**: Advisory when Claude creates a new file via `PreToolUse:Write` in a critical directory. Derive `criticalDirs` from the analysis report's identified architectural boundaries (top-level source directories). Use the same stdin-parsing and new-files-only pattern from O7 but without plugin or brainstorming references. Message: "Starting a new file in a key directory. Review CLAUDE.md and .claude/rules/ for conventions in this area."
+- **postFeature nudge**: Attach to `Stop` event. Message: "Consider reviewing CLAUDE.md and .claude/rules/ to capture any new conventions from this work." Always advisory, always `exit 0`.
+
+##### Standalone script conventions
+
+Standalone hooks follow the same shell conventions as headless hooks:
+- `#!/usr/bin/env bash` + `set -u` (not `set -euo pipefail` — see Shell Options section above)
+- ShellCheck-clean (`shellcheck -x`)
+- Advisory hooks always `exit 0`, blocking hooks `exit 2` with stderr on failure
+- No plugin availability checks needed — no plugins are referenced
+- No adaptive suppression (SessionStart) — always show the reminder
+- No brainstorming or worktree concepts — those are plugin-specific
+
+##### hookStatus telemetry for standalone hooks
+
+Record standalone quality-gate hooks in `onboard-meta.json` under the same `hookStatus` key used by headless hooks. The shape is identical — `planned`, `generated`, `skipped`, `warnings`. The `skipped[].reason` for profile-excluded hooks is `"profile-excluded"`.
+
+##### Merge behavior
+
+Same as headless mode: read existing `.claude/settings.json` first, merge hook entries, never overwrite. If a hook with the same matcher/event already exists, skip (don't duplicate). Standalone quality-gate hooks coexist with format/lint hooks from the Autonomy Cascade — they use different events/matchers and do not conflict.
+
 #### Utility Hooks (non-telemetry)
 
 Utility hooks are generated alongside quality-gate hooks but are **NOT** tracked in `hookStatus`. They serve infrastructure purposes. They follow the same shell conventions (`set -u`, `shellcheck -x`, always `exit 0`).
@@ -668,6 +750,8 @@ Always generate this file with:
 - Wizard answers (structured)
 - List of generated artifacts
 - Model recommendation and whether user approved
+- Plugin detection results: `detectedPlugins` object (only in standalone mode when plugins were self-detected)
+- Plugin source: `pluginSource` — `"callerExtras"` | `"self-detected"` | `"none"` — records how the effective plugin list was resolved
 
 ## Quality Checklist
 
@@ -692,6 +776,16 @@ Before finishing generation, verify:
 - [ ] If superpowers installed: no standalone TDD skill generated (would conflict)
 - [ ] If superpowers NOT installed: standalone TDD skill + TDD test-writer agent exist
 - [ ] If any plugin missing: CLAUDE.md includes "Recommended Plugins" section with install commands
+- [ ] Maintenance headers use version from plugin.json, not hardcoded values
+- [ ] Architecture pattern layers from analysis report are included as subdirectory CLAUDE.md candidates
+- [ ] File share thresholds reflect the selected profile (comprehensive = halved, minimal = doubled)
+- [ ] Standalone quality-gate hooks match profile + autonomyLevel (comprehensive → all four, standard → SessionStart only, minimal → none)
+- [ ] Standalone hooks do not reference plugin skills (no `/superpowers:*`, no `code-review:*`)
+- [ ] Standalone preCommit hook uses project's actual test command from analysis
+- [ ] effectivePlugins resolution works for all three scenarios: headless (callerExtras), standalone with plugins (self-detected), standalone without plugins (none)
+- [ ] Plugin Integration section generates in standalone mode when plugins are self-detected
+- [ ] Plugin-referencing quality-gate hooks generated when effectiveQualityGates is present (regardless of entry point)
+- [ ] onboard-meta.json records pluginSource and detectedPlugins when applicable
 - [ ] If both plugins installed: no "Recommended Plugins" section in CLAUDE.md
 - [ ] CLAUDE.md "Development Workflow" references match actually installed plugins (no dangling refs)
 - [ ] PR template includes TDD checklist item ("Tests written first, all pass")
