@@ -66,12 +66,23 @@ SessionStart hook (prompt-type, AI-powered)
 
 ### Auto-Update Variant
 
-For `autoEvolutionMode: "auto-update"`, replace the FileChanged hooks with versions that directly update tooling:
+For `autoEvolutionMode: "auto-update"`, replace the FileChanged hooks with versions that directly update tooling. The full `settings.json` shape still uses the nested `hooks:` wrapper — only the inner `command` changes:
 
 ```json
 {
-  "type": "command",
-  "command": "bash .claude/scripts/detect-dep-changes.sh \"$FILE_PATH\" --auto-update"
+  "hooks": {
+    "FileChanged": [
+      {
+        "matcher": "package.json|requirements.txt|go.mod|Cargo.toml",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/scripts/detect-dep-changes.sh \"$FILE_PATH\" --auto-update"
+          }
+        ]
+      }
+    ]
+  }
 }
 ```
 

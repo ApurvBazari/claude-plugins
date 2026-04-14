@@ -12,20 +12,71 @@ Hooks are shell commands that run automatically in response to Claude Code event
     "PreToolUse": [
       {
         "matcher": "Write",
-        "command": "...",
-        "timeout": 10000
+        "hooks": [
+          { "type": "command", "command": "...", "timeout": 10000 }
+        ]
       }
     ],
     "PostToolUse": [
       {
         "matcher": "Write",
-        "command": "...",
-        "timeout": 10000
+        "hooks": [
+          { "type": "command", "command": "...", "timeout": 10000 }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "...", "timeout": 5000 }
+        ]
       }
     ]
   }
 }
 ```
+
+### Schema — read carefully
+
+Each event (`PreToolUse`, `PostToolUse`, `Stop`, `SessionStart`, `WorktreeCreate`, etc.) maps to an **array of entries**. Each entry is an object with:
+
+- `matcher` (optional) — tool name pattern for `PreToolUse` / `PostToolUse`, or event-specific filter for others. Omit for events that don't filter (e.g., `Stop`, `SessionStart`).
+- `hooks` (**required**) — an array of command objects. Each command object has:
+  - `type` (required) — always `"command"` for shell hooks
+  - `command` (required) — the shell string to execute
+  - `timeout` (optional) — milliseconds before the hook is killed
+
+The nested `hooks: [...]` wrapper is **required**. A flat shape like `{ "type": "command", "command": "..." }` placed directly inside the event array is **invalid** and Claude Code will refuse to load the settings file.
+
+#### ❌ INVALID — Claude Code will reject this
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      { "type": "command", "command": "echo 'reminder'" }
+    ]
+  }
+}
+```
+
+#### ✅ VALID — the nested form
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "echo 'reminder'" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+When generating a `settings.json` entry for any event, always wrap command objects inside a `hooks:` array — never place them directly in the event array.
 
 ## Hook Events
 
