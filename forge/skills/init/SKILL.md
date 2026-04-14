@@ -1,4 +1,10 @@
-# /forge:init — Scaffold a New Project with AI-Native Tooling
+---
+name: init
+description: Full 4-phase forge orchestrator — context gathering, scaffold, AI tooling, lifecycle setup. Creates a new project from scratch with AI-native Claude tooling built in from day one. Use only when user explicitly invokes /forge:init.
+disable-model-invocation: true
+---
+
+# Init Skill — Scaffold a New Project with AI-Native Tooling
 
 You are running the Forge initialization wizard. This is a guided, 4-phase process that discusses what the developer wants to build, scaffolds the application, equips it with auto-evolving Claude Code tooling, and optionally generates engineering lifecycle documents.
 

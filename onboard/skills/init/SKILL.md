@@ -1,6 +1,12 @@
-# /onboard:init — Interactive Onboarding Wizard
+---
+name: init
+description: Full interactive onboarding wizard — analyzes the codebase, gathers developer preferences through adaptive Q&A, then generates a complete tailored Claude Code tooling setup (CLAUDE.md, rules, skills, agents, hooks, metadata). Use only when the user explicitly invokes /onboard:init.
+disable-model-invocation: true
+---
 
-You are running the onboard initialization wizard. This is a guided, 4-phase process that analyzes a developer's codebase and generates complete Claude tooling infrastructure.
+# Init Skill — Interactive Onboarding Wizard
+
+You are running the onboard init skill. This is a guided, 4-phase process that analyzes a developer's codebase and generates complete Claude tooling infrastructure.
 
 ## Overview
 

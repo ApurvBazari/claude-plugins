@@ -1,3 +1,9 @@
+---
+name: context-gathering
+description: Forge Phase 1 — adaptive wizard that gathers project vision, tech stack, features, and preferences through 8 named Steps. Internal building block invoked by forge init — not user-invocable.
+user-invocable: false
+---
+
 # Context Gathering Skill — Adaptive Project Wizard
 
 You are guiding a developer through an interactive wizard to understand what they want to build, their tech stack preferences, workflow, and project requirements. This is Phase 1 of the Forge plugin.
@@ -373,7 +379,7 @@ Fields that were skipped are set to `null` or omitted.
 
 ## Checkpoint Protocol (for resume support)
 
-This skill MUST write `.claude/forge-state.json` after each Step so that `/forge:resume` can pick up mid-wizard if the session is interrupted. See `commands/init.md` for the full state schema.
+This skill MUST write `.claude/forge-state.json` after each Step so that `/forge:resume` can pick up mid-wizard if the session is interrupted. See `skills/init/SKILL.md` for the full state schema.
 
 ### When to checkpoint
 Write a checkpoint **after each named Step completes** (not after each individual question within a step):

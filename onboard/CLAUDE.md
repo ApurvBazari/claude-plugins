@@ -30,12 +30,12 @@ Phase 4: Handoff ──→ explains generated artifacts, suggests next steps
 - `config-generator` runs second (write) — receives analysis + wizard answers via prompt
 - `feature-evaluator` is available for independent feature testing (spawned by `/onboard:verify`)
 
-## Headless Mode (`/onboard:generate`)
+## Headless Mode (`onboard:generate`)
 
-External plugins (e.g., Forge) invoke generation without the wizard or analysis:
+External plugins (e.g., Forge) invoke the `generate` skill via the Skill tool, skipping the wizard and analysis. The skill is `user-invocable: false` so it doesn't clutter the user's slash menu.
 
 ```
-/onboard:generate (headless)
+generate skill (headless)
      │
      ▼
 Pre-seeded context JSON ──→ config-generator agent (write)
@@ -70,20 +70,20 @@ Results report ──→ lists generated artifacts
 
 ## Skill Hierarchy
 
+User-facing skills (show in `/onboard:` autocomplete):
+
+- `init/SKILL.md` — full interactive wizard + generation (`disable-model-invocation: true`)
+- `update/SKILL.md` — align with latest best practices (`disable-model-invocation: true`)
+- `status/SKILL.md` — tooling health check (auto-invocable)
+- `verify/SKILL.md` — independent feature verification via feature-evaluator agent (auto-invocable)
+- `evolve/SKILL.md` — apply pending tooling drift updates (auto-invocable)
+
+Internal building blocks (`user-invocable: false` — hidden from menu):
+
+- `generate/SKILL.md` — headless generation API, invoked by forge via Skill tool
 - `wizard/SKILL.md` — drives the interactive Q&A (presets: Minimal/Standard/Comprehensive/Custom)
 - `analysis/SKILL.md` — tech stack pattern matching, model recommendations
 - `generation/SKILL.md` — artifact generation logic, core + enriched modes
-- `verify/SKILL.md` — independent feature verification via feature-evaluator agent
-- `evolve/SKILL.md` — apply pending tooling drift updates
-
-## Commands
-
-- `/onboard:init` — full interactive wizard + generation
-- `/onboard:generate` — headless generation from pre-seeded context
-- `/onboard:status` — tooling health check
-- `/onboard:update` — align with latest best practices
-- `/onboard:verify` — independent feature verification
-- `/onboard:evolve` — apply pending drift updates
 
 ## Script Conventions
 

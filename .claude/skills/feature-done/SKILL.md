@@ -1,6 +1,6 @@
 ---
 description: Run pre-completion checklist after finishing a plugin feature — validates, checks docs, suggests commit
-user_invocable: true
+user-invocable: true
 ---
 
 # /feature-done — Feature Completion Checklist

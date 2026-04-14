@@ -69,3 +69,15 @@ Notifications show repo + branch context:
 - **Per-project** (`<project>/.claude/settings.json`): hooks fire only in that project
 - Per-project extends/overrides global — both can coexist
 - The wizard detects the running editor (VS Code, Cursor, Windsurf, iTerm2) for bundle ID (macOS only)
+
+## Skills
+
+User-facing skills (show in `/notify:` autocomplete):
+
+- `setup/SKILL.md` — install + configure notifications (`disable-model-invocation: true`)
+- `status/SKILL.md` — health check (auto-invocable)
+- `uninstall/SKILL.md` — remove hooks + config (`disable-model-invocation: true`)
+
+Internal building blocks (`user-invocable: false`):
+
+- `wizard/SKILL.md` — preference wizard invoked by setup for customization

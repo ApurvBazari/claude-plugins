@@ -1,8 +1,14 @@
-# /onboard:generate — Headless Tooling Generation
+---
+name: generate
+description: Headless Claude tooling generation for programmatic callers (e.g., the forge plugin). Consumes a pre-seeded context JSON containing analysis, wizard answers, and plugin data; skips interactive phases; returns hookStatus telemetry. Not user-invocable.
+user-invocable: false
+---
 
-You are running the onboard headless generation command. This generates Claude tooling artifacts from pre-seeded context without running the interactive wizard or codebase analysis.
+# Generate Skill — Headless Tooling Generation
 
-This command is designed for programmatic consumers (e.g., the Forge plugin) that have already gathered project context through their own workflow and need onboard's generation capabilities directly.
+You are running the onboard headless generation skill. This generates Claude tooling artifacts from pre-seeded context without running the interactive wizard or codebase analysis.
+
+This skill is designed for programmatic consumers (e.g., the Forge plugin) that have already gathered project context through their own workflow and need onboard's generation capabilities directly.
 
 **Plugin detection fallback**: If `callerExtras.installedPlugins` is absent in the provided context, the generation skill will probe the filesystem for installed plugins using the same detection logic as standalone `/onboard:init`. This means headless callers that don't compile plugin data will still get Plugin Integration output if plugins are installed.
 
@@ -161,7 +167,7 @@ The caller must provide a context JSON object in the conversation. This object c
 
 Verify the context has:
 1. `source` — must be a non-empty string
-2. `projectPath` �� must be an absolute path that exists
+2. `projectPath` — must be an absolute path that exists
 3. `analysis.stack` — must have at least one language
 4. `wizardAnswers.autonomyLevel` — must be one of: always-ask, balanced, autonomous
 5. `wizardAnswers.projectDescription` — must be non-empty
@@ -272,7 +278,7 @@ The `onboard-meta.json` file records:
 
 ## Key Rules
 
-1. **No interactive prompts** — This command never asks the user questions. All context comes from the input.
+1. **No interactive prompts** — This skill never asks the user questions. All context comes from the input.
 2. **No analysis scripts** — The codebase-analyzer agent is not spawned. Analysis data comes from the context.
 3. **No wizard** — The wizard skill is not invoked. Preferences come from the context.
 4. **Merge, never overwrite** — Always read existing files (settings.json, .gitignore) before writing.

@@ -1,3 +1,9 @@
+---
+name: tooling-generation
+description: Forge Phase 3 — prepares scaffold context and delegates to onboard's headless generate skill for CLAUDE.md, rules, skills, agents, hooks, CI/CD, and evolution infrastructure. Internal building block invoked by forge init — not user-invocable.
+user-invocable: false
+---
+
 # Tooling Generation Skill — Delegate to Enriched Onboard
 
 You are executing Phase 3 of Forge: generating all AI tooling, CI/CD, harness, and evolution infrastructure by delegating to onboard's enriched headless mode. Forge prepares the context; onboard generates the artifacts.
@@ -7,7 +13,7 @@ You are executing Phase 3 of Forge: generating all AI tooling, CI/CD, harness, a
 This skill cannot do its job without the **onboard** plugin — onboard owns all generation. Check if onboard is installed before doing any work:
 
 ```bash
-ls "${CLAUDE_PLUGIN_ROOT}/../onboard/commands/generate.md" 2>/dev/null
+ls "${CLAUDE_PLUGIN_ROOT}/../onboard/skills/generate/SKILL.md" 2>/dev/null
 ```
 
 **If the probe finds the file**, onboard is present — proceed to Step 1.
@@ -275,7 +281,7 @@ Update `.claude/forge-meta.json` with:
 
   **Write rules**:
   - Copy `installedPlugins`, `coveredCapabilities`, `allowPluginReferences`, `qualityGates`, `phaseSkills` from the in-memory `callerExtras` object exactly as it was sent to `/onboard:generate` — including the autonomyLevel-downgraded `preCommit[].mode` values. Do not re-derive.
-  - Copy `hookStatus` verbatim from the `/onboard:generate` response object (see `onboard/commands/generate.md` § Step 5). Do not reshape. `generated` is a **list-of-basenames map**, not a count map.
+  - Copy `hookStatus` verbatim from the `/onboard:generate` response object (see `onboard/skills/generate/SKILL.md` § Step 5). Do not reshape. `generated` is a **list-of-basenames map**, not a count map.
   - **Invariant**: `toolingFlags.hookStatus.planned` keys should match what onboard expected to generate from `toolingFlags.qualityGates`. A mismatch signals a contract drift between forge and onboard.
 
 - `context.verificationStrategy`: the chosen approach
@@ -283,7 +289,7 @@ Update `.claude/forge-meta.json` with:
 
 ## Checkpoint Protocol (for resume support)
 
-This skill MUST write `.claude/forge-state.json` after each Step so `/forge:resume` can pick up mid-generation if the session is interrupted. See `commands/init.md` for the full state schema.
+This skill MUST write `.claude/forge-state.json` after each Step so `/forge:resume` can pick up mid-generation if the session is interrupted. See `skills/init/SKILL.md` for the full state schema.
 
 ### When to checkpoint
 

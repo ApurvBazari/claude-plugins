@@ -17,7 +17,9 @@ Think of it as `create-react-app` for the AI-assisted development era: it scaffo
 - **Ecosystem plugins** — Curated recommendations installed based on your stack and workflow
 - **Engineering documents** — Architecture Decision Records, testing strategies, deploy checklists, runbooks (via `engineering` plugin)
 
-## Commands
+## Skills
+
+All skills are invoked with the `/forge:<name>` slash syntax. `status` and `resume` are auto-invocable by Claude; `init` requires explicit invocation.
 
 ### `/forge:init`
 

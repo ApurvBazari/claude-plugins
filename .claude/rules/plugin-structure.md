@@ -12,9 +12,11 @@ paths:
 Every plugin directory must contain:
 - `.claude-plugin/plugin.json` — manifest (only file inside `.claude-plugin/`)
 - `README.md` — user-facing documentation
-- At least one of: `skills/`, `commands/`, `agents/`
+- At least one of: `skills/`, `agents/`
 
 All component directories live at the plugin root, never inside `.claude-plugin/`.
+
+Skills are the authoring form for all user-facing entrypoints and internal orchestration. `commands/<name>.md` has been superseded per the Claude Code docs — skills create the same `/<plugin>:<name>` slash entry and add frontmatter (`user-invocable`, `disable-model-invocation`), reference directories, and model auto-invocation. Do not create new `commands/` directories.
 
 ## Manifest Fields
 
@@ -32,7 +34,7 @@ All component directories live at the plugin root, never inside `.claude-plugin/
 
 ## Adding Components
 
-When adding a new skill, command, or agent to a plugin:
+When adding a new skill or agent to a plugin:
 1. Follow the naming and structure conventions from the corresponding authoring rule
 2. Update the plugin's README.md if the new component is user-facing
 3. Update CHANGELOG.md with a version bump

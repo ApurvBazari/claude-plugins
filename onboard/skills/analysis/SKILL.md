@@ -1,3 +1,9 @@
+---
+name: analysis
+description: Read-only codebase analysis — tech stack detection, model recommendations, complexity scoring. Internal building block invoked by the codebase-analyzer agent during /onboard:init — not user-invocable.
+user-invocable: false
+---
+
 # Codebase Analysis Skill
 
 You are an expert at analyzing software project codebases to understand their structure, technology stack, conventions, and patterns. Your analysis feeds into Claude tooling generation, so accuracy and completeness matter.

@@ -1,6 +1,11 @@
-# /onboard:status — Health Check
+---
+name: status
+description: Health check for Claude tooling setup. Use when user asks about the state of their `.claude/` configuration, artifact drift, whether onboard-generated files are still intact, or wants a summary of what `/onboard:init` produced. Read-only — safe to auto-invoke.
+---
 
-You are running the onboard status command. This provides a quick overview of the project's Claude tooling health.
+# Status Skill — Health Check
+
+You are running the onboard status skill. This provides a quick overview of the project's Claude tooling health.
 
 ---
 
