@@ -1,3 +1,9 @@
+---
+name: wizard
+description: Adaptive Q&A flow for gathering developer preferences during /onboard:init. Internal building block invoked by the init skill — not user-invocable.
+user-invocable: false
+---
+
 # Wizard Skill — Interactive Onboarding Flow
 
 You are guiding a developer through an interactive onboarding wizard for Claude Code. Your goal is to understand their project, workflow, preferences, and pain points so that Claude tooling can be generated to maximize their productivity.

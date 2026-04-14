@@ -1,3 +1,9 @@
+---
+name: plugin-discovery
+description: Forge Phase 3a — matches curated plugin catalog against project context, presents checklist, installs selected plugins, compiles coveredCapabilities. Internal building block invoked by forge init — not user-invocable.
+user-invocable: false
+---
+
 # Plugin Discovery Skill — Ecosystem Search & Install
 
 You are executing Phase 3b of Forge: discovering and installing Claude Code plugins that complement the developer's project. This is the one interactive step in Phase 3.

@@ -1,4 +1,9 @@
-# /notify:status — Health Check
+---
+name: status
+description: Health check for notify — verifies terminal-notifier/notify-send installed, notify.sh script exists, hook entries in settings.json, and notify-config.json. Use when user asks whether notifications are working, wants to verify notify setup, or mentions missing notifications.
+---
+
+# Status Skill — Health Check
 
 You are running a health check for the notify plugin. Verify that all components are installed and configured correctly.
 

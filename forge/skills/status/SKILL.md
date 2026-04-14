@@ -1,6 +1,11 @@
-# /forge:status — Project Health Check
+---
+name: status
+description: Forge project health check — reports in-flight session state, artifact integrity, pending drift, plugin integration coverage, and stack freshness. Use when user asks about forge status, wants to see if their scaffold is healthy, checks on an in-progress session, or asks whether their CI/CD and hooks are wired. Read-only — safe to auto-invoke.
+---
 
-You are running the Forge status command. This provides a quick overview of the project's state — whether a forge session is in progress, whether setup completed, and (if complete) the project's AI tooling health, pending drift, and setup metadata.
+# Status Skill — Project Health Check
+
+You are running the Forge status skill. This provides a quick overview of the project's state — whether a forge session is in progress, whether setup completed, and (if complete) the project's AI tooling health, pending drift, and setup metadata.
 
 ---
 

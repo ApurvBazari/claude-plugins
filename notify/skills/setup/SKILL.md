@@ -1,6 +1,12 @@
-# /notify:setup — Notification Setup
+---
+name: setup
+description: Install and configure cross-platform system notifications for Claude Code. Detects macOS/Linux, installs dependencies, walks through preferences, wires up hooks on Stop/Notification/SubagentStop events. Use only when user explicitly invokes /notify:setup.
+disable-model-invocation: true
+---
 
-You are running the notify setup command. This installs and configures system notifications for Claude Code. Supports macOS (`terminal-notifier`) and Linux (`notify-send`).
+# Setup Skill — Notification Setup
+
+You are running the notify setup skill. This installs and configures system notifications for Claude Code. Supports macOS (`terminal-notifier`) and Linux (`notify-send`).
 
 ## Overview
 

@@ -1,3 +1,9 @@
+---
+name: lifecycle-setup
+description: Forge Phase 4 — generates engineering lifecycle documents (ADRs, testing strategy, deploy checklists) by delegating to the optional engineering plugin. Internal building block invoked by forge init — not user-invocable.
+user-invocable: false
+---
+
 # Lifecycle Setup Skill — Engineering Document Generation
 
 You are executing Phase 4 of Forge: generating engineering lifecycle documents by delegating to the `engineering` plugin's skills. This phase is entirely optional — if the developer skips all documents or the engineering plugin is not installed, proceed directly to Handoff.

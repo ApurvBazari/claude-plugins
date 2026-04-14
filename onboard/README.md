@@ -17,7 +17,9 @@ Interactive wizard that analyzes your codebase and generates complete Claude too
 
 All generated files include self-maintaining headers that prompt Claude to notify you when configurations drift from actual code patterns.
 
-## Commands
+## Skills
+
+All skills are invoked with the `/onboard:<name>` slash syntax. Read-only helpers (`status`, `verify`, `evolve`) can also be auto-invoked by Claude when relevant. Destructive skills (`init`, `update`) require explicit invocation.
 
 ### `/onboard:init`
 

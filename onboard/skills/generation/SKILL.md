@@ -1,3 +1,9 @@
+---
+name: generation
+description: Core artifact generator for Claude tooling (CLAUDE.md, rules, skills, agents, hooks). Internal building block invoked by the config-generator agent during /onboard:init and /onboard:generate — not user-invocable.
+user-invocable: false
+---
+
 # Generation Skill — Claude Tooling Artifact Generator
 
 You are an expert at generating Claude Code configuration artifacts. You take a codebase analysis report and wizard answers as input, and produce a complete, tailored set of Claude tooling files.
@@ -337,7 +343,7 @@ When `effectiveQualityGates` is present (from either `callerExtras.qualityGates`
 
 **Hook Status Telemetry**: While walking through the 4 hook categories (`sessionStart`, `preCommit`, `featureStart`, `postFeature`), onboard MUST record what was planned, what was actually generated, and what was skipped (and why) into a structured `hookStatus` object. This object is:
 
-1. Returned from `/onboard:generate` in the result summary (see `onboard/commands/generate.md` § Step 5)
+1. Returned from `/onboard:generate` in the result summary (see `onboard/skills/generate/SKILL.md` § Step 5)
 2. Recorded inside `.claude/onboard-meta.json` under the top-level `hookStatus` key
 3. Mirrored by forge into `.claude/forge-meta.json.generated.toolingFlags.hookStatus` (see `forge/skills/tooling-generation/SKILL.md` § Step 4)
 

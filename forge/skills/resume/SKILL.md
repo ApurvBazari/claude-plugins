@@ -1,4 +1,9 @@
-# /forge:resume — Resume an In-Progress Forge Session
+---
+name: resume
+description: Resume an in-progress forge session from the last checkpoint in .claude/forge-state.json. Use when user wants to continue a paused /forge:init run, asks about resuming forge, mentions a session was interrupted, or opens a fresh Claude Code conversation in a project that has a forge session in flight.
+---
+
+# Resume Skill — Resume an In-Progress Forge Session
 
 You are resuming an in-progress Forge workflow that was paused mid-flight. Forge persists its state to `.claude/forge-state.json` at every checkpoint, so you can pick up exactly where the previous session left off — even in a completely fresh Claude Code conversation.
 
@@ -135,7 +140,7 @@ At the end of the workflow (all phases complete), set `currentPhase = "complete"
 
 ## Design notes
 
-- **Why a separate command?** `/forge:init` is already long and complex. Resuming is a distinct user intent ("I was already working on this, continue where I left off") that deserves its own entry point.
-- **Why not auto-resume in `/forge:init`?** `/forge:init` DOES check for an existing state file and offers resume — this command is the direct entry point for users who know they want to resume (faster than going through init's guard checks).
+- **Why a separate skill?** `/forge:init` is already long and complex. Resuming is a distinct user intent ("I was already working on this, continue where I left off") that deserves its own entry point.
+- **Why not auto-resume in `/forge:init`?** `/forge:init` DOES check for an existing state file and offers resume — this skill is the direct entry point for users who know they want to resume (faster than going through init's guard checks).
 - **Why JSON, not YAML?** The wizard updates state frequently; JSON parse/stringify is universal and fast. YAML adds no value here.
 - **Why per-project state?** Forge state is tied to a specific scaffold. If you had global state, you couldn't work on two projects concurrently.

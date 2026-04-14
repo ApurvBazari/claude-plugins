@@ -110,9 +110,11 @@ Notifications can be installed globally or per-project:
 
 Both scopes can coexist — per-project hooks add to global hooks, they don't replace them. This lets you set up global defaults and override or extend them for specific projects (e.g., a different sound for a particular repo).
 
-## Commands
+## Skills
 
-| Command | Description |
+All skills are invoked with the `/notify:<name>` slash syntax. `status` is auto-invocable; `setup` and `uninstall` require explicit invocation.
+
+| Skill | Description |
 |---------|-------------|
 | `/notify:setup` | Install and configure notifications |
 | `/notify:status` | Health check and test notifications |

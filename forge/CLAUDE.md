@@ -38,7 +38,7 @@ Phase 4: Lifecycle Setup (optional) ──→ lifecycle-setup skill
 
 ## Dependency on Onboard
 
-Forge is a thin orchestrator. Onboard does ALL tooling generation:
+Forge is a thin orchestrator. Onboard does ALL tooling generation via its `generate` skill (invoked through the Skill tool as `onboard:generate`):
 - Core: CLAUDE.md, rules, skills, agents, hooks, PR template
 - Enriched: CI/CD pipelines, harness guide, evolution hooks, sprint contracts, team support
 
@@ -59,11 +59,21 @@ Forge only generates two artifacts that require scaffold-specific knowledge:
 - `stack-researcher.md` — web search agent (sonnet) for researching tech stacks during Phase 1
 - `scaffold-analyzer.md` — read-only agent that scans the freshly scaffolded project for onboard context
 
-## Commands
+## Skills
 
-- `/forge:init` — full 4-phase flow (context → scaffold → tooling → lifecycle). Checks for in-flight state at startup and offers resume.
-- `/forge:resume` — resume an in-progress forge session from the last checkpoint in `.claude/forge-state.json`
-- `/forge:status` — project health check; also reports in-flight session state if present
+User-facing skills (show in `/forge:` autocomplete):
+
+- `init/SKILL.md` — full 4-phase flow (context → scaffold → tooling → lifecycle). Checks for in-flight state at startup and offers resume. (`disable-model-invocation: true`)
+- `resume/SKILL.md` — resume an in-progress forge session from the last checkpoint in `.claude/forge-state.json` (auto-invocable)
+- `status/SKILL.md` — project health check; also reports in-flight session state if present (auto-invocable)
+
+Internal building blocks (`user-invocable: false`):
+
+- `context-gathering/SKILL.md` — Phase 1 adaptive wizard
+- `scaffolding/SKILL.md` — Phase 2 scaffold execution
+- `plugin-discovery/SKILL.md` — Phase 3a plugin catalog match + install
+- `tooling-generation/SKILL.md` — Phase 3b delegation to `onboard:generate`
+- `lifecycle-setup/SKILL.md` — Phase 4 engineering document generation
 
 Note: `/forge:verify`, `/forge:evolve` are now `/onboard:verify`, `/onboard:evolve` (universally available, not Forge-specific).
 

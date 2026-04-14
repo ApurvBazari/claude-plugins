@@ -1,6 +1,12 @@
-# /onboard:update — Evolve Tooling to Latest Best Practices
+---
+name: update
+description: Update existing Claude tooling against latest best practices — re-analyzes the codebase, fetches current Claude Code documentation, presents targeted upgrade options, and applies approved changes with merge/replace choice per file. Use only when user explicitly invokes /onboard:update.
+disable-model-invocation: true
+---
 
-You are running the onboard update command. This checks whether the project's Claude tooling is aligned with the latest best practices and offers targeted upgrades.
+# Update Skill — Evolve Tooling to Latest Best Practices
+
+You are running the onboard update skill. This checks whether the project's Claude tooling is aligned with the latest best practices and offers targeted upgrades.
 
 This is NOT a snapshot diff. It's a forward-looking check against current best practices.
 

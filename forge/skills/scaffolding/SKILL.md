@@ -1,3 +1,9 @@
+---
+name: scaffolding
+description: Forge Phase 2 — executes the project scaffold (CLI, from-scratch, template, or walking-skeleton), sets up git, runs hello-world verification. Internal building block invoked by forge init — not user-invocable.
+user-invocable: false
+---
+
 # Scaffolding Skill — Project Setup & Git Configuration
 
 You are executing Phase 2 of Forge: scaffolding the application and setting up git infrastructure. All decisions were made during Phase 1 (context gathering). This phase is execution, not discussion.
@@ -233,7 +239,7 @@ Write `.claude/forge-meta.json`:
 
 ## Checkpoint Protocol (for resume support)
 
-This skill MUST write `.claude/forge-state.json` after each Step so `/forge:resume` can pick up mid-scaffold if the session is interrupted. See `commands/init.md` for the full state schema.
+This skill MUST write `.claude/forge-state.json` after each Step so `/forge:resume` can pick up mid-scaffold if the session is interrupted. See `skills/init/SKILL.md` for the full state schema.
 
 ### When to checkpoint
 

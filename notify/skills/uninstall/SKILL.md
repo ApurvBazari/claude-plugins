@@ -1,6 +1,12 @@
-# /notify:uninstall — Remove Notification Setup
+---
+name: uninstall
+description: Remove notify hooks, scripts, and config files from the chosen scope (global and/or project). Surgically deletes only notify-owned entries from settings.json; preserves all other hooks. Use only when user explicitly invokes /notify:uninstall.
+disable-model-invocation: true
+---
 
-You are running the notify uninstall command. This cleanly removes all notification hooks, scripts, and config files installed by the notify plugin.
+# Uninstall Skill — Remove Notification Setup
+
+You are running the notify uninstall skill. This cleanly removes all notification hooks, scripts, and config files installed by the notify plugin.
 
 ---
 

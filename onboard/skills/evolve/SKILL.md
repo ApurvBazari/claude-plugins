@@ -1,3 +1,8 @@
+---
+name: evolve
+description: Apply accumulated tooling drift to Claude configuration. Use when user says their Claude tooling is out of sync, mentions drift detected by hooks, installed/removed a plugin and wants the Plugin Integration section refreshed, or asks to drain queued forge-drift.json updates.
+---
+
 # Evolve Skill — Apply Pending Drift Updates
 
 You are applying accumulated tooling drift updates. This skill handles two drift sources: **FileChanged drift** (logged by hooks to `.claude/forge-drift.json`) and **plugin drift** (detected by comparing `forge-meta.json` against currently-installed plugins).
