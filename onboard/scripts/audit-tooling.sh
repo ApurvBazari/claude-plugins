@@ -26,7 +26,7 @@ if [ -f "CLAUDE.md" ]; then
   if [ -f "package.json" ]; then
     while IFS= read -r script_name; do
       if [ -n "$script_name" ]; then
-        if ! python3 -c "import json,sys; d=json.load(open('package.json')); sys.exit(0 if '$script_name' in d.get('scripts',{}) else 1)" 2>/dev/null; then
+        if ! python3 -c "import json,sys; d=json.load(open('package.json')); sys.exit(0 if sys.argv[1] in d.get('scripts',{}) else 1)" "$script_name" 2>/dev/null; then
           add_drift "CLAUDE.md references 'npm run $script_name' but script not found in package.json"
         fi
       fi
