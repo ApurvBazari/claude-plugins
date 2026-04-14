@@ -157,8 +157,13 @@ file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '"fi
     "PostToolUse": [
       {
         "matcher": "Write",
-        "command": "file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '\"file_path\": *\"[^\"]*\"' | head -1 | sed 's/.*: *\"//;s/\"//') && case \"$file\" in *.ts|*.tsx|*.js|*.jsx|*.json|*.css|*.md) npx prettier --write \"$file\" 2>/dev/null ;; esac; exit 0",
-        "timeout": 10000
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '\"file_path\": *\"[^\"]*\"' | head -1 | sed 's/.*: *\"//;s/\"//') && case \"$file\" in *.ts|*.tsx|*.js|*.jsx|*.json|*.css|*.md) npx prettier --write \"$file\" 2>/dev/null ;; esac; exit 0",
+            "timeout": 10000
+          }
+        ]
       }
     ]
   }
@@ -173,8 +178,13 @@ file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '"fi
     "PostToolUse": [
       {
         "matcher": "Write",
-        "command": "file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '\"file_path\": *\"[^\"]*\"' | head -1 | sed 's/.*: *\"//;s/\"//') && case \"$file\" in *.py) black --quiet \"$file\" 2>/dev/null ;; esac; exit 0",
-        "timeout": 10000
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '\"file_path\": *\"[^\"]*\"' | head -1 | sed 's/.*: *\"//;s/\"//') && case \"$file\" in *.py) black --quiet \"$file\" 2>/dev/null ;; esac; exit 0",
+            "timeout": 10000
+          }
+        ]
       }
     ]
   }
@@ -189,8 +199,13 @@ file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '"fi
     "PostToolUse": [
       {
         "matcher": "Write",
-        "command": "file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '\"file_path\": *\"[^\"]*\"' | head -1 | sed 's/.*: *\"//;s/\"//') && case \"$file\" in *.go) gofmt -w \"$file\" 2>/dev/null ;; esac; exit 0",
-        "timeout": 10000
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '\"file_path\": *\"[^\"]*\"' | head -1 | sed 's/.*: *\"//;s/\"//') && case \"$file\" in *.go) gofmt -w \"$file\" 2>/dev/null ;; esac; exit 0",
+            "timeout": 10000
+          }
+        ]
       }
     ]
   }
@@ -205,8 +220,13 @@ file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '"fi
     "PostToolUse": [
       {
         "matcher": "Write",
-        "command": "file=$(cat - | jq -r '.tool_input.file_path') && case \"$file\" in *.rs) rustfmt \"$file\" 2>/dev/null ;; esac; exit 0",
-        "timeout": 10000
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=$(cat - | jq -r '.tool_input.file_path') && case \"$file\" in *.rs) rustfmt \"$file\" 2>/dev/null ;; esac; exit 0",
+            "timeout": 10000
+          }
+        ]
       }
     ]
   }
@@ -221,8 +241,13 @@ file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '"fi
     "PostToolUse": [
       {
         "matcher": "Edit",
-        "command": "file=$(cat - | jq -r '.tool_input.file_path') && case \"$file\" in *.ts|*.tsx|*.js|*.jsx) npx eslint --no-error-on-unmatched-pattern \"$file\" 2>&1 | head -20 ;; esac; exit 0",
-        "timeout": 15000
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=$(cat - | jq -r '.tool_input.file_path') && case \"$file\" in *.ts|*.tsx|*.js|*.jsx) npx eslint --no-error-on-unmatched-pattern \"$file\" 2>&1 | head -20 ;; esac; exit 0",
+            "timeout": 15000
+          }
+        ]
       }
     ]
   }
@@ -237,8 +262,13 @@ file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '"fi
     "PostToolUse": [
       {
         "matcher": "Edit",
-        "command": "file=$(cat - | jq -r '.tool_input.file_path') && case \"$file\" in *.py) ruff check \"$file\" 2>&1 | head -20 ;; esac; exit 0",
-        "timeout": 10000
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=$(cat - | jq -r '.tool_input.file_path') && case \"$file\" in *.py) ruff check \"$file\" 2>&1 | head -20 ;; esac; exit 0",
+            "timeout": 10000
+          }
+        ]
       }
     ]
   }
@@ -253,8 +283,13 @@ file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '"fi
     "PostToolUse": [
       {
         "matcher": "Write",
-        "command": "file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '\"file_path\": *\"[^\"]*\"' | head -1 | sed 's/.*: *\"//;s/\"//') && case \"$file\" in *.rb) rubocop -a --fail-level fatal \"$file\" 2>/dev/null ;; esac; exit 0",
-        "timeout": 15000
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '\"file_path\": *\"[^\"]*\"' | head -1 | sed 's/.*: *\"//;s/\"//') && case \"$file\" in *.rb) rubocop -a --fail-level fatal \"$file\" 2>/dev/null ;; esac; exit 0",
+            "timeout": 15000
+          }
+        ]
       }
     ]
   }
@@ -269,8 +304,13 @@ file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '"fi
     "PostToolUse": [
       {
         "matcher": "Write",
-        "command": "file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '\"file_path\": *\"[^\"]*\"' | head -1 | sed 's/.*: *\"//;s/\"//') && case \"$file\" in *.py) ruff check --fix --quiet \"$file\" 2>/dev/null ;; esac; exit 0",
-        "timeout": 10000
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=$(cat - | jq -r '.tool_input.file_path' 2>/dev/null || cat - | grep -o '\"file_path\": *\"[^\"]*\"' | head -1 | sed 's/.*: *\"//;s/\"//') && case \"$file\" in *.py) ruff check --fix --quiet \"$file\" 2>/dev/null ;; esac; exit 0",
+            "timeout": 10000
+          }
+        ]
       }
     ]
   }
