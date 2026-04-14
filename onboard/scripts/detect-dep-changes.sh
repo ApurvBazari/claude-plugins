@@ -30,7 +30,7 @@ case "$BASENAME" in
       CHANGES=$(python3 -c "
 import json, sys
 try:
-    pkg = json.load(open('$FILE_PATH'))
+    pkg = json.load(open(sys.argv[1]))
     deps = list(pkg.get('dependencies', {}).keys())
     dev_deps = list(pkg.get('devDependencies', {}).keys())
     scripts = list(pkg.get('scripts', {}).keys())
@@ -42,7 +42,7 @@ try:
     print(json.dumps(changes))
 except Exception:
     print('[]')
-" 2>/dev/null || echo "[]")
+" "$FILE_PATH" 2>/dev/null || echo "[]")
     fi
     ;;
   pyproject.toml)
@@ -69,17 +69,18 @@ fi
 # Append entry to drift file
 if command -v python3 >/dev/null 2>&1; then
   python3 -c "
-import json
-drift = json.load(open('$DRIFT_FILE'))
+import json, sys
+drift_file, timestamp, basename, changes_json = sys.argv[1:5]
+drift = json.load(open(drift_file))
 drift['entries'].append({
-    'timestamp': '$TIMESTAMP',
-    'file': '$BASENAME',
+    'timestamp': timestamp,
+    'file': basename,
     'type': 'dependency',
-    'changes': $CHANGES
+    'changes': json.loads(changes_json)
 })
-with open('$DRIFT_FILE', 'w') as f:
+with open(drift_file, 'w') as f:
     json.dump(drift, f, indent=2)
-" 2>/dev/null || true
+" "$DRIFT_FILE" "$TIMESTAMP" "$BASENAME" "$CHANGES" 2>/dev/null || true
 fi
 
 exit 0

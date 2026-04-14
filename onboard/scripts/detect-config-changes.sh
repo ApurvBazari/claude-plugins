@@ -44,17 +44,18 @@ esac
 # Append entry to drift file
 if command -v python3 >/dev/null 2>&1; then
   python3 -c "
-import json
-drift = json.load(open('$DRIFT_FILE'))
+import json, sys
+drift_file, timestamp, basename, config_type, file_path = sys.argv[1:6]
+drift = json.load(open(drift_file))
 drift['entries'].append({
-    'timestamp': '$TIMESTAMP',
-    'file': '$BASENAME',
+    'timestamp': timestamp,
+    'file': basename,
     'type': 'config',
-    'changes': [{'action': 'modified', 'configType': '$CONFIG_TYPE', 'path': '$FILE_PATH'}]
+    'changes': [{'action': 'modified', 'configType': config_type, 'path': file_path}]
 })
-with open('$DRIFT_FILE', 'w') as f:
+with open(drift_file, 'w') as f:
     json.dump(drift, f, indent=2)
-" 2>/dev/null || true
+" "$DRIFT_FILE" "$TIMESTAMP" "$BASENAME" "$CONFIG_TYPE" "$FILE_PATH" 2>/dev/null || true
 fi
 
 exit 0
