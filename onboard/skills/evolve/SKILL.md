@@ -26,32 +26,15 @@ If either source has drift, continue.
 
 ## Step 0: Detect Plugin Drift
 
-Read `.claude/forge-meta.json`. If the file is missing or does not contain `generated.toolingFlags.installedPlugins`, skip this step entirely — plugin drift detection requires a forge baseline.
+Plugin drift detection follows the shared procedure in `../generation/references/plugin-drift-detection.md`. Evolve-specific parameters:
 
-1. Extract `previousPlugins` from `generated.toolingFlags.installedPlugins`.
-2. Probe the filesystem for currently-installed plugins. For each plugin in the known probe list (see `references/plugin-integration-rules.md` § Known Plugin Probe List), check:
+- **Baseline source** — `.claude/forge-meta.json.generated.toolingFlags.installedPlugins`. If the file is missing or this field is absent, skip Step 0 entirely (evolve requires a forge baseline; use `/onboard:update` instead for projects without forge-meta).
+- **Probe list** — canonical list in `../generation/references/plugin-detection-guide.md` § Known Plugin Probe List. Also probe any plugin in `previousPlugins` that isn't in the known list (custom/third-party plugins).
+- **autonomyLevel source** — `forge-meta.json.context.autonomyLevel`, falling back to `onboard-meta.json.wizardAnswers.autonomyLevel`.
 
-   ```bash
-   ls "${CLAUDE_PLUGIN_ROOT}/../<plugin-name>" 2>/dev/null
-   ```
+Produce the `driftReport` described in `plugin-drift-detection.md` § Output Schema. If `added` and `removed` are both empty, skip to Step 1.
 
-   Also probe any plugin in `previousPlugins` that isn't in the known list (custom/third-party plugins).
-
-3. Build `currentPlugins` from successful probes.
-4. Compute diff:
-   - `added` = plugins in `currentPlugins` but not in `previousPlugins`
-   - `removed` = plugins in `previousPlugins` but not in `currentPlugins`
-5. If `added` and `removed` are both empty, no plugin drift — skip to Step 1.
-6. Present the plugin drift summary:
-
-> **Plugin drift detected:**
->
-> **Added**: [comma-separated list, or "none"]
-> **Removed**: [comma-separated list, or "none"]
->
-> I'll update the Plugin Integration section in CLAUDE.md and refresh quality-gate hooks to match.
-
-Record `currentPlugins`, `added`, and `removed` for use in Step 2b.
+Present the summary to the developer per `plugin-drift-detection.md` § Presentation, then record `currentPlugins`, `added`, and `removed` for use in Step 2b.
 
 ## Step 1: Read FileChanged Drift Entries
 
@@ -126,6 +109,10 @@ Read the existing `autonomyLevel` from `forge-meta.json.context.autonomyLevel` (
 
 **Apply autonomyLevel downgrade**: If `autonomyLevel` is `always-ask`, downgrade all `preCommit[].mode` values to `"advisory"`.
 
+**Subdirectory skill-annotation refresh**: If `added` or `removed` is non-empty, also refresh per-directory `## Skill recommendations` blocks wrapped in `<!-- onboard:skill-recommendations:start role="..." -->` / `end` markers. Follow the procedure in `../update/SKILL.md` § Subdirectory skill-annotation refresh. The `role` attribute makes this a read-role → regenerate-body operation — no scaffold-analyzer invocation needed.
+
+**Standalone ↔ plugin reconciliation**: Apply the same reconciliation matrix that `update` uses — see `../update/SKILL.md` § Standalone ↔ plugin reconciliation for the full table. In short: when `superpowers` enters via `added`, delete `.claude/skills/tdd-workflow/SKILL.md` and `.claude/agents/tdd-test-writer.md` (plus standalone hooks that duplicate its skills); when `superpowers` leaves via `removed` and no alternate coverage exists, regenerate those standalone artifacts via `onboard:generate` with `callerExtras.regenerateOnly`. Same rules apply for any other plugin that shadowed a standalone artifact. Evolve runs this reconciliation without asking — it's acceptable because evolve is meant to drain accumulated drift automatically; users who want per-item approval should use `/onboard:update` instead.
+
 ### 2b.3: Update forge-meta.json
 
 Update the following fields in `.claude/forge-meta.json`:
@@ -151,7 +138,7 @@ After applying all updates (both FileChanged and plugin integration), show what 
 > **Not auto-applied** (needs your input):
 > - New directory src/services/ — want me to create a CLAUDE.md for it?
 >
-> **Note**: Subdirectory CLAUDE.md files may have stale skill annotations after plugin changes. Run `/onboard:update` for a thorough refresh that includes per-directory annotations.
+> **Note**: Subdirectory skill-annotation blocks (wrapped in `<!-- onboard:skill-recommendations:start/end -->` markers) are refreshed automatically via the role-attribute strategy. Subdirectory files that predate markered blocks are not auto-created — run `/onboard:update` to have those offered as new best-practice additions.
 
 ## Step 4: Clear Processed Entries
 
@@ -168,8 +155,8 @@ After updates are applied:
 3. **Ask for structural** — Dependency and config changes can be auto-applied. Structural changes (new CLAUDE.md files) require developer confirmation.
 4. **Preserve manual edits** — If the developer has customized CLAUDE.md beyond what onboard generated, preserve those customizations. Only touch the marker-delimited Plugin Integration section.
 5. **Show the diff** — Always show what was changed so the developer can verify.
-6. **Plugin drift is probe-based** — It does not depend on forge-drift.json entries. It's detected by comparing forge-meta.json against filesystem state at evolve-time.
+6. **Plugin drift is probe-based** — It does not depend on forge-drift.json entries. It's detected by comparing forge-meta.json against filesystem state at evolve-time, following `../generation/references/plugin-drift-detection.md`.
 7. **Marker-delimited surgery** — Plugin Integration section updates use the `<!-- onboard:plugin-integration:start/end -->` markers. Never touch content outside the markers.
-8. **No subdirectory annotation updates** — Plugin drift does not refresh subdirectory CLAUDE.md skill annotations (those require directory-role knowledge from scaffold-analyzer). Note the stale risk in Step 3 and suggest `/onboard:update`.
+8. **Subdirectory annotations refresh via marker + role attribute** — Plugin drift refreshes `<!-- onboard:skill-recommendations:start role="..." -->` blocks in subdirectory CLAUDE.md files without re-invoking scaffold-analyzer. Directories lacking markered blocks are not auto-created — run `/onboard:update` to surface them as new best-practice additions.
 9. **Merge-aware hook updates** — When modifying `.claude/settings.json`, read first, merge plugin-integration hooks, and preserve all other hooks (format, lint, evolution, etc.).
 10. **Never fabricate plugin references** — Only reference plugins confirmed to exist via filesystem probe.
