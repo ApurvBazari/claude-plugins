@@ -250,13 +250,13 @@ if [ -f "$PROJECT_ROOT/package.json" ]; then
     python3 -c "
 import json, sys
 try:
-    with open('$PROJECT_ROOT/package.json') as f:
+    with open(sys.argv[1]) as f:
         pkg = json.load(f)
     scripts = pkg.get('scripts', {})
     for name, cmd in scripts.items():
         print(f'  {name}: {cmd}')
 except: pass
-" 2>/dev/null || true
+" "$PROJECT_ROOT/package.json" 2>/dev/null || true
   else
     # Fallback: extract script names using grep/sed
     warn_skip "python3 JSON parse for npm scripts" "python3 not available, using grep fallback"
