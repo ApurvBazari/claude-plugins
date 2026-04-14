@@ -1,0 +1,66 @@
+name: release-please
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      prs_created: ${{ steps.release.outputs.prs_created }}
+      pr: ${{ steps.release.outputs.pr }}
+      releases_created: ${{ steps.release.outputs.releases_created }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  sync-marketplace:
+    needs: release-please
+    if: needs.release-please.outputs.prs_created == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract release PR branch name
+        id: branch
+        env:
+          PR_JSON: ${{ needs.release-please.outputs.pr }}
+        run: |
+          echo "name=$(echo "$PR_JSON" | jq -r '.headBranchName')" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.branch.outputs.name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync marketplace.json versions from plugin manifests
+        run: |
+          set -euo pipefail
+          changed=0
+          tmp=$(mktemp)
+          for plugin in onboard forge notify; do
+            version=$(jq -r '.version' "$plugin/.claude-plugin/plugin.json")
+            jq --arg name "$plugin" --arg ver "$version" \
+              '.plugins = (.plugins | map(if .name == $name then .version = $ver else . end))' \
+              .claude-plugin/marketplace.json > "$tmp"
+            if ! cmp -s "$tmp" .claude-plugin/marketplace.json; then
+              mv "$tmp" .claude-plugin/marketplace.json
+              changed=1
+            fi
+          done
+          echo "changed=$changed" >> "$GITHUB_ENV"
+
+      - name: Commit and push marketplace sync
+        if: env.changed == '1'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .claude-plugin/marketplace.json
+          git commit -m "chore: sync marketplace.json versions"
+          git push
