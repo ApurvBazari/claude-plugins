@@ -4,6 +4,8 @@ You are running the onboard headless generation command. This generates Claude t
 
 This command is designed for programmatic consumers (e.g., the Forge plugin) that have already gathered project context through their own workflow and need onboard's generation capabilities directly.
 
+**Plugin detection fallback**: If `callerExtras.installedPlugins` is absent in the provided context, the generation skill will probe the filesystem for installed plugins using the same detection logic as standalone `/onboard:init`. This means headless callers that don't compile plugin data will still get Plugin Integration output if plugins are installed.
+
 ---
 
 ## Step 1: Read Context Input

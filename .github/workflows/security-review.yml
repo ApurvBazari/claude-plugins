@@ -28,7 +28,7 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           model: claude-opus-4-6
-          max_turns: 20
+          max_turns: 100
           track_progress: true
           direct_prompt: |
             Security audit for a Claude Code plugin repo (markdown + shell scripts + JSON manifests — no compiled code, no web frontend, no database).
@@ -44,7 +44,7 @@ jobs:
 
             Skip categories irrelevant to this repo: SQL/NoSQL/LDAP injection, XXE, XSS, CSRF, deserialization, authentication, session management.
 
-            Format: list findings as Critical / High / Medium / Low. If clean, confirm the changes pass review.
+            **Progress tracking**: Update your progress comment by checking off each item as you complete it. After finishing all checks, post a final summary with findings listed as Critical / High / Medium / Low. If clean, confirm the changes pass review. Always post the final report — do not end without updating the comment.
 
   security-review:
     if: >

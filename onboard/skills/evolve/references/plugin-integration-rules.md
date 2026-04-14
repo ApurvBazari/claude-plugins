@@ -1,32 +1,12 @@
 # Plugin Integration Rules for Evolve
 
-Distilled rules for regenerating the Plugin Integration section in CLAUDE.md and quality-gate hooks during `/onboard:evolve`. Source of truth: `generation/SKILL.md` lines 82-125 and `tooling-generation/SKILL.md` lines 108-181.
+Distilled rules for regenerating the Plugin Integration section in CLAUDE.md and quality-gate hooks during `/onboard:evolve`.
 
 ## Known Plugin Probe List
 
-Filesystem probe target for detecting installed plugins. For each plugin, check:
-```bash
-ls "${CLAUDE_PLUGIN_ROOT}/../<plugin-name>" 2>/dev/null
-```
+See `../../generation/references/plugin-detection-guide.md` for the canonical probe list, probe command, capability mappings, and derivation rules for `coveredCapabilities`, `qualityGates`, and `phaseSkills`.
 
-| Plugin | Category | Capabilities Covered |
-|---|---|---|
-| `superpowers` | Universal | `test-generation`, `debugging`, `planning`, `code-review` |
-| `commit-commands` | Universal | `git-workflow` |
-| `security-guidance` | Universal | `security-audit` |
-| `hookify` | Universal | `behavioral-guardrails` |
-| `claude-md-management` | Universal | `documentation` |
-| `engineering` | Universal | `engineering-lifecycle`, `architecture-decisions`, `deploy-verification` |
-| `frontend-design` | Stack-conditional | `ui-development` |
-| `feature-dev` | Stack-conditional | `feature-development`, `code-review` |
-| `code-review` | Workflow-conditional | `code-review` |
-| `pr-review-toolkit` | Workflow-conditional | `code-review`, `code-simplification` |
-| `context7` | Stack-conditional | `docs-lookup` |
-| `github` | Workflow-conditional | `vcs-integration` |
-| `gitlab` | Workflow-conditional | `vcs-integration` |
-| `playwright` | Stack-conditional | `e2e-testing` |
-
-Also probe any plugin in `previousPlugins` that isn't in this list (custom/third-party plugins).
+Also probe any plugin in `previousPlugins` that isn't in the known list (custom/third-party plugins).
 
 ## Section Marker Template
 
@@ -110,71 +90,8 @@ Only include skills whose plugin is installed.
 
 Rich narrative voice, not a bulleted list of plugin names. Every subsection should answer "when do I use this?" tied to the project's actual tech stack.
 
-## qualityGates Derivation
+## qualityGates, phaseSkills, and coveredCapabilities Derivation
 
-Start from the defaults below, then filter out any skill whose plugin is not in `installedPlugins`.
+See `../../generation/references/plugin-detection-guide.md` for derivation rules, default templates, and autonomyLevel downgrade logic.
 
-```jsonc
-{
-  "sessionStart": [
-    {
-      "type": "reminder",
-      "message": "Starting new feature work? Begin with /superpowers:brainstorming.",
-      "condition": "superpowers-installed"
-    }
-  ],
-  "preCommit": [
-    { "skill": "code-review:code-review", "triggerOn": "commit", "mode": "blocking" },
-    { "skill": "superpowers:verification-before-completion", "triggerOn": "commit", "mode": "blocking" }
-  ],
-  "featureStart": [
-    {
-      "type": "reminder",
-      "criticalDirs": [],
-      "message": "New file in {dir}. Consider /superpowers:brainstorming first."
-    }
-  ],
-  "postFeature": [
-    { "skill": "claude-md-management:revise-claude-md", "triggerOn": "session-end", "mode": "advisory" }
-  ]
-}
-```
-
-### Derivation rules
-
-1. **sessionStart** — seeded only if `superpowers` is in `installedPlugins`.
-2. **preCommit** — drop entries whose plugin is not installed. Apply autonomyLevel downgrade (see below).
-3. **featureStart** — preserve existing `criticalDirs` from `forge-meta.json` (evolve does not re-derive directory roles). Seeded only if `superpowers` installed.
-4. **postFeature** — drop if `claude-md-management` not installed.
-5. **Never fabricate plugin references** — if a plugin is not in `installedPlugins`, drop all references to it.
-
-### autonomyLevel downgrade for preCommit
-
-| `autonomyLevel` | Action on `preCommit[].mode` |
-|---|---|
-| `always-ask` | Downgrade ALL to `"advisory"` |
-| `balanced` | Keep as seeded (`"blocking"`) |
-| `autonomous` | Keep as seeded (`"blocking"`) |
-
-Read `autonomyLevel` from `forge-meta.json.context.autonomyLevel` or `onboard-meta.json.wizardAnswers.autonomyLevel`.
-
-## phaseSkills Derivation
-
-Start from the defaults, filter by installed plugins:
-
-```jsonc
-{
-  "research":   ["superpowers:brainstorming", "superpowers:dispatching-parallel-agents", "context7"],
-  "planning":   ["superpowers:writing-plans"],
-  "feature":    ["feature-dev:code-architect", "superpowers:test-driven-development"],
-  "review":     ["code-review:code-review", "pr-review-toolkit:review-pr"],
-  "commit":     ["commit-commands:commit"],
-  "post-phase": ["claude-md-management:revise-claude-md"]
-}
-```
-
-Drop any skill whose plugin is not in `installedPlugins`. Remove empty phases entirely.
-
-## coveredCapabilities Derivation
-
-For each installed plugin, look up its capabilities in the probe list table above. Combine into a deduplicated list.
+**Evolve-specific note**: When deriving `featureStart.criticalDirs` during evolve, preserve existing `criticalDirs` from `forge-meta.json` or `onboard-meta.json` — evolve does not re-derive directory roles. Read `autonomyLevel` from `forge-meta.json.context.autonomyLevel` or `onboard-meta.json.wizardAnswers.autonomyLevel`.
