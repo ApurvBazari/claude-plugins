@@ -21,6 +21,10 @@ jobs:
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+          # Track main explicitly — default branch is 'develop' for developer DX,
+          # but releases are published from main. Without this, release-please
+          # creates PRs against develop (wrong target).
+          target-branch: main
 
   sync-marketplace:
     needs: release-please
