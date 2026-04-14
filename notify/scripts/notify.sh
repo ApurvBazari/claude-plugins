@@ -5,9 +5,18 @@
 # Supports: macOS (terminal-notifier) and Linux (notify-send)
 
 EVENT="${1:-stop}"
+
+# Allowlist known events — silently exit on unknown values to prevent
+# injection into jq paths and defensive-depth for future callers.
+case "$EVENT" in
+  stop|notification|subagentStop) ;;
+  *) exit 0 ;;
+esac
+
 BASE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 CONFIG_FILE="$BASE_DIR/notify-config.json"
-TIMESTAMP_FILE="${TMPDIR:-/tmp}/claude-notify-session-start"
+# User-scoped timestamp file — prevents symlink attacks at a predictable shared path.
+TIMESTAMP_FILE="${TMPDIR:-/tmp}/claude-notify-session-start-${UID:-$(id -u)}"
 
 # --- Detect platform ---
 PLATFORM="unknown"
@@ -28,14 +37,14 @@ json_get() {
 import sys, json
 try:
     data = json.load(sys.stdin)
-    keys = '''$path'''.strip('.').split('.')
+    keys = sys.argv[1].strip('.').split('.')
     val = data
     for k in keys:
         val = val[k]
     print(val if val is not None else '')
 except Exception:
     print('')
-" 2>/dev/null)"
+" "$path" 2>/dev/null)"
   fi
 
   # jq returns "null" for missing keys
