@@ -1,0 +1,49 @@
+name: sync main to develop
+
+# Keeps develop in sync with main after releases. When release-please merges
+# version bumps into main, this opens/updates a PR back to develop so the
+# bumps flow into the integration branch.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check if main is ahead of develop
+        id: diff
+        run: |
+          set -euo pipefail
+          git fetch origin develop
+          ahead=$(git rev-list --count origin/develop..origin/main)
+          echo "ahead=$ahead" >> "$GITHUB_OUTPUT"
+          echo "main is $ahead commits ahead of develop"
+
+      - name: Open or update sync PR
+        if: steps.diff.outputs.ahead != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Look for an existing open PR from main to develop
+          existing=$(gh pr list --base develop --head main --state open --json number --jq '.[0].number // ""')
+          if [ -z "$existing" ]; then
+            gh pr create \
+              --base develop \
+              --head main \
+              --title "chore: sync main to develop" \
+              --body "Automated sync PR. Merges release commits from main back to develop so version bumps flow into the integration branch."
+          else
+            echo "Sync PR #$existing already open — no action needed"
+          fi
