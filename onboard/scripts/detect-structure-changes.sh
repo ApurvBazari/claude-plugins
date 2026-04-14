@@ -54,16 +54,17 @@ fi
 # Check if we already logged this directory in a recent entry (avoid duplicates)
 if command -v python3 >/dev/null 2>&1; then
   ALREADY_LOGGED=$(python3 -c "
-import json
-drift = json.load(open('$DRIFT_FILE'))
+import json, sys
+drift_file, file_dir = sys.argv[1], sys.argv[2]
+drift = json.load(open(drift_file))
 for entry in drift.get('entries', []):
     if entry.get('type') == 'structure':
         for change in entry.get('changes', []):
-            if change.get('path') == '$FILE_DIR':
+            if change.get('path') == file_dir:
                 print('true')
                 exit()
 print('false')
-" 2>/dev/null || echo "false")
+" "$DRIFT_FILE" "$FILE_DIR" 2>/dev/null || echo "false")
 
   if [ "$ALREADY_LOGGED" = "true" ]; then
     exit 0
@@ -71,17 +72,18 @@ print('false')
 
   # Append entry to drift file
   python3 -c "
-import json
-drift = json.load(open('$DRIFT_FILE'))
+import json, sys
+drift_file, file_dir, timestamp, source_count = sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4])
+drift = json.load(open(drift_file))
 drift['entries'].append({
-    'timestamp': '$TIMESTAMP',
-    'file': '$FILE_DIR/',
+    'timestamp': timestamp,
+    'file': file_dir + '/',
     'type': 'structure',
-    'changes': [{'action': 'new-directory', 'path': '$FILE_DIR', 'fileCount': $SOURCE_COUNT}]
+    'changes': [{'action': 'new-directory', 'path': file_dir, 'fileCount': source_count}]
 })
-with open('$DRIFT_FILE', 'w') as f:
+with open(drift_file, 'w') as f:
     json.dump(drift, f, indent=2)
-" 2>/dev/null || true
+" "$DRIFT_FILE" "$FILE_DIR" "$TIMESTAMP" "$SOURCE_COUNT" 2>/dev/null || true
 fi
 
 exit 0

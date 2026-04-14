@@ -118,6 +118,47 @@ Wait for confirmation before proceeding to generation.
 
 ---
 
+## Phase 2.5: Plugin Detection
+
+Before generation, detect installed Claude Code plugins to enrich the output with plugin-aware features (Plugin Integration section, per-directory skill annotations, plugin-aware agent skipping, quality-gate hooks referencing plugin skills).
+
+### Step 2.5.1: Check for callerExtras
+
+If `callerExtras.installedPlugins` is present (headless mode via `/onboard:generate`), skip this phase entirely — the caller has already provided plugin data.
+
+### Step 2.5.2: Probe Filesystem
+
+For each plugin in the Known Plugin Probe List (see `generation/references/plugin-detection-guide.md`), run:
+
+```bash
+ls "${CLAUDE_PLUGIN_ROOT}/../<plugin-name>" 2>/dev/null
+```
+
+Build `installedPlugins` from successful probes. Derive `coveredCapabilities`, `qualityGates`, and `phaseSkills` per the detection guide's derivation rules, using `wizardAnswers.autonomyLevel` for the autonomyLevel downgrade.
+
+**If `CLAUDE_PLUGIN_ROOT` is unset**: Skip detection, treat as "no plugins detected", and proceed to Phase 3 with standalone generation.
+
+### Step 2.5.3: Present Detection Results
+
+If plugins were detected:
+
+> **Detected Claude Code plugins:**
+> - **[plugin name]** ([capabilities])
+> - ...
+>
+> These will be integrated into your generated CLAUDE.md and quality-gate hooks.
+
+If no plugins were detected:
+
+> No Claude Code plugins detected. I'll generate standalone tooling.
+> You can install plugins later and re-run `/onboard:init` to integrate them.
+
+### Step 2.5.4: Pass to Generation
+
+Build the `detectedPlugins` object with `installedPlugins`, `coveredCapabilities`, `qualityGates`, and `phaseSkills`. Include it in the data passed to the config-generator agent in Phase 3, alongside the analysis report and wizard answers.
+
+---
+
 ## Phase 3: Generation
 
 ### Step 3.1: Model Recommendation
@@ -143,6 +184,7 @@ Wait for the developer to choose. Record their choice.
 Spawn the `config-generator` agent. Include the following in the agent prompt — all of this is already available in the conversational context from prior phases:
 - The full analysis report (from Phase 1)
 - The wizard answers as structured JSON (from Phase 2)
+- The `detectedPlugins` object (from Phase 2.5) — if no plugins were detected, pass an empty object so the generation skill resolves `effectivePlugins` as empty
 - The chosen model (from Step 3.1)
 - The project root path
 - The current date for maintenance headers

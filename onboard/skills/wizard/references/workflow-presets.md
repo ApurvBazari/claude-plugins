@@ -18,7 +18,7 @@ Best for: Solo developers, side projects, prototypes, or developers who prefer C
 | Security Sensitivity | Standard |
 | Agents | 1 (code-reviewer) |
 | Skills | 2 (stack-specific) |
-| Hooks | Auto-format only |
+| Hooks | Auto-format only (no quality-gate hooks) |
 
 ```json
 {
@@ -45,7 +45,7 @@ Best for: Small teams, active projects with established workflows, balanced over
 | Security Sensitivity | Elevated |
 | Agents | 3 (code-reviewer, test-writer, security-checker) |
 | Skills | 2-3 (stack + workflow) |
-| Hooks | Auto-format + lint check |
+| Hooks | Auto-format + lint + SessionStart reminder |
 
 ```json
 {
@@ -72,7 +72,7 @@ Best for: Larger teams, enterprise projects, regulated environments, or develope
 | Security Sensitivity | High |
 | Agents | 4 (code-reviewer, test-writer, security-checker, docs-writer) |
 | Skills | 3 (stack + workflow + domain) |
-| Hooks | Auto-format + lint + pre-commit validation |
+| Hooks | Auto-format + lint + all quality-gate hooks (SessionStart, preCommit, featureStart, postFeature) |
 
 ```json
 {

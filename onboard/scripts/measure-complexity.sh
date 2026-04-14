@@ -138,15 +138,15 @@ DEP_COUNT=0
 if [ -f "$PROJECT_ROOT/package.json" ]; then
   if $PYTHON3_AVAILABLE; then
     NPM_DEPS=$(python3 -c "
-import json
+import json, sys
 try:
-    with open('$PROJECT_ROOT/package.json') as f:
+    with open(sys.argv[1]) as f:
         pkg = json.load(f)
     deps = len(pkg.get('dependencies', {}))
     devdeps = len(pkg.get('devDependencies', {}))
     print(f'{deps + devdeps}')
 except: print('0')
-" 2>/dev/null || echo "0")
+" "$PROJECT_ROOT/package.json" 2>/dev/null || echo "0")
   else
     # Fallback: count dependency entries using grep
     warn_skip "python3 JSON parse for npm deps" "python3 not available, using grep fallback"
