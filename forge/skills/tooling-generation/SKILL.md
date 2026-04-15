@@ -123,6 +123,7 @@ Based on Phase 1 context, set the `enriched` object:
     "disableSkillTuning": true,        // skip per-skill batched confirmation; rely on archetype + wizard defaults
     "disableAgentTuning": true,        // skip per-agent batched confirmation; rely on archetype + wizard defaults
     "disableOutputStyleTuning": true,  // skip Phase 7b batched confirmation; emit archetype-matched style directly
+    "disableLSP": true,                // skip Phase 7c LSP prompt; scaffolded projects have placeholder code so file-presence signals are unreliable. Developer re-runs /onboard:evolve after adding real code.
 
     "qualityGates": {
       "sessionStart": [
@@ -230,6 +231,8 @@ Call `/onboard:generate` with the prepared context. Onboard now generates EVERYT
 
 **Output style generation (automatic from archetype classification):** Onboard 1.7.0 emits one project-scoped custom output style at `.claude/output-styles/<name>.md` based on 5 archetypes (onboarding / teaching / production-ops / research / solo) inferred from existing wizard + analysis signals. Priority: production-ops > onboarding > teaching > research > solo. Built-in styles (Default / Explanatory / Learning) are Anthropic-provided and referenced in the generated CLAUDE.md Plugin Integration section — never re-emitted as files. A batched confirmation runs by default; the snapshot lands at `.claude/onboard-output-style-snapshot.json` for drift detection (frontmatter-only scope — body edits are free). Forge passes `callerExtras.disableOutputStyleTuning: true` whenever forge is running headless and wants the confirmation suppressed; the generator still emits the archetype-matched style. Full rules in `onboard/skills/generation/references/output-styles-guide.md`; 5 body templates in `output-styles-catalog.md`.
 
+**LSP plugin recommendations (automatic from detected source files):** Onboard 1.8.0 detects project languages via `detect-lsp-signals.sh` and offers matching marketplace LSP plugins (`typescript-lsp`, `gopls-lsp`, `rust-analyzer-lsp`, etc. — 12-entry catalog) through wizard Phase 5.6. Forge passes `callerExtras.disableLSP: true` because freshly scaffolded projects have placeholder code that would trigger unreliable file-presence signals. The developer runs `/onboard:evolve` after adding real source files to trigger the prompt. Full rules in `onboard/skills/generation/references/lsp-plugin-catalog.md`. Surface this in the handoff message: "Run `/onboard:evolve` after adding source files to get LSP plugin recommendations."
+
 Present a brief summary after generation. Offer optional review.
 
 ## Step 3: Forge-Specific Artifacts
@@ -302,6 +305,34 @@ Update `.claude/forge-meta.json` with:
       "frontmatterFields": { /* opaque — see onboard/skills/generation/SKILL.md § Agent Frontmatter Emission */ },
       "existedPreOnboard": [],
       "warnings":          []
+    },
+    "mcpStatus": {                          // NEW in onboard 1.4.0 — mirrored from /onboard:generate response
+      "planned":           ["context7", "vercel"],
+      "generated":         ["context7", "vercel"],
+      "skipped":           [],
+      "autoInstalled":     ["vercel"],
+      "autoInstallFailed": [],
+      "existedPreOnboard": false
+    },
+    "outputStyleStatus": {                  // NEW in onboard 1.7.0 — mirrored from /onboard:generate response
+      "planned":             ["solo-minimal"],
+      "generated":           ["solo-minimal"],
+      "skipped":             [],
+      "frontmatterFields":   { /* opaque — see onboard/skills/generation/SKILL.md § Output Styles */ },
+      "activationDefault":   "none",
+      "settingsLocalWritten": false,
+      "settingsLocalWarning": null,
+      "existedPreOnboard":   [],
+      "warnings":            []
+    },
+    "lspStatus": {                          // NEW in onboard 1.8.0 — mirrored from /onboard:generate response
+      "planned":           ["typescript-lsp", "pyright-lsp"],
+      "accepted":          ["typescript-lsp"],
+      "generated":         ["typescript-lsp"],
+      "skipped":           [{ "plugin": "pyright-lsp", "reason": "caller-disabled" }],
+      "autoInstalled":     [],
+      "autoInstallFailed": [],
+      "alreadyInstalled":  []
     }
   }
   ```

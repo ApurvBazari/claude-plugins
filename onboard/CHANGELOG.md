@@ -1,5 +1,39 @@
 # Changelog
 
+## 1.8.0 — 2026-04-16
+
+### Features
+
+- **LSP plugin recommendations (Phase 7c)**: generation now detects project languages via `scripts/detect-lsp-signals.sh` (12-entry language→plugin catalog covering TypeScript, Go, Rust, C/C++, C#, Java, Kotlin, Lua, PHP, Python, Ruby, Swift) and offers matching marketplace LSP plugins through a new wizard step. Onboard does NOT emit project-level `.lsp.json` — LSP config lives inside each `-lsp` plugin's own `plugin.json` under `lspServers`. Installing the right plugin is the complete story.
+- **Wizard Phase 5.6 — LSP Plugins (when any detected)**: one `AskUserQuestion` multiSelect presenting each detected candidate sorted by fileCount desc. Entries with `fileCount ≥ 10` pre-checked; lower entries unchecked to quietly nudge against polyglot noise. Headless callers can pass `callerExtras.lspPlugins` (explicit accept list) or `callerExtras.disableLSP: true` (skip entirely).
+- **Metadata-first install ordering (mirrors Phase 7a)**: install invocation runs AFTER `onboard-meta.json` write. If `claude plugin install` hangs or errors, `lspStatus` telemetry is already persisted.
+- **`lspStatus` telemetry**: new field in `onboard-meta.json`, parallel to `mcpStatus` / `skillStatus` / `agentStatus` / `outputStyleStatus`. Tracks `planned` / `accepted` / `generated` / `skipped` / `autoInstalled` / `autoInstallFailed` / `alreadyInstalled`.
+- **Drift snapshot**: `.claude/onboard-lsp-snapshot.json` with shape `{ recommended: [...], accepted: [...] }`. Pure JSON, no maintenance header — machine-owned baseline for `update` / `evolve`. Stable diff target independent of `onboard-meta.json` edits.
+- **Drift contract in `onboard:update` (Step 4b.8) and `onboard:evolve` (Step 2g)**: classifies candidates as `newLanguage` / `uninstalled` / `stillValid` / `staleCandidate`. Only `newLanguage` additions are applied on approval. Uninstalls and stale candidates are informational — onboard never auto-reinstalls or auto-removes. Evolve re-prompts (never silent install) to honor the wizard-driven opt-in posture.
+- **`callerExtras.disableLSP` + `callerExtras.lspPlugins` escape hatches**: headless callers (forge) can suppress Phase 7c entirely or pass an explicit install list. Forge default: `disableLSP: true` (scaffolded projects have placeholder code; LSP prompts are premature). Forge handoff message nudges developers toward `/onboard:evolve` after they add real source files.
+- **CLAUDE.md "LSP support" subsection**: Plugin Integration section gains a small subsection listing installed LSP plugins and their language-server binary install prereqs (pulled from the catalog). Omitted when no candidates detected.
+
+### Documentation
+
+- **New** `references/lsp-plugin-catalog.md`: 12-row authoritative table mapping language → marketplace plugin → extensions → language-server binary → install prereq. Covers rename/deprecation handling and signal strictness rationale.
+- `skills/generation/SKILL.md`: new § LSP Plugin Recommendations — Phase 7c (7 numbered steps) between Phase 7b (Output Styles) and Hooks section.
+- `skills/generate/SKILL.md`: `callerExtras.disableLSP` + `callerExtras.lspPlugins` documented.
+- `skills/wizard/SKILL.md`: new Phase 5.6 with fileCount-sorted multiSelect; output JSON extended with `lspPlugins`.
+- `skills/update/SKILL.md`: new Step 4b.8 (classify) + Step 5 findings report section + Step 7 LSP drift application + Step 8 `lspStatus` refresh.
+- `skills/evolve/SKILL.md`: new Step 2g (re-prompt for `newLanguage`, never silent install) + Step 2b.3 forge-meta mirror extended with `outputStyleStatus` (entry 9) and `lspStatus` (entry 10) + Step 3 diff-display example extended.
+- `references/claude-md-guide.md`: new § LSP Support Reference subsection.
+- `forge/skills/tooling-generation/SKILL.md`: docs-only note that LSP recommendations flow through onboard delegation; **functional changes** — Step 1 `callerExtras` template now sets `disableLSP: true`; Step 4 `toolingFlags` mirror schema extended with `mcpStatus`, `outputStyleStatus`, `lspStatus` (previously only `hookStatus` / `skillStatus` / `agentStatus` were documented — consistency fix).
+
+### Internal refactors
+
+- **Renamed `scripts/install-mcp-plugins.sh` → `scripts/install-plugins.sh` (BREAKING INTERNAL)** — the installer is language-agnostic and now shared between Phase 7a (MCP) and Phase 7c (LSP). The rename committed as a standalone prep commit before the LSP feature landed. All 7 call sites updated for audit trail:
+  - `onboard/skills/generation/SKILL.md` (line 571)
+  - `onboard/skills/generation/references/mcp-guide.md` (line 82)
+  - `onboard/agents/config-generator.md` (line 78)
+  - `onboard/skills/update/SKILL.md` (lines 398, 449)
+  - `onboard/skills/evolve/SKILL.md` (line 139)
+  - `onboard/CHANGELOG.md` (historical 1.4.0 entry flagged with rename)
+
 ## 1.7.0 — 2026-04-16
 
 ### Features

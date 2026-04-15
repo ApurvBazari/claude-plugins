@@ -203,6 +203,25 @@ Compare the live output-style frontmatter for every style in `onboard-meta.json.
 
 Record as `outputStyleDrift.{userEdited, missingFiles, newFieldCandidates, legacyNoFrontmatter}[]` for Step 7.
 
+#### 4b.8: LSP Plugin Drift
+
+Compare the fresh `detect-lsp-signals.sh` output against the `onboard-lsp-snapshot.json` baseline and the set of currently-installed marketplace plugins. Classification only — Step 7 applies.
+
+1. **Read the inputs**:
+   - `.claude/onboard-lsp-snapshot.json` — `{ recommended, accepted }`. Missing file → treat as `recommended: [], accepted: []` (pre-1.8.0 project).
+   - `bash ../scripts/detect-lsp-signals.sh "$PROJECT_ROOT"` — fresh JSON array.
+   - `claude plugin list --json` (via `install-plugins.sh`'s probe, or direct call) — current install state.
+
+2. **Classify** per candidate plugin from the fresh scan:
+   - **newLanguage** — plugin name in fresh scan but not in `snapshot.recommended`. A new language was added to the project since last onboard/evolve run. Surface as a suggested addition.
+   - **uninstalled** — plugin in `snapshot.accepted` but not currently installed (user ran `claude plugin uninstall`). Informational; do NOT auto-reinstall.
+   - **stillValid** — plugin in both `snapshot.accepted` and installed list. No action.
+   - **staleCandidate** — plugin in `snapshot.recommended` but fresh scan no longer detects any files for that language (e.g., a language was removed). Informational — do NOT auto-suggest removal.
+
+3. **Pre-1.8.0 projects** (snapshot missing) — surface every fresh-scan candidate as `newLanguage`. First update run acts like an initial 1.8.0 prompt.
+
+Record as `lspDrift.{newLanguages, uninstalled, staleCandidates}[]` for Step 7. Findings report emits a "LSP Plugin Drift" section when any of these are non-empty; see Step 5 template additions below.
+
 ---
 
 ## Findings Report
@@ -272,6 +291,12 @@ Organize findings into categories:
 > - **Legacy styles (no YAML frontmatter)**: [list or "none"] — styles hand-authored without frontmatter. Migration adds archetype-inferred frontmatter using catalog defaults.
 > - Impact: missing-file regeneration, new-field additions, and legacy migration can be applied on approval; user-edits and body prose are preserved.
 >
+> ### LSP Plugin Drift (from Step 4b.8)
+> - **New languages detected**: [list or "none"] — languages added to the project since last onboard/evolve run. Each comes with the matching marketplace plugin.
+> - **Uninstalled by developer**: [list or "none"] — previously-accepted LSP plugins that are no longer installed. Informational only; onboard never auto-reinstalls.
+> - **Stale candidates**: [list or "none"] — languages no longer present in the project. Informational only.
+> - Impact: newLanguages can be offered for install on approval; uninstalls and stale candidates are informational.
+>
 > ### Deprecated Patterns
 > - [Anything in current setup that's outdated]
 >
@@ -310,6 +335,9 @@ For each finding, offer a specific action:
 >
 > **New best-practice additions** (from Step 4b.3):
 > 12. **Create `.claude/rules/observability.md`** — Reference guides recommend this for your stack
+>
+> **LSP plugin drift** (from Step 4b.8):
+> 13. **Install `rust-analyzer-lsp`** — Rust files detected since last run
 >
 > Which updates would you like me to apply? (all / specific numbers / none)
 
@@ -430,6 +458,17 @@ Only **additions** and **legacy migrations** are applied on user approval. User-
    > Output style `<name>` has no YAML frontmatter. Apply archetype-inferred defaults (matching the filename stem to the 5-archetype catalog) as a migration? [yes/no/skip]
    On yes: match the filename stem against the catalog (`onboarding-mentor`, `tutorial-guide`, `operator`, `explorer-notes`, `solo-minimal`) to determine the archetype, compose catalog-default frontmatter (`name`, `description`, `keep-coding-instructions: true`, `archetype`, `source: "wizard-default"`), and prepend a YAML frontmatter block to the live file (keeping the body intact). If the filename stem doesn't match any catalog entry, skip with warning `legacy-no-archetype-match:<style>`. Update the snapshot. On no/skip: leave the file as-is; record `outputStyleStatus.warnings[] = "legacy-skipped:<style>"`.
 
+**LSP plugin drift application** (for items surfaced by Step 4b.8):
+
+Only **new-language additions** are applied on user approval. Uninstalls and stale candidates are informational only — onboard never auto-reinstalls or auto-removes LSP plugins.
+
+1. For each approved `newLanguage` candidate:
+   - Invoke `scripts/install-plugins.sh <plugin-name>`. Merge results into `lspStatus.autoInstalled[]` and `lspStatus.autoInstallFailed[]`.
+   - Append the plugin to `.claude/onboard-lsp-snapshot.json` `recommended[]` AND `accepted[]`, preserving alphabetical sort.
+   - Append the plugin to `lspStatus.generated[]`.
+2. For `uninstalled` findings: no action. Log once: "LSP plugin `<name>` was uninstalled since last run — rerun `/onboard:evolve` if you want to reinstall."
+3. For `staleCandidate` findings: no action. Log once.
+
 **Artifact gap regeneration** (for items surfaced by Step 4b.2):
 
 Invoke the `generate` skill via the Skill tool with a narrow `callerExtras.regenerateOnly` payload listing the missing artifact paths. Generate honors this scope and only writes the listed files. After regeneration, verify each file is present on disk and carries a fresh maintenance header.
@@ -450,6 +489,7 @@ Update `.claude/onboard-meta.json`:
 - **If skill frontmatter drift was applied in Step 7** — refresh top-level `skillStatus.frontmatterFields[<skill>]` to match the applied state, including the refreshed `source` value (`user-confirmed` / `user-tweaked`). Update `.claude/onboard-skill-snapshot.json` to reflect the new baseline. Keep `skillStatus.existedPreOnboard[]` sticky.
 - **If agent frontmatter drift was applied in Step 7** — refresh top-level `agentStatus.frontmatterFields[<agent>]` to match the applied state, including the refreshed `source` value (`user-confirmed` / `user-tweaked` / `wizard-default` for legacy migrations). Update `.claude/onboard-agent-snapshot.json` to reflect the new baseline. Keep `agentStatus.existedPreOnboard[]` sticky. Append `legacy-skipped:<agent>` entries to `agentStatus.warnings` for any `legacyNoFrontmatter` declined by the developer.
 - **If output style drift was applied in Step 7** — refresh top-level `outputStyleStatus.frontmatterFields[<style>]` to match the applied state, including the refreshed `source` value (`user-confirmed` / `user-tweaked` / `wizard-default` for legacy migrations). Update `.claude/onboard-output-style-snapshot.json` to reflect the new baseline. Keep `outputStyleStatus.existedPreOnboard[]` sticky. Append `legacy-skipped:<style>` or `legacy-no-archetype-match:<style>` entries to `outputStyleStatus.warnings` for any `legacyNoFrontmatter` declined or unclassifiable. Preserve `outputStyleStatus.activationDefault`, `settingsLocalWritten`, and `settingsLocalWarning` from the prior state — `update` does NOT touch settings.local.json.
+- **If LSP drift was applied in Step 7** — refresh top-level `lspStatus`: append newly-installed plugins to `lspStatus.accepted[]` and `lspStatus.generated[]`, merge install-script results into `lspStatus.autoInstalled[]` and `lspStatus.autoInstallFailed[]`. Update `.claude/onboard-lsp-snapshot.json` (both `recommended` and `accepted`) to reflect the new baseline. `lspStatus.skipped[]` is preserved from prior runs — never rewritten during update.
 - **Forge-meta mirror (scoped)** — If the project also maintains `.claude/forge-meta.json`, update ONLY these fields to match: `generated.toolingFlags.installedPlugins`, `generated.toolingFlags.coveredCapabilities`, `generated.toolingFlags.qualityGates`, `generated.toolingFlags.phaseSkills`, `generated.toolingFlags.hookStatus`. Read-modify-write the file: preserve every other key (`context.*`, `scaffold.*`, `lastRun`, `pluginVersion`, any caller-specific fields) verbatim. Never rewrite the whole file; never touch `context.autonomyLevel` or any other non-toolingFlags subtree — forge owns those. If `forge-meta.json` is absent, skip this step silently.
 - Add an `updateHistory` array entry:
 
