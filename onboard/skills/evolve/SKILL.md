@@ -14,11 +14,11 @@ Check both drift sources before deciding whether to proceed:
 1. Read `.claude/forge-drift.json` in the project root. Record whether it has entries.
 2. Read `.claude/forge-meta.json`. If it exists and contains `generated.toolingFlags.installedPlugins`, run the plugin drift detection from Step 0 below. Record whether plugin drift was found.
 
-If forge-drift.json has no entries (or is missing) AND no plugin drift was detected AND no skill frontmatter drift was detected (Step 2d pre-check against `.claude/onboard-skill-snapshot.json`):
+If forge-drift.json has no entries (or is missing) AND no plugin drift was detected AND no skill frontmatter drift was detected (Step 2d pre-check against `.claude/onboard-skill-snapshot.json`) AND no agent frontmatter drift was detected (Step 2e pre-check against `.claude/onboard-agent-snapshot.json`) AND no output-style drift was detected (Step 2f pre-check against `.claude/onboard-output-style-snapshot.json`):
 
 > No pending drift detected. Your AI tooling is in sync with your codebase.
 >
-> FileChanged drift is logged automatically when dependencies, configs, or structure change. Plugin drift is detected by comparing installed plugins against forge-meta.json. Skill frontmatter drift is detected by comparing `.claude/skills/<name>/SKILL.md` files against `.claude/onboard-skill-snapshot.json`.
+> FileChanged drift is logged automatically when dependencies, configs, or structure change. Plugin drift is detected by comparing installed plugins against forge-meta.json. Skill / agent / output-style frontmatter drift is detected by comparing live files against their respective snapshots in `.claude/`.
 
 Stop and do not proceed.
 
@@ -178,6 +178,25 @@ Run the same drift classification as `../update/SKILL.md` § 4b.6 Agent Frontmat
 
 Update `onboard-meta.json.agentStatus.frontmatterFields[<agent>]` to reflect the applied state. The Step 2b.3 forge-meta mirror path picks up the refreshed `agentStatus` via the read-modify-write pattern.
 
+## Step 2f: Apply Output Style Drift
+
+Run the same drift classification as `../update/SKILL.md` § 4b.7 Output Style Drift:
+
+1. Read `onboard-meta.json.outputStyleStatus.generated`, `.claude/onboard-output-style-snapshot.json`, and each live `.claude/output-styles/<name>.md`.
+2. Classify each frontmatter field per style as `user-edit` / `user-tweaked` / `missing-file` / `new-field` / `legacy-no-frontmatter` / `in-sync`.
+3. Styles in `outputStyleStatus.existedPreOnboard` are never diffed.
+4. **Scope reminder** — snapshot tracks frontmatter only; body edits are never classified as drift.
+
+**Auto-apply rules** (evolve's "drain drift without asking" philosophy — bounded by the user-owned-edits-are-never-touched floor):
+
+- **user-edit** → default verb `accept-user-edit`. Update the snapshot to match the live file so subsequent runs stop flagging. Do NOT rewrite the live file. Set `frontmatterFields.<style>.source = "user-tweaked"`. Log once.
+- **new-field** → apply by reading live `<name>.md`, inserting only the missing frontmatter field using the catalog default for the style's archetype. Do not touch body content. Update snapshot. Set `source = "user-confirmed"`.
+- **legacy-no-frontmatter** → auto-migrate. Match the filename stem against the 5-archetype catalog (`onboarding-mentor`, `tutorial-guide`, `operator`, `explorer-notes`, `solo-minimal`) to determine archetype; if matched, compose catalog-default frontmatter (`name`, `description`, `keep-coding-instructions: true`, `archetype`, `source: "wizard-default"`), prepend a YAML block to the live file (body intact), and update snapshot. Append `legacy-migrated:<style>` to `outputStyleStatus.warnings` for audit visibility. If the filename doesn't match any catalog entry, skip with warning `legacy-no-archetype-match:<style>` — the file is treated as a user-authored custom style and is not touched.
+- **missing-file** → invoke `onboard:generate` with `callerExtras.regenerateOnly: [".claude/output-styles/<name>.md"]` and `callerExtras.disableOutputStyleTuning: true`. The generator reuses the snapshot's frontmatter values and the catalog body template so prior tweaks are preserved.
+- **user-tweaked** / **in-sync** → no action.
+
+Update `onboard-meta.json.outputStyleStatus.frontmatterFields[<style>]` to reflect the applied state. Preserve `outputStyleStatus.activationDefault`, `settingsLocalWritten`, and `settingsLocalWarning` — evolve does NOT touch `settings.local.json`. The Step 2b.3 forge-meta mirror path picks up the refreshed `outputStyleStatus` via the read-modify-write pattern.
+
 ## Step 3: Show Diff
 
 After applying all updates (both FileChanged and plugin integration), show what changed:
@@ -195,6 +214,8 @@ After applying all updates (both FileChanged and plugin integration), show what 
 > - .claude/onboard-skill-snapshot.json: Updated baseline
 > - .claude/agents/code-reviewer.md: Migrated legacy agent to YAML frontmatter (reviewer archetype)
 > - .claude/onboard-agent-snapshot.json: Updated baseline
+> - .claude/output-styles/operator.md: Migrated legacy style to YAML frontmatter (production-ops archetype)
+> - .claude/onboard-output-style-snapshot.json: Updated baseline
 >
 > **Not auto-applied** (needs your input):
 > - New directory src/services/ — want me to create a CLAUDE.md for it?

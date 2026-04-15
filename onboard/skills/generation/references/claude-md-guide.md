@@ -174,6 +174,19 @@ AI aesthetics. Follow TDD via `superpowers:test-driven-development`. Run
 
 See `collaboration-guide.md` for the definitive reference on shared vs personal settings, `.gitignore` entries, and team hook conventions. Every generated root CLAUDE.md should include a brief settings section — use the format from the collaboration guide to avoid drift between the two references.
 
+## Output Styles Reference
+
+Generated root CLAUDE.md includes an Output styles subsection inside Plugin Integration when onboard has emitted a custom output style or when built-in styles are worth surfacing. The subsection documents:
+
+- **Built-in styles** (always available, no file needed): `Default` (software engineering), `Explanatory` (educational "Insights" between coding steps), `Learning` (collaborative mode with `TODO(human)` markers)
+- **Emitted custom style** (if any): name, one-line purpose, path (`.claude/output-styles/<name>.md`)
+- **Activation path**: open `/config` and pick from the menu, or set `"outputStyle": "<name>"` in `.claude/settings.local.json` (per-machine, gitignored)
+- **New-session caveat**: output style changes take effect on the next new session (Claude Code sets the style at session start for prompt-cache stability)
+
+Do not re-emit built-in styles as files — they're Anthropic-provided. Only custom styles live in `.claude/output-styles/`.
+
+The Plugin Integration subsection generation rules live in `generation/SKILL.md` § Plugin Integration Section Generation. For the authoring schema and archetype inference, see `output-styles-guide.md`. For the 5 custom style body templates, see `output-styles-catalog.md`.
+
 ## Tone by Autonomy Level
 
 ### "Always Ask" Autonomy

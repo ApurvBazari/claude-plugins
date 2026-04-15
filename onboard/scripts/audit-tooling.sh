@@ -43,9 +43,10 @@ if [ -d ".claude/rules" ]; then
     while IFS= read -r rule_path; do
       rule_path=$(echo "$rule_path" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | tr -d '"' | tr -d "'")
       if [ -n "$rule_path" ] && [ "$rule_path" != "**" ]; then
-        # Check if the glob pattern matches any files
-        # shellcheck disable=SC2086
-        if ! ls $rule_path >/dev/null 2>&1; then
+        # Check if the glob pattern matches any files.
+        # `compgen -G` expands the glob internally from a single quoted
+        # argument — no unquoted shell expansion, no ls invocation.
+        if ! compgen -G "$rule_path" >/dev/null 2>&1; then
           add_drift "Rule '$rule_file' targets path '$rule_path' but no matching files found"
         fi
       fi

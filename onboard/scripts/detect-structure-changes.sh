@@ -13,6 +13,14 @@ if [ -z "$FILE_PATH" ]; then
   exit 0
 fi
 
+# Defensive: FileChanged hook payload should be a workspace-relative or
+# absolute path. Refuse option-flag-looking input or shell metacharacters.
+# Hook scripts must always exit 0 (see .claude/rules/shell-scripts.md).
+case "$FILE_PATH" in
+  /*|./*|[a-zA-Z0-9_]*) ;;
+  *) exit 0 ;;
+esac
+
 # Only track source files
 case "$FILE_PATH" in
   *.ts|*.tsx|*.js|*.jsx|*.py|*.go|*.rs|*.rb|*.java|*.kt|*.swift|*.c|*.cpp|*.h)
