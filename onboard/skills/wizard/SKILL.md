@@ -142,6 +142,70 @@ If the developer declines, drop the `External URL` selection(s) and record as in
 
 **Quick Mode behavior**: 5.1.1 is skipped entirely in Quick Mode — per-event type defaults from `generation/SKILL.md` § Per-event defaults apply automatically.
 
+### Phase 5.2: Skill Tuning (Optional, Default No)
+
+After Phase 5.1/5.1.1, ask **one** yes/no question:
+
+> Tune generated skills (model, effort, pre-approved tools, auto-activation paths)? Default: no — sensible defaults per archetype.
+
+If the developer answers **no** (or skips): record `wizardAnswers.skillTuning = { mode: "defaults" }` and move on. Inference still runs in `generation/SKILL.md` § Skills — the archetype table produces per-skill frontmatter, and the confirmation step in generation Phase 4 still fires with default-answer "Accept all" so headless / Quick Mode paths pass through cleanly.
+
+If the developer answers **yes**: issue **one consolidated `AskUserQuestion` call** with three single-select questions (three questions fits within the 4-question cap):
+
+1. **Default model tier** — single-select: `inherit` (use session model) / `sonnet` / `opus` / `haiku`. Describe: "Acts as a hint — Claude Code uses the session model if the requested model is unavailable in your plan."
+2. **Default effort** — single-select: `inherit` / `low` / `medium` / `high`. Describe: "Per-skill thinking budget override. `inherit` uses the session's effort level."
+3. **Pre-approval posture** — single-select: `minimal` (read-surface tools only) / `standard` (read + essential writes, recommended) / `permissive` (read + write + narrowed runner Bash). Describe: "Controls `allowed-tools`: a pre-approval allowlist that reduces permission prompts for listed tools. Omitting it preserves default session permissions — it does NOT restrict access."
+
+Record the full selection as:
+
+```json
+{
+  "skillTuning": {
+    "mode": "tuned",
+    "defaultModel": "inherit | sonnet | opus | haiku",
+    "defaultEffort": "inherit | low | medium | high",
+    "preApprovalPosture": "minimal | standard | permissive"
+  }
+}
+```
+
+The generation skill reads `wizardAnswers.skillTuning` and refines the archetype defaults in `generation/references/skills-guide.md` § Frontmatter Emission Rules. Per-skill user tweaks happen in the generation-time confirmation step, not here.
+
+**Quick Mode behavior**: 5.2 is skipped entirely in Quick Mode — `skillTuning` defaults to `{ mode: "defaults" }` and inference runs with archetype defaults only. The generation-time confirmation step still fires with default answer "Accept all" so Quick Mode remains frictionless.
+
+### Phase 5.3: Agent Tuning (Optional, Default No)
+
+After Phase 5.2, ask **one** yes/no question:
+
+> Tune generated agents (model, effort, pre-approval posture, default isolation)? Default: no — sensible defaults per archetype.
+
+If the developer answers **no** (or skips): record `wizardAnswers.agentTuning = { mode: "defaults" }` and move on. Inference still runs in `generation/SKILL.md` § Agent Frontmatter Emission — the archetype table produces per-agent frontmatter, and the confirmation step in generation Step 4 still fires with default-answer "Accept all" so headless / Quick Mode paths pass through cleanly.
+
+If the developer answers **yes**: issue **one consolidated `AskUserQuestion` call** with four single-select questions (four fits within the 4-question cap):
+
+1. **Default model tier** — single-select: `inherit` (use session model) / `sonnet` / `opus` / `haiku`. Describe: "Applied to archetype defaults that resolve to `inherit`. Claude Code falls back to the session model if the requested model is unavailable in your plan."
+2. **Default effort** — single-select: `inherit` / `low` / `medium` / `high`. Describe: "Per-agent thinking budget override. `inherit` uses the session's effort level."
+3. **Pre-approval posture** — single-select: `minimal` (keep archetype write restrictions; force `permissionMode: default`) / `standard` (recommended — archetype defaults untouched) / `permissive` (add `permissionMode: acceptEdits` to generator archetype). Describe: "Archetype-defined `disallowedTools` always win — `minimal` cannot loosen semantic protection (reviewers/validators/architects/researchers never get `Write`/`Edit`)."
+4. **Default isolation** — single-select: `worktree-for-generators` (recommended — generators work on a throwaway git worktree; skipped in non-git dirs) / `off` (never emit `isolation`; use session defaults). Describe: "Isolation is a subagent frontmatter field — only `worktree` is accepted. Generators modify files, so worktree isolation keeps your working tree clean if a generation misbehaves."
+
+Record the full selection as:
+
+```json
+{
+  "agentTuning": {
+    "mode": "tuned",
+    "defaultModel": "inherit | sonnet | opus | haiku",
+    "defaultEffort": "inherit | low | medium | high",
+    "preApprovalPosture": "minimal | standard | permissive",
+    "defaultIsolation": "worktree-for-generators | off"
+  }
+}
+```
+
+The generation skill reads `wizardAnswers.agentTuning` and refines the archetype defaults in `generation/references/agents-guide.md` § Frontmatter Emission Rules. Per-agent user tweaks happen in the generation-time confirmation step, not here.
+
+**Quick Mode behavior**: 5.3 is skipped entirely in Quick Mode — `agentTuning` defaults to `{ mode: "defaults" }` and inference runs with archetype defaults only. The generation-time confirmation step still fires with default answer "Accept all" so Quick Mode remains frictionless.
+
 ### Phase 5.5: Ecosystem Plugins (Always)
 Offer complementary plugins from the ecosystem.
 - Notifications (notify plugin) — get alerted when Claude finishes tasks or needs attention
@@ -274,7 +338,13 @@ After the wizard completes, compile all answers into a structured JSON format:
     "taskCompleted": { "agentRef": "code-reviewer" },
     "elicitation":   { "httpUrl":  "https://audit.internal/claude-elicitation" }
   },
-  "allowHttpHooks": true
+  "allowHttpHooks": true,
+  "skillTuning": {
+    "mode": "tuned",
+    "defaultModel": "sonnet",
+    "defaultEffort": "medium",
+    "preApprovalPosture": "standard"
+  }
 }
 ```
 
@@ -283,3 +353,5 @@ The `ecosystemPlugins` field captures which ecosystem plugins the developer want
 The `advancedHookEvents` field is an array of event names the developer explicitly selected in Phase 5.1. An empty array (`[]`) means "the developer answered no to the opt-in prompt" — generation suppresses advanced event inference for that run. An absent field (omitted entirely) means "Quick Mode or preset path" — inference runs normally. See `generation/SKILL.md` § Advanced Event Hooks for the full mapping.
 
 The `advancedHookTypes` / `advancedHookTypeExtras` / `allowHttpHooks` fields come from Phase 5.1.1 (execution type per event). `advancedHookTypes` only contains entries for judgment-capable events the developer explicitly picked a non-default type for; events defaulting to `command` are omitted. `advancedHookTypeExtras` carries the auxiliary field (`agentRef` / `httpUrl` / `promptRef` / `promptInline`) required by the chosen type. `allowHttpHooks` is `true` only when the developer confirmed the HTTP data-leaves-machine prompt for at least one event. See `generation/SKILL.md` § Advanced Event Hooks § Per-event defaults and § Hook Type Validation for how these are consumed.
+
+The `skillTuning` field comes from Phase 5.2. `mode: "defaults"` (or the field being absent entirely) means "archetype inference only — no project-level override". `mode: "tuned"` carries the three project-level settings: `defaultModel` (model tier hint for generated skills), `defaultEffort` (thinking budget hint), `preApprovalPosture` (how aggressively the `allowed-tools` field is populated). These three settings refine the archetype output in `generation/SKILL.md` § Skills § Frontmatter emission. Per-skill overrides happen in the generation-time batched confirmation step, not here.

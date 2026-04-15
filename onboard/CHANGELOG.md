@@ -1,5 +1,50 @@
 # Changelog
 
+## 1.6.0 — 2026-04-15
+
+### Features
+
+- **Extended agent frontmatter emission**: generation now emits `tools`, `disallowedTools`, `model`, `effort`, `isolation`, `color`, `maxTurns`, and `permissionMode` on every generated agent in addition to the existing `name` / `description` surface. Values are computed via archetype classification (reviewer / validator / generator / architect / researcher — see `agents-guide.md` § Per-archetype defaults) and refined by wizard-level `agentTuning`. Omitted fields preserve pre-feature behavior exactly; pre-upgrade fixtures remain byte-identical. Audit-line clarifications: `proactive` is NOT a frontmatter field (encoded via description prefix per archetype); `isolation` only accepts `worktree`; `color` must be one of `red/blue/green/yellow/purple/orange/pink/cyan`.
+- **Wizard Phase 5.3 — Agent Tuning (optional, default No)**: one opt-in gate followed by four project-level questions (default model tier, default effort, pre-approval posture, default isolation). Quick Mode skips Phase 5.3 and emits archetype defaults.
+- **Batched confirmation before emission**: the generator presents every candidate agent's computed frontmatter in a single table. Options: *Accept all* (default — keeps headless / Quick Mode frictionless), *Tweak agent N*, *Skip agent N*. Per-agent provenance is recorded as `source ∈ {inferred, wizard-default, user-confirmed, user-tweaked}`.
+- **`agentStatus` telemetry**: new field in `onboard-meta.json`, parallel to `skillStatus`. Tracks `planned` / `generated` / `skipped` / `frontmatterFields` / `existedPreOnboard` / `warnings`.
+- **Drift snapshot**: `.claude/onboard-agent-snapshot.json` is the byte-diffable baseline onboard writes alongside agent emission. Used by `update` / `evolve` for drift detection.
+- **Drift contract in `onboard:update` (Step 4b.6) and `onboard:evolve` (Step 2e)**: diffs live agent frontmatter against the snapshot. New classification `legacy-no-frontmatter` covers pre-1.6.0 agents using markdown-sections format — update prompts before migrating, evolve auto-migrates using archetype inference. User hand-edits are preserved (evolve's default verb is `accept-user-edit`).
+- **`callerExtras.disableAgentTuning` escape hatch**: headless callers (forge) can suppress the batched confirmation entirely. Archetype + wizard defaults emit directly.
+
+### Documentation
+
+- `references/agents-guide.md`: full rewrite. New § Frontmatter Reference with 10-field surface, 5-archetype inference table, posture clamps, isolation-default rules, 5 worked example blocks (one per archetype); 6 common-agent templates rewritten to use YAML frontmatter; new § Frontmatter Emission Rules at end of file.
+- `skills/generation/SKILL.md`: new § Agent Frontmatter Emission (7 numbered steps) mirroring the skill-frontmatter pipeline, placed alongside the existing `### Agents (.claude/agents/)` section.
+- `skills/generate/SKILL.md`: `callerExtras.disableAgentTuning` documented in context schema; `wizardAnswers.agentTuning` added.
+- `skills/wizard/SKILL.md`: new Phase 5.3 with opt-in gate + four project-level questions; Output JSON extended with `agentTuning`.
+- `skills/update/SKILL.md`: new Step 4b.6 (classify) + Step 7 agent frontmatter drift application with `legacy-no-frontmatter` migration prompt + Step 8 `agentStatus` refresh.
+- `skills/evolve/SKILL.md`: new Step 2e (auto-apply rules including legacy migration) + Step 3 diff-display example extended.
+- `agents/config-generator.md`: bullet 5 (Agents) rewritten to describe archetype classification, wizard tuning composition, validation, batched confirmation, and snapshot writing. Bullet 7 (Metadata) extended to include `agentStatus` and `.claude/onboard-agent-snapshot.json`.
+- `forge/skills/tooling-generation/SKILL.md`: docs-only note that extended agent frontmatter flows through onboard delegation; mirrors the skill-tuning precedent.
+
+## 1.5.0 — 2026-04-15
+
+### Features
+
+- **Extended skill frontmatter emission**: generation now emits `allowed-tools`, `model`, `effort`, `paths`, `context`, and `agent` on every generated `SKILL.md` in addition to the existing `name` / `description` / `user-invocable` / `disable-model-invocation` surface. Values are computed via archetype classification (research-only / scaffolder / reviewer / orchestrator / workflow-specific — see `skills-guide.md` § Per-archetype defaults) and refined by wizard-level `skillTuning`. Omitted fields preserve pre-feature behavior exactly; pre-upgrade fixtures remain byte-identical.
+- **Wizard Phase 5.2 — Skill Tuning (optional, default No)**: one opt-in gate followed by three project-level questions (default model tier, default effort, pre-approval posture). Quick Mode skips Phase 5.2 and emits archetype defaults.
+- **Batched confirmation before emission**: the generator presents every candidate skill's computed frontmatter in a single table. Options: *Accept all* (default — keeps headless / Quick Mode frictionless), *Tweak skill N*, *Skip skill N*. Per-skill provenance is recorded as `source ∈ {inferred, wizard-default, user-confirmed, user-tweaked}`.
+- **`skillStatus` telemetry**: new field in `onboard-meta.json`, parallel to `hookStatus` and `mcpStatus`. Tracks `planned` / `generated` / `skipped` / `frontmatterFields` / `existedPreOnboard` / `warnings`. Mirrored into `forge-meta.json` by `evolve` Step 2b.3.
+- **Drift snapshot**: `.claude/onboard-skill-snapshot.json` is the byte-diffable baseline onboard writes alongside skill emission. Used by `update` / `evolve` for drift detection.
+- **Drift contract in `onboard:update` (Step 4b.5) and `onboard:evolve` (Step 2d)**: diffs live `SKILL.md` frontmatter against the snapshot. User hand-edits are preserved (evolve's default verb is `accept-user-edit`); missing-file regeneration and new-field additions apply on approval (update) or automatically (evolve).
+- **`callerExtras.disableSkillTuning` escape hatch**: headless callers (forge) can suppress the batched confirmation entirely. Archetype + wizard defaults emit directly.
+
+### Documentation
+
+- `references/skills-guide.md`: new § Frontmatter Reference with full field surface, archetype table, posture clamps, two worked example blocks (research-only reviewer, scaffolder); 4 existing example skills updated to show realistic frontmatter; new § Frontmatter Emission Rules at end of file.
+- `skills/generation/SKILL.md`: Phase 4 Skills section extended with new § Skill Frontmatter Emission (7 numbered steps) and `skillStatus` schema.
+- `skills/generate/SKILL.md`: `callerExtras.disableMCP` and `callerExtras.disableSkillTuning` documented in context schema; `wizardAnswers.skillTuning` added; `skillStatus` added to results summary and `onboard-meta.json` metadata list.
+- `skills/wizard/SKILL.md`: new Phase 5.2 with opt-in gate + three project-level questions; Output JSON extended with `skillTuning`.
+- `skills/update/SKILL.md`: new Step 4b.5 (classify) + Step 7 skill frontmatter drift application + Step 8 `skillStatus` refresh.
+- `skills/evolve/SKILL.md`: new Step 2d (auto-apply rules) + Step 2b.3 forge-meta mirror extended to include `skillStatus`.
+- `forge/skills/tooling-generation/SKILL.md`: docs-only note that extended skill frontmatter flows through onboard delegation; `toolingFlags` schema extended to mirror `skillStatus`.
+
 ## 1.4.0 — 2026-04-15
 
 ### Features

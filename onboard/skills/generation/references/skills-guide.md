@@ -24,6 +24,12 @@ Skills are reusable knowledge packages that Claude can reference when performing
 ## SKILL.md Structure
 
 ```markdown
+---
+name: <skill-name>
+description: One or two sentences — what the skill does AND when to invoke it.
+# Optional frontmatter fields — see § Frontmatter Reference below for the full list.
+---
+
 # Skill Name
 
 Brief description of what this skill helps Claude do.
@@ -54,11 +60,108 @@ List reference files if any:
 - `references/filename.md` — Description
 ```
 
+## Frontmatter Reference
+
+Every generated `SKILL.md` opens with YAML frontmatter between `---` markers. Canonical spelling is **hyphenated** — underscore variants (e.g., `allowed_tools`, `user_invocable`) are silently ignored by Claude Code and must never be emitted. A pre-write lint pass rejects any underscore-form key as a generation bug.
+
+| Field | Type | Required | Default | Purpose |
+|---|---|---|---|---|
+| `name` | string | no | derived from directory | lowercase, hyphens, max 64 chars; forms `/<plugin>:<name>` |
+| `description` | string | recommended | — | the trigger signal for model auto-invocation; front-load trigger phrases |
+| `user-invocable` | boolean | no | `true` | `false` hides the skill from `/<plugin>:` autocomplete (internal building blocks) |
+| `disable-model-invocation` | boolean | no | `false` | `true` means only the user can trigger — Claude won't auto-invoke (destructive / setup skills) |
+| `allowed-tools` | list | no | — | **pre-approval** list — Claude can use these tools without per-call permission prompts while the skill is active. Omitting the field preserves default session permissions; it does NOT restrict tool access |
+| `model` | string | no | session model | `sonnet` / `opus` / `haiku` / `inherit` — pick a tier when the skill's cost/quality tradeoff differs from session defaults |
+| `effort` | string | no | session effort | `low` / `medium` / `high` — thinking budget override |
+| `paths` | list | no | — | glob patterns; when set, the skill auto-activates only when the active file path matches |
+| `context` | string | no | — | set to `fork` to run the skill in an isolated subagent (fresh context, no conversation history). Requires `agent` |
+| `agent` | string | no | `general-purpose` | subagent type to use when `context: fork` — must reference an agent that exists in `.claude/agents/` or an installed plugin |
+
+**Rules for generated skills**:
+
+1. **Always emit `name` + `description`.** These are the only two fields that are non-negotiable.
+2. **Emit `user-invocable: false` or `disable-model-invocation: true`** per the category rules in the repo's skill frontmatter policy — not covered by the archetype inference.
+3. **Emit the other six fields only when inference produces a concrete value** — never emit empty strings or empty lists. An omitted field preserves pre-feature behavior exactly.
+4. **Reject underscore misspellings** before writing. A key like `allowed_tools` in the computed frontmatter is a generation bug — surface it loudly rather than silently letting Claude Code ignore it.
+
+### Per-archetype defaults
+
+The generator classifies each candidate skill into one of five archetypes based on the draft description + generation rationale, then applies these defaults. Wizard-level overrides (`defaultModel`, `defaultEffort`, `preApprovalPosture`) refine them before user confirmation.
+
+| Archetype | Signals | `allowed-tools` | `model` | `effort` | `paths` | `context` | `agent` |
+|---|---|---|---|---|---|---|---|
+| research-only | "analyze", "audit", "review"; no write verbs | `Read, Grep, Glob` | inherit | low | — | — | — |
+| scaffolder | "create", "generate", "scaffold"; stack-specific | `Read, Grep, Glob, Write, Edit` | inherit | medium | stack glob (e.g. `src/**/*.tsx`) | — | — |
+| reviewer | commit-adjacent review | `Read, Grep, Glob, Bash(git diff:*), Bash(git log:*)` | sonnet | medium | — | fork | `code-reviewer` (if present) |
+| orchestrator | spawns subagents, multi-phase | `Read, Grep, Glob, Write, Edit, Task` | opus | high | — | — | — |
+| workflow-specific | deploy / migrate / test-runner | `Read, Grep, Glob, Bash(<runner>:*)` | inherit | medium | — | — | — |
+
+**Posture clamp** (applied after archetype lookup):
+
+- `minimal` — strip `Write`, `Edit`, `Bash(*)` from `allowed-tools`. Leaves only read-surface tools.
+- `standard` — default. Leaves archetype output untouched.
+- `permissive` — broaden `Bash(...)` scoping to include detected runners (e.g., add `Bash(npm run *:*), Bash(pnpm *:*)` for Node projects).
+
+### Example frontmatter blocks
+
+**Research-only (reviewer-archetype):**
+
+```yaml
+---
+name: pr-summarizer
+description: Summarize the diff against main — sections for API changes, test coverage, risk areas. Trigger on "summarize PR", "what changed", "diff summary".
+allowed-tools:
+  - Read
+  - Grep
+  - Glob
+  - Bash(git diff:*)
+  - Bash(git log:*)
+model: sonnet
+effort: medium
+context: fork
+agent: code-reviewer
+---
+```
+
+**Scaffolder (frontend):**
+
+```yaml
+---
+name: react-component
+description: Create a new React functional component with co-located tests and type-safe props. Trigger on "create component", "new component", "add component".
+allowed-tools:
+  - Read
+  - Grep
+  - Glob
+  - Write
+  - Edit
+effort: medium
+paths:
+  - src/components/**/*.tsx
+  - src/features/**/*.tsx
+---
+```
+
 ## Common Skills by Stack
 
 ### React Component Skill
 
 ```markdown
+---
+name: react-component
+description: Create a new React component following this project's conventions — TypeScript, co-located test, named export. Trigger on "create component", "new component", "scaffold component".
+allowed-tools:
+  - Read
+  - Grep
+  - Glob
+  - Write
+  - Edit
+effort: medium
+paths:
+  - src/components/**/*.tsx
+  - src/features/**/*.tsx
+---
+
 # React Component Creation
 
 Creates new React components following project conventions.
@@ -93,6 +196,21 @@ When asked to create a new React component or UI element.
 ### API Endpoint Skill
 
 ```markdown
+---
+name: api-endpoint
+description: Create a new API endpoint with input validation, structured error handling, and tests. Trigger on "add endpoint", "new route", "create handler".
+allowed-tools:
+  - Read
+  - Grep
+  - Glob
+  - Write
+  - Edit
+effort: medium
+paths:
+  - src/api/**/*.ts
+  - src/routes/**/*.ts
+---
+
 # API Endpoint Creation
 
 Creates new API endpoints following project conventions.
@@ -122,6 +240,19 @@ When asked to create a new API route, endpoint, or handler.
 ### Database Migration Skill
 
 ```markdown
+---
+name: db-migration
+description: Author a safe database migration with up and down halves and a guarded destructive-change warning. Trigger on "migration", "schema change", "alter table".
+allowed-tools:
+  - Read
+  - Grep
+  - Glob
+  - Write
+  - Edit
+  - Bash(npx prisma migrate:*)
+effort: medium
+---
+
 # Database Migration
 
 Creates and manages database migrations safely.
@@ -144,6 +275,20 @@ When asked to modify the database schema.
 ### Deployment Skill
 
 ```markdown
+---
+name: deploy
+description: Walk through the project's deploy workflow — build, test, release check. Trigger on "deploy", "ship", "release".
+allowed-tools:
+  - Read
+  - Grep
+  - Glob
+  - Bash(npm run build:*)
+  - Bash(npm test:*)
+  - Bash(git status:*)
+model: sonnet
+effort: medium
+---
+
 # Deployment Process
 
 Guides through the project's deployment workflow.
@@ -189,3 +334,16 @@ Adapt the verbosity and structure of generated skills based on the developer's `
 - Show the target output format, not the reasoning process
 - No alternatives or checkpoints
 - Trust Claude to apply patterns correctly based on context
+
+## Frontmatter Emission Rules
+
+1. **Classify each candidate skill** into one of the five archetypes in § Frontmatter Reference § Per-archetype defaults before computing any frontmatter field. Use the draft description and the skill's generation rationale (pain point / stack / workflow gap).
+2. **Apply wizard project-level defaults** next — `wizardAnswers.skillTuning.defaultModel`, `defaultEffort`, `preApprovalPosture` — to refine the archetype output. Never blindly emit `inherit`; when the wizard set a concrete default (e.g., `sonnet`), replace `inherit` with that value.
+3. **Clamp `allowed-tools` per posture** after archetype + wizard overrides are composed. Never emit a list that contradicts the posture (e.g., `minimal` posture with `Write` in the list is a bug).
+4. **Validate before writing**:
+   - `context: fork` requires `agent`. If the referenced agent is not in `.claude/agents/` or `effectivePlugins`, demote to no-fork and append a warning to `skillStatus.warnings`.
+   - `paths` entries are globs. Warn when none match any file in the repo today, but still emit (developer may add files later).
+   - Reject underscore-form keys pre-write — this is a generation bug, not a silent fix.
+5. **Present a batched confirmation table** before writing any `SKILL.md`. Developer options: *Accept all* (default, keeps headless + quick-mode paths byte-stable), *Tweak skill N*, *Skip skill N*. Skipped skills record `skillStatus.skipped[].reason = "user-declined-confirmation"`.
+6. **Write the drift snapshot** at `.claude/onboard-skill-snapshot.json` mirroring only the emitted frontmatter (one object per skill name). This is the diff baseline for `/onboard:update` and `/onboard:evolve`.
+7. **Omitting a field is explicit**. When inference produces no concrete value, omit the field rather than emitting `null`, `""`, or `[]`. This keeps pre-feature-equivalent skills byte-identical to historical output.

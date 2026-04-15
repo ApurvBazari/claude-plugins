@@ -14,15 +14,15 @@ Check both drift sources before deciding whether to proceed:
 1. Read `.claude/forge-drift.json` in the project root. Record whether it has entries.
 2. Read `.claude/forge-meta.json`. If it exists and contains `generated.toolingFlags.installedPlugins`, run the plugin drift detection from Step 0 below. Record whether plugin drift was found.
 
-If forge-drift.json has no entries (or is missing) AND no plugin drift was detected:
+If forge-drift.json has no entries (or is missing) AND no plugin drift was detected AND no skill frontmatter drift was detected (Step 2d pre-check against `.claude/onboard-skill-snapshot.json`):
 
 > No pending drift detected. Your AI tooling is in sync with your codebase.
 >
-> FileChanged drift is logged automatically when dependencies, configs, or structure change. Plugin drift is detected by comparing installed plugins against forge-meta.json.
+> FileChanged drift is logged automatically when dependencies, configs, or structure change. Plugin drift is detected by comparing installed plugins against forge-meta.json. Skill frontmatter drift is detected by comparing `.claude/skills/<name>/SKILL.md` files against `.claude/onboard-skill-snapshot.json`.
 
 Stop and do not proceed.
 
-If either source has drift, continue.
+If any source has drift, continue.
 
 ## Step 0: Detect Plugin Drift
 
@@ -123,6 +123,8 @@ Update the following fields in `.claude/forge-meta.json`:
 4. `generated.toolingFlags.phaseSkills` → rebuilt from current state
 5. `generated.toolingFlags.hookStatus` → update `planned`, `generated`, `skipped` to reflect new hook state
 6. `generated.toolingFlags.mcpStatus` → mirror `onboard-meta.json.mcpStatus` verbatim (parallel to `hookStatus`). If `onboard-meta.json` has no `mcpStatus` yet (older project predating the MCP capability), skip this field silently — do not invent an empty object.
+7. `generated.toolingFlags.skillStatus` → mirror `onboard-meta.json.skillStatus` verbatim (parallel to `hookStatus` and `mcpStatus`). If `onboard-meta.json` has no `skillStatus` yet (older project predating onboard 1.5.0), skip this field silently — do not invent an empty object.
+8. `generated.toolingFlags.agentStatus` → mirror `onboard-meta.json.agentStatus` verbatim (parallel to `skillStatus`). If `onboard-meta.json` has no `agentStatus` yet (older project predating onboard 1.6.0), skip this field silently — do not invent an empty object.
 
 ## Step 2c: Apply MCP Drift
 
@@ -141,6 +143,41 @@ Run the same drift classification as `../update/SKILL.md` § 4b.4 MCP Drift:
 
 Update `onboard-meta.json.mcpStatus` to reflect additions (Step 2b.3 propagates to forge-meta).
 
+## Step 2d: Apply Skill Frontmatter Drift
+
+Run the same drift classification as `../update/SKILL.md` § 4b.5 Skill Frontmatter Drift:
+
+1. Read `onboard-meta.json.skillStatus.generated`, `.claude/onboard-skill-snapshot.json`, and each live `.claude/skills/<skill>/SKILL.md`.
+2. Classify each field per skill as `user-edit` / `user-tweaked` / `missing-file` / `new-field` / `in-sync`.
+3. Skills in `skillStatus.existedPreOnboard` are never diffed.
+
+**Auto-apply rules** (evolve's "drain drift without asking" philosophy — bounded by the user-owned-edits-are-never-touched floor):
+
+- **user-edit** → default verb `accept-user-edit`. Update the snapshot to match the live file so subsequent runs stop flagging. Do NOT rewrite the live file. Set `frontmatterFields.<skill>.source = "user-tweaked"`. Log once.
+- **new-field** → apply by reading live `SKILL.md`, inserting only the missing field using the archetype-inferred value (composed with `wizardAnswers.skillTuning`). Update snapshot. Set `source = "user-confirmed"`.
+- **missing-file** → invoke `onboard:generate` with `callerExtras.regenerateOnly: [".claude/skills/<skill>/SKILL.md"]` and `callerExtras.disableSkillTuning: true`. The generator reuses the snapshot's frontmatter values so prior tweaks are preserved.
+- **user-tweaked** / **in-sync** → no action.
+
+Update `onboard-meta.json.skillStatus.frontmatterFields[<skill>]` to reflect the applied state. The Step 2b.3 forge-meta mirror path picks up the refreshed `skillStatus` via the read-modify-write pattern (see below).
+
+## Step 2e: Apply Agent Frontmatter Drift
+
+Run the same drift classification as `../update/SKILL.md` § 4b.6 Agent Frontmatter Drift:
+
+1. Read `onboard-meta.json.agentStatus.generated`, `.claude/onboard-agent-snapshot.json`, and each live `.claude/agents/<agent>.md`.
+2. Classify each field per agent as `user-edit` / `user-tweaked` / `missing-file` / `new-field` / `legacy-no-frontmatter` / `in-sync`.
+3. Agents in `agentStatus.existedPreOnboard` are never diffed.
+
+**Auto-apply rules** (evolve's "drain drift without asking" philosophy — bounded by the user-owned-edits-are-never-touched floor):
+
+- **user-edit** → default verb `accept-user-edit`. Update the snapshot to match the live file so subsequent runs stop flagging. Do NOT rewrite the live file. Set `frontmatterFields.<agent>.source = "user-tweaked"`. Log once.
+- **new-field** → apply by reading live `<agent>.md`, inserting only the missing field using the archetype-inferred value (composed with `wizardAnswers.agentTuning`). Update snapshot. Set `source = "user-confirmed"`.
+- **legacy-no-frontmatter** → auto-migrate. Classify the agent via `../generation/references/agents-guide.md` archetype rules using its name/description, compose with `wizardAnswers.agentTuning`, run the full validation pass from `../generation/SKILL.md` § Agent Frontmatter Emission Step 3, and prepend a YAML frontmatter block to the live file (keeping the body intact). Update snapshot. Set `source = "wizard-default"`. Append `legacy-migrated:<agent>` to `agentStatus.warnings` for audit visibility.
+- **missing-file** → invoke `onboard:generate` with `callerExtras.regenerateOnly: [".claude/agents/<agent>.md"]` and `callerExtras.disableAgentTuning: true`. The generator reuses the snapshot's frontmatter values so prior tweaks are preserved.
+- **user-tweaked** / **in-sync** → no action.
+
+Update `onboard-meta.json.agentStatus.frontmatterFields[<agent>]` to reflect the applied state. The Step 2b.3 forge-meta mirror path picks up the refreshed `agentStatus` via the read-modify-write pattern.
+
 ## Step 3: Show Diff
 
 After applying all updates (both FileChanged and plugin integration), show what changed:
@@ -154,6 +191,10 @@ After applying all updates (both FileChanged and plugin integration), show what 
 > - .claude/forge-meta.json: Updated installedPlugins, hookStatus, mcpStatus
 > - .mcp.json: Added [server] entry (new signal detected)
 > - .claude/onboard-mcp-snapshot.json: Updated baseline
+> - .claude/skills/react-component/SKILL.md: Added `paths` field (new archetype default)
+> - .claude/onboard-skill-snapshot.json: Updated baseline
+> - .claude/agents/code-reviewer.md: Migrated legacy agent to YAML frontmatter (reviewer archetype)
+> - .claude/onboard-agent-snapshot.json: Updated baseline
 >
 > **Not auto-applied** (needs your input):
 > - New directory src/services/ — want me to create a CLAUDE.md for it?
