@@ -358,7 +358,7 @@ Follow `references/mcp-guide.md` for emission rules, catalog, and transport shap
 }
 ```
 
-**Step 6 — Write `.claude/rules/mcp-setup.md`** (conditional on at least one server requiring auth OR on `existedPreOnboard: true`). Use the template at `references/templates/mcp-setup-rule.md.tmpl`. Include per-server env-var requirements and OAuth steps.
+**Step 6 — Write `.claude/rules/mcp-setup.md`** (conditional on at least one server requiring auth OR on `existedPreOnboard: true`). Use the template in `references/mcp-guide.md` § mcp-setup.md Template. Include per-server env-var requirements and OAuth steps. Omit when no auth is needed and no pre-existing file existed.
 
 **Step 7 — Auto-install matching plugins** (after Phase 8 metadata is written, see § Auto-install Plugins below). Running after metadata ensures telemetry is persisted even if install fails.
 

@@ -134,3 +134,74 @@ See .claude/rules/mcp-setup.md for full details.
 ```
 
 The rule file is the long-form reference; the stdout block is the quick-glance.
+
+## mcp-setup.md Template
+
+Emit this file at `.claude/rules/mcp-setup.md` when any emitted server requires auth OR when a pre-existing `.mcp.json` was detected. Use standard rules frontmatter (`paths: **` — project-wide context). Include the maintenance header per § Maintenance Header in `generation/SKILL.md`.
+
+Template body (fill the `{{ ... }}` placeholders from `mcpStatus.generated` + catalog metadata):
+
+```markdown
+---
+paths: "**"
+---
+
+# MCP Server Setup
+
+Onboard emitted `.mcp.json` with {{N}} server(s) based on this project's
+stack signals. Some servers need additional setup before they will work.
+
+## Emitted servers
+
+| Server | Transport | Auth | Status |
+|---|---|---|---|
+{{#each emittedServers}}
+| `{{name}}` | {{transport}} | {{auth}} | {{authStatus}} |
+{{/each}}
+
+## Pending auth steps
+
+{{#each serversNeedingAuth}}
+### `{{name}}`
+
+{{#if needsEnvVar}}
+Set the following environment variable before starting Claude Code:
+
+```bash
+export {{envVar}}="<your-token>"
+```
+
+Token source: {{envVarSourceUrl}}
+{{/if}}
+
+{{#if needsOAuth}}
+Run the Claude Code OAuth flow:
+
+```bash
+claude mcp auth {{name}}
+```
+
+This opens a browser window to complete authentication. The resulting
+token is stored by Claude Code automatically.
+{{/if}}
+{{/each}}
+
+## Pre-existing `.mcp.json`
+
+{{#if existedPreOnboard}}
+This project had `.mcp.json` before onboard ran. Onboard did NOT overwrite it.
+Servers listed above are what onboard *would* have emitted — compare against
+your existing file and merge manually if useful.
+{{/if}}
+
+## Drift
+
+Onboard tracks a snapshot at `.claude/onboard-mcp-snapshot.json`. If you edit
+`.mcp.json` directly, running `/onboard:update` will surface the diff but
+never auto-apply changes — you stay in control.
+```
+
+Rendering notes:
+- Omit empty sections (e.g., no "Pre-existing" section if not applicable)
+- When no server needs auth AND no pre-existing file existed, onboard does NOT write this rule at all — the stdout summary is sufficient
+- Token source URLs live in the catalog: `github` → `https://github.com/settings/tokens`
