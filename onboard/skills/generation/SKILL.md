@@ -183,13 +183,26 @@ Follow `references/claude-md-guide.md` for content guidance.
 
 When `effectivePlugins.length > 0`, extend each generated subdirectory CLAUDE.md with a `## Skill recommendations` block that maps the directory's role to installed-plugin skills. The block is additive — it supplements the directory's conventions, it does not replace them.
 
+**Marker wrapping (required)**: the block MUST be wrapped in section markers that also encode the directory role. This lets `onboard:update` and `onboard:evolve` refresh the block on plugin drift without re-running scaffold-analyzer:
+
+```markdown
+<!-- onboard:skill-recommendations:start role="parser" -->
+## Skill recommendations
+
+[...generated guidance for this role with current effectivePlugins...]
+<!-- onboard:skill-recommendations:end -->
+```
+
+The `role` attribute value must match one of the identified directory roles (`domain`, `parser`, `data-layer`, `compose-ui`, `api`, `tests`, `scripts`, etc.). Drift handlers read this attribute to regenerate the block against the current plugin mix without needing to re-classify the directory.
+
 **Rules**:
 
-1. **Only add the block when** an installed plugin's capability meaningfully applies to the directory's role. Never stub "Skill recommendations: none". Directories with no matching plugin capability get no block.
+1. **Only add the block when** an installed plugin's capability meaningfully applies to the directory's role. Never stub "Skill recommendations: none". Directories with no matching plugin capability get no block (and no markers).
 2. **Derive mapping from** (a) directory role (identified by config-generator: `domain`, `parser`, `data-layer`, `compose-ui`, `api`, `tests`, `scripts`, etc.), and (b) `effectiveCoveredCapabilities`.
 3. **Brainstorming first** (when superpowers is installed): every annotation that invites new code creation must reference `/superpowers:brainstorming` as the entry point — e.g., *"Before adding a new Parser, run `/superpowers:brainstorming` to explore approaches."*
 4. **Be specific** about *when* to invoke each skill. Vague references like "use feature-dev" are not helpful; *"use `feature-dev:code-architect` when drafting a new Parser contract, then TDD via `superpowers:test-driven-development`"* is.
 5. **Don't repeat root** — the subdirectory block assumes the reader has already seen the root Plugin Integration section.
+6. **Never touch content outside the markers** — drift-time refresh operates only on the delimited region.
 
 **Example annotations**:
 
@@ -756,8 +769,8 @@ Always generate this file with:
 - Wizard answers (structured)
 - List of generated artifacts
 - Model recommendation and whether user approved
-- Plugin detection results: `detectedPlugins` object (only in standalone mode when plugins were self-detected)
-- Plugin source: `pluginSource` — `"callerExtras"` | `"self-detected"` | `"none"` — records how the effective plugin list was resolved
+- Plugin detection results: `detectedPlugins` object — always populated from `effectivePlugins`, `effectiveCoveredCapabilities`, `effectiveQualityGates`, `effectivePhaseSkills` (resolved per § Effective Plugin List Resolution). Populate regardless of `pluginSource` so that `onboard:update` has a single canonical baseline to diff against. When `effectivePlugins` is empty, write `detectedPlugins: { installedPlugins: [], coveredCapabilities: [], qualityGates: {}, phaseSkills: {} }` — do not omit the field.
+- Plugin source: `pluginSource` — `"callerExtras"` | `"self-detected"` | `"none"` — records how the effective plugin list was resolved (headless callers still get `detectedPlugins` mirrored for drift-detection continuity)
 
 ## Quality Checklist
 
@@ -791,7 +804,8 @@ Before finishing generation, verify:
 - [ ] effectivePlugins resolution works for all three scenarios: headless (callerExtras), standalone with plugins (self-detected), standalone without plugins (none)
 - [ ] Plugin Integration section generates in standalone mode when plugins are self-detected
 - [ ] Plugin-referencing quality-gate hooks generated when effectiveQualityGates is present (regardless of entry point)
-- [ ] onboard-meta.json records pluginSource and detectedPlugins when applicable
+- [ ] onboard-meta.json records pluginSource
+- [ ] onboard-meta.json.detectedPlugins is populated unconditionally (from effectivePlugins resolution), including headless runs — empty object is valid but the field must exist
 - [ ] If both plugins installed: no "Recommended Plugins" section in CLAUDE.md
 - [ ] CLAUDE.md "Development Workflow" references match actually installed plugins (no dangling refs)
 - [ ] PR template includes TDD checklist item ("Tests written first, all pass")

@@ -80,6 +80,41 @@ Check two knowledge sources:
 - Note in the findings output: "Live best practices check unavailable — recommendations based on built-in reference guides only"
 - Continue the update process normally with plugin knowledge alone
 
+### Step 4b: Tooling Drift Detection
+
+Detect three classes of drift that the preceding steps don't cover. Each class feeds new sections into the findings report (Step 5).
+
+#### 4b.1: Plugin Drift
+
+Follow `../generation/references/plugin-drift-detection.md` for the full procedure. Summary for update:
+
+1. **Resolve baseline** using the caller order for `update`: first `.claude/onboard-meta.json.detectedPlugins.installedPlugins`, then `.claude/onboard-meta.json.callerExtras.installedPlugins`, then `.claude/forge-meta.json.generated.toolingFlags.installedPlugins`, else empty.
+2. **Probe current state** against the Known Plugin Probe List in `../generation/references/plugin-detection-guide.md`. Also probe any plugin in the baseline that isn't in the known list.
+3. **Compute diff** — produce the `driftReport` object described in `plugin-drift-detection.md` § Output Schema.
+4. **Note the baseline source**. If the baseline was empty, flag the findings section with "Plugin Integration not tracked before — all detected plugins offered as new additions."
+
+Record `driftReport.added`, `driftReport.removed`, and the derived `qualityGatesNext` / `phaseSkillsNext` / `coveredCapabilitiesNext` for Step 7.
+
+#### 4b.2: Artifact Gaps
+
+Re-walk `onboard-meta.json.generatedArtifacts`. For each entry:
+
+1. Check that the file still exists on disk.
+2. If missing and the entry does **not** have a `deletedByUser: true` flag, mark it as a gap candidate.
+3. If missing and `deletedByUser: true` is set, skip silently — the developer opted out.
+
+This complements the existing "maintenance header removed" detection in Step 2: Step 2 flags user-customized files, 4b.2 flags user-deleted / lost files. No overlap.
+
+#### 4b.3: New Best-Practice Additions
+
+Compare the current project against the built-in generation reference guides (`../generation/references/claude-md-guide.md`, `rules-guide.md`, `hooks-guide.md`, `skills-guide.md`, `agents-guide.md`). Surface only items that:
+
+- Appear in the reference guides as a recommended artifact for the project's stack/complexity, AND
+- Are not present in `onboard-meta.json.generatedArtifacts`, AND
+- Are not present on disk under `.claude/`
+
+Keep this narrow — do not parse the live WebFetch output to infer new recommendations. The reference guides are the stable source. WebFetch continues to drive wording/pattern updates as before.
+
 ---
 
 ## Findings Report
@@ -107,6 +142,20 @@ Organize findings into categories:
 > - **Sprint Contracts**: [active sprint / no contracts — offer to create]
 > - **Feature Verification**: [evaluator available / not set up — offer to enable]
 > - **Agent Teams**: [configured / not applicable]
+>
+> ### Plugin Drift (from Step 4b.1)
+> _Baseline source: [onboard-meta / forge-meta / none]_
+> - **Newly installed since baseline**: [plugin names, or "none"]
+> - **Removed since baseline**: [plugin names, or "none"]
+> - Impact: refresh Plugin Integration section in CLAUDE.md, add/remove quality-gate hook scripts, update `phaseSkills`.
+>
+> ### Artifact Gaps (from Step 4b.2)
+> - [List each generatedArtifacts entry that is missing from disk and not marked `deletedByUser`]
+> - Impact: offer to regenerate via `onboard:generate`.
+>
+> ### New Best-Practice Additions (from Step 4b.3)
+> - [List recommended artifacts from the built-in reference guides that this project doesn't have yet]
+> - Impact: create the artifact with a maintenance header.
 >
 > ### Deprecated Patterns
 > - [Anything in current setup that's outdated]
@@ -136,7 +185,16 @@ For each finding, offer a specific action:
 > 6. **Add evolution hooks** — Auto-detect when deps/configs/structure change
 > 7. **Add sprint contracts** — Quality gates for feature development
 > 8. **Add feature verification** — Independent evaluator agent + /onboard:verify
-> 9. **[etc.]**
+>
+> **Plugin drift** (from Step 4b.1):
+> 9. **Wire in `feature-dev`** — Refresh Plugin Integration + add `preCommit` hooks
+> 10. **Remove `hookify`** — Strip CLAUDE.md references + delete obsolete hook scripts
+>
+> **Artifact gaps** (from Step 4b.2):
+> 11. **Regenerate `.claude/rules/security.md`** — File was listed in generatedArtifacts but is missing from disk
+>
+> **New best-practice additions** (from Step 4b.3):
+> 12. **Create `.claude/rules/observability.md`** — Reference guides recommend this for your stack
 >
 > Which updates would you like me to apply? (all / specific numbers / none)
 
@@ -173,22 +231,73 @@ For each approved update:
 - **New sections** — append after the last generated section, before any user-added trailing sections
 - **Deleted sections** — do not re-add sections the user explicitly removed (check onboard-meta.json for previously generated sections)
 
+**Plugin drift application** (for items surfaced by Step 4b.1):
+
+Follow `../evolve/references/plugin-integration-rules.md` for content rules and `../generation/references/hooks-guide.md` § Quality-Gate Hook Templates for hook scripts — the same sources evolve Step 2b uses. Do not reimplement logic here.
+
+For each approved **addition**:
+1. Refresh the `<!-- onboard:plugin-integration:start -->` / `end` region in the root CLAUDE.md. If markers are absent but `currentPlugins` is non-empty, insert the delimited region after the last generated section (same path as evolve Step 2b.1 first-time-add).
+2. Derive new `qualityGates` / `phaseSkills` entries from `driftReport.qualityGatesNext` / `phaseSkillsNext`. Generate hook scripts and merge entries into `.claude/settings.json` merge-aware (read first, preserve all non-plugin-integration hooks).
+3. Apply autonomyLevel downgrade to `preCommit[].mode` if `wizardAnswers.autonomyLevel` is `always-ask`.
+
+For each approved **removal**:
+1. Identify hook scripts that reference the removed plugin by matching basenames against `onboard-meta.json.hookStatus.generated`. Delete those files. Remove their entries from `.claude/settings.json`.
+2. Drop any `qualityGates` / `phaseSkills` entries referencing the removed plugin.
+3. If all plugins were removed (`currentPlugins` is empty), strip the entire marker-delimited Plugin Integration region from CLAUDE.md — markers included, no placeholder.
+
+**Subdirectory skill-annotation refresh** (runs when `driftReport.added` or `driftReport.removed` is non-empty):
+
+Per-directory `## Skill recommendations` blocks are wrapped in `<!-- onboard:skill-recommendations:start role="..." -->` / `end` markers (see `../generation/SKILL.md` § Per-Directory Skill Annotations). The `role` attribute encodes the directory's classified role (`parser`, `api`, `tests`, etc.), so refresh does not require re-running scaffold-analyzer.
+
+1. Enumerate all subdirectory `CLAUDE.md` files under the project root (glob `**/CLAUDE.md` excluding the root).
+2. For each file containing the start/end markers:
+   - Read the `role` attribute from the start marker.
+   - Regenerate the block body using the new `driftReport.currentPlugins` + `effectiveCoveredCapabilities` per the derivation rules in `../generation/SKILL.md` § Per-Directory Skill Annotations.
+   - Replace the delimited region (inclusive of markers) with the regenerated block. Preserve all file content outside the markers verbatim.
+3. **Block removal**: if `currentPlugins` is now empty, OR the role no longer has any matching plugin capability, remove the entire marker-delimited region (markers included) — do not leave a stub.
+4. **Block creation on empty baseline**: if markers are absent but `currentPlugins` is non-empty AND the file has a role hint (e.g., a prior generation comment or the file sits under a path that matches a known role from `../skills/analysis/references/tech-stack-patterns.md` § Subdirectory CLAUDE.md), skip auto-creation in this release. Surface a note in the findings report: "Subdirectory `<path>` could benefit from a Skill recommendations block — create during the next full regeneration."
+5. Record refreshed files in `updateHistory[*].changes` as `"Refreshed skill annotations in src/parser/CLAUDE.md"`.
+
+This reconciliation is non-blocking. If a subdirectory file fails to parse (e.g., corrupted markers), log a warning to `onboard-meta.json.warnings[]` and skip that file — never abort the whole update.
+
+**Standalone ↔ plugin reconciliation** (runs once per update, after all add/remove items are applied):
+
+Each of these standalone artifacts is only appropriate when the corresponding plugin is absent. On plugin drift, reconcile them:
+
+| Artifact | Present when | Action on add | Action on remove |
+|---|---|---|---|
+| `.claude/skills/tdd-workflow/SKILL.md` | `superpowers` NOT installed | If `superpowers` in `driftReport.added`: delete this file (it would shadow `superpowers:test-driven-development`). Drop the entry from `generatedArtifacts`. | If `superpowers` in `driftReport.removed` AND file is absent: invoke `generate` with `callerExtras.regenerateOnly` scoped to this path. |
+| `.claude/agents/tdd-test-writer.md` | `superpowers` NOT installed | If `superpowers` in `driftReport.added`: delete file, drop from `generatedArtifacts`. | If `superpowers` in `driftReport.removed`: regenerate via `generate`. |
+| Standalone preCommit / sessionStart hooks (no plugin refs) | Any profile generates them in absence of plugin qualityGates | If any plugin that provides `qualityGates` coverage is in `driftReport.added` (e.g., `code-review`, `superpowers`): delete the standalone hook scripts whose basenames match `onboard-meta.json.hookStatus.generated` AND whose content carries no plugin references. Their replacements are the plugin-referencing hooks added above. | If a plugin providing coverage is in `driftReport.removed` AND `currentPlugins` has no alternate coverage: invoke `generate` to regenerate the standalone hooks per the profile + autonomyLevel matrix in `../generation/SKILL.md` § Standalone Quality-Gate Hooks. |
+
+Before deleting any standalone artifact, present it in the findings report as a sub-item of the plugin-add approval ("Adding superpowers will remove the now-redundant standalone TDD skill at `.claude/skills/tdd-workflow/SKILL.md` — OK?"). Never auto-delete without per-item approval.
+
+**Artifact gap regeneration** (for items surfaced by Step 4b.2):
+
+Invoke the `generate` skill via the Skill tool with a narrow `callerExtras.regenerateOnly` payload listing the missing artifact paths. Generate honors this scope and only writes the listed files. After regeneration, verify each file is present on disk and carries a fresh maintenance header.
+
+**New best-practice additions** (for items surfaced by Step 4b.3):
+
+Invoke the `generate` skill with `callerExtras.regenerateOnly` scoped to the new artifact paths. Same flow as artifact gap regeneration — the difference is only in how the candidate list was computed.
+
 ### Step 8: Update Metadata
 
 Update `.claude/onboard-meta.json`:
 - Update `lastRun` timestamp
 - Update `pluginVersion`
-- Update `generatedArtifacts` list (add any new files)
+- Update `generatedArtifacts` list (add any new files, drop any whose deletion was explicitly approved)
 - Preserve `wizardAnswers` (don't re-ask wizard questions during update)
+- **If plugin drift was applied in Step 7** — refresh `detectedPlugins.installedPlugins` to `driftReport.currentPlugins`, and recompute `detectedPlugins.coveredCapabilities`, `detectedPlugins.qualityGates`, `detectedPlugins.phaseSkills` per `../generation/references/plugin-detection-guide.md`. Update the top-level `hookStatus` to reflect added/removed hook scripts.
+- **Forge-meta mirror (scoped)** — If the project also maintains `.claude/forge-meta.json`, update ONLY these fields to match: `generated.toolingFlags.installedPlugins`, `generated.toolingFlags.coveredCapabilities`, `generated.toolingFlags.qualityGates`, `generated.toolingFlags.phaseSkills`, `generated.toolingFlags.hookStatus`. Read-modify-write the file: preserve every other key (`context.*`, `scaffold.*`, `lastRun`, `pluginVersion`, any caller-specific fields) verbatim. Never rewrite the whole file; never touch `context.autonomyLevel` or any other non-toolingFlags subtree — forge owns those. If `forge-meta.json` is absent, skip this step silently.
 - Add an `updateHistory` array entry:
 
 ```json
 {
   "updateHistory": [
     {
-      "date": "2026-02-22T10:00:00Z",
-      "pluginVersion": "0.1.0",
-      "changes": ["Updated CLAUDE.md", "Added security rules", "Updated component skill"]
+      "date": "2026-04-15T10:00:00Z",
+      "pluginVersion": "1.2.0",
+      "changes": ["Updated CLAUDE.md", "Added security rules", "Wired in feature-dev (plugin drift)", "Regenerated missing .claude/rules/security.md"]
     }
   ]
 }
