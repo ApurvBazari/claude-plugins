@@ -11,22 +11,41 @@ ls "${CLAUDE_PLUGIN_ROOT}/../<plugin-name>" 2>/dev/null
 
 A successful probe (exit 0) means the plugin is installed.
 
-| Plugin | Category | Capabilities Covered |
+| Plugin | Category | Capabilities Covered | MCP Server | Transport | Auth |
+|---|---|---|---|---|---|
+| `superpowers` | Universal | `test-generation`, `debugging`, `planning`, `code-review` | — | — | — |
+| `commit-commands` | Universal | `git-workflow` | — | — | — |
+| `security-guidance` | Universal | `security-audit` | — | — | — |
+| `hookify` | Universal | `behavioral-guardrails` | — | — | — |
+| `claude-md-management` | Universal | `documentation` | — | — | — |
+| `engineering` | Universal | `engineering-lifecycle`, `architecture-decisions`, `deploy-verification` | — | — | — |
+| `frontend-design` | Stack-conditional | `ui-development` | — | — | — |
+| `feature-dev` | Stack-conditional | `feature-development`, `code-review` | — | — | — |
+| `code-review` | Workflow-conditional | `code-review` | — | — | — |
+| `pr-review-toolkit` | Workflow-conditional | `code-review`, `code-simplification` | — | — | — |
+| `context7` | Stack-conditional | `docs-lookup` | `@upstash/context7-mcp` | stdio | none |
+| `github` | Workflow-conditional | `vcs-integration` | `api.githubcopilot.com` | http | token |
+| `gitlab` | Workflow-conditional | `vcs-integration` | — | — | — |
+| `playwright` | Stack-conditional | `e2e-testing` | — | — | — |
+| `vercel` | Stack-conditional | `deploy-verification`, `platform-integration` | `mcp.vercel.com` | http | oauth |
+| `prisma` | Stack-conditional | `database-orm` | `prisma` | stdio + http | none |
+| `supabase` | Stack-conditional | `backend-as-a-service` | `mcp.supabase.com` | http | oauth |
+| `chrome-devtools-mcp` | Stack-conditional | `frontend-debugging`, `browser-automation` | `chrome-devtools-mcp` | stdio | none |
+
+## MCP Auto-Emit Signals
+
+The `MCP Server` column above describes what each plugin maps to. `.mcp.json` emission is driven by **stack signals**, not just plugin installation — we emit when the project's detected stack unambiguously benefits, whether or not the user has installed the corresponding plugin. When we emit and the plugin is not installed, we auto-install it (see `mcp-guide.md`).
+
+| Stack signal | Emits MCP server | Confidence tier |
 |---|---|---|
-| `superpowers` | Universal | `test-generation`, `debugging`, `planning`, `code-review` |
-| `commit-commands` | Universal | `git-workflow` |
-| `security-guidance` | Universal | `security-audit` |
-| `hookify` | Universal | `behavioral-guardrails` |
-| `claude-md-management` | Universal | `documentation` |
-| `engineering` | Universal | `engineering-lifecycle`, `architecture-decisions`, `deploy-verification` |
-| `frontend-design` | Stack-conditional | `ui-development` |
-| `feature-dev` | Stack-conditional | `feature-development`, `code-review` |
-| `code-review` | Workflow-conditional | `code-review` |
-| `pr-review-toolkit` | Workflow-conditional | `code-review`, `code-simplification` |
-| `context7` | Stack-conditional | `docs-lookup` |
-| `github` | Workflow-conditional | `vcs-integration` |
-| `gitlab` | Workflow-conditional | `vcs-integration` |
-| `playwright` | Stack-conditional | `e2e-testing` |
+| Any project | `context7` | always |
+| `.github/workflows/` present | `github` | high |
+| `vercel.json` or `@vercel/*` in package.json | `vercel` | high |
+| `prisma/` dir or `@prisma/client`/`prisma` in deps | `prisma` | high |
+| `@supabase/*` in deps or `supabase/` config dir | `supabase` | high |
+| Frontend framework detected (React, Next.js, Vue, Svelte, Astro, Remix, SolidJS) | `chrome-devtools-mcp` | high |
+
+Env-var requirements and OAuth steps are documented in the generated `.claude/rules/mcp-setup.md`.
 
 ## CLAUDE_PLUGIN_ROOT Fallback
 
