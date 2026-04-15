@@ -115,6 +115,24 @@ Compare the current project against the built-in generation reference guides (`.
 
 Keep this narrow — do not parse the live WebFetch output to infer new recommendations. The reference guides are the stable source. WebFetch continues to drive wording/pattern updates as before.
 
+#### 4b.4: MCP Drift
+
+Compare `.mcp.json`, the drift snapshot `.claude/onboard-mcp-snapshot.json`, and a fresh signal scan (`../scripts/detect-mcp-signals.sh`). Follow `../generation/references/mcp-guide.md` for emission rules — this step only classifies drift; applying is deferred to Step 7.
+
+1. **Read the three sources**:
+   - `.mcp.json` at project root (if absent and `mcpStatus.existedPreOnboard` is false, record `mcpDrift.status: "file-missing"`)
+   - `.claude/onboard-mcp-snapshot.json` (if absent, treat snapshot as empty)
+   - Fresh candidate list from `detect-mcp-signals.sh`
+2. **Classify each server**:
+   - **user-edited** — present in `.mcp.json` but mismatched against snapshot (fields differ or entry was added by user). Never propose changes; inform only.
+   - **user-removed** — in snapshot but missing from `.mcp.json`. Inform only ("you removed X"); never re-add without explicit user instruction.
+   - **newly-suggested** — in the fresh candidate list but neither in snapshot nor `.mcp.json`. Surface as a suggested addition.
+   - **stale-candidate** — in snapshot/`.mcp.json` but the underlying signal no longer fires (e.g., `vercel.json` was deleted). Surface as a suggested removal.
+   - **in-sync** — present in all three and unchanged. No action.
+3. **Pre-existing guard** — if `mcpStatus.existedPreOnboard: true`, onboard treats the whole file as user-owned. Suggest only additions (`newly-suggested`), never removals or edits.
+
+Record the classification as `mcpDrift.{userEdited, userRemoved, newlySuggested, staleCandidate}[]` for Step 7.
+
 ---
 
 ## Findings Report
@@ -156,6 +174,13 @@ Organize findings into categories:
 > ### New Best-Practice Additions (from Step 4b.3)
 > - [List recommended artifacts from the built-in reference guides that this project doesn't have yet]
 > - Impact: create the artifact with a maintenance header.
+>
+> ### MCP Drift (from Step 4b.4)
+> - **Newly suggested** (signal now fires): [list or "none"]
+> - **Stale candidates** (signal no longer fires): [list or "none"]
+> - **User edits detected**: [list or "none"] — informational only; onboard never rewrites your `.mcp.json`
+> - **User removals detected**: [list or "none"] — informational only
+> - Impact: additions can be applied on approval; removals require explicit user instruction.
 >
 > ### Deprecated Patterns
 > - [Anything in current setup that's outdated]
@@ -272,6 +297,19 @@ Each of these standalone artifacts is only appropriate when the corresponding pl
 
 Before deleting any standalone artifact, present it in the findings report as a sub-item of the plugin-add approval ("Adding superpowers will remove the now-redundant standalone TDD skill at `.claude/skills/tdd-workflow/SKILL.md` — OK?"). Never auto-delete without per-item approval.
 
+**MCP drift application** (for items surfaced by Step 4b.4):
+
+Only **additions** are applied automatically on user approval. Removals and user-edits are never written.
+
+1. For each approved `newlySuggested` server:
+   - Read the current `.mcp.json` (if absent, create it with `{"mcpServers":{}}`).
+   - Merge the new server entry into `mcpServers` per the schema in `../generation/references/mcp-guide.md` § Config Shape. Preserve every other key verbatim.
+   - Append the server to `.claude/onboard-mcp-snapshot.json` as well so subsequent drift checks use the new baseline.
+   - If the server's catalog entry has a `plugin` field, append to the auto-install queue for Step 7's plugin section (reuse `scripts/install-mcp-plugins.sh`).
+2. For each `staleCandidate`: display the removal suggestion but do NOT auto-apply. If the user explicitly says "yes remove X", delete the entry from `.mcp.json` AND the snapshot.
+3. For `userEdited` / `userRemoved`: no action. The findings report already informed the user.
+4. If `.claude/rules/mcp-setup.md` needs regeneration (new server added needing auth), invoke `generate` with `callerExtras.regenerateOnly` scoped to `.claude/rules/mcp-setup.md`.
+
 **Artifact gap regeneration** (for items surfaced by Step 4b.2):
 
 Invoke the `generate` skill via the Skill tool with a narrow `callerExtras.regenerateOnly` payload listing the missing artifact paths. Generate honors this scope and only writes the listed files. After regeneration, verify each file is present on disk and carries a fresh maintenance header.
@@ -288,6 +326,7 @@ Update `.claude/onboard-meta.json`:
 - Update `generatedArtifacts` list (add any new files, drop any whose deletion was explicitly approved)
 - Preserve `wizardAnswers` (don't re-ask wizard questions during update)
 - **If plugin drift was applied in Step 7** — refresh `detectedPlugins.installedPlugins` to `driftReport.currentPlugins`, and recompute `detectedPlugins.coveredCapabilities`, `detectedPlugins.qualityGates`, `detectedPlugins.phaseSkills` per `../generation/references/plugin-detection-guide.md`. Update the top-level `hookStatus` to reflect added/removed hook scripts.
+- **If MCP drift was applied in Step 7** — refresh top-level `mcpStatus`: add newly-applied servers to `mcpStatus.generated[]`, drop removed servers. Re-run `scripts/install-mcp-plugins.sh` for any newly-applied server with a `plugin` field; merge results into `mcpStatus.autoInstalled[]` and `mcpStatus.autoInstallFailed[]`. Always keep `mcpStatus.existedPreOnboard` sticky — once true, it stays true for the life of the project.
 - **Forge-meta mirror (scoped)** — If the project also maintains `.claude/forge-meta.json`, update ONLY these fields to match: `generated.toolingFlags.installedPlugins`, `generated.toolingFlags.coveredCapabilities`, `generated.toolingFlags.qualityGates`, `generated.toolingFlags.phaseSkills`, `generated.toolingFlags.hookStatus`. Read-modify-write the file: preserve every other key (`context.*`, `scaffold.*`, `lastRun`, `pluginVersion`, any caller-specific fields) verbatim. Never rewrite the whole file; never touch `context.autonomyLevel` or any other non-toolingFlags subtree — forge owns those. If `forge-meta.json` is absent, skip this step silently.
 - Add an `updateHistory` array entry:
 

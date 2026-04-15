@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.4.0 — 2026-04-15
+
+### Features
+
+- **`.mcp.json` generation from stack signals (Phase 7a)**: generation pipeline now emits `.mcp.json` and `.claude/onboard-mcp-snapshot.json` when detected stack signals match the catalog. Initial 6-entry catalog: `context7` (always, any project), `github` (when `.github/workflows/` present), `vercel` (when `vercel.json` or `@vercel/*` dep), `prisma` (when `prisma/` dir or `@prisma/client` dep), `supabase` (when `@supabase/*` dep or `supabase/` dir), `chrome-devtools-mcp` (when frontend framework detected). Forge inherits automatically via `onboard:generate` delegation.
+- **`.claude/rules/mcp-setup.md` auto-emission**: project-scoped rule listing per-server auth requirements (env vars, `claude mcp auth <name>` OAuth flows). Generated only when needed (any server requires auth OR pre-existing `.mcp.json` detected).
+- **Plugin auto-install for emitted MCPs**: `scripts/install-mcp-plugins.sh` probes `claude plugin list --json` and installs only missing plugins. Never fails Phase 7a on install errors — failures are telemetry, not blockers.
+- **`mcpStatus` telemetry**: new field in `onboard-meta.json`, parallel to `hookStatus`. Tracks `planned` / `generated` / `skipped` / `autoInstalled` / `autoInstallFailed` / `existedPreOnboard`. Mirrored into `forge-meta.json` by `evolve` Step 2b.3.
+- **MCP drift contract in `onboard:update` (Step 4b.4) and `onboard:evolve` (Step 2c)**: compares `.mcp.json` vs `.claude/onboard-mcp-snapshot.json` vs fresh signal scan. Additions auto-apply on approval (or automatically in evolve); user edits and removals are informational only — never rewritten.
+- **`callerExtras.disableMCP` escape hatch**: headless callers (forge) can suppress Phase 7a entirely when the scaffold template already ships an `.mcp.json`.
+
+### Documentation
+
+- `references/plugin-detection-guide.md`: probe table extended with `MCP Server` / `Transport` / `Auth` columns; added `MCP Auto-Emit Signals` section mapping stack fingerprints to servers with confidence tiers.
+- `references/mcp-guide.md` (new): emission rules, catalog shape, drift-snapshot pattern, auto-install contract, post-emit stdout summary, inline `mcp-setup.md` template.
+- `skills/generation/SKILL.md`: new Phase 7a section (8 numbered steps) between Recommended Plugins and Hooks; 9 new checklist items for MCP emission.
+- `skills/update/SKILL.md` and `skills/evolve/SKILL.md`: drift steps + metadata refresh for `mcpStatus`.
+- `agents/config-generator.md`: new steps 6a and 8 for MCP emission and auto-install.
+- `forge/skills/tooling-generation/SKILL.md`: docs-only note that `.mcp.json` flows through onboard delegation, mentions `callerExtras.disableMCP`.
+
 ## 1.3.0 — 2026-04-15
 
 ### Features

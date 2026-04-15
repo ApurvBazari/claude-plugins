@@ -321,6 +321,60 @@ After installing, re-run `/onboard:init` to upgrade from standalone TDD
 artifacts to the integrated plugin-based workflow.
 ```
 
+### MCP Servers (.mcp.json) — Phase 7a
+
+Follow `references/mcp-guide.md` for emission rules, catalog, and transport shapes.
+
+**When to run**: After Recommended Plugins copy is resolved and before Hooks are merged. Phase 7a runs once per generation; drift handling lives in `update`/`evolve`.
+
+**Inputs**:
+- `analysis.stack` — frameworks, deps, config-file fingerprints
+- `callerExtras.disableMCP` (optional, headless) — if `true`, skip the entire phase and record `mcpStatus.skipped = [{ server: "*", reason: "caller-disabled" }]`
+- Output of `scripts/detect-mcp-signals.sh <project-root>` — canonical signal list
+
+**Step 1 — Detect candidates**. Run the detection script; parse JSON output. Candidates marked `confidence: "always"` (context7) emit unconditionally. Candidates marked `confidence: "high"` emit when the signal evaluates unambiguously (see `references/mcp-guide.md` § Confidence Tiers). Dedupe by server name.
+
+**Step 2 — Pre-existing file check**. If `.mcp.json` already exists at project root:
+- Do NOT overwrite
+- Record `mcpStatus.existedPreOnboard: true` and `mcpStatus.preservedFile: ".mcp.json"`
+- Still emit `.claude/rules/mcp-setup.md` describing servers we *would* have emitted, so the user can reconcile manually
+- Skip the write in Step 3 and Step 4
+
+**Step 3 — Write `.mcp.json`**. Use the schema in `references/mcp-guide.md` § Config Shape. Secret references use the `${VAR}` substitution form — never inline real values.
+
+**Step 4 — Write drift snapshot**. Write `.claude/onboard-mcp-snapshot.json` with the exact contents of `.mcp.json` as written. This is the baseline that `onboard:update` / `onboard:evolve` diff against. Do not include a maintenance header — the snapshot is pure JSON consumed by tooling.
+
+**Step 5 — Populate `mcpStatus`**. Add to `onboard-meta.json` alongside `hookStatus`:
+```jsonc
+{
+  "mcpStatus": {
+    "planned": ["context7", "vercel"],
+    "generated": ["context7", "vercel"],
+    "skipped": [{ "server": "github", "reason": "no-github-workflows-detected" }],
+    "autoInstalled": [],
+    "autoInstallFailed": [],
+    "existedPreOnboard": false
+  }
+}
+```
+
+**Step 6 — Write `.claude/rules/mcp-setup.md`** (conditional on at least one server requiring auth OR on `existedPreOnboard: true`). Use the template in `references/mcp-guide.md` § mcp-setup.md Template. Include per-server env-var requirements and OAuth steps. Omit when no auth is needed and no pre-existing file existed.
+
+**Step 7 — Auto-install matching plugins** (after Phase 8 metadata is written, see § Auto-install Plugins below). Running after metadata ensures telemetry is persisted even if install fails.
+
+**Step 8 — Post-emit stdout summary**. Print a terse block listing each emitted server and any pending auth steps. See `references/mcp-guide.md` § Post-emit Summary.
+
+#### Auto-install Plugins
+
+After the metadata file is written in Phase 8, invoke `scripts/install-mcp-plugins.sh <plugin1> <plugin2> ...` for each server's `plugin` field (if present). The script:
+
+1. Probes `claude plugin list --json` once
+2. Skips plugins already installed
+3. Calls `claude plugin install <plugin>` for each remaining plugin
+4. Logs failures to stdout but always exits 0 — install layer must never fail Phase 7a
+
+On completion, update `mcpStatus.autoInstalled` and `mcpStatus.autoInstallFailed` in `onboard-meta.json` (re-write the single field; do not touch other keys).
+
 ### Hooks (.claude/settings.json)
 
 Follow `references/hooks-guide.md` for hook configuration.
@@ -958,6 +1012,14 @@ Before finishing generation, verify:
 - [ ] CLAUDE.md "Development Workflow" references match actually installed plugins (no dangling refs)
 - [ ] PR template includes TDD checklist item ("Tests written first, all pass")
 - [ ] No stale references to `minimal`, `write-after`, or `comprehensive` testing philosophies
+- [ ] Phase 7a ran before Hooks section (when any MCP candidate fires)
+- [ ] `.mcp.json` is pure JSON (no comments) and uses `${VAR}` form for secrets
+- [ ] Pre-existing `.mcp.json` was NOT overwritten (check for `mcpStatus.existedPreOnboard`)
+- [ ] `.claude/onboard-mcp-snapshot.json` matches what was written to `.mcp.json`
+- [ ] `onboard-meta.json.mcpStatus` populated alongside `hookStatus`
+- [ ] `.claude/rules/mcp-setup.md` emitted when any server needs auth OR pre-existing file detected
+- [ ] Auto-install ran after metadata write (never before)
+- [ ] `callerExtras.disableMCP: true` suppresses all Phase 7a side effects
 
 ## Extended Generation (Enriched Mode)
 
@@ -1021,6 +1083,7 @@ TDD is the standard testing approach for all onboarded projects. These artifacts
 - `references/claude-md-guide.md` — CLAUDE.md structure and best practices
 - `references/rules-guide.md` — Path-scoped rules patterns
 - `references/hooks-guide.md` — Hook configuration patterns (format, lint)
+- `references/mcp-guide.md` — MCP server emission rules, catalog, drift handling
 - `references/skills-guide.md` — Skill creation patterns
 - `references/agents-guide.md` — Agent creation patterns
 - `references/collaboration-guide.md` — PR template, commit conventions

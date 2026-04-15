@@ -217,6 +217,8 @@ Call `/onboard:generate` with the prepared context. Onboard now generates EVERYT
 - Sprint contracts infrastructure (if enableSprintContracts)
 - Agent team support (if enableTeams)
 
+**MCP servers (automatic from stack signals):** Onboard emits `.mcp.json` and `.claude/onboard-mcp-snapshot.json` when detected signals match its catalog (e.g., Vercel projects get `vercel`, frontend stacks get `chrome-devtools-mcp`, all projects get `context7`). Matching plugins are auto-installed if not already present. Full rules in `onboard/skills/generation/references/mcp-guide.md`. If a scaffold template already ships its own `.mcp.json`, pass `callerExtras.disableMCP: true` in Step 1 to suppress onboard's emission.
+
 Present a brief summary after generation. Offer optional review.
 
 ## Step 3: Forge-Specific Artifacts
