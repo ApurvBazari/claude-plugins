@@ -221,6 +221,8 @@ Call `/onboard:generate` with the prepared context. Onboard now generates EVERYT
 
 **Skill frontmatter tuning (automatic from archetype classification):** Onboard 1.5.0 emits extended skill frontmatter — `allowed-tools`, `model`, `effort`, `paths`, `context`, `agent` — on every generated skill, composing archetype defaults with wizard-level tuning (`wizardAnswers.skillTuning`). A batched confirmation step runs by default to let the developer tweak per-skill. The snapshot lands at `.claude/onboard-skill-snapshot.json` for drift detection. Forge passes `callerExtras.disableSkillTuning: true` whenever forge is running headless and wants the confirmation suppressed; the generator still emits the full frontmatter using archetype + wizard defaults. Full rules in `onboard/skills/generation/references/skills-guide.md` § Frontmatter Reference.
 
+**Agent frontmatter tuning (automatic from archetype classification):** Onboard 1.6.0 emits extended agent frontmatter — `tools`, `disallowedTools`, `model`, `effort`, `isolation`, `color`, `maxTurns`, `permissionMode` — on every generated agent, composing archetype defaults (reviewer/validator/generator/architect/researcher) with wizard-level tuning (`wizardAnswers.agentTuning`). A batched confirmation step runs by default to let the developer tweak per-agent. The snapshot lands at `.claude/onboard-agent-snapshot.json` for drift detection. Forge passes `callerExtras.disableAgentTuning: true` whenever forge is running headless and wants the confirmation suppressed; the generator still emits the full frontmatter using archetype + wizard defaults. Note: `proactive` is encoded via description prefix (it is not a frontmatter field); `isolation` only accepts `worktree` and is dropped in non-git directories. Full rules in `onboard/skills/generation/references/agents-guide.md` § Frontmatter Reference.
+
 Present a brief summary after generation. Offer optional review.
 
 ## Step 3: Forge-Specific Artifacts
@@ -283,6 +285,14 @@ Update `.claude/forge-meta.json` with:
       "generated":         ["react-component", "pr-summarizer"],
       "skipped":           [],
       "frontmatterFields": { /* opaque — see onboard/skills/generation/SKILL.md § Skill Frontmatter Emission */ },
+      "existedPreOnboard": [],
+      "warnings":          []
+    },
+    "agentStatus": {                        // NEW in onboard 1.6.0 — mirrored from /onboard:generate response
+      "planned":           ["code-reviewer", "tdd-test-writer"],
+      "generated":         ["code-reviewer", "tdd-test-writer"],
+      "skipped":           [],
+      "frontmatterFields": { /* opaque — see onboard/skills/generation/SKILL.md § Agent Frontmatter Emission */ },
       "existedPreOnboard": [],
       "warnings":          []
     }

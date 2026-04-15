@@ -173,6 +173,39 @@ The generation skill reads `wizardAnswers.skillTuning` and refines the archetype
 
 **Quick Mode behavior**: 5.2 is skipped entirely in Quick Mode — `skillTuning` defaults to `{ mode: "defaults" }` and inference runs with archetype defaults only. The generation-time confirmation step still fires with default answer "Accept all" so Quick Mode remains frictionless.
 
+### Phase 5.3: Agent Tuning (Optional, Default No)
+
+After Phase 5.2, ask **one** yes/no question:
+
+> Tune generated agents (model, effort, pre-approval posture, default isolation)? Default: no — sensible defaults per archetype.
+
+If the developer answers **no** (or skips): record `wizardAnswers.agentTuning = { mode: "defaults" }` and move on. Inference still runs in `generation/SKILL.md` § Agent Frontmatter Emission — the archetype table produces per-agent frontmatter, and the confirmation step in generation Step 4 still fires with default-answer "Accept all" so headless / Quick Mode paths pass through cleanly.
+
+If the developer answers **yes**: issue **one consolidated `AskUserQuestion` call** with four single-select questions (four fits within the 4-question cap):
+
+1. **Default model tier** — single-select: `inherit` (use session model) / `sonnet` / `opus` / `haiku`. Describe: "Applied to archetype defaults that resolve to `inherit`. Claude Code falls back to the session model if the requested model is unavailable in your plan."
+2. **Default effort** — single-select: `inherit` / `low` / `medium` / `high`. Describe: "Per-agent thinking budget override. `inherit` uses the session's effort level."
+3. **Pre-approval posture** — single-select: `minimal` (keep archetype write restrictions; force `permissionMode: default`) / `standard` (recommended — archetype defaults untouched) / `permissive` (add `permissionMode: acceptEdits` to generator archetype). Describe: "Archetype-defined `disallowedTools` always win — `minimal` cannot loosen semantic protection (reviewers/validators/architects/researchers never get `Write`/`Edit`)."
+4. **Default isolation** — single-select: `worktree-for-generators` (recommended — generators work on a throwaway git worktree; skipped in non-git dirs) / `off` (never emit `isolation`; use session defaults). Describe: "Isolation is a subagent frontmatter field — only `worktree` is accepted. Generators modify files, so worktree isolation keeps your working tree clean if a generation misbehaves."
+
+Record the full selection as:
+
+```json
+{
+  "agentTuning": {
+    "mode": "tuned",
+    "defaultModel": "inherit | sonnet | opus | haiku",
+    "defaultEffort": "inherit | low | medium | high",
+    "preApprovalPosture": "minimal | standard | permissive",
+    "defaultIsolation": "worktree-for-generators | off"
+  }
+}
+```
+
+The generation skill reads `wizardAnswers.agentTuning` and refines the archetype defaults in `generation/references/agents-guide.md` § Frontmatter Emission Rules. Per-agent user tweaks happen in the generation-time confirmation step, not here.
+
+**Quick Mode behavior**: 5.3 is skipped entirely in Quick Mode — `agentTuning` defaults to `{ mode: "defaults" }` and inference runs with archetype defaults only. The generation-time confirmation step still fires with default answer "Accept all" so Quick Mode remains frictionless.
+
 ### Phase 5.5: Ecosystem Plugins (Always)
 Offer complementary plugins from the ecosystem.
 - Notifications (notify plugin) — get alerted when Claude finishes tasks or needs attention

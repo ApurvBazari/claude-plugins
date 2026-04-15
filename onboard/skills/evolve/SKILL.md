@@ -124,6 +124,7 @@ Update the following fields in `.claude/forge-meta.json`:
 5. `generated.toolingFlags.hookStatus` → update `planned`, `generated`, `skipped` to reflect new hook state
 6. `generated.toolingFlags.mcpStatus` → mirror `onboard-meta.json.mcpStatus` verbatim (parallel to `hookStatus`). If `onboard-meta.json` has no `mcpStatus` yet (older project predating the MCP capability), skip this field silently — do not invent an empty object.
 7. `generated.toolingFlags.skillStatus` → mirror `onboard-meta.json.skillStatus` verbatim (parallel to `hookStatus` and `mcpStatus`). If `onboard-meta.json` has no `skillStatus` yet (older project predating onboard 1.5.0), skip this field silently — do not invent an empty object.
+8. `generated.toolingFlags.agentStatus` → mirror `onboard-meta.json.agentStatus` verbatim (parallel to `skillStatus`). If `onboard-meta.json` has no `agentStatus` yet (older project predating onboard 1.6.0), skip this field silently — do not invent an empty object.
 
 ## Step 2c: Apply MCP Drift
 
@@ -159,6 +160,24 @@ Run the same drift classification as `../update/SKILL.md` § 4b.5 Skill Frontmat
 
 Update `onboard-meta.json.skillStatus.frontmatterFields[<skill>]` to reflect the applied state. The Step 2b.3 forge-meta mirror path picks up the refreshed `skillStatus` via the read-modify-write pattern (see below).
 
+## Step 2e: Apply Agent Frontmatter Drift
+
+Run the same drift classification as `../update/SKILL.md` § 4b.6 Agent Frontmatter Drift:
+
+1. Read `onboard-meta.json.agentStatus.generated`, `.claude/onboard-agent-snapshot.json`, and each live `.claude/agents/<agent>.md`.
+2. Classify each field per agent as `user-edit` / `user-tweaked` / `missing-file` / `new-field` / `legacy-no-frontmatter` / `in-sync`.
+3. Agents in `agentStatus.existedPreOnboard` are never diffed.
+
+**Auto-apply rules** (evolve's "drain drift without asking" philosophy — bounded by the user-owned-edits-are-never-touched floor):
+
+- **user-edit** → default verb `accept-user-edit`. Update the snapshot to match the live file so subsequent runs stop flagging. Do NOT rewrite the live file. Set `frontmatterFields.<agent>.source = "user-tweaked"`. Log once.
+- **new-field** → apply by reading live `<agent>.md`, inserting only the missing field using the archetype-inferred value (composed with `wizardAnswers.agentTuning`). Update snapshot. Set `source = "user-confirmed"`.
+- **legacy-no-frontmatter** → auto-migrate. Classify the agent via `../generation/references/agents-guide.md` archetype rules using its name/description, compose with `wizardAnswers.agentTuning`, run the full validation pass from `../generation/SKILL.md` § Agent Frontmatter Emission Step 3, and prepend a YAML frontmatter block to the live file (keeping the body intact). Update snapshot. Set `source = "wizard-default"`. Append `legacy-migrated:<agent>` to `agentStatus.warnings` for audit visibility.
+- **missing-file** → invoke `onboard:generate` with `callerExtras.regenerateOnly: [".claude/agents/<agent>.md"]` and `callerExtras.disableAgentTuning: true`. The generator reuses the snapshot's frontmatter values so prior tweaks are preserved.
+- **user-tweaked** / **in-sync** → no action.
+
+Update `onboard-meta.json.agentStatus.frontmatterFields[<agent>]` to reflect the applied state. The Step 2b.3 forge-meta mirror path picks up the refreshed `agentStatus` via the read-modify-write pattern.
+
 ## Step 3: Show Diff
 
 After applying all updates (both FileChanged and plugin integration), show what changed:
@@ -174,6 +193,8 @@ After applying all updates (both FileChanged and plugin integration), show what 
 > - .claude/onboard-mcp-snapshot.json: Updated baseline
 > - .claude/skills/react-component/SKILL.md: Added `paths` field (new archetype default)
 > - .claude/onboard-skill-snapshot.json: Updated baseline
+> - .claude/agents/code-reviewer.md: Migrated legacy agent to YAML frontmatter (reviewer archetype)
+> - .claude/onboard-agent-snapshot.json: Updated baseline
 >
 > **Not auto-applied** (needs your input):
 > - New directory src/services/ — want me to create a CLAUDE.md for it?
