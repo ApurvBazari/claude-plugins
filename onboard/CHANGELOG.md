@@ -25,6 +25,16 @@
 - `references/claude-md-guide.md`: new § Output Styles Reference subsection pointing to `output-styles-guide.md` and `output-styles-catalog.md`.
 - `forge/skills/tooling-generation/SKILL.md`: docs-only note that output-style generation flows through onboard delegation; **functional change** — Step 1 `callerExtras` template now explicitly sets `disableOutputStyleTuning: true` (alongside `disableSkillTuning` / `disableAgentTuning`) for headless runs.
 
+### Hardening (shipped alongside 1.7.0)
+
+Three pre-existing shell-script findings were surfaced by the 1.7.0 security audit and hardened in the same release:
+
+- `onboard/scripts/audit-tooling.sh`: replaced unquoted `ls $rule_path` glob probe with bash builtin `compgen -G "$rule_path"` — no unquoted shell expansion, no external `ls` call, dropped the `# shellcheck disable=SC2086` comment.
+- `onboard/scripts/detect-dep-changes.sh`, `detect-config-changes.sh`, `detect-structure-changes.sh`: added defensive `case` guard after the empty-check — rejects option-flag-looking input or shell metacharacters. Hook-script contract preserved (always `exit 0`).
+- `notify/scripts/notify.sh`: replaced non-atomic `echo > "$TIMESTAMP_FILE"` with `mktemp` + `mv -f` atomic rename pattern. Closes the TOCTOU window between the existing symlink guard and the write.
+
+None of these findings were introduced by 1.7.0 — all three are defensive hardening that ships with the release because the audit ran against this branch.
+
 ## 1.6.0 — 2026-04-15
 
 ### Features
