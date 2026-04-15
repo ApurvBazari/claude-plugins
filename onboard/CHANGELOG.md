@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.7.0 — 2026-04-16
+
+### Features
+
+- **Output style generation (Phase 7b)**: generation now emits one project-scoped custom output style at `.claude/output-styles/<name>.md` based on 5 archetypes inferred from existing wizard + analysis signals (onboarding / teaching / production-ops / research / solo). Priority resolution when multiple fire: `production-ops > onboarding > teaching > research > solo`. Built-in styles (`Default` / `Explanatory` / `Learning`) are Anthropic-provided and referenced in the generated CLAUDE.md Plugin Integration section — never re-emitted as files.
+- **Wizard Phase 5.4 — Output Style Tuning (optional, default No)**: one opt-in gate followed by two project-level questions (archetype override, activation default). Quick Mode skips Phase 5.4 and emits archetype defaults. Exchange budget guard: auto-skip to defaults if prior phases exhausted the 6-exchange budget.
+- **Batched confirmation before emission**: Phase 7b presents the emitted style's computed frontmatter and options: *Accept* (default — keeps headless / Quick Mode frictionless), *Override archetype*, *Skip emit*. Per-style provenance recorded as `source ∈ {inferred, wizard-default, user-confirmed, user-tweaked}`.
+- **`outputStyleStatus` telemetry**: new field in `onboard-meta.json`, parallel to `mcpStatus` / `skillStatus` / `agentStatus`. Tracks `planned` / `generated` / `skipped` / `frontmatterFields` / `activationDefault` / `settingsLocalWritten` / `settingsLocalWarning` / `existedPreOnboard` / `warnings`.
+- **Drift snapshot**: `.claude/onboard-output-style-snapshot.json` is the byte-diffable baseline onboard writes alongside style emission. Frontmatter-only scope — body edits (system-prompt prose) are intentionally outside the snapshot and never flagged as drift. Multi-run accumulation: the snapshot appends new entries when archetypes change across runs.
+- **`settings.local.json` activation with 4-case merge safety**: when `activationDefault: "write-to-settings"`, Phase 7b merges `"outputStyle": "<name>"` into `.claude/settings.local.json` following strict rules — (1) file missing → warn `file-missing`, never create; (2) key absent → add, preserve all others; (3) same value → no-op + `already-set-to-same`; (4) different value → block + `conflict:<existing>`. Invariants: never create the file, never overwrite an existing `outputStyle`.
+- **Drift contract in `onboard:update` (Step 4b.7) and `onboard:evolve` (Step 2f)**: diffs live output-style frontmatter against the snapshot. New classification `legacy-no-frontmatter` covers hand-authored styles without YAML frontmatter — update prompts before migrating, evolve auto-migrates using catalog archetype defaults for any filename stem matching the 5-style catalog. User hand-edits are preserved (evolve's default verb is `accept-user-edit`).
+- **`callerExtras.disableOutputStyleTuning` escape hatch**: headless callers (forge) can suppress the Phase 7b batched confirmation entirely. Archetype inference emits the matched style directly.
+
+### Documentation
+
+- **New** `references/output-styles-guide.md`: authoritative reference — what output styles are, archetype inference table, priority resolution, frontmatter schema, `settings.local.json` 4-case merge rules, snapshot contract, drift state machine, interaction with built-in styles.
+- **New** `references/output-styles-catalog.md`: 5 body templates (`onboarding-mentor`, `tutorial-guide`, `operator`, `explorer-notes`, `solo-minimal`) with per-style purpose, frontmatter, and structured body template.
+- `skills/generation/SKILL.md`: new § Output Styles — Phase 7b (11 numbered steps) between Phase 7a (MCP) and Hooks section; Plugin Integration content rule #7 (Output styles) added; acceptance criteria extended with 10 Phase 7b checks.
+- `skills/generate/SKILL.md`: `callerExtras.disableOutputStyleTuning` documented alongside `disableMCP` / `disableSkillTuning` / `disableAgentTuning`.
+- `skills/wizard/SKILL.md`: new Phase 5.4 with opt-in gate + two project-level questions; Output JSON extended with `outputStyleTuning`; exchange-budget guard documented.
+- `skills/update/SKILL.md`: new Step 4b.7 (classify) + Step 5 findings report section + Step 7 output-style drift application with `legacy-no-frontmatter` catalog-match migration + Step 8 `outputStyleStatus` refresh.
+- `skills/evolve/SKILL.md`: Guard extended to probe output-style snapshot + new Step 2f (auto-apply rules including legacy migration via catalog match) + Step 3 diff-display example extended.
+- `references/claude-md-guide.md`: new § Output Styles Reference subsection pointing to `output-styles-guide.md` and `output-styles-catalog.md`.
+- `forge/skills/tooling-generation/SKILL.md`: docs-only note that output-style generation flows through onboard delegation; **functional change** — Step 1 `callerExtras` template now explicitly sets `disableOutputStyleTuning: true` (alongside `disableSkillTuning` / `disableAgentTuning`) for headless runs.
+
 ## 1.6.0 — 2026-04-15
 
 ### Features

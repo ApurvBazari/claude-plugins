@@ -143,6 +143,7 @@ This project uses the following Claude Code plugins. Use them consistently.
 4. **Commit discipline** — `/commit`, `/commit-push-pr` (only if `commit-commands` is installed)
 5. **Quality gates** — `code-review:code-review`, `pr-review-toolkit:review-pr`, `claude-md-management:revise-claude-md` (only ones whose plugin is installed)
 6. **Ecosystem** — `hookify`, `security-guidance` (only ones whose plugin is installed)
+7. **Output styles** (always — built-in styles are universal, emitted custom style is project-specific): Add an `### Output styles` subsection. List the three built-ins (`Default` / `Explanatory` / `Learning`) with one-line descriptions. If `outputStyleStatus.generated[]` is non-empty, also list the emitted custom style with its path and one-line purpose. State the activation path: open `/config` and pick from the menu, OR set `"outputStyle": "<name>"` in `.claude/settings.local.json`. Include the new-session caveat (changes take effect in the next new session). Do NOT reference built-in styles as files — they're Anthropic-provided. When `outputStyleStatus.generated[]` is empty, still emit the subsection to surface the built-ins.
 
 **Graceful degradation (EC8)**: When `superpowers` is NOT in `installedPlugins`, the "Research & brainstorming" subsection falls back to a generic version that recommends built-in `WebSearch`/`WebFetch` and a manual-discussion protocol. Do **not** reference `/superpowers:brainstorming` in the fallback — it would be a broken command. Add a note suggesting users install superpowers for the full experience.
 
@@ -575,6 +576,111 @@ After the metadata file is written in Phase 8, invoke `scripts/install-mcp-plugi
 4. Logs failures to stdout but always exits 0 — install layer must never fail Phase 7a
 
 On completion, update `mcpStatus.autoInstalled` and `mcpStatus.autoInstallFailed` in `onboard-meta.json` (re-write the single field; do not touch other keys).
+
+### Output Styles (.claude/output-styles/) — Phase 7b
+
+Follow `references/output-styles-guide.md` for archetype inference, frontmatter schema, and `settings.local.json` merge rules. Follow `references/output-styles-catalog.md` for the 5 body templates.
+
+**When to run**: After Phase 7a (MCP) and before Hooks are merged. Phase 7b runs once per generation; drift handling lives in `update`/`evolve`.
+
+**Inputs**:
+- `analysis.*` — existing wizard + analysis signals (teamSize, projectMaturity, primaryTasks, securitySensitivity, deployFrequency, painPoints, project description)
+- `wizardAnswers.outputStyleTuning` (optional) — `{ mode, archetypeOverride?, activationDefault? }`. Treat absence as `{ mode: "defaults" }`
+- `callerExtras.disableOutputStyleTuning` (optional, headless) — if `true`, skip batched confirmation and emit with inferred + wizard-default values directly
+
+**Step 1 — Classify firing archetypes.** Evaluate the 5 firing conditions from `output-styles-guide.md` § Archetype inference. Record the full firing set — even archetypes that won't be chosen — in `outputStyleStatus.planned[]` for telemetry.
+
+**Step 2 — Apply wizard override.** Read `wizardAnswers.outputStyleTuning.archetypeOverride`:
+
+| Override value | Effect |
+|---|---|
+| absent / `"inherit"` | Use Step 1 firing set unchanged; pick top priority in Step 3 |
+| `onboarding` / `teaching` / `production-ops` / `research` / `solo` | Force that archetype as the sole candidate, regardless of Step 1 firing set. Mark `source: "user-tweaked"` |
+| `"skip-emit"` | Record `outputStyleStatus.skipped = [{ reason: "skip-emit-selected" }]`; exit Phase 7b without emitting any file. Do NOT populate snapshot. Do NOT touch settings.local.json |
+
+**Step 3 — Resolve priority.** From the candidate set produced by Steps 1+2, apply priority: `production-ops > onboarding > teaching > research > solo`. Emit ONLY the top match. If the candidate set is empty (no archetype fired, no override), record `outputStyleStatus.skipped = [{ reason: "archetype-not-fired" }]` and exit without emission.
+
+**Step 4 — Pre-existing file check.** Probe `.claude/output-styles/` for a file matching the target filename (e.g., `operator.md` for `production-ops`). If present:
+- Do NOT overwrite
+- Add the filename stem to `outputStyleStatus.existedPreOnboard[]`
+- Do NOT write a snapshot entry for this style
+- Skip Steps 6–8 for this style
+- Continue to Step 9 (telemetry) so the skip is visible
+
+**Step 5 — Compose frontmatter.** Combine catalog defaults from `output-styles-catalog.md` with internal tracking fields:
+
+| Field | Source |
+|---|---|
+| `name` | Filename stem (e.g., `operator`) |
+| `description` | Catalog description verbatim (no project substitution) |
+| `keep-coding-instructions` | `true` (all 5 archetypes) |
+| `archetype` | The chosen archetype string |
+| `source` | `inferred` (Step 1+3 only), `wizard-default` (`tuned` mode with `inherit` override), `user-tweaked` (explicit override), `user-confirmed` (accepted in Step 6 batched confirmation) |
+
+**Step 6 — Batched confirmation.** Present a single `AskUserQuestion` with:
+- One row showing: archetype, target path, activation default
+- Options: **Accept** (default), **Override archetype** (re-prompt with the 7-option archetype list), **Skip emit** (record `{reason: "user-declined-confirmation"}` and exit)
+
+**Headless passthrough**: when `callerExtras.disableOutputStyleTuning` is `true`, skip Step 6 entirely and emit with the Step 5 frontmatter as-is. Mirrors the `callerExtras.disableMCP` and `callerExtras.disableSkillTuning` patterns.
+
+**Step 7 — Write the style file.** Emit `.claude/output-styles/<name>.md` with the frontmatter from Step 5 followed by the catalog body template. Project-specific markers (`<angle-bracket>` placeholders) are filled from `analysis.*`; drop the parent sentence when a marker can't be filled cleanly.
+
+**Step 8 — Write drift snapshot.** Write (or create if absent) `.claude/onboard-output-style-snapshot.json` with ONE entry per emitted style. Snapshot tracks frontmatter fields only — body edits never trigger drift. Pure JSON, no maintenance header. Multi-run accumulation: append, never prune (see `output-styles-guide.md` § Snapshot contract § Multi-run accumulation).
+
+```jsonc
+{
+  "operator": {
+    "name": "operator",
+    "description": "Terse production voice for security-sensitive and infrastructure-critical work...",
+    "keep-coding-instructions": true,
+    "archetype": "production-ops",
+    "source": "inferred"
+  }
+}
+```
+
+**Step 9 — Apply `settings.local.json` merge** (only if `wizardAnswers.outputStyleTuning.activationDefault === "write-to-settings"`). Apply the 4-case merge from `output-styles-guide.md` § settings.local.json merge rules:
+
+| Case | Action | Telemetry |
+|---|---|---|
+| File missing | Warn, do NOT create | `settingsLocalWritten: false`, `settingsLocalWarning: "file-missing"` |
+| Key absent | Read-modify-write: add `"outputStyle": "<emitted-name>"`, preserve all other keys | `settingsLocalWritten: true`, `settingsLocalWarning: null` |
+| Key present, same value | No-op | `settingsLocalWritten: false`, `settingsLocalWarning: "already-set-to-same"` |
+| Key present, different value | Block, warn | `settingsLocalWritten: false`, `settingsLocalWarning: "conflict:<existing-value>"` |
+
+Invariants: never create `settings.local.json` from scratch, never overwrite an existing `outputStyle` value, write value as a JSON-quoted string (strict JSON).
+
+**Step 10 — Populate `outputStyleStatus`.** Add to `onboard-meta.json` alongside `mcpStatus` and `skillStatus`:
+
+```jsonc
+{
+  "outputStyleStatus": {
+    "planned": ["operator"],
+    "generated": ["operator"],
+    "skipped": [],
+    "frontmatterFields": {
+      "operator": {
+        "name": "operator",
+        "description": "...",
+        "keep-coding-instructions": true,
+        "archetype": "production-ops",
+        "source": "inferred"
+      }
+    },
+    "activationDefault": "none",
+    "settingsLocalWritten": false,
+    "settingsLocalWarning": null,
+    "existedPreOnboard": [],
+    "warnings": []
+  }
+}
+```
+
+**`skipped[].reason` values**: `user-declined-confirmation` | `archetype-not-fired` | `skip-emit-selected` | `caller-disabled`.
+**`source` values**: `inferred` | `wizard-default` | `user-confirmed` | `user-tweaked`.
+**`settingsLocalWarning` values**: `null` | `"file-missing"` | `"already-set-to-same"` | `"conflict:<existing-value>"`.
+
+**Step 11 — Post-emit stdout summary.** Print a terse block: the emitted style, activation default, any settings.local.json warning, any pre-existing file we preserved. Keep it under 5 lines — most of the useful detail lives in `onboard-meta.json`.
 
 ### Hooks (.claude/settings.json)
 
@@ -1221,6 +1327,15 @@ Before finishing generation, verify:
 - [ ] `.claude/rules/mcp-setup.md` emitted when any server needs auth OR pre-existing file detected
 - [ ] Auto-install ran after metadata write (never before)
 - [ ] `callerExtras.disableMCP: true` suppresses all Phase 7a side effects
+- [ ] Phase 7b ran after Phase 7a and before Hooks
+- [ ] Emitted output-style file is at `.claude/output-styles/<archetype-name>.md` with matching `name` frontmatter
+- [ ] Pre-existing output-style file was NOT overwritten (check for `outputStyleStatus.existedPreOnboard[]`)
+- [ ] `.claude/onboard-output-style-snapshot.json` contains frontmatter-only entry for the emitted style
+- [ ] `onboard-meta.json.outputStyleStatus` populated alongside `mcpStatus`
+- [ ] `settings.local.json` was NOT created from scratch (Case 1 warns only)
+- [ ] Existing `outputStyle` in `settings.local.json` was NOT overwritten (Cases 3/4 warn only)
+- [ ] `callerExtras.disableOutputStyleTuning: true` suppresses the Phase 7b batched confirmation
+- [ ] CLAUDE.md Plugin Integration includes the `### Output styles` subsection (built-ins + emitted custom + activation path)
 
 ## Extended Generation (Enriched Mode)
 

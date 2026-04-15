@@ -13,6 +13,7 @@ Interactive wizard that analyzes your codebase and generates complete Claude too
 - **`.claude/rules/*.md`** — Path-scoped rules for testing, APIs, components, security
 - **`.claude/skills/`** — Stack-specific and workflow skills
 - **`.claude/agents/`** — Specialized agents (code reviewer, test writer, etc.)
+- **`.claude/output-styles/<name>.md`** — Project-scoped custom output style tuned to archetype (onboarding / teaching / production-ops / research / solo)
 - **Hook entries in `.claude/settings.json`** — Auto-format, lint checks, tailored to your tooling
 
 All generated files include self-maintaining headers that prompt Claude to notify you when configurations drift from actual code patterns.

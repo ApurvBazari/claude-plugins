@@ -178,6 +178,31 @@ Compare the live agent frontmatter for every agent in `onboard-meta.json.agentSt
 
 Record as `agentDrift.{userEdited, missingFiles, newFieldCandidates, legacyNoFrontmatter}[]` for Step 7.
 
+#### 4b.7: Output Style Drift
+
+Compare the live output-style frontmatter for every style in `onboard-meta.json.outputStyleStatus.generated` against the baseline in `.claude/onboard-output-style-snapshot.json`. This step only classifies — applying is deferred to Step 7.
+
+1. **Read the inputs**:
+   - `onboard-meta.json.outputStyleStatus.generated` — list of style filename stems onboard authored in this project.
+   - `.claude/onboard-output-style-snapshot.json` — per-style frontmatter baseline (the 5 fields onboard wrote in the last run).
+   - Live `.claude/output-styles/<name>.md` files on disk.
+
+2. **For each style in `outputStyleStatus.generated`**: parse the YAML frontmatter from the live file and diff against the snapshot entry field-by-field.
+
+3. **Scope reminder**: snapshot tracks **frontmatter only** (`name`, `description`, `keep-coding-instructions`, `archetype`, `source`). Body edits (system-prompt prose) are intentionally outside snapshot scope and never classified as drift. Developers can freely revise the body voice without triggering any state.
+
+4. **Classify per field**:
+   - **user-edit** — frontmatter field value in live differs from snapshot, and the style's `frontmatterFields.<style>.source` in `onboard-meta.json` is NOT `user-tweaked`. The developer hand-edited it after generation. Informational by default; never auto-rewrite.
+   - **user-tweaked** — frontmatter field value in live differs from snapshot AND `source === "user-tweaked"`. Expected drift — do not flag.
+   - **missing-file** — the `.md` file is absent from disk but present in `outputStyleStatus.generated` and not tagged `deletedByUser`. Offer to regenerate via `onboard:generate` with `callerExtras.regenerateOnly` and `callerExtras.disableOutputStyleTuning: true` (reuse snapshot values).
+   - **new-field** — snapshot omitted a field that the current generator would now emit (e.g., a future release adds a new internal tracking field). Surface as a suggested addition.
+   - **legacy-no-frontmatter** — live file exists, but the YAML frontmatter block is absent entirely (style was hand-authored before 1.7.0 or frontmatter was stripped). Classify + prompt for migration; never auto-rewrite in `update`.
+   - **in-sync** — live frontmatter equals snapshot for every field. No action.
+
+5. **Pre-existing guard**: styles in `outputStyleStatus.existedPreOnboard` are never diffed — they predate the generator and are treated as user-owned.
+
+Record as `outputStyleDrift.{userEdited, missingFiles, newFieldCandidates, legacyNoFrontmatter}[]` for Step 7.
+
 ---
 
 ## Findings Report
@@ -239,6 +264,13 @@ Organize findings into categories:
 > - **New field candidates**: [list or "none"] — fields the current archetype table would emit that the snapshot omits
 > - **Legacy agents (no YAML frontmatter)**: [list or "none"] — pre-1.6.0 agents using markdown-sections format. Migration adds archetype-inferred frontmatter.
 > - Impact: missing-file regeneration, new-field additions, and legacy migration can be applied on approval; user-edits are preserved.
+>
+> ### Output Style Drift (from Step 4b.7)
+> - **User edits detected**: [style:field pairs or "none"] — informational only; onboard never rewrites hand-edited frontmatter. Body edits are outside snapshot scope and never flagged.
+> - **Missing files**: [list or "none"] — tracked styles absent from disk (regenerate via `onboard:generate` with `disableOutputStyleTuning: true`)
+> - **New field candidates**: [list or "none"] — fields the current generator would emit that the snapshot omits
+> - **Legacy styles (no YAML frontmatter)**: [list or "none"] — styles hand-authored without frontmatter. Migration adds archetype-inferred frontmatter using catalog defaults.
+> - Impact: missing-file regeneration, new-field additions, and legacy migration can be applied on approval; user-edits and body prose are preserved.
 >
 > ### Deprecated Patterns
 > - [Anything in current setup that's outdated]
@@ -387,6 +419,17 @@ Only **additions** and **legacy migrations** are applied on user approval. User-
    > Agent `<name>` has no YAML frontmatter (pre-1.6.0 format). Apply archetype-inferred defaults (`model: sonnet`, `color: blue`, `effort: medium`) as a migration? [yes/no/skip]
    On yes: classify the agent via `generation/references/agents-guide.md` archetype rules using its name/description, compose with `wizardAnswers.agentTuning`, run the full validation pass from `generation/SKILL.md` § Agent Frontmatter Emission Step 3, and prepend a YAML frontmatter block to the live file (keeping the body intact). Update the snapshot and set `frontmatterFields.<agent>.source = "wizard-default"`. On no/skip: leave the file as-is; record `agentStatus.warnings[] = "legacy-skipped:<agent>"`.
 
+**Output style drift application** (for items surfaced by Step 4b.7):
+
+Only **additions** and **legacy migrations** are applied on user approval. User-edits are never overwritten, and body prose is outside snapshot scope (no body-related apply logic).
+
+1. For each approved `newFieldCandidate`: read the live style `.md`, add only the missing frontmatter field using the catalog default for the style's archetype. Do not touch body content. Update `.claude/onboard-output-style-snapshot.json` to include the new field in the baseline. Set `frontmatterFields.<style>.source = "user-confirmed"`.
+2. For each `userEdit`: display only — never apply. The developer's hand-edit stays. Update the snapshot to match the live file so subsequent runs stop flagging this drift. Set `frontmatterFields.<style>.source = "user-tweaked"`.
+3. For each `missingFile`: invoke `generate` via the Skill tool with `callerExtras.regenerateOnly: [".claude/output-styles/<name>.md"]` and `callerExtras.disableOutputStyleTuning: true`. The generator re-emits the style using the snapshot's frontmatter values and the catalog body template (preserving prior tweaks). Append to `generatedArtifacts` if previously dropped.
+4. For each `legacyNoFrontmatter`: prompt the developer with a preview:
+   > Output style `<name>` has no YAML frontmatter. Apply archetype-inferred defaults (matching the filename stem to the 5-archetype catalog) as a migration? [yes/no/skip]
+   On yes: match the filename stem against the catalog (`onboarding-mentor`, `tutorial-guide`, `operator`, `explorer-notes`, `solo-minimal`) to determine the archetype, compose catalog-default frontmatter (`name`, `description`, `keep-coding-instructions: true`, `archetype`, `source: "wizard-default"`), and prepend a YAML frontmatter block to the live file (keeping the body intact). If the filename stem doesn't match any catalog entry, skip with warning `legacy-no-archetype-match:<style>`. Update the snapshot. On no/skip: leave the file as-is; record `outputStyleStatus.warnings[] = "legacy-skipped:<style>"`.
+
 **Artifact gap regeneration** (for items surfaced by Step 4b.2):
 
 Invoke the `generate` skill via the Skill tool with a narrow `callerExtras.regenerateOnly` payload listing the missing artifact paths. Generate honors this scope and only writes the listed files. After regeneration, verify each file is present on disk and carries a fresh maintenance header.
@@ -406,6 +449,7 @@ Update `.claude/onboard-meta.json`:
 - **If MCP drift was applied in Step 7** — refresh top-level `mcpStatus`: add newly-applied servers to `mcpStatus.generated[]`, drop removed servers. Re-run `scripts/install-mcp-plugins.sh` for any newly-applied server with a `plugin` field; merge results into `mcpStatus.autoInstalled[]` and `mcpStatus.autoInstallFailed[]`. Always keep `mcpStatus.existedPreOnboard` sticky — once true, it stays true for the life of the project.
 - **If skill frontmatter drift was applied in Step 7** — refresh top-level `skillStatus.frontmatterFields[<skill>]` to match the applied state, including the refreshed `source` value (`user-confirmed` / `user-tweaked`). Update `.claude/onboard-skill-snapshot.json` to reflect the new baseline. Keep `skillStatus.existedPreOnboard[]` sticky.
 - **If agent frontmatter drift was applied in Step 7** — refresh top-level `agentStatus.frontmatterFields[<agent>]` to match the applied state, including the refreshed `source` value (`user-confirmed` / `user-tweaked` / `wizard-default` for legacy migrations). Update `.claude/onboard-agent-snapshot.json` to reflect the new baseline. Keep `agentStatus.existedPreOnboard[]` sticky. Append `legacy-skipped:<agent>` entries to `agentStatus.warnings` for any `legacyNoFrontmatter` declined by the developer.
+- **If output style drift was applied in Step 7** — refresh top-level `outputStyleStatus.frontmatterFields[<style>]` to match the applied state, including the refreshed `source` value (`user-confirmed` / `user-tweaked` / `wizard-default` for legacy migrations). Update `.claude/onboard-output-style-snapshot.json` to reflect the new baseline. Keep `outputStyleStatus.existedPreOnboard[]` sticky. Append `legacy-skipped:<style>` or `legacy-no-archetype-match:<style>` entries to `outputStyleStatus.warnings` for any `legacyNoFrontmatter` declined or unclassifiable. Preserve `outputStyleStatus.activationDefault`, `settingsLocalWritten`, and `settingsLocalWarning` from the prior state — `update` does NOT touch settings.local.json.
 - **Forge-meta mirror (scoped)** — If the project also maintains `.claude/forge-meta.json`, update ONLY these fields to match: `generated.toolingFlags.installedPlugins`, `generated.toolingFlags.coveredCapabilities`, `generated.toolingFlags.qualityGates`, `generated.toolingFlags.phaseSkills`, `generated.toolingFlags.hookStatus`. Read-modify-write the file: preserve every other key (`context.*`, `scaffold.*`, `lastRun`, `pluginVersion`, any caller-specific fields) verbatim. Never rewrite the whole file; never touch `context.autonomyLevel` or any other non-toolingFlags subtree — forge owns those. If `forge-meta.json` is absent, skip this step silently.
 - Add an `updateHistory` array entry:
 

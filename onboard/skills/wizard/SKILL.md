@@ -206,6 +206,37 @@ The generation skill reads `wizardAnswers.agentTuning` and refines the archetype
 
 **Quick Mode behavior**: 5.3 is skipped entirely in Quick Mode — `agentTuning` defaults to `{ mode: "defaults" }` and inference runs with archetype defaults only. The generation-time confirmation step still fires with default answer "Accept all" so Quick Mode remains frictionless.
 
+### Phase 5.4: Output Style Tuning (Optional, Default No)
+
+After Phase 5.3, ask **one** yes/no question:
+
+> Tune the generated output style? Default: no — an archetype is inferred from your project and emitted with sensible defaults.
+
+If the developer answers **no** (or skips): record `wizardAnswers.outputStyleTuning = { mode: "defaults" }` and move on. Inference still runs in `generation/SKILL.md` § Output Styles — the archetype table (onboarding / teaching / production-ops / research / solo) produces the emitted style's frontmatter, and the batched confirmation in generation Phase 7b Step 6 still fires with default-answer "Accept" so headless / Quick Mode paths pass through cleanly.
+
+If the developer answers **yes**: issue **one consolidated `AskUserQuestion` call** with two single-select questions (two fits comfortably within the 4-question cap):
+
+1. **Archetype override** — single-select: `inherit` (use the inferred archetype) / `onboarding` / `teaching` / `production-ops` / `research` / `solo` / `skip-emit`. Describe: "Controls which `.claude/output-styles/<name>.md` is emitted. `skip-emit` prevents any file from being written — use when you prefer to rely solely on Claude Code's three built-in styles."
+2. **Activation default** — single-select: `none` (emit the file but don't activate it; the developer can pick it via `/config` when ready) / `write-to-settings` (write `"outputStyle": "<emitted-name>"` to `.claude/settings.local.json` so the style is active in new sessions). Describe: "`settings.local.json` is typically git-ignored and per-machine. Onboard never creates the file and never overwrites an existing `outputStyle` value — pre-existing values surface as a warning instead."
+
+Record the full selection as:
+
+```json
+{
+  "outputStyleTuning": {
+    "mode": "tuned",
+    "archetypeOverride": "inherit | onboarding | teaching | production-ops | research | solo | skip-emit",
+    "activationDefault": "none | write-to-settings"
+  }
+}
+```
+
+**Exchange budget guard**: Phase 5.4 is one gate (yes/no) + optionally one two-question `AskUserQuestion` call. If the current exchange count is already ≥5 when Phase 5.4 fires (worst case: all of 5.1 / 5.1.1 / 5.2 / 5.3 were answered "yes" and each ran its full dialog), skip directly to defaults (`wizardAnswers.outputStyleTuning = { mode: "defaults" }`) and note it in `skippedFields` so the generation skill knows the developer did not explicitly decline. The 6-exchange hard limit stays intact.
+
+The generation skill reads `wizardAnswers.outputStyleTuning` and refines the archetype output in `generation/references/output-styles-guide.md` § Archetype inference and § settings.local.json merge rules. Per-style developer tweaks happen in the generation-time batched confirmation step, not here.
+
+**Quick Mode behavior**: 5.4 is skipped entirely in Quick Mode — `outputStyleTuning` defaults to `{ mode: "defaults" }` and inference runs with archetype defaults only. The generation-time batched confirmation still fires with default answer "Accept" so Quick Mode remains frictionless.
+
 ### Phase 5.5: Ecosystem Plugins (Always)
 Offer complementary plugins from the ecosystem.
 - Notifications (notify plugin) — get alerted when Claude finishes tasks or needs attention
@@ -344,6 +375,11 @@ After the wizard completes, compile all answers into a structured JSON format:
     "defaultModel": "sonnet",
     "defaultEffort": "medium",
     "preApprovalPosture": "standard"
+  },
+  "outputStyleTuning": {
+    "mode": "tuned",
+    "archetypeOverride": "inherit",
+    "activationDefault": "none"
   }
 }
 ```
@@ -355,3 +391,5 @@ The `advancedHookEvents` field is an array of event names the developer explicit
 The `advancedHookTypes` / `advancedHookTypeExtras` / `allowHttpHooks` fields come from Phase 5.1.1 (execution type per event). `advancedHookTypes` only contains entries for judgment-capable events the developer explicitly picked a non-default type for; events defaulting to `command` are omitted. `advancedHookTypeExtras` carries the auxiliary field (`agentRef` / `httpUrl` / `promptRef` / `promptInline`) required by the chosen type. `allowHttpHooks` is `true` only when the developer confirmed the HTTP data-leaves-machine prompt for at least one event. See `generation/SKILL.md` § Advanced Event Hooks § Per-event defaults and § Hook Type Validation for how these are consumed.
 
 The `skillTuning` field comes from Phase 5.2. `mode: "defaults"` (or the field being absent entirely) means "archetype inference only — no project-level override". `mode: "tuned"` carries the three project-level settings: `defaultModel` (model tier hint for generated skills), `defaultEffort` (thinking budget hint), `preApprovalPosture` (how aggressively the `allowed-tools` field is populated). These three settings refine the archetype output in `generation/SKILL.md` § Skills § Frontmatter emission. Per-skill overrides happen in the generation-time batched confirmation step, not here.
+
+The `outputStyleTuning` field comes from Phase 5.4. `mode: "defaults"` (or the field being absent entirely) means "archetype inference only — the generation skill picks the top-priority archetype match and emits with catalog defaults". `mode: "tuned"` carries two project-level settings: `archetypeOverride` (`inherit` keeps inference; a named archetype forces that one regardless of firing conditions; `skip-emit` prevents emission entirely) and `activationDefault` (`none` emits the file without touching settings; `write-to-settings` merges `"outputStyle": "<name>"` into `.claude/settings.local.json` following the 4-case merge safety rules in `generation/references/output-styles-guide.md` § settings.local.json merge rules). Per-style developer tweaks happen in the generation-time batched confirmation step, not here.
