@@ -139,6 +139,58 @@ The caller must provide a context JSON object in the conversation. This object c
           "triggerOn": "string — 'session-end'",
           "mode": "string — 'advisory' (default for postFeature)"
         }
+      ],
+      "sessionEnd": [
+        {
+          "type": "reminder",
+          "message": "string (optional) — surfaced to stderr at session end; omit for the default safe no-op stub"
+        }
+      ],
+      "userPromptSubmit": [
+        {
+          "type": "reminder",
+          "condition": "string (optional) — e.g., 'security-high' or 'hookify-installed'; entry dropped if condition fails"
+        }
+      ],
+      "preCompact": [
+        {
+          "matcher": "string — 'manual' | 'auto' (default: 'auto')",
+          "mode": "string — 'advisory' (default, only value currently supported)"
+        }
+      ],
+      "subagentStart": [
+        {
+          "type": "audit",
+          "condition": "string (optional) — e.g., 'teams-enabled'"
+        }
+      ],
+      "taskCreated": [
+        {
+          "mode": "string — 'advisory' (default) or 'blocking'",
+          "minSubjectLength": "number (optional) — default 10"
+        }
+      ],
+      "taskCompleted": [
+        {
+          "mode": "string — 'advisory' (default) or 'blocking'",
+          "testCommand": "string (optional) — shell command; falls through to advisory if unset"
+        }
+      ],
+      "fileChanged": [
+        {
+          "matcher": "string — filename glob (e.g., 'package-lock.json|Cargo.lock')",
+          "message": "string (optional) — stderr notice; default uses generic advisory"
+        }
+      ],
+      "configChange": [
+        {
+          "matcher": "string — 'user_settings' | 'project_settings' | 'local_settings' | 'policy_settings' | 'skills' (default: 'project_settings')"
+        }
+      ],
+      "elicitation": [
+        {
+          "matcher": "string (optional) — MCP server name; omit for all servers"
+        }
       ]
     },
     "phaseSkills": {
@@ -160,8 +212,9 @@ The caller must provide a context JSON object in the conversation. This object c
 - `mode: "advisory"` → generated hook script exits 0 with stdout. Claude sees the message and continues. Default for everything else.
 - **autonomyLevel downgrade**: callers are expected to downgrade `preCommit[].mode` to `"advisory"` when `wizardAnswers.autonomyLevel === "always-ask"`. Onboard honors whatever mode it receives — it does not second-guess the caller's autonomy derivation.
 - **Plugin availability**: onboard checks that each referenced skill's plugin is in `installedPlugins` before writing a hook entry. Missing → entry is dropped + warning recorded in `onboard-meta.json`.
+- **Advanced event fields** (`sessionEnd`, `userPromptSubmit`, `preCompact`, `subagentStart`, `taskCreated`, `taskCompleted`, `fileChanged`, `configChange`, `elicitation`) are all optional. Each accepts either an explicit array or is inferred from wizard answers and analyzer signals — see `generation/SKILL.md` § Advanced Event Hooks for the per-event inference rules. Matcher-incompatible events (see `references/hooks-guide.md` § Matcher Compatibility) must have no `matcher` field in the generated settings entry regardless of what the caller passes.
 
-**Backward compat**: `callerExtras.qualityGates`, `phaseSkills`, and `allowPluginReferences` are all optional. Callers that omit them get the pre-upgrade behavior (no quality-gate hooks, no Plugin Integration section, no plugin cross-references in rules).
+**Backward compat**: `callerExtras.qualityGates`, `phaseSkills`, and `allowPluginReferences` are all optional. Callers that omit them get the pre-upgrade behavior (no quality-gate hooks, no Plugin Integration section, no plugin cross-references in rules). Callers that pass the legacy 4-field `qualityGates` shape (only `sessionStart` / `preCommit` / `featureStart` / `postFeature`) also get pre-upgrade behavior for the advanced event fields — they fall through to the inference rules in `generation/SKILL.md`.
 
 ### Validation
 

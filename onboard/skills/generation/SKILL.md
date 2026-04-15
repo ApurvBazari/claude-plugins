@@ -353,6 +353,8 @@ This telemetry enables `/forge:status` to report "X/Y hooks wired" and lays the 
 
 The mental model: `hookStatus` answers "how well did the Plugin Integration contract land?", not "how many shell hooks does this project have total?".
 
+**Scope extension — advanced event hooks**: hooks emitted from the Advanced Event Hooks section (SessionEnd, UserPromptSubmit, PreCompact, SubagentStart, TaskCreated, TaskCompleted, FileChanged, ConfigChange, Elicitation) ARE counted in `hookStatus`. They are part of the Plugin Integration contract when the caller requested them via `callerExtras.qualityGates.<event>[]` OR when the wizard's `advancedHookEvents` opt-in selected them. When the inference rules fire them implicitly (see per-event triggers), they are also tracked — the scope boundary is "did a caller or wizard answer ask for this?" not "did the user type a yes". Format/lint hooks and utility hooks (WorktreeCreate init-runner) remain out of scope.
+
 **Canonical `hookStatus` shape** (the source of truth — all downstream consumers use this exact layout):
 
 ```jsonc
@@ -361,7 +363,11 @@ The mental model: `hookStatus` answers "how well did the Plugin Integration cont
     "SessionStart": 1,               // count of planned hooks per event key
     "PreToolUse:Write": 1,           // keys use <Event>[:<Matcher>] format
     "PreToolUse:Bash": 2,            // multiple entries possible (e.g. 2 preCommit scripts)
-    "Stop": 1
+    "Stop": 1,
+    // Advanced event hooks use the same <Event>[:<Matcher>] key format:
+    "SessionEnd": 1,
+    "PreCompact:auto": 1,
+    "FileChanged:package-lock.json|Cargo.lock": 1
   },
   "generated": {
     // list-of-script-basenames per event key (NOT a count map).
@@ -373,7 +379,10 @@ The mental model: `hookStatus` answers "how well did the Plugin Integration cont
       "pre-commit-code-review.sh",
       "pre-commit-verification-before-completion.sh"
     ],
-    "Stop":             ["post-feature-revise-claude-md.sh"]
+    "Stop":             ["post-feature-revise-claude-md.sh"],
+    "SessionEnd":       ["session-end.sh"],
+    "PreCompact:auto":  ["pre-compact-checkpoint.sh"],
+    "FileChanged:package-lock.json|Cargo.lock": ["file-changed-notice.sh"]
   },
   "skipped": [                       // one entry per hook that was planned but NOT generated
     {
@@ -722,6 +731,62 @@ Record standalone quality-gate hooks in `onboard-meta.json` under the same `hook
 ##### Merge behavior
 
 Same as headless mode: read existing `.claude/settings.json` first, merge hook entries, never overwrite. If a hook with the same matcher/event already exists, skip (don't duplicate). Standalone quality-gate hooks coexist with format/lint hooks from the Autonomy Cascade — they use different events/matchers and do not conflict.
+
+#### Advanced Event Hooks (from `qualityGates.<advanced-event>` or wizard opt-in)
+
+In addition to the four core quality-gate categories (sessionStart / preCommit / featureStart / postFeature), onboard emits hooks for nine advanced Claude Code events when the caller requests them or the wizard's advanced-hook step selects them. All templates live in `references/hooks-guide.md` § Advanced Event Templates — this section covers the generation contract only.
+
+##### Input sources (in priority order)
+
+1. **Caller-provided**: `callerExtras.qualityGates.<event>[]` where `<event>` is one of `sessionEnd`, `userPromptSubmit`, `preCompact`, `subagentStart`, `taskCreated`, `taskCompleted`, `fileChanged`, `configChange`, `elicitation`. See `skills/generate/SKILL.md` § Required Context Structure for the per-field shape.
+2. **Wizard opt-in**: `wizardAnswers.advancedHookEvents[]` — array of event names the developer selected in the wizard's optional advanced-hooks step. Maps 1:1 to the caller schema keys (lowercase first letter, e.g., `sessionEnd`, not `SessionEnd`).
+3. **Inference**: when neither source is present, apply the per-event inference rules below. Inference runs last and never overrides an explicit empty selection.
+
+##### Per-event inference rules
+
+| Event | Inference trigger | Template script (in `references/hooks-guide.md`) |
+|---|---|---|
+| `SessionEnd` | Always emit (safe cleanup stub) | `session-end.sh` |
+| `UserPromptSubmit` | `wizardAnswers.securitySensitivity === "high"` OR `hookify` in `effectivePlugins` | `user-prompt-preflight.sh` |
+| `PreCompact` | `wizardAnswers.autonomyLevel ∈ {balanced, autonomous}` AND `analysis.complexity.fileCount > 500` — matcher `"auto"` | `pre-compact-checkpoint.sh` |
+| `SubagentStart` | `enriched.enableTeams === true` | `subagent-start-audit.sh` |
+| `TaskCreated` | `enriched.enableTeams === true` | `task-created-check.sh` |
+| `TaskCompleted` | `enriched.enableTeams === true` — substitute `${CLAUDE_TEST_COMMAND}` with the analyzer's detected test command if available | `task-completed-verify.sh` |
+| `FileChanged` | `enriched.enableEvolution === true` — use the drift-detection matcher set from `references/evolution-hooks-guide.md`; fall back to the generic lockfile matcher when the caller supplies no explicit matcher | `file-changed-notice.sh` or the drift scripts from evolution-hooks-guide |
+| `ConfigChange` | Analyzer detected `.claude/settings.json` OR `.claude/rules/` under git version control (`versionControlledClaude === true`) — matcher `"project_settings"` | `config-change-warn.sh` |
+| `Elicitation` | `.mcp.json` present in the repo OR analyzer reports MCP servers in the stack — omit matcher unless caller names specific servers | `elicitation-audit.sh` |
+
+##### Generation rules
+
+1. **Matcher-incompatible events MUST NOT emit a `matcher` field** in the settings entry. Applies to: `SessionEnd`, `UserPromptSubmit`, `SubagentStart`, `TaskCompleted`. See `references/hooks-guide.md` § Matcher Compatibility for the authoritative table. Silently ignoring an extraneous matcher is not acceptable — the generated JSON must be honest.
+2. **Matcher-capable events MUST scope narrowly**. `PreCompact` defaults to `"auto"` (manual compactions stay quiet). `FileChanged` must specify a filename glob — omitting the matcher means "watch every file" and produces avoidable noise. `ConfigChange` defaults to `"project_settings"`. `Elicitation` omits the matcher only when the caller explicitly intends to audit every MCP server.
+3. **All advanced events are advisory by default** — the generated scripts always `exit 0`. The caller may upgrade `taskCreated` / `taskCompleted` to `mode: "blocking"` explicitly; all other events ignore `mode` (only advisory is supported because Claude Code does not honor `exit 2` on them).
+4. **Script generation**: copy the corresponding template from `references/hooks-guide.md` § Advanced Event Templates into `<project>/.claude/hooks/<script-name>`, make executable (`chmod +x`), verify `shellcheck -x` passes. Do NOT re-author the templates inline — the guide is authoritative.
+5. **Merge semantics**: same as quality-gate hooks — read existing `.claude/settings.json`, append the new hook entry under its event key, skip if a hook with the same matcher already exists. Never overwrite.
+6. **hookStatus telemetry**: every advanced event hook that is planned, generated, or skipped MUST appear in `hookStatus` under the `<Event>[:<Matcher>]` key (e.g., `"PreCompact:auto"`, `"FileChanged:package-lock.json|Cargo.lock"`). The canonical-shape invariant — `planned[event] - len(generated[event]) == count(skipped where event matches)` — applies equally.
+7. **Plugin availability**: when an advanced event's inference condition references an installed plugin (e.g., `hookify` for `UserPromptSubmit`), verify the plugin is in `effectivePlugins` before emitting. Missing → record in `hookStatus.skipped[]` with reason `plugin-not-installed`.
+
+##### Wizard opt-in plumbing
+
+When `wizardAnswers.advancedHookEvents` is present and non-empty, it takes priority over the inference rules for exactly the events it names. Events not in the array fall back to inference. An empty-but-present array (`[]`) means "user said no to all advanced events" — inference is suppressed entirely for that run (the one exception to rule 3 in Input sources above).
+
+Mapping from wizard names (camelCase) to hookStatus keys (Event[:Matcher]):
+
+| Wizard name | hookStatus key(s) |
+|---|---|
+| `sessionEnd` | `SessionEnd` |
+| `userPromptSubmit` | `UserPromptSubmit` |
+| `preCompact` | `PreCompact:auto` (default matcher) |
+| `subagentStart` | `SubagentStart` |
+| `taskCreated` | `TaskCreated` |
+| `taskCompleted` | `TaskCompleted` |
+| `fileChanged` | `FileChanged:<matcher>` (matcher derived from analyzer signals or defaulted to lockfiles) |
+| `configChange` | `ConfigChange:project_settings` |
+| `elicitation` | `Elicitation` (no matcher) or `Elicitation:<mcp-server>` (per matcher) |
+
+##### Scope note
+
+Advanced event hooks complement — they do not replace — the core four quality-gate categories. SessionStart (plugin integration reminder), preCommit (commit gating), featureStart (new-file detector), and postFeature (phase-end nudge) continue to fire under their existing rules. Advanced event hooks are additive.
 
 #### Utility Hooks (non-telemetry)
 
