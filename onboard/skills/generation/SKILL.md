@@ -568,7 +568,7 @@ Follow `references/mcp-guide.md` for emission rules, catalog, and transport shap
 
 #### Auto-install Plugins
 
-After the metadata file is written in Phase 8, invoke `scripts/install-mcp-plugins.sh <plugin1> <plugin2> ...` for each server's `plugin` field (if present). The script:
+After the metadata file is written in Phase 8, invoke `scripts/install-plugins.sh <plugin1> <plugin2> ...` for each server's `plugin` field (if present). The script:
 
 1. Probes `claude plugin list --json` once
 2. Skips plugins already installed

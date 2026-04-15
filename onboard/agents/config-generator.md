@@ -75,7 +75,7 @@ Generate artifacts in this order:
 
 7. **Metadata** (`.claude/onboard-meta.json`) — Record everything: plugin version, timestamp, wizard answers, list of generated artifacts, model recommendation. Include `mcpStatus` (parallel to `hookStatus`) with `planned`/`generated`/`skipped`/`autoInstalled`/`autoInstallFailed`/`existedPreOnboard` fields. Include `agentStatus` (parallel to `skillStatus`) with `planned`/`generated`/`skipped`/`frontmatterFields`/`existedPreOnboard`/`warnings` fields. Add `.mcp.json`, `.claude/onboard-mcp-snapshot.json`, `.claude/rules/mcp-setup.md` (if written), and `.claude/onboard-agent-snapshot.json` to `generatedArtifacts`.
 
-8. **Auto-install MCP plugins** — After metadata is written, run `scripts/install-mcp-plugins.sh` with the list of emitted-server plugin names. The script probes `claude plugin list --json`, skips already-installed plugins, and installs the rest. Failures are logged but do not fail generation. On completion, update `mcpStatus.autoInstalled` and `mcpStatus.autoInstallFailed` in `onboard-meta.json`.
+8. **Auto-install MCP plugins** — After metadata is written, run `scripts/install-plugins.sh` with the list of emitted-server plugin names. The script probes `claude plugin list --json`, skips already-installed plugins, and installs the rest. Failures are logged but do not fail generation. On completion, update `mcpStatus.autoInstalled` and `mcpStatus.autoInstallFailed` in `onboard-meta.json`.
 
 ### Maintenance Header
 

@@ -136,7 +136,7 @@ Run the same drift classification as `../update/SKILL.md` § 4b.4 MCP Drift:
 
 **Auto-apply rules** (evolve's "drain drift without asking" philosophy applies here — but with the hard floor that user-owned edits are never touched):
 
-- `newlySuggested` → merge into `.mcp.json` and `.claude/onboard-mcp-snapshot.json`. Queue corresponding plugin for `scripts/install-mcp-plugins.sh`.
+- `newlySuggested` → merge into `.mcp.json` and `.claude/onboard-mcp-snapshot.json`. Queue corresponding plugin for `scripts/install-plugins.sh`.
 - `staleCandidate` → DO NOT auto-remove. Log as "stale MCP candidate surfaced — run `/onboard:update` to review". Drift stays flagged.
 - `userEdited` / `userRemoved` → no action. Log once.
 - Regenerate `.claude/rules/mcp-setup.md` if any newly-applied server needs auth.
