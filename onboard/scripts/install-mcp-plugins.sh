@@ -27,10 +27,24 @@ if command -v claude &>/dev/null; then
   installed_plugins=$(claude plugin list --json 2>/dev/null | tr -d '\n' || true)
 fi
 
+# Validate plugin names against a strict charset before any use in regex/JSON/shell.
+# Claude Code plugin names are kebab-case alphanumerics; anything else is rejected.
+# Closes M1 (regex injection) and M2 (JSON string injection) — both trace back to
+# unsanitized $plugin values. Names failing validation are recorded as failures and
+# never flow into grep patterns, JSON output, or install invocations.
+is_valid_plugin_name() {
+  [[ "$1" =~ ^[a-z0-9][a-z0-9._-]*$ ]]
+}
+
 is_installed() {
   local plugin="$1"
-  # Match `"name":"<plugin>"` or `"name": "<plugin>"` to be tolerant of formatting
-  if echo "$installed_plugins" | grep -qE "\"name\"[[:space:]]*:[[:space:]]*\"${plugin}\""; then
+  # Fixed-string match on the JSON fragment `"name":"<plugin>"`. Use grep -F so
+  # regex metacharacters in plugin names can't produce false positives. Tolerant
+  # of whitespace variants by trying both compact and spaced forms.
+  if echo "$installed_plugins" | grep -qF "\"name\":\"${plugin}\""; then
+    return 0
+  fi
+  if echo "$installed_plugins" | grep -qF "\"name\": \"${plugin}\""; then
     return 0
   fi
   return 1
@@ -41,6 +55,11 @@ already_list=()
 failed_list=()
 
 for plugin in "$@"; do
+  if ! is_valid_plugin_name "$plugin"; then
+    failed_list+=('{"plugin":"<invalid>","reason":"invalid-plugin-name"}')
+    continue
+  fi
+
   if is_installed "$plugin"; then
     already_list+=("$plugin")
     continue
@@ -51,11 +70,15 @@ for plugin in "$@"; do
     continue
   fi
 
-  # Best-effort install; capture exit code
-  if claude plugin install "$plugin" >/dev/null 2>&1; then
+  # Capture the install exit code BEFORE any if/test construct so $? isn't
+  # clobbered by the if-test's own exit status (L1 fix — previously reported
+  # a constant exit-code-1 regardless of actual failure).
+  claude plugin install "$plugin" >/dev/null 2>&1
+  rc=$?
+  if [[ "$rc" -eq 0 ]]; then
     installed_list+=("$plugin")
   else
-    failed_list+=("{\"plugin\":\"$plugin\",\"reason\":\"exit-code-$?\"}")
+    failed_list+=("{\"plugin\":\"$plugin\",\"reason\":\"exit-code-$rc\"}")
   fi
 done
 

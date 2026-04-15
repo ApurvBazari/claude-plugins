@@ -17,7 +17,10 @@
 set -euo pipefail
 
 PROJECT_ROOT="${1:-.}"
-PROJECT_ROOT="$(cd "$PROJECT_ROOT" && pwd)"
+# -P resolves the physical path (no symlink following). Keeps subsequent
+# file-existence checks honest if any component of the supplied path is a
+# symlink pointing outside the project tree.
+PROJECT_ROOT="$(cd "$PROJECT_ROOT" && pwd -P)"
 
 candidates=()
 
