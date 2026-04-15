@@ -81,7 +81,10 @@ The caller must provide a context JSON object in the conversation. This object c
     },
     "frontendPatterns": "object (optional — same shape as wizard output)",
     "backendPatterns": "object (optional — same shape as wizard output)",
-    "devopsPatterns": "object (optional — same shape as wizard output)"
+    "devopsPatterns": "object (optional — same shape as wizard output)",
+    "advancedHookEvents": "string[] (optional) — event names the developer explicitly selected in wizard Phase 5.1. Empty array = suppress inference. Absent = inference runs. See generation/SKILL.md § Advanced Event Hooks § Wizard opt-in plumbing.",
+    "advancedHookTypes": "object (optional) — map<eventName, 'command'|'prompt'|'agent'|'http'> from wizard Phase 5.1.1. Selects the execution type per event. Only keys for judgment-capable events (UserPromptSubmit, Stop, TaskCreated, TaskCompleted, Elicitation) are honored; others ignored. Absent = use per-event defaults + inference rules. See generation/SKILL.md § Hook Type Validation.",
+    "advancedHookTypeExtras": "object (optional) — map<eventName, {agentRef?, httpUrl?, promptRef?, promptInline?}> from wizard Phase 5.1.1 follow-up exchange. Provides the required auxiliary field for prompt/agent/http types. Missing aux for a selected type → validation failure per the skip-reason table."
   },
 
   "modelChoice": "string — sonnet | opus | haiku",
@@ -110,8 +113,10 @@ The caller must provide a context JSON object in the conversation. This object c
     "installedPlugins": ["string — plugin names installed by the caller"],
     "coveredCapabilities": ["string — capabilities covered by installed plugins"],
     "allowPluginReferences": "boolean (optional) — permit rules/skills to reference installed plugins instead of duplicating their guidance. Defaults to true when installedPlugins is non-empty.",
+    "allowHttpHooks": "boolean (optional) — OFF by default. When false, any qualityGates entry with hookType='http' is refused at generation time (skip reason 'http-not-opted-in'). When true, http entries are allowed provided they supply a valid httpUrl. Never auto-inferred — callers opt in explicitly.",
     "qualityGates": {
       "description": "object (optional) — boundary-enforcement hook spec. Onboard translates these into .claude/settings.json hook entries. See generation/SKILL.md § Quality-Gate Hooks for the full schema.",
+      "_perEntryTypeFields_": "EVERY entry in sessionStart/preCommit/featureStart/postFeature/sessionEnd/userPromptSubmit/preCompact/subagentStart/taskCreated/taskCompleted/fileChanged/configChange/elicitation accepts these 7 OPTIONAL fields for type selection (documented once here, honored uniformly): { hookType: 'command'|'prompt'|'agent'|'http' (default per generation/SKILL.md § Per-event defaults), promptRef: path to .claude/hooks/*.prompt.md, promptInline: inline prompt text (exactly one of promptRef/promptInline required when hookType='prompt'), agentRef: agent name required when hookType='agent', httpUrl: https-only URL required when hookType='http', httpHeaders: {k:v} optional http headers supporting ${VAR} expansion, timeout: positive int ms override (defaults: command 5000, prompt 15000, agent 60000, http 5000) }. See generation/SKILL.md § Hook Type Validation for the full rule set and skip reasons.",
       "sessionStart": [
         {
           "type": "reminder",
@@ -139,6 +144,58 @@ The caller must provide a context JSON object in the conversation. This object c
           "triggerOn": "string — 'session-end'",
           "mode": "string — 'advisory' (default for postFeature)"
         }
+      ],
+      "sessionEnd": [
+        {
+          "type": "reminder",
+          "message": "string (optional) — surfaced to stderr at session end; omit for the default safe no-op stub"
+        }
+      ],
+      "userPromptSubmit": [
+        {
+          "type": "reminder",
+          "condition": "string (optional) — e.g., 'security-high' or 'hookify-installed'; entry dropped if condition fails"
+        }
+      ],
+      "preCompact": [
+        {
+          "matcher": "string — 'manual' | 'auto' (default: 'auto')",
+          "mode": "string — 'advisory' (default, only value currently supported)"
+        }
+      ],
+      "subagentStart": [
+        {
+          "type": "audit",
+          "condition": "string (optional) — e.g., 'teams-enabled'"
+        }
+      ],
+      "taskCreated": [
+        {
+          "mode": "string — 'advisory' (default) or 'blocking'",
+          "minSubjectLength": "number (optional) — default 10"
+        }
+      ],
+      "taskCompleted": [
+        {
+          "mode": "string — 'advisory' (default) or 'blocking'",
+          "testCommand": "string (optional) — shell command; falls through to advisory if unset"
+        }
+      ],
+      "fileChanged": [
+        {
+          "matcher": "string — filename glob (e.g., 'package-lock.json|Cargo.lock')",
+          "message": "string (optional) — stderr notice; default uses generic advisory"
+        }
+      ],
+      "configChange": [
+        {
+          "matcher": "string — 'user_settings' | 'project_settings' | 'local_settings' | 'policy_settings' | 'skills' (default: 'project_settings')"
+        }
+      ],
+      "elicitation": [
+        {
+          "matcher": "string (optional) — MCP server name; omit for all servers"
+        }
       ]
     },
     "phaseSkills": {
@@ -160,8 +217,11 @@ The caller must provide a context JSON object in the conversation. This object c
 - `mode: "advisory"` → generated hook script exits 0 with stdout. Claude sees the message and continues. Default for everything else.
 - **autonomyLevel downgrade**: callers are expected to downgrade `preCommit[].mode` to `"advisory"` when `wizardAnswers.autonomyLevel === "always-ask"`. Onboard honors whatever mode it receives — it does not second-guess the caller's autonomy derivation.
 - **Plugin availability**: onboard checks that each referenced skill's plugin is in `installedPlugins` before writing a hook entry. Missing → entry is dropped + warning recorded in `onboard-meta.json`.
+- **Advanced event fields** (`sessionEnd`, `userPromptSubmit`, `preCompact`, `subagentStart`, `taskCreated`, `taskCompleted`, `fileChanged`, `configChange`, `elicitation`) are all optional. Each accepts either an explicit array or is inferred from wizard answers and analyzer signals — see `generation/SKILL.md` § Advanced Event Hooks for the per-event inference rules. Matcher-incompatible events (see `references/hooks-guide.md` § Matcher Compatibility) must have no `matcher` field in the generated settings entry regardless of what the caller passes.
+- **Hook type selection** (per-entry `hookType` + aux fields — see `_perEntryTypeFields_` above) is optional on every entry. Absent → per-event default applies (see `generation/SKILL.md` § Advanced Event Hooks § Per-event defaults). The 10 validation rules in `generation/SKILL.md` § Hook Type Validation drop invalid entries with a structured `skipped` reason — they never fail the whole generation.
+- **HTTP opt-in**: `callerExtras.allowHttpHooks` must be `true` for any `hookType: "http"` entry to be emitted. Omitting it (or setting `false`) causes http entries to be skipped with reason `http-not-opted-in`. Non-https URLs are always refused with reason `insecure-http-url`.
 
-**Backward compat**: `callerExtras.qualityGates`, `phaseSkills`, and `allowPluginReferences` are all optional. Callers that omit them get the pre-upgrade behavior (no quality-gate hooks, no Plugin Integration section, no plugin cross-references in rules).
+**Backward compat**: `callerExtras.qualityGates`, `phaseSkills`, `allowPluginReferences`, and `allowHttpHooks` are all optional. Callers that omit them get the pre-upgrade behavior (no quality-gate hooks, no Plugin Integration section, no plugin cross-references in rules, no http hooks). Callers that pass the legacy 4-field `qualityGates` shape (only `sessionStart` / `preCommit` / `featureStart` / `postFeature`) also get pre-upgrade behavior for the advanced event fields — they fall through to the inference rules in `generation/SKILL.md`. Callers that omit the new per-entry `hookType`/aux fields get `command`-type output identical to pre-upgrade behavior (every current fixture remains byte-identical).
 
 ### Validation
 
@@ -178,6 +238,22 @@ If any required field is missing, report the error clearly:
 > The calling plugin must provide a complete context object.
 
 Stop and do not proceed.
+
+**Per-entry hook-type validation** — applied during generation, not at this step. Each `callerExtras.qualityGates.<event>[]` entry passes through the 10-rule validator in `generation/SKILL.md` § Hook Type Validation. Validation failures drop the offending entry and record a `skipped[]` entry with a structured reason; they never fail the overall generation. The complete skip-reason table (for authoritative reference):
+
+| Skip reason | Condition |
+|---|---|
+| `missing-prompt-source` | `hookType="prompt"` but neither `promptRef` nor `promptInline` supplied |
+| `ambiguous-prompt-source` | `hookType="prompt"` with BOTH `promptRef` AND `promptInline` |
+| `prompt-file-not-found` | `hookType="prompt"` + `promptRef` points to non-existent file |
+| `missing-agentRef` | `hookType="agent"` but `agentRef` is absent or empty |
+| `missing-httpUrl` | `hookType="http"` but `httpUrl` is absent or empty |
+| `unsupported-type-for-event` | `hookType ∈ {prompt, agent}` on `PreToolUse` or `PostToolUse` event |
+| `http-not-opted-in` | `hookType="http"` without `callerExtras.allowHttpHooks === true` |
+| `insecure-http-url` | `hookType="http"` with URL that does not start with `https://` |
+| `agent-not-found` | `hookType="agent"` + `agentRef` referencing an agent whose plugin is not in `effectivePlugins` |
+| `invalid-timeout` | `timeout` field present but not a positive integer |
+| `high-frequency-event-unsuitable-for-agent` | `hookType="agent"` on `UserPromptSubmit` (fires on every prompt — agent latency makes it unusable) |
 
 ---
 

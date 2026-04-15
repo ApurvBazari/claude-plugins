@@ -2,6 +2,8 @@
 
 Patterns for configuring FileChanged and SessionStart hooks that keep AI tooling in sync with the codebase.
 
+> **Scope note**: the base advisory templates for `FileChanged`, `TaskCreated`, and `TaskCompleted` live in [`hooks-guide.md` § Advanced Event Templates](./hooks-guide.md#advanced-event-templates). This guide owns the drift-detection-specific wiring (the `detect-*-changes.sh` scripts and the `.claude/forge-drift.json` format) and the team-mode overrides. When adding a new generic variant of any event, update `hooks-guide.md` — not this file — and cross-reference back here if drift-specific logic needs to layer on top.
+
 ## Hook Architecture
 
 ```
@@ -152,9 +154,11 @@ AFTER (forge adds):
 
 **Conditional**: Only generate these when the project is production-scale with a team (`isProduction && hasTeam`) or when agent teams are explicitly enabled.
 
-### TaskCreated Hook
+### TaskCreated Hook (blocking override)
 
-Enforce descriptive task subjects to maintain clarity in the shared task list:
+Agent-team mode upgrades the base advisory `task-created-check.sh` template to a blocking hook so vague task subjects stop task creation entirely.
+
+> **Base template**: see [`hooks-guide.md` § TaskCreated](./hooks-guide.md#taskcreated--task-is-created-via-taskcreate) for the advisory script and payload contract. The blocking override below differs only in the exit code (2 instead of 0) and the stderr message wording.
 
 ```json
 {
@@ -171,11 +175,13 @@ Enforce descriptive task subjects to maintain clarity in the shared task list:
 }
 ```
 
-Exit code 2 blocks task creation and feeds the error message back to Claude.
+Exit code 2 blocks task creation and feeds the error message back to Claude. Generation rule: emit this blocking variant only when `enriched.enableTeams === true`. For non-team projects, use the advisory template from `hooks-guide.md`.
 
-### TaskCompleted Hook
+### TaskCompleted Hook (blocking override)
 
-Require tests to pass before a task can be marked complete:
+Agent-team mode upgrades the base advisory `task-completed-verify.sh` template to hard-require a passing test command before a task completes.
+
+> **Base template**: see [`hooks-guide.md` § TaskCompleted](./hooks-guide.md#taskcompleted--task-is-marked-completed). The blocking override below uses the detected test command directly and promotes failures to exit 2.
 
 ```json
 {

@@ -59,6 +59,88 @@ Calibrate the generated tooling.
 - Code style strictness
 - Security sensitivity
 - Claude autonomy level
+- Advanced hook events (optional — see Phase 5.1 below)
+
+### Phase 5.1: Advanced Hook Events (Optional, Default No)
+
+After capturing `autonomyLevel`, ask **one** yes/no question:
+
+> Do you want to configure advanced Claude Code hook events? (optional — default is no, and onboard will pick sensible defaults for you)
+
+If the developer answers **no** (or skips): record `wizardAnswers.advancedHookEvents = []` and move on. The generation skill's per-event inference rules fire instead — the empty array is an intentional "no, do not add advanced hooks on top of inference", documented in `generation/SKILL.md` § Advanced Event Hooks § Input sources.
+
+If the developer answers **yes**: use `AskUserQuestion` with `multiSelect: true` to present the 9 events. Each option is one sentence — no long descriptions.
+
+| Label | Description (one line) |
+|---|---|
+| `SessionEnd` | Run a cleanup script when the session ends (rotate task markers, flush state). |
+| `UserPromptSubmit` | Preflight every user prompt (e.g., warn on apparent secret literals). |
+| `PreCompact` | Save a checkpoint just before Claude compacts context (large projects). |
+| `SubagentStart` | Audit-log every subagent spawn (agent-team workflows). |
+| `TaskCreated` | Nudge when a `TaskCreate` subject looks too vague. |
+| `TaskCompleted` | Run the project's test command before a task can be marked done. |
+| `FileChanged` | Notice when a watched file (lockfiles, configs) changes on disk. |
+| `ConfigChange` | Warn when `.claude/` configuration changes mid-session. |
+| `Elicitation` | Audit-log prompts from MCP servers (compliance / security review). |
+
+Record the developer's selection verbatim as an array of strings in `wizardAnswers.advancedHookEvents` (e.g., `["SessionEnd", "PreCompact"]`). The generation skill maps these to event keys per the mapping table in `generation/SKILL.md` § Advanced Event Hooks § Wizard opt-in plumbing.
+
+**Do not combine this question with other preferences** — keep it a single dedicated exchange so the developer can scan the list. If Quick Mode is active, default `advancedHookEvents` to `[]` (inference only) and skip the prompt — advanced events are never inferred as "wanted" without an explicit developer decision.
+
+### Phase 5.1.1: Execution Type Per Event (Conditional, After 5.1 Selections)
+
+**Fires only when** Phase 5.1 returned a non-empty `advancedHookEvents` AND at least one of those events is **judgment-capable**: `UserPromptSubmit`, `Stop`, `TaskCreated`, `TaskCompleted`, `Elicitation`. If none of the selected events are judgment-capable, skip 5.1.1 entirely.
+
+Claude Code hooks can run as one of four types — `command` (shell script, fast, no LLM cost), `prompt` (LLM guardrail with judgment), `agent` (spawn a named subagent), or `http` (POST to an external URL). Most events default to `command`. For the five judgment-capable events above, a non-command type can be a significant upgrade — but has real latency and token costs.
+
+Present this cost table verbatim before asking (one message, no question):
+
+> | Type    | Latency | Cost/fire | Best for |
+> |---------|---------|-----------|----------|
+> | shell   | <1s     | none      | fast deterministic checks (regex, lint) |
+> | prompt  | 2-15s   | ~500-2k   | judgment (commit-msg quality, LLM secret detection) |
+> | agent   | 10-60s  | ~5-30k    | heavy verification at boundaries (code-reviewer on TaskCompleted) |
+> | http    | network | none local| compliance / SIEM / pager integration |
+
+Then issue **one consolidated `AskUserQuestion` call** with one question per selected judgment-capable event, up to the tool's 4-question limit. If the developer selected all 5 judgment-capable events, split into two exchanges: first 4 events, then the 5th.
+
+**Question shape per event** (single-select, exactly these 4 options — order matters for familiarity):
+
+```
+Q: How should the <Event> hook run?
+  - Shell script (fast, no LLM cost)
+  - Prompt (LLM-evaluated guardrail)
+  - Agent (spawn a named subagent)
+  - External URL (POST event to https endpoint)
+```
+
+**Follow-up exchange** (fires only when needed — skip entirely if every event picked `Shell script`):
+
+For every event where the developer picked a non-shell type, gather the auxiliary field in a **second consolidated `AskUserQuestion` call** (still one question per event, up to 4 per call):
+
+| Selected type | Follow-up question | Field captured |
+|---|---|---|
+| Prompt | "Paste the prompt text (one line) or provide a file path (e.g., `.claude/hooks/my-prompt.md`). For `UserPromptSubmit` with `securitySensitivity: high`, leave blank to use the shipped default secret-scan prompt." | `promptInline` (if no leading `./` or `/`), else `promptRef` |
+| Agent | "Which agent should evaluate this hook? (e.g., `code-reviewer`, `verification-before-completion`)" | `agentRef` |
+| External URL | "Paste the https URL to POST events to (must be https-only; http:// is refused)." | `httpUrl` |
+
+**HTTP confirmation** — before accepting any `External URL` selection, present:
+
+> Heads up: `http` hooks POST event payloads (including prompt text, file paths, and MCP elicitations) to your URL. This data leaves the machine. Continue only if your endpoint is internal/audited.
+>
+> Confirm: set `allowHttpHooks: true` for this project? (yes/no)
+
+If the developer declines, drop the `External URL` selection(s) and record as inference fallback for that event. If accepted, set `wizardAnswers.allowHttpHooks = true` (which the init command then maps to `callerExtras.allowHttpHooks` for the generator).
+
+**Recording the answers**:
+
+- `wizardAnswers.advancedHookTypes[<eventName>]` = one of `"command" | "prompt" | "agent" | "http"`. Example: `{ "taskCompleted": "agent", "elicitation": "http" }`. Events that weren't asked about don't appear in this map (they fall through to defaults).
+- `wizardAnswers.advancedHookTypeExtras[<eventName>]` = `{ agentRef?, httpUrl?, promptRef?, promptInline? }` — only the field relevant to that event's chosen type. Events that picked `command` don't appear here.
+- `wizardAnswers.allowHttpHooks` = boolean — set to `true` only when the developer accepted at least one HTTP confirmation.
+
+**Exchange budget**: 5.1.1 always fits in ≤3 exchanges total (cost-table preamble → type-pick question → follow-up aux question). When combined with 5.1 (the events question) and the rest of the wizard, we stay within the 6-exchange hard limit. If approaching exchange 5 before 5.1.1 completes, fold remaining aux questions into the final summary confirmation and use sensible defaults for any unanswered fields (record in `skippedFields`).
+
+**Quick Mode behavior**: 5.1.1 is skipped entirely in Quick Mode — per-event type defaults from `generation/SKILL.md` § Per-event defaults apply automatically.
 
 ### Phase 5.5: Ecosystem Plugins (Always)
 Offer complementary plugins from the ecosystem.
@@ -177,8 +259,27 @@ After the wizard completes, compile all answers into a structured JSON format:
   "autonomyLevel": "always-ask | balanced | autonomous",
   "ecosystemPlugins": {
     "notify": true
-  }
+  },
+  "advancedHookEvents": [
+    "SessionEnd",
+    "PreCompact",
+    "TaskCompleted",
+    "Elicitation"
+  ],
+  "advancedHookTypes": {
+    "taskCompleted": "agent",
+    "elicitation": "http"
+  },
+  "advancedHookTypeExtras": {
+    "taskCompleted": { "agentRef": "code-reviewer" },
+    "elicitation":   { "httpUrl":  "https://audit.internal/claude-elicitation" }
+  },
+  "allowHttpHooks": true
 }
 ```
 
 The `ecosystemPlugins` field captures which ecosystem plugins the developer wants set up. This gets passed to the config-generator agent along with the analysis report. The init command acts on these choices in Phase 3.5.
+
+The `advancedHookEvents` field is an array of event names the developer explicitly selected in Phase 5.1. An empty array (`[]`) means "the developer answered no to the opt-in prompt" — generation suppresses advanced event inference for that run. An absent field (omitted entirely) means "Quick Mode or preset path" — inference runs normally. See `generation/SKILL.md` § Advanced Event Hooks for the full mapping.
+
+The `advancedHookTypes` / `advancedHookTypeExtras` / `allowHttpHooks` fields come from Phase 5.1.1 (execution type per event). `advancedHookTypes` only contains entries for judgment-capable events the developer explicitly picked a non-default type for; events defaulting to `command` are omitted. `advancedHookTypeExtras` carries the auxiliary field (`agentRef` / `httpUrl` / `promptRef` / `promptInline`) required by the chosen type. `allowHttpHooks` is `true` only when the developer confirmed the HTTP data-leaves-machine prompt for at least one event. See `generation/SKILL.md` § Advanced Event Hooks § Per-event defaults and § Hook Type Validation for how these are consumed.
