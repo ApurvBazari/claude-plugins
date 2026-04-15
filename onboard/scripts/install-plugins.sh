@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# install-mcp-plugins.sh — Install Claude Code plugins for emitted MCP servers
-# Usage: bash install-mcp-plugins.sh <plugin1> [plugin2] ...
+# install-plugins.sh — Install Claude Code plugins by name (shared by MCP + LSP emission)
+# Usage: bash install-plugins.sh <plugin1> [plugin2] ...
 # Output: JSON object on stdout summarizing install results.
 #
 # Schema:

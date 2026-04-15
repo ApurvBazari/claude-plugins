@@ -187,6 +187,31 @@ Do not re-emit built-in styles as files — they're Anthropic-provided. Only cus
 
 The Plugin Integration subsection generation rules live in `generation/SKILL.md` § Plugin Integration Section Generation. For the authoring schema and archetype inference, see `output-styles-guide.md`. For the 5 custom style body templates, see `output-styles-catalog.md`.
 
+## LSP Support Reference
+
+Generated root CLAUDE.md includes an LSP support subsection inside Plugin Integration when onboard has recommended or installed one or more marketplace LSP plugins (Phase 7c). The subsection documents:
+
+- **Installed LSP plugins** (from `lspStatus.accepted`): plugin name, covered language(s), and the language-server binary that must be present on `$PATH`. Pull the binary name and install prereq from `lsp-plugin-catalog.md`.
+- **Recommended but declined** (from `lspStatus.skipped` when `reason === "user-declined"`): listed with a short note "run `/onboard:evolve` to install".
+- **Not re-emit as files**: LSP config lives inside each plugin's own `plugin.json` under `lspServers`. Onboard never writes a project-level `.lsp.json`.
+
+Example rendered subsection:
+
+```markdown
+### LSP support
+
+Installed language server plugins:
+
+- `typescript-lsp` — TypeScript / JavaScript. Requires `typescript-language-server` on PATH (`npm install -g typescript-language-server typescript`).
+- `rust-analyzer-lsp` — Rust. Requires `rust-analyzer` on PATH (`rustup component add rust-analyzer`).
+
+Plugins surface diagnostics, go-to-definition, and hover docs inside Claude Code. Restart your session after install for plugins to register.
+```
+
+Omit the subsection entirely when `lspStatus.accepted` and `lspStatus.skipped` are both empty (no candidates detected). Keep the subsection under 10 lines.
+
+The emission rules live in `generation/SKILL.md` § LSP Plugin Recommendations — Phase 7c. For the language→plugin mapping, see `lsp-plugin-catalog.md`.
+
 ## Tone by Autonomy Level
 
 ### "Always Ask" Autonomy

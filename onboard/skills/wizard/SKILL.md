@@ -254,6 +254,28 @@ Present each plugin with:
 
 The developer can select any plugin regardless of install status. Phase 3.5 (`Resolve Requested Ecosystem Plugins` in the init command) handles the inline install for anything selected but missing — the wizard never hides options just because they aren't installed yet.
 
+### Phase 5.6: LSP Plugins (When Any Detected)
+
+Run `scripts/detect-lsp-signals.sh "$PROJECT_ROOT"`. If the output is an empty array (`[]`), skip this phase entirely and record `wizardAnswers.lspPlugins = []`.
+
+Otherwise, issue **one `AskUserQuestion` multiSelect** presenting each detected plugin as an option, pre-checked when `fileCount ≥ 10` and unchecked when lower (quiet nudge against noise in polyglot projects). Preserve the script's fileCount-descending order — the primary language shows up first.
+
+> Detected source files in multiple languages. Which LSP plugins would you like to install?
+>
+> - `typescript-lsp` (1247 typescript files) **[checked]**
+> - `rust-analyzer-lsp` (312 rust files) **[checked]**
+> - `pyright-lsp` (8 python files) **[unchecked]**
+
+Describe each option: plugin name, detected language label, file count, and a one-line capability description (e.g., "Adds typescript-language-server via Claude Code LSP"). Refer to `generation/references/lsp-plugin-catalog.md` for the copy.
+
+Record the user's selection verbatim as `wizardAnswers.lspPlugins` (a string array of accepted plugin names). An empty array means "detected candidates but developer declined all of them" — distinct from "no detection" (absent field in headless mode).
+
+**Quick Mode behavior**: 5.6 is skipped in Quick Mode — `lspPlugins` defaults to the full detected list (all candidates accepted). The wizard still writes the array to `wizardAnswers.lspPlugins` so downstream generation knows to install them without re-asking.
+
+**Exchange budget guard**: Phase 5.6 is at most one `AskUserQuestion` call. If the current exchange count is already at 6, skip and set `wizardAnswers.lspPlugins` to the full detected list — Quick Mode semantics. The 6-exchange hard limit stays intact.
+
+**Headless mode** (`callerExtras.lspPlugins` or `callerExtras.disableLSP` present): the wizard never fires — generation reads the caller-supplied value directly.
+
 ### Phase 6: Summary & Confirmation
 Present everything gathered (analysis + wizard answers) and ask for confirmation before generation.
 
@@ -380,7 +402,8 @@ After the wizard completes, compile all answers into a structured JSON format:
     "mode": "tuned",
     "archetypeOverride": "inherit",
     "activationDefault": "none"
-  }
+  },
+  "lspPlugins": ["typescript-lsp", "rust-analyzer-lsp"]
 }
 ```
 
@@ -389,6 +412,8 @@ The `ecosystemPlugins` field captures which ecosystem plugins the developer want
 The `advancedHookEvents` field is an array of event names the developer explicitly selected in Phase 5.1. An empty array (`[]`) means "the developer answered no to the opt-in prompt" — generation suppresses advanced event inference for that run. An absent field (omitted entirely) means "Quick Mode or preset path" — inference runs normally. See `generation/SKILL.md` § Advanced Event Hooks for the full mapping.
 
 The `advancedHookTypes` / `advancedHookTypeExtras` / `allowHttpHooks` fields come from Phase 5.1.1 (execution type per event). `advancedHookTypes` only contains entries for judgment-capable events the developer explicitly picked a non-default type for; events defaulting to `command` are omitted. `advancedHookTypeExtras` carries the auxiliary field (`agentRef` / `httpUrl` / `promptRef` / `promptInline`) required by the chosen type. `allowHttpHooks` is `true` only when the developer confirmed the HTTP data-leaves-machine prompt for at least one event. See `generation/SKILL.md` § Advanced Event Hooks § Per-event defaults and § Hook Type Validation for how these are consumed.
+
+The `lspPlugins` field is the developer-accepted list of marketplace LSP plugins from Phase 5.6. An empty array means "detected candidates but developer declined all"; an absent field means "Quick Mode / headless path — full detected list is the implicit accept". `generation/SKILL.md` § LSP Plugin Recommendations consumes this alongside `callerExtras.lspPlugins` and `callerExtras.disableLSP`. See `generation/references/lsp-plugin-catalog.md` for the plugin→language mapping.
 
 The `skillTuning` field comes from Phase 5.2. `mode: "defaults"` (or the field being absent entirely) means "archetype inference only — no project-level override". `mode: "tuned"` carries the three project-level settings: `defaultModel` (model tier hint for generated skills), `defaultEffort` (thinking budget hint), `preApprovalPosture` (how aggressively the `allowed-tools` field is populated). These three settings refine the archetype output in `generation/SKILL.md` § Skills § Frontmatter emission. Per-skill overrides happen in the generation-time batched confirmation step, not here.
 

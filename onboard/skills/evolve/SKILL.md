@@ -125,6 +125,8 @@ Update the following fields in `.claude/forge-meta.json`:
 6. `generated.toolingFlags.mcpStatus` → mirror `onboard-meta.json.mcpStatus` verbatim (parallel to `hookStatus`). If `onboard-meta.json` has no `mcpStatus` yet (older project predating the MCP capability), skip this field silently — do not invent an empty object.
 7. `generated.toolingFlags.skillStatus` → mirror `onboard-meta.json.skillStatus` verbatim (parallel to `hookStatus` and `mcpStatus`). If `onboard-meta.json` has no `skillStatus` yet (older project predating onboard 1.5.0), skip this field silently — do not invent an empty object.
 8. `generated.toolingFlags.agentStatus` → mirror `onboard-meta.json.agentStatus` verbatim (parallel to `skillStatus`). If `onboard-meta.json` has no `agentStatus` yet (older project predating onboard 1.6.0), skip this field silently — do not invent an empty object.
+9. `generated.toolingFlags.outputStyleStatus` → mirror `onboard-meta.json.outputStyleStatus` verbatim. If `onboard-meta.json` has no `outputStyleStatus` yet (older project predating onboard 1.7.0), skip this field silently — do not invent an empty object.
+10. `generated.toolingFlags.lspStatus` → mirror `onboard-meta.json.lspStatus` verbatim. If `onboard-meta.json` has no `lspStatus` yet (older project predating onboard 1.8.0), skip this field silently — do not invent an empty object.
 
 ## Step 2c: Apply MCP Drift
 
@@ -136,7 +138,7 @@ Run the same drift classification as `../update/SKILL.md` § 4b.4 MCP Drift:
 
 **Auto-apply rules** (evolve's "drain drift without asking" philosophy applies here — but with the hard floor that user-owned edits are never touched):
 
-- `newlySuggested` → merge into `.mcp.json` and `.claude/onboard-mcp-snapshot.json`. Queue corresponding plugin for `scripts/install-mcp-plugins.sh`.
+- `newlySuggested` → merge into `.mcp.json` and `.claude/onboard-mcp-snapshot.json`. Queue corresponding plugin for `scripts/install-plugins.sh`.
 - `staleCandidate` → DO NOT auto-remove. Log as "stale MCP candidate surfaced — run `/onboard:update` to review". Drift stays flagged.
 - `userEdited` / `userRemoved` → no action. Log once.
 - Regenerate `.claude/rules/mcp-setup.md` if any newly-applied server needs auth.
@@ -197,6 +199,29 @@ Run the same drift classification as `../update/SKILL.md` § 4b.7 Output Style D
 
 Update `onboard-meta.json.outputStyleStatus.frontmatterFields[<style>]` to reflect the applied state. Preserve `outputStyleStatus.activationDefault`, `settingsLocalWritten`, and `settingsLocalWarning` — evolve does NOT touch `settings.local.json`. The Step 2b.3 forge-meta mirror path picks up the refreshed `outputStyleStatus` via the read-modify-write pattern.
 
+## Step 2g: Apply LSP Plugin Drift
+
+Run the same drift classification as `../update/SKILL.md` § 4b.8 LSP Plugin Drift:
+
+1. Read `.claude/onboard-lsp-snapshot.json` (missing file → treat as `{ recommended: [], accepted: [] }`).
+2. Run `bash ../scripts/detect-lsp-signals.sh "$PROJECT_ROOT"` for fresh candidates.
+3. Classify each candidate as `newLanguage` / `uninstalled` / `stillValid` / `staleCandidate`.
+
+**Auto-apply rules** (evolve's "drain drift without asking" philosophy — bounded by explicit-consent floor for new plugin installs):
+
+- **newLanguage** → **re-prompt** via a single `AskUserQuestion` multiSelect (reuse wizard Phase 5.6 phrasing): "Detected new languages since last run: `<list>`. Install these LSP plugins?". Pre-check entries with `fileCount ≥ 10`, unchecked below. User accepts → invoke `scripts/install-plugins.sh <plugins>`, append to `onboard-lsp-snapshot.json.recommended[]` AND `accepted[]` (preserve alphabetical sort), and merge install results into `lspStatus.autoInstalled[]` / `lspStatus.autoInstallFailed[]`. User declines individual entries → still append to `recommended[]` so subsequent drift runs don't re-surface (but omit from `accepted[]`). This respects the user's earlier choice: "prompt during wizard" posture carries through to evolve — never silent install of net-new plugins.
+- **uninstalled** → no action. Log once: "LSP plugin `<name>` was uninstalled since last run — leaving it out of snapshot.accepted on next update." Do NOT reinstall.
+- **stillValid** → no action.
+- **staleCandidate** → no action. Log once.
+
+**Snapshot-missing migration** (pre-1.8.0 projects running evolve on 1.8.0+):
+
+When `.claude/onboard-lsp-snapshot.json` is absent, fire a one-time initial prompt just like `/onboard:init` Phase 5.6. After the user's response, write the snapshot with `recommended` = full detected list, `accepted` = user's selected subset. Subsequent evolve runs follow the normal drift flow.
+
+**Headless mode** (when called via `generate` with `callerExtras.lspPlugins` set): evolve delegates to the caller's explicit list — no prompt fires. An empty array means "declined all"; an absent caller value falls through to interactive prompting.
+
+Update `onboard-meta.json.lspStatus` to reflect additions. The Step 2b.3 forge-meta mirror path picks up the refreshed `lspStatus` via the read-modify-write pattern.
+
 ## Step 3: Show Diff
 
 After applying all updates (both FileChanged and plugin integration), show what changed:
@@ -216,6 +241,8 @@ After applying all updates (both FileChanged and plugin integration), show what 
 > - .claude/onboard-agent-snapshot.json: Updated baseline
 > - .claude/output-styles/operator.md: Migrated legacy style to YAML frontmatter (production-ops archetype)
 > - .claude/onboard-output-style-snapshot.json: Updated baseline
+> - Installed rust-analyzer-lsp (new Rust files detected since last run)
+> - .claude/onboard-lsp-snapshot.json: Updated baseline
 >
 > **Not auto-applied** (needs your input):
 > - New directory src/services/ — want me to create a CLAUDE.md for it?
