@@ -189,7 +189,7 @@ Wait for the developer to choose. Record their choice.
 
 Spawn the `config-generator` agent. Include the following in the agent prompt — all of this is already available in the conversational context from prior phases:
 - The full analysis report (from Phase 1)
-- The wizard answers as structured JSON (from Phase 2)
+- The wizard answers as structured JSON (from Phase 2) — includes `advancedHookEvents` when the developer opted in at Phase 5.1; generation reads this to drive `Advanced Event Hooks` emission (see `generation/SKILL.md` § Advanced Event Hooks)
 - The `detectedPlugins` object (from Phase 2.5) — if no plugins were detected, pass an empty object so the generation skill resolves `effectivePlugins` as empty
 - The chosen model (from Step 3.1)
 - The project root path

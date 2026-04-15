@@ -59,6 +59,33 @@ Calibrate the generated tooling.
 - Code style strictness
 - Security sensitivity
 - Claude autonomy level
+- Advanced hook events (optional — see Phase 5.1 below)
+
+### Phase 5.1: Advanced Hook Events (Optional, Default No)
+
+After capturing `autonomyLevel`, ask **one** yes/no question:
+
+> Do you want to configure advanced Claude Code hook events? (optional — default is no, and onboard will pick sensible defaults for you)
+
+If the developer answers **no** (or skips): record `wizardAnswers.advancedHookEvents = []` and move on. The generation skill's per-event inference rules fire instead — the empty array is an intentional "no, do not add advanced hooks on top of inference", documented in `generation/SKILL.md` § Advanced Event Hooks § Input sources.
+
+If the developer answers **yes**: use `AskUserQuestion` with `multiSelect: true` to present the 9 events. Each option is one sentence — no long descriptions.
+
+| Label | Description (one line) |
+|---|---|
+| `SessionEnd` | Run a cleanup script when the session ends (rotate task markers, flush state). |
+| `UserPromptSubmit` | Preflight every user prompt (e.g., warn on apparent secret literals). |
+| `PreCompact` | Save a checkpoint just before Claude compacts context (large projects). |
+| `SubagentStart` | Audit-log every subagent spawn (agent-team workflows). |
+| `TaskCreated` | Nudge when a `TaskCreate` subject looks too vague. |
+| `TaskCompleted` | Run the project's test command before a task can be marked done. |
+| `FileChanged` | Notice when a watched file (lockfiles, configs) changes on disk. |
+| `ConfigChange` | Warn when `.claude/` configuration changes mid-session. |
+| `Elicitation` | Audit-log prompts from MCP servers (compliance / security review). |
+
+Record the developer's selection verbatim as an array of strings in `wizardAnswers.advancedHookEvents` (e.g., `["SessionEnd", "PreCompact"]`). The generation skill maps these to event keys per the mapping table in `generation/SKILL.md` § Advanced Event Hooks § Wizard opt-in plumbing.
+
+**Do not combine this question with other preferences** — keep it a single dedicated exchange so the developer can scan the list. If Quick Mode is active, default `advancedHookEvents` to `[]` (inference only) and skip the prompt — advanced events are never inferred as "wanted" without an explicit developer decision.
 
 ### Phase 5.5: Ecosystem Plugins (Always)
 Offer complementary plugins from the ecosystem.
@@ -177,8 +204,14 @@ After the wizard completes, compile all answers into a structured JSON format:
   "autonomyLevel": "always-ask | balanced | autonomous",
   "ecosystemPlugins": {
     "notify": true
-  }
+  },
+  "advancedHookEvents": [
+    "SessionEnd",
+    "PreCompact"
+  ]
 }
 ```
 
 The `ecosystemPlugins` field captures which ecosystem plugins the developer wants set up. This gets passed to the config-generator agent along with the analysis report. The init command acts on these choices in Phase 3.5.
+
+The `advancedHookEvents` field is an array of event names the developer explicitly selected in Phase 5.1. An empty array (`[]`) means "the developer answered no to the opt-in prompt" — generation suppresses advanced event inference for that run. An absent field (omitted entirely) means "Quick Mode or preset path" — inference runs normally. See `generation/SKILL.md` § Advanced Event Hooks for the full mapping.

@@ -81,7 +81,8 @@ The caller must provide a context JSON object in the conversation. This object c
     },
     "frontendPatterns": "object (optional — same shape as wizard output)",
     "backendPatterns": "object (optional — same shape as wizard output)",
-    "devopsPatterns": "object (optional — same shape as wizard output)"
+    "devopsPatterns": "object (optional — same shape as wizard output)",
+    "advancedHookEvents": "string[] (optional) — event names the developer explicitly selected in wizard Phase 5.1. Empty array = suppress inference. Absent = inference runs. See generation/SKILL.md § Advanced Event Hooks § Wizard opt-in plumbing."
   },
 
   "modelChoice": "string — sonnet | opus | haiku",
