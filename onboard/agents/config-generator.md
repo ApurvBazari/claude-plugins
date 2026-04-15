@@ -71,7 +71,11 @@ Generate artifacts in this order:
 
 6. **Hook entries** (`.claude/settings.json`) — Only for detected tools. If settings.json already exists, merge carefully (read first, add hooks, preserve everything else). Only add hooks for tools that are actually installed.
 
-7. **Metadata** (`.claude/onboard-meta.json`) — Record everything: plugin version, timestamp, wizard answers, list of generated artifacts, model recommendation.
+6a. **MCP servers (`.mcp.json`) — Phase 7a** — Run `scripts/detect-mcp-signals.sh` to find candidate MCP servers from the detected stack. Emit `.mcp.json` only when `.mcp.json` does not already exist (never overwrite). Write `.claude/onboard-mcp-snapshot.json` as the drift baseline. Emit `.claude/rules/mcp-setup.md` when any emitted server needs auth OR a pre-existing `.mcp.json` was detected. Full rules in `references/mcp-guide.md`. Suppressed entirely when `callerExtras.disableMCP: true`.
+
+7. **Metadata** (`.claude/onboard-meta.json`) — Record everything: plugin version, timestamp, wizard answers, list of generated artifacts, model recommendation. Include `mcpStatus` (parallel to `hookStatus`) with `planned`/`generated`/`skipped`/`autoInstalled`/`autoInstallFailed`/`existedPreOnboard` fields. Add `.mcp.json`, `.claude/onboard-mcp-snapshot.json`, and `.claude/rules/mcp-setup.md` (if written) to `generatedArtifacts`.
+
+8. **Auto-install MCP plugins** — After metadata is written, run `scripts/install-mcp-plugins.sh` with the list of emitted-server plugin names. The script probes `claude plugin list --json`, skips already-installed plugins, and installs the rest. Failures are logged but do not fail generation. On completion, update `mcpStatus.autoInstalled` and `mcpStatus.autoInstallFailed` in `onboard-meta.json`.
 
 ### Maintenance Header
 
