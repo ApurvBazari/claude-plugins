@@ -26,6 +26,8 @@ PROJECT_ROOT="$(cd "$PROJECT_ROOT" && pwd -P)"
 
 # Count files matching any of the given extensions under PROJECT_ROOT, pruning
 # vendor/build/cache directories. Works on BSD (macOS) and GNU (Linux) find.
+# Uses -print0 + NUL counting so filenames containing newlines don't over-count
+# (closes L1 from the 1.8.0 security audit — advisory only, but cheap to fix).
 count_ext() {
   local total=0 c
   for ext in "$@"; do
@@ -33,10 +35,21 @@ count_ext() {
       -type d \( -name node_modules -o -name .git -o -name dist -o -name build \
                  -o -name target -o -name .venv -o -name venv -o -name __pycache__ \
                  -o -name vendor -o -name .next -o -name .cache \) -prune -o \
-      -type f -iname "*$ext" -print 2>/dev/null | wc -l | tr -d ' ')
+      -type f -iname "*$ext" -print0 2>/dev/null | tr -cd '\0' | wc -c | tr -d ' ')
     total=$((total + c))
   done
   echo "$total"
+}
+
+# Escape a string for embedding inside a JSON double-quoted value. Handles
+# backslash and double-quote — sufficient for ASCII content from the hardcoded
+# LANGUAGES array. Closes L2 from the 1.8.0 security audit — defends against
+# future extensions where catalog entries might contain external input.
+json_escape() {
+  local s="$1"
+  s="${s//\\/\\\\}"
+  s="${s//\"/\\\"}"
+  printf '%s' "$s"
 }
 
 # Language rows: language-label | marketplace-plugin | space-separated extensions.
@@ -87,14 +100,15 @@ if [[ -n "$sorted" ]]; then
     ext_json=""
     for e in "${exts_arr[@]}"; do
       [[ -z "$e" ]] && continue
+      e_escaped=$(json_escape "$e")
       if [[ -z "$ext_json" ]]; then
-        ext_json="\"$e\""
+        ext_json="\"$e_escaped\""
       else
-        ext_json="$ext_json,\"$e\""
+        ext_json="$ext_json,\"$e_escaped\""
       fi
     done
     printf '{"language":"%s","plugin":"%s","fileCount":%s,"extensions":[%s]}' \
-      "$lang" "$plugin" "$count" "$ext_json"
+      "$(json_escape "$lang")" "$(json_escape "$plugin")" "$count" "$ext_json"
   done <<< "$sorted"
 fi
 printf ']\n'
