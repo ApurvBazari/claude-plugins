@@ -133,6 +133,28 @@ Compare `.mcp.json`, the drift snapshot `.claude/onboard-mcp-snapshot.json`, and
 
 Record the classification as `mcpDrift.{userEdited, userRemoved, newlySuggested, staleCandidate}[]` for Step 7.
 
+#### 4b.5: Skill Frontmatter Drift
+
+Compare the live `SKILL.md` frontmatter for every skill in `onboard-meta.json.skillStatus.generated` against the baseline in `.claude/onboard-skill-snapshot.json`. This step only classifies — applying is deferred to Step 7.
+
+1. **Read the inputs**:
+   - `onboard-meta.json.skillStatus.generated` — list of skill names onboard authored in this project.
+   - `.claude/onboard-skill-snapshot.json` — per-skill frontmatter baseline (the exact fields onboard wrote in the last run).
+   - Live `.claude/skills/<skill>/SKILL.md` files on disk.
+
+2. **For each skill in `skillStatus.generated`**: parse the YAML frontmatter from the live file and diff against the snapshot entry field-by-field.
+
+3. **Classify per field**:
+   - **user-edit** — field value in live differs from snapshot, and the skill's `frontmatterFields.<skill>.source` in `onboard-meta.json` is NOT `user-tweaked`. The developer hand-edited it after generation. Informational by default; never auto-rewrite.
+   - **user-tweaked** — field value in live differs from snapshot AND `source === "user-tweaked"`. Expected drift — do not flag.
+   - **missing-file** — `SKILL.md` is absent from disk but present in `skillStatus.generated` and not tagged `deletedByUser`. Offer to regenerate via `onboard:generate` with `callerExtras.regenerateOnly`.
+   - **new-field** — snapshot omitted a field that the current generator would now emit (e.g., `model` was never inferred for this skill but is now part of the archetype default). Surface as a suggested addition.
+   - **in-sync** — live frontmatter equals snapshot for every field. No action.
+
+4. **Pre-existing guard**: skills in `skillStatus.existedPreOnboard` are never diffed — they predate the generator and are treated as user-owned.
+
+Record as `skillDrift.{userEdited, missingFiles, newFieldCandidates}[]` for Step 7.
+
 ---
 
 ## Findings Report
@@ -181,6 +203,12 @@ Organize findings into categories:
 > - **User edits detected**: [list or "none"] — informational only; onboard never rewrites your `.mcp.json`
 > - **User removals detected**: [list or "none"] — informational only
 > - Impact: additions can be applied on approval; removals require explicit user instruction.
+>
+> ### Skill Frontmatter Drift (from Step 4b.5)
+> - **User edits detected**: [skill:field pairs or "none"] — informational only; onboard never rewrites hand-edited frontmatter
+> - **Missing files**: [list or "none"] — tracked skills absent from disk (regenerate via `onboard:generate`)
+> - **New field candidates**: [list or "none"] — fields the current archetype table would emit that the snapshot omits
+> - Impact: missing-file regeneration and new-field additions can be applied on approval; user-edits are preserved.
 >
 > ### Deprecated Patterns
 > - [Anything in current setup that's outdated]
@@ -310,6 +338,14 @@ Only **additions** are applied automatically on user approval. Removals and user
 3. For `userEdited` / `userRemoved`: no action. The findings report already informed the user.
 4. If `.claude/rules/mcp-setup.md` needs regeneration (new server added needing auth), invoke `generate` with `callerExtras.regenerateOnly` scoped to `.claude/rules/mcp-setup.md`.
 
+**Skill frontmatter drift application** (for items surfaced by Step 4b.5):
+
+Only **additions** are applied automatically on user approval. User-edits are never overwritten.
+
+1. For each approved `newFieldCandidate`: read the live `SKILL.md`, add only the missing field using the archetype-inferred value (wizard defaults from `onboard-meta.json.wizardAnswers.skillTuning` still apply). Do not touch existing fields. Update `.claude/onboard-skill-snapshot.json` to include the new field in the baseline. Set `frontmatterFields.<skill>.source = "user-confirmed"`.
+2. For each `userEdit`: display only — never apply. The developer's hand-edit stays. Update the snapshot to match the live file so subsequent runs stop flagging this drift (equivalent to evolve's `accept-user-edit` verb). Set `frontmatterFields.<skill>.source = "user-tweaked"`.
+3. For each `missingFile`: invoke `generate` via the Skill tool with `callerExtras.regenerateOnly: [".claude/skills/<skill>/SKILL.md"]` and `callerExtras.disableSkillTuning: true`. The generator re-emits the skill using the snapshot's frontmatter values (preserving prior tweaks). Append to `generatedArtifacts` if previously dropped.
+
 **Artifact gap regeneration** (for items surfaced by Step 4b.2):
 
 Invoke the `generate` skill via the Skill tool with a narrow `callerExtras.regenerateOnly` payload listing the missing artifact paths. Generate honors this scope and only writes the listed files. After regeneration, verify each file is present on disk and carries a fresh maintenance header.
@@ -327,6 +363,7 @@ Update `.claude/onboard-meta.json`:
 - Preserve `wizardAnswers` (don't re-ask wizard questions during update)
 - **If plugin drift was applied in Step 7** — refresh `detectedPlugins.installedPlugins` to `driftReport.currentPlugins`, and recompute `detectedPlugins.coveredCapabilities`, `detectedPlugins.qualityGates`, `detectedPlugins.phaseSkills` per `../generation/references/plugin-detection-guide.md`. Update the top-level `hookStatus` to reflect added/removed hook scripts.
 - **If MCP drift was applied in Step 7** — refresh top-level `mcpStatus`: add newly-applied servers to `mcpStatus.generated[]`, drop removed servers. Re-run `scripts/install-mcp-plugins.sh` for any newly-applied server with a `plugin` field; merge results into `mcpStatus.autoInstalled[]` and `mcpStatus.autoInstallFailed[]`. Always keep `mcpStatus.existedPreOnboard` sticky — once true, it stays true for the life of the project.
+- **If skill frontmatter drift was applied in Step 7** — refresh top-level `skillStatus.frontmatterFields[<skill>]` to match the applied state, including the refreshed `source` value (`user-confirmed` / `user-tweaked`). Update `.claude/onboard-skill-snapshot.json` to reflect the new baseline. Keep `skillStatus.existedPreOnboard[]` sticky.
 - **Forge-meta mirror (scoped)** — If the project also maintains `.claude/forge-meta.json`, update ONLY these fields to match: `generated.toolingFlags.installedPlugins`, `generated.toolingFlags.coveredCapabilities`, `generated.toolingFlags.qualityGates`, `generated.toolingFlags.phaseSkills`, `generated.toolingFlags.hookStatus`. Read-modify-write the file: preserve every other key (`context.*`, `scaffold.*`, `lastRun`, `pluginVersion`, any caller-specific fields) verbatim. Never rewrite the whole file; never touch `context.autonomyLevel` or any other non-toolingFlags subtree — forge owns those. If `forge-meta.json` is absent, skip this step silently.
 - Add an `updateHistory` array entry:
 

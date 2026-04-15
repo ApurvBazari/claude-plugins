@@ -84,7 +84,8 @@ The caller must provide a context JSON object in the conversation. This object c
     "devopsPatterns": "object (optional — same shape as wizard output)",
     "advancedHookEvents": "string[] (optional) — event names the developer explicitly selected in wizard Phase 5.1. Empty array = suppress inference. Absent = inference runs. See generation/SKILL.md § Advanced Event Hooks § Wizard opt-in plumbing.",
     "advancedHookTypes": "object (optional) — map<eventName, 'command'|'prompt'|'agent'|'http'> from wizard Phase 5.1.1. Selects the execution type per event. Only keys for judgment-capable events (UserPromptSubmit, Stop, TaskCreated, TaskCompleted, Elicitation) are honored; others ignored. Absent = use per-event defaults + inference rules. See generation/SKILL.md § Hook Type Validation.",
-    "advancedHookTypeExtras": "object (optional) — map<eventName, {agentRef?, httpUrl?, promptRef?, promptInline?}> from wizard Phase 5.1.1 follow-up exchange. Provides the required auxiliary field for prompt/agent/http types. Missing aux for a selected type → validation failure per the skip-reason table."
+    "advancedHookTypeExtras": "object (optional) — map<eventName, {agentRef?, httpUrl?, promptRef?, promptInline?}> from wizard Phase 5.1.1 follow-up exchange. Provides the required auxiliary field for prompt/agent/http types. Missing aux for a selected type → validation failure per the skip-reason table.",
+    "skillTuning": "object (optional) — { mode: 'defaults' | 'tuned', defaultModel?, defaultEffort?, preApprovalPosture? } from wizard Phase 5.2. Shapes the archetype-inferred skill frontmatter. Absent or mode='defaults' emits archetype defaults only. mode='tuned' refines model/effort/allowed-tools via the three project-level settings. See generation/SKILL.md § Skills § Skill Frontmatter Emission."
   },
 
   "modelChoice": "string — sonnet | opus | haiku",
@@ -114,6 +115,8 @@ The caller must provide a context JSON object in the conversation. This object c
     "coveredCapabilities": ["string — capabilities covered by installed plugins"],
     "allowPluginReferences": "boolean (optional) — permit rules/skills to reference installed plugins instead of duplicating their guidance. Defaults to true when installedPlugins is non-empty.",
     "allowHttpHooks": "boolean (optional) — OFF by default. When false, any qualityGates entry with hookType='http' is refused at generation time (skip reason 'http-not-opted-in'). When true, http entries are allowed provided they supply a valid httpUrl. Never auto-inferred — callers opt in explicitly.",
+    "disableMCP": "boolean (optional) — when true, skip Phase 7a MCP emission entirely (no .mcp.json, no .claude/onboard-mcp-snapshot.json). Use when the scaffold template already ships its own MCP config. Defaults to false.",
+    "disableSkillTuning": "boolean (optional) — when true, suppress the per-skill batched confirmation step during generation. Archetype + wizard defaults are emitted directly. Use for fully non-interactive headless flows. Defaults to false.",
     "qualityGates": {
       "description": "object (optional) — boundary-enforcement hook spec. Onboard translates these into .claude/settings.json hook entries. See generation/SKILL.md § Quality-Gate Hooks for the full schema.",
       "_perEntryTypeFields_": "EVERY entry in sessionStart/preCommit/featureStart/postFeature/sessionEnd/userPromptSubmit/preCompact/subagentStart/taskCreated/taskCompleted/fileChanged/configChange/elicitation accepts these 7 OPTIONAL fields for type selection (documented once here, honored uniformly): { hookType: 'command'|'prompt'|'agent'|'http' (default per generation/SKILL.md § Per-event defaults), promptRef: path to .claude/hooks/*.prompt.md, promptInline: inline prompt text (exactly one of promptRef/promptInline required when hookType='prompt'), agentRef: agent name required when hookType='agent', httpUrl: https-only URL required when hookType='http', httpHeaders: {k:v} optional http headers supporting ${VAR} expansion, timeout: positive int ms override (defaults: command 5000, prompt 15000, agent 60000, http 5000) }. See generation/SKILL.md § Hook Type Validation for the full rule set and skip reasons.",
@@ -335,6 +338,21 @@ Example results object shape:
     "skipped":   [],
     "warnings":  [],
     "downgradeApplied": null  // optional — set to an object when autonomyLevel forced a preCommit mode downgrade
+  },
+  "skillStatus": {                             // new in onboard 1.5.0 — canonical shape in generation/SKILL.md § Skill Frontmatter Emission
+    "planned":    ["react-component", "pr-summarizer"],
+    "generated":  ["react-component", "pr-summarizer"],
+    "skipped":    [],
+    "frontmatterFields": {
+      "react-component": {
+        "allowed-tools": ["Read", "Grep", "Glob", "Write", "Edit"],
+        "effort": "medium",
+        "paths": ["src/components/**/*.tsx"],
+        "source": "inferred"
+      }
+    },
+    "existedPreOnboard": [],
+    "warnings":  []
   }
 }
 ```
@@ -349,6 +367,7 @@ The `onboard-meta.json` file records:
 - `modelRecommendation`: from context
 - `callerExtras`: passed through from context
 - `hookStatus`: **new** — the same canonical-shape object returned in the results summary. Recording it in both places gives callers two independent provenance sources.
+- `skillStatus`: **new in 1.5.0** — same canonical-shape object returned in the results summary. Parallel to `hookStatus` and `mcpStatus`. Drives skill frontmatter drift detection in `onboard:update` and `onboard:evolve`.
 
 ---
 
