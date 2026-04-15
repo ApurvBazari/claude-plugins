@@ -357,22 +357,35 @@ The mental model: `hookStatus` answers "how well did the Plugin Integration cont
 
 **Canonical `hookStatus` shape** (the source of truth — all downstream consumers use this exact layout):
 
+**Key format**: `<Event>[:<Matcher>][:<Type>]` where:
+- `<Event>` is the Claude Code event name (e.g., `SessionStart`, `TaskCompleted`).
+- `<Matcher>` is the event's matcher value (tool name, filename glob, MCP server, etc.). Omitted for matcher-incompatible events.
+- `<Type>` is the hook type (`prompt`, `agent`, or `http`). **Omitted entirely when type is `command`** — this keeps every pre-upgrade fixture byte-identical.
+- When matcher is absent but type is present, the double colon is preserved: `Elicitation::http`. This is intentional — it signals "no matcher, but non-default type" unambiguously.
+
 ```jsonc
 "hookStatus": {
   "planned": {
-    "SessionStart": 1,               // count of planned hooks per event key
-    "PreToolUse:Write": 1,           // keys use <Event>[:<Matcher>] format
-    "PreToolUse:Bash": 2,            // multiple entries possible (e.g. 2 preCommit scripts)
-    "Stop": 1,
-    // Advanced event hooks use the same <Event>[:<Matcher>] key format:
-    "SessionEnd": 1,
-    "PreCompact:auto": 1,
-    "FileChanged:package-lock.json|Cargo.lock": 1
+    "SessionStart":              1,  // command, no matcher, no type suffix
+    "PreToolUse:Write":          1,  // command, matcher present
+    "PreToolUse:Bash":           2,  // command, matcher present, 2 entries
+    "Stop":                      1,  // command
+    "SessionEnd":                1,  // command
+    "PreCompact:auto":           1,  // command, matcher present
+    "FileChanged:package-lock.json|Cargo.lock": 1,  // command with glob matcher
+    // Non-command types surface the :<Type> suffix:
+    "UserPromptSubmit:prompt":   1,  // prompt type, no matcher
+    "TaskCompleted:agent":       1,  // agent type, no matcher
+    "Elicitation::http":         1   // http type, no matcher (double colon preserves position)
+    // With both matcher AND non-command type:
+    // "Elicitation:vercel:http": 1
   },
   "generated": {
-    // list-of-script-basenames per event key (NOT a count map).
-    // Richer than a count: you can see which script is wired to which event without
-    // cross-referencing .claude/settings.json.
+    // Value type varies by hook type — see § Artifact per type:
+    //   command → script basename     (.claude/hooks/<name>.sh)
+    //   prompt  → prompt filename     (.claude/hooks/<name>.prompt.md) OR inline-snippet fallback (first 50 chars + '…')
+    //   agent   → agent name
+    //   http    → URL
     "SessionStart":     ["plugin-integration-reminder.sh"],
     "PreToolUse:Write": ["feature-start-detector.sh"],
     "PreToolUse:Bash":  [
@@ -382,17 +395,25 @@ The mental model: `hookStatus` answers "how well did the Plugin Integration cont
     "Stop":             ["post-feature-revise-claude-md.sh"],
     "SessionEnd":       ["session-end.sh"],
     "PreCompact:auto":  ["pre-compact-checkpoint.sh"],
-    "FileChanged:package-lock.json|Cargo.lock": ["file-changed-notice.sh"]
+    "FileChanged:package-lock.json|Cargo.lock": ["file-changed-notice.sh"],
+    "UserPromptSubmit:prompt":   ["user-prompt-secret-scan.prompt.md"],
+    "TaskCompleted:agent":       ["code-reviewer"],
+    "Elicitation::http":         ["https://audit.internal/claude-elicitation"]
   },
   "skipped": [                       // one entry per hook that was planned but NOT generated
     {
-      "event": "Stop",               // event:matcher key from `planned`
+      "event": "Stop",               // matches a key in planned{} (including any :Type suffix)
       "skill": "claude-md-management:revise-claude-md",
       "reason": "plugin-not-installed"
+    },
+    {
+      "event": "Elicitation::http",
+      "reason": "http-not-opted-in"  // callerExtras.allowHttpHooks was not true
     }
   ],
   "warnings": [                      // free-text warnings emitted during hook generation
-    "featureStart.criticalDirs was empty; detector hook not generated"
+    "featureStart.criticalDirs was empty; detector hook not generated",
+    "Elicitation:http entry dropped — set callerExtras.allowHttpHooks: true to enable"
   ],
   "downgradeApplied": {              // OPTIONAL — only present when autonomyLevel forced a mode change
     "rule": "autonomyLevel=always-ask → preCommit[].mode=advisory",
@@ -402,12 +423,13 @@ The mental model: `hookStatus` answers "how well did the Plugin Integration cont
 ```
 
 **Counting rules**:
-- `planned[event]` = **integer** — number of entries in `callerExtras.qualityGates.<field>[]` that map to that event (e.g. `qualityGates.preCommit[]` length contributes to `PreToolUse:Bash` because pre-commit hooks attach to Bash tool calls). **Only counts qualityGates-derived hooks, never format/lint/forge-internal.**
-- `generated[event]` = **array of script basenames** (relative to `.claude/hooks/`) for hooks actually written to `.claude/settings.json` **from the qualityGates spec**. Not the total event count in settings.json — exclude format/lint/forge-internal scripts.
-- `skipped[]` = a record for every entry in `planned` that did NOT produce a corresponding `generated` entry, with the reason (`plugin-not-installed`, `condition-unsatisfied`, `empty-critical-dirs`, etc.).
+- `planned[key]` = **integer** — number of entries in `callerExtras.qualityGates.<field>[]` that map to that exact `<Event>[:<Matcher>][:<Type>]` key. Entries sharing an event but differing in type count as separate keys (e.g., `TaskCompleted` and `TaskCompleted:agent` are distinct). **Only counts qualityGates-derived hooks, never format/lint/forge-internal.**
+- `generated[key]` = **array** of artifact references for hooks actually written to `.claude/settings.json` from the qualityGates spec. Value semantics depend on type (see § Artifact per type under Advanced Event Hooks).
+- `skipped[]` = a record for every entry in `planned` that did NOT produce a corresponding `generated` entry. The `event` field must match a `planned` key verbatim (including type suffix). Reasons include `plugin-not-installed`, `condition-unsatisfied`, `empty-critical-dirs`, plus the 11 type-validation reasons listed in § Hook Type Validation.
 - `warnings[]` = operator-facing messages (not user-facing) about soft issues during generation.
 - `downgradeApplied` (optional) = records the autonomyLevel-aware preCommit mode downgrade rule when it fires. Only present when the downgrade actually ran — absent means no downgrade was applied. Gives downstream tooling (status reports, adaptive suppression) provenance without re-deriving.
-- **Invariant**: for every event key, `planned[event] - len(generated[event]) == (number of skipped[] entries whose `event` matches)`. If this doesn't balance, the telemetry is broken — treat as a generation bug.
+- **Invariant**: for every event key, `planned[key] - len(generated[key]) == (number of skipped[] entries whose `event` matches that key exactly)`. If this doesn't balance, the telemetry is broken — treat as a generation bug.
+- **Backward compat**: for pre-upgrade callers (no `hookType` fields, no `allowHttpHooks`), every key in `planned` / `generated` has NO type suffix — the shape is byte-identical to pre-upgrade fixtures. Type suffixes only appear when a caller/wizard explicitly used a non-command type.
 
 See `references/hooks-guide.md` for generated script templates, ShellCheck requirements, and concrete examples of sessionStart + featureStart + preCommit hooks.
 
@@ -756,6 +778,62 @@ In addition to the four core quality-gate categories (sessionStart / preCommit /
 | `ConfigChange` | Analyzer detected `.claude/settings.json` OR `.claude/rules/` under git version control (`versionControlledClaude === true`) — matcher `"project_settings"` | `config-change-warn.sh` |
 | `Elicitation` | `.mcp.json` present in the repo OR analyzer reports MCP servers in the stack — omit matcher unless caller names specific servers | `elicitation-audit.sh` |
 
+##### Per-event defaults (hook type)
+
+When neither the caller's `qualityGates.<event>[].hookType` nor `wizardAnswers.advancedHookTypes[<event>]` is set, generation applies these per-event defaults. The third column shows the inference-path upgrade — when the listed condition fires, the default type is upgraded from `command` to the listed alternative (still overridable by the caller/wizard).
+
+| Event | Default type | Inference-path upgrade (auto-fires when silent) |
+|---|---|---|
+| `SessionStart` | `command` | — |
+| `SessionEnd` | `command` | — |
+| `UserPromptSubmit` | `command` | → `prompt` (using shipped `default-prompts/user-prompt-secret-scan.md`) when `wizardAnswers.securitySensitivity === "high"` |
+| `PreToolUse` / `PostToolUse` | `command` (**locked** — `prompt`/`agent` refused with `unsupported-type-for-event`) | none |
+| `Stop` | `command` | — |
+| `PreCompact` | `command` | — |
+| `SubagentStart` | `command` | — |
+| `TaskCreated` | `command` | — (wizard offers `prompt` as manual upgrade only) |
+| `TaskCompleted` | `command` | → `agent` when `enriched.enableTeams === true` AND caller supplies `qualityGates.taskCompleted[].agentRef` |
+| `FileChanged` | `command` | — |
+| `ConfigChange` | `command` | — |
+| `Elicitation` | `command` | → `http` when caller supplies `qualityGates.elicitation[].httpUrl` AND `callerExtras.allowHttpHooks === true` |
+
+**Inference-path safety invariants**:
+- `UserPromptSubmit` → `prompt` never fires if the wizard/caller explicitly set `hookType: "command"` for that event. Explicit beats inferred.
+- `TaskCompleted` → `agent` requires BOTH `enableTeams` AND an `agentRef`. Missing the ref → stay on `command` (never guess which agent to use).
+- `Elicitation` → `http` requires BOTH `httpUrl` AND `allowHttpHooks`. Missing either → stay on `command`.
+- No `http` path is ever emitted purely from analyzer signals — always requires explicit caller consent (`allowHttpHooks: true`).
+
+##### Hook Type Validation
+
+Each entry passes through this 11-rule validator before the settings.json write. Failures drop the offending entry into `hookStatus.skipped[]` with a structured reason and continue generation. They never abort the run.
+
+| Skip reason | Condition | Remediation hint recorded in `warnings[]` |
+|---|---|---|
+| `missing-prompt-source` | `hookType="prompt"` but neither `promptRef` nor `promptInline` supplied | "Provide `promptRef` (path) or `promptInline` (text) for prompt-type hooks" |
+| `ambiguous-prompt-source` | `hookType="prompt"` with BOTH `promptRef` AND `promptInline` | "Pick exactly one of `promptRef` / `promptInline`" |
+| `prompt-file-not-found` | `hookType="prompt"` + `promptRef` points to a file that does not exist | "Create the prompt file at the supplied path or switch to `promptInline`" |
+| `missing-agentRef` | `hookType="agent"` but `agentRef` is absent or empty | "Provide `agentRef` naming the agent (e.g. `code-reviewer`)" |
+| `missing-httpUrl` | `hookType="http"` but `httpUrl` is absent or empty | "Provide `httpUrl` (https-only)" |
+| `unsupported-type-for-event` | `hookType ∈ {prompt, agent}` on `PreToolUse` or `PostToolUse` | "Use `command` type for per-tool-call events" |
+| `http-not-opted-in` | `hookType="http"` without `callerExtras.allowHttpHooks === true` | "Set `callerExtras.allowHttpHooks: true` to enable http-type hooks" |
+| `insecure-http-url` | `hookType="http"` with URL not starting with `https://` | "Use https; non-https URLs are refused even for loopback" |
+| `agent-not-found` | `hookType="agent"` + `agentRef` referencing an agent whose plugin is not in `effectivePlugins` | "Install the agent's plugin or switch to a `command` hook" |
+| `invalid-timeout` | `timeout` field present but not a positive integer | "Timeout must be a positive integer in milliseconds" |
+| `high-frequency-event-unsuitable-for-agent` | `hookType="agent"` on `UserPromptSubmit` (fires on every prompt; agent latency makes the session unusable) | "Use `prompt` type instead, or keep `command` for low-latency checks" |
+
+**Invariant**: every `skipped[]` entry counts against the event's `planned[eventKey]` in the same way existing skips do. The `planned − len(generated) == count(skipped)` invariant still balances per key.
+
+##### Artifact per type
+
+| Type | `generated[<key>]` array value | Physical file | Plugin-level source of truth |
+|---|---|---|---|
+| `command` | script basename (e.g., `session-end.sh`) | `${project}/.claude/hooks/<name>.sh` | template in `references/hooks-guide.md` |
+| `prompt` | prompt filename (e.g., `user-prompt-secret-scan.prompt.md`) | `${project}/.claude/hooks/<name>.prompt.md` (copied verbatim from `promptRef` file OR written from `promptInline` text if >1 line) | optional default in `references/default-prompts/` |
+| `agent` | agent name (e.g., `code-reviewer`) | no new file — references existing agent via `type: "agent"` settings entry | `effectivePlugins` provides the agent |
+| `http` | URL (e.g., `https://audit.internal/e`) | no new file — URL lives inline in `settings.json` | caller-supplied |
+
+**`promptInline` special case**: if `promptInline` is 1 line AND ≤200 chars, embed directly in `settings.json` `prompt` field (no sidecar file). Otherwise always write a `.prompt.md` sidecar and reference it via file-read at generation time. `generated[<key>]` records the sidecar filename when present; else the inline text's first 50 chars followed by `…`.
+
 ##### Generation rules
 
 1. **Matcher-incompatible events MUST NOT emit a `matcher` field** in the settings entry. Applies to: `SessionEnd`, `UserPromptSubmit`, `SubagentStart`, `TaskCompleted`. See `references/hooks-guide.md` § Matcher Compatibility for the authoritative table. Silently ignoring an extraneous matcher is not acceptable — the generated JSON must be honest.
@@ -763,26 +841,31 @@ In addition to the four core quality-gate categories (sessionStart / preCommit /
 3. **All advanced events are advisory by default** — the generated scripts always `exit 0`. The caller may upgrade `taskCreated` / `taskCompleted` to `mode: "blocking"` explicitly; all other events ignore `mode` (only advisory is supported because Claude Code does not honor `exit 2` on them).
 4. **Script generation**: copy the corresponding template from `references/hooks-guide.md` § Advanced Event Templates into `<project>/.claude/hooks/<script-name>`, make executable (`chmod +x`), verify `shellcheck -x` passes. Do NOT re-author the templates inline — the guide is authoritative.
 5. **Merge semantics**: same as quality-gate hooks — read existing `.claude/settings.json`, append the new hook entry under its event key, skip if a hook with the same matcher already exists. Never overwrite.
-6. **hookStatus telemetry**: every advanced event hook that is planned, generated, or skipped MUST appear in `hookStatus` under the `<Event>[:<Matcher>]` key (e.g., `"PreCompact:auto"`, `"FileChanged:package-lock.json|Cargo.lock"`). The canonical-shape invariant — `planned[event] - len(generated[event]) == count(skipped where event matches)` — applies equally.
+6. **hookStatus telemetry**: every advanced event hook that is planned, generated, or skipped MUST appear in `hookStatus` under the `<Event>[:<Matcher>][:<Type>]` key. The type suffix is **omitted when type is `command`** (backward compatible — existing fixtures are unchanged). Examples: `"PreCompact:auto"` (command, no suffix), `"UserPromptSubmit:prompt"` (no matcher → single colon before type), `"Elicitation::http"` (no matcher + non-command type → double colon preserves position), `"FileChanged:package-lock.json|Cargo.lock"` (command with matcher). The canonical-shape invariant — `planned[event] - len(generated[event]) == count(skipped where event matches)` — applies equally.
 7. **Plugin availability**: when an advanced event's inference condition references an installed plugin (e.g., `hookify` for `UserPromptSubmit`), verify the plugin is in `effectivePlugins` before emitting. Missing → record in `hookStatus.skipped[]` with reason `plugin-not-installed`.
+8. **Type selection**: apply the per-event default (§ Per-event defaults above) unless the caller/wizard explicitly sets `hookType`. Then run the 11-rule validator (§ Hook Type Validation). A rejected entry records `skipped[]` with the structured reason and NEVER falls back to `command` silently — the caller must see the rejection in telemetry.
+9. **Prompt sidecar file**: when `hookType="prompt"` + `promptRef`, copy the source file to `${project}/.claude/hooks/<slug>.prompt.md`. When `hookType="prompt"` + `promptInline` >1 line OR >200 chars, write the inline text to the same sidecar path and reference it. When `promptInline` fits inline, embed directly in settings.json.
+10. **Timeout**: if caller supplied `timeout`, use it (after positive-integer validation). Else apply the type default: command 5000, prompt 15000, agent 60000, http 5000 ms.
 
 ##### Wizard opt-in plumbing
 
 When `wizardAnswers.advancedHookEvents` is present and non-empty, it takes priority over the inference rules for exactly the events it names. Events not in the array fall back to inference. An empty-but-present array (`[]`) means "user said no to all advanced events" — inference is suppressed entirely for that run (the one exception to rule 3 in Input sources above).
 
-Mapping from wizard names (camelCase) to hookStatus keys (Event[:Matcher]):
+`wizardAnswers.advancedHookTypes` (optional) supplies per-event type selection from Phase 5.1.1. Only judgment-capable events (`userPromptSubmit`, `stop`, `taskCreated`, `taskCompleted`, `elicitation`) honor this field; other event keys are ignored silently. `wizardAnswers.advancedHookTypeExtras` supplies the auxiliary field (`agentRef`, `httpUrl`, `promptRef`, `promptInline`) required by the chosen type — same validator applies.
 
-| Wizard name | hookStatus key(s) |
-|---|---|
-| `sessionEnd` | `SessionEnd` |
-| `userPromptSubmit` | `UserPromptSubmit` |
-| `preCompact` | `PreCompact:auto` (default matcher) |
-| `subagentStart` | `SubagentStart` |
-| `taskCreated` | `TaskCreated` |
-| `taskCompleted` | `TaskCompleted` |
-| `fileChanged` | `FileChanged:<matcher>` (matcher derived from analyzer signals or defaulted to lockfiles) |
-| `configChange` | `ConfigChange:project_settings` |
-| `elicitation` | `Elicitation` (no matcher) or `Elicitation:<mcp-server>` (per matcher) |
+Mapping from wizard names (camelCase) to hookStatus keys (`Event[:Matcher][:Type]`, type suffix omitted for `command`):
+
+| Wizard name | Default type | hookStatus key examples |
+|---|---|---|
+| `sessionEnd` | command | `SessionEnd` |
+| `userPromptSubmit` | command (→ prompt on security-high) | `UserPromptSubmit`, `UserPromptSubmit:prompt` |
+| `preCompact` | command | `PreCompact:auto` |
+| `subagentStart` | command | `SubagentStart` |
+| `taskCreated` | command | `TaskCreated`, `TaskCreated:prompt` (wizard upgrade), `TaskCreated:http` (wizard upgrade) |
+| `taskCompleted` | command (→ agent on teams + agentRef) | `TaskCompleted`, `TaskCompleted:agent`, `TaskCompleted:prompt`, `TaskCompleted:http` |
+| `fileChanged` | command | `FileChanged:<matcher>` (matcher derived from analyzer signals or defaulted to lockfiles) |
+| `configChange` | command | `ConfigChange:project_settings` |
+| `elicitation` | command (→ http on httpUrl + allowHttpHooks) | `Elicitation`, `Elicitation:<mcp-server>`, `Elicitation::http`, `Elicitation:<mcp>:http` |
 
 ##### Scope note
 

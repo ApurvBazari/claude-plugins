@@ -127,6 +127,94 @@ Hook scripts signal intent via their exit code:
 
 **Rule of thumb**: enforce at boundaries (pre-commit, pre-destructive-action) with `exit 2`. Guide in the middle (session start, feature-start reminder) with `exit 0`. Never use `exit 2` for individual edits — it creates ergonomic friction and forces devs to bypass hooks entirely.
 
+> **Note**: this section applies to `type: "command"` hooks. For `prompt` / `agent` / `http` hook types, see § Hook Types Reference § Response-format rules per type (below).
+
+## Hook Types Reference
+
+Claude Code supports four hook **types**. The `type` field inside a hook-command object picks which execution model runs. `command` (shell script) is the longstanding default; `prompt`, `agent`, and `http` unlock LLM guardrails, subagent evaluation, and external-service integration respectively.
+
+### Canonical JSON shapes
+
+Each shape goes inside the `hooks: [...]` array of a settings-entry (same wrapper rules as § Schema apply).
+
+**`type: "command"`** — shell script, exit code decides.
+
+```json
+{ "type": "command", "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/my-check.sh", "timeout": 5000 }
+```
+
+**`type: "prompt"`** — Claude evaluates a prompt with the event payload as context. The LLM's response text becomes the hook's decision (see response-format rule below).
+
+```json
+{
+  "type": "prompt",
+  "prompt": "You are a security guardrail. The user just submitted a prompt. If it contains an API key, secret token, or password literal, respond with EXACTLY 'BLOCK: <reason>'. Otherwise respond with EXACTLY 'OK'.",
+  "timeout": 15000
+}
+```
+
+**`type: "agent"`** — spawns a named subagent; the agent's verdict decides pass/block. The agent name must reference an installed agent (e.g., `code-reviewer` from the `code-review` plugin).
+
+```json
+{
+  "type": "agent",
+  "agent": "code-reviewer",
+  "prompt": "Review the diff in the current working directory. Block if any critical issue is found.",
+  "timeout": 60000
+}
+```
+
+**`type: "http"`** — POST the event payload to a URL; response JSON `{ "action": "block" | "allow", "message": "..." }` decides. `${VAR}` substitution in headers uses Claude Code's native env-var expansion.
+
+```json
+{
+  "type": "http",
+  "url": "https://audit.internal.corp/claude-elicitation",
+  "headers": { "Authorization": "Bearer ${AUDIT_TOKEN}" },
+  "timeout": 5000
+}
+```
+
+### Cost, latency, best-fit matrix
+
+| Type | Latency | Token cost | Best for | Worst for |
+|---|---|---|---|---|
+| `command` | <1s typical | none | format, lint, regex, pre-commit | judgment calls the LLM would do better |
+| `prompt` | 2–15s | ~500–2k per fire | guardrails needing judgment (commit-msg quality, paraphrased secret detection) | per-tool-call events (PreToolUse / PostToolUse) |
+| `agent` | 10–60s | ~5–30k per fire | heavy verification at turn/task boundaries (`TaskCompleted` → code-reviewer) | any event that fires per keystroke or per tool use |
+| `http` | network-dep | none local | compliance audit, SIEM / pager / external-policy integration | offline projects, sensitive payloads (events leave the machine) |
+
+### Safety rules (enforced by onboard's generation skill)
+
+1. **`prompt` and `agent` types are REFUSED on `PreToolUse` / `PostToolUse`** — per-tool-call events fire too often for LLM-cost evaluation. Allowed only on: `Stop`, `TaskCompleted`, `Elicitation`, `SessionStart`, `SessionEnd`, `UserPromptSubmit`, `PreCompact`.
+2. **`http` requires explicit opt-in** — payloads leaving the machine is a privacy choice. Callers must pass `callerExtras.allowHttpHooks: true` AND supply `httpUrl`. Never auto-inferred from analyzer signals.
+3. **`http` URLs must be `https://`** — `http://` is refused with skip reason `insecure-http-url`. No exceptions for loopback.
+4. **Timeout defaults scale with type**: `command` 5000ms, `prompt` 15000ms, `agent` 60000ms, `http` 5000ms. Callers may override via an optional per-entry `timeout` field (positive integer, milliseconds).
+
+### Response-format rules per type
+
+- **`prompt`**: the template must instruct the model to respond with **exactly** `OK` to allow or `BLOCK: <reason>` to block. Any other response is treated as advisory (allow + surface message). Templates shipped by onboard follow this convention; custom `promptRef` / `promptInline` should as well.
+- **`agent`**: the subagent's final message decides. A message containing the substring `BLOCK:` at the start of a line is treated as blocking. Otherwise the agent's output is surfaced as advisory context.
+- **`http`**: the endpoint must return HTTP 200 with JSON body `{ "action": "block" | "allow", "message": "string?" }`. Non-200, non-JSON, or missing `action` → treated as advisory-allow + surface warning.
+
+### Prompt file convention
+
+When a hook uses `type: "prompt"` and the prompt text is non-trivial (>1 line), onboard stores the prompt as a sidecar file under `.claude/hooks/` with extension `.prompt.md`. The settings entry's `prompt` field then loads the file content inline at generation time.
+
+- Path convention: `${CLAUDE_PROJECT_DIR}/.claude/hooks/<hook-slug>.prompt.md`
+- File is plain markdown — the entire content becomes the `prompt` string.
+- One-line inline prompts (passed via `promptInline`) are embedded directly in `settings.json` without a sidecar file.
+
+### Default prompt library
+
+Onboard ships exactly one default prompt template, used only by the inference path when the caller/wizard did not supply one:
+
+| Template | Path (inside onboard plugin) | Used when |
+|---|---|---|
+| `user-prompt-secret-scan.md` | `skills/generation/references/default-prompts/user-prompt-secret-scan.md` | `UserPromptSubmit` inference path fires `hookType: "prompt"` (i.e., `wizardAnswers.securitySensitivity === "high"`) and no caller/wizard prompt was supplied (see EC6 in plan) |
+
+All other prompt-type hooks (for `TaskCreated`, `Stop`, etc.) require the caller or wizard to supply `promptRef` / `promptInline` explicitly — there are no canned defaults outside `UserPromptSubmit`.
+
 ## Matcher
 
 The `matcher` field filters which tool triggers the hook:
@@ -1058,3 +1146,261 @@ exit 0
 
 - The legacy `FileChanged` drift pipeline (`detect-dep-changes.sh`, `detect-config-changes.sh`, `detect-structure-changes.sh`) stays in `references/evolution-hooks-guide.md`. That guide now cross-references this section for the base advisory template; the drift-specific scripts are unchanged.
 - Team-mode `TaskCreated` / `TaskCompleted` behavior likewise lives in `references/agent-teams-guide.md` for team-composition concerns; this section owns the event-level generation contract.
+
+---
+
+## Type Variants Per Event
+
+The templates above all use `type: "command"`. This section shows the equivalent `prompt` / `agent` / `http` variants for the five **judgment-capable** events — `UserPromptSubmit`, `Stop`, `TaskCreated`, `TaskCompleted`, `Elicitation`. Non-judgment events (SessionStart, SessionEnd, PreCompact, SubagentStart, FileChanged, ConfigChange) stay on `command` type; `PreToolUse` / `PostToolUse` are locked to `command` (see § Hook Types Reference § Safety rules).
+
+Each variant follows the canonical shape from § Hook Types Reference. Timeout defaults: command 5000, prompt 15000, agent 60000, http 5000 — overridable via the caller's `timeout` field.
+
+### UserPromptSubmit — type variants
+
+**`prompt` variant** (LLM-evaluated secret scan — default when `securitySensitivity === "high"`):
+
+```jsonc
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "<< contents of .claude/hooks/user-prompt-secret-scan.prompt.md >>",
+            "timeout": 15000
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+The `prompt` field is populated at generation time from either `promptInline` (embedded verbatim) or by reading the file at `promptRef` (typically `.claude/hooks/<slug>.prompt.md`). The default prompt template for secret-scan ships at `onboard/skills/generation/references/default-prompts/user-prompt-secret-scan.md`.
+
+**`http` variant** (prompt-telemetry / audit endpoint — requires `allowHttpHooks: true`):
+
+```jsonc
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "http",
+            "url": "https://audit.internal.corp/claude-prompt",
+            "headers": { "Authorization": "Bearer ${AUDIT_TOKEN}" },
+            "timeout": 5000
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**`agent` variant**: not typical — UserPromptSubmit fires on every prompt and agent-type latency (10-60s) would make the session unusable. Onboard refuses `agent` on this event with skip reason `high-frequency-event-unsuitable-for-agent` (generation-skill validation, not schema-level).
+
+### Stop — type variants
+
+**`prompt` variant** (turn-end judgment — e.g., summary quality check):
+
+```jsonc
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Claude just finished a turn. Review the assistant's last response. If it claimed completion without verification evidence (no command output, no test run, no file diff cited), respond with EXACTLY 'BLOCK: claim-without-evidence'. Otherwise respond with EXACTLY 'OK'.",
+            "timeout": 15000
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**`agent` variant** (post-turn review by a named subagent):
+
+```jsonc
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "agent",
+            "agent": "verification-before-completion",
+            "prompt": "Validate that the assistant's last turn made verifiable claims. Block if any completion claim lacks evidence.",
+            "timeout": 60000
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### TaskCreated — type variants
+
+**`prompt` variant** (LLM judges subject quality, not just length):
+
+```jsonc
+{
+  "hooks": {
+    "TaskCreated": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "A task was just created. Read its `task_subject` field. If the subject is vague ('fix bug', 'update code', 'add feature'), generic, or non-actionable, respond with EXACTLY 'BLOCK: vague-subject'. If it names a concrete component/behavior/outcome, respond with EXACTLY 'OK'.",
+            "timeout": 15000
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**`http` variant** (sync tasks to external tracker like Linear/Jira):
+
+```jsonc
+{
+  "hooks": {
+    "TaskCreated": [
+      {
+        "hooks": [
+          {
+            "type": "http",
+            "url": "https://linear-sync.internal/claude-task-created",
+            "headers": { "Authorization": "Bearer ${LINEAR_SYNC_TOKEN}" },
+            "timeout": 5000
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### TaskCompleted — type variants (the canonical agent-type use case)
+
+**`agent` variant** (code-reviewer subagent gates task completion — default when `enableTeams === true` AND caller provides `agentRef`):
+
+```jsonc
+{
+  "hooks": {
+    "TaskCompleted": [
+      {
+        "hooks": [
+          {
+            "type": "agent",
+            "agent": "code-reviewer",
+            "prompt": "A task was just marked complete. Review the diff in the current working directory. If any critical issue is present (missing tests, security issue, broken invariant), respond starting with 'BLOCK:' followed by the reason. Otherwise surface observations advisorily.",
+            "timeout": 60000
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**`prompt` variant** (lighter — ask the LLM directly instead of spawning a full subagent):
+
+```jsonc
+{
+  "hooks": {
+    "TaskCompleted": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "A task was just marked complete. Given the task subject and any recent file changes in stdin, decide: is there evidence the task's acceptance criteria were met? If clearly not (e.g., 'add tests' task with no test file touched), respond with EXACTLY 'BLOCK: <reason>'. Otherwise respond with EXACTLY 'OK'.",
+            "timeout": 15000
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**`http` variant** (POST completion event to project tracker):
+
+```jsonc
+{
+  "hooks": {
+    "TaskCompleted": [
+      {
+        "hooks": [
+          {
+            "type": "http",
+            "url": "https://tracker.internal/claude-task-done",
+            "headers": { "Authorization": "Bearer ${TRACKER_TOKEN}" },
+            "timeout": 5000
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Elicitation — type variants (the canonical http-type use case)
+
+**`http` variant** (compliance audit — default when caller provides `auditUrl` AND `allowHttpHooks: true`):
+
+```jsonc
+{
+  "hooks": {
+    "Elicitation": [
+      {
+        "hooks": [
+          {
+            "type": "http",
+            "url": "https://audit.internal.corp/claude-elicitation",
+            "headers": { "Authorization": "Bearer ${AUDIT_TOKEN}" },
+            "timeout": 5000
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**`prompt` variant** (LLM gates sensitive MCP elicitations):
+
+```jsonc
+{
+  "hooks": {
+    "Elicitation": [
+      {
+        "matcher": "vercel",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "An MCP server requested user input. Review the elicitation prompt in stdin. If it looks like a phishing attempt or requests sensitive credentials via an unexpected channel, respond with EXACTLY 'BLOCK: <reason>'. Otherwise respond with EXACTLY 'OK'.",
+            "timeout": 15000
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Type-variant generation rules
+
+1. **Inference vs. explicit** — only the defaults marked in plan § 3 fire automatically (UserPromptSubmit→prompt on `securitySensitivity=high`, TaskCompleted→agent when `enableTeams && agentRef`, Elicitation→http when `auditUrl`). All other variants require caller `qualityGates.<event>[].hookType` or wizard Phase 5.1.1 selection.
+2. **Validation** — apply the 10 rules in `generation/SKILL.md` § Hook Type Validation before emitting any variant. Missing required fields drop the entry with the appropriate `skipped` reason.
+3. **Prompt file creation** — when `hookType: "prompt"` + `promptRef` is supplied, copy the file to `${project}/.claude/hooks/<slug>.prompt.md`. When `promptInline` is supplied, embed directly in settings.json (no sidecar file).
+4. **Agent existence check** — before emitting an `agent`-type entry, verify the referenced agent's plugin is in `effectivePlugins`. Missing → skip with reason `agent-not-found`.
+5. **HTTP https-only** — refuse non-https URLs at generation time, reason `insecure-http-url`. Applies even to loopback addresses.
+6. **Timeout override** — if caller supplied `timeout` in the entry, use it verbatim (after positive-integer validation). Otherwise apply the type default (5000 / 15000 / 60000 / 5000).

@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.3.0 — 2026-04-15
+
+### Features
+
+- **Hook event coverage expansion**: generated tooling now covers 14+ Claude Code hook events (previously 5). Added: `SessionEnd`, `UserPromptSubmit`, `PreCompact`, `SubagentStart`, `TaskCreated`, `TaskCompleted`, `FileChanged`, `ConfigChange`, `Elicitation`. Wizard Phase 5.1 lets developers opt in; inference rules auto-emit safe defaults.
+- **Hook type support — `prompt` / `agent` / `http`**: generation now emits all four Claude Code hook types (previously `command` only). `prompt` unlocks LLM-evaluated guardrails, `agent` wires subagents (e.g., code-reviewer) into `TaskCompleted`, `http` enables compliance/SIEM integration via POST-to-URL. Caller schema extended with per-entry `hookType` / `promptRef` / `promptInline` / `agentRef` / `httpUrl` / `httpHeaders` / `timeout` fields. Wizard Phase 5.1.1 asks developers which execution type per judgment-capable event.
+- **`hookStatus` telemetry extended**: keys now use `<Event>[:<Matcher>][:<Type>]` format. Type suffix omitted for `command` — fully backward compatible with pre-upgrade fixtures. `generated[<key>]` holds type-appropriate artifact (script basename / prompt filename / agent name / URL).
+- **Safety rules enforced**: `prompt`/`agent` refused on per-tool-call events; `http` requires explicit `callerExtras.allowHttpHooks: true` + https-only URLs; 11 structured skip reasons recorded in `hookStatus.skipped[]`.
+- **Default prompt library**: ships one prompt template (`user-prompt-secret-scan.md`) used by the inference path when `securitySensitivity === "high"`.
+
+### Documentation
+
+- `references/hooks-guide.md`: new § "Hook Types Reference" + § "Type Variants Per Event" with canonical JSON shapes, cost/latency matrix, response-format rules.
+- `skills/generate/SKILL.md` and `skills/generation/SKILL.md`: new § "Hook Type Validation" with the 11-rule validator and skip reasons.
+- `skills/wizard/SKILL.md`: new Phase 5.1.1 documentation with cost-table preamble and HTTP opt-in confirmation.
+
 ## [1.2.0](https://github.com/ApurvBazari/claude-plugins/compare/onboard-v1.1.0...onboard-v1.2.0) (2026-04-14)
 
 
