@@ -122,6 +122,24 @@ Update the following fields in `.claude/forge-meta.json`:
 3. `generated.toolingFlags.qualityGates` → rebuilt from current state
 4. `generated.toolingFlags.phaseSkills` → rebuilt from current state
 5. `generated.toolingFlags.hookStatus` → update `planned`, `generated`, `skipped` to reflect new hook state
+6. `generated.toolingFlags.mcpStatus` → mirror `onboard-meta.json.mcpStatus` verbatim (parallel to `hookStatus`). If `onboard-meta.json` has no `mcpStatus` yet (older project predating the MCP capability), skip this field silently — do not invent an empty object.
+
+## Step 2c: Apply MCP Drift
+
+Run the same drift classification as `../update/SKILL.md` § 4b.4 MCP Drift:
+
+1. Read `.mcp.json`, `.claude/onboard-mcp-snapshot.json`, and fresh output from `../scripts/detect-mcp-signals.sh`.
+2. Classify each server as `userEdited` / `userRemoved` / `newlySuggested` / `staleCandidate` / `inSync`.
+3. Respect the pre-existing guard — if `onboard-meta.json.mcpStatus.existedPreOnboard` is true, the whole file is user-owned; only additions may be applied.
+
+**Auto-apply rules** (evolve's "drain drift without asking" philosophy applies here — but with the hard floor that user-owned edits are never touched):
+
+- `newlySuggested` → merge into `.mcp.json` and `.claude/onboard-mcp-snapshot.json`. Queue corresponding plugin for `scripts/install-mcp-plugins.sh`.
+- `staleCandidate` → DO NOT auto-remove. Log as "stale MCP candidate surfaced — run `/onboard:update` to review". Drift stays flagged.
+- `userEdited` / `userRemoved` → no action. Log once.
+- Regenerate `.claude/rules/mcp-setup.md` if any newly-applied server needs auth.
+
+Update `onboard-meta.json.mcpStatus` to reflect additions (Step 2b.3 propagates to forge-meta).
 
 ## Step 3: Show Diff
 
@@ -133,7 +151,9 @@ After applying all updates (both FileChanged and plugin integration), show what 
 > - .claude/rules/typescript.md: Updated for strict mode
 > - .claude/hooks/pre-commit-code-review.sh: Added (new plugin: code-review)
 > - .claude/settings.json: Updated hook entries
-> - .claude/forge-meta.json: Updated installedPlugins, hookStatus
+> - .claude/forge-meta.json: Updated installedPlugins, hookStatus, mcpStatus
+> - .mcp.json: Added [server] entry (new signal detected)
+> - .claude/onboard-mcp-snapshot.json: Updated baseline
 >
 > **Not auto-applied** (needs your input):
 > - New directory src/services/ — want me to create a CLAUDE.md for it?
