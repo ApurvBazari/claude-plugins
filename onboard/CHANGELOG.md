@@ -16,6 +16,11 @@
 - `skills/generate/SKILL.md` and `skills/generation/SKILL.md`: new § "Hook Type Validation" with the 11-rule validator and skip reasons.
 - `skills/wizard/SKILL.md`: new Phase 5.1.1 documentation with cost-table preamble and HTTP opt-in confirmation.
 
+### Bug Fixes
+
+- **Harden `task-completed-verify.sh` template**: drop the `eval "${CLAUDE_TEST_COMMAND:-}"` pattern in favor of a literal `__TEST_CMD__` placeholder substituted at generation time. `eval` was unnecessary (word-splitting already handles multi-token test commands) and the invented env-var fallback opened an arbitrary-command-execution path if consumers copied the template verbatim. Generation now skips the hook entirely when no test command is detected instead of emitting an advisory no-op. Addresses auto-security-review Medium finding on PR #34.
+- **Add `jq`/`grep`/`sed` fallback to Rustfmt, ESLint, and Ruff Lint templates**: three PostToolUse format/lint templates in `references/hooks-guide.md` were the only ones still invoking `jq` without the fallback chain used by every other template. They now match the fallback-safe pattern, so the hooks remain functional on systems without `jq` installed.
+
 ## [1.2.0](https://github.com/ApurvBazari/claude-plugins/compare/onboard-v1.1.0...onboard-v1.2.0) (2026-04-14)
 
 

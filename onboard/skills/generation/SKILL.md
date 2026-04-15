@@ -773,7 +773,7 @@ In addition to the four core quality-gate categories (sessionStart / preCommit /
 | `PreCompact` | `wizardAnswers.autonomyLevel ∈ {balanced, autonomous}` AND `analysis.complexity.fileCount > 500` — matcher `"auto"` | `pre-compact-checkpoint.sh` |
 | `SubagentStart` | `enriched.enableTeams === true` | `subagent-start-audit.sh` |
 | `TaskCreated` | `enriched.enableTeams === true` | `task-created-check.sh` |
-| `TaskCompleted` | `enriched.enableTeams === true` — substitute `${CLAUDE_TEST_COMMAND}` with the analyzer's detected test command if available | `task-completed-verify.sh` |
+| `TaskCompleted` | `enriched.enableTeams === true` AND analyzer detected a test command — replace the `__TEST_CMD__` placeholder in the template with the literal command (e.g. `npm test`, `pytest -q`). Skip this hook entirely if no test command was detected. | `task-completed-verify.sh` |
 | `FileChanged` | `enriched.enableEvolution === true` — use the drift-detection matcher set from `references/evolution-hooks-guide.md`; fall back to the generic lockfile matcher when the caller supplies no explicit matcher | `file-changed-notice.sh` or the drift scripts from evolution-hooks-guide |
 | `ConfigChange` | Analyzer detected `.claude/settings.json` OR `.claude/rules/` under git version control (`versionControlledClaude === true`) — matcher `"project_settings"` | `config-change-warn.sh` |
 | `Elicitation` | `.mcp.json` present in the repo OR analyzer reports MCP servers in the stack — omit matcher unless caller names specific servers | `elicitation-audit.sh` |
