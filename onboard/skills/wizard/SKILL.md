@@ -352,7 +352,21 @@ Record the user's selection verbatim as `wizardAnswers.builtInSkills` (a string 
 **Headless mode** (`callerExtras.builtInSkills` or `callerExtras.disableBuiltInSkills` present): the wizard never fires — generation reads the caller-supplied value directly.
 
 ### Phase 6: Summary & Confirmation
+
 Present everything gathered (analysis + wizard answers) and ask for confirmation before generation.
+
+**Always include the chosen model** in the summary — one labeled line near the top so the developer sees what model will run during generation. Use the format:
+
+```
+Model: <model-id> (<source>)
+```
+
+Where `<source>` is one of:
+- `your selection` — explicitly chosen in Phase 5.2 (Custom preset)
+- `preset default` — derived from `wizardAnswers.selectedPreset` per `references/workflow-presets.md` § Per-preset exchange targets (Minimal/Standard/Comprehensive default to `claude-opus-4-7[1m]`)
+- `fallback default` — wizardAnswers.model resolution fell through to the global fallback (`claude-opus-4-7[1m]`) because no preset/Phase 5.2 answer is present
+
+If the developer wants to change the model, they tweak it from the summary edit step rather than via a separate post-summary prompt — init/SKILL.md Step 3.1 no longer asks "Which model would you like to use?" (the duplicate prompt was findings A4 in the 2026-04-16 release-gate test).
 
 ## Key Rules
 

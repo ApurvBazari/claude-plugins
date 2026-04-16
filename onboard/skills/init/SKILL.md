@@ -167,31 +167,32 @@ Build the `detectedPlugins` object with `installedPlugins`, `coveredCapabilities
 
 ## Phase 3: Generation
 
-### Step 3.1: Model Recommendation
+### Step 3.1: Model resolution (no separate prompt)
 
-Before generating artifacts, present the model recommendation based on the analysis skill's model-recommendations.md logic:
+The model has already been chosen by this point — either explicitly through the wizard's Phase 5.2 (Custom preset), or implicitly via the preset default (Minimal/Standard/Comprehensive use `claude-opus-4-7[1m]` per `wizard/references/workflow-presets.md` § Per-preset exchange targets).
 
-> Based on your project ([complexity category], [file count] files, [LOC] lines, [language count] languages):
->
-> **Recommended model**: [Sonnet/Opus]
-> **Reasoning**:
-> - [bullet 1]
-> - [bullet 2]
-> - [bullet 3]
->
-> [If both are viable]: You could also consider [other model] because [trade-off].
->
-> Which model would you like to use? You can always change this later.
+**Do NOT** ask "Which model would you like to use?" here. That used to be a separate post-summary question in earlier versions of init/SKILL.md and the wizard's Phase 5.2 also asked the same thing — the duplicate prompt was findings A4 in the 2026-04-16 release-gate test.
 
-Wait for the developer to choose. Record their choice.
+Resolve the model from the wizard answers as follows:
+
+```
+chosenModel = wizardAnswers.skillTuning?.defaultModel
+            ?? wizardAnswers.model
+            ?? presetDefaultModel(wizardAnswers.selectedPreset)
+            ?? "claude-opus-4-7[1m]"
+```
+
+The preset-default fallback is documented in `wizard/references/workflow-presets.md`. The final fallback (`claude-opus-4-7[1m]`) covers any path where the wizard answers don't include a model (e.g., a future bug or a Quick Mode bail-out before Phase 5.2).
+
+The wizard's Phase 6 summary already shows the chosen model — the developer has already seen and confirmed it. If they wanted to change it, they would have done so in the summary tweak step (or by editing `.claude/settings.json` after init).
 
 ### Step 3.2: Generate Artifacts
 
 Spawn the `config-generator` agent via the Agent tool (`subagent_type: "config-generator"`). Include the following in the agent prompt — all of this is already available in the conversational context from prior phases:
 - The full analysis report (from Phase 1)
-- The wizard answers as structured JSON (from Phase 2) — includes `advancedHookEvents` when the developer opted in at Phase 5.1; generation reads this to drive `Advanced Event Hooks` emission (see `generation/SKILL.md` § Advanced Event Hooks)
+- The wizard answers as structured JSON (from Phase 2) — includes `advancedHookEvents` when the developer opted in at Phase 5.1; generation reads this to drive `Advanced Event Hooks` emission (see `generation/SKILL.md` § Advanced Event Hooks). The wizard answers include the model under `skillTuning.defaultModel` or top-level `model` (see Step 3.1 resolution rules).
 - The `detectedPlugins` object (from Phase 2.5) — if no plugins were detected, pass an empty object so the generation skill resolves `effectivePlugins` as empty
-- The chosen model (from Step 3.1)
+- The chosen model (resolved per Step 3.1, propagated via `callerExtras.model` so config-generator emits agent/skill frontmatter with the right `model` field)
 - The project root path
 - The current date for maintenance headers
 - A flag indicating the agent was dispatched (not running inline): `"dispatchedAsAgent": true` — config-generator hard-fails Step 0 if absent
