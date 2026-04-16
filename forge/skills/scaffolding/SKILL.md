@@ -158,6 +158,92 @@ If the stack isn't on this list and research doesn't give you clear guidance, as
 
 **After Path D completes**, return control to `/forge:init`. It will run Phase 3 (AI tooling) against the walking skeleton. Phase 3 will generate CLAUDE.md + rules + hooks from the observed patterns. Then the flow enters **Phase 2b: Expand scaffold under AI-tooling guidance** — a second pass through this skill that uses the generated rules to expand the walking skeleton into a fuller scaffold, with each expansion respecting the AI tooling's conventions.
 
+## Step 2.5: Non-interactive package-manager install (Node.js stacks)
+
+Before running the install step in any Path A/B/C/D for a Node.js stack, configure the package manager so it never fires an interactive prompt during install. The 2026-04-16 release-gate test (findings A13 / FO4) failed because pnpm's `approve-builds` TUI fired during `pnpm install` and there's no clean headless path to dismiss it.
+
+### pnpm — `pnpm.onlyBuiltDependencies` (stack-aware)
+
+Inspect the constructed `package.json` for known native-build dependencies and emit a project-specific `pnpm.onlyBuiltDependencies` whitelist **before** running `pnpm install`.
+
+**Base set (always included for any pnpm-based scaffold)**: `prisma`, `@prisma/engines`, `esbuild`, `@swc/core`.
+
+**Conditional additions** — include each only if the dep is present in `dependencies` / `devDependencies`:
+
+| Detected dep | Add to whitelist |
+|---|---|
+| `sharp` | `sharp` |
+| `bcrypt` | `bcrypt` |
+| `better-sqlite3` | `better-sqlite3` |
+| `canvas` | `canvas` |
+| `puppeteer` / `puppeteer-core` | `puppeteer`, `puppeteer-core` (whichever is present) |
+| `playwright` / `@playwright/test` | `playwright`, `@playwright/test` |
+| `electron` | `electron` |
+| `cypress` | `cypress` |
+
+Example for a Prisma + Express + Sharp project:
+
+```jsonc
+{
+  "name": "my-api",
+  "packageManager": "pnpm@9.15.0",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "prisma",
+      "@prisma/engines",
+      "esbuild",
+      "@swc/core",
+      "sharp"
+    ]
+  }
+  // ... rest of package.json
+}
+```
+
+**Pin pnpm to latest stable 9.x** in the `packageManager` field (e.g., `"pnpm@9.15.0"`). Bump the pin periodically during release-gate sweeps.
+
+**FORBIDDEN patterns** (every one observed in the 2026-04-16 forge run):
+
+- `FORBIDDEN`: `pnpm approve-builds --allow` — invalid flag, does not exist.
+- `FORBIDDEN`: Interactive `pnpm approve-builds` TUI — breaks headless flow because the prompt blocks indefinitely.
+
+If `approve-builds` ever fires post-install for a project, the canonical fix is to extend `pnpm.onlyBuiltDependencies` with the missing dep (likely a niche native-build package not in the standard whitelist above). Document this in the scaffold's CLAUDE.md.
+
+### npm — non-interactive flags
+
+For npm-based scaffolds, install with:
+
+```bash
+npm install --no-audit --no-fund
+```
+
+The `--no-audit` flag suppresses the audit output that may include interactive remediation prompts in some npm versions. `--no-fund` removes the funding spam that bloats CI logs.
+
+### yarn — non-interactive flags
+
+For yarn 1.x scaffolds:
+
+```bash
+yarn install --non-interactive
+```
+
+For yarn Berry 4+ scaffolds, set `enableImmutableInstalls: false` in `.yarnrc.yml` for the first install (so yarn won't refuse if `yarn.lock` doesn't exist yet), and verify no plugin-installed prompt fires:
+
+```yaml
+# .yarnrc.yml
+enableImmutableInstalls: false
+nodeLinker: node-modules
+```
+
+### Verify checklist
+
+After install, check stdout/stderr for these strings and surface any match as a failure:
+- `approve-builds` (pnpm)
+- `Run "npm audit fix"` interactive prompt (npm)
+- yarn plugin install / accept prompts
+
+If any of these appear, the install ran in interactive mode and may have hung — fix the package-manager configuration and re-run.
+
 ## Step 3: Post-Scaffold Additions
 
 Regardless of scaffold path, add these based on Phase 1 context:
