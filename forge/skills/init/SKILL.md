@@ -1,12 +1,12 @@
 ---
 name: init
-description: Full 4-phase forge orchestrator — context gathering, scaffold, AI tooling, lifecycle setup. Creates a new project from scratch with AI-native Claude tooling built in from day one. Use only when user explicitly invokes /forge:init.
+description: Full 3-phase forge orchestrator — context gathering, scaffold, AI tooling. Creates a new project from scratch with AI-native Claude tooling built in from day one. Use only when user explicitly invokes /forge:init.
 disable-model-invocation: true
 ---
 
 # Init Skill — Scaffold a New Project with AI-Native Tooling
 
-You are running the Forge initialization wizard. This is a guided, 4-phase process that discusses what the developer wants to build, scaffolds the application, equips it with auto-evolving Claude Code tooling, and optionally generates engineering lifecycle documents.
+You are running the Forge initialization wizard. This is a guided, 3-phase process that discusses what the developer wants to build, scaffolds the application, and equips it with auto-evolving Claude Code tooling.
 
 ## Step 0: Resume check
 
@@ -51,7 +51,6 @@ Wait for the user's choice.
 No command-level guard beyond the Step 0 resume check. Prerequisite checks happen inline at the point each dependency is actually needed — this lets the developer complete Phase 1 (context gathering) and Phase 2 (scaffold) even if AI-tooling dependencies aren't yet installed, and offers inline install rather than kicking them out of the session.
 
 - **Phase 3.2** (`tooling-generation` skill) checks for the **onboard** plugin before invoking `/onboard:generate`. If missing, it offers inline install. Onboard is required — if the developer declines, Phase 3 aborts gracefully and the Phase 2 scaffold is preserved.
-- **Phase 4** (`lifecycle-setup` skill) checks for the **engineering** plugin before generating lifecycle documents. Engineering is optional — if missing and the developer declines, Phase 4 is skipped and Handoff still runs.
 
 ---
 
@@ -66,7 +65,7 @@ Forge writes to `.claude/forge-state.json` at every natural checkpoint — after
   "version": 1,
   "createdAt": "ISO-8601 timestamp",
   "updatedAt": "ISO-8601 timestamp",
-  "currentPhase": "phase-1-context-gathering | phase-1.5-architectural-research | phase-2-scaffold | phase-3a-plugin-discovery | phase-3b-tooling-generation | phase-4-lifecycle-setup | complete",
+  "currentPhase": "phase-1-context-gathering | phase-1.5-architectural-research | phase-2-scaffold | phase-3a-plugin-discovery | phase-3b-tooling-generation | complete",
   "currentStep": "skill-specific step identifier",
   "completedSteps": ["list of completed step identifiers"],
   "context": { /* partial context object, grows as wizard progresses */ },
@@ -91,13 +90,12 @@ Tell the developer:
 
 > Starting **Forge** — I'll help you create a new project from scratch with AI-native tooling built in from day one.
 >
-> This runs in 4 phases:
+> This runs in 3 phases:
 > 1. **Context Gathering** — We'll discuss what you want to build, your tech stack, and preferences
 > 2. **Scaffold** — I'll create the application and set up git
 > 3. **AI Tooling** — I'll generate Claude tooling, CI/CD pipelines, and auto-evolution hooks
-> 4. **Lifecycle Setup** — I'll generate engineering documents (ADRs, testing strategy, deploy checklists) using your project context
 >
-> By the end, you'll have a running app with world-class AI tooling and engineering documents that evolve alongside your code.
+> By the end, you'll have a running app with world-class AI tooling that evolves alongside your code.
 
 ---
 
@@ -151,10 +149,10 @@ The skill handles:
 **If `context.scaffoldMode === "full"` (the default for most stacks)**:
 
 ```
-Phase 1 → Phase 2 (full scaffold) → Phase 3 (AI tooling) → Phase 4 (lifecycle) → Handoff
+Phase 1 → Phase 2 (full scaffold) → Phase 3 (AI tooling) → Handoff
 ```
 
-This is the original forge flow. The full scaffold exists before AI tooling runs, onboard analyzes it once, and phase 4 wraps up.
+This is the original forge flow. The full scaffold exists before AI tooling runs, onboard analyzes it once, and the run completes.
 
 **If `context.scaffoldMode === "walking-skeleton"`**:
 
@@ -162,7 +160,7 @@ This is the original forge flow. The full scaffold exists before AI tooling runs
 Phase 1 → Phase 2a (walking skeleton — Path D in scaffolding skill)
        → Phase 3 (AI tooling against walking skeleton)
        → Phase 2b (expand scaffold under AI-tooling guidance)
-       → Phase 4 (lifecycle) → Handoff
+       → Handoff
 ```
 
 This is the new flow for complex architectures (native mobile, custom backends, etc.) where forge's AI tooling benefits from being in place *before* the main build happens. The walking skeleton gives onboard one example of each pattern to derive rules from; Phase 2b then expands the skeleton into a fuller scaffold with each addition guided by the generated CLAUDE.md and hooks.
@@ -233,26 +231,6 @@ After all generation is complete, update the project's CLAUDE.md with:
 
 ---
 
-## Phase 4: Lifecycle Setup (Optional)
-
-Use the `lifecycle-setup` skill, passing it the full Phase 1 context, Phase 2 scaffold metadata, and Phase 3 installed plugins list.
-
-The skill handles:
-- Checking if the `engineering` plugin is installed (graceful skip if not)
-- Presenting a context-aware checklist of engineering documents to generate
-- Invoking `engineering:*` skills with composed context arguments
-- Saving outputs to `docs/engineering/`
-- Updating CLAUDE.md with an Engineering Documents section
-- Updating `forge-meta.json` with lifecycle document metadata
-
-Phase 4 is entirely optional. If the engineering plugin is not installed and the developer declines to install it, or if the developer deselects all documents, skip directly to Handoff.
-
-Inform the developer before starting:
-
-> **Phase 4: Lifecycle Setup** — I can generate engineering documents (ADRs, testing strategy, deploy checklists) using the project context we gathered earlier. This uses the `engineering` plugin.
-
----
-
 ## Handoff
 
 After all phases complete, present the completion summary:
@@ -278,9 +256,6 @@ After all phases complete, present the completion summary:
 > **Plugins Installed**
 > - [list installed plugins with key commands]
 >
-> **Engineering Documents** [if any generated in Phase 4]
-> - [list each generated document with path, e.g., "docs/engineering/adr-001-tech-stack.md — Architecture Decision Record"]
->
 > **Development Harness**
 > - `init.sh` — run at the start of every session to bootstrap your environment
 > - `docs/feature-list.json` — [N] features across [N] sprints (all starting as failing)
@@ -289,12 +264,12 @@ After all phases complete, present the completion summary:
 > - Session startup protocol + worktree workflow in CLAUDE.md
 >
 > **What to do next:**
-> 1. Review CLAUDE.md and engineering documents in `docs/engineering/` — they capture your project's architectural decisions and strategies
+> 1. Review CLAUDE.md — it captures your project's architectural decisions and conventions
 > 2. Start your next session: `bash init.sh` → read progress → pick a feature from Sprint 1
 > 3. Use worktrees for isolation: `EnterWorktree(name: "F001-[name]")` — see CLAUDE.md § Worktree Workflow
-> 4. After implementing a feature, run `/forge:verify F001` for independent evaluation
-> 5. When Sprint 1 features are done, run `/forge:verify --sprint 1` to check the sprint contract
-> 6. Your tooling evolves — [auto-updates / run /forge:evolve when notified] to keep AI tooling current
+> 4. After implementing a feature, run `/onboard:verify F001` for independent evaluation
+> 5. When Sprint 1 features are done, run `/onboard:verify --sprint 1` to check the sprint contract
+> 6. Your tooling evolves — [auto-updates / run /onboard:evolve when notified] to keep AI tooling current
 > 7. Check health — run `/forge:status` anytime to verify tooling is in sync
 
 ---
@@ -341,13 +316,6 @@ Every phase has its own failure modes. The table below is the authoritative per-
 | Session killed mid-`/onboard:generate` | Long-running step | `/forge:resume` detects partial output. User chooses: delete and retry / retry in recovery mode if supported / fast-forward past. Never silently retry on top of partial output. |
 | Plugin discovery fails (catalog unreadable) | Plugin dev issue | Fall back to a hardcoded list of "always install" plugins (superpowers, commit-commands, claude-md-management) and continue. |
 
-### Phase 4: Lifecycle Setup (Optional)
-
-| Failure | Cause | Recovery |
-|---|---|---|
-| Engineering plugin not installed, developer declines | Policy choice | Skip Phase 4 gracefully. Handoff still runs. |
-| Engineering install command fails | Marketplace not added, network, auth | Surface underlying error verbatim. Skip Phase 4. |
-| Individual document generation fails | Bug in engineering plugin, bad input | Report the error and continue with remaining documents. Phase 4 failures never block Handoff. |
 
 ### Universal rules
 

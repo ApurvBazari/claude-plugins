@@ -18,7 +18,6 @@ A successful probe (exit 0) means the plugin is installed.
 | `security-guidance` | Universal | `security-audit` | — | — | — |
 | `hookify` | Universal | `behavioral-guardrails` | — | — | — |
 | `claude-md-management` | Universal | `documentation` | — | — | — |
-| `engineering` | Universal | `engineering-lifecycle`, `architecture-decisions`, `deploy-verification` | — | — | — |
 | `frontend-design` | Stack-conditional | `ui-development` | — | — | — |
 | `feature-dev` | Stack-conditional | `feature-development`, `code-review` | — | — | — |
 | `code-review` | Workflow-conditional | `code-review` | — | — | — |
