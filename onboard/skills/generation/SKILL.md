@@ -409,7 +409,9 @@ Archetype-defined `disallowedTools` always win for semantic protection (reviewer
 
 **Step 5 — Write agent files.** Emit only fields that have concrete values — never emit empty strings or empty lists. Omitted fields preserve pre-feature-equivalent behavior exactly and keep pre-upgrade fixtures byte-identical. The description prefix convention (for encoding `proactive` intent per the archetype table) is applied inline in the final description string, not as a separate field.
 
-**Step 6 — Write drift snapshot.** Append `.claude/onboard-agent-snapshot.json` (or create it if absent) with the exact emitted frontmatter block per agent. Same pattern as `.claude/onboard-skill-snapshot.json` — pure JSON, no maintenance header, consumed by `onboard:update` / `onboard:evolve` as the drift baseline.
+**Pre-write validation (HARD-FAIL)**: every agent file content MUST start with `---\n` AND contain at minimum `name:` and `description:` lines within the frontmatter block. The 2026-04-16 release-gate run produced 5 agents with 0 working frontmatter because this check did not exist. If the generated content is missing the frontmatter, **hard-fail** the generation rather than write a degraded markdown-sections-only file. See `references/agents-guide.md` § REQUIRED for the template.
+
+**Step 6 — Write drift snapshot (re-read pattern).** After writing each agent file, re-read it from disk, parse the actual YAML frontmatter, and use THAT for the snapshot entry. Do not trust the in-memory string — the snapshot must match what landed on disk. If re-read parse fails (no `---`, malformed YAML, missing `name`/`description`), **hard-fail** — the file failed to write what was intended. Snapshot is `.claude/onboard-agent-snapshot.json` — pure JSON, no maintenance header, consumed by `onboard:update` / `onboard:evolve` as the drift baseline.
 
 ```jsonc
 {

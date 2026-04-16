@@ -4,6 +4,40 @@ Agents are specialized Claude personas with constrained tool access and focused 
 
 ---
 
+## REQUIRED: every emitted agent file MUST start with `---` YAML frontmatter
+
+This is non-negotiable. An agent file without frontmatter is a **bug**, not a stylistic choice. Claude Code's subagent system parses the frontmatter to determine `name`, `description`, tool access, model, color, and other behavior. A markdown-sections-only file (H1 + `## Tools` + `## Instructions`) is silently treated as no agent at all by the runtime — that's how the 2026-04-16 release-gate test produced 5 agents with 0 working frontmatter.
+
+The `config-generator` agent enforces this with a pre-write validation: the file content MUST start with `---\n` and contain at minimum `name:` and `description:`. If not, generation hard-fails on that file rather than writing a degraded artifact.
+
+### Copy-paste-able full example (all fields populated)
+
+Use this as the template when generating an agent. Drop optional fields whose archetype produces no concrete value (never emit `null`, `""`, or `[]`).
+
+```markdown
+---
+name: code-reviewer
+description: Proactively reviews code changes for quality, conventions, and potential issues. Use after writing or modifying code.
+tools: Read, Glob, Grep, Bash(git diff:*), Bash(git log:*)
+disallowedTools: Write, Edit
+model: sonnet
+effort: medium
+color: blue
+---
+
+# Code Reviewer
+
+Reviews code changes for quality, conventions, and potential issues.
+
+## Instructions
+
+Detailed instructions for the agent's behavior, focus areas, and output format.
+```
+
+The two fields `name` and `description` are required by Claude Code; the others are optional. See § Frontmatter Reference below for the full field catalog and § Per-archetype defaults for when each field gets emitted.
+
+---
+
 ## File Structure
 
 Each agent is a single markdown file:
