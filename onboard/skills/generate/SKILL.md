@@ -10,6 +10,38 @@ You are running the onboard headless generation skill. This generates Claude too
 
 This skill is designed for programmatic consumers (e.g., the Forge plugin) that have already gathered project context through their own workflow and need onboard's generation capabilities directly.
 
+<EXTREMELY-IMPORTANT>
+**DISPATCH CONTRACT — READ BEFORE TOUCHING ANYTHING**
+
+This skill's ONLY job is to dispatch the `config-generator` agent with a pre-seeded context. It MUST NOT call the Write or Edit tool from its own execution context, ever.
+
+```
+generate skill (this file)              config-generator agent
+─────────────────────                   ──────────────────────
+1. Read context input                   1. (dispatched by generate)
+2. Validate                             2. Run full generation pipeline
+3. Map to onboard format                3. Emit ALL artifacts
+4. Build agent prompt                   4. Self-audit telemetry
+5. DISPATCH AGENT  ───────────────────► 5. Return structured JSON response
+6. Parse JSON response, return summary
+```
+
+**FORBIDDEN patterns** (every one observed in the 2026-04-16 release-gate forge run):
+
+- `FORBIDDEN`: Writing CLAUDE.md inline via Write tool from this skill's execution context.
+- `FORBIDDEN`: Calling Write or Edit tools from this skill at all (any file).
+- `FORBIDDEN`: Skipping the agent dispatch and running generation pipeline steps directly.
+- `FORBIDDEN`: Treating this skill as a Write-tool wrapper.
+
+**REQUIRED pattern**:
+
+- `REQUIRED`: A single Agent dispatch with `subagent_type: "config-generator"` and the pre-seeded context object (Step 3 below).
+
+If you find yourself reaching for the Write tool while executing this skill, STOP — that is the bug this contract is designed to prevent. The artifacts must be written by the dispatched agent, not by this skill.
+
+**Hard-fail safety net**: The `config-generator` agent itself checks for `dispatchedAsAgent: true` in its context. If a caller bypasses dispatch (somehow invoking the agent's logic from the main session inline), the agent refuses to write anything and reports the violation. This is defense in depth — but it does NOT excuse violations of the contract above.
+</EXTREMELY-IMPORTANT>
+
 **Plugin detection fallback**: If `callerExtras.installedPlugins` is absent in the provided context, the generation skill probes the filesystem using the shared procedure in `../generation/references/plugin-drift-detection.md` § Probe Procedure (generate runs probe-only — no baseline diff). This means headless callers that don't compile plugin data will still get Plugin Integration output if plugins are installed.
 
 ---
@@ -307,9 +339,19 @@ The headless context uses the same field names and values as the standard wizard
 
 ---
 
-## Step 3: Generate Artifacts
+## Step 3: Generate Artifacts (DISPATCH config-generator)
 
-Spawn the `config-generator` agent with the mapped context. Include in the agent prompt:
+This is the ONLY action in this skill that produces artifacts. Use the Agent tool:
+
+```
+Agent({
+  subagent_type: "config-generator",
+  description: "Generate onboard artifacts from headless context",
+  prompt: <prompt described below>
+})
+```
+
+Include in the agent prompt:
 
 1. The analysis report (constructed from context in Step 2)
 2. The wizard answers JSON (from context)
@@ -318,6 +360,8 @@ Spawn the `config-generator` agent with the mapped context. Include in the agent
 5. The current date for maintenance headers
 6. A flag indicating headless mode: `"headlessMode": true, "source": "[source]"`
 7. A flag indicating the agent was dispatched (not running inline): `"dispatchedAsAgent": true`
+
+**Do NOT** read the agent's instructions and execute them inline from this skill — that defeats the dispatch contract above. Use the Agent tool exactly once and let the agent run in its own context.
 
 The config-generator agent follows the `generation` skill as usual. In headless mode, the behavioral differences are:
 
@@ -337,22 +381,58 @@ If `ecosystemPlugins` is present in the context, set up the requested plugins fo
 
 ---
 
-## Step 5: Report Results
+## Step 5: Report Results (parse agent's structured JSON response)
 
-After generation completes, compile and return a results summary:
+The dispatched config-generator agent returns a structured JSON response. **Do not improvise** — this is a contract the calling skill (e.g., forge) parses to know what landed.
+
+### Required JSON response shape
+
+```jsonc
+{
+  "filesWritten": [
+    { "path": "CLAUDE.md", "bytes": 4231 },
+    { "path": ".claude/settings.json", "bytes": 1842 },
+    { "path": ".mcp.json", "bytes": 612 }
+    // ... one entry per file written
+  ],
+  "telemetry": {
+    "hookStatus":          { "status": "emitted",  /* canonical shape per generation/SKILL.md */ },
+    "skillStatus":         { "status": "emitted",  /* ... */ },
+    "agentStatus":         { "status": "emitted",  /* ... */ },
+    "mcpStatus":           { "status": "emitted",  /* ... */ },
+    "outputStyleStatus":   { "status": "emitted",  /* ... */ },
+    "lspStatus":           { "status": "skipped", "reason": "caller-disabled" },
+    "builtInSkillsStatus": { "status": "emitted",  /* ... */ }
+  },
+  "auditPassed": true,    // result of pre-exit self-audit (config-generator step 9)
+  "warnings": []
+}
+```
+
+**Validation by this skill** (after agent returns):
+
+1. `auditPassed === true` — if false, surface a hard error to the caller.
+2. All 7 telemetry keys present with valid `status` enum values (`emitted | skipped | declined | failed`).
+3. `filesWritten` non-empty (at minimum CLAUDE.md and onboard-meta.json should be present).
+
+If validation fails, do NOT pretend success. Report the missing/invalid fields to the caller.
+
+### Human-readable summary (rendered to user)
+
+After validation passes, compile and return:
 
 > **Headless generation complete** (source: [source])
 >
 > Generated artifacts:
 > | File | Purpose |
 > |---|---|
-> | [list each file created] | [brief description] |
+> | [list each file from filesWritten] | [brief description] |
 >
-> Hook status: [N] planned, [M] generated, [K] skipped
+> Telemetry: hookStatus=[status], skillStatus=[status], agentStatus=[status], mcpStatus=[status], outputStyleStatus=[status], lspStatus=[status], builtInSkillsStatus=[status]
 >
 > Metadata saved to `.claude/onboard-meta.json`
 
-In addition to the human-readable summary, the results object returned to the caller MUST include a `hookStatus` object with the canonical shape documented in `skills/generation/SKILL.md` § Quality-Gate Hooks § Hook Status Telemetry. Callers (notably forge) rely on this field to persist hook wiring data in their own metadata files — do not omit it even when all hooks were generated successfully (in that case, `skipped: []` and `warnings: []`).
+The full structured JSON response is what callers (notably forge) consume to mirror status into their own metadata files — pass it through verbatim alongside the human-readable summary.
 
 **Scope reminder**: `hookStatus` tracks **only** hooks derived from `callerExtras.qualityGates`. Format/lint hooks (Prettier, ESLint, etc.) and onboard-internal hooks (forge-evolution-check, etc.) are deliberately **excluded** from these counts — they still land in `.claude/settings.json` but do not appear in `hookStatus.planned` or `hookStatus.generated`. See SKILL.md § Hook Status Telemetry § Scope boundary for the full rationale.
 

@@ -187,13 +187,16 @@ Wait for the developer to choose. Record their choice.
 
 ### Step 3.2: Generate Artifacts
 
-Spawn the `config-generator` agent. Include the following in the agent prompt — all of this is already available in the conversational context from prior phases:
+Spawn the `config-generator` agent via the Agent tool (`subagent_type: "config-generator"`). Include the following in the agent prompt — all of this is already available in the conversational context from prior phases:
 - The full analysis report (from Phase 1)
 - The wizard answers as structured JSON (from Phase 2) — includes `advancedHookEvents` when the developer opted in at Phase 5.1; generation reads this to drive `Advanced Event Hooks` emission (see `generation/SKILL.md` § Advanced Event Hooks)
 - The `detectedPlugins` object (from Phase 2.5) — if no plugins were detected, pass an empty object so the generation skill resolves `effectivePlugins` as empty
 - The chosen model (from Step 3.1)
 - The project root path
 - The current date for maintenance headers
+- A flag indicating the agent was dispatched (not running inline): `"dispatchedAsAgent": true` — config-generator hard-fails Step 0 if absent
+
+**REQUIRED**: this MUST be a single Agent dispatch. Do NOT execute the agent's instructions inline from this skill (init), and do NOT call Write/Edit from this skill — config-generator owns all writes (same dispatch contract as `onboard:generate`).
 
 Inform the developer:
 

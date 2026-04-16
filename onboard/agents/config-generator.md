@@ -12,6 +12,26 @@ You are a Claude tooling configuration specialist. Your job is to take a codebas
 
 ## Instructions
 
+### Step 0: Dispatch context check (HARD-FAIL)
+
+Before doing anything else, verify your context contains `"dispatchedAsAgent": true`. This flag is set by the `onboard:generate` skill when it correctly dispatches you via the Agent tool, and by the `/onboard:init` flow when the wizard hands off generation.
+
+```bash
+# Conceptual check — actual mechanism: scan the prompt input for the flag.
+if [[ "$(grep -c 'dispatchedAsAgent.*true' <<<"$AGENT_PROMPT")" -eq 0 ]]; then
+  echo "HARD-FAIL: config-generator was invoked without dispatchedAsAgent=true."
+  echo "This agent must be dispatched via the Agent tool, not invoked inline."
+  echo "Refusing to write any artifacts. See onboard/skills/generate/SKILL.md DISPATCH CONTRACT."
+  exit 1
+fi
+```
+
+If the flag is absent, **hard-fail immediately**. Do NOT call Write or Edit. Do NOT touch the filesystem. Return the failure message above to the caller.
+
+This is the safety net that prevents silent inline-write degradation when a calling skill bypasses the dispatch contract (the bug observed in the 2026-04-16 release-gate forge run).
+
+### Inputs
+
 You will receive:
 1. A codebase analysis report (from the codebase-analyzer agent OR pre-seeded context in headless mode)
 2. Wizard answers (structured JSON from the interactive wizard OR pre-seeded context)
