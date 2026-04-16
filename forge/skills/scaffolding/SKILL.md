@@ -260,6 +260,62 @@ Regardless of scaffold path, add these based on Phase 1 context:
 7. **Code generation** (if `codegenTools` has entries): Install tools, add generate scripts
 8. **Storage** (if `storageStrategy` ≠ "none"): Add storage utility module with placeholder config
 
+### Prisma + Pothos scalar registration (GraphQL stacks only)
+
+If the scaffold uses Pothos (`@pothos/core`) with the Prisma plugin (`@pothos/plugin-prisma`), the auto-generated types reference scalar names that the Pothos builder must register **before** the schema boots. Missing registration is a hard fail — the API exits on first request with `Unknown scalar DateTime` (or similar). The 2026-04-16 release-gate Phase 5 test (findings A12/FO5) hit this exact failure.
+
+**Conditional registration** (don't import scalars the Prisma schema doesn't actually use):
+
+1. Inspect the generated `prisma/schema.prisma` for the set of Prisma scalar types used across all models. The relevant ones for Pothos are: `DateTime`, `Json`, `BigInt`, `Bytes`, `Decimal`. (`Int`, `String`, `Boolean`, `Float` are GraphQL built-ins — no registration needed.)
+2. Add `graphql-scalars: ^1.x` to `dependencies` in the API package's `package.json` (only if step 1 found ≥1 scalar to register).
+3. In the Pothos builder file (typically `src/builder.ts` or `apps/api/src/builder.ts` in monorepos), import only the resolvers actually needed and register them on the builder. For example, a Prisma schema using `DateTime` and `Json` produces:
+
+   ```ts
+   import { DateTimeResolver, JSONResolver } from 'graphql-scalars';
+   import SchemaBuilder from '@pothos/core';
+   import PrismaPlugin from '@pothos/plugin-prisma';
+   import type PrismaTypes from '../prisma/generated/pothos-types';
+
+   export const builder = new SchemaBuilder<{
+     PrismaTypes: PrismaTypes;
+     Scalars: {
+       DateTime: { Input: Date; Output: Date };
+       JSON:     { Input: unknown; Output: unknown };
+     };
+   }>({
+     plugins: [PrismaPlugin],
+     prisma: { client: prisma },
+   });
+
+   builder.addScalarType('DateTime', DateTimeResolver);
+   builder.addScalarType('JSON', JSONResolver);
+   ```
+
+   Mapping (Prisma scalar → graphql-scalars resolver):
+
+   | Prisma | Resolver | Pothos type |
+   |---|---|---|
+   | `DateTime` | `DateTimeResolver` | `DateTime` |
+   | `Json` | `JSONResolver` | `JSON` |
+   | `BigInt` | `BigIntResolver` | `BigInt` |
+   | `Bytes` | `ByteResolver` | `Bytes` |
+   | `Decimal` | (use Prisma's `.toString()` or a custom scalar) | `Decimal` |
+
+4. **Verify after `pnpm install`**: GraphQL boots without "Unknown scalar" errors.
+   - `curl -sf http://localhost:<port>/graphql` returns HTTP 200 (the GraphQL endpoint accepts POST; HEAD/GET against the playground returns 200 if Apollo Server is configured for it).
+   - Run a minimal introspection query against the same endpoint:
+
+     ```bash
+     curl -sf -X POST http://localhost:<port>/graphql \
+       -H "Content-Type: application/json" \
+       -d '{"query":"{ __schema { types { name } } }"}' \
+       | jq -e '.data.__schema.types | length > 0'
+     ```
+
+     This must return a non-empty type list with no `errors` field. A response with `{ errors: [...] }` indicates a schema build error (e.g., missing scalar registration); fix the builder and re-run.
+
+This guidance applies to Pothos + Prisma specifically. Other GraphQL builders (Yoga, Mercurius, Apollo Server vanilla) need their own scalar registration and are out of scope for this template.
+
 ## Step 4: Git Setup
 
 1. **Initialize**: `git init` (if not already a git repo)
