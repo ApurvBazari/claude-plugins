@@ -332,41 +332,73 @@ Organize findings into categories:
 
 ## Upgrade Offers
 
-### Step 6: Offer Targeted Upgrades
+### Step 6: Offer Targeted Upgrades (AskUserQuestion)
 
-For each finding, offer a specific action:
+Accumulate every detected drift item into a list of offer-objects. Do **not** number them manually — they get rendered as `AskUserQuestion` options programmatically. Each offer has:
 
-> I can make the following updates:
->
-> **Core tooling:**
-> 1. **Update CLAUDE.md** — Add new commands discovered, update tech stack section
-> 2. **Add .claude/rules/security.md** — Your project now has auth code that wasn't there before
-> 3. **Update .claude/skills/react-component/SKILL.md** — New patterns detected in recent components
->
-> **Enriched capabilities** (if not already set up):
-> 4. **Add CI/CD pipelines** — Generate GitHub Actions for testing, deployment, and PR review
-> 5. **Add harness artifacts** — progress.md, HARNESS-GUIDE.md for multi-session development
-> 6. **Add evolution hooks** — Auto-detect when deps/configs/structure change
-> 7. **Add sprint contracts** — Quality gates for feature development
-> 8. **Add feature verification** — Independent evaluator agent + /onboard:verify
->
-> **Plugin drift** (from Step 4b.1):
-> 9. **Wire in `feature-dev`** — Refresh Plugin Integration + add `preCommit` hooks
-> 10. **Remove `hookify`** — Strip CLAUDE.md references + delete obsolete hook scripts
->
-> **Artifact gaps** (from Step 4b.2):
-> 11. **Regenerate `.claude/rules/security.md`** — File was listed in generatedArtifacts but is missing from disk
->
-> **New best-practice additions** (from Step 4b.3):
-> 12. **Create `.claude/rules/observability.md`** — Reference guides recommend this for your stack
->
-> **LSP plugin drift** (from Step 4b.8):
-> 13. **Install `rust-analyzer-lsp`** — Rust files detected since last run
->
-> **Built-in skills drift** (from Step 4b.9):
-> 14. **Add `/claude-api` to built-in skills** — Anthropic SDK detected since last run
->
-> Which updates would you like me to apply? (all / specific numbers / none)
+```jsonc
+{
+  "id": "regenerate-security-rule",   // stable id, used in pending-updates snapshot
+  "label": "Regenerate .claude/rules/security.md",
+  "description": "File was listed in generatedArtifacts but is missing from disk",
+  "group": "artifact-gaps",            // see grouping below
+  "autoChecked": false                  // true for new-language LSP / built-in skills, see below
+}
+```
+
+Group offers into these categories (each becomes one `multiSelect: true` question inside the AskUserQuestion call):
+
+| Group | What goes here |
+|---|---|
+| `artifact-gaps` | Files in `generatedArtifacts` missing from disk; user-customized files that need merge/replace decision |
+| `user-edit-detections` | Files where the maintenance header was modified or other edits detected |
+| `new-dependencies-or-languages` | New dep additions (e.g., `@anthropic-ai/sdk`), new languages (Rust → `rust-analyzer-lsp`), built-in skills newly relevant. **LSP plugins for newly detected languages are `autoChecked: true` by default**, matching wizard Phase 5.6 pre-check behavior. |
+| `best-practice-suggestions` | Reference guide recommendations (e.g., `observability.md` rule for the detected stack) |
+| `enriched-capabilities` | CI/CD, harness, evolution, sprint contracts, verification |
+| `plugin-drift` | Wire-in / remove offers from Step 4b.1 |
+
+### Combined AskUserQuestion call
+
+Issue a **single AskUserQuestion call** containing the pre-question + up to 3 offer-group multi-select questions (4 max per call). If there are more than 3 active groups, fold the lowest-priority groups into a second AskUserQuestion call within the same exchange.
+
+**Question 1 — Pre-question** (single-select, header: `"Approach"`):
+
+| Label | Effect |
+|---|---|
+| `Review and pick` | Default. Proceed to per-group multiSelect questions in this same call. |
+| `Apply all` | Skip per-group selection, apply every offer accumulated. |
+| `Apply later` | Write `.claude/onboard-pending-updates.json` snapshot of all offers (with their `id` and metadata) and exit. The next `/onboard:update` re-presents pending items + any newly detected drift. |
+| `Skip / dismiss` | Discard offers, do not remind again this session. (Re-running `/onboard:update` re-detects from scratch.) |
+
+**Questions 2–4 — Offer-group multi-selects** (each `multiSelect: true`, headers: `"ArtifactGaps"`, `"UserEdits"`, `"NewDeps"`, etc. — pick the 3 most populous groups for the first call). Only render groups that have ≥1 offer; skip empty groups.
+
+For each option, set the `description` to the offer's `description` field. Mark `autoChecked: true` offers (e.g., new-language LSP) as pre-selected so the developer just clicks Submit unless they want to opt out.
+
+### "Apply later" snapshot — `.claude/onboard-pending-updates.json`
+
+Written when the developer picks "Apply later" in the pre-question:
+
+```jsonc
+{
+  "savedAt": "2026-04-17T14:32:00Z",
+  "pendingOffers": [
+    {
+      "id": "regenerate-security-rule",
+      "label": "Regenerate .claude/rules/security.md",
+      "description": "File was listed in generatedArtifacts but is missing from disk",
+      "group": "artifact-gaps",
+      "autoChecked": false
+    }
+    // ... one entry per offer
+  ]
+}
+```
+
+Next `/onboard:update`:
+1. If `.claude/onboard-pending-updates.json` exists, read it. Re-validate each offer against current state (e.g., the missing file may have been restored manually).
+2. Merge still-applicable pending offers into the freshly detected drift list. Dedupe by `id`.
+3. Present the combined list via the same Step 6 AskUserQuestion call.
+4. After "Apply all" or per-group selection lands, delete `.claude/onboard-pending-updates.json` (snapshot has served its purpose).
 
 ### User-Customized Files
 
