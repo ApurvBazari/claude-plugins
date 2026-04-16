@@ -82,6 +82,10 @@ Canonical frontmatter spelling is **hyphenated** (`user-invocable`, `disable-mod
 - Reference integrity: every file referenced in skills/agents must exist
 - Run `/validate` to check all plugins at once
 
+## Documentation URL convention
+
+When referencing Claude Code documentation in any plugin file, use the current home `https://code.claude.com/docs/en/*`. The legacy `https://docs.anthropic.com/en/docs/claude-code/*` URLs 301-redirect and waste turns when programmatic WebFetch calls don't follow redirects (release-gate finding A6, 2026-04-16). Full mapping + verification recipe in `docs/url-conventions.md`.
+
 ## Git Discipline
 
 - Conventional commits: `type(scope): description` — types: `feat`, `fix`, `refactor`, `docs`, `chore`

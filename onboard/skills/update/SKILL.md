@@ -71,8 +71,8 @@ Check two knowledge sources:
 - Check if the existing artifacts use deprecated patterns
 
 **Live web fetch** (latest):
-- Fetch the official Claude Code documentation at `https://docs.anthropic.com/en/docs/claude-code` using WebFetch to check for new features or changed best practices
-- Also check `https://docs.anthropic.com/en/docs/claude-code/settings` for settings and hooks updates
+- Fetch the official Claude Code documentation at `https://code.claude.com/docs/en` using WebFetch to check for new features or changed best practices
+- Also check `https://code.claude.com/docs/en/settings` for settings and hooks updates
 - Compare fetched documentation against the existing setup to identify new capabilities not yet leveraged
 
 **Web fetch failure fallback**: If the web fetch fails (network error, timeout, or content unavailable):

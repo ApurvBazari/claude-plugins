@@ -1,6 +1,6 @@
 # claude-plugins
 
-A curated collection of plugins for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — powering AI-driven development and agentic workflows.
+A curated collection of plugins for [Claude Code](https://code.claude.com/docs/en) — powering AI-driven development and agentic workflows.
 
 ## Plugins
 
@@ -187,8 +187,8 @@ These are plugins from the broader Claude Code ecosystem that pair well with thi
 
 ## Links
 
-- [Claude Code documentation](https://docs.anthropic.com/en/docs/claude-code)
-- [Claude Code plugins guide](https://docs.anthropic.com/en/docs/claude-code/plugins)
+- [Claude Code documentation](https://code.claude.com/docs/en)
+- [Claude Code plugins guide](https://code.claude.com/docs/en/plugins)
 
 ## License
 
