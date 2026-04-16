@@ -222,6 +222,24 @@ Compare the fresh `detect-lsp-signals.sh` output against the `onboard-lsp-snapsh
 
 Record as `lspDrift.{newLanguages, uninstalled, staleCandidates}[]` for Step 7. Findings report emits a "LSP Plugin Drift" section when any of these are non-empty; see Step 5 template additions below.
 
+#### 4b.9: Built-in Skills Drift
+
+Re-run detection against the current codebase analysis to identify which built-in Claude Code skills are relevant. Compare against the `onboard-builtin-skills-snapshot.json` baseline. Classification only — Step 7 applies.
+
+1. **Read the inputs**:
+   - `.claude/onboard-builtin-skills-snapshot.json` — `{ recommended, accepted }`. Missing file → treat as `recommended: [], accepted: []` (pre-1.9.0 project).
+   - Fresh detection against the current codebase: check each extra skill's detection signal per `generation/references/built-in-skills-catalog.md`. Core skills (`/loop`, `/simplify`, `/debug`, `/pr-summary`) are always candidates.
+
+2. **Classify** per candidate skill from the fresh detection:
+   - **newSkill** — skill name in fresh candidates but not in `snapshot.recommended`. A new detection signal fired since last onboard/evolve run (e.g., `@anthropic-ai/sdk` added to dependencies → `/claude-api` detected). Surface as a suggested addition.
+   - **newlyRelevant** — skill in `snapshot.recommended` but not in `snapshot.accepted` (developer previously declined), and the detection signal now has a stronger basis (e.g., file count grew from 30 to 200 → `/codebase-visualizer` crosses threshold). Surface as a suggestion, not an action.
+   - **staleCandidate** — skill in `snapshot.recommended` but fresh detection no longer fires the signal (e.g., `@anthropic-ai/sdk` removed from dependencies). Informational — do NOT auto-suggest removal.
+   - **in-sync** — no changes between snapshot and fresh detection. No action.
+
+3. **Pre-1.9.0 projects** (snapshot missing) — surface every fresh candidate (core + fired extras) as `newSkill`. First update run acts like an initial 1.9.0 prompt.
+
+Record as `builtInSkillsDrift.{newSkills, newlyRelevant, staleCandidates}[]` for Step 7. Findings report emits a "Built-in Skills Drift" section when any of these are non-empty; see Step 5 template additions below.
+
 ---
 
 ## Findings Report
@@ -297,6 +315,12 @@ Organize findings into categories:
 > - **Stale candidates**: [list or "none"] — languages no longer present in the project. Informational only.
 > - Impact: newLanguages can be offered for install on approval; uninstalls and stale candidates are informational.
 >
+> ### Built-in Skills Drift (from Step 4b.9)
+> - **New skills detected**: [list or "none"] — built-in skills newly relevant to the project (e.g., `/claude-api` after adding `@anthropic-ai/sdk`).
+> - **Newly relevant**: [list or "none"] — previously declined skills with stronger signals now. Informational only; offered as a suggestion.
+> - **Stale candidates**: [list or "none"] — skills whose detection signals no longer fire. Informational only.
+> - Impact: new skills can be added to CLAUDE.md on approval.
+>
 > ### Deprecated Patterns
 > - [Anything in current setup that's outdated]
 >
@@ -338,6 +362,9 @@ For each finding, offer a specific action:
 >
 > **LSP plugin drift** (from Step 4b.8):
 > 13. **Install `rust-analyzer-lsp`** — Rust files detected since last run
+>
+> **Built-in skills drift** (from Step 4b.9):
+> 14. **Add `/claude-api` to built-in skills** — Anthropic SDK detected since last run
 >
 > Which updates would you like me to apply? (all / specific numbers / none)
 
@@ -469,6 +496,22 @@ Only **new-language additions** are applied on user approval. Uninstalls and sta
 2. For `uninstalled` findings: no action. Log once: "LSP plugin `<name>` was uninstalled since last run — rerun `/onboard:evolve` if you want to reinstall."
 3. For `staleCandidate` findings: no action. Log once.
 
+**Built-in skills drift application** (for items surfaced by Step 4b.9):
+
+Only **newSkill additions** are applied on user approval. Stale candidates and newly-relevant suggestions are informational only.
+
+1. For each approved `newSkill` candidate:
+   - Add the skill to `builtInSkillsStatus.generated[]`.
+   - Find the `<!-- onboard:builtin-skills:start -->` / `<!-- onboard:builtin-skills:end -->` markers in CLAUDE.md and regenerate the content between them, including the new skill with its stack-specific example from `generation/references/built-in-skills-catalog.md`.
+   - Update `.claude/onboard-builtin-skills-snapshot.json` — append to both `recommended[]` and `accepted[]`, preserving alphabetical sort.
+2. For `newlyRelevant` suggestions: no action. Log once as informational.
+3. For `staleCandidate` findings: no action. Log once.
+
+**Placement migration** (handled alongside built-in skills application):
+- **Standalone → Plugin Integration**: If `<!-- onboard:builtin-skills:start/end -->` markers exist as a top-level section AND `effectivePlugins` is now non-empty (e.g., plugins were installed since last run), remove the standalone region and regenerate the built-in skills content as the last subsection inside `<!-- onboard:plugin-integration:start/end -->`. Surface as a named migration action in the Step 6 upgrade offer menu.
+- **Plugin Integration → standalone**: If `effectivePlugins` becomes empty (all plugins removed) and built-in skills content is inside Plugin Integration markers, migrate the content out to a standalone section before stripping the Plugin Integration markers.
+- **Empty accepted list**: If `builtInSkillsStatus.generated[]` becomes empty (all skills declined), strip the `<!-- onboard:builtin-skills:start/end -->` markers and their content entirely.
+
 **Artifact gap regeneration** (for items surfaced by Step 4b.2):
 
 Invoke the `generate` skill via the Skill tool with a narrow `callerExtras.regenerateOnly` payload listing the missing artifact paths. Generate honors this scope and only writes the listed files. After regeneration, verify each file is present on disk and carries a fresh maintenance header.
@@ -490,6 +533,7 @@ Update `.claude/onboard-meta.json`:
 - **If agent frontmatter drift was applied in Step 7** — refresh top-level `agentStatus.frontmatterFields[<agent>]` to match the applied state, including the refreshed `source` value (`user-confirmed` / `user-tweaked` / `wizard-default` for legacy migrations). Update `.claude/onboard-agent-snapshot.json` to reflect the new baseline. Keep `agentStatus.existedPreOnboard[]` sticky. Append `legacy-skipped:<agent>` entries to `agentStatus.warnings` for any `legacyNoFrontmatter` declined by the developer.
 - **If output style drift was applied in Step 7** — refresh top-level `outputStyleStatus.frontmatterFields[<style>]` to match the applied state, including the refreshed `source` value (`user-confirmed` / `user-tweaked` / `wizard-default` for legacy migrations). Update `.claude/onboard-output-style-snapshot.json` to reflect the new baseline. Keep `outputStyleStatus.existedPreOnboard[]` sticky. Append `legacy-skipped:<style>` or `legacy-no-archetype-match:<style>` entries to `outputStyleStatus.warnings` for any `legacyNoFrontmatter` declined or unclassifiable. Preserve `outputStyleStatus.activationDefault`, `settingsLocalWritten`, and `settingsLocalWarning` from the prior state — `update` does NOT touch settings.local.json.
 - **If LSP drift was applied in Step 7** — refresh top-level `lspStatus`: append newly-installed plugins to `lspStatus.accepted[]` and `lspStatus.generated[]`, merge install-script results into `lspStatus.autoInstalled[]` and `lspStatus.autoInstallFailed[]`. Update `.claude/onboard-lsp-snapshot.json` (both `recommended` and `accepted`) to reflect the new baseline. `lspStatus.skipped[]` is preserved from prior runs — never rewritten during update.
+- **If built-in skills drift was applied in Step 7** — refresh top-level `builtInSkillsStatus`: append newly-accepted skills to `builtInSkillsStatus.generated[]`, update `detectionSignals` for new entries. Update `.claude/onboard-builtin-skills-snapshot.json` (both `recommended` and `accepted`) to reflect the new baseline, preserving alphabetical sort. `builtInSkillsStatus.skipped[]` is preserved from prior runs — never rewritten during update.
 - **Forge-meta mirror (scoped)** — If the project also maintains `.claude/forge-meta.json`, update ONLY these fields to match: `generated.toolingFlags.installedPlugins`, `generated.toolingFlags.coveredCapabilities`, `generated.toolingFlags.qualityGates`, `generated.toolingFlags.phaseSkills`, `generated.toolingFlags.hookStatus`. Read-modify-write the file: preserve every other key (`context.*`, `scaffold.*`, `lastRun`, `pluginVersion`, any caller-specific fields) verbatim. Never rewrite the whole file; never touch `context.autonomyLevel` or any other non-toolingFlags subtree — forge owns those. If `forge-meta.json` is absent, skip this step silently.
 - Add an `updateHistory` array entry:
 

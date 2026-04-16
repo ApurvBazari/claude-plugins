@@ -276,6 +276,34 @@ Record the user's selection verbatim as `wizardAnswers.lspPlugins` (a string arr
 
 **Headless mode** (`callerExtras.lspPlugins` or `callerExtras.disableLSP` present): the wizard never fires — generation reads the caller-supplied value directly.
 
+### Phase 5.7: Built-in Skills (When Candidates Exist)
+
+Run detection against the codebase analysis report to identify which built-in Claude Code skills are relevant. Core skills (`/loop`, `/simplify`, `/debug`, `/pr-summary`) are always candidates. Extra skills (`/schedule`, `/claude-api`, `/explain-code`, `/codebase-visualizer`, `/batch`) are candidates only when their detection signal fires. Refer to `generation/references/built-in-skills-catalog.md` for the full tier/signal mapping.
+
+If no extra skills fire AND the project has no special characteristics, the candidate list is the 4 core skills. This still produces a non-empty list — skip this phase only when `callerExtras.disableBuiltInSkills: true` is set (headless suppression).
+
+Issue **one `AskUserQuestion` multiSelect** presenting each candidate skill as an option. Core skills are always pre-checked. Extra skills are pre-checked when their detection signal fires and unchecked otherwise (developers can manually add extras that weren't auto-detected).
+
+> Which built-in Claude Code skills would you like documented in your project's CLAUDE.md?
+>
+> - `/loop` — run a prompt on a recurring interval **(core)** **[checked]**
+> - `/simplify` — review and simplify changed code **(core)** **[checked]**
+> - `/debug` — systematic debugging **(core)** **[checked]**
+> - `/pr-summary` — summarize PR changes **(core)** **[checked]**
+> - `/schedule` — create scheduled remote agents **(detected: CI/CD present)** **[checked]**
+> - `/batch` — batch operations across files **(detected: 247 source files)** **[checked]**
+> - `/explain-code` — deep code explanation **[unchecked]**
+
+Describe each option: skill name, one-line description, tier label (core or detected signal), and checked/unchecked state. Present core skills first (alphabetical), then extras sorted by detection confidence (signal-present first, then absent).
+
+Record the user's selection verbatim as `wizardAnswers.builtInSkills` (a string array of accepted skill names, e.g., `["/loop", "/simplify", "/debug", "/pr-summary", "/schedule"]`). An empty array means "candidates existed but developer declined all of them" — distinct from "no detection" (absent field in headless mode).
+
+**Quick Mode behavior**: 5.7 is skipped in Quick Mode — `builtInSkills` defaults to the full candidate list (all core + fired extras accepted). The wizard still writes the array to `wizardAnswers.builtInSkills` so downstream generation knows which skills to document without re-asking.
+
+**Exchange budget guard**: Phase 5.7 is at most one `AskUserQuestion` call. If the current exchange count is already at 6, skip and set `wizardAnswers.builtInSkills` to the full candidate list — Quick Mode semantics. The 6-exchange hard limit stays intact.
+
+**Headless mode** (`callerExtras.builtInSkills` or `callerExtras.disableBuiltInSkills` present): the wizard never fires — generation reads the caller-supplied value directly.
+
 ### Phase 6: Summary & Confirmation
 Present everything gathered (analysis + wizard answers) and ask for confirmation before generation.
 
@@ -403,7 +431,8 @@ After the wizard completes, compile all answers into a structured JSON format:
     "archetypeOverride": "inherit",
     "activationDefault": "none"
   },
-  "lspPlugins": ["typescript-lsp", "rust-analyzer-lsp"]
+  "lspPlugins": ["typescript-lsp", "rust-analyzer-lsp"],
+  "builtInSkills": ["/loop", "/simplify", "/debug", "/pr-summary", "/schedule"]
 }
 ```
 
@@ -414,6 +443,8 @@ The `advancedHookEvents` field is an array of event names the developer explicit
 The `advancedHookTypes` / `advancedHookTypeExtras` / `allowHttpHooks` fields come from Phase 5.1.1 (execution type per event). `advancedHookTypes` only contains entries for judgment-capable events the developer explicitly picked a non-default type for; events defaulting to `command` are omitted. `advancedHookTypeExtras` carries the auxiliary field (`agentRef` / `httpUrl` / `promptRef` / `promptInline`) required by the chosen type. `allowHttpHooks` is `true` only when the developer confirmed the HTTP data-leaves-machine prompt for at least one event. See `generation/SKILL.md` § Advanced Event Hooks § Per-event defaults and § Hook Type Validation for how these are consumed.
 
 The `lspPlugins` field is the developer-accepted list of marketplace LSP plugins from Phase 5.6. An empty array means "detected candidates but developer declined all"; an absent field means "Quick Mode / headless path — full detected list is the implicit accept". `generation/SKILL.md` § LSP Plugin Recommendations consumes this alongside `callerExtras.lspPlugins` and `callerExtras.disableLSP`. See `generation/references/lsp-plugin-catalog.md` for the plugin→language mapping.
+
+The `builtInSkills` field is the developer-accepted list of built-in Claude Code skills from Phase 5.7. An empty array means "candidates existed but developer declined all"; an absent field means "Quick Mode / headless path — full candidate list (core + fired extras) is the implicit accept". `generation/SKILL.md` § Built-in Claude Code Skills — Phase 7d consumes this alongside `callerExtras.builtInSkills` and `callerExtras.disableBuiltInSkills`. See `generation/references/built-in-skills-catalog.md` for the skill tiers and detection signals.
 
 The `skillTuning` field comes from Phase 5.2. `mode: "defaults"` (or the field being absent entirely) means "archetype inference only — no project-level override". `mode: "tuned"` carries the three project-level settings: `defaultModel` (model tier hint for generated skills), `defaultEffort` (thinking budget hint), `preApprovalPosture` (how aggressively the `allowed-tools` field is populated). These three settings refine the archetype output in `generation/SKILL.md` § Skills § Frontmatter emission. Per-skill overrides happen in the generation-time batched confirmation step, not here.
 

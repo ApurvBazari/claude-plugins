@@ -98,6 +98,7 @@ Internal building blocks (`user-invocable: false` — hidden from menu):
 `generation/references/` is the single source of truth:
 
 **Core guides**: claude-md-guide, rules-guide, hooks-guide, skills-guide, agents-guide, collaboration-guide
+**Catalog guides**: mcp-guide, output-styles-guide, output-styles-catalog, lsp-plugin-catalog, built-in-skills-catalog
 **Extended guides**: harness-design, ci-cd-templates, evolution-hooks-guide, sprint-contracts, agent-teams-guide, worktree-workflow
 
 ## Key Patterns

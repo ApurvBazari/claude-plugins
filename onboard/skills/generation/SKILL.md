@@ -144,6 +144,7 @@ This project uses the following Claude Code plugins. Use them consistently.
 5. **Quality gates** — `code-review:code-review`, `pr-review-toolkit:review-pr`, `claude-md-management:revise-claude-md` (only ones whose plugin is installed)
 6. **Ecosystem** — `hookify`, `security-guidance` (only ones whose plugin is installed)
 7. **Output styles** (always — built-in styles are universal, emitted custom style is project-specific): Add an `### Output styles` subsection. List the three built-ins (`Default` / `Explanatory` / `Learning`) with one-line descriptions. If `outputStyleStatus.generated[]` is non-empty, also list the emitted custom style with its path and one-line purpose. State the activation path: open `/config` and pick from the menu, OR set `"outputStyle": "<name>"` in `.claude/settings.local.json`. Include the new-session caveat (changes take effect in the next new session). Do NOT reference built-in styles as files — they're Anthropic-provided. When `outputStyleStatus.generated[]` is empty, still emit the subsection to surface the built-ins.
+8. **Built-in Claude Code skills** (always — these are Anthropic-provided, not plugin-dependent): Add a `### Built-in Claude Code skills` subsection wrapped in `<!-- onboard:builtin-skills:start -->` / `<!-- onboard:builtin-skills:end -->` markers. For each skill in `builtInSkillsStatus.generated[]`, emit: skill name, one-line description, and a project-specific example from `references/built-in-skills-catalog.md` (matched to detected stack). Use the same narrative voice as other Plugin Integration subsections — answer "when would you use this on your project?" not just list names. Place this as the **last subsection** inside Plugin Integration, after Output styles. When `builtInSkillsStatus.generated[]` is empty, do not emit the subsection (no stub). When `effectivePlugins` is empty, emit as a standalone `## Built-in Claude Code skills` section with the same `<!-- onboard:builtin-skills:start/end -->` markers, placed after the last onboard-generated section (identified by maintenance header). See "Built-in Claude Code Skills — Phase 7d" below for the full emission spec.
 
 **Graceful degradation (EC8)**: When `superpowers` is NOT in `installedPlugins`, the "Research & brainstorming" subsection falls back to a generic version that recommends built-in `WebSearch`/`WebFetch` and a manual-discussion protocol. Do **not** reference `/superpowers:brainstorming` in the fallback — it would be a broken command. Add a note suggesting users install superpowers for the full experience.
 
@@ -748,6 +749,95 @@ Both arrays are sorted alphabetically for stable diffs. Add the snapshot path to
 **`skipped[].reason` values**: `user-declined` | `caller-disabled` | `detection-empty`.
 
 **Step 7 — Post-emit stdout summary.** Print a terse block listing accepted plugins, any auto-install failures, and any language-server binaries the user still needs to install manually (per catalog). Keep under 6 lines.
+
+### Built-in Claude Code Skills — Phase 7d
+
+Follow `references/built-in-skills-catalog.md` for the 9-skill catalog, tier classification (core vs extra), detection signals, and stack-specific example templates.
+
+**When to run**: After Phase 7c (LSP) and before Hooks. Runs once per generation; drift handling lives in `update`/`evolve`.
+
+**Suppression**: Skip entirely when `callerExtras.disableBuiltInSkills: true` (forge default — scaffolded projects have placeholder code so detection signals are premature). When skipped, still emit a `builtInSkillsStatus` entry in meta.json:
+
+```json
+{
+  "builtInSkillsStatus": {
+    "planned": [],
+    "generated": [],
+    "skipped": [{ "skill": "*", "reason": "caller-disabled" }],
+    "warnings": [],
+    "detectionSignals": {}
+  }
+}
+```
+
+**Step 1 — Detect candidates.** Run detection against the codebase analysis report:
+
+- **Core skills** (`/loop`, `/simplify`, `/debug`, `/pr-summary`): always candidates. No detection signal needed.
+- **Extra skills**: check each signal per the catalog's "Detection signal" and "Analysis report field" columns. Record which signals fired and which did not.
+
+Build the full candidate list: 4 core + N extras (0-5) whose signals fired. Record as `planned[]`.
+
+**Step 2 — Resolve accepted list.** Determine which skills to generate from the candidate list:
+
+- If `callerExtras.builtInSkills` is present → use it verbatim as the accepted list (headless mode). An empty array means "declined all".
+- Else if `wizardAnswers.builtInSkills` is present → use it as the accepted list.
+- Else (Quick Mode / absent field) → accept the full candidate list (all core + fired extras).
+
+Record as `generated[]`. Skills in `planned[]` but not in `generated[]` go into `skipped[]` with `reason: "user-declined"`.
+
+**Step 3 — Determine placement path.**
+
+- If `effectivePlugins` is non-empty → emit as `### Built-in Claude Code skills` subsection inside `<!-- onboard:plugin-integration:start/end -->`, after the `### Output styles` subsection (content rule #7), before the Plugin Integration closing marker.
+- If `effectivePlugins` is empty → emit as a standalone `## Built-in Claude Code skills` section, placed after the last onboard-generated section (identified by maintenance header), before any user-added trailing content.
+
+In both cases, wrap the content in `<!-- onboard:builtin-skills:start -->` / `<!-- onboard:builtin-skills:end -->` markers. The markers are always present regardless of placement path — this makes all drift handlers marker-based.
+
+**Step 4 — Compose the subsection.** For each skill in `generated[]`:
+
+1. Look up the skill in the catalog to get the one-line description.
+2. Select the stack-specific example from the catalog's four template tables (frontend / backend / CLI / general), picking the table that matches the project's primary detected stack (highest source file count). If no specific stack matches, use the general fallback.
+3. Emit in this format:
+
+```markdown
+- `/skill-name` — one-line description.
+  Example: project-specific example from catalog.
+```
+
+Use rich narrative voice matching the project's autonomy level (per the Tone rules). The subsection header should briefly explain what built-in skills are: "These Anthropic-provided skills are available in every Claude Code session — no plugin install required."
+
+**Step 5 — Write drift snapshot.** Write `.claude/onboard-builtin-skills-snapshot.json`:
+
+```json
+{
+  "recommended": ["/batch", "/debug", "/loop", "/pr-summary", "/schedule", "/simplify"],
+  "accepted": ["/debug", "/loop", "/pr-summary", "/schedule", "/simplify"]
+}
+```
+
+Plain JSON, no `_generated` header — matches LSP snapshot format. Both arrays sorted alphabetically. Add the snapshot path to `generatedArtifacts` in `onboard-meta.json`.
+
+**Step 6 — Record telemetry.** Add `builtInSkillsStatus` to `onboard-meta.json` alongside `hookStatus`, `mcpStatus`, `skillStatus`, `agentStatus`, `outputStyleStatus`, and `lspStatus`:
+
+```json
+{
+  "builtInSkillsStatus": {
+    "planned": ["/loop", "/simplify", "/debug", "/pr-summary", "/schedule", "/batch"],
+    "generated": ["/loop", "/simplify", "/debug", "/pr-summary", "/schedule"],
+    "skipped": [{ "skill": "/batch", "reason": "user-declined" }],
+    "warnings": [],
+    "detectionSignals": {
+      "/schedule": "ci-cd-detected",
+      "/batch": "source-file-count:247"
+    }
+  }
+}
+```
+
+`detectionSignals` only records extras whose signal fired (they appear in `planned`). Core skills don't need detection entries since they're always included.
+
+**`skipped[].reason` values**: `user-declined` | `caller-disabled` | `detection-empty`.
+
+**Step 7 — Post-emit stdout summary.** Print a terse block listing accepted skills and the placement path (inside Plugin Integration or standalone). Keep under 4 lines.
 
 ### Hooks (.claude/settings.json)
 
@@ -1403,6 +1493,12 @@ Before finishing generation, verify:
 - [ ] Existing `outputStyle` in `settings.local.json` was NOT overwritten (Cases 3/4 warn only)
 - [ ] `callerExtras.disableOutputStyleTuning: true` suppresses the Phase 7b batched confirmation
 - [ ] CLAUDE.md Plugin Integration includes the `### Output styles` subsection (built-ins + emitted custom + activation path)
+- [ ] Phase 7d ran after Phase 7c (LSP) and before Hooks section
+- [ ] `<!-- onboard:builtin-skills:start/end -->` markers present in CLAUDE.md (inside Plugin Integration or standalone)
+- [ ] `.claude/onboard-builtin-skills-snapshot.json` contains `recommended` and `accepted` arrays (plain JSON, no `_generated`)
+- [ ] `onboard-meta.json.builtInSkillsStatus` populated alongside `hookStatus`, `mcpStatus`, `skillStatus`, `agentStatus`, `outputStyleStatus`, `lspStatus`
+- [ ] `callerExtras.disableBuiltInSkills: true` suppresses all Phase 7d side effects
+- [ ] CLAUDE.md includes `### Built-in Claude Code skills` subsection (or standalone `## Built-in Claude Code skills` section when no plugins) with project-specific examples
 
 ## Extended Generation (Enriched Mode)
 

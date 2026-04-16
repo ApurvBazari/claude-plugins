@@ -14,11 +14,11 @@ Check both drift sources before deciding whether to proceed:
 1. Read `.claude/forge-drift.json` in the project root. Record whether it has entries.
 2. Read `.claude/forge-meta.json`. If it exists and contains `generated.toolingFlags.installedPlugins`, run the plugin drift detection from Step 0 below. Record whether plugin drift was found.
 
-If forge-drift.json has no entries (or is missing) AND no plugin drift was detected AND no skill frontmatter drift was detected (Step 2d pre-check against `.claude/onboard-skill-snapshot.json`) AND no agent frontmatter drift was detected (Step 2e pre-check against `.claude/onboard-agent-snapshot.json`) AND no output-style drift was detected (Step 2f pre-check against `.claude/onboard-output-style-snapshot.json`):
+If forge-drift.json has no entries (or is missing) AND no plugin drift was detected AND no skill frontmatter drift was detected (Step 2d pre-check against `.claude/onboard-skill-snapshot.json`) AND no agent frontmatter drift was detected (Step 2e pre-check against `.claude/onboard-agent-snapshot.json`) AND no output-style drift was detected (Step 2f pre-check against `.claude/onboard-output-style-snapshot.json`) AND no built-in skills drift was detected (Step 2h pre-check against `.claude/onboard-builtin-skills-snapshot.json`):
 
 > No pending drift detected. Your AI tooling is in sync with your codebase.
 >
-> FileChanged drift is logged automatically when dependencies, configs, or structure change. Plugin drift is detected by comparing installed plugins against forge-meta.json. Skill / agent / output-style frontmatter drift is detected by comparing live files against their respective snapshots in `.claude/`.
+> FileChanged drift is logged automatically when dependencies, configs, or structure change. Plugin drift is detected by comparing installed plugins against forge-meta.json. Skill / agent / output-style / built-in skills drift is detected by comparing live files against their respective snapshots in `.claude/`.
 
 Stop and do not proceed.
 
@@ -127,6 +127,7 @@ Update the following fields in `.claude/forge-meta.json`:
 8. `generated.toolingFlags.agentStatus` → mirror `onboard-meta.json.agentStatus` verbatim (parallel to `skillStatus`). If `onboard-meta.json` has no `agentStatus` yet (older project predating onboard 1.6.0), skip this field silently — do not invent an empty object.
 9. `generated.toolingFlags.outputStyleStatus` → mirror `onboard-meta.json.outputStyleStatus` verbatim. If `onboard-meta.json` has no `outputStyleStatus` yet (older project predating onboard 1.7.0), skip this field silently — do not invent an empty object.
 10. `generated.toolingFlags.lspStatus` → mirror `onboard-meta.json.lspStatus` verbatim. If `onboard-meta.json` has no `lspStatus` yet (older project predating onboard 1.8.0), skip this field silently — do not invent an empty object.
+11. `generated.toolingFlags.builtInSkillsStatus` → mirror `onboard-meta.json.builtInSkillsStatus` verbatim. If `onboard-meta.json` has no `builtInSkillsStatus` yet (older project predating onboard 1.9.0), skip this field silently — do not invent an empty object.
 
 ## Step 2c: Apply MCP Drift
 
@@ -222,6 +223,31 @@ When `.claude/onboard-lsp-snapshot.json` is absent, fire a one-time initial prom
 
 Update `onboard-meta.json.lspStatus` to reflect additions. The Step 2b.3 forge-meta mirror path picks up the refreshed `lspStatus` via the read-modify-write pattern.
 
+## Step 2h: Apply Built-in Skills Drift
+
+Run the same drift classification as `../update/SKILL.md` § 4b.9 Built-in Skills Drift:
+
+1. Read `.claude/onboard-builtin-skills-snapshot.json` (`{ recommended, accepted }`). Missing file → `recommended: [], accepted: []` (pre-1.9.0 project).
+2. Re-run detection against the current codebase: check each extra skill's detection signal per `generation/references/built-in-skills-catalog.md`. Core skills are always candidates.
+3. Classify each candidate: `newSkill`, `newlyRelevant`, `staleCandidate`, `in-sync`.
+
+**Auto-apply rules** (evolve's "drain drift without asking" philosophy — bounded by explicit-consent floor for new built-in skill additions):
+
+- **newSkill** → **re-prompt** (not silent-add). Batch all `newSkill` entries into **one `AskUserQuestion` multiSelect** (same format as wizard Phase 5.7). Present each new skill with its description and detection signal. The developer selects which to accept.
+  - For each accepted skill: add to `builtInSkillsStatus.generated[]`. Find the `<!-- onboard:builtin-skills:start/end -->` markers in CLAUDE.md and regenerate the content between them, including the new skill with its stack-specific example. Update `.claude/onboard-builtin-skills-snapshot.json` — append to both `recommended[]` and `accepted[]`.
+  - For each declined skill: add to `builtInSkillsStatus.skipped[]` with `reason: "user-declined"`. Append to `snapshot.recommended[]` only (not `accepted[]`).
+- **staleCandidate** → no action. Log once: "Built-in skill `<name>` detection signal no longer fires — informational only."
+- **newlyRelevant** → no action (developer already declined). Log once as a suggestion.
+
+**Placement migration** (handled alongside application):
+- **Standalone → Plugin Integration**: If `<!-- onboard:builtin-skills:start/end -->` markers exist as a top-level section AND `effectivePlugins` is now non-empty, remove the standalone region and regenerate the content inside `<!-- onboard:plugin-integration:start/end -->`.
+- **Plugin Integration → standalone**: If `effectivePlugins` becomes empty, migrate the content out to a standalone section.
+- **Empty accepted list**: Strip markers entirely when `builtInSkillsStatus.generated[]` is empty.
+
+**Headless mode** (when called via `generate` with `callerExtras.builtInSkills` set): evolve delegates to the caller's explicit list — no prompt fires. An empty array means "declined all"; an absent caller value falls through to interactive prompting.
+
+Update `onboard-meta.json.builtInSkillsStatus` to reflect additions. The Step 2b.3 forge-meta mirror path picks up the refreshed `builtInSkillsStatus` via the read-modify-write pattern.
+
 ## Step 3: Show Diff
 
 After applying all updates (both FileChanged and plugin integration), show what changed:
@@ -243,6 +269,8 @@ After applying all updates (both FileChanged and plugin integration), show what 
 > - .claude/onboard-output-style-snapshot.json: Updated baseline
 > - Installed rust-analyzer-lsp (new Rust files detected since last run)
 > - .claude/onboard-lsp-snapshot.json: Updated baseline
+> - CLAUDE.md: Added `/claude-api` to built-in skills subsection (Anthropic SDK detected)
+> - .claude/onboard-builtin-skills-snapshot.json: Updated baseline
 >
 > **Not auto-applied** (needs your input):
 > - New directory src/services/ — want me to create a CLAUDE.md for it?
