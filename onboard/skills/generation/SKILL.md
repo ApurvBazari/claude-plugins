@@ -530,10 +530,21 @@ Follow `references/mcp-guide.md` for emission rules, catalog, and transport shap
 
 **When to run**: After Recommended Plugins copy is resolved and before Hooks are merged. Phase 7a runs once per generation; drift handling lives in `update`/`evolve`.
 
+**Firing paths** (mutually exclusive — exactly one fires per generation):
+
+| Path | Trigger | Behavior |
+|---|---|---|
+| **Path A — wizard answer** | `wizardAnswers` contains MCP server preferences (rare; MCP is signal-driven, not wizard-gated) | Emit per wizard. |
+| **Path B — Quick Mode default** | wizard absent AND no candidate signals | Emit `mcpStatus: { status: "skipped", reason: "no-candidates" }`. No `.mcp.json`, no snapshot. |
+| **Path C — signal-driven (default)** | `scripts/detect-mcp-signals.sh` returns ≥1 candidate | Emit `.mcp.json` + snapshot + telemetry. **This path fires regardless of wizard or headless mode** unless `callerExtras.disableMCP === true`. |
+| **Path SKIP — caller-disabled** | `callerExtras.disableMCP === true` | No `.mcp.json`, no snapshot. Telemetry: `mcpStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [] }`. **Telemetry IS still written.** |
+
 **Inputs**:
 - `analysis.stack` — frameworks, deps, config-file fingerprints
-- `callerExtras.disableMCP` (optional, headless) — if `true`, skip the entire phase and record `mcpStatus.skipped = [{ server: "*", reason: "caller-disabled" }]`
+- `callerExtras.disableMCP` (optional, headless) — see Path SKIP above
 - Output of `scripts/detect-mcp-signals.sh <project-root>` — canonical signal list
+
+**Telemetry contract**: `mcpStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | skipped | declined | failed`) per the Default behavior matrix in `generate/SKILL.md`.
 
 **Step 1 — Detect candidates**. Run the detection script; parse JSON output. Candidates marked `confidence: "always"` (context7) emit unconditionally. Candidates marked `confidence: "high"` emit when the signal evaluates unambiguously (see `references/mcp-guide.md` § Confidence Tiers). Dedupe by server name.
 
@@ -584,10 +595,22 @@ Follow `references/output-styles-guide.md` for archetype inference, frontmatter 
 
 **When to run**: After Phase 7a (MCP) and before Hooks are merged. Phase 7b runs once per generation; drift handling lives in `update`/`evolve`.
 
+**Firing paths** (mutually exclusive — exactly one fires per generation):
+
+| Path | Trigger | Behavior |
+|---|---|---|
+| **Path A — wizard answer** | `wizardAnswers.outputStyleTuning` present with `mode: "tuned"` | Use wizard's archetype override + activation default. Run Step 6 batched confirmation unless headless. |
+| **Path B — Quick Mode default** | wizard absent OR `mode: "defaults"` | Infer top-priority archetype from signals (Steps 1+3). Emit catalog defaults + snapshot + telemetry `status: "emitted"`. **No silent no-op.** |
+| **Path SUPPRESS — tuning disabled** | `callerExtras.disableOutputStyleTuning === true` | Same as Path B but skip Step 6 batched confirmation entirely. Artifacts ARE generated. Telemetry: `outputStyleStatus: { status: "emitted", source: "inferred", ... }`. |
+| **Path DECLINED** | wizard `archetypeOverride === "skip-emit"` | No file written. Telemetry: `outputStyleStatus: { status: "declined", reason: "skip-emit-selected" }`. |
+| **Path NO-CANDIDATES** | candidate set empty after Steps 1+2 | No file written. Telemetry: `outputStyleStatus: { status: "skipped", reason: "archetype-not-fired" }`. |
+
 **Inputs**:
 - `analysis.*` — existing wizard + analysis signals (teamSize, projectMaturity, primaryTasks, securitySensitivity, deployFrequency, painPoints, project description)
 - `wizardAnswers.outputStyleTuning` (optional) — `{ mode, archetypeOverride?, activationDefault? }`. Treat absence as `{ mode: "defaults" }`
-- `callerExtras.disableOutputStyleTuning` (optional, headless) — if `true`, skip batched confirmation and emit with inferred + wizard-default values directly
+- `callerExtras.disableOutputStyleTuning` (optional, headless) — see Path SUPPRESS above
+
+**Telemetry contract**: `outputStyleStatus` MUST be present in `onboard-meta.json` after every generation. The SUPPRESS-PROMPT-ONLY family (`disableOutputStyleTuning`) MUST NOT collapse to `status: "skipped"` — that's the SKIP-PHASE family's behavior, and Phase 7b has no SKIP-PHASE flag.
 
 **Step 1 — Classify firing archetypes.** Evaluate the 5 firing conditions from `output-styles-guide.md` § Archetype inference. Record the full firing set — even archetypes that won't be chosen — in `outputStyleStatus.planned[]` for telemetry.
 
@@ -689,7 +712,23 @@ Follow `references/lsp-plugin-catalog.md` for the 12-entry language→plugin map
 
 **When to run**: After Phase 7b (Output Styles) and before Hooks. Runs once per generation; drift handling lives in `update`/`evolve`.
 
-**Suppression**: Skip entirely when `callerExtras.disableLSP: true` (forge default). When skipped, still emit an `lspStatus: { skipped: [...], reason: "caller-disabled" }` entry in meta.json so the forge-meta mirror has something to forward.
+**Firing paths** (mutually exclusive — exactly one fires per generation):
+
+| Path | Trigger | Behavior |
+|---|---|---|
+| **Path A — explicit caller list** | `callerExtras.lspPlugins` is a non-null array | Use it verbatim as the accepted list. Empty array = "detected but declined all" → `lspStatus: { status: "declined", accepted: [] }`. |
+| **Path A — wizard answer** | `wizardAnswers.lspPlugins` present | Use wizard's accepted list. Same `declined` semantics if empty. |
+| **Path B — Quick Mode default** | wizard answer absent AND callerExtras list absent AND detection found candidates | Accept ALL detected plugins. Emit + snapshot + telemetry `status: "emitted"`. |
+| **Path NO-CANDIDATES** | `detect-lsp-signals.sh` returns empty array | No install, no snapshot. Telemetry: `lspStatus: { status: "skipped", reason: "detection-empty", planned: [], generated: [] }`. |
+| **Path SKIP — caller-disabled** | `callerExtras.disableLSP === true` | No script run, no install, no snapshot. Telemetry: `lspStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [] }`. **Telemetry IS still written.** |
+
+**Inputs**:
+- `callerExtras.disableLSP` (optional, headless) — see Path SKIP above; forge passes `true` by default for placeholder code in scaffolds
+- `callerExtras.lspPlugins` (optional, headless) — see Path A above
+- `wizardAnswers.lspPlugins` (optional) — see Path A above
+- Output of `scripts/detect-lsp-signals.sh "$PROJECT_ROOT"` — JSON array sorted by fileCount desc
+
+**Telemetry contract**: `lspStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | skipped | declined | failed`) per the Default behavior matrix in `generate/SKILL.md`.
 
 **Step 1 — Detect candidate plugins.** Run `scripts/detect-lsp-signals.sh "$PROJECT_ROOT"`. Output is a JSON array sorted by fileCount desc, e.g.:
 
@@ -755,6 +794,22 @@ Both arrays are sorted alphabetically for stable diffs. Add the snapshot path to
 Follow `references/built-in-skills-catalog.md` for the 9-skill catalog, tier classification (core vs extra), detection signals, and stack-specific example templates.
 
 **When to run**: After Phase 7c (LSP) and before Hooks. Runs once per generation; drift handling lives in `update`/`evolve`.
+
+**Firing paths** (mutually exclusive — exactly one fires per generation):
+
+| Path | Trigger | Behavior |
+|---|---|---|
+| **Path A — explicit caller list** | `callerExtras.builtInSkills` present | Use it verbatim as the accepted list. Empty array = "candidates existed but declined all" → `builtInSkillsStatus: { status: "declined", accepted: [] }`. |
+| **Path A — wizard answer** | `wizardAnswers.builtInSkills` present | Use wizard's accepted list. Same `declined` semantics if empty. |
+| **Path B — Quick Mode default** | wizard absent AND callerExtras list absent | Accept the full candidate list (4 core + N fired extras). Emit + snapshot + telemetry `status: "emitted"`. **Built-in skills' core tier always fires; this path NEVER produces an empty result.** |
+| **Path SKIP — caller-disabled** | `callerExtras.disableBuiltInSkills === true` | No CLAUDE.md subsection, no snapshot. Telemetry: `builtInSkillsStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [] }`. **Telemetry IS still written.** |
+
+**Inputs**:
+- `callerExtras.disableBuiltInSkills` (optional, headless) — see Path SKIP above; forge passes `true` by default for placeholder code in scaffolds
+- `callerExtras.builtInSkills` (optional, headless) — see Path A above
+- `wizardAnswers.builtInSkills` (optional) — see Path A above
+
+**Telemetry contract**: `builtInSkillsStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | skipped | declined | failed`) per the Default behavior matrix in `generate/SKILL.md`.
 
 **Suppression**: Skip entirely when `callerExtras.disableBuiltInSkills: true` (forge default — scaffolded projects have placeholder code so detection signals are premature). When skipped, still emit a `builtInSkillsStatus` entry in meta.json:
 
@@ -1480,25 +1535,28 @@ Before finishing generation, verify:
 - [ ] `.mcp.json` is pure JSON (no comments) and uses `${VAR}` form for secrets
 - [ ] Pre-existing `.mcp.json` was NOT overwritten (check for `mcpStatus.existedPreOnboard`)
 - [ ] `.claude/onboard-mcp-snapshot.json` matches what was written to `.mcp.json`
-- [ ] `onboard-meta.json.mcpStatus` populated alongside `hookStatus`
+- [ ] `onboard-meta.json.mcpStatus` populated alongside `hookStatus` (with `status` enum value)
 - [ ] `.claude/rules/mcp-setup.md` emitted when any server needs auth OR pre-existing file detected
 - [ ] Auto-install ran after metadata write (never before)
-- [ ] `callerExtras.disableMCP: true` suppresses all Phase 7a side effects
+- [ ] `callerExtras.disableMCP: true` skips artifact writes BUT still emits `mcpStatus: { status: "skipped", reason: "caller-disabled" }` (SKIP-PHASE family contract)
 - [ ] Phase 7b ran after Phase 7a and before Hooks
 - [ ] Emitted output-style file is at `.claude/output-styles/<archetype-name>.md` with matching `name` frontmatter
 - [ ] Pre-existing output-style file was NOT overwritten (check for `outputStyleStatus.existedPreOnboard[]`)
 - [ ] `.claude/onboard-output-style-snapshot.json` contains frontmatter-only entry for the emitted style
-- [ ] `onboard-meta.json.outputStyleStatus` populated alongside `mcpStatus`
+- [ ] `onboard-meta.json.outputStyleStatus` populated alongside `mcpStatus` (with `status` enum value)
 - [ ] `settings.local.json` was NOT created from scratch (Case 1 warns only)
 - [ ] Existing `outputStyle` in `settings.local.json` was NOT overwritten (Cases 3/4 warn only)
-- [ ] `callerExtras.disableOutputStyleTuning: true` suppresses the Phase 7b batched confirmation
+- [ ] `callerExtras.disableOutputStyleTuning: true` ONLY suppresses Step 6 batched confirmation; artifacts + snapshot + `outputStyleStatus: { status: "emitted", source: "inferred" }` are STILL produced (SUPPRESS-PROMPT family contract)
 - [ ] CLAUDE.md Plugin Integration includes the `### Output styles` subsection (built-ins + emitted custom + activation path)
+- [ ] Phase 7c (LSP) emitted `lspStatus` regardless of firing path — `status` is one of: `emitted`, `skipped`, `declined`
+- [ ] `callerExtras.disableLSP: true` skips artifact writes BUT still emits `lspStatus: { status: "skipped", reason: "caller-disabled" }` (SKIP-PHASE family contract)
 - [ ] Phase 7d ran after Phase 7c (LSP) and before Hooks section
 - [ ] `<!-- onboard:builtin-skills:start/end -->` markers present in CLAUDE.md (inside Plugin Integration or standalone)
 - [ ] `.claude/onboard-builtin-skills-snapshot.json` contains `recommended` and `accepted` arrays (plain JSON, no `_generated`)
-- [ ] `onboard-meta.json.builtInSkillsStatus` populated alongside `hookStatus`, `mcpStatus`, `skillStatus`, `agentStatus`, `outputStyleStatus`, `lspStatus`
-- [ ] `callerExtras.disableBuiltInSkills: true` suppresses all Phase 7d side effects
+- [ ] `onboard-meta.json.builtInSkillsStatus` populated alongside `hookStatus`, `mcpStatus`, `skillStatus`, `agentStatus`, `outputStyleStatus`, `lspStatus` (with `status` enum value)
+- [ ] `callerExtras.disableBuiltInSkills: true` skips artifact writes BUT still emits `builtInSkillsStatus: { status: "skipped", reason: "caller-disabled" }` (SKIP-PHASE family contract)
 - [ ] CLAUDE.md includes `### Built-in Claude Code skills` subsection (or standalone `## Built-in Claude Code skills` section when no plugins) with project-specific examples
+- [ ] **Pre-exit self-audit**: all 4 Phase 7 telemetry keys (`mcpStatus`, `outputStyleStatus`, `lspStatus`, `builtInSkillsStatus`) exist in `onboard-meta.json` — missing key = hard-fail before returning
 
 ## Extended Generation (Enriched Mode)
 

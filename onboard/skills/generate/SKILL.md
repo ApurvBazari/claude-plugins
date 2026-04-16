@@ -118,13 +118,13 @@ The caller must provide a context JSON object in the conversation. This object c
     "coveredCapabilities": ["string — capabilities covered by installed plugins"],
     "allowPluginReferences": "boolean (optional) — permit rules/skills to reference installed plugins instead of duplicating their guidance. Defaults to true when installedPlugins is non-empty.",
     "allowHttpHooks": "boolean (optional) — OFF by default. When false, any qualityGates entry with hookType='http' is refused at generation time (skip reason 'http-not-opted-in'). When true, http entries are allowed provided they supply a valid httpUrl. Never auto-inferred — callers opt in explicitly.",
-    "disableMCP": "boolean (optional) — when true, skip Phase 7a MCP emission entirely (no .mcp.json, no .claude/onboard-mcp-snapshot.json). Use when the scaffold template already ships its own MCP config. Defaults to false.",
-    "disableSkillTuning": "boolean (optional) — when true, suppress the per-skill batched confirmation step during generation. Archetype + wizard defaults are emitted directly. Use for fully non-interactive headless flows. Defaults to false.",
-    "disableAgentTuning": "boolean (optional) — when true, suppress the per-agent batched confirmation step during generation. Archetype + wizard defaults are emitted directly. Use for fully non-interactive headless flows. Defaults to false.",
-    "disableOutputStyleTuning": "boolean (optional) — when true, suppress the Phase 7b batched confirmation for output-style emission. The top-priority archetype is inferred from existing signals and the matching .claude/output-styles/<name>.md is emitted with catalog defaults. Use for fully non-interactive headless flows (e.g., forge scaffolding). Defaults to false.",
-    "disableLSP": "boolean (optional) — when true, skip Phase 7c LSP plugin emission entirely (no detect-lsp-signals.sh run, no install-plugins.sh invocation, no .claude/onboard-lsp-snapshot.json). Use for scaffolded projects whose source files are still placeholders. Defaults to false. Forge passes true by default; users can rerun /onboard:evolve to prompt once real code exists.",
+    "disableMCP": "boolean (optional, SKIP-PHASE family) — when true, skip Phase 7a MCP emission entirely (no .mcp.json, no .claude/onboard-mcp-snapshot.json). Use when the scaffold template already ships its own MCP config. Defaults to false. MUST still emit telemetry: mcpStatus = { status: 'skipped', reason: 'caller-disabled' }.",
+    "disableSkillTuning": "boolean (optional, SUPPRESS-PROMPT-ONLY family) — when true, suppress the per-skill batched confirmation step during generation. Archetype + wizard defaults are emitted directly (artifacts ARE generated). Use for fully non-interactive headless flows. Defaults to false. Phase ALWAYS emits: skill files + snapshot + telemetry status: 'emitted'.",
+    "disableAgentTuning": "boolean (optional, SUPPRESS-PROMPT-ONLY family) — when true, suppress the per-agent batched confirmation step during generation. Archetype + wizard defaults are emitted directly (artifacts ARE generated). Use for fully non-interactive headless flows. Defaults to false. Phase ALWAYS emits: agent files + snapshot + telemetry status: 'emitted'.",
+    "disableOutputStyleTuning": "boolean (optional, SUPPRESS-PROMPT-ONLY family) — when true, suppress the Phase 7b batched confirmation for output-style emission. The top-priority archetype is inferred from existing signals and the matching .claude/output-styles/<name>.md is emitted with catalog defaults. Use for fully non-interactive headless flows (e.g., forge scaffolding). Defaults to false. Phase ALWAYS emits: style file + snapshot + telemetry status: 'emitted'.",
+    "disableLSP": "boolean (optional, SKIP-PHASE family) — when true, skip Phase 7c LSP plugin emission entirely (no detect-lsp-signals.sh run, no install-plugins.sh invocation, no .claude/onboard-lsp-snapshot.json). Use for scaffolded projects whose source files are still placeholders. Defaults to false. Forge passes true by default; users can rerun /onboard:evolve to prompt once real code exists. MUST still emit telemetry: lspStatus = { status: 'skipped', reason: 'caller-disabled' }.",
     "lspPlugins": "string[] (optional) — explicit list of marketplace LSP plugin names to install during Phase 7c. When present, skips the wizard prompt and treats the array as the accepted list verbatim. Pass an empty array to record 'detected but declined all'. When absent (and disableLSP is not true), wizard Phase 5.6 runs in interactive mode or defaults to the full detected list in Quick Mode / headless.",
-    "disableBuiltInSkills": "boolean (optional) — when true, skip Phase 7d built-in skills emission entirely (no CLAUDE.md subsection, no .claude/onboard-builtin-skills-snapshot.json). Use for scaffolded projects whose source files are still placeholders — detection signals are premature. Defaults to false. Forge passes true by default; users can rerun /onboard:evolve to prompt once real code exists.",
+    "disableBuiltInSkills": "boolean (optional, SKIP-PHASE family) — when true, skip Phase 7d built-in skills emission entirely (no CLAUDE.md subsection, no .claude/onboard-builtin-skills-snapshot.json). Use for scaffolded projects whose source files are still placeholders — detection signals are premature. Defaults to false. Forge passes true by default; users can rerun /onboard:evolve to prompt once real code exists. MUST still emit telemetry: builtInSkillsStatus = { status: 'skipped', reason: 'caller-disabled' }.",
     "builtInSkills": "string[] (optional) — explicit list of built-in Claude Code skill names to document in the generated CLAUDE.md during Phase 7d. When present, skips wizard Phase 5.7 and treats the array as the accepted list verbatim. Pass an empty array to record 'candidates existed but declined all'. When absent (and disableBuiltInSkills is not true), wizard Phase 5.7 runs in interactive mode or defaults to the full candidate list (core + fired extras) in Quick Mode / headless. See generation/references/built-in-skills-catalog.md for valid skill names.",
     "qualityGates": {
       "description": "object (optional) — boundary-enforcement hook spec. Onboard translates these into .claude/settings.json hook entries. See generation/SKILL.md § Quality-Gate Hooks for the full schema.",
@@ -235,6 +235,30 @@ The caller must provide a context JSON object in the conversation. This object c
 
 **Backward compat**: `callerExtras.qualityGates`, `phaseSkills`, `allowPluginReferences`, and `allowHttpHooks` are all optional. Callers that omit them get the pre-upgrade behavior (no quality-gate hooks, no Plugin Integration section, no plugin cross-references in rules, no http hooks). Callers that pass the legacy 4-field `qualityGates` shape (only `sessionStart` / `preCommit` / `featureStart` / `postFeature`) also get pre-upgrade behavior for the advanced event fields — they fall through to the inference rules in `generation/SKILL.md`. Callers that omit the new per-entry `hookType`/aux fields get `command`-type output identical to pre-upgrade behavior (every current fixture remains byte-identical).
 
+### Default behavior matrix — Phase 7 disable flags
+
+There are **two distinct families** of `callerExtras` disable flags. They MUST NOT be conflated in implementation. Treating them identically is the bug that caused MCP, output-style, LSP, built-in skills, and snapshots to disappear from headless forge runs in the 2026-04-16 release-gate test.
+
+| Flag | Family | Effect when `true` | Telemetry written | Artifacts written |
+|---|---|---|---|---|
+| `disableMCP` | **SKIP-PHASE** | Skip Phase 7a entirely | `mcpStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [], skipped: [...] }` | None |
+| `disableLSP` | **SKIP-PHASE** | Skip Phase 7c entirely | `lspStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [], skipped: [...] }` | None |
+| `disableBuiltInSkills` | **SKIP-PHASE** | Skip Phase 7d entirely | `builtInSkillsStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [], skipped: [...] }` | None |
+| `disableSkillTuning` | **SUPPRESS-PROMPT** | Skip per-skill batched confirmation only | `skillStatus: { status: "emitted", source: "inferred", ... }` | Skill files + `onboard-skill-snapshot.json` |
+| `disableAgentTuning` | **SUPPRESS-PROMPT** | Skip per-agent batched confirmation only | `agentStatus: { status: "emitted", source: "inferred", ... }` | Agent files (with YAML frontmatter) + `onboard-agent-snapshot.json` |
+| `disableOutputStyleTuning` | **SUPPRESS-PROMPT** | Skip Phase 7b batched confirmation only | `outputStyleStatus: { status: "emitted", source: "inferred", ... }` | Output style file + `onboard-output-style-snapshot.json` |
+
+**Telemetry status enum** (used in every Phase 7 status object):
+
+| Value | Meaning |
+|---|---|
+| `"emitted"` | Phase ran, artifacts written, snapshot recorded. |
+| `"skipped"` | Phase intentionally skipped (caller flag, no signal, no candidates). Telemetry still recorded so verify scripts can distinguish "intentional skip" from "silent bug". |
+| `"declined"` | User explicitly declined in interactive flow (wizard answered "no" / empty array). |
+| `"failed"` | Phase attempted but failed (e.g., script crash, write error). Triggers warning in `warnings[]` but never aborts the run. |
+
+**Hard rule** (load-bearing): EVERY Phase 7 block MUST emit its telemetry status key in `onboard-meta.json`, even when status is `"skipped"`. Missing keys are bugs, not absences. The `config-generator` agent's pre-exit self-audit verifies all four keys (`mcpStatus`, `outputStyleStatus`, `lspStatus`, `builtInSkillsStatus`) exist before returning. See `generation/SKILL.md` Phase 7 blocks for the per-phase Path A/B/C firing logic that ensures this invariant holds whether wizard answers are present, absent, or the SUPPRESS-PROMPT-ONLY flags are set.
+
 ### Validation
 
 Verify the context has:
@@ -293,10 +317,14 @@ Spawn the `config-generator` agent with the mapped context. Include in the agent
 4. The project root path
 5. The current date for maintenance headers
 6. A flag indicating headless mode: `"headlessMode": true, "source": "[source]"`
+7. A flag indicating the agent was dispatched (not running inline): `"dispatchedAsAgent": true`
 
-The config-generator agent follows the `generation` skill as usual. In headless mode, the only behavioral difference is:
+The config-generator agent follows the `generation` skill as usual. In headless mode, the behavioral differences are:
 
 - **Merge-aware hooks**: The caller may have already added hooks to `.claude/settings.json`. The generator must read existing settings first and merge, never overwrite. This applies in normal mode too, but is especially critical in headless mode since the caller may have set up its own hooks before invoking generation.
+- **Phase 7 SKIP-PHASE telemetry**: When `callerExtras.disableMCP` / `disableLSP` / `disableBuiltInSkills` is true, the corresponding Phase 7 block STILL writes its telemetry key to `onboard-meta.json` with `status: "skipped"` and `reason: "caller-disabled"`. The artifacts are not written, but verify scripts can distinguish "intentional skip" from "silent bug." See § Default behavior matrix above.
+- **Phase 7 SUPPRESS-PROMPT-ONLY behavior**: When `callerExtras.disableSkillTuning` / `disableAgentTuning` / `disableOutputStyleTuning` is true, generation skips the batched user confirmation but **still emits artifacts + snapshots + telemetry with `status: "emitted"`**. These flags exist to make headless flows non-interactive, NOT to suppress generation.
+- **Pre-exit self-audit**: The agent verifies all 4 Phase 7 telemetry keys exist in `onboard-meta.json` before returning. Missing key = hard-fail.
 
 ---
 
