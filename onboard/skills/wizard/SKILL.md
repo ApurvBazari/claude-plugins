@@ -8,6 +8,16 @@ user-invocable: false
 
 You are guiding a developer through an interactive onboarding wizard for Claude Code. Your goal is to understand their project, workflow, preferences, and pain points so that Claude tooling can be generated to maximize their productivity.
 
+## Guard — interactive choice convention (MUST follow)
+
+**REQUIRED**: Every interactive choice in this wizard MUST use the `AskUserQuestion` tool with structured options. Single-select uses one question per `AskUserQuestion` call; multi-select uses `multiSelect: true`; up to 4 questions can be packed into one `AskUserQuestion` call (each up to 4 options).
+
+**FORBIDDEN**: Inline numbered prompts of the form "Type 1 for X / 2 for Y / 3 for Z". This pattern degrades to plain-text reading + parsing instead of the click-to-select UI affordance, and was the primary UX issue flagged in the 2026-04-16 release-gate test (findings A5, O2, O3).
+
+If you find yourself typing a numbered list and asking the developer to "reply with the number", **stop** — that's a bug. Wrap the choices in `AskUserQuestion` with `options` and let the harness render the picker.
+
+Free-form text inputs (project name, description, paths) are NOT choices and stay as conversational text prompts. The rule applies only to multiple-options-pick-one(or-many) interactions.
+
 ## Conversation Style
 
 - **Conversational, not interrogative** — This is a dialogue, not a form. Acknowledge each answer before asking the next question.
@@ -22,12 +32,23 @@ Follow this sequence, adapting based on analysis results and prior answers. See 
 
 ### Phase 0: Preset Selection (Always)
 
-Present the four workflow presets: Minimal, Standard, Comprehensive, and Custom. See `references/workflow-presets.md` for details and pre-filled values.
+Use **`AskUserQuestion`** with a single-select question (header: `"Preset"`, no `multiSelect`):
 
-- If a preset is selected → load pre-filled values, ask Q1.1 (project description is always project-specific), then skip directly to Phase 6 summary for confirmation.
+| Label | Description |
+|---|---|
+| `Minimal` | Solo / prototype / stay-out-of-the-way. Autonomous, relaxed style, 1 agent, format-only hooks. |
+| `Standard (Recommended)` | Small teams / active projects. Balanced autonomy, moderate strictness, 3 agents, lint + SessionStart hooks. |
+| `Comprehensive` | Larger teams / regulated environments. Always-ask autonomy, strict style, all quality-gate hooks. |
+| `Custom` | Full adaptive wizard. Choose this when no preset fits or you want fine-grained control. |
+
+See `references/workflow-presets.md` for full per-preset value tables.
+
+- If a preset is selected → load pre-filled values, ask Q1.1 (project description is always project-specific) as a free-form text prompt, then skip directly to Phase 6 summary for confirmation.
 - If Custom is selected → proceed with the full wizard flow starting at Phase 1.
 
 **Preset path is fast** — only project description + summary if a preset is selected.
+
+**FORBIDDEN**: Do NOT render the preset list as inline numbered text ("1. Minimal / 2. Standard / ..."). Use `AskUserQuestion` so the developer clicks an option (see Guard § interactive choice convention).
 
 ### Phase 1: Project Context (Always)
 Establish what this project is and who works on it.
@@ -81,23 +102,37 @@ After capturing `autonomyLevel`, ask **one** yes/no question:
 
 If the developer answers **no** (or skips): record `wizardAnswers.advancedHookEvents = []` and move on. The generation skill's per-event inference rules fire instead — the empty array is an intentional "no, do not add advanced hooks on top of inference", documented in `generation/SKILL.md` § Advanced Event Hooks § Input sources.
 
-If the developer answers **yes**: use `AskUserQuestion` with `multiSelect: true` to present the 9 events. Each option is one sentence — no long descriptions.
+If the developer answers **yes**: use a **single `AskUserQuestion` call** containing **three thematic `multiSelect: true` questions** (AskUserQuestion supports up to 4 questions per call, each up to 4 options). Group the 9 events thematically so the developer can scan one category at a time:
 
-| Label | Description (one line) |
+**Question 1 — Lifecycle events** (`multiSelect: true`, header: `"Lifecycle"`):
+
+| Label | Description |
 |---|---|
 | `SessionEnd` | Run a cleanup script when the session ends (rotate task markers, flush state). |
-| `UserPromptSubmit` | Preflight every user prompt (e.g., warn on apparent secret literals). |
 | `PreCompact` | Save a checkpoint just before Claude compacts context (large projects). |
 | `SubagentStart` | Audit-log every subagent spawn (agent-team workflows). |
+
+**Question 2 — User events** (`multiSelect: true`, header: `"User"`):
+
+| Label | Description |
+|---|---|
+| `UserPromptSubmit` | Preflight every user prompt (e.g., warn on apparent secret literals). |
 | `TaskCreated` | Nudge when a `TaskCreate` subject looks too vague. |
 | `TaskCompleted` | Run the project's test command before a task can be marked done. |
-| `FileChanged` | Notice when a watched file (lockfiles, configs) changes on disk. |
-| `ConfigChange` | Warn when `.claude/` configuration changes mid-session. |
 | `Elicitation` | Audit-log prompts from MCP servers (compliance / security review). |
 
-Record the developer's selection verbatim as an array of strings in `wizardAnswers.advancedHookEvents` (e.g., `["SessionEnd", "PreCompact"]`). The generation skill maps these to event keys per the mapping table in `generation/SKILL.md` § Advanced Event Hooks § Wizard opt-in plumbing.
+**Question 3 — Tool events** (`multiSelect: true`, header: `"Tool"`):
 
-**Do not combine this question with other preferences** — keep it a single dedicated exchange so the developer can scan the list. If Quick Mode is active, default `advancedHookEvents` to `[]` (inference only) and skip the prompt — advanced events are never inferred as "wanted" without an explicit developer decision.
+| Label | Description |
+|---|---|
+| `FileChanged` | Notice when a watched file (lockfiles, configs) changes on disk. |
+| `ConfigChange` | Warn when `.claude/` configuration changes mid-session. |
+
+Record the developer's selection verbatim as an array of strings in `wizardAnswers.advancedHookEvents`, merging the three `multiSelect` answers (e.g., `["SessionEnd", "PreCompact", "TaskCompleted"]`). The generation skill maps these to event keys per the mapping table in `generation/SKILL.md` § Advanced Event Hooks § Wizard opt-in plumbing.
+
+**Three questions = one exchange** (single `AskUserQuestion` call). Do not split across multiple exchanges — that would degrade the UX into back-to-back single-select prompts.
+
+**Quick Mode**: default `advancedHookEvents` to `[]` (inference only) and skip the prompt — advanced events are never inferred as "wanted" without an explicit developer decision.
 
 ### Phase 5.1.1: Execution Type Per Event (Conditional, After 5.1 Selections)
 
