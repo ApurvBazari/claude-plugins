@@ -61,6 +61,18 @@ Calibrate the generated tooling.
 - Claude autonomy level
 - Advanced hook events (optional — see Phase 5.1 below)
 
+#### Phase 5.0 — Mid-wizard escape hatch (Custom preset only)
+
+When the **Custom** preset is selected, fire a single `AskUserQuestion` at the start of Phase 5 (after summarizing how many sub-phases remain based on detected signals):
+
+> You're in Custom mode. Based on your project I have N more questions to ask (autonomy + style + security + skill tuning + agent tuning + output style + LSP/built-ins). Want to keep customizing, or use Quick Mode defaults from here?
+
+Options:
+- **Continue customizing** (default) — full Phase 5 flow as written below.
+- **Use Quick Mode defaults from here** — wizard wraps up Phase 5 with detected defaults for all remaining sub-phases. Sets `wizardStatus.escapeHatchTriggered = true` and populates every Phase 5 field with its Quick Mode default per § Skip Behavior + § Quick Mode Inference Rules.
+
+This step does NOT fire for Minimal/Standard/Comprehensive presets (they already use pre-filled values per `references/workflow-presets.md`).
+
 ### Phase 5.1: Advanced Hook Events (Optional, Default No)
 
 After capturing `autonomyLevel`, ask **one** yes/no question:
@@ -138,7 +150,7 @@ If the developer declines, drop the `External URL` selection(s) and record as in
 - `wizardAnswers.advancedHookTypeExtras[<eventName>]` = `{ agentRef?, httpUrl?, promptRef?, promptInline? }` — only the field relevant to that event's chosen type. Events that picked `command` don't appear here.
 - `wizardAnswers.allowHttpHooks` = boolean — set to `true` only when the developer accepted at least one HTTP confirmation.
 
-**Exchange budget**: 5.1.1 always fits in ≤3 exchanges total (cost-table preamble → type-pick question → follow-up aux question). When combined with 5.1 (the events question) and the rest of the wizard, we stay within the 6-exchange hard limit. If approaching exchange 5 before 5.1.1 completes, fold remaining aux questions into the final summary confirmation and use sensible defaults for any unanswered fields (record in `skippedFields`).
+**Exchange notes**: 5.1.1 typically fits in ≤3 exchanges total (cost-table preamble → type-pick question → follow-up aux question). The wizard is adaptive (no hard cap — see Key Rules § Adaptive exchange sizing) so Phase 5.1.1 runs to completion when triggered, with the Custom-preset escape hatch (Phase 5.0) as the bail-out option for developers who change their mind.
 
 **Quick Mode behavior**: 5.1.1 is skipped entirely in Quick Mode — per-event type defaults from `generation/SKILL.md` § Per-event defaults apply automatically.
 
@@ -231,7 +243,7 @@ Record the full selection as:
 }
 ```
 
-**Exchange budget guard**: Phase 5.4 is one gate (yes/no) + optionally one two-question `AskUserQuestion` call. If the current exchange count is already ≥5 when Phase 5.4 fires (worst case: all of 5.1 / 5.1.1 / 5.2 / 5.3 were answered "yes" and each ran its full dialog), skip directly to defaults (`wizardAnswers.outputStyleTuning = { mode: "defaults" }`) and note it in `skippedFields` so the generation skill knows the developer did not explicitly decline. The 6-exchange hard limit stays intact.
+**Exchange notes**: Phase 5.4 is one gate (yes/no) + optionally one two-question `AskUserQuestion` call. With the no-cap adaptive sizing rule, Phase 5.4 always runs when its entry condition fires; the Custom-preset escape hatch (Phase 5.0) is the bail-out path if the developer wants to take Quick Mode defaults from this point.
 
 The generation skill reads `wizardAnswers.outputStyleTuning` and refines the archetype output in `generation/references/output-styles-guide.md` § Archetype inference and § settings.local.json merge rules. Per-style developer tweaks happen in the generation-time batched confirmation step, not here.
 
@@ -272,11 +284,11 @@ Record the user's selection verbatim as `wizardAnswers.lspPlugins` (a string arr
 
 **Quick Mode behavior**: 5.6 is skipped in Quick Mode — `lspPlugins` defaults to the full detected list (all candidates accepted). The wizard still writes the array to `wizardAnswers.lspPlugins` so downstream generation knows to install them without re-asking.
 
-**Exchange budget guard**: Phase 5.6 is at most one `AskUserQuestion` call. If the current exchange count is already at 6, skip and set `wizardAnswers.lspPlugins` to the full detected list — Quick Mode semantics. The 6-exchange hard limit stays intact.
+**Combined exchange with Phase 5.7**: Phase 5.6 (LSP) and Phase 5.7 (built-in skills) are issued together in a **single `AskUserQuestion` call** with two `multiSelect` questions (one for LSP plugins, one for built-in skills). This keeps the wizard tight without artificial caps. See the canonical example pattern in `references/question-bank.md` (or generation skill) for the two-multiSelect-blocks-in-one-call structure.
 
 **Headless mode** (`callerExtras.lspPlugins` or `callerExtras.disableLSP` present): the wizard never fires — generation reads the caller-supplied value directly.
 
-### Phase 5.7: Built-in Skills (When Candidates Exist)
+### Phase 5.7: Built-in Skills (When Candidates Exist) — combined with Phase 5.6
 
 Run detection against the codebase analysis report to identify which built-in Claude Code skills are relevant. Core skills (`/loop`, `/simplify`, `/debug`, `/pr-summary`) are always candidates. Extra skills (`/schedule`, `/claude-api`, `/explain-code`, `/codebase-visualizer`, `/batch`) are candidates only when their detection signal fires. Refer to `generation/references/built-in-skills-catalog.md` for the full tier/signal mapping.
 
@@ -300,7 +312,7 @@ Record the user's selection verbatim as `wizardAnswers.builtInSkills` (a string 
 
 **Quick Mode behavior**: 5.7 is skipped in Quick Mode — `builtInSkills` defaults to the full candidate list (all core + fired extras accepted). The wizard still writes the array to `wizardAnswers.builtInSkills` so downstream generation knows which skills to document without re-asking.
 
-**Exchange budget guard**: Phase 5.7 is at most one `AskUserQuestion` call. If the current exchange count is already at 6, skip and set `wizardAnswers.builtInSkills` to the full candidate list — Quick Mode semantics. The 6-exchange hard limit stays intact.
+**Combined exchange with Phase 5.6**: Phase 5.7 is the second `multiSelect` question inside the single `AskUserQuestion` call from Phase 5.6 — one exchange covers both LSP plugins and built-in skills. This is the canonical "two multiSelect blocks in one AskUserQuestion call" pattern, referenced from M1 (wizard AskUserQuestion consistency).
 
 **Headless mode** (`callerExtras.builtInSkills` or `callerExtras.disableBuiltInSkills` present): the wizard never fires — generation reads the caller-supplied value directly.
 
@@ -311,19 +323,37 @@ Present everything gathered (analysis + wizard answers) and ask for confirmation
 
 1. **Never skip the summary** — Always show the developer what you've gathered before proceeding to generation.
 2. **Respect "skip"** — If a developer says they want to skip a section, move on. Don't push.
-3. **Hard 6-exchange limit** — The entire wizard must complete within 6 back-and-forth exchanges. If you reach exchange 5 without completing all phases, consolidate remaining questions into a single final exchange. At exchange 6, wrap up: present the summary with any unanswered fields set to defaults, and proceed to confirmation.
+3. **Adaptive exchange sizing** — There is **no hard exchange cap**. The wizard asks every question whose entry condition has signal, skipping phases with no applicable signal (e.g., no LSP candidates → no LSP exchange). Each preset has a target (Minimal=2, Standard=3, Comprehensive=4, Custom=N where N varies with project complexity, typically 5–8). The Custom preset adds a mid-wizard escape hatch at the start of Phase 5 so developers can opt into "Quick Mode defaults from here" if they don't want to keep customizing.
 4. **Reference the analysis** — Always connect questions to what the analyzer found. This demonstrates value and reduces redundant questions.
 5. **Capture autonomy preference carefully** — This determines how much Claude asks vs acts independently. Get this right.
+6. **Always populate fields explicitly** — When the wizard chooses to skip a phase (no signal, escape hatch chosen, headless mode), populate the corresponding field in `wizardAnswers` with the Quick Mode default value (full detected list, archetype default, etc.) rather than leaving the field `undefined`. This means downstream generation always receives explicit Path A data and never has to fall back to Path B (which is just the C1-introduced safety net).
+7. **Telemetry** — Record the wizard run in `onboard-meta.json` under `wizardStatus`:
+   ```json
+   {
+     "wizardStatus": {
+       "presetUsed": "custom",
+       "exchangesUsed": 6,
+       "phasesAsked": ["phase0", "phase1", "phase2", "phase4", "phase5", "phase5.1", "phase5.6+5.7"],
+       "phasesSkipped": ["phase3", "phase5.1.1"],
+       "escapeHatchTriggered": false
+     }
+   }
+   ```
 
 ## Skip Behavior
 
 When a developer skips a question or section:
 
-1. **Use neutral defaults** for skipped fields:
+1. **Use neutral defaults** for skipped fields — and ALWAYS populate them explicitly (do not leave fields `undefined`; downstream generation should never need to guess intent):
    - `autonomyLevel` → `"balanced"`
    - `codeStyleStrictness` → `"moderate"`
    - `securitySensitivity` → `"standard"`
-   - Other fields → omit from wizard answers or use analysis inference if available
+   - `lspPlugins` → full detected list from `scripts/detect-lsp-signals.sh` (Quick Mode default)
+   - `builtInSkills` → full candidate list (4 core + fired extras)
+   - `outputStyleTuning` → `{ mode: "defaults" }`
+   - `skillTuning` → `{ mode: "defaults" }`
+   - `agentTuning` → `{ mode: "defaults" }`
+   - Other fields → use analysis inference if available; otherwise the default literal documented in `references/question-bank.md`
 2. **Record skipped fields** — Add a `skippedFields` array in `onboard-meta.json` listing every field that was skipped (e.g., `["testingPhilosophy", "securitySensitivity"]`)
 3. **Flag in generated artifacts** — Add `<!-- TODO: Developer skipped this preference during setup. Review and adjust if needed. -->` comments in generated artifacts where a skipped field affects the output content
 
