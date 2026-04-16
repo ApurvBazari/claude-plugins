@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ApurvBazari/claude-plugins/forge/skills/tooling-generation/references/forge-meta.schema.json",
+  "title": "forge-meta.json",
+  "description": "Authoritative schema for forge's per-project metadata file at .claude/forge-meta.json. Validated by tooling-generation/SKILL.md Step 4 before write.",
+  "type": "object",
+  "required": ["version", "createdAt", "context", "generated"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Forge plugin version that wrote this file (semver)."
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp of the initial scaffold."
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "meta": {
+      "type": "object",
+      "description": "Cross-plugin runtime metadata.",
+      "properties": {
+        "onboardVersion": {
+          "type": "string",
+          "description": "Onboard plugin version resolved at runtime (CLI-first then sibling-path) per tooling-generation/SKILL.md Step 1. Never hardcoded."
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "description": "Phase 1 context object — project description, tech stack, preferences."
+    },
+    "webResearch": {
+      "type": "object",
+      "description": "Stack research findings cached at scaffold time."
+    },
+    "costs": {
+      "type": "object",
+      "description": "Optional token/$ usage telemetry."
+    },
+    "generated": {
+      "type": "object",
+      "required": ["toolingFlags"],
+      "properties": {
+        "toolingFlags": {
+          "type": "object",
+          "description": "Single namespace for all generated artifact lists, callerExtras passthrough, and onboard status mirrors. The top-level dot-notation siblings (generated.tooling / generated.cicd / generated.harness) are removed as of L5 in the 2026-04-16 release-gate sweep — everything lives under toolingFlags.",
+          "required": [
+            "tooling",
+            "cicd",
+            "harness",
+            "installedPlugins",
+            "coveredCapabilities",
+            "qualityGates",
+            "phaseSkills",
+            "hookStatus"
+          ],
+          "properties": {
+            "tooling": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Generated tooling file paths (CLAUDE.md, rules, skills, agents)."
+            },
+            "cicd": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Generated CI/CD workflow file paths."
+            },
+            "harness": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Forge-only harness artifact paths (init.sh, docs/feature-list.json, docs/progress.md)."
+            },
+            "installedPlugins": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "coveredCapabilities": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "allowPluginReferences": { "type": "boolean" },
+            "allowHttpHooks": { "type": "boolean" },
+            "qualityGates": { "type": "object" },
+            "phaseSkills": { "type": "object" },
+            "hookStatus": {
+              "type": "object",
+              "description": "Mirrored verbatim from /onboard:generate response. See onboard/skills/generation/SKILL.md § Hook Status Telemetry for the canonical shape."
+            },
+            "skillStatus":         { "type": "object" },
+            "agentStatus":         { "type": "object" },
+            "mcpStatus":           { "type": "object" },
+            "outputStyleStatus":   { "type": "object" },
+            "lspStatus":           { "type": "object" },
+            "builtInSkillsStatus": { "type": "object" }
+          }
+        }
+      }
+    }
+  }
+}

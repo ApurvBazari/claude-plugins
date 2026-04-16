@@ -287,14 +287,18 @@ If developer skipped feature decomposition: generate a minimal 3-5 feature list.
 
 ## Step 4: Update Forge Metadata
 
-Update `.claude/forge-meta.json` with:
-- `generated.tooling`: from onboard's response
-- `generated.cicd`: from onboard's response
-- `generated.harness`: init.sh + feature-list.json + onboard's harness artifacts
-- `generated.toolingFlags`: **the full `callerExtras` object built in Step 1 + the `hookStatus` object from onboard's response**. This persists `installedPlugins`, `coveredCapabilities`, `qualityGates`, `phaseSkills`, and `allowPluginReferences` so `/forge:status` can later report Plugin Integration Coverage without re-deriving them, and mirrors onboard's `hookStatus` telemetry so the coverage report can show planned-vs-generated-vs-skipped counts. Required by the `/forge:status` Step 4.5 coverage report. Shape:
+Update `.claude/forge-meta.json`. The schema lives at `references/forge-meta.schema.json` (committed alongside this skill) and is the authoritative contract — validate the produced object against it via `jq` + `ajv-cli` (or any JSON schema validator) before write. Hard-fail on schema mismatch; never write a forge-meta.json that doesn't match the schema.
+
+Note on the 2026-04-16 release-gate finding (FO2): earlier versions wrote `generated.tooling`, `generated.cicd`, `generated.harness` as **siblings** to `generated.toolingFlags`. That dot-notation drift was inconsistent with the documented `toolingFlags` namespace. The shape below consolidates everything under `generated.toolingFlags` — old-shape projects heal on the next regeneration (no auto-migration).
+
+Update with:
+- `generated.toolingFlags`: **the full `callerExtras` object built in Step 1 + the artifact lists + the `hookStatus` object from onboard's response**. Replaces the previous `generated.tooling` / `generated.cicd` / `generated.harness` sibling fields. This persists `tooling` / `cicd` / `harness` artifact lists, `installedPlugins`, `coveredCapabilities`, `qualityGates`, `phaseSkills`, `allowPluginReferences`, and the seven status objects so `/forge:status` can report Plugin Integration Coverage without re-deriving them. Shape:
 
   ```jsonc
   {
+    "tooling":  ["CLAUDE.md", ".claude/rules/*.md", ".claude/skills/**", ".claude/agents/**"],
+    "cicd":     [".github/workflows/ci.yml", ".github/workflows/tooling-audit.yml"],
+    "harness":  ["init.sh", "docs/feature-list.json", "docs/progress.md"],
     "installedPlugins": ["superpowers", "code-review", ...],
     "coveredCapabilities": ["code-review", ...],
     "allowPluginReferences": true,
@@ -398,8 +402,8 @@ This skill MUST write `.claude/forge-state.json` after each Step so `/forge:resu
 | After Step | Write to state file |
 |---|---|
 | Step 1 (Prepare Onboard Context) | `completedSteps: [..., "tooling-context-prepared"]`, `currentStep: "onboard-invoke"` |
-| Step 2 (Invoke Onboard Headless) | Add `"onboard-invoke"`, `currentStep: "forge-artifacts"`, `generated.tooling: [...]` |
-| Step 3 (Forge-Specific Artifacts) | Add `"forge-artifacts"`, `currentStep: "tooling-metadata"`, `generated.harness: [...]` |
+| Step 2 (Invoke Onboard Headless) | Add `"onboard-invoke"`, `currentStep: "forge-artifacts"`, `generated.toolingFlags.tooling: [...]` |
+| Step 3 (Forge-Specific Artifacts) | Add `"forge-artifacts"`, `currentStep: "tooling-metadata"`, `generated.toolingFlags.harness: [...]` |
 | Step 4 (Update Forge Metadata) | Add `"tooling-metadata"`, `currentPhase: "phase-4-lifecycle-setup"`, `currentStep: "lifecycle-check"` (handoff to lifecycle-setup) |
 
 ### Critical: onboard is expensive and time-consuming

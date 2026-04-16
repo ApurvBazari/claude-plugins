@@ -79,7 +79,7 @@ Note: `/forge:verify`, `/forge:evolve` are now `/onboard:verify`, `/onboard:evol
 - Web research: stack-researcher agent searches for latest versions and best practices before scaffolding, with main-session fallback when sub-agent web tools are denied
 - Feature decomposition: mandatory — downstream phases depend on `docs/feature-list.json` existing
 - Plugin-aware generation: coveredCapabilities passed to onboard, prevents agent shadowing
-- Forge metadata: `.claude/forge-meta.json` records all context, decisions, and generated artifacts (post-scaffold)
+- Forge metadata: `.claude/forge-meta.json` records all context, decisions, and generated artifacts (post-scaffold). Schema is the single source of truth at `forge/skills/tooling-generation/references/forge-meta.schema.json` — tooling-generation Step 4 validates against it before write. As of the 2026-04-16 release-gate L5 alignment, everything lives under `generated.toolingFlags` (tooling/cicd/harness/installedPlugins/coveredCapabilities/qualityGates/phaseSkills + the seven status mirrors). The earlier `generated.tooling` / `generated.cicd` / `generated.harness` sibling keys are removed; old-shape projects heal on next regeneration (no auto-migration).
 - **Forge state: `.claude/forge-state.json` persists in-flight progress** for `/forge:resume`. Checkpoint after every skill Step. Atomic write via `.tmp` + rename.
 - **Scaffold modes**: `full` (default — complete scaffold, then AI tooling) vs `walking-skeleton` (minimal scaffold → AI tooling → expand). Walking skeleton is for stacks without a mature CLI or with complex architecture.
 
