@@ -43,16 +43,16 @@ Fetch each URL below using WebFetch. Extract all Claude Code feature surfaces me
 
 If a URL returns a 404, times out, or fails for any reason: log it in `urlsFailed` and continue. Never abort the analysis because of a fetch failure.
 
-1. `https://docs.anthropic.com/en/docs/claude-code/overview`
-2. `https://docs.anthropic.com/en/docs/claude-code/hooks`
-3. `https://docs.anthropic.com/en/docs/claude-code/skills`
-4. `https://docs.anthropic.com/en/docs/claude-code/sub-agents`
-5. `https://docs.anthropic.com/en/docs/claude-code/mcp`
-6. `https://docs.anthropic.com/en/docs/claude-code/plugins`
-7. `https://docs.anthropic.com/en/docs/claude-code/settings`
-8. `https://docs.anthropic.com/en/docs/claude-code/output-styles`
-9. `https://docs.anthropic.com/en/docs/claude-code/headless`
-10. `https://docs.anthropic.com/en/docs/claude-code/github-actions`
+1. `https://code.claude.com/docs/en/overview`
+2. `https://code.claude.com/docs/en/hooks`
+3. `https://code.claude.com/docs/en/skills`
+4. `https://code.claude.com/docs/en/sub-agents`
+5. `https://code.claude.com/docs/en/mcp`
+6. `https://code.claude.com/docs/en/plugins`
+7. `https://code.claude.com/docs/en/settings`
+8. `https://code.claude.com/docs/en/output-styles`
+9. `https://code.claude.com/docs/en/headless`
+10. `https://code.claude.com/docs/en/github-actions`
 
 ## Step 4: Analyze
 
