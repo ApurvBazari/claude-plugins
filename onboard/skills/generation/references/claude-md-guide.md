@@ -212,6 +212,35 @@ Omit the subsection entirely when `lspStatus.accepted` and `lspStatus.skipped` a
 
 The emission rules live in `generation/SKILL.md` § LSP Plugin Recommendations — Phase 7c. For the language→plugin mapping, see `lsp-plugin-catalog.md`.
 
+## Built-in Skills Reference
+
+Generated root CLAUDE.md includes a built-in skills subsection when onboard has recommended and the developer has accepted one or more built-in Claude Code skills (Phase 7d). The subsection is wrapped in `<!-- onboard:builtin-skills:start/end -->` markers regardless of placement. It documents:
+
+- **Accepted skills** (from `builtInSkillsStatus.generated`): skill name, one-line description, and a project-specific usage example matched to the detected stack.
+- **Placement**: inside Plugin Integration (as `### Built-in Claude Code skills`) when plugins are installed, or as a standalone `## Built-in Claude Code skills` section when no plugins are present.
+- **Not plugin-dependent**: these are Anthropic-provided skills available in every Claude Code session — no install required.
+
+Example rendered subsection:
+
+```markdown
+### Built-in Claude Code skills
+
+These Anthropic-provided skills are available in every Claude Code session — no plugin install required.
+
+- `/loop` — run a prompt on a recurring interval.
+  Example: `/loop 5m npm test` to watch for regressions during refactoring.
+- `/simplify` — review and simplify recently changed code.
+  Example: after landing a feature, run `/simplify` to clean up before PR.
+- `/debug` — systematic debugging of bugs and test failures.
+  Example: paste a stack trace and run `/debug` to trace the root cause.
+- `/schedule` — create scheduled remote agents on a cron schedule.
+  Example: schedule a weekly dependency-audit agent to check for vulnerabilities.
+```
+
+Omit the subsection entirely when `builtInSkillsStatus.generated` is empty (developer declined all candidates). Keep the subsection under 15 lines.
+
+The emission rules live in `generation/SKILL.md` § Built-in Claude Code Skills — Phase 7d. For the skill catalog, detection signals, and stack-specific example templates, see `built-in-skills-catalog.md`.
+
 ## Tone by Autonomy Level
 
 ### "Always Ask" Autonomy

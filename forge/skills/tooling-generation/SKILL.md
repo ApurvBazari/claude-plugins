@@ -124,6 +124,7 @@ Based on Phase 1 context, set the `enriched` object:
     "disableAgentTuning": true,        // skip per-agent batched confirmation; rely on archetype + wizard defaults
     "disableOutputStyleTuning": true,  // skip Phase 7b batched confirmation; emit archetype-matched style directly
     "disableLSP": true,                // skip Phase 7c LSP prompt; scaffolded projects have placeholder code so file-presence signals are unreliable. Developer re-runs /onboard:evolve after adding real code.
+    "disableBuiltInSkills": true,      // skip Phase 7d built-in skills prompt; scaffolded projects have placeholder code so detection signals (file counts, complexity, deps) are premature. Developer re-runs /onboard:evolve after adding real code.
 
     "qualityGates": {
       "sessionStart": [
@@ -233,6 +234,8 @@ Call `/onboard:generate` with the prepared context. Onboard now generates EVERYT
 
 **LSP plugin recommendations (automatic from detected source files):** Onboard 1.8.0 detects project languages via `detect-lsp-signals.sh` and offers matching marketplace LSP plugins (`typescript-lsp`, `gopls-lsp`, `rust-analyzer-lsp`, etc. — 12-entry catalog) through wizard Phase 5.6. Forge passes `callerExtras.disableLSP: true` because freshly scaffolded projects have placeholder code that would trigger unreliable file-presence signals. The developer runs `/onboard:evolve` after adding real source files to trigger the prompt. Full rules in `onboard/skills/generation/references/lsp-plugin-catalog.md`. Surface this in the handoff message: "Run `/onboard:evolve` after adding source files to get LSP plugin recommendations."
 
+**Built-in skill recommendations (automatic from codebase analysis):** Onboard 1.9.0 recommends built-in Claude Code skills (`/loop`, `/simplify`, `/debug`, `/pr-summary` as core; `/schedule`, `/claude-api`, `/explain-code`, `/codebase-visualizer`, `/batch` as conditional extras) through wizard Phase 5.7 and documents accepted skills in the generated CLAUDE.md with project-specific usage examples. Forge passes `callerExtras.disableBuiltInSkills: true` because freshly scaffolded projects have placeholder code — detection signals (file counts, complexity, dependency lists) are premature. The developer runs `/onboard:evolve` after adding real source files to trigger the prompt. Full rules in `onboard/skills/generation/references/built-in-skills-catalog.md`. Surface this in the handoff message: "Run `/onboard:evolve` after adding source files to get built-in skill recommendations."
+
 Present a brief summary after generation. Offer optional review.
 
 ## Step 3: Forge-Specific Artifacts
@@ -333,6 +336,13 @@ Update `.claude/forge-meta.json` with:
       "autoInstalled":     [],
       "autoInstallFailed": [],
       "alreadyInstalled":  []
+    },
+    "builtInSkillsStatus": {                // NEW in onboard 1.9.0 — mirrored from /onboard:generate response
+      "planned":           [],
+      "generated":         [],
+      "skipped":           [{ "skill": "*", "reason": "caller-disabled" }],
+      "warnings":          [],
+      "detectionSignals":  {}
     }
   }
   ```
