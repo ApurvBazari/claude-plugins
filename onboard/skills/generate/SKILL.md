@@ -477,7 +477,7 @@ Example results object shape:
 The `onboard-meta.json` file records:
 - `source`: the calling plugin identifier
 - `headlessMode`: true
-- `pluginVersion`: onboard version
+- `pluginVersion`: onboard version — **MUST be read at runtime** from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` (this skill lives inside onboard, so `${CLAUDE_PLUGIN_ROOT}` resolves to onboard's plugin root). Never hardcode a literal version string. Callers must NOT supply `pluginVersion` in `callerExtras` — config-generator authoritatively reads it from disk so onboard upgrades automatically reflect in the meta file. The 2026-04-16 release-gate Phase 5 test (finding FO6) hit a stale literal `1.2.0` baked into the headless context even though onboard was at 1.9.0.
 - `lastRun`: current timestamp
 - `wizardAnswers`: from context
 - `generatedArtifacts`: list of files created

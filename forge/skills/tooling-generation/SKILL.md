@@ -65,6 +65,37 @@ You receive:
 
 ## Step 1: Prepare Onboard Context
 
+### Resolve the onboard plugin version (runtime — never hardcode)
+
+Before building the headless context, **read onboard's actual installed version at runtime**. Do not bake a literal version string into the context — the 2026-04-16 release-gate Phase 5 test (finding FO6) found `forge-meta.json` recorded `pluginVersion: "1.2.0"` even though the installed onboard was at 1.9.0, leading to stale snapshots and version checks.
+
+Resolution order (CLI-first, sibling-path fallback, hard-fail otherwise):
+
+```bash
+ONBOARD_VERSION=""
+
+# 1. CLI-first: prefer the official Claude Code CLI when available
+if command -v claude >/dev/null 2>&1; then
+  ONBOARD_VERSION=$(claude plugins info onboard --format json 2>/dev/null | jq -r '.version // empty')
+fi
+
+# 2. Sibling-path fallback for the claude-plugins marketplace layout
+#    ($CLAUDE_PLUGIN_ROOT here is forge's plugin root, so onboard is a sibling)
+if [ -z "$ONBOARD_VERSION" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/../onboard/.claude-plugin/plugin.json" ]; then
+  ONBOARD_VERSION=$(jq -r '.version' "${CLAUDE_PLUGIN_ROOT}/../onboard/.claude-plugin/plugin.json")
+fi
+
+# 3. Hard-fail if neither resolved (shouldn't happen — Guard already checked onboard exists)
+if [ -z "$ONBOARD_VERSION" ]; then
+  echo "ERROR: Cannot resolve onboard plugin version. Reinstall onboard: claude plugins install onboard" >&2
+  exit 1
+fi
+```
+
+Inject `$ONBOARD_VERSION` into the headless context as `meta.onboardVersion` for forge-side telemetry; onboard itself reads its own version from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` when writing `pluginVersion` into `onboard-meta.json` (see `onboard/skills/generate/SKILL.md` § Step 5 for that contract). Do NOT pass `pluginVersion` in `callerExtras` — config-generator authoritatively reads it from disk so onboard upgrades flow through without forge changes.
+
+The PR-version markers later in this skill (lines mentioning "Onboard 1.5.0", "Onboard 1.6.0", etc.) are an **historical audit trail** of which onboard release introduced each integration — they document when forge first started honoring a given onboard feature. Keep them as comments; the runtime source of truth for the live version is the resolution code above.
+
 ### Build the analysis object
 
 Spawn the `scaffold-analyzer` agent to scan the freshly scaffolded project. The agent produces the structured `analysis` object matching onboard's expected format.
