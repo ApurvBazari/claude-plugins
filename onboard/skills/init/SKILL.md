@@ -275,7 +275,24 @@ Then continue to the next requested plugin. Repeat for each entry in `ecosystemP
 
 ### Step 3.5.2: Set Up Notify (if requested and available)
 
-If `ecosystemPlugins.notify` is `true` and notify is available:
+If `ecosystemPlugins.notify` is `true` and notify is available, **first probe for pre-existing global configuration** before offering any project-local setup:
+
+#### Detection probe (strict — both must match to count as configured)
+
+```bash
+HAS_GLOBAL_CONFIG=$( [ -f "$HOME/.claude/notify-config.json" ] && echo 1 || echo 0 )
+HAS_GLOBAL_HOOK=$(jq -e '.hooks // {} | tostring | test("notify\\.sh") and test("notify-config\\.json")' "$HOME/.claude/settings.json" 2>/dev/null && echo 1 || echo 0)
+```
+
+Three states result:
+
+| State | Condition | Action |
+|---|---|---|
+| `globalConfigured` | `HAS_GLOBAL_CONFIG=1` AND `HAS_GLOBAL_HOOK=1` | **Inform-only, no offer.** Print: "Global notify config detected at `~/.claude/notify-config.json` — your hooks will fire for this project automatically. No project-local setup needed." Skip steps 1-4 below. |
+| `globalPartial` | One of the two probes is positive but not both | Print: "Global notify hooks detected but config is incomplete. Project-local setup will install the full config; consider running `/notify:setup` in a fresh session to repair the global install." Then proceed with steps 1-4 (default = no via AskUserQuestion). |
+| `notConfigured` | Both probes are 0 | Proceed with steps 1-4 below as the original flow (default = yes). |
+
+#### Project-local setup steps (only when `notConfigured` or developer accepts `globalPartial` offer)
 
 1. Run notify's install script to check dependencies:
    ```bash
@@ -287,22 +304,26 @@ If `ecosystemPlugins.notify` is `true` and notify is available:
    cp "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh" "$BASE_DIR/hooks/notify.sh"
    chmod +x "$BASE_DIR/hooks/notify.sh"
    ```
-3. Write a default `notify-config.json` to `$BASE_DIR/`:
-   ```json
-   {
-     "version": "1.0.0",
-     "events": {
-       "stop": { "enabled": true, "message": "Task completed", "sound": "Hero", "minDurationSeconds": 0 },
-       "notification": { "enabled": true, "matcher": "permission_prompt|idle_prompt", "message": "Needs your attention", "sound": "Glass" },
-       "subagentStop": { "enabled": false, "message": "Subagent task completed", "sound": "Ping" }
+3. Write `notify-config.json` to `$BASE_DIR/` — applying **inherit + override** precedence when global config exists:
+   - Read `~/.claude/notify-config.json` (if present) as the base.
+   - Layer the project-local default on top: only specified keys override the global; missing keys inherit the global value.
+   - Example: if global has `events.stop.sound = "Glass"` and project-local doesn't override `sound`, the merged result keeps `"Glass"`.
+   - Default project-local body (used when no global exists, or as the override layer):
+     ```json
+     {
+       "version": "1.0.0",
+       "events": {
+         "stop": { "enabled": true, "message": "Task completed", "sound": "Hero", "minDurationSeconds": 0 },
+         "notification": { "enabled": true, "matcher": "permission_prompt|idle_prompt", "message": "Needs your attention", "sound": "Glass" },
+         "subagentStop": { "enabled": false, "message": "Subagent task completed", "sound": "Ping" }
+       }
      }
-   }
-   ```
+     ```
 4. Merge notify hooks into `$BASE_DIR/settings.json` (Stop, Notification, SubagentStop events)
 
 Where `$BASE_DIR` is the same scope used for the generated Claude tooling (typically `$PWD/.claude` for per-project or `~/.claude` for global).
 
-Report: `Notify plugin configured — you'll get system notifications when Claude finishes tasks.`
+Report: `Notify plugin configured — you'll get system notifications when Claude finishes tasks.` (or, when `globalConfigured`, the inform-only line above.)
 
 ### Step 3.5.3: Report Ecosystem Setup
 
