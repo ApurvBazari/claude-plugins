@@ -128,23 +128,29 @@ Wait for confirmation before proceeding to generation.
 
 Before generation, detect installed Claude Code plugins to enrich the output with plugin-aware features (Plugin Integration section, per-directory skill annotations, plugin-aware agent skipping, quality-gate hooks referencing plugin skills).
 
-### Step 2.5.1: Check for callerExtras
+### Step 2.5.1: Probe Filesystem — canonical deep probe
 
-If `callerExtras.installedPlugins` is present (headless mode via `/onboard:generate`), skip this phase entirely — the caller has already provided plugin data.
+Follow the canonical procedure in `../generation/references/plugin-detection-guide.md` § Known Plugin Probe List. The probe walks **both** locations to catch sibling installs AND marketplace-installed plugins:
 
-### Step 2.5.2: Probe Filesystem
+1. `${CLAUDE_PLUGIN_ROOT}/../<plugin-name>/` (dev monorepo siblings)
+2. `~/.claude/plugins/cache/*/<plugin-name>/[version/]` (marketplace installs, where `<version>` is often the literal string `"unknown"`)
 
-For each plugin in the Known Plugin Probe List (see `generation/references/plugin-detection-guide.md`), run:
+Build `installedPlugins` from successful probes across the full catalog. Do not stop on a single miss — continue through every plugin in the catalog.
 
-```bash
-ls "${CLAUDE_PLUGIN_ROOT}/../<plugin-name>" 2>/dev/null
-```
+**Fallback when `CLAUDE_PLUGIN_ROOT` is unset**: the marketplace-cache probe still runs (keys off `$HOME`). Only fall back to "no plugins detected" when BOTH probe locations yield zero hits across the catalog.
 
-Build `installedPlugins` from successful probes. Derive `coveredCapabilities`, `qualityGates`, and `phaseSkills` per the detection guide's derivation rules, using `wizardAnswers.autonomyLevel` for the autonomyLevel downgrade.
+### Step 2.5.2: Probe Plugin Surfaces
 
-**If `CLAUDE_PLUGIN_ROOT` is unset**: Skip detection, treat as "no plugins detected", and proceed to Phase 3 with standalone generation.
+For each entry in `installedPlugins`, run the surface-probe procedure in `../generation/references/plugin-surface-probe.md` to classify the plugin as `command-or-skill`, `hooks-only`, or `agent-only`. The resulting `pluginSurfaces` map feeds the Plugin Integration template to prevent fabricated slash refs (e.g., `/security-guidance:security-review` for a hooks-only plugin — release-gate finding G.3, 2026-04-17).
 
-### Step 2.5.3: Present Detection Results
+### Step 2.5.3: Derive coveredCapabilities, qualityGates, phaseSkills
+
+Apply the derivation rules in `../generation/references/plugin-detection-guide.md`:
+- `coveredCapabilities` — combine per-plugin capabilities, deduplicated
+- `qualityGates` — filter defaults by `installedPlugins`, then downgrade `preCommit[].mode` per `wizardAnswers.autonomyLevel`
+- `phaseSkills` — filter defaults by `installedPlugins`; remove empty phases
+
+### Step 2.5.4: Present Detection Results
 
 If plugins were detected:
 
@@ -159,13 +165,30 @@ If no plugins were detected:
 > No Claude Code plugins detected. I'll generate standalone tooling.
 > You can install plugins later and re-run `/onboard:init` to integrate them.
 
-### Step 2.5.4: Pass to Generation
+---
 
-Build the `detectedPlugins` object with `installedPlugins`, `coveredCapabilities`, `qualityGates`, and `phaseSkills`. Include it in the data passed to the config-generator agent in Phase 3, alongside the analysis report and wizard answers.
+## Phase 2.6: Build Onboard Context
+
+Follow the canonical procedure in `references/onboard-context-builder.md` to assemble the single context object that Phase 3 dispatches to `Skill(onboard:generate)`. The builder is the **single source of truth** for init context construction — every preset path (Custom / Standard / Minimal / Comprehensive / Quick Mode) invokes it. Do not maintain preset-specific context builders; that was the drift that caused release-gate findings B1, B5, B6, B8, B10, B12, B13 (2026-04-17 sweep).
+
+Inputs already in conversation context:
+
+- Phase 1 analysis report
+- Phase 2 wizard output (canonical `wizardAnswers` shape per `../wizard/SKILL.md` § Output § Canonical shape invariant)
+- Phase 2.5 plugin detection results (`installedPlugins`, `coveredCapabilities`, `pluginSurfaces`)
+- Project root path (current working directory)
+
+The builder emits a context object shaped like `forge-onboard-context.json` (forge is the reference — its release-gate Phase 5 pass proves the shape works). Key invariants:
+
+- All 7 callerExtras Phase-7 flags populated explicitly (`disableMCP`, `disableLSP`, `disableBuiltInSkills`, `disableSkillTuning`, `disableAgentTuning`, `disableOutputStyleTuning`, `allowHttpHooks`) — init-path defaults are `false` for all (Phase 7 blocks run fully; interactive confirmation runs).
+- `callerExtras.installedPlugins` and `pluginSurfaces` populated from Phase 2.5 probes.
+- Every wizardAnswers field populated (including defaults for skipped fields per `../wizard/SKILL.md` § Skip Behavior).
+
+Run the builder's validation step before proceeding to Phase 3. If validation fails, refuse to dispatch — surface the error to the user with the offending field name.
 
 ---
 
-## Phase 3: Generation
+## Phase 3: Generation via Skill(onboard:generate)
 
 ### Step 3.1: Model resolution (no separate prompt)
 
@@ -186,20 +209,32 @@ The preset-default fallback is documented in `wizard/references/workflow-presets
 
 The wizard's Phase 6 summary already shows the chosen model — the developer has already seen and confirmed it. If they wanted to change it, they would have done so in the summary tweak step (or by editing `.claude/settings.json` after init).
 
-### Step 3.2: Generate Artifacts
+The model choice is written into `context.modelChoice` by the Phase 2.6 builder.
 
-Spawn the `config-generator` agent via the Agent tool (`subagent_type: "config-generator"`). Include the following in the agent prompt — all of this is already available in the conversational context from prior phases:
-- The full analysis report (from Phase 1)
-- The wizard answers as structured JSON (from Phase 2) — includes `advancedHookEvents` when the developer opted in at Phase 5.1; generation reads this to drive `Advanced Event Hooks` emission (see `generation/SKILL.md` § Advanced Event Hooks). The wizard answers include the model under `skillTuning.defaultModel` or top-level `model` (see Step 3.1 resolution rules).
-- The `detectedPlugins` object (from Phase 2.5) — if no plugins were detected, pass an empty object so the generation skill resolves `effectivePlugins` as empty
-- The chosen model (resolved per Step 3.1, propagated via `callerExtras.model` so config-generator emits agent/skill frontmatter with the right `model` field)
-- The project root path
-- The current date for maintenance headers
-- A flag indicating the agent was dispatched (not running inline): `"dispatchedAsAgent": true` — config-generator hard-fails Step 0 if absent
+### Step 3.2: Dispatch to Skill(onboard:generate)
 
-**REQUIRED**: this MUST be a single Agent dispatch. Do NOT execute the agent's instructions inline from this skill (init), and do NOT call Write/Edit from this skill — config-generator owns all writes (same dispatch contract as `onboard:generate`).
+**Invoke `Skill(onboard:generate)` with the context object built in Phase 2.6.** This is the same skill forge uses (via `forge:tooling-generation`) — one contract, one validator, one agent-dispatch boundary.
 
-Inform the developer:
+```
+Skill(
+  skill: "onboard:generate",
+  args: <stringified context object from Phase 2.6>
+)
+```
+
+The generate skill then:
+
+1. Validates the context (same rules as forge — see `../generate/SKILL.md` § Validation)
+2. Dispatches `Agent(config-generator)` with `dispatchedAsAgent: true`
+3. Runs the full generation pipeline (Phase 7a MCP, 7b Output Styles, 7c LSP, 7d Built-in Skills) per `../generation/SKILL.md`
+4. Runs pre-exit self-audit verifying all 7 Phase 7 telemetry keys are present
+5. Returns a structured JSON response with `filesWritten`, `telemetry`, `auditPassed`, `warnings`
+
+**Do NOT** call `Agent(config-generator)` directly from this skill — that breaks the contract boundary and bypasses the shared validation. Always dispatch via the Skill tool.
+
+**Do NOT** call Write / Edit from this skill — the dispatched agent owns all writes (hard-fail safety net: config-generator checks `dispatchedAsAgent === true` and refuses to write if absent).
+
+Before dispatching, inform the developer:
 
 > Generating your Claude tooling... This will create the following artifacts:
 > - Root CLAUDE.md
@@ -208,6 +243,9 @@ Inform the developer:
 > - Skills
 > - Agents
 > - Hook configuration
+> - MCP servers (if stack signals detected)
+> - Output style
+> - LSP plugin integration (if source files detected)
 > - Setup metadata
 
 ### Step 3.3: Report Generation Results
