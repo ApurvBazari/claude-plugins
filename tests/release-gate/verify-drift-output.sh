@@ -12,7 +12,7 @@ if [[ -z "$REPO" || ! -d "$REPO" ]]; then
   exit 1
 fi
 
-cd "$REPO"
+cd "$REPO" || exit 1
 
 PASSED=0
 FAILED=0
