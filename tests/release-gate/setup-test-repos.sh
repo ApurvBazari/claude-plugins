@@ -7,6 +7,26 @@ set -euo pipefail
 
 BASE_DIR="${1:-${TMPDIR:-/tmp}/release-gate-tests}"
 
+# Safety guard for rm -rf: refuse paths that don't look like a release-gate-tests
+# scratch dir, and refuse relative paths. Addresses L1 in the 2026-04-18 security
+# review (PR #41). A typo like `./setup-test-repos.sh /` or a bare filename must
+# never get near rm -rf.
+case "$BASE_DIR" in
+  /*) ;;
+  *)
+    echo "ERROR: BASE_DIR must be an absolute path. Got: $BASE_DIR" >&2
+    exit 1
+    ;;
+esac
+case "$BASE_DIR" in
+  *release-gate-tests*) ;;
+  *)
+    echo "ERROR: BASE_DIR must contain 'release-gate-tests' in its path (rm -rf safety guard)." >&2
+    echo "       Got: $BASE_DIR" >&2
+    exit 1
+    ;;
+esac
+
 echo "## Setting up test repos in: ${BASE_DIR}"
 echo ""
 
