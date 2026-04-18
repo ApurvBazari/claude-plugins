@@ -554,6 +554,57 @@ fi
 echo ""
 
 # ─────────────────────────────────────────────────
+echo "### 11. Plugin Integration slash-ref existence — no fabrications (Cluster 3)"
+# ─────────────────────────────────────────────────
+# Every /<plugin>:<slug> in the generated CLAUDE.md MUST correspond to an
+# actual file at <plugin>/commands/<slug>.md OR <plugin>/skills/<slug>/SKILL.md.
+# Fabricated refs were release-gate finding G.3 (2026-04-17) — the generator
+# emitted /security-guidance:security-review for a hooks-only plugin.
+
+if [[ -f "CLAUDE.md" && "$IS_CANONICAL_STUB" -ne 1 ]]; then
+  CACHE="$HOME/.claude/plugins/cache"
+  # Sibling root — walk up from the fixture's parent; covers dev repo layout
+  SIBLING_ROOT="$(dirname "$(pwd)")"
+  # Also accept sibling of the caller (common when running from a subproject):
+  [ -d "$SIBLING_ROOT/onboard" ] || SIBLING_ROOT="$HOME/Desktop/projects/claude-plugins"
+
+  FABRICATED=0
+  TOTAL_REFS=0
+  while IFS= read -r ref; do
+    TOTAL_REFS=$((TOTAL_REFS + 1))
+    P="${ref#/}"; P="${P%%:*}"
+    S="${ref##*:}"
+    FOUND=0
+
+    # Probe both locations; accept any matching file
+    for candidate in \
+      "$SIBLING_ROOT/$P/commands/$S.md" \
+      "$SIBLING_ROOT/$P/skills/$S/SKILL.md" \
+      "$CACHE"/*/"$P"/commands/"$S".md \
+      "$CACHE"/*/"$P"/*/commands/"$S".md \
+      "$CACHE"/*/"$P"/skills/"$S"/SKILL.md \
+      "$CACHE"/*/"$P"/*/skills/"$S"/SKILL.md; do
+      if [ -f "$candidate" ] 2>/dev/null; then
+        FOUND=1
+        break
+      fi
+    done
+
+    if [ $FOUND -eq 0 ]; then
+      fail "fabricated slash ref in CLAUDE.md: ${ref} (no file at <plugin>/commands/<slug>.md or <plugin>/skills/<slug>/SKILL.md)"
+      FABRICATED=$((FABRICATED + 1))
+    fi
+  done < <(grep -oE '/[a-z][a-z0-9-]*:[a-z][a-z0-9-]*' CLAUDE.md | sort -u)
+
+  if [ $TOTAL_REFS -gt 0 ] && [ $FABRICATED -eq 0 ]; then
+    pass "Plugin Integration slash refs: ${TOTAL_REFS} checked, 0 fabricated"
+  elif [ $TOTAL_REFS -eq 0 ]; then
+    pass "Plugin Integration slash refs: none emitted (acceptable when no plugins installed)"
+  fi
+fi
+echo ""
+
+# ─────────────────────────────────────────────────
 echo "═══════════════════════════════════════════"
 echo "## Summary — ${PROFILE}"
 echo ""

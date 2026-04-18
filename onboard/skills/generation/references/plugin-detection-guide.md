@@ -86,6 +86,10 @@ Sequence:
 2. If NEITHER probe returns any hits for any plugin in the catalog AND `CLAUDE_PLUGIN_ROOT` was unset, fall back to "no plugins detected" with a structured log entry (`detectedPlugins.probeContext: "claude-plugin-root-unset-and-cache-empty"`).
 3. Proceed with standalone generation. Do not fail.
 
+## Surface Classification
+
+After building `installedPlugins`, classify each plugin's entry surface (commands / skills / hooks / agents) per `plugin-surface-probe.md`. The resulting `pluginSurfaces` map feeds the Plugin Integration template in `claude-md-guide.md` and prevents fabricated slash refs (release-gate finding G.3, 2026-04-17 — `/security-guidance:security-review` fabricated for a hooks-only plugin).
+
 ## Detection Output Schema
 
 The detection step produces a `detectedPlugins` object:
@@ -95,6 +99,7 @@ The detection step produces a `detectedPlugins` object:
   "detectedPlugins": {
     "installedPlugins": ["superpowers", "commit-commands", ...],
     "coveredCapabilities": ["test-generation", "git-workflow", ...],
+    "pluginSurfaces": { /* per plugin-surface-probe.md */ },
     "qualityGates": { /* derived from installed plugins + autonomyLevel */ },
     "phaseSkills": { /* derived from installed plugins */ }
   }
@@ -162,7 +167,7 @@ Read `autonomyLevel` from `wizardAnswers.autonomyLevel`.
 
 ## phaseSkills Derivation
 
-Start from the defaults, filter by installed plugins:
+Start from the defaults, filter by installed plugins. Note: `feature-dev` contributes **only** its `code-architect` sub-agent to the `feature` phase — NOT `feature-dev:feature-dev` as a top-level orchestrator. When `superpowers` is installed, its `brainstorming` + `writing-plans` + `test-driven-development` pipeline owns feature entry; `feature-dev:feature-dev` is effectively dead code in that environment (release-gate finding G.4, 2026-04-17).
 
 ```jsonc
 {
@@ -176,3 +181,5 @@ Start from the defaults, filter by installed plugins:
 ```
 
 Drop any skill whose plugin is not in `installedPlugins`. Remove empty phases entirely.
+
+See `plugin-surface-probe.md § Disambiguation rules` (R1-R6) for the full routing-conflict resolution that applies on top of this derivation when multiple overlapping plugins are installed.

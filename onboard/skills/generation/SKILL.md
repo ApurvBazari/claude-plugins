@@ -130,6 +130,24 @@ This project uses the following Claude Code plugins. Use them consistently.
 <!-- onboard:plugin-integration:end -->
 ```
 
+**Surface verification invariant** — before emitting ANY `/<plugin>:<slug>` reference in any subsection below, verify the ref via `callerExtras.pluginSurfaces[<plugin>]` per `plugin-surface-probe.md`:
+
+- `surface.type === "command-or-skill"` or `"command-and-agent"` → slash refs are safe to emit from `surface.commands[]` and `surface.skills[]`
+- `surface.type === "hooks-only"` or `"hooks-and-agent"` → NEVER emit `/<plugin>:<slug>` refs. Instead emit the hook-behavior narrative per Rule R6 in `plugin-surface-probe.md`
+- `surface.type === "agent-only"` → emit agent refs (e.g., `subagent_type: '<plugin>:<agent>'`) only
+- `surface.type === "empty"` → skip the plugin in Plugin Integration entirely + log a warning
+
+The 2026-04-17 release-gate finding G.3 was a fabricated `/security-guidance:security-review` ref for a hooks-only plugin. This invariant prevents the regression class.
+
+**Disambiguation rules** — when multiple overlapping plugins are installed, apply the R1-R6 disambiguation rules from `plugin-surface-probe.md § Disambiguation rules` in order. Key effects:
+
+- **R1**: when `superpowers` + `feature-dev` are both installed, drop `feature-dev:feature-dev` as a top-level Per-feature workflow entry. Keep `feature-dev:code-architect` as an adjunct tool inside the superpowers flow. (Closes G.2, G.5.2.)
+- **R2**: when `code-review` + `pr-review-toolkit` are both installed, label them as `light review` vs `heavy review` so Claude picks the right one per PR context. (Closes G.5.3.)
+- **R3**: when `frontend-design` is installed AND the stack includes a frontend framework (Next.js / React / Vue / Svelte / Astro / Remix / SolidJS), emit a subsection declaring `frontend-design` owns UI feature work. (Closes G.5.4.)
+- **R4**: agent refs always use the plugin-prefixed form (e.g., `feature-dev:code-reviewer`, not bare `code-reviewer`). (Closes G.5.5.)
+- **R5**: emit a note that superpowers' `brainstorming → writing-plans` pipeline is self-contained and doesn't invoke external plugins mid-flow. (Closes G.5.6.)
+- **R6**: hooks-only plugins get behavior narratives derived from the probed hook events (e.g., `security-guidance` hooks fire on PreToolUse:Write → secret-literal-scan). (Closes G.3.)
+
 **Content rules**:
 
 1. **Research & brainstorming** (always first subsection when `superpowers` is in `installedPlugins`):
@@ -138,11 +156,13 @@ This project uses the following Claude Code plugins. Use them consistently.
    - Reference `context7` only if it's in `installedPlugins` (never fabricate)
    - Include the "design can be a few sentences for trivial work" caveat so developers don't feel trapped
    - Point at where research outputs are saved (e.g., `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`)
+   - Add the R5 note: "superpowers' `brainstorming → writing-plans` forms a self-contained pipeline. It does not invoke external plugins mid-flow."
 2. **Core discipline** — `superpowers:test-driven-development`, `superpowers:verification-before-completion`, `superpowers:systematic-debugging` (only include ones whose plugin is installed)
-3. **Per-feature workflow** — `feature-dev:code-architect`, `code-explorer`, `code-reviewer` (only if `feature-dev` is installed)
+3. **Per-feature workflow** — apply R1: if `superpowers` is installed, do NOT list `feature-dev:feature-dev` as a top-level entry. Instead, document `feature-dev:code-architect` as an adjunct tool within the superpowers phase-4 flow. If `superpowers` is NOT installed, `feature-dev:feature-dev` becomes the primary entry for this subsection. Also list `feature-dev:code-explorer` and `feature-dev:code-reviewer` (always with plugin prefix per R4) as tactical tools.
 4. **Commit discipline** — `/commit`, `/commit-push-pr` (only if `commit-commands` is installed)
-5. **Quality gates** — `code-review:code-review`, `pr-review-toolkit:review-pr`, `claude-md-management:revise-claude-md` (only ones whose plugin is installed)
-6. **Ecosystem** — `hookify`, `security-guidance` (only ones whose plugin is installed)
+5. **Quality gates** — when both `code-review` and `pr-review-toolkit` are installed, apply R2: present them as **light review** vs **heavy review** with specific guidance on when to pick each. Otherwise list whichever is installed. Include `claude-md-management:revise-claude-md` if installed.
+6. **Ecosystem** — for `hookify` (slash surface), emit slash refs normally. For `security-guidance` (hooks-only surface), apply R6: emit a narrative paragraph derived from `pluginSurfaces.security-guidance.hooks[]` describing the events fired + behaviors. Do NOT fabricate a `/security-guidance:*` slash ref.
+6.5. **UI feature work (conditional on R3)** — when `frontend-design` is installed AND a frontend framework is detected in the analysis, add a subsection declaring `frontend-design:frontend-design` owns web component / page / application generation. Non-UI feature work stays in the superpowers → feature-dev flow (subsection 3).
 7. **Output styles** (always — built-in styles are universal, emitted custom style is project-specific): Add an `### Output styles` subsection. List the three built-ins (`Default` / `Explanatory` / `Learning`) with one-line descriptions. If `outputStyleStatus.generated[]` is non-empty, also list the emitted custom style with its path and one-line purpose. State the activation path: open `/config` and pick from the menu, OR set `"outputStyle": "<name>"` in `.claude/settings.local.json`. Include the new-session caveat (changes take effect in the next new session). Do NOT reference built-in styles as files — they're Anthropic-provided. When `outputStyleStatus.generated[]` is empty, still emit the subsection to surface the built-ins.
 8. **Built-in Claude Code skills** (always — these are Anthropic-provided, not plugin-dependent): Add a `### Built-in Claude Code skills` subsection wrapped in `<!-- onboard:builtin-skills:start -->` / `<!-- onboard:builtin-skills:end -->` markers. For each skill in `builtInSkillsStatus.generated[]`, emit: skill name, one-line description, and a project-specific example from `references/built-in-skills-catalog.md` (matched to detected stack). Use the same narrative voice as other Plugin Integration subsections — answer "when would you use this on your project?" not just list names. Place this as the **last subsection** inside Plugin Integration, after Output styles. When `builtInSkillsStatus.generated[]` is empty, do not emit the subsection (no stub). When `effectivePlugins` is empty, emit as a standalone `## Built-in Claude Code skills` section with the same `<!-- onboard:builtin-skills:start/end -->` markers, placed after the last onboard-generated section (identified by maintenance header). See "Built-in Claude Code Skills — Phase 7d" below for the full emission spec.
 
