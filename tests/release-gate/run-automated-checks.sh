@@ -203,7 +203,7 @@ for plugin_dir in onboard forge notify; do
   MANIFEST="${plugin_dir}/.claude-plugin/plugin.json"
   if [[ -f "$MANIFEST" ]]; then
     PLUGIN_VER=$(jq -r '.version' "$MANIFEST")
-    MARKET_VER=$(jq -r ".plugins[] | select(.name == \"${plugin_dir}\") | .version" .claude-plugin/marketplace.json)
+    MARKET_VER=$(jq -r --arg name "$plugin_dir" '.plugins[] | select(.name == $name) | .version' .claude-plugin/marketplace.json)
     if [[ "$PLUGIN_VER" == "$MARKET_VER" ]]; then
       pass "version sync: ${plugin_dir} (${PLUGIN_VER})"
     else
