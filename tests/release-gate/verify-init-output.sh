@@ -285,6 +285,12 @@ declare -a SNAPSHOT_PAIRS=(
   ".claude/onboard-builtin-skills-snapshot.json:builtInSkillsStatus"
 )
 META=".claude/onboard-meta.json"
+# Detect stub mode once (used across sections). Post-Cluster-2 stubs emit
+# top-level mode:"stub-empty-repo" in canonical-schema onboard-meta.json.
+STUB_MODE=""
+if [[ -f "$META" ]]; then
+  STUB_MODE=$(jq -r '.mode // empty' "$META" 2>/dev/null)
+fi
 for pair in "${SNAPSHOT_PAIRS[@]}"; do
   snap="${pair%%:*}"
   key="${pair#*:}"
@@ -333,12 +339,22 @@ echo "### 8. Telemetry completeness — keys mandatory + status enum validated (
 # ─────────────────────────────────────────────────
 
 if [[ -f "$META" ]]; then
+  # Post-Cluster-2, canonical stubs emit top-level mode:"stub-empty-repo" and
+  # keep all 7 Phase 7 telemetry keys present (each status:"skipped", reason:
+  # "stub-mode-no-code"). Pre-Cluster-2 empty fixtures may legitimately lack
+  # keys. STUB_MODE was set once at the top of the script.
+  IS_CANONICAL_STUB=0
+  [[ "$STUB_MODE" == "stub-empty-repo" ]] && IS_CANONICAL_STUB=1
+
   STATUS_KEYS=("hookStatus" "skillStatus" "agentStatus" "mcpStatus" "outputStyleStatus" "lspStatus" "builtInSkillsStatus")
   for key in "${STATUS_KEYS[@]}"; do
     HAS_KEY=$(jq "has(\"${key}\")" "$META" 2>/dev/null || echo "false")
     if [[ "$HAS_KEY" != "true" ]]; then
-      if [[ "$PROFILE" == "empty" ]]; then
-        warn "telemetry: ${key} missing (acceptable for empty repo)"
+      if [[ "$IS_CANONICAL_STUB" -eq 1 ]]; then
+        # Canonical stub MUST have all 7 keys. Missing is a hard fail in stub mode.
+        fail "telemetry: ${key} missing in canonical stub — stub schema requires all 7 Phase 7 keys with status:\"skipped\""
+      elif [[ "$PROFILE" == "empty" ]]; then
+        warn "telemetry: ${key} missing (acceptable for empty repo pre-Cluster-2 schema)"
       else
         # C1 contract: missing telemetry key = HARD FAIL (was a warn pre-sweep)
         fail "telemetry: ${key} missing — C1 contract requires every Phase 7 telemetry key to exist"
@@ -464,6 +480,9 @@ if [[ -f "$META" ]]; then
     fail "pluginVersion missing from onboard-meta.json"
   elif [[ "$RECORDED_VER" == "1.2.0" ]]; then
     fail "pluginVersion is stale literal '1.2.0' (L4 violation — must be read at runtime)"
+  elif [[ "$RECORDED_VER" == "1.0.0" && "$STUB_MODE" == "stub-empty-repo" ]]; then
+    # B15: pre-Cluster-2 stubs hardcoded "1.0.0"; post-Cluster-2 stubs resolve dynamically.
+    fail "pluginVersion hardcoded '1.0.0' in stub mode (B15 regression — must read from plugin.json)"
   elif [[ -z "$ACTUAL_VER" ]]; then
     warn "pluginVersion=${RECORDED_VER} recorded; could not resolve actual installed onboard for comparison"
   elif [[ "$RECORDED_VER" == "$ACTUAL_VER" ]]; then

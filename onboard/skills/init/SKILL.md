@@ -22,6 +22,56 @@ Tell the developer:
 
 ---
 
+## Phase 0: Empty-Repo Guard
+
+Runs **before** Phase 1 Analysis. Detects repositories with no source code and routes them to a minimal, canonical-shape stub instead of running the full analysis + wizard. Closes 2026-04-17 release-gate findings B14, B15, B16.
+
+### Step 0.1: Detect empty repository
+
+Count source-code files (exclude `.git/`, dotfiles, `README*`, `LICENSE*`, `.gitignore`):
+
+```bash
+SRC_COUNT=$(find . -type f \
+  -not -path './.git/*' \
+  -not -name '.*' \
+  -not -name 'README*' \
+  -not -name 'LICENSE*' \
+  | wc -l | tr -d ' ')
+```
+
+- `SRC_COUNT > 0` → source code exists → **skip Phase 0 entirely**, fall through to Phase 1 Analysis. Most common case.
+- `SRC_COUNT == 0` → empty repo → proceed to Step 0.2.
+
+### Step 0.2: Detect prior stub (auto-promote)
+
+If `.claude/onboard-meta.json` already exists AND `jq -r '.mode // empty'` returns `"stub-empty-repo"` AND `SRC_COUNT > 0`: auto-promote. Skip Phase 0 entirely; run Phase 1 Analysis → Phase 2 Wizard → Phase 3 Generation. Full generation overwrites the stub artifacts. Append an `updateHistory` entry to the new `onboard-meta.json` noting the `"stub → full"` promotion.
+
+If prior stub exists AND `SRC_COUNT == 0` (user ran init twice on empty dir): default to no-op — inform the developer a stub already exists, skip re-write.
+
+### Step 0.3: Present the 3-option menu
+
+For empty repos without a prior stub, use `AskUserQuestion` (single-select, header: `"Empty repo"`):
+
+> This repository has no source code yet. How would you like to proceed?
+>
+> - **Abort** — stop here. Suggestion: run `/forge:init` to scaffold a project and generate tooling in one step.
+> - **Placeholder only** — write a minimal CLAUDE.md placeholder (no `.claude/` directory). Useful if you want to set up Claude context before the code exists but don't want a formal tooling setup.
+> - **Generate canonical stub** (default) — create CLAUDE.md, `.claude/settings.json`, and `.claude/onboard-meta.json` in canonical schema with stub-mode markers. Re-run `/onboard:init` later to upgrade to full tooling.
+
+Default: **Generate canonical stub**.
+
+**Single-option guard** (per `.claude/rules/ask-user-question-guard.md`): the menu has 3 options → no guard needed.
+
+### Step 0.4: Execute the selected path
+
+- **Abort** → stop the skill. No files written. Optionally invoke `/forge:init` if the developer explicitly asks.
+- **Placeholder only** → write CLAUDE.md with the placeholder content from the stub procedure (below) but SKIP the `.claude/` directory. Return minimal handoff. Do not proceed to further phases.
+- **Generate canonical stub** (default) → follow `references/empty-repo-stub-procedure.md`. It prescribes: the 3 files, the canonical `onboard-meta.json` schema with all 7 Phase 7 status keys set to `status: "skipped"` + `reason: "stub-mode-no-code"`, dynamic `pluginVersion` resolution (no hardcoded literals), and the 3-file atomic write order.
+
+After either stub path completes, run a minimal handoff (see the stub procedure's § Post-write handoff section) and return — do NOT continue to Phase 1 Analysis.
+
+---
+
 ## Phase 1: Automated Analysis
 
 ### Step 1.1: Check for Existing Claude Config
