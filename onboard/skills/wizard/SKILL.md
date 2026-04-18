@@ -380,7 +380,20 @@ If the developer wants to change the model, they tweak it from the summary edit 
 4. **Reference the analysis** — Always connect questions to what the analyzer found. This demonstrates value and reduces redundant questions.
 5. **Capture autonomy preference carefully** — This determines how much Claude asks vs acts independently. Get this right.
 6. **Always populate fields explicitly** — When the wizard chooses to skip a phase (no signal, escape hatch chosen, headless mode), populate the corresponding field in `wizardAnswers` with the Quick Mode default value (full detected list, archetype default, etc.) rather than leaving the field `undefined`. This means downstream generation always receives explicit Path A data and never has to fall back to Path B (which is just the C1-introduced safety net).
-7. **Telemetry** — Record the wizard run in `onboard-meta.json` under `wizardStatus`:
+7. **Canonical wizardStatus telemetry — Finalize step** — Before the Phase 6 Summary, emit `wizardStatus` to `onboard-meta.json` with **exactly** these 5 subkeys. Emission runs IN EVERY preset path (Custom / Standard / Minimal / Comprehensive / Quick Mode); no preset-specific shape variant is allowed.
+
+   Track state throughout the wizard run:
+
+   | State field | Updated when |
+   |---|---|
+   | `state.presetUsed` | Set once at Phase 1 preset selection (`minimal | standard | comprehensive | custom | quick-mode`) |
+   | `state.exchangesUsed` | Incremented on every `AskUserQuestion` call the wizard makes |
+   | `state.phasesAsked` | Pushed when a phase presents questions to the developer |
+   | `state.phasesSkipped` | Pushed when a phase is gated off (no signal, preset-skipped, headless path, escape hatch) |
+   | `state.escapeHatchTriggered` | Set `true` the first time the Phase 5.0 Custom escape hatch fires; stays `true` (monotonic) |
+
+   Emit as the penultimate wizard action (before Phase 6 Summary renders):
+
    ```json
    {
      "wizardStatus": {
@@ -392,6 +405,13 @@ If the developer wants to change the model, they tweak it from the summary edit 
      }
    }
    ```
+
+   **Hard emission rules** (load-bearing; verified by `tests/release-gate/verify-init-output.sh`):
+   - Every key present. `phasesAsked` / `phasesSkipped` empty arrays are valid; missing keys are not.
+   - `presetUsed` values drawn only from the enum above. Never emit `"mode: interactive"` or `"completed: true"` or `"answersPresent: true"` — those were the three distinct legacy shapes observed on Custom/Standard/Minimal in the 2026-04-17 release-gate (findings B2 / B11).
+   - `escapeHatchTriggered` defaults to `false` in every preset; set `true` only when Phase 5.0's bail-out fires.
+   - `exchangesUsed` defaults to `0` for Quick Mode / stub-mode paths that bypass the wizard entirely. Do not emit `null`.
+   - No extra keys beyond the 5 canonical. Adding fields creates drift for downstream consumers.
 
 ## Skip Behavior
 
@@ -445,7 +465,9 @@ Quick mode inference can refine preset defaults. If a developer chose Quick setu
 
 ## Output
 
-After the wizard completes, compile all answers into a structured JSON format:
+**Canonical shape invariant** — every preset path (Minimal / Standard / Comprehensive / Custom / Quick Mode / stub) emits **the same** top-level `wizardAnswers` structure. Missing fields MUST be populated with defaults per § Skip Behavior; never leave a field `undefined` or emit a preset-specific subset. The 2026-04-17 release-gate found three distinct preset-subset shapes in the wild (findings B2 / B11 / B5 / B6) — all caused by presets skipping field emission. The canonical full shape below is the reference; downstream consumers (`onboard:generate` validator, `init/references/onboard-context-builder.md`, `tests/release-gate/verify-init-output.sh`) assume this shape uniformly.
+
+After the wizard completes, compile all answers into the following structured JSON format:
 
 ```json
 {
