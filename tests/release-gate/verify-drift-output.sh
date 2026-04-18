@@ -79,10 +79,13 @@ if [[ -f "package.json" ]]; then
     fail "@anthropic-ai/sdk removed from package.json"
   fi
 
-  # Check if builtInSkillsStatus was updated to reflect the new skill
+  # Check if builtInSkillsStatus was updated to reflect the new skill.
+  # Walk nested structures: /claude-api lives in planned[], generated[], and
+  # detectionSignals (keys + values) — never at top level. The original
+  # to_entries walk checked only top-level keys and always false-negative WARNed.
   if [[ -f ".claude/onboard-meta.json" ]]; then
     BSS=$(jq '.builtInSkillsStatus // {}' .claude/onboard-meta.json 2>/dev/null)
-    if echo "$BSS" | jq -e 'to_entries | map(select(.key | test("claude-api";"i"))) | length > 0' >/dev/null 2>&1; then
+    if echo "$BSS" | jq -e '[.planned[]?, .generated[]?, (.detectionSignals // {} | keys[]?), (.detectionSignals // {} | values[]?)] | any(. | tostring | test("claude-api"; "i"))' >/dev/null 2>&1; then
       pass "builtInSkillsStatus references claude-api"
     else
       warn "builtInSkillsStatus does not reference claude-api (may need manual approval during update)"
