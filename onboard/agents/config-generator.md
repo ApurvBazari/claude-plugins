@@ -120,9 +120,9 @@ Generate artifacts in this order:
    for KEY in mcpStatus outputStyleStatus lspStatus builtInSkillsStatus; do
      STATUS=$(jq -r ".$KEY.status // \"MISSING\"" "$META")
      case "$STATUS" in
-       emitted|skipped|declined|failed) ;;  # OK
+       emitted|documented|skipped|declined|failed) ;;  # OK
        MISSING) echo "AUDIT FAIL: $KEY missing from $META"; exit 1 ;;
-       *) echo "AUDIT FAIL: $KEY.status='$STATUS' is not in {emitted|skipped|declined|failed}"; exit 1 ;;
+       *) echo "AUDIT FAIL: $KEY.status='$STATUS' is not in {emitted|documented|skipped|declined|failed}"; exit 1 ;;
      esac
    done
    ```
@@ -158,7 +158,7 @@ Before declaring completion, verify:
 - Hooks reference tools that are installed
 - settings.json was merged (not overwritten) if it existed
 - onboard-meta.json is complete
-- **Phase 7 telemetry self-audit ran successfully** — `mcpStatus`, `outputStyleStatus`, `lspStatus`, `builtInSkillsStatus` all present in onboard-meta.json with valid `status` enum values (`emitted | skipped | declined | failed`). Missing key = hard-fail, do not return.
+- **Phase 7 telemetry self-audit ran successfully** — `mcpStatus`, `outputStyleStatus`, `lspStatus`, `builtInSkillsStatus` all present in onboard-meta.json with valid `status` enum values (`emitted | documented | skipped | declined | failed`). Missing key = hard-fail, do not return.
 
 ### Critical Rules
 

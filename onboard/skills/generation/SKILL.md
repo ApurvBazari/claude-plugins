@@ -546,7 +546,7 @@ Follow `references/mcp-guide.md` for emission rules, catalog, and transport shap
 - `callerExtras.disableMCP` (optional, headless) — see Path SKIP above
 - Output of `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh" <project-root>` — canonical signal list
 
-**Telemetry contract**: `mcpStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | skipped | declined | failed`) per the Default behavior matrix in `generate/SKILL.md`.
+**Telemetry contract**: `mcpStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | documented | skipped | declined | failed`) per the Default behavior matrix in `generate/SKILL.md`.
 
 **Step 1 — Detect candidates**. Run the detection script; parse JSON output. Candidates marked `confidence: "always"` (context7) emit unconditionally. Candidates marked `confidence: "high"` emit when the signal evaluates unambiguously (see `references/mcp-guide.md` § Confidence Tiers). Dedupe by server name.
 
@@ -730,7 +730,7 @@ Follow `references/lsp-plugin-catalog.md` for the 12-entry language→plugin map
 - `wizardAnswers.lspPlugins` (optional) — see Path A above
 - Output of `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"` — JSON array sorted by fileCount desc
 
-**Telemetry contract**: `lspStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | skipped | declined | failed`) per the Default behavior matrix in `generate/SKILL.md`.
+**Telemetry contract**: `lspStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | documented | skipped | declined | failed`) per the Default behavior matrix in `generate/SKILL.md`.
 
 **Step 1 — Detect candidate plugins.** Run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"`. Output is a JSON array sorted by fileCount desc, e.g.:
 
@@ -811,7 +811,7 @@ Follow `references/built-in-skills-catalog.md` for the 9-skill catalog, tier cla
 - `callerExtras.builtInSkills` (optional, headless) — see Path A above
 - `wizardAnswers.builtInSkills` (optional) — see Path A above
 
-**Telemetry contract**: `builtInSkillsStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | skipped | declined | failed`) per the Default behavior matrix in `generate/SKILL.md`.
+**Telemetry contract**: `builtInSkillsStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | documented | skipped | declined | failed`) per the Default behavior matrix in `generate/SKILL.md`. **Built-in skills is the primary user of the `"documented"` value** — its "artifact" is a CLAUDE.md subsection rather than a separate file + snapshot, so `"documented"` is semantically more accurate than `"emitted"` when the phase runs. See Phase 7d below for the firing paths.
 
 **Suppression**: Skip entirely when `callerExtras.disableBuiltInSkills: true` (forge default — scaffolded projects have placeholder code so detection signals are premature). When skipped, still emit a `builtInSkillsStatus` entry in meta.json:
 

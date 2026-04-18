@@ -285,7 +285,8 @@ There are **two distinct families** of `callerExtras` disable flags. They MUST N
 | Value | Meaning |
 |---|---|
 | `"emitted"` | Phase ran, artifacts written, snapshot recorded. |
-| `"skipped"` | Phase intentionally skipped (caller flag, no signal, no candidates). Telemetry still recorded so verify scripts can distinguish "intentional skip" from "silent bug". |
+| `"documented"` | Phase ran, guidance was written INTO an existing artifact (e.g., a CLAUDE.md subsection) rather than as a separate file + snapshot. Used by Phase 7d (built-in skills) whose "artifact" is documentation-only by design. Semantically distinct from `"emitted"` (new file) and `"skipped"` (phase did not run). |
+| `"skipped"` | Phase intentionally skipped (caller flag, no signal, no candidates, stub mode). Telemetry still recorded so verify scripts can distinguish "intentional skip" from "silent bug". |
 | `"declined"` | User explicitly declined in interactive flow (wizard answered "no" / empty array). |
 | `"failed"` | Phase attempted but failed (e.g., script crash, write error). Triggers warning in `warnings[]` but never aborts the run. |
 
@@ -412,7 +413,7 @@ The dispatched config-generator agent returns a structured JSON response. **Do n
 **Validation by this skill** (after agent returns):
 
 1. `auditPassed === true` — if false, surface a hard error to the caller.
-2. All 7 telemetry keys present with valid `status` enum values (`emitted | skipped | declined | failed`).
+2. All 7 telemetry keys present with valid `status` enum values (`emitted | documented | skipped | declined | failed`).
 3. `filesWritten` non-empty (at minimum CLAUDE.md and onboard-meta.json should be present).
 
 If validation fails, do NOT pretend success. Report the missing/invalid fields to the caller.
