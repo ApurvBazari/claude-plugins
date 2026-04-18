@@ -374,6 +374,8 @@ Issue a **single AskUserQuestion call** containing the pre-question + up to 3 of
 
 For each option, set the `description` to the offer's `description` field. Mark `autoChecked: true` offers (e.g., new-language LSP) as pre-selected so the developer just clicks Submit unless they want to opt out.
 
+**Single-option guard** (per `.claude/rules/ask-user-question-guard.md`): when a group has exactly 1 offer, **pad that group** with an explicit `None / Skip` option (label: `"None / Skip"`, description: `"Do not apply anything from this group"`). This keeps the batched single-call envelope intact. Do NOT fall back to sequential single-select calls — that breaks the M2 contract (one AskUserQuestion per update exchange) and was the failure mode observed in release-gate finding F1 (2026-04-17). When the user selects `None / Skip` in a padded group, treat it as empty-array-equivalent: skip every offer in that group, do not apply, and record `status: "declined", reason: "user-skipped-padded-group"` in `updateHistory`.
+
 ### "Apply later" snapshot — `.claude/onboard-pending-updates.json`
 
 Written when the developer picks "Apply later" in the pre-question:

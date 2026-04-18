@@ -301,6 +301,8 @@ Present each plugin with:
 
 The developer can select any plugin regardless of install status. Phase 3.5 (`Resolve Requested Ecosystem Plugins` in the init command) handles the inline install for anything selected but missing — the wizard never hides options just because they aren't installed yet.
 
+**Single-option guard** (per `.claude/rules/ask-user-question-guard.md`): the ecosystem roster today offers one plugin (`notify`). When the candidate list has only 1 entry, convert the multiSelect to a single-select yes/no ("Configure notify?") rather than padding with a synthetic "None" — the ecosystem step is a standalone question, not part of a batched approval, so yes/no is the better UX. Release-gate finding B3 (2026-04-17) reproduced the schema violation here on first try.
+
 ### Phase 5.6: LSP Plugins (When Any Detected)
 
 Run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"`. If the output is an empty array (`[]`), skip this phase entirely and record `wizardAnswers.lspPlugins = []`.
@@ -320,6 +322,8 @@ Record the user's selection verbatim as `wizardAnswers.lspPlugins` (a string arr
 **Quick Mode behavior**: 5.6 is skipped in Quick Mode — `lspPlugins` defaults to the full detected list (all candidates accepted). The wizard still writes the array to `wizardAnswers.lspPlugins` so downstream generation knows to install them without re-asking.
 
 **Combined exchange with Phase 5.7**: Phase 5.6 (LSP) and Phase 5.7 (built-in skills) are issued together in a **single `AskUserQuestion` call** with two `multiSelect` questions (one for LSP plugins, one for built-in skills). This keeps the wizard tight without artificial caps. See the canonical example pattern in `references/question-bank.md` (or generation skill) for the two-multiSelect-blocks-in-one-call structure.
+
+**Single-option guard for the combined call** (per `.claude/rules/ask-user-question-guard.md`): when one of the two groups (LSP or built-in skills) yields only 1 candidate, pad **that group** with an explicit `None / Skip` option — keep the combined two-question envelope intact. Do NOT demote to sequential single-selects; that breaks the M1 single-call contract and was the fallback mode observed in release-gate findings B3 / B9 (2026-04-17). When BOTH groups have candidate-count 1, treat each independently: pad each with None. If a group has zero candidates, drop that group from the call entirely.
 
 **Headless mode** (`callerExtras.lspPlugins` or `callerExtras.disableLSP` present): the wizard never fires — generation reads the caller-supplied value directly.
 
