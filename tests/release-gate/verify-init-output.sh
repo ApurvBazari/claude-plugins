@@ -304,6 +304,12 @@ for pair in "${SNAPSHOT_PAIRS[@]}"; do
       emitted)
         fail "snapshot: $(basename "$snap") missing despite ${key}.status=\"emitted\""
         ;;
+      documented)
+        # "documented" means the artifact lives inside CLAUDE.md, not a separate
+        # file/snapshot. Snapshot absence is EXPECTED. Builtin-skills is the
+        # current canonical user of this status.
+        pass "snapshot: $(basename "$snap") intentionally absent (${key}.status=\"documented\")"
+        ;;
       skipped|declined|failed)
         pass "snapshot: $(basename "$snap") intentionally absent (${key}.status=\"${STATUS}\")"
         ;;
@@ -315,7 +321,7 @@ for pair in "${SNAPSHOT_PAIRS[@]}"; do
         fi
         ;;
       *)
-        fail "snapshot missing + telemetry status='${STATUS}' is not in {emitted|skipped|declined|failed}"
+        fail "snapshot missing + telemetry status='${STATUS}' is not in {emitted|documented|skipped|declined|failed}"
         ;;
     esac
   fi
@@ -340,21 +346,21 @@ if [[ -f "$META" ]]; then
       continue
     fi
 
-    # Validate the status enum value (C1: emitted | skipped | declined | failed)
+    # Validate the status enum value (post-C1.1: emitted | documented | skipped | declined | failed)
     # hookStatus/skillStatus/agentStatus may not have a top-level .status pre-sweep;
     # accept missing .status only on those three, but enforce on Phase 7 keys.
     STATUS_VAL=$(jq -r ".${key}.status // empty" "$META" 2>/dev/null)
     case "$key" in
       mcpStatus|outputStyleStatus|lspStatus|builtInSkillsStatus)
         case "$STATUS_VAL" in
-          emitted|skipped|declined|failed)
+          emitted|documented|skipped|declined|failed)
             pass "telemetry: ${key} present (status=\"${STATUS_VAL}\")"
             ;;
           "")
             fail "telemetry: ${key}.status missing — C1 contract requires the status enum"
             ;;
           *)
-            fail "telemetry: ${key}.status=\"${STATUS_VAL}\" is not in {emitted|skipped|declined|failed}"
+            fail "telemetry: ${key}.status=\"${STATUS_VAL}\" is not in {emitted|documented|skipped|declined|failed}"
             ;;
         esac
         ;;

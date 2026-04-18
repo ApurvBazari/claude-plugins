@@ -801,9 +801,9 @@ Follow `references/built-in-skills-catalog.md` for the 9-skill catalog, tier cla
 
 | Path | Trigger | Behavior |
 |---|---|---|
-| **Path A — explicit caller list** | `callerExtras.builtInSkills` present | Use it verbatim as the accepted list. Empty array = "candidates existed but declined all" → `builtInSkillsStatus: { status: "declined", accepted: [] }`. |
-| **Path A — wizard answer** | `wizardAnswers.builtInSkills` present | Use wizard's accepted list. Same `declined` semantics if empty. |
-| **Path B — Quick Mode default** | wizard absent AND callerExtras list absent | Accept the full candidate list (4 core + N fired extras). Emit + snapshot + telemetry `status: "emitted"`. **Built-in skills' core tier always fires; this path NEVER produces an empty result.** |
+| **Path A — explicit caller list** | `callerExtras.builtInSkills` present | Use it verbatim as the accepted list. Empty array = "candidates existed but declined all" → `builtInSkillsStatus: { status: "declined", accepted: [] }`. Non-empty array → `status: "documented"` (CLAUDE.md subsection is the artifact). |
+| **Path A — wizard answer** | `wizardAnswers.builtInSkills` present | Use wizard's accepted list. Same `declined` semantics if empty; `"documented"` status when non-empty. |
+| **Path B — Quick Mode default** | wizard absent AND callerExtras list absent | Accept the full candidate list (4 core + N fired extras). Emit CLAUDE.md subsection + snapshot + telemetry `status: "documented"`. **Built-in skills' core tier always fires; this path NEVER produces an empty result.** |
 | **Path SKIP — caller-disabled** | `callerExtras.disableBuiltInSkills === true` | No CLAUDE.md subsection, no snapshot. Telemetry: `builtInSkillsStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [] }`. **Telemetry IS still written.** |
 
 **Inputs**:
@@ -873,11 +873,13 @@ Use rich narrative voice matching the project's autonomy level (per the Tone rul
 
 Plain JSON, no `_generated` header — matches LSP snapshot format. Both arrays sorted alphabetically. Add the snapshot path to `generatedArtifacts` in `onboard-meta.json`.
 
-**Step 6 — Record telemetry.** Add `builtInSkillsStatus` to `onboard-meta.json` alongside `hookStatus`, `mcpStatus`, `skillStatus`, `agentStatus`, `outputStyleStatus`, and `lspStatus`:
+**Step 6 — Record telemetry.** Add `builtInSkillsStatus` to `onboard-meta.json` alongside `hookStatus`, `mcpStatus`, `skillStatus`, `agentStatus`, `outputStyleStatus`, and `lspStatus`. Use `status: "documented"` when the phase successfully wrote a CLAUDE.md subsection (the primary artifact type for Phase 7d — no separate file), `status: "declined"` when accepted list is empty, `status: "skipped"` for SKIP-PHASE, `status: "failed"` on errors. The `"documented"` value replaces the earlier `"skipped", reason: "built-in-skills-are-user-level-no-project-artifact"` semantic that broke downstream consumers (release-gate finding B13, 2026-04-17).
 
 ```json
 {
   "builtInSkillsStatus": {
+    "status": "documented",
+    "documentedIn": "CLAUDE.md",
     "planned": ["/loop", "/simplify", "/debug", "/pr-summary", "/schedule", "/batch"],
     "generated": ["/loop", "/simplify", "/debug", "/pr-summary", "/schedule"],
     "skipped": [{ "skill": "/batch", "reason": "user-declined" }],
