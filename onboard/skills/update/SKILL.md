@@ -117,7 +117,7 @@ Keep this narrow — do not parse the live WebFetch output to infer new recommen
 
 #### 4b.4: MCP Drift
 
-Compare `.mcp.json`, the drift snapshot `.claude/onboard-mcp-snapshot.json`, and a fresh signal scan (`../scripts/detect-mcp-signals.sh`). Follow `../generation/references/mcp-guide.md` for emission rules — this step only classifies drift; applying is deferred to Step 7.
+Compare `.mcp.json`, the drift snapshot `.claude/onboard-mcp-snapshot.json`, and a fresh signal scan (`bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh"`). Follow `../generation/references/mcp-guide.md` for emission rules — this step only classifies drift; applying is deferred to Step 7.
 
 1. **Read the three sources**:
    - `.mcp.json` at project root (if absent and `mcpStatus.existedPreOnboard` is false, record `mcpDrift.status: "file-missing"`)
@@ -209,7 +209,7 @@ Compare the fresh `detect-lsp-signals.sh` output against the `onboard-lsp-snapsh
 
 1. **Read the inputs**:
    - `.claude/onboard-lsp-snapshot.json` — `{ recommended, accepted }`. Missing file → treat as `recommended: [], accepted: []` (pre-1.8.0 project).
-   - `bash ../scripts/detect-lsp-signals.sh "$PROJECT_ROOT"` — fresh JSON array.
+   - `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"` — fresh JSON array.
    - `claude plugin list --json` (via `install-plugins.sh`'s probe, or direct call) — current install state.
 
 2. **Classify** per candidate plugin from the fresh scan:
@@ -482,7 +482,7 @@ Only **additions** are applied automatically on user approval. Removals and user
    - Read the current `.mcp.json` (if absent, create it with `{"mcpServers":{}}`).
    - Merge the new server entry into `mcpServers` per the schema in `../generation/references/mcp-guide.md` § Config Shape. Preserve every other key verbatim.
    - Append the server to `.claude/onboard-mcp-snapshot.json` as well so subsequent drift checks use the new baseline.
-   - If the server's catalog entry has a `plugin` field, append to the auto-install queue for Step 7's plugin section (reuse `scripts/install-plugins.sh`).
+   - If the server's catalog entry has a `plugin` field, append to the auto-install queue for Step 7's plugin section (reuse `${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh`).
 2. For each `staleCandidate`: display the removal suggestion but do NOT auto-apply. If the user explicitly says "yes remove X", delete the entry from `.mcp.json` AND the snapshot.
 3. For `userEdited` / `userRemoved`: no action. The findings report already informed the user.
 4. If `.claude/rules/mcp-setup.md` needs regeneration (new server added needing auth), invoke `generate` with `callerExtras.regenerateOnly` scoped to `.claude/rules/mcp-setup.md`.
@@ -522,7 +522,7 @@ Only **additions** and **legacy migrations** are applied on user approval. User-
 Only **new-language additions** are applied on user approval. Uninstalls and stale candidates are informational only — onboard never auto-reinstalls or auto-removes LSP plugins.
 
 1. For each approved `newLanguage` candidate:
-   - Invoke `scripts/install-plugins.sh <plugin-name>`. Merge results into `lspStatus.autoInstalled[]` and `lspStatus.autoInstallFailed[]`.
+   - Invoke `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugin-name>`. Merge results into `lspStatus.autoInstalled[]` and `lspStatus.autoInstallFailed[]`.
    - Append the plugin to `.claude/onboard-lsp-snapshot.json` `recommended[]` AND `accepted[]`, preserving alphabetical sort.
    - Append the plugin to `lspStatus.generated[]`.
 2. For `uninstalled` findings: no action. Log once: "LSP plugin `<name>` was uninstalled since last run — rerun `/onboard:evolve` if you want to reinstall."
@@ -560,7 +560,7 @@ Update `.claude/onboard-meta.json`:
 - Update `generatedArtifacts` list (add any new files, drop any whose deletion was explicitly approved)
 - Preserve `wizardAnswers` (don't re-ask wizard questions during update)
 - **If plugin drift was applied in Step 7** — refresh `detectedPlugins.installedPlugins` to `driftReport.currentPlugins`, and recompute `detectedPlugins.coveredCapabilities`, `detectedPlugins.qualityGates`, `detectedPlugins.phaseSkills` per `../generation/references/plugin-detection-guide.md`. Update the top-level `hookStatus` to reflect added/removed hook scripts.
-- **If MCP drift was applied in Step 7** — refresh top-level `mcpStatus`: add newly-applied servers to `mcpStatus.generated[]`, drop removed servers. Re-run `scripts/install-plugins.sh` for any newly-applied server with a `plugin` field; merge results into `mcpStatus.autoInstalled[]` and `mcpStatus.autoInstallFailed[]`. Always keep `mcpStatus.existedPreOnboard` sticky — once true, it stays true for the life of the project.
+- **If MCP drift was applied in Step 7** — refresh top-level `mcpStatus`: add newly-applied servers to `mcpStatus.generated[]`, drop removed servers. Re-run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh"` for any newly-applied server with a `plugin` field; merge results into `mcpStatus.autoInstalled[]` and `mcpStatus.autoInstallFailed[]`. Always keep `mcpStatus.existedPreOnboard` sticky — once true, it stays true for the life of the project.
 - **If skill frontmatter drift was applied in Step 7** — refresh top-level `skillStatus.frontmatterFields[<skill>]` to match the applied state, including the refreshed `source` value (`user-confirmed` / `user-tweaked`). Update `.claude/onboard-skill-snapshot.json` to reflect the new baseline. Keep `skillStatus.existedPreOnboard[]` sticky.
 - **If agent frontmatter drift was applied in Step 7** — refresh top-level `agentStatus.frontmatterFields[<agent>]` to match the applied state, including the refreshed `source` value (`user-confirmed` / `user-tweaked` / `wizard-default` for legacy migrations). Update `.claude/onboard-agent-snapshot.json` to reflect the new baseline. Keep `agentStatus.existedPreOnboard[]` sticky. Append `legacy-skipped:<agent>` entries to `agentStatus.warnings` for any `legacyNoFrontmatter` declined by the developer.
 - **If output style drift was applied in Step 7** — refresh top-level `outputStyleStatus.frontmatterFields[<style>]` to match the applied state, including the refreshed `source` value (`user-confirmed` / `user-tweaked` / `wizard-default` for legacy migrations). Update `.claude/onboard-output-style-snapshot.json` to reflect the new baseline. Keep `outputStyleStatus.existedPreOnboard[]` sticky. Append `legacy-skipped:<style>` or `legacy-no-archetype-match:<style>` entries to `outputStyleStatus.warnings` for any `legacyNoFrontmatter` declined or unclassifiable. Preserve `outputStyleStatus.activationDefault`, `settingsLocalWritten`, and `settingsLocalWarning` from the prior state — `update` does NOT touch settings.local.json.

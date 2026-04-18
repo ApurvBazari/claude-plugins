@@ -101,7 +101,7 @@ Generate artifacts in this order:
 
 6. **Hook entries** (`.claude/settings.json`) — Only for detected tools. If settings.json already exists, merge carefully (read first, add hooks, preserve everything else). Only add hooks for tools that are actually installed.
 
-6a. **MCP servers (`.mcp.json`) — Phase 7a** — Follow the Path A/B/C/SKIP firing logic in `generation/SKILL.md` § MCP Servers — Phase 7a. Path C (signal-driven) fires by default when `scripts/detect-mcp-signals.sh` returns ≥1 candidate. SKIP-PHASE family (`callerExtras.disableMCP === true`) suppresses artifact writes BUT MUST still write `mcpStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [] }` to `onboard-meta.json`. Telemetry is mandatory regardless of path.
+6a. **MCP servers (`.mcp.json`) — Phase 7a** — Follow the Path A/B/C/SKIP firing logic in `generation/SKILL.md` § MCP Servers — Phase 7a. Path C (signal-driven) fires by default when `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh"` returns ≥1 candidate. SKIP-PHASE family (`callerExtras.disableMCP === true`) suppresses artifact writes BUT MUST still write `mcpStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [] }` to `onboard-meta.json`. Telemetry is mandatory regardless of path.
 
 6b. **Output Styles (`.claude/output-styles/`) — Phase 7b** — Follow Path A/B/SUPPRESS/DECLINED/NO-CANDIDATES firing logic in `generation/SKILL.md` § Output Styles — Phase 7b. SUPPRESS-PROMPT-ONLY family (`callerExtras.disableOutputStyleTuning === true`) skips ONLY Step 6 batched confirmation; artifact + snapshot + telemetry `status: "emitted"` ARE still produced. Telemetry is mandatory.
 
@@ -111,7 +111,7 @@ Generate artifacts in this order:
 
 7. **Metadata** (`.claude/onboard-meta.json`) — Record everything: plugin version, timestamp, wizard answers, list of generated artifacts, model recommendation. Include all 7 status keys parallel to `hookStatus`: `mcpStatus`, `outputStyleStatus`, `lspStatus`, `builtInSkillsStatus`, `skillStatus`, `agentStatus` (each with at minimum a `status` enum value: `emitted | skipped | declined | failed`). Add `.mcp.json`, `.claude/onboard-mcp-snapshot.json`, `.claude/rules/mcp-setup.md` (if written), `.claude/onboard-agent-snapshot.json`, `.claude/onboard-output-style-snapshot.json`, `.claude/onboard-lsp-snapshot.json`, `.claude/onboard-builtin-skills-snapshot.json` to `generatedArtifacts` (only those that were actually written).
 
-8. **Auto-install MCP plugins** — After metadata is written, run `scripts/install-plugins.sh` with the list of emitted-server plugin names. The script probes `claude plugin list --json`, skips already-installed plugins, and installs the rest. Failures are logged but do not fail generation. On completion, update `mcpStatus.autoInstalled` and `mcpStatus.autoInstallFailed` in `onboard-meta.json`.
+8. **Auto-install MCP plugins** — After metadata is written, run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh"` with the list of emitted-server plugin names. The script probes `claude plugin list --json`, skips already-installed plugins, and installs the rest. Failures are logged but do not fail generation. On completion, update `mcpStatus.autoInstalled` and `mcpStatus.autoInstallFailed` in `onboard-meta.json`.
 
 9. **Pre-exit self-audit (Phase 7 telemetry contract)** — Before returning to the caller, verify all 4 Phase 7 telemetry keys exist in `onboard-meta.json`:
 

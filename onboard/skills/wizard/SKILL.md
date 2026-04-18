@@ -303,7 +303,7 @@ The developer can select any plugin regardless of install status. Phase 3.5 (`Re
 
 ### Phase 5.6: LSP Plugins (When Any Detected)
 
-Run `scripts/detect-lsp-signals.sh "$PROJECT_ROOT"`. If the output is an empty array (`[]`), skip this phase entirely and record `wizardAnswers.lspPlugins = []`.
+Run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"`. If the output is an empty array (`[]`), skip this phase entirely and record `wizardAnswers.lspPlugins = []`.
 
 Otherwise, issue **one `AskUserQuestion` multiSelect** presenting each detected plugin as an option, pre-checked when `fileCount ≥ 10` and unchecked when lower (quiet nudge against noise in polyglot projects). Preserve the script's fileCount-descending order — the primary language shows up first.
 
@@ -397,7 +397,7 @@ When a developer skips a question or section:
    - `autonomyLevel` → `"balanced"`
    - `codeStyleStrictness` → `"moderate"`
    - `securitySensitivity` → `"standard"`
-   - `lspPlugins` → full detected list from `scripts/detect-lsp-signals.sh` (Quick Mode default)
+   - `lspPlugins` → full detected list from `${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh` (Quick Mode default)
    - `builtInSkills` → full candidate list (4 core + fired extras)
    - `outputStyleTuning` → `{ mode: "defaults" }`
    - `skillTuning` → `{ mode: "defaults" }`

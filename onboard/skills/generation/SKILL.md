@@ -538,13 +538,13 @@ Follow `references/mcp-guide.md` for emission rules, catalog, and transport shap
 |---|---|---|
 | **Path A — wizard answer** | `wizardAnswers` contains MCP server preferences (rare; MCP is signal-driven, not wizard-gated) | Emit per wizard. |
 | **Path B — Quick Mode default** | wizard absent AND no candidate signals | Emit `mcpStatus: { status: "skipped", reason: "no-candidates" }`. No `.mcp.json`, no snapshot. |
-| **Path C — signal-driven (default)** | `scripts/detect-mcp-signals.sh` returns ≥1 candidate | Emit `.mcp.json` + snapshot + telemetry. **This path fires regardless of wizard or headless mode** unless `callerExtras.disableMCP === true`. |
+| **Path C — signal-driven (default)** | `${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh` returns ≥1 candidate | Emit `.mcp.json` + snapshot + telemetry. **This path fires regardless of wizard or headless mode** unless `callerExtras.disableMCP === true`. |
 | **Path SKIP — caller-disabled** | `callerExtras.disableMCP === true` | No `.mcp.json`, no snapshot. Telemetry: `mcpStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [] }`. **Telemetry IS still written.** |
 
 **Inputs**:
 - `analysis.stack` — frameworks, deps, config-file fingerprints
 - `callerExtras.disableMCP` (optional, headless) — see Path SKIP above
-- Output of `scripts/detect-mcp-signals.sh <project-root>` — canonical signal list
+- Output of `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh" <project-root>` — canonical signal list
 
 **Telemetry contract**: `mcpStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | skipped | declined | failed`) per the Default behavior matrix in `generate/SKILL.md`.
 
@@ -582,7 +582,7 @@ Follow `references/mcp-guide.md` for emission rules, catalog, and transport shap
 
 #### Auto-install Plugins
 
-After the metadata file is written in Phase 8, invoke `scripts/install-plugins.sh <plugin1> <plugin2> ...` for each server's `plugin` field (if present). The script:
+After the metadata file is written in Phase 8, invoke `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugin1> <plugin2> ...` for each server's `plugin` field (if present). The script:
 
 1. Probes `claude plugin list --json` once
 2. Skips plugins already installed
@@ -728,11 +728,11 @@ Follow `references/lsp-plugin-catalog.md` for the 12-entry language→plugin map
 - `callerExtras.disableLSP` (optional, headless) — see Path SKIP above; forge passes `true` by default for placeholder code in scaffolds
 - `callerExtras.lspPlugins` (optional, headless) — see Path A above
 - `wizardAnswers.lspPlugins` (optional) — see Path A above
-- Output of `scripts/detect-lsp-signals.sh "$PROJECT_ROOT"` — JSON array sorted by fileCount desc
+- Output of `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"` — JSON array sorted by fileCount desc
 
 **Telemetry contract**: `lspStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | skipped | declined | failed`) per the Default behavior matrix in `generate/SKILL.md`.
 
-**Step 1 — Detect candidate plugins.** Run `scripts/detect-lsp-signals.sh "$PROJECT_ROOT"`. Output is a JSON array sorted by fileCount desc, e.g.:
+**Step 1 — Detect candidate plugins.** Run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"`. Output is a JSON array sorted by fileCount desc, e.g.:
 
 ```json
 [
@@ -757,7 +757,7 @@ Always preserve the full detected list as `recommended`, independent of what was
 
 1. Add `lspStatus` placeholder to `onboard-meta.json`: `{ planned: [...], generated: [...], accepted: [...], autoInstalled: [], autoInstallFailed: [], skipped: [...] }` with install fields empty.
 2. Wait for Phase 8's metadata write to complete.
-3. Invoke `scripts/install-plugins.sh <plugin1> <plugin2> ...` with the accepted list.
+3. Invoke `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugin1> <plugin2> ...` with the accepted list.
 4. Update `onboard-meta.json.lspStatus.autoInstalled` and `.autoInstallFailed` from the install script's JSON output (single-field read-modify-write; don't touch other keys).
 
 Rationale: if `claude plugin install` hangs or errors, telemetry must already be persisted. Same contract as Phase 7a.
