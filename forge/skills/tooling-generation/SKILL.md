@@ -118,6 +118,25 @@ Spawn the `scaffold-analyzer` agent to scan the freshly scaffolded project. The 
 | `backendPatterns` | `backendPatterns` | If backend project |
 | (inferred) | `projectMaturity` | Always "new" for scaffolded projects |
 
+### Sanitise free-text wizard answers
+
+Before forwarding to onboard, apply the canonical untrusted-input sanitiser from `${CLAUDE_PLUGIN_ROOT}/../onboard/skills/init/references/onboard-context-builder.md § Untrusted-input sanitiser` to every free-text field captured by the wizard. This is a defence-in-depth layer on top of the `<untrusted-user-input>` XML framing that `onboard/skills/generate/SKILL.md § Validate` applies at dispatch time — callers (forge + onboard:init) are expected to have pre-sanitised these values. Do NOT skip this step; `generate/SKILL.md` explicitly delegates the work to callers and does not duplicate it.
+
+Apply to these fields (and any future free-text wizard field added to `wizardAnswers`):
+
+- `wizardAnswers.projectDescription` (mapped from `appDescription`)
+- `wizardAnswers.painPoints.timeSinks`
+- `wizardAnswers.painPoints.errorProne`
+- `wizardAnswers.painPoints.automationWishes`
+
+Procedure per field (authoritative rule lives in the onboard reference above — do not diverge):
+
+1. **Length-cap to 5000 characters.** If the original exceeded the cap, set `context._warnings.<fieldName>Truncated = true` (e.g., `descriptionTruncated`, `painPointsTimeSinksTruncated`) so the `config-generator` agent can surface a gentle note to the user during generation.
+2. **Strip carriage returns** (`\r`) — collapse to `\n`. Prevents terminal-escape-sequence shenanigans in pasted content.
+3. **Preserve everything else.** Do not attempt heuristic "injection-like" content filtering. The defence is framing (applied downstream), not filtering.
+
+Non-string values (null, undefined, missing field) short-circuit the sanitiser — cap + strip only apply to strings. The downstream `projectDescription` non-empty validator catches the truly-missing case.
+
 ### Set enriched flags
 
 Based on Phase 1 context, set the `enriched` object:
