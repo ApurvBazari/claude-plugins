@@ -8,9 +8,20 @@ if ! [[ -t 0 ]]; then
 fi
 
 # Extract the command from stdin JSON
+# Prefer jq; fall back to python3 (handles escaped quotes correctly);
+# last-resort grep fallback is deliberately loose and may truncate
+# on escaped quotes — the destructive-command case patterns below
+# still catch the dangerous prefixes even on truncated input.
 COMMAND=""
 if command -v jq &>/dev/null; then
   COMMAND="$(echo "$STDIN_JSON" | jq -r '.tool_input.command // ""' 2>/dev/null)"
+elif command -v python3 &>/dev/null; then
+  COMMAND="$(echo "$STDIN_JSON" | python3 -c 'import json,sys
+try:
+    data=json.load(sys.stdin)
+    print(data.get("tool_input",{}).get("command",""))
+except Exception:
+    pass' 2>/dev/null)"
 else
   COMMAND="$(echo "$STDIN_JSON" | grep -o '"command": *"[^"]*"' | head -1 | sed 's/.*: *"//;s/"//')"
 fi
