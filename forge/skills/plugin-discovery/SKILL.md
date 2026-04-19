@@ -1,3 +1,9 @@
+---
+name: plugin-discovery
+description: Forge Phase 3a — matches curated plugin catalog against project context, presents checklist, installs selected plugins, compiles coveredCapabilities. Internal building block invoked by forge init — not user-invocable.
+user-invocable: false
+---
+
 # Plugin Discovery Skill — Ecosystem Search & Install
 
 You are executing Phase 3b of Forge: discovering and installing Claude Code plugins that complement the developer's project. This is the one interactive step in Phase 3.
@@ -41,6 +47,8 @@ When presenting the interactive checklist in Step 2, group plugins by the build 
 ## Step 2: Present Interactive Checklist
 
 Present the matched plugins as a checklist using the AskUserQuestion tool with multiSelect.
+
+**Single-option guard** (per `.claude/rules/ask-user-question-guard.md`): if the matched plugin set collapses to exactly 1 plugin (small project, narrow stack), the multiSelect fails schema validation on first try. In that case, convert to a single-select yes/no — "Install `<plugin-name>`?" — rather than padding with `None / Skip`. Rationale: plugin-discovery is a standalone question, not part of a batched approval. A `None` option in a 1-plugin discovery read is pure noise. When the candidate list is empty (no catalog matches), skip the question entirely and continue to Step 3.
 
 **Grouping for the checklist UI**: render plugins under the phase headers from Step 1 (Research & brainstorming → Core discipline → Per-feature work → Review → Engineering → Guardrails). Superpowers and other multi-purpose plugins appear in every group they serve. The first phase header must be:
 

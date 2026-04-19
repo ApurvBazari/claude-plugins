@@ -89,7 +89,31 @@ Best for: Larger teams, enterprise projects, regulated environments, or develope
 
 ### Custom
 
-Full wizard flow — all questions are asked. Choose this when no preset fits or when you want fine-grained control over every setting.
+Full wizard flow — every question whose entry condition has signal is asked. Choose this when no preset fits or when you want fine-grained control over every setting. Custom mode also exposes a mid-wizard escape hatch (Phase 5.0 in `wizard/SKILL.md`) so developers can opt into Quick Mode defaults at any point in Phase 5 without restarting.
+
+---
+
+## Per-preset exchange targets (no hard cap)
+
+There is **no hard 6-exchange cap**. Each preset has a target based on what it actually needs to ask:
+
+| Preset | Exchange target | Notes |
+|---|---|---|
+| Minimal | 2 | Preset selection + project description. Everything else pre-filled per the table above. |
+| Standard | 3 | Preset + description + autonomy confirmation. |
+| Comprehensive | 4 | Preset + description + autonomy + advanced hook events confirmation. |
+| Custom | N (typically 5–8) | Phase 0 + 1 + 2 + 4 + 5 (with multi-block AskUserQuestion folding LSP+built-ins together) + 5.1 (advanced events) + 6 (summary). Phases with no signal (Phase 3 tech-stack-specific, Phase 5.6 LSP when no candidates) are skipped automatically. The escape hatch (Phase 5.0) lets the developer opt out of remaining customizations. |
+
+**Default models per preset** (used when wizard's Phase 5.2 model question is skipped — i.e., for non-Custom presets):
+
+| Preset | Default model |
+|---|---|
+| Minimal | `claude-opus-4-7[1m]` (Opus 4.7 1M context) |
+| Standard | `claude-opus-4-7[1m]` (Opus 4.7 1M context) |
+| Comprehensive | `claude-opus-4-7[1m]` (Opus 4.7 1M context) |
+| Custom | Asked explicitly in Phase 5.2; defaults to `claude-opus-4-7[1m]` if skipped |
+
+The high-tier default reflects: Claude tooling generation is a one-time-per-project investment; the model strength makes a measurable difference in the quality of the artifacts produced. Users can downgrade per-project by editing `.claude/settings.json` after init.
 
 ---
 
@@ -100,7 +124,7 @@ Full wizard flow — all questions are asked. Choose this when no preset fits or
 3. The wizard still asks Q1.1 (project description) — this is always project-specific
 4. The wizard skips directly to the summary phase (Phase 6) for confirmation
 5. The developer can tweak any pre-filled value during the summary review
-6. If Custom is chosen, the full wizard flow runs as normal
+6. If Custom is chosen, the full wizard flow runs as normal — adaptive, no cap, escape hatch available at Phase 5.0
 
 ## Preset Values Not Covered
 

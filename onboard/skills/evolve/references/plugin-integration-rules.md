@@ -1,6 +1,11 @@
 # Plugin Integration Rules for Evolve
 
-Distilled rules for regenerating the Plugin Integration section in CLAUDE.md and quality-gate hooks during `/onboard:evolve`.
+Distilled rules for regenerating the Plugin Integration section in CLAUDE.md and quality-gate hooks during `/onboard:evolve` and `/onboard:update`.
+
+**Related references**:
+- `../../generation/references/plugin-drift-detection.md` — shared probe + diff procedure (baseline resolution, output schema, presentation). Used by update, evolve, and generate.
+- `../../generation/references/plugin-detection-guide.md` — canonical probe list, capability mappings, and derivation rules for `coveredCapabilities`, `qualityGates`, `phaseSkills`.
+- This document — **application** rules: CLAUDE.md section markers, subsection content, tone.
 
 ## Known Plugin Probe List
 

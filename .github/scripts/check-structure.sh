@@ -59,29 +59,34 @@ for i in $(seq 0 $((PLUGIN_COUNT - 1))); do
     PLUGIN_ERRORS=$((PLUGIN_ERRORS + 1))
   fi
 
-  # Check SKILL.md files have proper H1 title
+  # Check SKILL.md files have a descriptive H1 title.
+  # Canonical rule (.claude/rules/skills-authoring.md:60-62): H1 is
+  # "# <Descriptive Name> — <Short Description>" — NOT the slash form
+  # "# /plugin:name". The slash is derived from the `name` frontmatter.
   if [ -d "$PLUGIN_DIR/skills" ]; then
     while IFS= read -r -d '' skill_file; do
       FIRST_H1=$(grep -m1 '^# ' "$skill_file" 2>/dev/null || true)
       if [ -z "$FIRST_H1" ]; then
         echo "  WARN: $skill_file has no H1 title"
         WARNINGS=$((WARNINGS + 1))
-      elif ! echo "$FIRST_H1" | grep -q '^# /'; then
-        echo "  WARN: $skill_file H1 should start with '/' — found: $FIRST_H1"
+      elif echo "$FIRST_H1" | grep -q '^# /'; then
+        echo "  WARN: $skill_file H1 should NOT start with '/' (see skills-authoring.md:60-62) — use descriptive form '# <Name> — <Short Description>'; found: $FIRST_H1"
         WARNINGS=$((WARNINGS + 1))
       fi
     done < <(find "$PLUGIN_DIR/skills" -name "SKILL.md" -type f -print0 2>/dev/null)
   fi
 
-  # Check command files have proper H1 title
+  # Check command files have a descriptive H1 title (same convention as skills).
+  # commands/ directories are deprecated per plugin-structure.md; legacy plugins
+  # may still ship them and should follow the same rule.
   if [ -d "$PLUGIN_DIR/commands" ]; then
     while IFS= read -r -d '' cmd_file; do
       FIRST_H1=$(grep -m1 '^# ' "$cmd_file" 2>/dev/null || true)
       if [ -z "$FIRST_H1" ]; then
         echo "  WARN: $cmd_file has no H1 title"
         WARNINGS=$((WARNINGS + 1))
-      elif ! echo "$FIRST_H1" | grep -q '^# /'; then
-        echo "  WARN: $cmd_file H1 should start with '/' — found: $FIRST_H1"
+      elif echo "$FIRST_H1" | grep -q '^# /'; then
+        echo "  WARN: $cmd_file H1 should NOT start with '/' (see skills-authoring.md:60-62) — use descriptive form; found: $FIRST_H1"
         WARNINGS=$((WARNINGS + 1))
       fi
     done < <(find "$PLUGIN_DIR/commands" -name "*.md" -type f -print0 2>/dev/null)

@@ -14,7 +14,7 @@ add_drift() {
   REPORT="${REPORT}  - $1\n"
 }
 
-cd "$PROJECT_ROOT"
+cd "$PROJECT_ROOT" || exit 1
 
 echo "## Tooling Audit Report"
 echo ""
@@ -26,7 +26,7 @@ if [ -f "CLAUDE.md" ]; then
   if [ -f "package.json" ]; then
     while IFS= read -r script_name; do
       if [ -n "$script_name" ]; then
-        if ! python3 -c "import json,sys; d=json.load(open('package.json')); sys.exit(0 if '$script_name' in d.get('scripts',{}) else 1)" 2>/dev/null; then
+        if ! python3 -c "import json,sys; d=json.load(open('package.json')); sys.exit(0 if sys.argv[1] in d.get('scripts',{}) else 1)" "$script_name" 2>/dev/null; then
           add_drift "CLAUDE.md references 'npm run $script_name' but script not found in package.json"
         fi
       fi
@@ -43,9 +43,10 @@ if [ -d ".claude/rules" ]; then
     while IFS= read -r rule_path; do
       rule_path=$(echo "$rule_path" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | tr -d '"' | tr -d "'")
       if [ -n "$rule_path" ] && [ "$rule_path" != "**" ]; then
-        # Check if the glob pattern matches any files
-        # shellcheck disable=SC2086
-        if ! ls $rule_path >/dev/null 2>&1; then
+        # Check if the glob pattern matches any files.
+        # `compgen -G` expands the glob internally from a single quoted
+        # argument — no unquoted shell expansion, no ls invocation.
+        if ! compgen -G "$rule_path" >/dev/null 2>&1; then
           add_drift "Rule '$rule_file' targets path '$rule_path' but no matching files found"
         fi
       fi

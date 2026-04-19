@@ -1,6 +1,6 @@
 ---
 description: Validate all plugins for structure, manifests, references, shell scripts, and markdown conventions
-user_invocable: true
+user-invocable: true
 ---
 
 # /validate — Plugin Validation

@@ -33,6 +33,8 @@ Copy the token and add it as a repository secret:
 | `claude.yml` | `claude-sonnet` | `@claude` comment | Sonnet 4.6 | 10 |
 | `claude.yml` | `claude-opus` | `@claude-opus` comment | Opus 4.6 | 10 |
 | `security-review.yml` | `security-review` | `@claude security-review` comment | Opus 4.6 | 5 |
+| `tooling-gap-audit.yml` | `audit` (analyze) | Cron 1st/15th + dispatch | Opus 4.6 | 80 |
+| `tooling-gap-audit.yml` | `audit` (report) | Cron 1st/15th + dispatch | Opus 4.6 | 40 |
 
 ## Usage
 
