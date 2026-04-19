@@ -45,3 +45,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check reference file integrity
         run: .github/scripts/check-references.sh
+
+  action-pinning:
+    name: Action Pinning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify GitHub Actions are pinned to immutable refs
+        run: .github/scripts/check-action-pinning.sh
