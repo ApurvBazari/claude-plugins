@@ -53,7 +53,7 @@ Forge only generates two artifacts that require scaffold-specific knowledge:
 
 User-facing skills (show in `/forge:` autocomplete):
 
-- `init/SKILL.md` — full 4-phase flow (context → scaffold → tooling → lifecycle). Checks for in-flight state at startup and offers resume. (`disable-model-invocation: true`)
+- `init/SKILL.md` — full 3-phase flow (context → scaffold → AI tooling). Checks for in-flight state at startup and offers resume. (`disable-model-invocation: true`)
 - `resume/SKILL.md` — resume an in-progress forge session from the last checkpoint in `.claude/forge-state.json` (auto-invocable)
 - `status/SKILL.md` — project health check; also reports in-flight session state if present (auto-invocable)
 

@@ -49,141 +49,13 @@ claude plugin install notify@apurvbazari-plugins
 
 ## Examples
 
-Three short transcripts so you can see what a real session looks like before you install.
+Each plugin's README contains a runnable transcript so you can see what a real session looks like before you install:
 
-### 1. `forge` — bootstrapping a new project
+- **forge** — full 3-phase scaffold of a Python FastAPI project (Context Gathering → Scaffold → AI Tooling delegation to onboard) → [forge/README.md#example](./forge/README.md#example)
+- **onboard** — initial `/onboard:init` on a Next.js 15 project, then `/onboard:evolve` two weeks later detecting drift and proposing updates → [onboard/README.md#example](./onboard/README.md#example)
+- **notify** — `/notify:setup` followed by the duration filter suppressing a fast task and delivering a long one → [notify/README.md#example](./notify/README.md#example)
 
-```
-> /forge:init
-
-forge — guided project bootstrapper (3 phases)
-
-Phase 1 — Context Gathering
-───────────────────────────
-What do you want to build?
-
-> A feedback-collection SaaS — Next.js + Supabase + Clerk
-
-Researching stack via WebSearch…
-  Next.js   16.1     stable
-  Supabase  v2.45    @supabase/supabase-js
-  Clerk     v5       App Router integration
-
-How much should I scaffold in Phase 2?
-  1. Full scaffold (recommended)
-  2. Walking skeleton (one of each architectural pattern)
-  3. Not sure, pick for me
-
-> 1
-
-What takes the most time in your development workflow?
-
-> Onboarding new contributors and writing repetitive CRUD glue.
-
-Phase 2 — Scaffold
-──────────────────
-Running `npx create-next-app@latest feedback-saas …`
-Installing @supabase/supabase-js, @clerk/nextjs …
-Initialising git on `main`, first commit.
-
-Your app is scaffolded and running. Dev server verified at http://localhost:3000.
-Moving to AI tooling setup…
-
-Phase 3 — AI Tooling  (delegated to onboard)
-────────────────────────────────────────────
-Call /onboard:generate with the prepared context. Onboard now generates EVERYTHING:
-
-  ✓ CLAUDE.md  (root + apps/web)
-  ✓ 4 path-scoped rules
-  ✓ 2 project skills, 1 agent
-  ✓ 3 hooks  (lint on save, schema check, build gate)
-  ✓ .mcp.json  wired with context7@claude-plugins-official
-  ✓ Plugin Integration recommending superpowers, supabase, vercel
-  ✓ Built-in skills referenced: /loop, /simplify, /claude-api
-
-forge done. One conversation produced a verified app and a full Claude tooling package.
-```
-
-> The bold beat here is the Phase 3 line: forge **delegates** to `onboard:generate` rather than reinventing tooling generation. That's the composability story in action — onboard is one of the building blocks forge stands on.
-
-### 2. `onboard` — keeping configs aligned as code evolves
-
-A two-run transcript: initial generation, then drift detection two weeks later.
-
-```
-> /onboard:init
-
-Detected: TypeScript, Next.js 15, Vitest, Tailwind, pnpm workspaces
-Wizard — 4 adaptive questions about your team, conventions, plugin preferences.
-
-Generated:
-  CLAUDE.md  (root + 2 sub-paths)
-  3 rules · 2 skills · 1 agent · 3 hooks
-  .mcp.json · Plugin Integration section
-  Snapshot saved to .claude/onboard-snapshot.json
-
-Project tooling ready.
-
-# ── two weeks later — team added Playwright + extracted packages/shared ──
-
-> /onboard:evolve
-
-Reading snapshot vs current state…
-
-Drift detected:
-  + new dependency     → @playwright/test in apps/web
-  + new language area  → Playwright config implies e2e tests (no rule yet)
-  + structural change  → packages/shared workspace appeared
-  ~ tsconfig changes   → paths added for @repo/shared
-
-Proposed updates:
-  • Add rule  testing/e2e-conventions.md  (Playwright)
-  • Update CLAUDE.md → mark monorepo, document workspace boundaries
-  • Add hook  PostToolUse on apps/web/**/*.tsx  → Playwright config check
-  • Refresh Plugin Integration  → recommend chrome-devtools-mcp for e2e debugging
-
-Apply all? [Y/n]
-> Y
-
-Snapshot updated. AI configs realigned to current code.
-```
-
-> AI configs rot as code evolves — onboard is the only tool in the ecosystem that **notices and offers to fix it**. Generation is commodity in 2026; drift detection is uncontested.
-
-### 3. `notify` — desktop notifications, with the noise filtered out
-
-```
-> /notify:setup
-
-Detecting platform … macOS
-Checking for terminal-notifier … installing via Homebrew
-Editor detected: VS Code → bundle ID com.microsoft.VSCode
-Scope: global (~/.claude/)
-
-Configuring three events:
-  stop          enabled   sound: Hero    minDurationSeconds: 30
-  notification  enabled   sound: Glass   minDurationSeconds: 0
-  subagentStop  disabled  (too noisy by default)
-
-notify ready. Try a long task to see it fire.
-
-# ── short task: "fix typo in README" ────────
-[Stop hook fires]
-[notify.sh: elapsed 4s < 30s threshold → silently skip]
-(no notification — duration filter suppressed)
-
-# ── long task: 12-minute refactor ───────────
-[Stop hook fires]
-[notify.sh: elapsed 743s ≥ 30s → notify]
-
-  ┌──────────────────────────────────────┐
-  │ Claude Code                          │
-  │ feedback-saas / feat/onboarding-flow │
-  │ Refactored auth middleware …         │
-  └──────────────────────────────────────┘
-```
-
-> The `minDurationSeconds` filter is notify's one genuine differentiator — it suppresses notifications for fast responses so you only hear from Claude when it's worth your attention. See the [notify section](#notify) below for the honest comparison against richer community alternatives.
+The narrative beat to watch for: forge's Phase 3 calls `Skill(onboard:generate)` rather than reinventing tooling generation. That delegation is the composability story this whole repo is built around.
 
 ---
 
@@ -193,31 +65,11 @@ Guided project bootstrapper. Takes you from *"I want to build X"* to a running a
 
 forge is a **thin orchestrator**. The defining design choice: it delegates all Claude tooling generation to `onboard:generate` rather than reimplementing it. That delegation is the composability story this whole repo is built around.
 
-**The 3 phases:**
-
-```
-┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐
-│ 1. Context       │ →  │ 2. Scaffold      │ →  │ 3. AI Tooling    │
-│                  │    │                  │    │                  │
-│ Adaptive wizard  │    │ Stack-specific   │    │ Delegate to      │
-│ Stack research   │    │ scaffold + git   │    │ onboard:generate │
-│ Pain points      │    │ Hello-world ver. │    │ Plugin discovery │
-└──────────────────┘    └──────────────────┘    └──────────────────┘
-```
-
-**Commands:**
-
-| Command | What it does |
-|---|---|
-| `/forge:init` | Full 3-phase guided bootstrap. Destructive — user-invoked only. |
-| `/forge:resume` | Continue a paused forge session from its last checkpoint. |
-| `/forge:status` | Health check; report any in-flight session state. |
-
-**Stack-agnostic.** forge researches your stack via WebSearch + WebFetch (current versions, official scaffolders, idiomatic patterns) rather than shipping pre-built templates. Whatever framework you name, forge investigates and uses the canonical CLI for it.
+**Stack-agnostic.** forge researches your stack via WebSearch (current versions, official scaffolders, idiomatic patterns) rather than shipping pre-built templates. Whatever framework you name, forge investigates and uses the canonical CLI for it.
 
 **Prerequisites:** the `onboard` plugin (forge calls it for Phase 3 generation).
 
-[Full documentation →](./forge/README.md)
+For the 3-phase walkthrough, full skill reference (`/forge:init`, `/forge:resume`, `/forge:status`), supported stacks, resumability mechanics, and the runnable Example transcript: [forge/README.md →](./forge/README.md)
 
 ---
 
@@ -228,23 +80,11 @@ The lifecycle manager for AI-assisted development. Generates Claude tooling on d
 **Two capabilities, one plugin:**
 
 - **Initial generation** — analyse the codebase, run an adaptive wizard, then emit a full Claude tooling package: `CLAUDE.md` files, path-scoped rules, project-specific skills/agents, hook entries, plugin integration recommendations, and an `.mcp.json` wired to relevant servers.
-- **Drift detection (`/onboard:evolve`)** — snapshot the project state at init time, then on demand compare against current state and surface what's out of date: new languages added, new dependencies, structural changes, missing hooks. Propose updates and apply on approval.
+- **Drift detection (`/onboard:evolve`)** — snapshot the project state at init time, then compare against current state on demand and surface what's out of date: new languages added, new dependencies, structural changes, missing hooks. Propose updates and apply on approval.
 
 The drift loop is the differentiated piece. Auto-generating `CLAUDE.md` is commodity in 2026 — Claude Code's `/init`, GitHub Copilot, OpenAI Codex, Cursor, and several web tools all do it. Maintaining those configs as code grows is what onboard does that nothing else does.
 
-**Commands:**
-
-| Command | What it does |
-|---|---|
-| `/onboard:init` | Full setup wizard — analyse, Q&A, generate tooling. Destructive — user-invoked only. |
-| `/onboard:update` | Re-align tooling to the latest Claude Code best practices. Destructive — user-invoked only. |
-| `/onboard:status` | Health check on generated artifacts. |
-| `/onboard:verify` | Run an independent evaluator against feature list. |
-| `/onboard:evolve` | Detect code-vs-config drift and apply queued updates. |
-
-Supports Node.js / TypeScript, Python, Go, Rust, Java/Kotlin, Ruby, monorepos, and mixed-language projects.
-
-[Full documentation →](./onboard/README.md)
+For the full skill reference (5 user-facing skills + the headless `/onboard:generate` API forge consumes), the drift detection deep dive, generated artifact catalog, and supported project types: [onboard/README.md →](./onboard/README.md)
 
 ---
 
@@ -254,21 +94,6 @@ Cross-platform system notifications for Claude Code. macOS via `terminal-notifie
 
 **Genuine differentiator: duration filtering.** `minDurationSeconds` per event suppresses notifications for fast responses, so notify only fires when Claude has actually been working for a while. None of the comparable plugins ship this.
 
-**Supported platforms:**
-
-| Platform | Backend | Sound | Click-to-focus |
-|---|---|---|---|
-| macOS | `terminal-notifier` | 14 system sounds | Yes (bundle ID) |
-| Linux | `notify-send` (libnotify) | Urgency levels | No |
-
-**Commands:**
-
-| Command | What it does |
-|---|---|
-| `/notify:setup` | Install backend + configure hooks (global or per-project). Destructive — user-invoked only. |
-| `/notify:status` | Health check; verify installation and test notifications. |
-| `/notify:uninstall` | Remove all notify hooks, scripts, and config. Destructive — user-invoked only. |
-
 **Honest framing.** notify is intentionally minimal — `terminal-notifier` / `notify-send`, a Stop-hook wrapper, duration filtering, `repo/branch` subtitle. If you need Windows support, webhook fanout (Slack / Discord / Telegram), or typed event categories, the community has richer alternatives:
 
 - [`777genius/claude-notifications-go`](https://github.com/777genius/claude-notifications-go) — Windows + webhook fanout, single Go binary
@@ -277,7 +102,7 @@ Cross-platform system notifications for Claude Code. macOS via `terminal-notifie
 
 This plugin is the *"it just works on my machine"* default, not a feature-complete notification platform.
 
-[Full documentation →](./notify/README.md)
+For the full skill reference, install scopes, configuration precedence rules, customisation options (sounds, bundle IDs, duration filter), and troubleshooting: [notify/README.md →](./notify/README.md)
 
 ---
 
