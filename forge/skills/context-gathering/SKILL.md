@@ -305,6 +305,8 @@ When all parked questions are resolved, set `currentPhase: "phase-2-scaffold"` i
 
 ## Output
 
+**Sanitisation downstream** — free-text fields captured here (`appDescription`, `painPoints.timeSinks`, `painPoints.errorProne`, `painPoints.automationWishes`, and any future free-text wizard field) are sanitised by `forge/skills/tooling-generation/SKILL.md § Sanitise free-text wizard answers` before dispatch to `/onboard:generate`. The sanitiser applies a 5000-character length cap and strips `\r` — defence-in-depth pairing with the `<untrusted-user-input>` framing that `onboard/skills/generate/SKILL.md § Validate` wraps around the values at agent-prompt build time. Context-gathering itself stores raw answers verbatim; do not pre-sanitise here.
+
 After the wizard completes, compile all answers into a structured context object:
 
 ```json
