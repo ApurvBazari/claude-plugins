@@ -60,6 +60,29 @@ jobs:
           done
           echo "changed=$changed" >> "$GITHUB_ENV"
 
+      - name: Verify marketplace.json versions match plugin.json versions
+        # Defense-in-depth: ensure the sync step produced a marketplace.json
+        # whose per-plugin versions exactly match each plugin's own
+        # plugin.json. If release-please or the sync step ever drifted,
+        # fail loudly here instead of publishing an inconsistent manifest.
+        run: |
+          set -euo pipefail
+          failed=0
+          for plugin in onboard forge notify; do
+            plugin_ver=$(jq -r '.version' "$plugin/.claude-plugin/plugin.json")
+            marketplace_ver=$(jq -r --arg name "$plugin" \
+              '.plugins[] | select(.name == $name) | .version' \
+              .claude-plugin/marketplace.json)
+            if [[ "$plugin_ver" != "$marketplace_ver" ]]; then
+              echo "::error::Version mismatch for $plugin: plugin.json=$plugin_ver marketplace.json=$marketplace_ver" >&2
+              failed=1
+            fi
+          done
+          if [[ "$failed" -eq 1 ]]; then
+            echo "::error::Release PR contains marketplace.json / plugin.json version drift — refusing to commit." >&2
+            exit 1
+          fi
+
       - name: Commit and push marketplace sync
         if: env.changed == '1'
         run: |

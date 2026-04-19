@@ -10,6 +10,17 @@ Rules for emitting `.mcp.json` during Phase 7a of the generation pipeline.
 
 Auto-emit. No wizard prompt. The decision is driven purely by stack signals, not plugin installation. If a signal fires and the corresponding Claude Code plugin is not installed, onboard will auto-install it after writing the config (see § Auto-install).
 
+## Trust boundary
+
+The catalog above is **hardcoded**. Server URLs and commands are NEVER read from the user's project, package metadata, or any external source. A malicious package with a spoofed name (e.g., a typosquat matching `@supabase/*`) can cause a false-positive signal fire — but the resulting `.mcp.json` entry always points to the legitimate URL from this catalog, not to any attacker-controlled endpoint. The blast radius of a spoofed signal is "user gets an unexpected-but-real MCP server wired up," not "user gets a malicious MCP server wired up."
+
+To keep spoofed signals rare:
+
+- Use `skip-on-uncertainty` liberally — if the match is loose, skip.
+- Prefer two-signal confirmation when adding new catalog entries (e.g., require both a dep match AND a directory match, not just one).
+- Document every `.mcp.json` write in `mcpStatus` so the user can review what was emitted.
+- The generated `.mcp.json` is committed to the user's project — they see it in code review and can remove or gate auth.
+
 ## Catalog
 
 The initial catalog has **6 entries**:

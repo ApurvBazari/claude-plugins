@@ -250,7 +250,16 @@ Regardless of scaffold path, add these based on Phase 1 context:
 
 1. **`.env.example`** — Placeholder keys for database, auth, storage, monitoring, API integrations. Each key has a comment explaining what it's for.
 2. **`.env.local`** — Copy of .env.example (gitignored, developer fills in real values)
-3. **`.gitignore`** — If not already present, create with standard patterns for the stack plus: `.env*` (except .env.example), `node_modules/`, build dirs, OS files, `.claude/settings.local.json`
+3. **`.gitignore`** — If not already present, create with standard patterns for the stack plus: `.env*` (except .env.example), `node_modules/`, build dirs, OS files, `.claude/settings.local.json`. **Also append forge + onboard runtime state files** (these persist wizard answers that may contain secrets and must never be committed):
+   ```
+   .claude/forge-state.json
+   .claude/forge-state.json.tmp
+   .claude/forge-drift.json
+   .claude/forge-meta.json
+   .claude/onboard-snapshot.json
+   .claude/onboard-meta.json
+   ```
+   If a `.gitignore` already exists, scan for these entries and append any that are missing (do not duplicate existing lines).
 4. **Docker** (if `dockerStrategy` ≠ "none"):
    - `Dockerfile` — Multi-stage build for the detected stack
    - `docker-compose.yml` — Dev services (app + database if selected)
