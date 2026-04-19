@@ -4,12 +4,42 @@ Canonical source of truth for detecting installed Claude Code plugins and derivi
 
 ## Known Plugin Probe List
 
-For each plugin, probe the filesystem:
+A plugin may live in one of two places on disk:
+
+1. **Sibling** to the running plugin — e.g., in a development monorepo like `claude-plugins/` where `onboard/`, `forge/`, `notify/` live side-by-side under one parent. Path: `${CLAUDE_PLUGIN_ROOT}/../<plugin-name>/`.
+2. **Marketplace cache** — the standard install location populated by `claude plugin install`. Path: `~/.claude/plugins/cache/<marketplace>/<plugin-name>/<version>/` where `<marketplace>` is typically `claude-plugins-official` and `<version>` is often the literal string `unknown` (not a semver).
+
+Probing only siblings misses marketplace-installed plugins entirely (release-gate finding B8, 2026-04-17 — Standard + Minimal presets detected 2 plugins when 14+ were actually installed). Probe **both** locations:
+
 ```bash
-ls "${CLAUDE_PLUGIN_ROOT}/../<plugin-name>" 2>/dev/null
+# For each plugin name in the catalog below:
+P="<plugin-name>"
+FOUND=0
+
+# (1) Sibling location (dev repo monorepo layout)
+if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -d "${CLAUDE_PLUGIN_ROOT}/../${P}" ]; then
+  FOUND=1
+fi
+
+# (2) Marketplace cache (standard install)
+# Use globbing via [ -d <path>/*/<p> ] — the <marketplace> and <version>
+# dir names vary by install, so don't hardcode them.
+if [ $FOUND -eq 0 ] && ls -d "$HOME/.claude/plugins/cache"/*/"${P}"/ >/dev/null 2>&1; then
+  FOUND=1
+fi
+
+# Also accept a versioned cache dir: ~/.claude/plugins/cache/<mkt>/<p>/<ver>/
+if [ $FOUND -eq 0 ] && ls -d "$HOME/.claude/plugins/cache"/*/"${P}"/*/ >/dev/null 2>&1; then
+  FOUND=1
+fi
+
+if [ $FOUND -eq 1 ]; then
+  # Plugin is installed. Add to installedPlugins.
+  :
+fi
 ```
 
-A successful probe (exit 0) means the plugin is installed.
+**Do not `exit 1`-gate the loop** — a missing plugin is the expected case for most entries. Only add found plugins to `installedPlugins`. Continue through the full catalog regardless of individual probe results.
 
 | Plugin | Category | Capabilities Covered | MCP Server | Transport | Auth |
 |---|---|---|---|---|---|
@@ -18,7 +48,6 @@ A successful probe (exit 0) means the plugin is installed.
 | `security-guidance` | Universal | `security-audit` | — | — | — |
 | `hookify` | Universal | `behavioral-guardrails` | — | — | — |
 | `claude-md-management` | Universal | `documentation` | — | — | — |
-| `engineering` | Universal | `engineering-lifecycle`, `architecture-decisions`, `deploy-verification` | — | — | — |
 | `frontend-design` | Stack-conditional | `ui-development` | — | — | — |
 | `feature-dev` | Stack-conditional | `feature-development`, `code-review` | — | — | — |
 | `code-review` | Workflow-conditional | `code-review` | — | — | — |
@@ -49,7 +78,17 @@ Env-var requirements and OAuth steps are documented in the generated `.claude/ru
 
 ## CLAUDE_PLUGIN_ROOT Fallback
 
-If `CLAUDE_PLUGIN_ROOT` is unset or empty (e.g., running outside plugin context), skip all probes and treat as "no plugins detected." Do not fail — proceed with standalone generation.
+`CLAUDE_PLUGIN_ROOT` being unset or empty means the sibling probe cannot run — but the marketplace-cache probe still should. The `~/.claude/plugins/cache` path is stable across install methods and does NOT depend on `CLAUDE_PLUGIN_ROOT`.
+
+Sequence:
+
+1. Attempt both probe locations for every catalog entry (`CLAUDE_PLUGIN_ROOT` optional for sibling; always available for cache).
+2. If NEITHER probe returns any hits for any plugin in the catalog AND `CLAUDE_PLUGIN_ROOT` was unset, fall back to "no plugins detected" with a structured log entry (`detectedPlugins.probeContext: "claude-plugin-root-unset-and-cache-empty"`).
+3. Proceed with standalone generation. Do not fail.
+
+## Surface Classification
+
+After building `installedPlugins`, classify each plugin's entry surface (commands / skills / hooks / agents) per `plugin-surface-probe.md`. The resulting `pluginSurfaces` map feeds the Plugin Integration template in `claude-md-guide.md` and prevents fabricated slash refs (release-gate finding G.3, 2026-04-17 — `/security-guidance:security-review` fabricated for a hooks-only plugin).
 
 ## Detection Output Schema
 
@@ -60,6 +99,7 @@ The detection step produces a `detectedPlugins` object:
   "detectedPlugins": {
     "installedPlugins": ["superpowers", "commit-commands", ...],
     "coveredCapabilities": ["test-generation", "git-workflow", ...],
+    "pluginSurfaces": { /* per plugin-surface-probe.md */ },
     "qualityGates": { /* derived from installed plugins + autonomyLevel */ },
     "phaseSkills": { /* derived from installed plugins */ }
   }
@@ -127,7 +167,7 @@ Read `autonomyLevel` from `wizardAnswers.autonomyLevel`.
 
 ## phaseSkills Derivation
 
-Start from the defaults, filter by installed plugins:
+Start from the defaults, filter by installed plugins. Note: `feature-dev` contributes **only** its `code-architect` sub-agent to the `feature` phase — NOT `feature-dev:feature-dev` as a top-level orchestrator. When `superpowers` is installed, its `brainstorming` + `writing-plans` + `test-driven-development` pipeline owns feature entry; `feature-dev:feature-dev` is effectively dead code in that environment (release-gate finding G.4, 2026-04-17).
 
 ```jsonc
 {
@@ -141,3 +181,5 @@ Start from the defaults, filter by installed plugins:
 ```
 
 Drop any skill whose plugin is not in `installedPlugins`. Remove empty phases entirely.
+
+See `plugin-surface-probe.md § Disambiguation rules` (R1-R6) for the full routing-conflict resolution that applies on top of this derivation when multiple overlapping plugins are installed.

@@ -6,7 +6,7 @@ Scaffold new projects with AI-native tooling that evolves with your code.
 
 Forge is a guided project bootstrapper for Claude Code. It takes you from "I want to build X" to a running application with auto-evolving AI tooling — in one conversation.
 
-Think of it as `create-react-app` for the AI-assisted development era: it scaffolds your app, sets up Claude Code tooling, configures CI/CD pipelines, installs ecosystem plugins, and optionally generates engineering lifecycle documents (ADRs, testing strategies, deploy checklists). The tooling it generates doesn't just sit there — it detects changes in your codebase and evolves alongside your code.
+Think of it as `create-react-app` for the AI-assisted development era: it scaffolds your app, sets up Claude Code tooling, configures CI/CD pipelines, and installs ecosystem plugins. The tooling it generates doesn't just sit there — it detects changes in your codebase and evolves alongside your code.
 
 ### What Gets Created
 
@@ -15,7 +15,6 @@ Think of it as `create-react-app` for the AI-assisted development era: it scaffo
 - **CI/CD pipelines** — GitHub Actions for testing, deployment, AI-powered PR review, and tooling audit
 - **Auto-evolution hooks** — Detect dependency, config, and structural changes; keep tooling in sync
 - **Ecosystem plugins** — Curated recommendations installed based on your stack and workflow
-- **Engineering documents** — Architecture Decision Records, testing strategies, deploy checklists, runbooks (via `engineering` plugin)
 
 ## Skills
 
@@ -23,7 +22,7 @@ All skills are invoked with the `/forge:<name>` slash syntax. `status` and `resu
 
 ### `/forge:init`
 
-Main entry point. Runs a guided workflow with 4 main phases (plus a resume check and two optional sub-phases):
+Main entry point. Runs a guided workflow with 3 main phases (plus a resume check and two optional sub-phases):
 
 0. **Resume check** — If a forge session is already in progress in this directory (detected via `.claude/forge-state.json`), offer to resume instead of restarting.
 1. **Context Gathering** — Adaptive 8-step wizard that discusses your app idea, researches your tech stack via web search, and captures all preferences (testing, security, CI/CD behavior, etc.). Emits a `Step X of 8` progress indicator at every step, supports a "Park it" escape hatch when a question triggers deep research, and makes feature decomposition mandatory.
@@ -31,7 +30,6 @@ Main entry point. Runs a guided workflow with 4 main phases (plus a resume check
 3. **Scaffold** — Creates the application using the chosen approach: official CLI, from scratch, your template, or a **walking skeleton** (one representative example of each architectural pattern, for stacks without a mature CLI or with complex architecture). Detects sibling projects in the parent directory and offers to anchor versions to them.
 4. (**2b. Expand Scaffold** — only in walking-skeleton mode; runs after Phase 3 AI tooling to expand the skeleton under the guidance of generated rules)
 5. **AI Tooling** — Invokes onboard headless for Claude tooling, generates GitHub Actions pipelines, adds auto-evolution hooks, discovers and installs ecosystem plugins
-6. **Lifecycle Setup** (optional) — Generates engineering documents (ADRs, testing strategy, deploy checklists, system design, runbooks) using the `engineering` plugin with Phase 1 context
 
 Every phase writes checkpoints to `.claude/forge-state.json` so the whole workflow is interruption-safe. See [Resumability](#resumability) below.
 
@@ -60,14 +58,6 @@ claude plugin add /path/to/forge
 - **onboard** plugin (required) — forge delegates all Claude tooling generation to onboard's headless mode. Install from this same marketplace: `claude plugin install onboard`
 - **git** — required for repository setup and branching
 - **gh** (GitHub CLI) — required for branch protection and CI/CD setup (optional if not using GitHub)
-- **engineering** plugin (optional) — enables Phase 4 lifecycle document generation (ADRs, testing strategy, deploy checklists, system designs, runbooks, incident playbooks). Install from the `knowledge-work-plugins` marketplace:
-
-  ```bash
-  claude marketplace add knowledge-work-plugins
-  claude plugin install engineering
-  ```
-
-  If you skip this, Phase 4 is gracefully skipped and you can install engineering later and run its skills directly on the project.
 
 ## How It Works
 
@@ -105,10 +95,6 @@ Executes the agreed scaffold approach, adds project infrastructure (.env, Docker
 - **Plugin discovery** — Curated + web-searched recommendations, interactive selection
 
 In walking-skeleton mode (Path D from Phase 2), this phase runs against the walking skeleton. Its output (CLAUDE.md, rules, hooks) then guides Phase 2b's expansion of the scaffold.
-
-### Phase 4: Lifecycle Setup (Optional)
-
-If the `engineering` plugin is installed, Forge presents a context-aware checklist of engineering documents to generate — Architecture Decision Records, testing strategies, deploy checklists, system design docs, runbooks, and incident playbooks. Each document is generated by invoking the corresponding `engineering:*` skill with context composed from Phase 1. Documents are saved to `docs/engineering/` and referenced in CLAUDE.md.
 
 ## Example
 
@@ -172,17 +158,6 @@ Claude: Generating Claude tooling via onboard...
           .github/workflows/ci.yml          — pytest + ruff
           .github/workflows/tooling-audit.yml — weekly drift check
           .github/workflows/pr-review.yml    — AI-powered PR review
-
-Phase 4: Lifecycle Setup
-━━━━━━━━━━━━━━━━━━━━━━━━
-Claude: Engineering plugin detected. Generate documents?
-        [x] Architecture Decision Record
-        [x] Testing Strategy
-        [ ] Deploy Checklist (skip for now)
-
-        Generated:
-          docs/engineering/adr-001-fastapi-sqlalchemy.md
-          docs/engineering/testing-strategy.md
 
 Done! Your project is ready at ./task-manager/
 Next: cd task-manager && /feature-dev Add user registration

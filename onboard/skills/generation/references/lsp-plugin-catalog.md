@@ -2,7 +2,7 @@
 
 Maps detected project languages to official Claude Code marketplace LSP plugins used by Phase 7c of the generation pipeline and by `detect-lsp-signals.sh`. Each plugin ships its own `lspServers` config inline in its `plugin.json` — onboard does **not** generate any project-level LSP config files.
 
-When `onboard:init` detects files of these extensions, wizard Phase 5.6 presents a checkbox list of the matching plugins. User-selected entries are installed via `scripts/install-plugins.sh <plugin-name>`.
+When `onboard:init` detects files of these extensions, wizard Phase 5.6 presents a checkbox list of the matching plugins. User-selected entries are installed via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugin-name>`.
 
 See `mcp-guide.md` for the sibling MCP catalog pattern.
 
@@ -37,7 +37,7 @@ Any file of a listed extension triggers the plugin candidate (no threshold). Rat
 When Anthropic ships a new official `-lsp` plugin:
 
 1. Add a row to the catalog table above with the language label, plugin name, extensions, binary name, and install prereq.
-2. Add a corresponding entry to the `LANGUAGES` array in `scripts/detect-lsp-signals.sh`.
+2. Add a corresponding entry to the `LANGUAGES` array in `onboard/scripts/detect-lsp-signals.sh` (the script itself; plugin-root-relative paths at runtime use `${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh`).
 3. Bump onboard minor version (language coverage is additive — no migration needed).
 4. No changes needed in `wizard/SKILL.md` or `generation/SKILL.md` — both consume the script's JSON output generically.
 

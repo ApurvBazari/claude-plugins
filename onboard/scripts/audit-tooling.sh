@@ -14,7 +14,7 @@ add_drift() {
   REPORT="${REPORT}  - $1\n"
 }
 
-cd "$PROJECT_ROOT"
+cd "$PROJECT_ROOT" || exit 1
 
 echo "## Tooling Audit Report"
 echo ""

@@ -130,6 +130,24 @@ This project uses the following Claude Code plugins. Use them consistently.
 <!-- onboard:plugin-integration:end -->
 ```
 
+**Surface verification invariant** — before emitting ANY `/<plugin>:<slug>` reference in any subsection below, verify the ref via `callerExtras.pluginSurfaces[<plugin>]` per `plugin-surface-probe.md`:
+
+- `surface.type === "command-or-skill"` or `"command-and-agent"` → slash refs are safe to emit from `surface.commands[]` and `surface.skills[]`
+- `surface.type === "hooks-only"` or `"hooks-and-agent"` → NEVER emit `/<plugin>:<slug>` refs. Instead emit the hook-behavior narrative per Rule R6 in `plugin-surface-probe.md`
+- `surface.type === "agent-only"` → emit agent refs (e.g., `subagent_type: '<plugin>:<agent>'`) only
+- `surface.type === "empty"` → skip the plugin in Plugin Integration entirely + log a warning
+
+The 2026-04-17 release-gate finding G.3 was a fabricated `/security-guidance:security-review` ref for a hooks-only plugin. This invariant prevents the regression class.
+
+**Disambiguation rules** — when multiple overlapping plugins are installed, apply the R1-R6 disambiguation rules from `plugin-surface-probe.md § Disambiguation rules` in order. Key effects:
+
+- **R1**: when `superpowers` + `feature-dev` are both installed, drop `feature-dev:feature-dev` as a top-level Per-feature workflow entry. Keep `feature-dev:code-architect` as an adjunct tool inside the superpowers flow. (Closes G.2, G.5.2.)
+- **R2**: when `code-review` + `pr-review-toolkit` are both installed, label them as `light review` vs `heavy review` so Claude picks the right one per PR context. (Closes G.5.3.)
+- **R3**: when `frontend-design` is installed AND the stack includes a frontend framework (Next.js / React / Vue / Svelte / Astro / Remix / SolidJS), emit a subsection declaring `frontend-design` owns UI feature work. (Closes G.5.4.)
+- **R4**: agent refs always use the plugin-prefixed form (e.g., `feature-dev:code-reviewer`, not bare `code-reviewer`). (Closes G.5.5.)
+- **R5**: emit a note that superpowers' `brainstorming → writing-plans` pipeline is self-contained and doesn't invoke external plugins mid-flow. (Closes G.5.6.)
+- **R6**: hooks-only plugins get behavior narratives derived from the probed hook events (e.g., `security-guidance` hooks fire on PreToolUse:Write → secret-literal-scan). (Closes G.3.)
+
 **Content rules**:
 
 1. **Research & brainstorming** (always first subsection when `superpowers` is in `installedPlugins`):
@@ -138,11 +156,13 @@ This project uses the following Claude Code plugins. Use them consistently.
    - Reference `context7` only if it's in `installedPlugins` (never fabricate)
    - Include the "design can be a few sentences for trivial work" caveat so developers don't feel trapped
    - Point at where research outputs are saved (e.g., `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`)
+   - Add the R5 note: "superpowers' `brainstorming → writing-plans` forms a self-contained pipeline. It does not invoke external plugins mid-flow."
 2. **Core discipline** — `superpowers:test-driven-development`, `superpowers:verification-before-completion`, `superpowers:systematic-debugging` (only include ones whose plugin is installed)
-3. **Per-feature workflow** — `feature-dev:code-architect`, `code-explorer`, `code-reviewer` (only if `feature-dev` is installed)
+3. **Per-feature workflow** — apply R1: if `superpowers` is installed, do NOT list `feature-dev:feature-dev` as a top-level entry. Instead, document `feature-dev:code-architect` as an adjunct tool within the superpowers phase-4 flow. If `superpowers` is NOT installed, `feature-dev:feature-dev` becomes the primary entry for this subsection. Also list `feature-dev:code-explorer` and `feature-dev:code-reviewer` (always with plugin prefix per R4) as tactical tools.
 4. **Commit discipline** — `/commit`, `/commit-push-pr` (only if `commit-commands` is installed)
-5. **Quality gates** — `code-review:code-review`, `pr-review-toolkit:review-pr`, `claude-md-management:revise-claude-md` (only ones whose plugin is installed)
-6. **Ecosystem** — `hookify`, `security-guidance` (only ones whose plugin is installed)
+5. **Quality gates** — when both `code-review` and `pr-review-toolkit` are installed, apply R2: present them as **light review** vs **heavy review** with specific guidance on when to pick each. Otherwise list whichever is installed. Include `claude-md-management:revise-claude-md` if installed.
+6. **Ecosystem** — for `hookify` (slash surface), emit slash refs normally. For `security-guidance` (hooks-only surface), apply R6: emit a narrative paragraph derived from `pluginSurfaces.security-guidance.hooks[]` describing the events fired + behaviors. Do NOT fabricate a `/security-guidance:*` slash ref.
+6.5. **UI feature work (conditional on R3)** — when `frontend-design` is installed AND a frontend framework is detected in the analysis, add a subsection declaring `frontend-design:frontend-design` owns web component / page / application generation. Non-UI feature work stays in the superpowers → feature-dev flow (subsection 3).
 7. **Output styles** (always — built-in styles are universal, emitted custom style is project-specific): Add an `### Output styles` subsection. List the three built-ins (`Default` / `Explanatory` / `Learning`) with one-line descriptions. If `outputStyleStatus.generated[]` is non-empty, also list the emitted custom style with its path and one-line purpose. State the activation path: open `/config` and pick from the menu, OR set `"outputStyle": "<name>"` in `.claude/settings.local.json`. Include the new-session caveat (changes take effect in the next new session). Do NOT reference built-in styles as files — they're Anthropic-provided. When `outputStyleStatus.generated[]` is empty, still emit the subsection to surface the built-ins.
 8. **Built-in Claude Code skills** (always — these are Anthropic-provided, not plugin-dependent): Add a `### Built-in Claude Code skills` subsection wrapped in `<!-- onboard:builtin-skills:start -->` / `<!-- onboard:builtin-skills:end -->` markers. For each skill in `builtInSkillsStatus.generated[]`, emit: skill name, one-line description, and a project-specific example from `references/built-in-skills-catalog.md` (matched to detected stack). Use the same narrative voice as other Plugin Integration subsections — answer "when would you use this on your project?" not just list names. Place this as the **last subsection** inside Plugin Integration, after Output styles. When `builtInSkillsStatus.generated[]` is empty, do not emit the subsection (no stub). When `effectivePlugins` is empty, emit as a standalone `## Built-in Claude Code skills` section with the same `<!-- onboard:builtin-skills:start/end -->` markers, placed after the last onboard-generated section (identified by maintenance header). See "Built-in Claude Code Skills — Phase 7d" below for the full emission spec.
 
@@ -409,7 +429,9 @@ Archetype-defined `disallowedTools` always win for semantic protection (reviewer
 
 **Step 5 — Write agent files.** Emit only fields that have concrete values — never emit empty strings or empty lists. Omitted fields preserve pre-feature-equivalent behavior exactly and keep pre-upgrade fixtures byte-identical. The description prefix convention (for encoding `proactive` intent per the archetype table) is applied inline in the final description string, not as a separate field.
 
-**Step 6 — Write drift snapshot.** Append `.claude/onboard-agent-snapshot.json` (or create it if absent) with the exact emitted frontmatter block per agent. Same pattern as `.claude/onboard-skill-snapshot.json` — pure JSON, no maintenance header, consumed by `onboard:update` / `onboard:evolve` as the drift baseline.
+**Pre-write validation (HARD-FAIL)**: every agent file content MUST start with `---\n` AND contain at minimum `name:` and `description:` lines within the frontmatter block. The 2026-04-16 release-gate run produced 5 agents with 0 working frontmatter because this check did not exist. If the generated content is missing the frontmatter, **hard-fail** the generation rather than write a degraded markdown-sections-only file. See `references/agents-guide.md` § REQUIRED for the template.
+
+**Step 6 — Write drift snapshot (re-read pattern).** After writing each agent file, re-read it from disk, parse the actual YAML frontmatter, and use THAT for the snapshot entry. Do not trust the in-memory string — the snapshot must match what landed on disk. If re-read parse fails (no `---`, malformed YAML, missing `name`/`description`), **hard-fail** — the file failed to write what was intended. Snapshot is `.claude/onboard-agent-snapshot.json` — pure JSON, no maintenance header, consumed by `onboard:update` / `onboard:evolve` as the drift baseline.
 
 ```jsonc
 {
@@ -530,10 +552,21 @@ Follow `references/mcp-guide.md` for emission rules, catalog, and transport shap
 
 **When to run**: After Recommended Plugins copy is resolved and before Hooks are merged. Phase 7a runs once per generation; drift handling lives in `update`/`evolve`.
 
+**Firing paths** (mutually exclusive — exactly one fires per generation):
+
+| Path | Trigger | Behavior |
+|---|---|---|
+| **Path A — wizard answer** | `wizardAnswers` contains MCP server preferences (rare; MCP is signal-driven, not wizard-gated) | Emit per wizard. |
+| **Path B — Quick Mode default** | wizard absent AND no candidate signals | Emit `mcpStatus: { status: "skipped", reason: "no-candidates" }`. No `.mcp.json`, no snapshot. |
+| **Path C — signal-driven (default)** | `${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh` returns ≥1 candidate | Emit `.mcp.json` + snapshot + telemetry. **This path fires regardless of wizard or headless mode** unless `callerExtras.disableMCP === true`. |
+| **Path SKIP — caller-disabled** | `callerExtras.disableMCP === true` | No `.mcp.json`, no snapshot. Telemetry: `mcpStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [] }`. **Telemetry IS still written.** |
+
 **Inputs**:
 - `analysis.stack` — frameworks, deps, config-file fingerprints
-- `callerExtras.disableMCP` (optional, headless) — if `true`, skip the entire phase and record `mcpStatus.skipped = [{ server: "*", reason: "caller-disabled" }]`
-- Output of `scripts/detect-mcp-signals.sh <project-root>` — canonical signal list
+- `callerExtras.disableMCP` (optional, headless) — see Path SKIP above
+- Output of `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh" <project-root>` — canonical signal list
+
+**Telemetry contract**: `mcpStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | documented | skipped | declined | failed`) per the Default behavior matrix in `generate/SKILL.md`.
 
 **Step 1 — Detect candidates**. Run the detection script; parse JSON output. Candidates marked `confidence: "always"` (context7) emit unconditionally. Candidates marked `confidence: "high"` emit when the signal evaluates unambiguously (see `references/mcp-guide.md` § Confidence Tiers). Dedupe by server name.
 
@@ -569,7 +602,7 @@ Follow `references/mcp-guide.md` for emission rules, catalog, and transport shap
 
 #### Auto-install Plugins
 
-After the metadata file is written in Phase 8, invoke `scripts/install-plugins.sh <plugin1> <plugin2> ...` for each server's `plugin` field (if present). The script:
+After the metadata file is written in Phase 8, invoke `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugin1> <plugin2> ...` for each server's `plugin` field (if present). The script:
 
 1. Probes `claude plugin list --json` once
 2. Skips plugins already installed
@@ -584,10 +617,22 @@ Follow `references/output-styles-guide.md` for archetype inference, frontmatter 
 
 **When to run**: After Phase 7a (MCP) and before Hooks are merged. Phase 7b runs once per generation; drift handling lives in `update`/`evolve`.
 
+**Firing paths** (mutually exclusive — exactly one fires per generation):
+
+| Path | Trigger | Behavior |
+|---|---|---|
+| **Path A — wizard answer** | `wizardAnswers.outputStyleTuning` present with `mode: "tuned"` | Use wizard's archetype override + activation default. Run Step 6 batched confirmation unless headless. |
+| **Path B — Quick Mode default** | wizard absent OR `mode: "defaults"` | Infer top-priority archetype from signals (Steps 1+3). Emit catalog defaults + snapshot + telemetry `status: "emitted"`. **No silent no-op.** |
+| **Path SUPPRESS — tuning disabled** | `callerExtras.disableOutputStyleTuning === true` | Same as Path B but skip Step 6 batched confirmation entirely. Artifacts ARE generated. Telemetry: `outputStyleStatus: { status: "emitted", source: "inferred", ... }`. |
+| **Path DECLINED** | wizard `archetypeOverride === "skip-emit"` | No file written. Telemetry: `outputStyleStatus: { status: "declined", reason: "skip-emit-selected" }`. |
+| **Path NO-CANDIDATES** | candidate set empty after Steps 1+2 | No file written. Telemetry: `outputStyleStatus: { status: "skipped", reason: "archetype-not-fired" }`. |
+
 **Inputs**:
 - `analysis.*` — existing wizard + analysis signals (teamSize, projectMaturity, primaryTasks, securitySensitivity, deployFrequency, painPoints, project description)
 - `wizardAnswers.outputStyleTuning` (optional) — `{ mode, archetypeOverride?, activationDefault? }`. Treat absence as `{ mode: "defaults" }`
-- `callerExtras.disableOutputStyleTuning` (optional, headless) — if `true`, skip batched confirmation and emit with inferred + wizard-default values directly
+- `callerExtras.disableOutputStyleTuning` (optional, headless) — see Path SUPPRESS above
+
+**Telemetry contract**: `outputStyleStatus` MUST be present in `onboard-meta.json` after every generation. The SUPPRESS-PROMPT-ONLY family (`disableOutputStyleTuning`) MUST NOT collapse to `status: "skipped"` — that's the SKIP-PHASE family's behavior, and Phase 7b has no SKIP-PHASE flag.
 
 **Step 1 — Classify firing archetypes.** Evaluate the 5 firing conditions from `output-styles-guide.md` § Archetype inference. Record the full firing set — even archetypes that won't be chosen — in `outputStyleStatus.planned[]` for telemetry.
 
@@ -689,9 +734,25 @@ Follow `references/lsp-plugin-catalog.md` for the 12-entry language→plugin map
 
 **When to run**: After Phase 7b (Output Styles) and before Hooks. Runs once per generation; drift handling lives in `update`/`evolve`.
 
-**Suppression**: Skip entirely when `callerExtras.disableLSP: true` (forge default). When skipped, still emit an `lspStatus: { skipped: [...], reason: "caller-disabled" }` entry in meta.json so the forge-meta mirror has something to forward.
+**Firing paths** (mutually exclusive — exactly one fires per generation):
 
-**Step 1 — Detect candidate plugins.** Run `scripts/detect-lsp-signals.sh "$PROJECT_ROOT"`. Output is a JSON array sorted by fileCount desc, e.g.:
+| Path | Trigger | Behavior |
+|---|---|---|
+| **Path A — explicit caller list** | `callerExtras.lspPlugins` is a non-null array | Use it verbatim as the accepted list. Empty array = "detected but declined all" → `lspStatus: { status: "declined", accepted: [] }`. |
+| **Path A — wizard answer** | `wizardAnswers.lspPlugins` present | Use wizard's accepted list. Same `declined` semantics if empty. |
+| **Path B — Quick Mode default** | wizard answer absent AND callerExtras list absent AND detection found candidates | Accept ALL detected plugins. Emit + snapshot + telemetry `status: "emitted"`. |
+| **Path NO-CANDIDATES** | `detect-lsp-signals.sh` returns empty array | No install, no snapshot. Telemetry: `lspStatus: { status: "skipped", reason: "detection-empty", planned: [], generated: [] }`. |
+| **Path SKIP — caller-disabled** | `callerExtras.disableLSP === true` | No script run, no install, no snapshot. Telemetry: `lspStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [] }`. **Telemetry IS still written.** |
+
+**Inputs**:
+- `callerExtras.disableLSP` (optional, headless) — see Path SKIP above; forge passes `true` by default for placeholder code in scaffolds
+- `callerExtras.lspPlugins` (optional, headless) — see Path A above
+- `wizardAnswers.lspPlugins` (optional) — see Path A above
+- Output of `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"` — JSON array sorted by fileCount desc
+
+**Telemetry contract**: `lspStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | documented | skipped | declined | failed`) per the Default behavior matrix in `generate/SKILL.md`.
+
+**Step 1 — Detect candidate plugins.** Run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"`. Output is a JSON array sorted by fileCount desc, e.g.:
 
 ```json
 [
@@ -716,7 +777,7 @@ Always preserve the full detected list as `recommended`, independent of what was
 
 1. Add `lspStatus` placeholder to `onboard-meta.json`: `{ planned: [...], generated: [...], accepted: [...], autoInstalled: [], autoInstallFailed: [], skipped: [...] }` with install fields empty.
 2. Wait for Phase 8's metadata write to complete.
-3. Invoke `scripts/install-plugins.sh <plugin1> <plugin2> ...` with the accepted list.
+3. Invoke `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugin1> <plugin2> ...` with the accepted list.
 4. Update `onboard-meta.json.lspStatus.autoInstalled` and `.autoInstallFailed` from the install script's JSON output (single-field read-modify-write; don't touch other keys).
 
 Rationale: if `claude plugin install` hangs or errors, telemetry must already be persisted. Same contract as Phase 7a.
@@ -755,6 +816,22 @@ Both arrays are sorted alphabetically for stable diffs. Add the snapshot path to
 Follow `references/built-in-skills-catalog.md` for the 9-skill catalog, tier classification (core vs extra), detection signals, and stack-specific example templates.
 
 **When to run**: After Phase 7c (LSP) and before Hooks. Runs once per generation; drift handling lives in `update`/`evolve`.
+
+**Firing paths** (mutually exclusive — exactly one fires per generation):
+
+| Path | Trigger | Behavior |
+|---|---|---|
+| **Path A — explicit caller list** | `callerExtras.builtInSkills` present | Use it verbatim as the accepted list. Empty array = "candidates existed but declined all" → `builtInSkillsStatus: { status: "declined", accepted: [] }`. Non-empty array → `status: "documented"` (CLAUDE.md subsection is the artifact). |
+| **Path A — wizard answer** | `wizardAnswers.builtInSkills` present | Use wizard's accepted list. Same `declined` semantics if empty; `"documented"` status when non-empty. |
+| **Path B — Quick Mode default** | wizard absent AND callerExtras list absent | Accept the full candidate list (4 core + N fired extras). Emit CLAUDE.md subsection + snapshot + telemetry `status: "documented"`. **Built-in skills' core tier always fires; this path NEVER produces an empty result.** |
+| **Path SKIP — caller-disabled** | `callerExtras.disableBuiltInSkills === true` | No CLAUDE.md subsection, no snapshot. Telemetry: `builtInSkillsStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [] }`. **Telemetry IS still written.** |
+
+**Inputs**:
+- `callerExtras.disableBuiltInSkills` (optional, headless) — see Path SKIP above; forge passes `true` by default for placeholder code in scaffolds
+- `callerExtras.builtInSkills` (optional, headless) — see Path A above
+- `wizardAnswers.builtInSkills` (optional) — see Path A above
+
+**Telemetry contract**: `builtInSkillsStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | documented | skipped | declined | failed`) per the Default behavior matrix in `generate/SKILL.md`. **Built-in skills is the primary user of the `"documented"` value** — its "artifact" is a CLAUDE.md subsection rather than a separate file + snapshot, so `"documented"` is semantically more accurate than `"emitted"` when the phase runs. See Phase 7d below for the firing paths.
 
 **Suppression**: Skip entirely when `callerExtras.disableBuiltInSkills: true` (forge default — scaffolded projects have placeholder code so detection signals are premature). When skipped, still emit a `builtInSkillsStatus` entry in meta.json:
 
@@ -816,11 +893,13 @@ Use rich narrative voice matching the project's autonomy level (per the Tone rul
 
 Plain JSON, no `_generated` header — matches LSP snapshot format. Both arrays sorted alphabetically. Add the snapshot path to `generatedArtifacts` in `onboard-meta.json`.
 
-**Step 6 — Record telemetry.** Add `builtInSkillsStatus` to `onboard-meta.json` alongside `hookStatus`, `mcpStatus`, `skillStatus`, `agentStatus`, `outputStyleStatus`, and `lspStatus`:
+**Step 6 — Record telemetry.** Add `builtInSkillsStatus` to `onboard-meta.json` alongside `hookStatus`, `mcpStatus`, `skillStatus`, `agentStatus`, `outputStyleStatus`, and `lspStatus`. Use `status: "documented"` when the phase successfully wrote a CLAUDE.md subsection (the primary artifact type for Phase 7d — no separate file), `status: "declined"` when accepted list is empty, `status: "skipped"` for SKIP-PHASE, `status: "failed"` on errors. The `"documented"` value replaces the earlier `"skipped", reason: "built-in-skills-are-user-level-no-project-artifact"` semantic that broke downstream consumers (release-gate finding B13, 2026-04-17).
 
 ```json
 {
   "builtInSkillsStatus": {
+    "status": "documented",
+    "documentedIn": "CLAUDE.md",
     "planned": ["/loop", "/simplify", "/debug", "/pr-summary", "/schedule", "/batch"],
     "generated": ["/loop", "/simplify", "/debug", "/pr-summary", "/schedule"],
     "skipped": [{ "skill": "/batch", "reason": "user-declined" }],
@@ -1480,25 +1559,28 @@ Before finishing generation, verify:
 - [ ] `.mcp.json` is pure JSON (no comments) and uses `${VAR}` form for secrets
 - [ ] Pre-existing `.mcp.json` was NOT overwritten (check for `mcpStatus.existedPreOnboard`)
 - [ ] `.claude/onboard-mcp-snapshot.json` matches what was written to `.mcp.json`
-- [ ] `onboard-meta.json.mcpStatus` populated alongside `hookStatus`
+- [ ] `onboard-meta.json.mcpStatus` populated alongside `hookStatus` (with `status` enum value)
 - [ ] `.claude/rules/mcp-setup.md` emitted when any server needs auth OR pre-existing file detected
 - [ ] Auto-install ran after metadata write (never before)
-- [ ] `callerExtras.disableMCP: true` suppresses all Phase 7a side effects
+- [ ] `callerExtras.disableMCP: true` skips artifact writes BUT still emits `mcpStatus: { status: "skipped", reason: "caller-disabled" }` (SKIP-PHASE family contract)
 - [ ] Phase 7b ran after Phase 7a and before Hooks
 - [ ] Emitted output-style file is at `.claude/output-styles/<archetype-name>.md` with matching `name` frontmatter
 - [ ] Pre-existing output-style file was NOT overwritten (check for `outputStyleStatus.existedPreOnboard[]`)
 - [ ] `.claude/onboard-output-style-snapshot.json` contains frontmatter-only entry for the emitted style
-- [ ] `onboard-meta.json.outputStyleStatus` populated alongside `mcpStatus`
+- [ ] `onboard-meta.json.outputStyleStatus` populated alongside `mcpStatus` (with `status` enum value)
 - [ ] `settings.local.json` was NOT created from scratch (Case 1 warns only)
 - [ ] Existing `outputStyle` in `settings.local.json` was NOT overwritten (Cases 3/4 warn only)
-- [ ] `callerExtras.disableOutputStyleTuning: true` suppresses the Phase 7b batched confirmation
+- [ ] `callerExtras.disableOutputStyleTuning: true` ONLY suppresses Step 6 batched confirmation; artifacts + snapshot + `outputStyleStatus: { status: "emitted", source: "inferred" }` are STILL produced (SUPPRESS-PROMPT family contract)
 - [ ] CLAUDE.md Plugin Integration includes the `### Output styles` subsection (built-ins + emitted custom + activation path)
+- [ ] Phase 7c (LSP) emitted `lspStatus` regardless of firing path — `status` is one of: `emitted`, `skipped`, `declined`
+- [ ] `callerExtras.disableLSP: true` skips artifact writes BUT still emits `lspStatus: { status: "skipped", reason: "caller-disabled" }` (SKIP-PHASE family contract)
 - [ ] Phase 7d ran after Phase 7c (LSP) and before Hooks section
 - [ ] `<!-- onboard:builtin-skills:start/end -->` markers present in CLAUDE.md (inside Plugin Integration or standalone)
 - [ ] `.claude/onboard-builtin-skills-snapshot.json` contains `recommended` and `accepted` arrays (plain JSON, no `_generated`)
-- [ ] `onboard-meta.json.builtInSkillsStatus` populated alongside `hookStatus`, `mcpStatus`, `skillStatus`, `agentStatus`, `outputStyleStatus`, `lspStatus`
-- [ ] `callerExtras.disableBuiltInSkills: true` suppresses all Phase 7d side effects
+- [ ] `onboard-meta.json.builtInSkillsStatus` populated alongside `hookStatus`, `mcpStatus`, `skillStatus`, `agentStatus`, `outputStyleStatus`, `lspStatus` (with `status` enum value)
+- [ ] `callerExtras.disableBuiltInSkills: true` skips artifact writes BUT still emits `builtInSkillsStatus: { status: "skipped", reason: "caller-disabled" }` (SKIP-PHASE family contract)
 - [ ] CLAUDE.md includes `### Built-in Claude Code skills` subsection (or standalone `## Built-in Claude Code skills` section when no plugins) with project-specific examples
+- [ ] **Pre-exit self-audit**: all 4 Phase 7 telemetry keys (`mcpStatus`, `outputStyleStatus`, `lspStatus`, `builtInSkillsStatus`) exist in `onboard-meta.json` — missing key = hard-fail before returning
 
 ## Extended Generation (Enriched Mode)
 

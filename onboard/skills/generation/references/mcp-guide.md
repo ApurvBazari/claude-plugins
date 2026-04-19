@@ -79,7 +79,7 @@ Because `.mcp.json` is pure JSON (no comments / markers possible), drift detecti
 
 ## Auto-install
 
-After `.mcp.json` is written and metadata is updated, run `scripts/install-plugins.sh` with the list of emitted server→plugin pairs. The script:
+After `.mcp.json` is written and metadata is updated, run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh"` with the list of emitted server→plugin pairs. The script:
 
 1. Probes installed plugins once (`claude plugin list --json`)
 2. Skips any server whose plugin is already installed

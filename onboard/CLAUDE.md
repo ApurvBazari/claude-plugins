@@ -8,6 +8,11 @@ Interactive wizard that analyzes codebases and generates complete Claude tooling
 /onboard:init
      │
      ▼
+Phase 0: Empty-Repo Guard ──→ SRC_COUNT == 0?
+     │                            ├── yes → 3-option menu (abort / placeholder / canonical stub)
+     │                            │          └── stub path follows init/references/empty-repo-stub-procedure.md
+     │                            └── no  → fall through to Phase 1
+     ▼
 Phase 1: Analysis ──→ codebase-analyzer agent (read-only)
      │                   ├── analyze-structure.sh
      │                   ├── detect-stack.sh
@@ -16,9 +21,17 @@ Phase 1: Analysis ──→ codebase-analyzer agent (read-only)
 Phase 2: Wizard ──→ wizard skill (adaptive Q&A, presets)
      │
      ▼
-Phase 3: Generation ──→ config-generator agent (write)
-     │                   ├── Core: CLAUDE.md, rules, skills, agents, hooks
-     │                   └── Enriched: CI/CD, harness, evolution, teams (if enabled)
+Phase 2.5: Plugin Detection ──→ deep probe (siblings + marketplace cache)
+     │                          + plugin-surface-probe (closes G.3)
+     ▼
+Phase 2.6: Build Onboard Context ──→ init/references/onboard-context-builder.md
+     │                                (same forge-shaped callerExtras forge emits)
+     ▼
+Phase 3: Generation ──→ Skill(onboard:generate)  [same contract as forge]
+     │                   └── config-generator agent (write)
+     │                       ├── Core: CLAUDE.md, rules, skills, agents, hooks
+     │                       ├── Enriched: CI/CD, harness, evolution, teams (if enabled)
+     │                       └── Pre-exit self-audit on 7 Phase 7 telemetry keys
      ▼
 Phase 4: Handoff ──→ explains generated artifacts, suggests next steps
 ```

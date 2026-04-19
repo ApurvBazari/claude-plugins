@@ -255,7 +255,8 @@ try:
     scripts = pkg.get('scripts', {})
     for name, cmd in scripts.items():
         print(f'  {name}: {cmd}')
-except: pass
+except (OSError, json.JSONDecodeError, UnicodeDecodeError, ValueError):
+    pass
 " "$PROJECT_ROOT/package.json" 2>/dev/null || true
   else
     # Fallback: extract script names using grep/sed

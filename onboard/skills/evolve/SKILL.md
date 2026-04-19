@@ -133,13 +133,13 @@ Update the following fields in `.claude/forge-meta.json`:
 
 Run the same drift classification as `../update/SKILL.md` § 4b.4 MCP Drift:
 
-1. Read `.mcp.json`, `.claude/onboard-mcp-snapshot.json`, and fresh output from `../scripts/detect-mcp-signals.sh`.
+1. Read `.mcp.json`, `.claude/onboard-mcp-snapshot.json`, and fresh output from `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh"`.
 2. Classify each server as `userEdited` / `userRemoved` / `newlySuggested` / `staleCandidate` / `inSync`.
 3. Respect the pre-existing guard — if `onboard-meta.json.mcpStatus.existedPreOnboard` is true, the whole file is user-owned; only additions may be applied.
 
 **Auto-apply rules** (evolve's "drain drift without asking" philosophy applies here — but with the hard floor that user-owned edits are never touched):
 
-- `newlySuggested` → merge into `.mcp.json` and `.claude/onboard-mcp-snapshot.json`. Queue corresponding plugin for `scripts/install-plugins.sh`.
+- `newlySuggested` → merge into `.mcp.json` and `.claude/onboard-mcp-snapshot.json`. Queue corresponding plugin for `${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh`.
 - `staleCandidate` → DO NOT auto-remove. Log as "stale MCP candidate surfaced — run `/onboard:update` to review". Drift stays flagged.
 - `userEdited` / `userRemoved` → no action. Log once.
 - Regenerate `.claude/rules/mcp-setup.md` if any newly-applied server needs auth.
@@ -205,12 +205,12 @@ Update `onboard-meta.json.outputStyleStatus.frontmatterFields[<style>]` to refle
 Run the same drift classification as `../update/SKILL.md` § 4b.8 LSP Plugin Drift:
 
 1. Read `.claude/onboard-lsp-snapshot.json` (missing file → treat as `{ recommended: [], accepted: [] }`).
-2. Run `bash ../scripts/detect-lsp-signals.sh "$PROJECT_ROOT"` for fresh candidates.
+2. Run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"` for fresh candidates.
 3. Classify each candidate as `newLanguage` / `uninstalled` / `stillValid` / `staleCandidate`.
 
 **Auto-apply rules** (evolve's "drain drift without asking" philosophy — bounded by explicit-consent floor for new plugin installs):
 
-- **newLanguage** → **re-prompt** via a single `AskUserQuestion` multiSelect (reuse wizard Phase 5.6 phrasing): "Detected new languages since last run: `<list>`. Install these LSP plugins?". Pre-check entries with `fileCount ≥ 10`, unchecked below. User accepts → invoke `scripts/install-plugins.sh <plugins>`, append to `onboard-lsp-snapshot.json.recommended[]` AND `accepted[]` (preserve alphabetical sort), and merge install results into `lspStatus.autoInstalled[]` / `lspStatus.autoInstallFailed[]`. User declines individual entries → still append to `recommended[]` so subsequent drift runs don't re-surface (but omit from `accepted[]`). This respects the user's earlier choice: "prompt during wizard" posture carries through to evolve — never silent install of net-new plugins.
+- **newLanguage** → **re-prompt** via a single `AskUserQuestion` multiSelect (reuse wizard Phase 5.6 phrasing): "Detected new languages since last run: `<list>`. Install these LSP plugins?". Pre-check entries with `fileCount ≥ 10`, unchecked below. User accepts → invoke `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugins>`, append to `onboard-lsp-snapshot.json.recommended[]` AND `accepted[]` (preserve alphabetical sort), and merge install results into `lspStatus.autoInstalled[]` / `lspStatus.autoInstallFailed[]`. User declines individual entries → still append to `recommended[]` so subsequent drift runs don't re-surface (but omit from `accepted[]`). This respects the user's earlier choice: "prompt during wizard" posture carries through to evolve — never silent install of net-new plugins.
 - **uninstalled** → no action. Log once: "LSP plugin `<name>` was uninstalled since last run — leaving it out of snapshot.accepted on next update." Do NOT reinstall.
 - **stillValid** → no action.
 - **staleCandidate** → no action. Log once.

@@ -10,6 +10,38 @@ You are running the onboard headless generation skill. This generates Claude too
 
 This skill is designed for programmatic consumers (e.g., the Forge plugin) that have already gathered project context through their own workflow and need onboard's generation capabilities directly.
 
+<EXTREMELY-IMPORTANT>
+**DISPATCH CONTRACT — READ BEFORE TOUCHING ANYTHING**
+
+This skill's ONLY job is to dispatch the `config-generator` agent with a pre-seeded context. It MUST NOT call the Write or Edit tool from its own execution context, ever.
+
+```
+generate skill (this file)              config-generator agent
+─────────────────────                   ──────────────────────
+1. Read context input                   1. (dispatched by generate)
+2. Validate                             2. Run full generation pipeline
+3. Map to onboard format                3. Emit ALL artifacts
+4. Build agent prompt                   4. Self-audit telemetry
+5. DISPATCH AGENT  ───────────────────► 5. Return structured JSON response
+6. Parse JSON response, return summary
+```
+
+**FORBIDDEN patterns** (every one observed in the 2026-04-16 release-gate forge run):
+
+- `FORBIDDEN`: Writing CLAUDE.md inline via Write tool from this skill's execution context.
+- `FORBIDDEN`: Calling Write or Edit tools from this skill at all (any file).
+- `FORBIDDEN`: Skipping the agent dispatch and running generation pipeline steps directly.
+- `FORBIDDEN`: Treating this skill as a Write-tool wrapper.
+
+**REQUIRED pattern**:
+
+- `REQUIRED`: A single Agent dispatch with `subagent_type: "config-generator"` and the pre-seeded context object (Step 3 below).
+
+If you find yourself reaching for the Write tool while executing this skill, STOP — that is the bug this contract is designed to prevent. The artifacts must be written by the dispatched agent, not by this skill.
+
+**Hard-fail safety net**: The `config-generator` agent itself checks for `dispatchedAsAgent: true` in its context. If a caller bypasses dispatch (somehow invoking the agent's logic from the main session inline), the agent refuses to write anything and reports the violation. This is defense in depth — but it does NOT excuse violations of the contract above.
+</EXTREMELY-IMPORTANT>
+
 **Plugin detection fallback**: If `callerExtras.installedPlugins` is absent in the provided context, the generation skill probes the filesystem using the shared procedure in `../generation/references/plugin-drift-detection.md` § Probe Procedure (generate runs probe-only — no baseline diff). This means headless callers that don't compile plugin data will still get Plugin Integration output if plugins are installed.
 
 ---
@@ -118,13 +150,13 @@ The caller must provide a context JSON object in the conversation. This object c
     "coveredCapabilities": ["string — capabilities covered by installed plugins"],
     "allowPluginReferences": "boolean (optional) — permit rules/skills to reference installed plugins instead of duplicating their guidance. Defaults to true when installedPlugins is non-empty.",
     "allowHttpHooks": "boolean (optional) — OFF by default. When false, any qualityGates entry with hookType='http' is refused at generation time (skip reason 'http-not-opted-in'). When true, http entries are allowed provided they supply a valid httpUrl. Never auto-inferred — callers opt in explicitly.",
-    "disableMCP": "boolean (optional) — when true, skip Phase 7a MCP emission entirely (no .mcp.json, no .claude/onboard-mcp-snapshot.json). Use when the scaffold template already ships its own MCP config. Defaults to false.",
-    "disableSkillTuning": "boolean (optional) — when true, suppress the per-skill batched confirmation step during generation. Archetype + wizard defaults are emitted directly. Use for fully non-interactive headless flows. Defaults to false.",
-    "disableAgentTuning": "boolean (optional) — when true, suppress the per-agent batched confirmation step during generation. Archetype + wizard defaults are emitted directly. Use for fully non-interactive headless flows. Defaults to false.",
-    "disableOutputStyleTuning": "boolean (optional) — when true, suppress the Phase 7b batched confirmation for output-style emission. The top-priority archetype is inferred from existing signals and the matching .claude/output-styles/<name>.md is emitted with catalog defaults. Use for fully non-interactive headless flows (e.g., forge scaffolding). Defaults to false.",
-    "disableLSP": "boolean (optional) — when true, skip Phase 7c LSP plugin emission entirely (no detect-lsp-signals.sh run, no install-plugins.sh invocation, no .claude/onboard-lsp-snapshot.json). Use for scaffolded projects whose source files are still placeholders. Defaults to false. Forge passes true by default; users can rerun /onboard:evolve to prompt once real code exists.",
+    "disableMCP": "boolean (optional, SKIP-PHASE family) — when true, skip Phase 7a MCP emission entirely (no .mcp.json, no .claude/onboard-mcp-snapshot.json). Use when the scaffold template already ships its own MCP config. Defaults to false. MUST still emit telemetry: mcpStatus = { status: 'skipped', reason: 'caller-disabled' }.",
+    "disableSkillTuning": "boolean (optional, SUPPRESS-PROMPT-ONLY family) — when true, suppress the per-skill batched confirmation step during generation. Archetype + wizard defaults are emitted directly (artifacts ARE generated). Use for fully non-interactive headless flows. Defaults to false. Phase ALWAYS emits: skill files + snapshot + telemetry status: 'emitted'.",
+    "disableAgentTuning": "boolean (optional, SUPPRESS-PROMPT-ONLY family) — when true, suppress the per-agent batched confirmation step during generation. Archetype + wizard defaults are emitted directly (artifacts ARE generated). Use for fully non-interactive headless flows. Defaults to false. Phase ALWAYS emits: agent files + snapshot + telemetry status: 'emitted'.",
+    "disableOutputStyleTuning": "boolean (optional, SUPPRESS-PROMPT-ONLY family) — when true, suppress the Phase 7b batched confirmation for output-style emission. The top-priority archetype is inferred from existing signals and the matching .claude/output-styles/<name>.md is emitted with catalog defaults. Use for fully non-interactive headless flows (e.g., forge scaffolding). Defaults to false. Phase ALWAYS emits: style file + snapshot + telemetry status: 'emitted'.",
+    "disableLSP": "boolean (optional, SKIP-PHASE family) — when true, skip Phase 7c LSP plugin emission entirely (no detect-lsp-signals.sh run, no install-plugins.sh invocation, no .claude/onboard-lsp-snapshot.json). Use for scaffolded projects whose source files are still placeholders. Defaults to false. Forge passes true by default; users can rerun /onboard:evolve to prompt once real code exists. MUST still emit telemetry: lspStatus = { status: 'skipped', reason: 'caller-disabled' }.",
     "lspPlugins": "string[] (optional) — explicit list of marketplace LSP plugin names to install during Phase 7c. When present, skips the wizard prompt and treats the array as the accepted list verbatim. Pass an empty array to record 'detected but declined all'. When absent (and disableLSP is not true), wizard Phase 5.6 runs in interactive mode or defaults to the full detected list in Quick Mode / headless.",
-    "disableBuiltInSkills": "boolean (optional) — when true, skip Phase 7d built-in skills emission entirely (no CLAUDE.md subsection, no .claude/onboard-builtin-skills-snapshot.json). Use for scaffolded projects whose source files are still placeholders — detection signals are premature. Defaults to false. Forge passes true by default; users can rerun /onboard:evolve to prompt once real code exists.",
+    "disableBuiltInSkills": "boolean (optional, SKIP-PHASE family) — when true, skip Phase 7d built-in skills emission entirely (no CLAUDE.md subsection, no .claude/onboard-builtin-skills-snapshot.json). Use for scaffolded projects whose source files are still placeholders — detection signals are premature. Defaults to false. Forge passes true by default; users can rerun /onboard:evolve to prompt once real code exists. MUST still emit telemetry: builtInSkillsStatus = { status: 'skipped', reason: 'caller-disabled' }.",
     "builtInSkills": "string[] (optional) — explicit list of built-in Claude Code skill names to document in the generated CLAUDE.md during Phase 7d. When present, skips wizard Phase 5.7 and treats the array as the accepted list verbatim. Pass an empty array to record 'candidates existed but declined all'. When absent (and disableBuiltInSkills is not true), wizard Phase 5.7 runs in interactive mode or defaults to the full candidate list (core + fired extras) in Quick Mode / headless. See generation/references/built-in-skills-catalog.md for valid skill names.",
     "qualityGates": {
       "description": "object (optional) — boundary-enforcement hook spec. Onboard translates these into .claude/settings.json hook entries. See generation/SKILL.md § Quality-Gate Hooks for the full schema.",
@@ -235,6 +267,31 @@ The caller must provide a context JSON object in the conversation. This object c
 
 **Backward compat**: `callerExtras.qualityGates`, `phaseSkills`, `allowPluginReferences`, and `allowHttpHooks` are all optional. Callers that omit them get the pre-upgrade behavior (no quality-gate hooks, no Plugin Integration section, no plugin cross-references in rules, no http hooks). Callers that pass the legacy 4-field `qualityGates` shape (only `sessionStart` / `preCommit` / `featureStart` / `postFeature`) also get pre-upgrade behavior for the advanced event fields — they fall through to the inference rules in `generation/SKILL.md`. Callers that omit the new per-entry `hookType`/aux fields get `command`-type output identical to pre-upgrade behavior (every current fixture remains byte-identical).
 
+### Default behavior matrix — Phase 7 disable flags
+
+There are **two distinct families** of `callerExtras` disable flags. They MUST NOT be conflated in implementation. Treating them identically is the bug that caused MCP, output-style, LSP, built-in skills, and snapshots to disappear from headless forge runs in the 2026-04-16 release-gate test.
+
+| Flag | Family | Effect when `true` | Telemetry written | Artifacts written |
+|---|---|---|---|---|
+| `disableMCP` | **SKIP-PHASE** | Skip Phase 7a entirely | `mcpStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [], skipped: [...] }` | None |
+| `disableLSP` | **SKIP-PHASE** | Skip Phase 7c entirely | `lspStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [], skipped: [...] }` | None |
+| `disableBuiltInSkills` | **SKIP-PHASE** | Skip Phase 7d entirely | `builtInSkillsStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [], skipped: [...] }` | None |
+| `disableSkillTuning` | **SUPPRESS-PROMPT** | Skip per-skill batched confirmation only | `skillStatus: { status: "emitted", source: "inferred", ... }` | Skill files + `onboard-skill-snapshot.json` |
+| `disableAgentTuning` | **SUPPRESS-PROMPT** | Skip per-agent batched confirmation only | `agentStatus: { status: "emitted", source: "inferred", ... }` | Agent files (with YAML frontmatter) + `onboard-agent-snapshot.json` |
+| `disableOutputStyleTuning` | **SUPPRESS-PROMPT** | Skip Phase 7b batched confirmation only | `outputStyleStatus: { status: "emitted", source: "inferred", ... }` | Output style file + `onboard-output-style-snapshot.json` |
+
+**Telemetry status enum** (used in every Phase 7 status object):
+
+| Value | Meaning |
+|---|---|
+| `"emitted"` | Phase ran, artifacts written, snapshot recorded. |
+| `"documented"` | Phase ran, guidance was written INTO an existing artifact (e.g., a CLAUDE.md subsection) rather than as a separate file + snapshot. Used by Phase 7d (built-in skills) whose "artifact" is documentation-only by design. Semantically distinct from `"emitted"` (new file) and `"skipped"` (phase did not run). |
+| `"skipped"` | Phase intentionally skipped (caller flag, no signal, no candidates, stub mode). Telemetry still recorded so verify scripts can distinguish "intentional skip" from "silent bug". |
+| `"declined"` | User explicitly declined in interactive flow (wizard answered "no" / empty array). |
+| `"failed"` | Phase attempted but failed (e.g., script crash, write error). Triggers warning in `warnings[]` but never aborts the run. |
+
+**Hard rule** (load-bearing): EVERY Phase 7 block MUST emit its telemetry status key in `onboard-meta.json`, even when status is `"skipped"`. Missing keys are bugs, not absences. The `config-generator` agent's pre-exit self-audit verifies all four keys (`mcpStatus`, `outputStyleStatus`, `lspStatus`, `builtInSkillsStatus`) exist before returning. See `generation/SKILL.md` Phase 7 blocks for the per-phase Path A/B/C firing logic that ensures this invariant holds whether wizard answers are present, absent, or the SUPPRESS-PROMPT-ONLY flags are set.
+
 ### Validation
 
 Verify the context has:
@@ -283,9 +340,19 @@ The headless context uses the same field names and values as the standard wizard
 
 ---
 
-## Step 3: Generate Artifacts
+## Step 3: Generate Artifacts (DISPATCH config-generator)
 
-Spawn the `config-generator` agent with the mapped context. Include in the agent prompt:
+This is the ONLY action in this skill that produces artifacts. Use the Agent tool:
+
+```
+Agent({
+  subagent_type: "config-generator",
+  description: "Generate onboard artifacts from headless context",
+  prompt: <prompt described below>
+})
+```
+
+Include in the agent prompt:
 
 1. The analysis report (constructed from context in Step 2)
 2. The wizard answers JSON (from context)
@@ -293,10 +360,16 @@ Spawn the `config-generator` agent with the mapped context. Include in the agent
 4. The project root path
 5. The current date for maintenance headers
 6. A flag indicating headless mode: `"headlessMode": true, "source": "[source]"`
+7. A flag indicating the agent was dispatched (not running inline): `"dispatchedAsAgent": true`
 
-The config-generator agent follows the `generation` skill as usual. In headless mode, the only behavioral difference is:
+**Do NOT** read the agent's instructions and execute them inline from this skill — that defeats the dispatch contract above. Use the Agent tool exactly once and let the agent run in its own context.
+
+The config-generator agent follows the `generation` skill as usual. In headless mode, the behavioral differences are:
 
 - **Merge-aware hooks**: The caller may have already added hooks to `.claude/settings.json`. The generator must read existing settings first and merge, never overwrite. This applies in normal mode too, but is especially critical in headless mode since the caller may have set up its own hooks before invoking generation.
+- **Phase 7 SKIP-PHASE telemetry**: When `callerExtras.disableMCP` / `disableLSP` / `disableBuiltInSkills` is true, the corresponding Phase 7 block STILL writes its telemetry key to `onboard-meta.json` with `status: "skipped"` and `reason: "caller-disabled"`. The artifacts are not written, but verify scripts can distinguish "intentional skip" from "silent bug." See § Default behavior matrix above.
+- **Phase 7 SUPPRESS-PROMPT-ONLY behavior**: When `callerExtras.disableSkillTuning` / `disableAgentTuning` / `disableOutputStyleTuning` is true, generation skips the batched user confirmation but **still emits artifacts + snapshots + telemetry with `status: "emitted"`**. These flags exist to make headless flows non-interactive, NOT to suppress generation.
+- **Pre-exit self-audit**: The agent verifies all 4 Phase 7 telemetry keys exist in `onboard-meta.json` before returning. Missing key = hard-fail.
 
 ---
 
@@ -309,22 +382,58 @@ If `ecosystemPlugins` is present in the context, set up the requested plugins fo
 
 ---
 
-## Step 5: Report Results
+## Step 5: Report Results (parse agent's structured JSON response)
 
-After generation completes, compile and return a results summary:
+The dispatched config-generator agent returns a structured JSON response. **Do not improvise** — this is a contract the calling skill (e.g., forge) parses to know what landed.
+
+### Required JSON response shape
+
+```jsonc
+{
+  "filesWritten": [
+    { "path": "CLAUDE.md", "bytes": 4231 },
+    { "path": ".claude/settings.json", "bytes": 1842 },
+    { "path": ".mcp.json", "bytes": 612 }
+    // ... one entry per file written
+  ],
+  "telemetry": {
+    "hookStatus":          { "status": "emitted",  /* canonical shape per generation/SKILL.md */ },
+    "skillStatus":         { "status": "emitted",  /* ... */ },
+    "agentStatus":         { "status": "emitted",  /* ... */ },
+    "mcpStatus":           { "status": "emitted",  /* ... */ },
+    "outputStyleStatus":   { "status": "emitted",  /* ... */ },
+    "lspStatus":           { "status": "skipped", "reason": "caller-disabled" },
+    "builtInSkillsStatus": { "status": "emitted",  /* ... */ }
+  },
+  "auditPassed": true,    // result of pre-exit self-audit (config-generator step 9)
+  "warnings": []
+}
+```
+
+**Validation by this skill** (after agent returns):
+
+1. `auditPassed === true` — if false, surface a hard error to the caller.
+2. All 7 telemetry keys present with valid `status` enum values (`emitted | documented | skipped | declined | failed`).
+3. `filesWritten` non-empty (at minimum CLAUDE.md and onboard-meta.json should be present).
+
+If validation fails, do NOT pretend success. Report the missing/invalid fields to the caller.
+
+### Human-readable summary (rendered to user)
+
+After validation passes, compile and return:
 
 > **Headless generation complete** (source: [source])
 >
 > Generated artifacts:
 > | File | Purpose |
 > |---|---|
-> | [list each file created] | [brief description] |
+> | [list each file from filesWritten] | [brief description] |
 >
-> Hook status: [N] planned, [M] generated, [K] skipped
+> Telemetry: hookStatus=[status], skillStatus=[status], agentStatus=[status], mcpStatus=[status], outputStyleStatus=[status], lspStatus=[status], builtInSkillsStatus=[status]
 >
 > Metadata saved to `.claude/onboard-meta.json`
 
-In addition to the human-readable summary, the results object returned to the caller MUST include a `hookStatus` object with the canonical shape documented in `skills/generation/SKILL.md` § Quality-Gate Hooks § Hook Status Telemetry. Callers (notably forge) rely on this field to persist hook wiring data in their own metadata files — do not omit it even when all hooks were generated successfully (in that case, `skipped: []` and `warnings: []`).
+The full structured JSON response is what callers (notably forge) consume to mirror status into their own metadata files — pass it through verbatim alongside the human-readable summary.
 
 **Scope reminder**: `hookStatus` tracks **only** hooks derived from `callerExtras.qualityGates`. Format/lint hooks (Prettier, ESLint, etc.) and onboard-internal hooks (forge-evolution-check, etc.) are deliberately **excluded** from these counts — they still land in `.claude/settings.json` but do not appear in `hookStatus.planned` or `hookStatus.generated`. See SKILL.md § Hook Status Telemetry § Scope boundary for the full rationale.
 
@@ -369,7 +478,7 @@ Example results object shape:
 The `onboard-meta.json` file records:
 - `source`: the calling plugin identifier
 - `headlessMode`: true
-- `pluginVersion`: onboard version
+- `pluginVersion`: onboard version — **MUST be read at runtime** from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` (this skill lives inside onboard, so `${CLAUDE_PLUGIN_ROOT}` resolves to onboard's plugin root). Never hardcode a literal version string. Callers must NOT supply `pluginVersion` in `callerExtras` — config-generator authoritatively reads it from disk so onboard upgrades automatically reflect in the meta file. The 2026-04-16 release-gate Phase 5 test (finding FO6) hit a stale literal `1.2.0` baked into the headless context even though onboard was at 1.9.0.
 - `lastRun`: current timestamp
 - `wizardAnswers`: from context
 - `generatedArtifacts`: list of files created

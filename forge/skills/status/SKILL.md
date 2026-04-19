@@ -61,8 +61,9 @@ Extract from `forge-meta.json`:
 - `context.deployTarget` — Deployment target
 - `context.branchingStrategy` — Git branching strategy
 - `context.autoEvolutionMode` — How tooling updates work
-- `generated.tooling` — List of generated tooling files
-- `generated.cicd` — List of CI/CD workflows
+- `generated.toolingFlags.tooling` — List of generated tooling files (formerly `generated.tooling` before the L5 alignment in the 2026-04-16 release-gate sweep)
+- `generated.toolingFlags.cicd` — List of CI/CD workflows (formerly `generated.cicd`)
+- `generated.toolingFlags.harness` — List of harness artifacts (init.sh, docs/feature-list.json, docs/progress.md)
 - `webResearch.stackVersion` — Framework version at scaffold time
 
 ---

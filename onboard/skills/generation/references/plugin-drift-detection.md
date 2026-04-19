@@ -18,15 +18,9 @@ Each caller resolves the baseline `previousPlugins` list using the first source 
 
 ## Probe Procedure
 
-Use the canonical Known Plugin Probe List from `plugin-detection-guide.md` § Known Plugin Probe List. For each plugin in the list:
+Follow `plugin-detection-guide.md` § Known Plugin Probe List — specifically the two-location probe (sibling + `~/.claude/plugins/cache/**`) that catches both dev-repo monorepo installs and marketplace installs. Also probe any plugin in `previousPlugins` that is **not** in the known catalog (custom/third-party plugins), applying the same two-location logic.
 
-```bash
-ls "${CLAUDE_PLUGIN_ROOT}/../<plugin-name>" 2>/dev/null
-```
-
-A successful probe (exit 0) means the plugin is installed. Also probe any plugin in `previousPlugins` that is **not** in the known list (custom/third-party plugins).
-
-**`CLAUDE_PLUGIN_ROOT` unset or empty**: skip all probes and treat as "no plugins detected" (`currentPlugins = []`). Do not fail.
+**`CLAUDE_PLUGIN_ROOT` unset or empty**: the cache-location probe still works (it keys off `$HOME`, not `CLAUDE_PLUGIN_ROOT`). Only the sibling probe is skipped. If BOTH locations yield zero hits across the catalog, fall back to "no plugins detected" (`currentPlugins = []`). Do not fail.
 
 Build `currentPlugins` from successful probes.
 

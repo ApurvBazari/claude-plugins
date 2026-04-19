@@ -11,7 +11,6 @@ Vetted Claude Code plugins organized by category with matching rules. Use this c
 | **security-guidance** | Official (Anthropic) | Hook-based security warnings on file edits | (passive hook) |
 | **hookify** | Official (Anthropic) | Create behavioral guardrails from natural language | `/hookify` |
 | **claude-md-management** | Official (Anthropic) | Audit and improve CLAUDE.md quality over time | `/revise-claude-md` |
-| **engineering** | Official (Anthropic) | Engineering lifecycle — ADRs, testing strategy, deploy checklists, debugging, incident response | `/architecture`, `/testing-strategy`, `/deploy-checklist` |
 | **notify** | In-repo (apurvbazari) | Cross-platform system notifications when Claude finishes tasks or needs attention | `/notify:setup`, `/notify:status` |
 
 ## Stack-Conditional Plugins
@@ -106,7 +105,6 @@ Each plugin covers specific capabilities. When a plugin is installed, its capabi
 | **Trail of Bits skills** | `security-audit` |
 | **github** | `vcs-integration` |
 | **gitlab** | `vcs-integration` |
-| **engineering** | `engineering-lifecycle`, `architecture-decisions`, `deploy-verification` |
 | **notify** | `session-monitoring` |
 
 ### How to Build the coveredCapabilities List

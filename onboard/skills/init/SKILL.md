@@ -22,6 +22,56 @@ Tell the developer:
 
 ---
 
+## Phase 0: Empty-Repo Guard
+
+Runs **before** Phase 1 Analysis. Detects repositories with no source code and routes them to a minimal, canonical-shape stub instead of running the full analysis + wizard. Closes 2026-04-17 release-gate findings B14, B15, B16.
+
+### Step 0.1: Detect empty repository
+
+Count source-code files (exclude `.git/`, dotfiles, `README*`, `LICENSE*`, `.gitignore`):
+
+```bash
+SRC_COUNT=$(find . -type f \
+  -not -path './.git/*' \
+  -not -name '.*' \
+  -not -name 'README*' \
+  -not -name 'LICENSE*' \
+  | wc -l | tr -d ' ')
+```
+
+- `SRC_COUNT > 0` → source code exists → **skip Phase 0 entirely**, fall through to Phase 1 Analysis. Most common case.
+- `SRC_COUNT == 0` → empty repo → proceed to Step 0.2.
+
+### Step 0.2: Detect prior stub (auto-promote)
+
+If `.claude/onboard-meta.json` already exists AND `jq -r '.mode // empty'` returns `"stub-empty-repo"` AND `SRC_COUNT > 0`: auto-promote. Skip Phase 0 entirely; run Phase 1 Analysis → Phase 2 Wizard → Phase 3 Generation. Full generation overwrites the stub artifacts. Append an `updateHistory` entry to the new `onboard-meta.json` noting the `"stub → full"` promotion.
+
+If prior stub exists AND `SRC_COUNT == 0` (user ran init twice on empty dir): default to no-op — inform the developer a stub already exists, skip re-write.
+
+### Step 0.3: Present the 3-option menu
+
+For empty repos without a prior stub, use `AskUserQuestion` (single-select, header: `"Empty repo"`):
+
+> This repository has no source code yet. How would you like to proceed?
+>
+> - **Abort** — stop here. Suggestion: run `/forge:init` to scaffold a project and generate tooling in one step.
+> - **Placeholder only** — write a minimal CLAUDE.md placeholder (no `.claude/` directory). Useful if you want to set up Claude context before the code exists but don't want a formal tooling setup.
+> - **Generate canonical stub** (default) — create CLAUDE.md, `.claude/settings.json`, and `.claude/onboard-meta.json` in canonical schema with stub-mode markers. Re-run `/onboard:init` later to upgrade to full tooling.
+
+Default: **Generate canonical stub**.
+
+**Single-option guard** (per `.claude/rules/ask-user-question-guard.md`): the menu has 3 options → no guard needed.
+
+### Step 0.4: Execute the selected path
+
+- **Abort** → stop the skill. No files written. Optionally invoke `/forge:init` if the developer explicitly asks.
+- **Placeholder only** → write CLAUDE.md with the placeholder content from the stub procedure (below) but SKIP the `.claude/` directory. Return minimal handoff. Do not proceed to further phases.
+- **Generate canonical stub** (default) → follow `references/empty-repo-stub-procedure.md`. It prescribes: the 3 files, the canonical `onboard-meta.json` schema with all 7 Phase 7 status keys set to `status: "skipped"` + `reason: "stub-mode-no-code"`, dynamic `pluginVersion` resolution (no hardcoded literals), and the 3-file atomic write order.
+
+After either stub path completes, run a minimal handoff (see the stub procedure's § Post-write handoff section) and return — do NOT continue to Phase 1 Analysis.
+
+---
+
 ## Phase 1: Automated Analysis
 
 ### Step 1.1: Check for Existing Claude Config
@@ -128,23 +178,29 @@ Wait for confirmation before proceeding to generation.
 
 Before generation, detect installed Claude Code plugins to enrich the output with plugin-aware features (Plugin Integration section, per-directory skill annotations, plugin-aware agent skipping, quality-gate hooks referencing plugin skills).
 
-### Step 2.5.1: Check for callerExtras
+### Step 2.5.1: Probe Filesystem — canonical deep probe
 
-If `callerExtras.installedPlugins` is present (headless mode via `/onboard:generate`), skip this phase entirely — the caller has already provided plugin data.
+Follow the canonical procedure in `../generation/references/plugin-detection-guide.md` § Known Plugin Probe List. The probe walks **both** locations to catch sibling installs AND marketplace-installed plugins:
 
-### Step 2.5.2: Probe Filesystem
+1. `${CLAUDE_PLUGIN_ROOT}/../<plugin-name>/` (dev monorepo siblings)
+2. `~/.claude/plugins/cache/*/<plugin-name>/[version/]` (marketplace installs, where `<version>` is often the literal string `"unknown"`)
 
-For each plugin in the Known Plugin Probe List (see `generation/references/plugin-detection-guide.md`), run:
+Build `installedPlugins` from successful probes across the full catalog. Do not stop on a single miss — continue through every plugin in the catalog.
 
-```bash
-ls "${CLAUDE_PLUGIN_ROOT}/../<plugin-name>" 2>/dev/null
-```
+**Fallback when `CLAUDE_PLUGIN_ROOT` is unset**: the marketplace-cache probe still runs (keys off `$HOME`). Only fall back to "no plugins detected" when BOTH probe locations yield zero hits across the catalog.
 
-Build `installedPlugins` from successful probes. Derive `coveredCapabilities`, `qualityGates`, and `phaseSkills` per the detection guide's derivation rules, using `wizardAnswers.autonomyLevel` for the autonomyLevel downgrade.
+### Step 2.5.2: Probe Plugin Surfaces
 
-**If `CLAUDE_PLUGIN_ROOT` is unset**: Skip detection, treat as "no plugins detected", and proceed to Phase 3 with standalone generation.
+For each entry in `installedPlugins`, run the surface-probe procedure in `../generation/references/plugin-surface-probe.md` to classify the plugin as `command-or-skill`, `hooks-only`, or `agent-only`. The resulting `pluginSurfaces` map feeds the Plugin Integration template to prevent fabricated slash refs (e.g., `/security-guidance:security-review` for a hooks-only plugin — release-gate finding G.3, 2026-04-17).
 
-### Step 2.5.3: Present Detection Results
+### Step 2.5.3: Derive coveredCapabilities, qualityGates, phaseSkills
+
+Apply the derivation rules in `../generation/references/plugin-detection-guide.md`:
+- `coveredCapabilities` — combine per-plugin capabilities, deduplicated
+- `qualityGates` — filter defaults by `installedPlugins`, then downgrade `preCommit[].mode` per `wizardAnswers.autonomyLevel`
+- `phaseSkills` — filter defaults by `installedPlugins`; remove empty phases
+
+### Step 2.5.4: Present Detection Results
 
 If plugins were detected:
 
@@ -159,43 +215,76 @@ If no plugins were detected:
 > No Claude Code plugins detected. I'll generate standalone tooling.
 > You can install plugins later and re-run `/onboard:init` to integrate them.
 
-### Step 2.5.4: Pass to Generation
+---
 
-Build the `detectedPlugins` object with `installedPlugins`, `coveredCapabilities`, `qualityGates`, and `phaseSkills`. Include it in the data passed to the config-generator agent in Phase 3, alongside the analysis report and wizard answers.
+## Phase 2.6: Build Onboard Context
+
+Follow the canonical procedure in `references/onboard-context-builder.md` to assemble the single context object that Phase 3 dispatches to `Skill(onboard:generate)`. The builder is the **single source of truth** for init context construction — every preset path (Custom / Standard / Minimal / Comprehensive / Quick Mode) invokes it. Do not maintain preset-specific context builders; that was the drift that caused release-gate findings B1, B5, B6, B8, B10, B12, B13 (2026-04-17 sweep).
+
+Inputs already in conversation context:
+
+- Phase 1 analysis report
+- Phase 2 wizard output (canonical `wizardAnswers` shape per `../wizard/SKILL.md` § Output § Canonical shape invariant)
+- Phase 2.5 plugin detection results (`installedPlugins`, `coveredCapabilities`, `pluginSurfaces`)
+- Project root path (current working directory)
+
+The builder emits a context object shaped like `forge-onboard-context.json` (forge is the reference — its release-gate Phase 5 pass proves the shape works). Key invariants:
+
+- All 7 callerExtras Phase-7 flags populated explicitly (`disableMCP`, `disableLSP`, `disableBuiltInSkills`, `disableSkillTuning`, `disableAgentTuning`, `disableOutputStyleTuning`, `allowHttpHooks`) — init-path defaults are `false` for all (Phase 7 blocks run fully; interactive confirmation runs).
+- `callerExtras.installedPlugins` and `pluginSurfaces` populated from Phase 2.5 probes.
+- Every wizardAnswers field populated (including defaults for skipped fields per `../wizard/SKILL.md` § Skip Behavior).
+
+Run the builder's validation step before proceeding to Phase 3. If validation fails, refuse to dispatch — surface the error to the user with the offending field name.
 
 ---
 
-## Phase 3: Generation
+## Phase 3: Generation via Skill(onboard:generate)
 
-### Step 3.1: Model Recommendation
+### Step 3.1: Model resolution (no separate prompt)
 
-Before generating artifacts, present the model recommendation based on the analysis skill's model-recommendations.md logic:
+The model has already been chosen by this point — either explicitly through the wizard's Phase 5.2 (Custom preset), or implicitly via the preset default (Minimal/Standard/Comprehensive use `claude-opus-4-7[1m]` per `wizard/references/workflow-presets.md` § Per-preset exchange targets).
 
-> Based on your project ([complexity category], [file count] files, [LOC] lines, [language count] languages):
->
-> **Recommended model**: [Sonnet/Opus]
-> **Reasoning**:
-> - [bullet 1]
-> - [bullet 2]
-> - [bullet 3]
->
-> [If both are viable]: You could also consider [other model] because [trade-off].
->
-> Which model would you like to use? You can always change this later.
+**Do NOT** ask "Which model would you like to use?" here. That used to be a separate post-summary question in earlier versions of init/SKILL.md and the wizard's Phase 5.2 also asked the same thing — the duplicate prompt was findings A4 in the 2026-04-16 release-gate test.
 
-Wait for the developer to choose. Record their choice.
+Resolve the model from the wizard answers as follows:
 
-### Step 3.2: Generate Artifacts
+```
+chosenModel = wizardAnswers.skillTuning?.defaultModel
+            ?? wizardAnswers.model
+            ?? presetDefaultModel(wizardAnswers.selectedPreset)
+            ?? "claude-opus-4-7[1m]"
+```
 
-Spawn the `config-generator` agent. Include the following in the agent prompt — all of this is already available in the conversational context from prior phases:
-- The full analysis report (from Phase 1)
-- The wizard answers as structured JSON (from Phase 2) — includes `advancedHookEvents` when the developer opted in at Phase 5.1; generation reads this to drive `Advanced Event Hooks` emission (see `generation/SKILL.md` § Advanced Event Hooks)
-- The `detectedPlugins` object (from Phase 2.5) — if no plugins were detected, pass an empty object so the generation skill resolves `effectivePlugins` as empty
-- The chosen model (from Step 3.1)
-- The project root path
-- The current date for maintenance headers
+The preset-default fallback is documented in `wizard/references/workflow-presets.md`. The final fallback (`claude-opus-4-7[1m]`) covers any path where the wizard answers don't include a model (e.g., a future bug or a Quick Mode bail-out before Phase 5.2).
 
-Inform the developer:
+The wizard's Phase 6 summary already shows the chosen model — the developer has already seen and confirmed it. If they wanted to change it, they would have done so in the summary tweak step (or by editing `.claude/settings.json` after init).
+
+The model choice is written into `context.modelChoice` by the Phase 2.6 builder.
+
+### Step 3.2: Dispatch to Skill(onboard:generate)
+
+**Invoke `Skill(onboard:generate)` with the context object built in Phase 2.6.** This is the same skill forge uses (via `forge:tooling-generation`) — one contract, one validator, one agent-dispatch boundary.
+
+```
+Skill(
+  skill: "onboard:generate",
+  args: <stringified context object from Phase 2.6>
+)
+```
+
+The generate skill then:
+
+1. Validates the context (same rules as forge — see `../generate/SKILL.md` § Validation)
+2. Dispatches `Agent(config-generator)` with `dispatchedAsAgent: true`
+3. Runs the full generation pipeline (Phase 7a MCP, 7b Output Styles, 7c LSP, 7d Built-in Skills) per `../generation/SKILL.md`
+4. Runs pre-exit self-audit verifying all 7 Phase 7 telemetry keys are present
+5. Returns a structured JSON response with `filesWritten`, `telemetry`, `auditPassed`, `warnings`
+
+**Do NOT** call `Agent(config-generator)` directly from this skill — that breaks the contract boundary and bypasses the shared validation. Always dispatch via the Skill tool.
+
+**Do NOT** call Write / Edit from this skill — the dispatched agent owns all writes (hard-fail safety net: config-generator checks `dispatchedAsAgent === true` and refuses to write if absent).
+
+Before dispatching, inform the developer:
 
 > Generating your Claude tooling... This will create the following artifacts:
 > - Root CLAUDE.md
@@ -204,6 +293,9 @@ Inform the developer:
 > - Skills
 > - Agents
 > - Hook configuration
+> - MCP servers (if stack signals detected)
+> - Output style
+> - LSP plugin integration (if source files detected)
 > - Setup metadata
 
 ### Step 3.3: Report Generation Results
@@ -272,7 +364,24 @@ Then continue to the next requested plugin. Repeat for each entry in `ecosystemP
 
 ### Step 3.5.2: Set Up Notify (if requested and available)
 
-If `ecosystemPlugins.notify` is `true` and notify is available:
+If `ecosystemPlugins.notify` is `true` and notify is available, **first probe for pre-existing global configuration** before offering any project-local setup:
+
+#### Detection probe (strict — both must match to count as configured)
+
+```bash
+HAS_GLOBAL_CONFIG=$( [ -f "$HOME/.claude/notify-config.json" ] && echo 1 || echo 0 )
+HAS_GLOBAL_HOOK=$(jq -e '.hooks // {} | tostring | test("notify\\.sh") and test("notify-config\\.json")' "$HOME/.claude/settings.json" 2>/dev/null && echo 1 || echo 0)
+```
+
+Three states result:
+
+| State | Condition | Action |
+|---|---|---|
+| `globalConfigured` | `HAS_GLOBAL_CONFIG=1` AND `HAS_GLOBAL_HOOK=1` | **Inform-only, no offer.** Print: "Global notify config detected at `~/.claude/notify-config.json` — your hooks will fire for this project automatically. No project-local setup needed." Skip steps 1-4 below. |
+| `globalPartial` | One of the two probes is positive but not both | Print: "Global notify hooks detected but config is incomplete. Project-local setup will install the full config; consider running `/notify:setup` in a fresh session to repair the global install." Then proceed with steps 1-4 (default = no via AskUserQuestion). |
+| `notConfigured` | Both probes are 0 | Proceed with steps 1-4 below as the original flow (default = yes). |
+
+#### Project-local setup steps (only when `notConfigured` or developer accepts `globalPartial` offer)
 
 1. Run notify's install script to check dependencies:
    ```bash
@@ -284,22 +393,26 @@ If `ecosystemPlugins.notify` is `true` and notify is available:
    cp "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh" "$BASE_DIR/hooks/notify.sh"
    chmod +x "$BASE_DIR/hooks/notify.sh"
    ```
-3. Write a default `notify-config.json` to `$BASE_DIR/`:
-   ```json
-   {
-     "version": "1.0.0",
-     "events": {
-       "stop": { "enabled": true, "message": "Task completed", "sound": "Hero", "minDurationSeconds": 0 },
-       "notification": { "enabled": true, "matcher": "permission_prompt|idle_prompt", "message": "Needs your attention", "sound": "Glass" },
-       "subagentStop": { "enabled": false, "message": "Subagent task completed", "sound": "Ping" }
+3. Write `notify-config.json` to `$BASE_DIR/` — applying **inherit + override** precedence when global config exists:
+   - Read `~/.claude/notify-config.json` (if present) as the base.
+   - Layer the project-local default on top: only specified keys override the global; missing keys inherit the global value.
+   - Example: if global has `events.stop.sound = "Glass"` and project-local doesn't override `sound`, the merged result keeps `"Glass"`.
+   - Default project-local body (used when no global exists, or as the override layer):
+     ```json
+     {
+       "version": "1.0.0",
+       "events": {
+         "stop": { "enabled": true, "message": "Task completed", "sound": "Hero", "minDurationSeconds": 0 },
+         "notification": { "enabled": true, "matcher": "permission_prompt|idle_prompt", "message": "Needs your attention", "sound": "Glass" },
+         "subagentStop": { "enabled": false, "message": "Subagent task completed", "sound": "Ping" }
+       }
      }
-   }
-   ```
+     ```
 4. Merge notify hooks into `$BASE_DIR/settings.json` (Stop, Notification, SubagentStop events)
 
 Where `$BASE_DIR` is the same scope used for the generated Claude tooling (typically `$PWD/.claude` for per-project or `~/.claude` for global).
 
-Report: `Notify plugin configured — you'll get system notifications when Claude finishes tasks.`
+Report: `Notify plugin configured — you'll get system notifications when Claude finishes tasks.` (or, when `globalConfigured`, the inform-only line above.)
 
 ### Step 3.5.3: Report Ecosystem Setup
 

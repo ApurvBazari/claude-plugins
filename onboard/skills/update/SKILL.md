@@ -71,8 +71,8 @@ Check two knowledge sources:
 - Check if the existing artifacts use deprecated patterns
 
 **Live web fetch** (latest):
-- Fetch the official Claude Code documentation at `https://docs.anthropic.com/en/docs/claude-code` using WebFetch to check for new features or changed best practices
-- Also check `https://docs.anthropic.com/en/docs/claude-code/settings` for settings and hooks updates
+- Fetch the official Claude Code documentation at `https://code.claude.com/docs/en` using WebFetch to check for new features or changed best practices
+- Also check `https://code.claude.com/docs/en/settings` for settings and hooks updates
 - Compare fetched documentation against the existing setup to identify new capabilities not yet leveraged
 
 **Web fetch failure fallback**: If the web fetch fails (network error, timeout, or content unavailable):
@@ -117,7 +117,7 @@ Keep this narrow — do not parse the live WebFetch output to infer new recommen
 
 #### 4b.4: MCP Drift
 
-Compare `.mcp.json`, the drift snapshot `.claude/onboard-mcp-snapshot.json`, and a fresh signal scan (`../scripts/detect-mcp-signals.sh`). Follow `../generation/references/mcp-guide.md` for emission rules — this step only classifies drift; applying is deferred to Step 7.
+Compare `.mcp.json`, the drift snapshot `.claude/onboard-mcp-snapshot.json`, and a fresh signal scan (`bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh"`). Follow `../generation/references/mcp-guide.md` for emission rules — this step only classifies drift; applying is deferred to Step 7.
 
 1. **Read the three sources**:
    - `.mcp.json` at project root (if absent and `mcpStatus.existedPreOnboard` is false, record `mcpDrift.status: "file-missing"`)
@@ -209,7 +209,7 @@ Compare the fresh `detect-lsp-signals.sh` output against the `onboard-lsp-snapsh
 
 1. **Read the inputs**:
    - `.claude/onboard-lsp-snapshot.json` — `{ recommended, accepted }`. Missing file → treat as `recommended: [], accepted: []` (pre-1.8.0 project).
-   - `bash ../scripts/detect-lsp-signals.sh "$PROJECT_ROOT"` — fresh JSON array.
+   - `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"` — fresh JSON array.
    - `claude plugin list --json` (via `install-plugins.sh`'s probe, or direct call) — current install state.
 
 2. **Classify** per candidate plugin from the fresh scan:
@@ -332,41 +332,75 @@ Organize findings into categories:
 
 ## Upgrade Offers
 
-### Step 6: Offer Targeted Upgrades
+### Step 6: Offer Targeted Upgrades (AskUserQuestion)
 
-For each finding, offer a specific action:
+Accumulate every detected drift item into a list of offer-objects. Do **not** number them manually — they get rendered as `AskUserQuestion` options programmatically. Each offer has:
 
-> I can make the following updates:
->
-> **Core tooling:**
-> 1. **Update CLAUDE.md** — Add new commands discovered, update tech stack section
-> 2. **Add .claude/rules/security.md** — Your project now has auth code that wasn't there before
-> 3. **Update .claude/skills/react-component/SKILL.md** — New patterns detected in recent components
->
-> **Enriched capabilities** (if not already set up):
-> 4. **Add CI/CD pipelines** — Generate GitHub Actions for testing, deployment, and PR review
-> 5. **Add harness artifacts** — progress.md, HARNESS-GUIDE.md for multi-session development
-> 6. **Add evolution hooks** — Auto-detect when deps/configs/structure change
-> 7. **Add sprint contracts** — Quality gates for feature development
-> 8. **Add feature verification** — Independent evaluator agent + /onboard:verify
->
-> **Plugin drift** (from Step 4b.1):
-> 9. **Wire in `feature-dev`** — Refresh Plugin Integration + add `preCommit` hooks
-> 10. **Remove `hookify`** — Strip CLAUDE.md references + delete obsolete hook scripts
->
-> **Artifact gaps** (from Step 4b.2):
-> 11. **Regenerate `.claude/rules/security.md`** — File was listed in generatedArtifacts but is missing from disk
->
-> **New best-practice additions** (from Step 4b.3):
-> 12. **Create `.claude/rules/observability.md`** — Reference guides recommend this for your stack
->
-> **LSP plugin drift** (from Step 4b.8):
-> 13. **Install `rust-analyzer-lsp`** — Rust files detected since last run
->
-> **Built-in skills drift** (from Step 4b.9):
-> 14. **Add `/claude-api` to built-in skills** — Anthropic SDK detected since last run
->
-> Which updates would you like me to apply? (all / specific numbers / none)
+```jsonc
+{
+  "id": "regenerate-security-rule",   // stable id, used in pending-updates snapshot
+  "label": "Regenerate .claude/rules/security.md",
+  "description": "File was listed in generatedArtifacts but is missing from disk",
+  "group": "artifact-gaps",            // see grouping below
+  "autoChecked": false                  // true for new-language LSP / built-in skills, see below
+}
+```
+
+Group offers into these categories (each becomes one `multiSelect: true` question inside the AskUserQuestion call):
+
+| Group | What goes here |
+|---|---|
+| `artifact-gaps` | Files in `generatedArtifacts` missing from disk; user-customized files that need merge/replace decision |
+| `user-edit-detections` | Files where the maintenance header was modified or other edits detected |
+| `new-dependencies-or-languages` | New dep additions (e.g., `@anthropic-ai/sdk`), new languages (Rust → `rust-analyzer-lsp`), built-in skills newly relevant. **LSP plugins for newly detected languages are `autoChecked: true` by default**, matching wizard Phase 5.6 pre-check behavior. |
+| `best-practice-suggestions` | Reference guide recommendations (e.g., `observability.md` rule for the detected stack) |
+| `enriched-capabilities` | CI/CD, harness, evolution, sprint contracts, verification |
+| `plugin-drift` | Wire-in / remove offers from Step 4b.1 |
+
+### Combined AskUserQuestion call
+
+Issue a **single AskUserQuestion call** containing the pre-question + up to 3 offer-group multi-select questions (4 max per call). If there are more than 3 active groups, fold the lowest-priority groups into a second AskUserQuestion call within the same exchange.
+
+**Question 1 — Pre-question** (single-select, header: `"Approach"`):
+
+| Label | Effect |
+|---|---|
+| `Review and pick` | Default. Proceed to per-group multiSelect questions in this same call. |
+| `Apply all` | Skip per-group selection, apply every offer accumulated. |
+| `Apply later` | Write `.claude/onboard-pending-updates.json` snapshot of all offers (with their `id` and metadata) and exit. The next `/onboard:update` re-presents pending items + any newly detected drift. |
+| `Skip / dismiss` | Discard offers, do not remind again this session. (Re-running `/onboard:update` re-detects from scratch.) |
+
+**Questions 2–4 — Offer-group multi-selects** (each `multiSelect: true`, headers: `"ArtifactGaps"`, `"UserEdits"`, `"NewDeps"`, etc. — pick the 3 most populous groups for the first call). Only render groups that have ≥1 offer; skip empty groups.
+
+For each option, set the `description` to the offer's `description` field. Mark `autoChecked: true` offers (e.g., new-language LSP) as pre-selected so the developer just clicks Submit unless they want to opt out.
+
+**Single-option guard** (per `.claude/rules/ask-user-question-guard.md`): when a group has exactly 1 offer, **pad that group** with an explicit `None / Skip` option (label: `"None / Skip"`, description: `"Do not apply anything from this group"`). This keeps the batched single-call envelope intact. Do NOT fall back to sequential single-select calls — that breaks the M2 contract (one AskUserQuestion per update exchange) and was the failure mode observed in release-gate finding F1 (2026-04-17). When the user selects `None / Skip` in a padded group, treat it as empty-array-equivalent: skip every offer in that group, do not apply, and record `status: "declined", reason: "user-skipped-padded-group"` in `updateHistory`.
+
+### "Apply later" snapshot — `.claude/onboard-pending-updates.json`
+
+Written when the developer picks "Apply later" in the pre-question:
+
+```jsonc
+{
+  "savedAt": "2026-04-17T14:32:00Z",
+  "pendingOffers": [
+    {
+      "id": "regenerate-security-rule",
+      "label": "Regenerate .claude/rules/security.md",
+      "description": "File was listed in generatedArtifacts but is missing from disk",
+      "group": "artifact-gaps",
+      "autoChecked": false
+    }
+    // ... one entry per offer
+  ]
+}
+```
+
+Next `/onboard:update`:
+1. If `.claude/onboard-pending-updates.json` exists, read it. Re-validate each offer against current state (e.g., the missing file may have been restored manually).
+2. Merge still-applicable pending offers into the freshly detected drift list. Dedupe by `id`.
+3. Present the combined list via the same Step 6 AskUserQuestion call.
+4. After "Apply all" or per-group selection lands, delete `.claude/onboard-pending-updates.json` (snapshot has served its purpose).
 
 ### User-Customized Files
 
@@ -450,7 +484,7 @@ Only **additions** are applied automatically on user approval. Removals and user
    - Read the current `.mcp.json` (if absent, create it with `{"mcpServers":{}}`).
    - Merge the new server entry into `mcpServers` per the schema in `../generation/references/mcp-guide.md` § Config Shape. Preserve every other key verbatim.
    - Append the server to `.claude/onboard-mcp-snapshot.json` as well so subsequent drift checks use the new baseline.
-   - If the server's catalog entry has a `plugin` field, append to the auto-install queue for Step 7's plugin section (reuse `scripts/install-plugins.sh`).
+   - If the server's catalog entry has a `plugin` field, append to the auto-install queue for Step 7's plugin section (reuse `${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh`).
 2. For each `staleCandidate`: display the removal suggestion but do NOT auto-apply. If the user explicitly says "yes remove X", delete the entry from `.mcp.json` AND the snapshot.
 3. For `userEdited` / `userRemoved`: no action. The findings report already informed the user.
 4. If `.claude/rules/mcp-setup.md` needs regeneration (new server added needing auth), invoke `generate` with `callerExtras.regenerateOnly` scoped to `.claude/rules/mcp-setup.md`.
@@ -490,7 +524,7 @@ Only **additions** and **legacy migrations** are applied on user approval. User-
 Only **new-language additions** are applied on user approval. Uninstalls and stale candidates are informational only — onboard never auto-reinstalls or auto-removes LSP plugins.
 
 1. For each approved `newLanguage` candidate:
-   - Invoke `scripts/install-plugins.sh <plugin-name>`. Merge results into `lspStatus.autoInstalled[]` and `lspStatus.autoInstallFailed[]`.
+   - Invoke `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugin-name>`. Merge results into `lspStatus.autoInstalled[]` and `lspStatus.autoInstallFailed[]`.
    - Append the plugin to `.claude/onboard-lsp-snapshot.json` `recommended[]` AND `accepted[]`, preserving alphabetical sort.
    - Append the plugin to `lspStatus.generated[]`.
 2. For `uninstalled` findings: no action. Log once: "LSP plugin `<name>` was uninstalled since last run — rerun `/onboard:evolve` if you want to reinstall."
@@ -528,7 +562,7 @@ Update `.claude/onboard-meta.json`:
 - Update `generatedArtifacts` list (add any new files, drop any whose deletion was explicitly approved)
 - Preserve `wizardAnswers` (don't re-ask wizard questions during update)
 - **If plugin drift was applied in Step 7** — refresh `detectedPlugins.installedPlugins` to `driftReport.currentPlugins`, and recompute `detectedPlugins.coveredCapabilities`, `detectedPlugins.qualityGates`, `detectedPlugins.phaseSkills` per `../generation/references/plugin-detection-guide.md`. Update the top-level `hookStatus` to reflect added/removed hook scripts.
-- **If MCP drift was applied in Step 7** — refresh top-level `mcpStatus`: add newly-applied servers to `mcpStatus.generated[]`, drop removed servers. Re-run `scripts/install-plugins.sh` for any newly-applied server with a `plugin` field; merge results into `mcpStatus.autoInstalled[]` and `mcpStatus.autoInstallFailed[]`. Always keep `mcpStatus.existedPreOnboard` sticky — once true, it stays true for the life of the project.
+- **If MCP drift was applied in Step 7** — refresh top-level `mcpStatus`: add newly-applied servers to `mcpStatus.generated[]`, drop removed servers. Re-run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh"` for any newly-applied server with a `plugin` field; merge results into `mcpStatus.autoInstalled[]` and `mcpStatus.autoInstallFailed[]`. Always keep `mcpStatus.existedPreOnboard` sticky — once true, it stays true for the life of the project.
 - **If skill frontmatter drift was applied in Step 7** — refresh top-level `skillStatus.frontmatterFields[<skill>]` to match the applied state, including the refreshed `source` value (`user-confirmed` / `user-tweaked`). Update `.claude/onboard-skill-snapshot.json` to reflect the new baseline. Keep `skillStatus.existedPreOnboard[]` sticky.
 - **If agent frontmatter drift was applied in Step 7** — refresh top-level `agentStatus.frontmatterFields[<agent>]` to match the applied state, including the refreshed `source` value (`user-confirmed` / `user-tweaked` / `wizard-default` for legacy migrations). Update `.claude/onboard-agent-snapshot.json` to reflect the new baseline. Keep `agentStatus.existedPreOnboard[]` sticky. Append `legacy-skipped:<agent>` entries to `agentStatus.warnings` for any `legacyNoFrontmatter` declined by the developer.
 - **If output style drift was applied in Step 7** — refresh top-level `outputStyleStatus.frontmatterFields[<style>]` to match the applied state, including the refreshed `source` value (`user-confirmed` / `user-tweaked` / `wizard-default` for legacy migrations). Update `.claude/onboard-output-style-snapshot.json` to reflect the new baseline. Keep `outputStyleStatus.existedPreOnboard[]` sticky. Append `legacy-skipped:<style>` or `legacy-no-archetype-match:<style>` entries to `outputStyleStatus.warnings` for any `legacyNoFrontmatter` declined or unclassifiable. Preserve `outputStyleStatus.activationDefault`, `settingsLocalWritten`, and `settingsLocalWarning` from the prior state — `update` does NOT touch settings.local.json.
