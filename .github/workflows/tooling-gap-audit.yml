@@ -1,0 +1,85 @@
+name: Tooling Gap Audit
+
+# Runs a two-phase Claude-powered audit every 15 days to detect when Anthropic
+# ships new Claude Code features that our plugins don't yet support.
+# Phase 1 (analyze): reads local plugins + live docs, produces structured JSON.
+# Phase 2 (report): renders JSON into a strict-schema markdown report.
+# A post-step diffs the report and opens a PR if content changed.
+
+on:
+  schedule:
+    - cron: '0 6 1,15 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create audit branch
+        id: branch
+        run: |
+          set -euo pipefail
+          DATE=$(date -u +%Y-%m-%d)
+          BRANCH="chore/audit-${DATE}"
+          # Handle same-day re-runs: reuse existing branch if it already exists
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            git fetch origin "$BRANCH"
+            git checkout "$BRANCH"
+          else
+            git checkout -b "$BRANCH"
+          fi
+          echo "date=${DATE}" >> "$GITHUB_OUTPUT"
+          echo "branch=${BRANCH}" >> "$GITHUB_OUTPUT"
+
+      - name: Phase 1 — Analyze
+        uses: anthropics/claude-code-action@beta
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          model: claude-opus-4-6
+          max_turns: 80
+          track_progress: true
+          prompt_file: .claude/prompts/tooling-gap-audit-analyze.md
+
+      - name: Phase 2 — Report
+        uses: anthropics/claude-code-action@beta
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          model: claude-opus-4-6
+          max_turns: 40
+          prompt_file: .claude/prompts/tooling-gap-audit-report.md
+
+      - name: Commit audit artifacts
+        env:
+          AUDIT_DATE: ${{ steps.branch.outputs.date }}
+          AUDIT_BRANCH: ${{ steps.branch.outputs.branch }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/tooling-gap-reports/ .claude/audit-baseline.json
+          # If nothing changed (e.g., no report was written due to failure), exit cleanly
+          if git diff --cached --quiet; then
+            echo "No audit artifacts to commit"
+            exit 0
+          fi
+          git commit -m "chore(audit): tooling gap artifacts ${AUDIT_DATE}"
+          git push origin "${AUDIT_BRANCH}"
+
+      - name: Open gap audit PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AUDIT_DATE: ${{ steps.branch.outputs.date }}
+          AUDIT_BRANCH: ${{ steps.branch.outputs.branch }}
+        run: .github/scripts/open-gap-audit-pr.sh "$AUDIT_DATE" "$AUDIT_BRANCH"

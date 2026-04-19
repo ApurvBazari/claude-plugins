@@ -174,6 +174,73 @@ AI aesthetics. Follow TDD via `superpowers:test-driven-development`. Run
 
 See `collaboration-guide.md` for the definitive reference on shared vs personal settings, `.gitignore` entries, and team hook conventions. Every generated root CLAUDE.md should include a brief settings section — use the format from the collaboration guide to avoid drift between the two references.
 
+## Output Styles Reference
+
+Generated root CLAUDE.md includes an Output styles subsection inside Plugin Integration when onboard has emitted a custom output style or when built-in styles are worth surfacing. The subsection documents:
+
+- **Built-in styles** (always available, no file needed): `Default` (software engineering), `Explanatory` (educational "Insights" between coding steps), `Learning` (collaborative mode with `TODO(human)` markers)
+- **Emitted custom style** (if any): name, one-line purpose, path (`.claude/output-styles/<name>.md`)
+- **Activation path**: open `/config` and pick from the menu, or set `"outputStyle": "<name>"` in `.claude/settings.local.json` (per-machine, gitignored)
+- **New-session caveat**: output style changes take effect on the next new session (Claude Code sets the style at session start for prompt-cache stability)
+
+Do not re-emit built-in styles as files — they're Anthropic-provided. Only custom styles live in `.claude/output-styles/`.
+
+The Plugin Integration subsection generation rules live in `generation/SKILL.md` § Plugin Integration Section Generation. For the authoring schema and archetype inference, see `output-styles-guide.md`. For the 5 custom style body templates, see `output-styles-catalog.md`.
+
+## LSP Support Reference
+
+Generated root CLAUDE.md includes an LSP support subsection inside Plugin Integration when onboard has recommended or installed one or more marketplace LSP plugins (Phase 7c). The subsection documents:
+
+- **Installed LSP plugins** (from `lspStatus.accepted`): plugin name, covered language(s), and the language-server binary that must be present on `$PATH`. Pull the binary name and install prereq from `lsp-plugin-catalog.md`.
+- **Recommended but declined** (from `lspStatus.skipped` when `reason === "user-declined"`): listed with a short note "run `/onboard:evolve` to install".
+- **Not re-emit as files**: LSP config lives inside each plugin's own `plugin.json` under `lspServers`. Onboard never writes a project-level `.lsp.json`.
+
+Example rendered subsection:
+
+```markdown
+### LSP support
+
+Installed language server plugins:
+
+- `typescript-lsp` — TypeScript / JavaScript. Requires `typescript-language-server` on PATH (`npm install -g typescript-language-server typescript`).
+- `rust-analyzer-lsp` — Rust. Requires `rust-analyzer` on PATH (`rustup component add rust-analyzer`).
+
+Plugins surface diagnostics, go-to-definition, and hover docs inside Claude Code. Restart your session after install for plugins to register.
+```
+
+Omit the subsection entirely when `lspStatus.accepted` and `lspStatus.skipped` are both empty (no candidates detected). Keep the subsection under 10 lines.
+
+The emission rules live in `generation/SKILL.md` § LSP Plugin Recommendations — Phase 7c. For the language→plugin mapping, see `lsp-plugin-catalog.md`.
+
+## Built-in Skills Reference
+
+Generated root CLAUDE.md includes a built-in skills subsection when onboard has recommended and the developer has accepted one or more built-in Claude Code skills (Phase 7d). The subsection is wrapped in `<!-- onboard:builtin-skills:start/end -->` markers regardless of placement. It documents:
+
+- **Accepted skills** (from `builtInSkillsStatus.generated`): skill name, one-line description, and a project-specific usage example matched to the detected stack.
+- **Placement**: inside Plugin Integration (as `### Built-in Claude Code skills`) when plugins are installed, or as a standalone `## Built-in Claude Code skills` section when no plugins are present.
+- **Not plugin-dependent**: these are Anthropic-provided skills available in every Claude Code session — no install required.
+
+Example rendered subsection:
+
+```markdown
+### Built-in Claude Code skills
+
+These Anthropic-provided skills are available in every Claude Code session — no plugin install required.
+
+- `/loop` — run a prompt on a recurring interval.
+  Example: `/loop 5m npm test` to watch for regressions during refactoring.
+- `/simplify` — review and simplify recently changed code.
+  Example: after landing a feature, run `/simplify` to clean up before PR.
+- `/debug` — systematic debugging of bugs and test failures.
+  Example: paste a stack trace and run `/debug` to trace the root cause.
+- `/schedule` — create scheduled remote agents on a cron schedule.
+  Example: schedule a weekly dependency-audit agent to check for vulnerabilities.
+```
+
+Omit the subsection entirely when `builtInSkillsStatus.generated` is empty (developer declined all candidates). Keep the subsection under 15 lines.
+
+The emission rules live in `generation/SKILL.md` § Built-in Claude Code Skills — Phase 7d. For the skill catalog, detection signals, and stack-specific example templates, see `built-in-skills-catalog.md`.
+
 ## Tone by Autonomy Level
 
 ### "Always Ask" Autonomy

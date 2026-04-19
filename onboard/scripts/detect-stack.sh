@@ -19,7 +19,7 @@ warn_skip() {
 }
 
 PROJECT_ROOT="${1:-.}"
-PROJECT_ROOT="$(cd "$PROJECT_ROOT" && pwd)"
+PROJECT_ROOT="$(cd "$PROJECT_ROOT" && pwd -P)"
 
 echo "=== TECH STACK DETECTION ==="
 echo "Root: $PROJECT_ROOT"
@@ -255,7 +255,8 @@ try:
     scripts = pkg.get('scripts', {})
     for name, cmd in scripts.items():
         print(f'  {name}: {cmd}')
-except: pass
+except (OSError, json.JSONDecodeError, UnicodeDecodeError, ValueError):
+    pass
 " "$PROJECT_ROOT/package.json" 2>/dev/null || true
   else
     # Fallback: extract script names using grep/sed

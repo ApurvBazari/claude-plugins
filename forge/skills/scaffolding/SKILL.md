@@ -1,3 +1,9 @@
+---
+name: scaffolding
+description: Forge Phase 2 — executes the project scaffold (CLI, from-scratch, template, or walking-skeleton), sets up git, runs hello-world verification. Internal building block invoked by forge init — not user-invocable.
+user-invocable: false
+---
+
 # Scaffolding Skill — Project Setup & Git Configuration
 
 You are executing Phase 2 of Forge: scaffolding the application and setting up git infrastructure. All decisions were made during Phase 1 (context gathering). This phase is execution, not discussion.
@@ -152,13 +158,108 @@ If the stack isn't on this list and research doesn't give you clear guidance, as
 
 **After Path D completes**, return control to `/forge:init`. It will run Phase 3 (AI tooling) against the walking skeleton. Phase 3 will generate CLAUDE.md + rules + hooks from the observed patterns. Then the flow enters **Phase 2b: Expand scaffold under AI-tooling guidance** — a second pass through this skill that uses the generated rules to expand the walking skeleton into a fuller scaffold, with each expansion respecting the AI tooling's conventions.
 
+## Step 2.5: Non-interactive package-manager install (Node.js stacks)
+
+Before running the install step in any Path A/B/C/D for a Node.js stack, configure the package manager so it never fires an interactive prompt during install. The 2026-04-16 release-gate test (findings A13 / FO4) failed because pnpm's `approve-builds` TUI fired during `pnpm install` and there's no clean headless path to dismiss it.
+
+### pnpm — `pnpm.onlyBuiltDependencies` (stack-aware)
+
+Inspect the constructed `package.json` for known native-build dependencies and emit a project-specific `pnpm.onlyBuiltDependencies` whitelist **before** running `pnpm install`.
+
+**Base set (always included for any pnpm-based scaffold)**: `prisma`, `@prisma/engines`, `esbuild`, `@swc/core`.
+
+**Conditional additions** — include each only if the dep is present in `dependencies` / `devDependencies`:
+
+| Detected dep | Add to whitelist |
+|---|---|
+| `sharp` | `sharp` |
+| `bcrypt` | `bcrypt` |
+| `better-sqlite3` | `better-sqlite3` |
+| `canvas` | `canvas` |
+| `puppeteer` / `puppeteer-core` | `puppeteer`, `puppeteer-core` (whichever is present) |
+| `playwright` / `@playwright/test` | `playwright`, `@playwright/test` |
+| `electron` | `electron` |
+| `cypress` | `cypress` |
+
+Example for a Prisma + Express + Sharp project:
+
+```jsonc
+{
+  "name": "my-api",
+  "packageManager": "pnpm@9.15.0",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "prisma",
+      "@prisma/engines",
+      "esbuild",
+      "@swc/core",
+      "sharp"
+    ]
+  }
+  // ... rest of package.json
+}
+```
+
+**Pin pnpm to latest stable 9.x** in the `packageManager` field (e.g., `"pnpm@9.15.0"`). Bump the pin periodically during release-gate sweeps.
+
+**FORBIDDEN patterns** (every one observed in the 2026-04-16 forge run):
+
+- `FORBIDDEN`: `pnpm approve-builds --allow` — invalid flag, does not exist.
+- `FORBIDDEN`: Interactive `pnpm approve-builds` TUI — breaks headless flow because the prompt blocks indefinitely.
+
+If `approve-builds` ever fires post-install for a project, the canonical fix is to extend `pnpm.onlyBuiltDependencies` with the missing dep (likely a niche native-build package not in the standard whitelist above). Document this in the scaffold's CLAUDE.md.
+
+### npm — non-interactive flags
+
+For npm-based scaffolds, install with:
+
+```bash
+npm install --no-audit --no-fund
+```
+
+The `--no-audit` flag suppresses the audit output that may include interactive remediation prompts in some npm versions. `--no-fund` removes the funding spam that bloats CI logs.
+
+### yarn — non-interactive flags
+
+For yarn 1.x scaffolds:
+
+```bash
+yarn install --non-interactive
+```
+
+For yarn Berry 4+ scaffolds, set `enableImmutableInstalls: false` in `.yarnrc.yml` for the first install (so yarn won't refuse if `yarn.lock` doesn't exist yet), and verify no plugin-installed prompt fires:
+
+```yaml
+# .yarnrc.yml
+enableImmutableInstalls: false
+nodeLinker: node-modules
+```
+
+### Verify checklist
+
+After install, check stdout/stderr for these strings and surface any match as a failure:
+- `approve-builds` (pnpm)
+- `Run "npm audit fix"` interactive prompt (npm)
+- yarn plugin install / accept prompts
+
+If any of these appear, the install ran in interactive mode and may have hung — fix the package-manager configuration and re-run.
+
 ## Step 3: Post-Scaffold Additions
 
 Regardless of scaffold path, add these based on Phase 1 context:
 
 1. **`.env.example`** — Placeholder keys for database, auth, storage, monitoring, API integrations. Each key has a comment explaining what it's for.
 2. **`.env.local`** — Copy of .env.example (gitignored, developer fills in real values)
-3. **`.gitignore`** — If not already present, create with standard patterns for the stack plus: `.env*` (except .env.example), `node_modules/`, build dirs, OS files, `.claude/settings.local.json`
+3. **`.gitignore`** — If not already present, create with standard patterns for the stack plus: `.env*` (except .env.example), `node_modules/`, build dirs, OS files, `.claude/settings.local.json`. **Also append forge + onboard runtime state files** (these persist wizard answers that may contain secrets and must never be committed):
+   ```
+   .claude/forge-state.json
+   .claude/forge-state.json.tmp
+   .claude/forge-drift.json
+   .claude/forge-meta.json
+   .claude/onboard-snapshot.json
+   .claude/onboard-meta.json
+   ```
+   If a `.gitignore` already exists, scan for these entries and append any that are missing (do not duplicate existing lines).
 4. **Docker** (if `dockerStrategy` ≠ "none"):
    - `Dockerfile` — Multi-stage build for the detected stack
    - `docker-compose.yml` — Dev services (app + database if selected)
@@ -167,6 +268,62 @@ Regardless of scaffold path, add these based on Phase 1 context:
 6. **i18n** (if `i18n` ≠ "no"): Create locale directory structure and base config
 7. **Code generation** (if `codegenTools` has entries): Install tools, add generate scripts
 8. **Storage** (if `storageStrategy` ≠ "none"): Add storage utility module with placeholder config
+
+### Prisma + Pothos scalar registration (GraphQL stacks only)
+
+If the scaffold uses Pothos (`@pothos/core`) with the Prisma plugin (`@pothos/plugin-prisma`), the auto-generated types reference scalar names that the Pothos builder must register **before** the schema boots. Missing registration is a hard fail — the API exits on first request with `Unknown scalar DateTime` (or similar). The 2026-04-16 release-gate Phase 5 test (findings A12/FO5) hit this exact failure.
+
+**Conditional registration** (don't import scalars the Prisma schema doesn't actually use):
+
+1. Inspect the generated `prisma/schema.prisma` for the set of Prisma scalar types used across all models. The relevant ones for Pothos are: `DateTime`, `Json`, `BigInt`, `Bytes`, `Decimal`. (`Int`, `String`, `Boolean`, `Float` are GraphQL built-ins — no registration needed.)
+2. Add `graphql-scalars: ^1.x` to `dependencies` in the API package's `package.json` (only if step 1 found ≥1 scalar to register).
+3. In the Pothos builder file (typically `src/builder.ts` or `apps/api/src/builder.ts` in monorepos), import only the resolvers actually needed and register them on the builder. For example, a Prisma schema using `DateTime` and `Json` produces:
+
+   ```ts
+   import { DateTimeResolver, JSONResolver } from 'graphql-scalars';
+   import SchemaBuilder from '@pothos/core';
+   import PrismaPlugin from '@pothos/plugin-prisma';
+   import type PrismaTypes from '../prisma/generated/pothos-types';
+
+   export const builder = new SchemaBuilder<{
+     PrismaTypes: PrismaTypes;
+     Scalars: {
+       DateTime: { Input: Date; Output: Date };
+       JSON:     { Input: unknown; Output: unknown };
+     };
+   }>({
+     plugins: [PrismaPlugin],
+     prisma: { client: prisma },
+   });
+
+   builder.addScalarType('DateTime', DateTimeResolver);
+   builder.addScalarType('JSON', JSONResolver);
+   ```
+
+   Mapping (Prisma scalar → graphql-scalars resolver):
+
+   | Prisma | Resolver | Pothos type |
+   |---|---|---|
+   | `DateTime` | `DateTimeResolver` | `DateTime` |
+   | `Json` | `JSONResolver` | `JSON` |
+   | `BigInt` | `BigIntResolver` | `BigInt` |
+   | `Bytes` | `ByteResolver` | `Bytes` |
+   | `Decimal` | (use Prisma's `.toString()` or a custom scalar) | `Decimal` |
+
+4. **Verify after `pnpm install`**: GraphQL boots without "Unknown scalar" errors.
+   - `curl -sf http://localhost:<port>/graphql` returns HTTP 200 (the GraphQL endpoint accepts POST; HEAD/GET against the playground returns 200 if Apollo Server is configured for it).
+   - Run a minimal introspection query against the same endpoint:
+
+     ```bash
+     curl -sf -X POST http://localhost:<port>/graphql \
+       -H "Content-Type: application/json" \
+       -d '{"query":"{ __schema { types { name } } }"}' \
+       | jq -e '.data.__schema.types | length > 0'
+     ```
+
+     This must return a non-empty type list with no `errors` field. A response with `{ errors: [...] }` indicates a schema build error (e.g., missing scalar registration); fix the builder and re-run.
+
+This guidance applies to Pothos + Prisma specifically. Other GraphQL builders (Yoga, Mercurius, Apollo Server vanilla) need their own scalar registration and are out of scope for this template.
 
 ## Step 4: Git Setup
 
@@ -233,7 +390,7 @@ Write `.claude/forge-meta.json`:
 
 ## Checkpoint Protocol (for resume support)
 
-This skill MUST write `.claude/forge-state.json` after each Step so `/forge:resume` can pick up mid-scaffold if the session is interrupted. See `commands/init.md` for the full state schema.
+This skill MUST write `.claude/forge-state.json` after each Step so `/forge:resume` can pick up mid-scaffold if the session is interrupted. See `skills/init/SKILL.md` for the full state schema.
 
 ### When to checkpoint
 

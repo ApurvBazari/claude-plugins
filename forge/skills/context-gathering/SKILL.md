@@ -1,3 +1,9 @@
+---
+name: context-gathering
+description: Forge Phase 1 — adaptive wizard that gathers project vision, tech stack, features, and preferences through 8 named Steps. Internal building block invoked by forge init — not user-invocable.
+user-invocable: false
+---
+
 # Context Gathering Skill — Adaptive Project Wizard
 
 You are guiding a developer through an interactive wizard to understand what they want to build, their tech stack preferences, workflow, and project requirements. This is Phase 1 of the Forge plugin.
@@ -115,25 +121,28 @@ Listen carefully. From the answer, infer:
 
 Emit the progress indicator. Ask Q2.1 about their stack preference. If they know, ask Q2.2 for details.
 
-**Research pause**: After gathering the stack, dispatch the `stack-researcher` agent with a clear research brief. The agent runs a probe protocol first (see its file for details) and may return a `BLOCKED` status if web tools are unavailable in the sub-agent sandbox.
+**Research pause**: After gathering the stack, dispatch the `stack-researcher` agent with a clear research brief. The agent's first action is a real npm-registry call (zero overhead when web works) — if that fails, the agent immediately returns the sentinel `STACK_RESEARCH_REQUIRES_MAIN_SESSION` (see `forge/agents/stack-researcher.md` § Sentinel and `forge/skills/init/references/stack-research-checklist.md` § 0 / § Output).
 
 **Handling the two possible agent outcomes**:
 
 #### Outcome A — Agent returns a full research report
 Proceed normally. Present findings naturally: *"I looked into [framework] — the current stable version is [X]. The official scaffold CLI `[command]` now supports [features]. I'd recommend using that."*
 
-#### Outcome B — Agent returns `BLOCKED` (sub-agent web access denied)
-Do NOT silently fail. Instead, **fall back to main-session research**:
+#### Outcome B — Agent returns the sentinel (sub-agent web access denied)
+
+Detect by greping the agent's response for the literal string `STACK_RESEARCH_REQUIRES_MAIN_SESSION`. Do NOT silently fail; do NOT re-dispatch the agent (that would loop). Instead, **fall back to main-session research using the shared checklist**:
 
 1. Tell the user what happened, concisely:
-   > "The background research agent doesn't have web access in this session. I'll run the same research in our main conversation so you can see and approve each web call."
+   > "The background research agent doesn't have web access in this session. I'll run the same research checklist in our main conversation so you can see and approve each web call."
 
-2. Run the same research questions directly using `WebSearch` and `WebFetch` in the main session. Permission prompts for specific URLs will appear to the user; ask them to approve so research can proceed.
+2. Read `forge/skills/init/references/stack-research-checklist.md` and run sections 1-7 inline using main-session `WebSearch` and `WebFetch`. Per-call permission prompts will appear to the user; ask them to approve so research can proceed. The checklist is the single source of truth shared with the agent — following it inline produces the same report shape.
 
 3. If the user denies web access entirely, offer a degraded path:
    > "Without web research, I'll use my training data to make stack recommendations, but please verify versions and scaffold CLIs manually before we proceed with scaffolding — my knowledge may be months out of date."
 
 4. Checkpoint the fallback mode in `forge-state.json` under `research.mode = "main-session" | "training-data-only"` so downstream skills know the research provenance.
+
+5. **Hard-failure path**: if main-session retries also fail (network down, all per-call permissions denied), surface a clear error to the user — do NOT silently proceed with empty research. Forge's downstream phases need at least the basic stack metadata.
 
 Wait for research results (either via agent or main session). Then ask Q2.3 about the scaffold approach, informed by the research findings.
 
@@ -296,6 +305,8 @@ When all parked questions are resolved, set `currentPhase: "phase-2-scaffold"` i
 
 ## Output
 
+**Sanitisation downstream** — free-text fields captured here (`appDescription`, `painPoints.timeSinks`, `painPoints.errorProne`, `painPoints.automationWishes`, and any future free-text wizard field) are sanitised by `forge/skills/tooling-generation/SKILL.md § Sanitise free-text wizard answers` before dispatch to `/onboard:generate`. The sanitiser applies a 5000-character length cap and strips `\r` — defence-in-depth pairing with the `<untrusted-user-input>` framing that `onboard/skills/generate/SKILL.md § Validate` wraps around the values at agent-prompt build time. Context-gathering itself stores raw answers verbatim; do not pre-sanitise here.
+
 After the wizard completes, compile all answers into a structured context object:
 
 ```json
@@ -373,7 +384,7 @@ Fields that were skipped are set to `null` or omitted.
 
 ## Checkpoint Protocol (for resume support)
 
-This skill MUST write `.claude/forge-state.json` after each Step so that `/forge:resume` can pick up mid-wizard if the session is interrupted. See `commands/init.md` for the full state schema.
+This skill MUST write `.claude/forge-state.json` after each Step so that `/forge:resume` can pick up mid-wizard if the session is interrupted. See `skills/init/SKILL.md` for the full state schema.
 
 ### When to checkpoint
 Write a checkpoint **after each named Step completes** (not after each individual question within a step):

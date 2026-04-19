@@ -1,3 +1,9 @@
+---
+name: wizard
+description: Interactive Q&A for customizing notification preferences (sounds, durations, matcher regex, per-event toggles). Internal building block invoked by the notify setup skill — not user-invocable.
+user-invocable: false
+---
+
 # Wizard Skill — Notification Preferences
 
 You are guiding a developer through customizing their Claude Code notification preferences. This wizard configures which events trigger notifications, what sounds play, duration filtering, and which app activates on click. Works on macOS (terminal-notifier) and Linux (notify-send).

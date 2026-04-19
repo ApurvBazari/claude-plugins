@@ -1,3 +1,9 @@
+---
+name: tooling-generation
+description: Forge Phase 3 — prepares scaffold context and delegates to onboard's headless generate skill for CLAUDE.md, rules, skills, agents, hooks, CI/CD, and evolution infrastructure. Internal building block invoked by forge init — not user-invocable.
+user-invocable: false
+---
+
 # Tooling Generation Skill — Delegate to Enriched Onboard
 
 You are executing Phase 3 of Forge: generating all AI tooling, CI/CD, harness, and evolution infrastructure by delegating to onboard's enriched headless mode. Forge prepares the context; onboard generates the artifacts.
@@ -7,7 +13,7 @@ You are executing Phase 3 of Forge: generating all AI tooling, CI/CD, harness, a
 This skill cannot do its job without the **onboard** plugin — onboard owns all generation. Check if onboard is installed before doing any work:
 
 ```bash
-ls "${CLAUDE_PLUGIN_ROOT}/../onboard/commands/generate.md" 2>/dev/null
+ls "${CLAUDE_PLUGIN_ROOT}/../onboard/skills/generate/SKILL.md" 2>/dev/null
 ```
 
 **If the probe finds the file**, onboard is present — proceed to Step 1.
@@ -59,6 +65,37 @@ You receive:
 
 ## Step 1: Prepare Onboard Context
 
+### Resolve the onboard plugin version (runtime — never hardcode)
+
+Before building the headless context, **read onboard's actual installed version at runtime**. Do not bake a literal version string into the context — the 2026-04-16 release-gate Phase 5 test (finding FO6) found `forge-meta.json` recorded `pluginVersion: "1.2.0"` even though the installed onboard was at 1.9.0, leading to stale snapshots and version checks.
+
+Resolution order (CLI-first, sibling-path fallback, hard-fail otherwise):
+
+```bash
+ONBOARD_VERSION=""
+
+# 1. CLI-first: prefer the official Claude Code CLI when available
+if command -v claude >/dev/null 2>&1; then
+  ONBOARD_VERSION=$(claude plugins info onboard --format json 2>/dev/null | jq -r '.version // empty')
+fi
+
+# 2. Sibling-path fallback for the claude-plugins marketplace layout
+#    ($CLAUDE_PLUGIN_ROOT here is forge's plugin root, so onboard is a sibling)
+if [ -z "$ONBOARD_VERSION" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/../onboard/.claude-plugin/plugin.json" ]; then
+  ONBOARD_VERSION=$(jq -r '.version' "${CLAUDE_PLUGIN_ROOT}/../onboard/.claude-plugin/plugin.json")
+fi
+
+# 3. Hard-fail if neither resolved (shouldn't happen — Guard already checked onboard exists)
+if [ -z "$ONBOARD_VERSION" ]; then
+  echo "ERROR: Cannot resolve onboard plugin version. Reinstall onboard: claude plugins install onboard" >&2
+  exit 1
+fi
+```
+
+Inject `$ONBOARD_VERSION` into the headless context as `meta.onboardVersion` for forge-side telemetry; onboard itself reads its own version from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` when writing `pluginVersion` into `onboard-meta.json` (see `onboard/skills/generate/SKILL.md` § Step 5 for that contract). Do NOT pass `pluginVersion` in `callerExtras` — config-generator authoritatively reads it from disk so onboard upgrades flow through without forge changes.
+
+The PR-version markers later in this skill (lines mentioning "Onboard 1.5.0", "Onboard 1.6.0", etc.) are an **historical audit trail** of which onboard release introduced each integration — they document when forge first started honoring a given onboard feature. Keep them as comments; the runtime source of truth for the live version is the resolution code above.
+
 ### Build the analysis object
 
 Spawn the `scaffold-analyzer` agent to scan the freshly scaffolded project. The agent produces the structured `analysis` object matching onboard's expected format.
@@ -80,6 +117,25 @@ Spawn the `scaffold-analyzer` agent to scan the freshly scaffolded project. The 
 | `frontendPatterns` | `frontendPatterns` | If frontend project |
 | `backendPatterns` | `backendPatterns` | If backend project |
 | (inferred) | `projectMaturity` | Always "new" for scaffolded projects |
+
+### Sanitise free-text wizard answers
+
+Before forwarding to onboard, apply the canonical untrusted-input sanitiser from `${CLAUDE_PLUGIN_ROOT}/../onboard/skills/init/references/onboard-context-builder.md § Untrusted-input sanitiser` to every free-text field captured by the wizard. This is a defence-in-depth layer on top of the `<untrusted-user-input>` XML framing that `onboard/skills/generate/SKILL.md § Validate` applies at dispatch time — callers (forge + onboard:init) are expected to have pre-sanitised these values. Do NOT skip this step; `generate/SKILL.md` explicitly delegates the work to callers and does not duplicate it.
+
+Apply to these fields (and any future free-text wizard field added to `wizardAnswers`):
+
+- `wizardAnswers.projectDescription` (mapped from `appDescription`)
+- `wizardAnswers.painPoints.timeSinks`
+- `wizardAnswers.painPoints.errorProne`
+- `wizardAnswers.painPoints.automationWishes`
+
+Procedure per field (authoritative rule lives in the onboard reference above — do not diverge):
+
+1. **Length-cap to 5000 characters.** If the original exceeded the cap, set `context._warnings.<fieldName>Truncated = true` (e.g., `descriptionTruncated`, `painPointsTimeSinksTruncated`) so the `config-generator` agent can surface a gentle note to the user during generation.
+2. **Strip carriage returns** (`\r`) — collapse to `\n`. Prevents terminal-escape-sequence shenanigans in pasted content.
+3. **Preserve everything else.** Do not attempt heuristic "injection-like" content filtering. The defence is framing (applied downstream), not filtering.
+
+Non-string values (null, undefined, missing field) short-circuit the sanitiser — cap + strip only apply to strings. The downstream `projectDescription` non-empty validator catches the truly-missing case.
 
 ### Set enriched flags
 
@@ -112,6 +168,13 @@ Based on Phase 1 context, set the `enriched` object:
     "installedPlugins": ["superpowers", "feature-dev", ...],
     "coveredCapabilities": ["code-review", "test-generation", ...],
     "allowPluginReferences": true,   // default true when installedPlugins is non-empty
+
+    // Headless passthrough flags — forge runs non-interactive. Always pass true.
+    "disableSkillTuning": true,        // skip per-skill batched confirmation; rely on archetype + wizard defaults
+    "disableAgentTuning": true,        // skip per-agent batched confirmation; rely on archetype + wizard defaults
+    "disableOutputStyleTuning": true,  // skip Phase 7b batched confirmation; emit archetype-matched style directly
+    "disableLSP": true,                // skip Phase 7c LSP prompt; scaffolded projects have placeholder code so file-presence signals are unreliable. Developer re-runs /onboard:evolve after adding real code.
+    "disableBuiltInSkills": true,      // skip Phase 7d built-in skills prompt; scaffolded projects have placeholder code so detection signals (file counts, complexity, deps) are premature. Developer re-runs /onboard:evolve after adding real code.
 
     "qualityGates": {
       "sessionStart": [
@@ -211,6 +274,18 @@ Call `/onboard:generate` with the prepared context. Onboard now generates EVERYT
 - Sprint contracts infrastructure (if enableSprintContracts)
 - Agent team support (if enableTeams)
 
+**MCP servers (automatic from stack signals):** Onboard emits `.mcp.json` and `.claude/onboard-mcp-snapshot.json` when detected signals match its catalog (e.g., Vercel projects get `vercel`, frontend stacks get `chrome-devtools-mcp`, all projects get `context7`). Matching plugins are auto-installed if not already present. Full rules in `onboard/skills/generation/references/mcp-guide.md`. If a scaffold template already ships its own `.mcp.json`, pass `callerExtras.disableMCP: true` in Step 1 to suppress onboard's emission.
+
+**Skill frontmatter tuning (automatic from archetype classification):** Onboard 1.5.0 emits extended skill frontmatter — `allowed-tools`, `model`, `effort`, `paths`, `context`, `agent` — on every generated skill, composing archetype defaults with wizard-level tuning (`wizardAnswers.skillTuning`). A batched confirmation step runs by default to let the developer tweak per-skill. The snapshot lands at `.claude/onboard-skill-snapshot.json` for drift detection. Forge passes `callerExtras.disableSkillTuning: true` whenever forge is running headless and wants the confirmation suppressed; the generator still emits the full frontmatter using archetype + wizard defaults. Full rules in `onboard/skills/generation/references/skills-guide.md` § Frontmatter Reference.
+
+**Agent frontmatter tuning (automatic from archetype classification):** Onboard 1.6.0 emits extended agent frontmatter — `tools`, `disallowedTools`, `model`, `effort`, `isolation`, `color`, `maxTurns`, `permissionMode` — on every generated agent, composing archetype defaults (reviewer/validator/generator/architect/researcher) with wizard-level tuning (`wizardAnswers.agentTuning`). A batched confirmation step runs by default to let the developer tweak per-agent. The snapshot lands at `.claude/onboard-agent-snapshot.json` for drift detection. Forge passes `callerExtras.disableAgentTuning: true` whenever forge is running headless and wants the confirmation suppressed; the generator still emits the full frontmatter using archetype + wizard defaults. Note: `proactive` is encoded via description prefix (it is not a frontmatter field); `isolation` only accepts `worktree` and is dropped in non-git directories. Full rules in `onboard/skills/generation/references/agents-guide.md` § Frontmatter Reference.
+
+**Output style generation (automatic from archetype classification):** Onboard 1.7.0 emits one project-scoped custom output style at `.claude/output-styles/<name>.md` based on 5 archetypes (onboarding / teaching / production-ops / research / solo) inferred from existing wizard + analysis signals. Priority: production-ops > onboarding > teaching > research > solo. Built-in styles (Default / Explanatory / Learning) are Anthropic-provided and referenced in the generated CLAUDE.md Plugin Integration section — never re-emitted as files. A batched confirmation runs by default; the snapshot lands at `.claude/onboard-output-style-snapshot.json` for drift detection (frontmatter-only scope — body edits are free). Forge passes `callerExtras.disableOutputStyleTuning: true` whenever forge is running headless and wants the confirmation suppressed; the generator still emits the archetype-matched style. Full rules in `onboard/skills/generation/references/output-styles-guide.md`; 5 body templates in `output-styles-catalog.md`.
+
+**LSP plugin recommendations (automatic from detected source files):** Onboard 1.8.0 detects project languages via `detect-lsp-signals.sh` and offers matching marketplace LSP plugins (`typescript-lsp`, `gopls-lsp`, `rust-analyzer-lsp`, etc. — 12-entry catalog) through wizard Phase 5.6. Forge passes `callerExtras.disableLSP: true` because freshly scaffolded projects have placeholder code that would trigger unreliable file-presence signals. The developer runs `/onboard:evolve` after adding real source files to trigger the prompt. Full rules in `onboard/skills/generation/references/lsp-plugin-catalog.md`. Surface this in the handoff message: "Run `/onboard:evolve` after adding source files to get LSP plugin recommendations."
+
+**Built-in skill recommendations (automatic from codebase analysis):** Onboard 1.9.0 recommends built-in Claude Code skills (`/loop`, `/simplify`, `/debug`, `/pr-summary` as core; `/schedule`, `/claude-api`, `/explain-code`, `/codebase-visualizer`, `/batch` as conditional extras) through wizard Phase 5.7 and documents accepted skills in the generated CLAUDE.md with project-specific usage examples. Forge passes `callerExtras.disableBuiltInSkills: true` because freshly scaffolded projects have placeholder code — detection signals (file counts, complexity, dependency lists) are premature. The developer runs `/onboard:evolve` after adding real source files to trigger the prompt. Full rules in `onboard/skills/generation/references/built-in-skills-catalog.md`. Surface this in the handoff message: "Run `/onboard:evolve` after adding source files to get built-in skill recommendations."
+
 Present a brief summary after generation. Offer optional review.
 
 ## Step 3: Forge-Specific Artifacts
@@ -231,14 +306,18 @@ If developer skipped feature decomposition: generate a minimal 3-5 feature list.
 
 ## Step 4: Update Forge Metadata
 
-Update `.claude/forge-meta.json` with:
-- `generated.tooling`: from onboard's response
-- `generated.cicd`: from onboard's response
-- `generated.harness`: init.sh + feature-list.json + onboard's harness artifacts
-- `generated.toolingFlags`: **the full `callerExtras` object built in Step 1 + the `hookStatus` object from onboard's response**. This persists `installedPlugins`, `coveredCapabilities`, `qualityGates`, `phaseSkills`, and `allowPluginReferences` so `/forge:status` can later report Plugin Integration Coverage without re-deriving them, and mirrors onboard's `hookStatus` telemetry so the coverage report can show planned-vs-generated-vs-skipped counts. Required by the `/forge:status` Step 4.5 coverage report. Shape:
+Update `.claude/forge-meta.json`. The schema lives at `references/forge-meta.schema.json` (committed alongside this skill) and is the authoritative contract — validate the produced object against it via `jq` + `ajv-cli` (or any JSON schema validator) before write. Hard-fail on schema mismatch; never write a forge-meta.json that doesn't match the schema.
+
+Note on the 2026-04-16 release-gate finding (FO2): earlier versions wrote `generated.tooling`, `generated.cicd`, `generated.harness` as **siblings** to `generated.toolingFlags`. That dot-notation drift was inconsistent with the documented `toolingFlags` namespace. The shape below consolidates everything under `generated.toolingFlags` — old-shape projects heal on the next regeneration (no auto-migration).
+
+Update with:
+- `generated.toolingFlags`: **the full `callerExtras` object built in Step 1 + the artifact lists + the `hookStatus` object from onboard's response**. Replaces the previous `generated.tooling` / `generated.cicd` / `generated.harness` sibling fields. This persists `tooling` / `cicd` / `harness` artifact lists, `installedPlugins`, `coveredCapabilities`, `qualityGates`, `phaseSkills`, `allowPluginReferences`, and the seven status objects so `/forge:status` can report Plugin Integration Coverage without re-deriving them. Shape:
 
   ```jsonc
   {
+    "tooling":  ["CLAUDE.md", ".claude/rules/*.md", ".claude/skills/**", ".claude/agents/**"],
+    "cicd":     [".github/workflows/ci.yml", ".github/workflows/tooling-audit.yml"],
+    "harness":  ["init.sh", "docs/feature-list.json", "docs/progress.md"],
     "installedPlugins": ["superpowers", "code-review", ...],
     "coveredCapabilities": ["code-review", ...],
     "allowPluginReferences": true,
@@ -267,6 +346,57 @@ Update `.claude/forge-meta.json` with:
       "skipped":   [],
       "warnings":  [],
       "downgradeApplied": null              // optional — object with rule + affectedEntries when autonomyLevel forced a downgrade
+    },
+    "skillStatus": {                        // NEW in onboard 1.5.0 — mirrored from /onboard:generate response
+      "planned":           ["react-component", "pr-summarizer"],
+      "generated":         ["react-component", "pr-summarizer"],
+      "skipped":           [],
+      "frontmatterFields": { /* opaque — see onboard/skills/generation/SKILL.md § Skill Frontmatter Emission */ },
+      "existedPreOnboard": [],
+      "warnings":          []
+    },
+    "agentStatus": {                        // NEW in onboard 1.6.0 — mirrored from /onboard:generate response
+      "planned":           ["code-reviewer", "tdd-test-writer"],
+      "generated":         ["code-reviewer", "tdd-test-writer"],
+      "skipped":           [],
+      "frontmatterFields": { /* opaque — see onboard/skills/generation/SKILL.md § Agent Frontmatter Emission */ },
+      "existedPreOnboard": [],
+      "warnings":          []
+    },
+    "mcpStatus": {                          // NEW in onboard 1.4.0 — mirrored from /onboard:generate response
+      "planned":           ["context7", "vercel"],
+      "generated":         ["context7", "vercel"],
+      "skipped":           [],
+      "autoInstalled":     ["vercel"],
+      "autoInstallFailed": [],
+      "existedPreOnboard": false
+    },
+    "outputStyleStatus": {                  // NEW in onboard 1.7.0 — mirrored from /onboard:generate response
+      "planned":             ["solo-minimal"],
+      "generated":           ["solo-minimal"],
+      "skipped":             [],
+      "frontmatterFields":   { /* opaque — see onboard/skills/generation/SKILL.md § Output Styles */ },
+      "activationDefault":   "none",
+      "settingsLocalWritten": false,
+      "settingsLocalWarning": null,
+      "existedPreOnboard":   [],
+      "warnings":            []
+    },
+    "lspStatus": {                          // NEW in onboard 1.8.0 — mirrored from /onboard:generate response
+      "planned":           ["typescript-lsp", "pyright-lsp"],
+      "accepted":          ["typescript-lsp"],
+      "generated":         ["typescript-lsp"],
+      "skipped":           [{ "plugin": "pyright-lsp", "reason": "caller-disabled" }],
+      "autoInstalled":     [],
+      "autoInstallFailed": [],
+      "alreadyInstalled":  []
+    },
+    "builtInSkillsStatus": {                // NEW in onboard 1.9.0 — mirrored from /onboard:generate response
+      "planned":           [],
+      "generated":         [],
+      "skipped":           [{ "skill": "*", "reason": "caller-disabled" }],
+      "warnings":          [],
+      "detectionSignals":  {}
     }
   }
   ```
@@ -274,24 +404,25 @@ Update `.claude/forge-meta.json` with:
   **Scope reminder**: `hookStatus` only tracks hooks derived from `callerExtras.qualityGates`. Format/lint hooks, forge-internal hooks, and any other non-Plugin-Integration hooks stay out of these counts even though they're written to `.claude/settings.json`. See `onboard/skills/generation/SKILL.md` § Hook Status Telemetry § Scope boundary for the rationale.
 
   **Write rules**:
-  - Copy `installedPlugins`, `coveredCapabilities`, `allowPluginReferences`, `qualityGates`, `phaseSkills` from the in-memory `callerExtras` object exactly as it was sent to `/onboard:generate` — including the autonomyLevel-downgraded `preCommit[].mode` values. Do not re-derive.
-  - Copy `hookStatus` verbatim from the `/onboard:generate` response object (see `onboard/commands/generate.md` § Step 5). Do not reshape. `generated` is a **list-of-basenames map**, not a count map.
+  - Copy `installedPlugins`, `coveredCapabilities`, `allowPluginReferences`, `allowHttpHooks`, `qualityGates`, `phaseSkills` from the in-memory `callerExtras` object exactly as it was sent to `/onboard:generate` — including the autonomyLevel-downgraded `preCommit[].mode` values and any per-entry `hookType`/`promptRef`/`promptInline`/`agentRef`/`httpUrl`/`httpHeaders`/`timeout` fields. Do not re-derive.
+  - Copy `hookStatus` verbatim from the `/onboard:generate` response object (see `onboard/skills/generate/SKILL.md` § Step 5). Do not reshape. `generated` values vary by hook type (script basename for `command`, prompt filename for `prompt`, agent name for `agent`, URL for `http`) — treat the value as an opaque string array.
   - **Invariant**: `toolingFlags.hookStatus.planned` keys should match what onboard expected to generate from `toolingFlags.qualityGates`. A mismatch signals a contract drift between forge and onboard.
+  - **Key format passthrough**: hookStatus keys use `<Event>[:<Matcher>][:<Type>]` format. The `:<Type>` suffix is OMITTED when the hook type is `command` (backward compatible — pre-upgrade forge-meta.json fixtures remain byte-identical). Non-command types surface as e.g. `TaskCompleted:agent`, `UserPromptSubmit:prompt`, `Elicitation::http` (double colon when matcher is absent but type is non-default). Forge treats these keys as opaque strings and never parses them — parsing happens in downstream consumers (`/forge:status`, `/onboard:status`). See `onboard/skills/generation/SKILL.md` § Hook Status Telemetry for the full key-format contract.
 
 - `context.verificationStrategy`: the chosen approach
 - `costs.forgeInit`: estimated token usage
 
 ## Checkpoint Protocol (for resume support)
 
-This skill MUST write `.claude/forge-state.json` after each Step so `/forge:resume` can pick up mid-generation if the session is interrupted. See `commands/init.md` for the full state schema.
+This skill MUST write `.claude/forge-state.json` after each Step so `/forge:resume` can pick up mid-generation if the session is interrupted. See `skills/init/SKILL.md` for the full state schema.
 
 ### When to checkpoint
 
 | After Step | Write to state file |
 |---|---|
 | Step 1 (Prepare Onboard Context) | `completedSteps: [..., "tooling-context-prepared"]`, `currentStep: "onboard-invoke"` |
-| Step 2 (Invoke Onboard Headless) | Add `"onboard-invoke"`, `currentStep: "forge-artifacts"`, `generated.tooling: [...]` |
-| Step 3 (Forge-Specific Artifacts) | Add `"forge-artifacts"`, `currentStep: "tooling-metadata"`, `generated.harness: [...]` |
+| Step 2 (Invoke Onboard Headless) | Add `"onboard-invoke"`, `currentStep: "forge-artifacts"`, `generated.toolingFlags.tooling: [...]` |
+| Step 3 (Forge-Specific Artifacts) | Add `"forge-artifacts"`, `currentStep: "tooling-metadata"`, `generated.toolingFlags.harness: [...]` |
 | Step 4 (Update Forge Metadata) | Add `"tooling-metadata"`, `currentPhase: "phase-4-lifecycle-setup"`, `currentStep: "lifecycle-check"` (handoff to lifecycle-setup) |
 
 ### Critical: onboard is expensive and time-consuming

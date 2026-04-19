@@ -60,6 +60,12 @@ jobs:
           done
           echo "changed=$changed" >> "$GITHUB_ENV"
 
+      - name: Verify marketplace.json versions match plugin.json versions
+        # Defense-in-depth: ensure the sync step produced a marketplace.json
+        # whose per-plugin versions exactly match each plugin's own
+        # plugin.json. Shared script also runs on every PR via validate.yml.
+        run: .github/scripts/check-version-sync.sh
+
       - name: Commit and push marketplace sync
         if: env.changed == '1'
         run: |

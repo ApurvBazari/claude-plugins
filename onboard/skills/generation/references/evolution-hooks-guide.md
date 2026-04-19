@@ -2,6 +2,8 @@
 
 Patterns for configuring FileChanged and SessionStart hooks that keep AI tooling in sync with the codebase.
 
+> **Scope note**: the base advisory templates for `FileChanged`, `TaskCreated`, and `TaskCompleted` live in [`hooks-guide.md` § Advanced Event Templates](./hooks-guide.md#advanced-event-templates). This guide owns the drift-detection-specific wiring (the `detect-*-changes.sh` scripts and the `.claude/forge-drift.json` format) and the team-mode overrides. When adding a new generic variant of any event, update `hooks-guide.md` — not this file — and cross-reference back here if drift-specific logic needs to layer on top.
+
 ## Hook Architecture
 
 ```
@@ -66,12 +68,23 @@ SessionStart hook (prompt-type, AI-powered)
 
 ### Auto-Update Variant
 
-For `autoEvolutionMode: "auto-update"`, replace the FileChanged hooks with versions that directly update tooling:
+For `autoEvolutionMode: "auto-update"`, replace the FileChanged hooks with versions that directly update tooling. The full `settings.json` shape still uses the nested `hooks:` wrapper — only the inner `command` changes:
 
 ```json
 {
-  "type": "command",
-  "command": "bash .claude/scripts/detect-dep-changes.sh \"$FILE_PATH\" --auto-update"
+  "hooks": {
+    "FileChanged": [
+      {
+        "matcher": "package.json|requirements.txt|go.mod|Cargo.toml",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/scripts/detect-dep-changes.sh \"$FILE_PATH\" --auto-update"
+          }
+        ]
+      }
+    ]
+  }
 }
 ```
 
@@ -141,9 +154,11 @@ AFTER (forge adds):
 
 **Conditional**: Only generate these when the project is production-scale with a team (`isProduction && hasTeam`) or when agent teams are explicitly enabled.
 
-### TaskCreated Hook
+### TaskCreated Hook (blocking override)
 
-Enforce descriptive task subjects to maintain clarity in the shared task list:
+Agent-team mode upgrades the base advisory `task-created-check.sh` template to a blocking hook so vague task subjects stop task creation entirely.
+
+> **Base template**: see [`hooks-guide.md` § TaskCreated](./hooks-guide.md#taskcreated--task-is-created-via-taskcreate) for the advisory script and payload contract. The blocking override below differs only in the exit code (2 instead of 0) and the stderr message wording.
 
 ```json
 {
@@ -160,11 +175,13 @@ Enforce descriptive task subjects to maintain clarity in the shared task list:
 }
 ```
 
-Exit code 2 blocks task creation and feeds the error message back to Claude.
+Exit code 2 blocks task creation and feeds the error message back to Claude. Generation rule: emit this blocking variant only when `enriched.enableTeams === true`. For non-team projects, use the advisory template from `hooks-guide.md`.
 
-### TaskCompleted Hook
+### TaskCompleted Hook (blocking override)
 
-Require tests to pass before a task can be marked complete:
+Agent-team mode upgrades the base advisory `task-completed-verify.sh` template to hard-require a passing test command before a task completes.
+
+> **Base template**: see [`hooks-guide.md` § TaskCompleted](./hooks-guide.md#taskcompleted--task-is-marked-completed). The blocking override below uses the detected test command directly and promotes failures to exit 2.
 
 ```json
 {
@@ -181,11 +198,36 @@ Require tests to pass before a task can be marked complete:
 }
 ```
 
-Replace `[TEST_COMMAND]` with the project's actual test command:
-- Node.js: `npm test` or `npx vitest run`
-- Python: `pytest`
-- Go: `go test ./...`
-- Rust: `cargo test`
+Replace `[TEST_COMMAND]` with the project's actual test command — selected from this **allowlist only**:
+
+| Stack | Allowed `[TEST_COMMAND]` values |
+|---|---|
+| Node.js | `npm test` · `npm run test` · `pnpm test` · `yarn test` · `npx vitest run` · `npx jest` |
+| Python | `pytest` · `python -m pytest` · `python -m unittest` |
+| Go | `go test ./...` |
+| Rust | `cargo test` |
+| Ruby | `bundle exec rspec` · `bundle exec rake test` |
+| Java / Kotlin | `mvn test` · `./gradlew test` |
+
+**Whitelist enforcement**: generation MUST compare the detected command (from `analysis.stack.testCommand`) against the allowlist above. If the detected command is not an exact match, emit the hook entry with the command field **commented out** and add a TODO for the user:
+
+```json
+{
+  "TaskCompleted": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "//": "TODO: onboard could not match the detected test command to its allowlist. Fill in the project's test command manually, then remove this comment.",
+          "command": "# echo 'fill in a test command here' >&2; exit 0"
+        }
+      ]
+    }
+  ]
+}
+```
+
+Never substitute an arbitrary user-provided or heuristically-inferred string directly into `[TEST_COMMAND]`. The allowlist is the contract — a future "custom test command" feature would need its own validation path, not a bypass here.
 
 Exit code 2 prevents task completion and sends the test failure output back to the teammate.
 

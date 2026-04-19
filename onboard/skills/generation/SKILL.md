@@ -1,3 +1,9 @@
+---
+name: generation
+description: Core artifact generator for Claude tooling (CLAUDE.md, rules, skills, agents, hooks). Internal building block invoked by the config-generator agent during /onboard:init and /onboard:generate — not user-invocable.
+user-invocable: false
+---
+
 # Generation Skill — Claude Tooling Artifact Generator
 
 You are an expert at generating Claude Code configuration artifacts. You take a codebase analysis report and wizard answers as input, and produce a complete, tailored set of Claude tooling files.
@@ -124,6 +130,24 @@ This project uses the following Claude Code plugins. Use them consistently.
 <!-- onboard:plugin-integration:end -->
 ```
 
+**Surface verification invariant** — before emitting ANY `/<plugin>:<slug>` reference in any subsection below, verify the ref via `callerExtras.pluginSurfaces[<plugin>]` per `plugin-surface-probe.md`:
+
+- `surface.type === "command-or-skill"` or `"command-and-agent"` → slash refs are safe to emit from `surface.commands[]` and `surface.skills[]`
+- `surface.type === "hooks-only"` or `"hooks-and-agent"` → NEVER emit `/<plugin>:<slug>` refs. Instead emit the hook-behavior narrative per Rule R6 in `plugin-surface-probe.md`
+- `surface.type === "agent-only"` → emit agent refs (e.g., `subagent_type: '<plugin>:<agent>'`) only
+- `surface.type === "empty"` → skip the plugin in Plugin Integration entirely + log a warning
+
+The 2026-04-17 release-gate finding G.3 was a fabricated `/security-guidance:security-review` ref for a hooks-only plugin. This invariant prevents the regression class.
+
+**Disambiguation rules** — when multiple overlapping plugins are installed, apply the R1-R6 disambiguation rules from `plugin-surface-probe.md § Disambiguation rules` in order. Key effects:
+
+- **R1**: when `superpowers` + `feature-dev` are both installed, drop `feature-dev:feature-dev` as a top-level Per-feature workflow entry. Keep `feature-dev:code-architect` as an adjunct tool inside the superpowers flow. (Closes G.2, G.5.2.)
+- **R2**: when `code-review` + `pr-review-toolkit` are both installed, label them as `light review` vs `heavy review` so Claude picks the right one per PR context. (Closes G.5.3.)
+- **R3**: when `frontend-design` is installed AND the stack includes a frontend framework (Next.js / React / Vue / Svelte / Astro / Remix / SolidJS), emit a subsection declaring `frontend-design` owns UI feature work. (Closes G.5.4.)
+- **R4**: agent refs always use the plugin-prefixed form (e.g., `feature-dev:code-reviewer`, not bare `code-reviewer`). (Closes G.5.5.)
+- **R5**: emit a note that superpowers' `brainstorming → writing-plans` pipeline is self-contained and doesn't invoke external plugins mid-flow. (Closes G.5.6.)
+- **R6**: hooks-only plugins get behavior narratives derived from the probed hook events (e.g., `security-guidance` hooks fire on PreToolUse:Write → secret-literal-scan). (Closes G.3.)
+
 **Content rules**:
 
 1. **Research & brainstorming** (always first subsection when `superpowers` is in `installedPlugins`):
@@ -132,11 +156,15 @@ This project uses the following Claude Code plugins. Use them consistently.
    - Reference `context7` only if it's in `installedPlugins` (never fabricate)
    - Include the "design can be a few sentences for trivial work" caveat so developers don't feel trapped
    - Point at where research outputs are saved (e.g., `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`)
+   - Add the R5 note: "superpowers' `brainstorming → writing-plans` forms a self-contained pipeline. It does not invoke external plugins mid-flow."
 2. **Core discipline** — `superpowers:test-driven-development`, `superpowers:verification-before-completion`, `superpowers:systematic-debugging` (only include ones whose plugin is installed)
-3. **Per-feature workflow** — `feature-dev:code-architect`, `code-explorer`, `code-reviewer` (only if `feature-dev` is installed)
+3. **Per-feature workflow** — apply R1: if `superpowers` is installed, do NOT list `feature-dev:feature-dev` as a top-level entry. Instead, document `feature-dev:code-architect` as an adjunct tool within the superpowers phase-4 flow. If `superpowers` is NOT installed, `feature-dev:feature-dev` becomes the primary entry for this subsection. Also list `feature-dev:code-explorer` and `feature-dev:code-reviewer` (always with plugin prefix per R4) as tactical tools.
 4. **Commit discipline** — `/commit`, `/commit-push-pr` (only if `commit-commands` is installed)
-5. **Quality gates** — `code-review:code-review`, `pr-review-toolkit:review-pr`, `claude-md-management:revise-claude-md` (only ones whose plugin is installed)
-6. **Ecosystem** — `hookify`, `security-guidance` (only ones whose plugin is installed)
+5. **Quality gates** — when both `code-review` and `pr-review-toolkit` are installed, apply R2: present them as **light review** vs **heavy review** with specific guidance on when to pick each. Otherwise list whichever is installed. Include `claude-md-management:revise-claude-md` if installed.
+6. **Ecosystem** — for `hookify` (slash surface), emit slash refs normally. For `security-guidance` (hooks-only surface), apply R6: emit a narrative paragraph derived from `pluginSurfaces.security-guidance.hooks[]` describing the events fired + behaviors. Do NOT fabricate a `/security-guidance:*` slash ref.
+6.5. **UI feature work (conditional on R3)** — when `frontend-design` is installed AND a frontend framework is detected in the analysis, add a subsection declaring `frontend-design:frontend-design` owns web component / page / application generation. Non-UI feature work stays in the superpowers → feature-dev flow (subsection 3).
+7. **Output styles** (always — built-in styles are universal, emitted custom style is project-specific): Add an `### Output styles` subsection. List the three built-ins (`Default` / `Explanatory` / `Learning`) with one-line descriptions. If `outputStyleStatus.generated[]` is non-empty, also list the emitted custom style with its path and one-line purpose. State the activation path: open `/config` and pick from the menu, OR set `"outputStyle": "<name>"` in `.claude/settings.local.json`. Include the new-session caveat (changes take effect in the next new session). Do NOT reference built-in styles as files — they're Anthropic-provided. When `outputStyleStatus.generated[]` is empty, still emit the subsection to surface the built-ins.
+8. **Built-in Claude Code skills** (always — these are Anthropic-provided, not plugin-dependent): Add a `### Built-in Claude Code skills` subsection wrapped in `<!-- onboard:builtin-skills:start -->` / `<!-- onboard:builtin-skills:end -->` markers. For each skill in `builtInSkillsStatus.generated[]`, emit: skill name, one-line description, and a project-specific example from `references/built-in-skills-catalog.md` (matched to detected stack). Use the same narrative voice as other Plugin Integration subsections — answer "when would you use this on your project?" not just list names. Place this as the **last subsection** inside Plugin Integration, after Output styles. When `builtInSkillsStatus.generated[]` is empty, do not emit the subsection (no stub). When `effectivePlugins` is empty, emit as a standalone `## Built-in Claude Code skills` section with the same `<!-- onboard:builtin-skills:start/end -->` markers, placed after the last onboard-generated section (identified by maintenance header). See "Built-in Claude Code Skills — Phase 7d" below for the full emission spec.
 
 **Graceful degradation (EC8)**: When `superpowers` is NOT in `installedPlugins`, the "Research & brainstorming" subsection falls back to a generic version that recommends built-in `WebSearch`/`WebFetch` and a manual-discussion protocol. Do **not** reference `/superpowers:brainstorming` in the fallback — it would be a broken command. Add a note suggesting users install superpowers for the full experience.
 
@@ -177,13 +205,26 @@ Follow `references/claude-md-guide.md` for content guidance.
 
 When `effectivePlugins.length > 0`, extend each generated subdirectory CLAUDE.md with a `## Skill recommendations` block that maps the directory's role to installed-plugin skills. The block is additive — it supplements the directory's conventions, it does not replace them.
 
+**Marker wrapping (required)**: the block MUST be wrapped in section markers that also encode the directory role. This lets `onboard:update` and `onboard:evolve` refresh the block on plugin drift without re-running scaffold-analyzer:
+
+```markdown
+<!-- onboard:skill-recommendations:start role="parser" -->
+## Skill recommendations
+
+[...generated guidance for this role with current effectivePlugins...]
+<!-- onboard:skill-recommendations:end -->
+```
+
+The `role` attribute value must match one of the identified directory roles (`domain`, `parser`, `data-layer`, `compose-ui`, `api`, `tests`, `scripts`, etc.). Drift handlers read this attribute to regenerate the block against the current plugin mix without needing to re-classify the directory.
+
 **Rules**:
 
-1. **Only add the block when** an installed plugin's capability meaningfully applies to the directory's role. Never stub "Skill recommendations: none". Directories with no matching plugin capability get no block.
+1. **Only add the block when** an installed plugin's capability meaningfully applies to the directory's role. Never stub "Skill recommendations: none". Directories with no matching plugin capability get no block (and no markers).
 2. **Derive mapping from** (a) directory role (identified by config-generator: `domain`, `parser`, `data-layer`, `compose-ui`, `api`, `tests`, `scripts`, etc.), and (b) `effectiveCoveredCapabilities`.
 3. **Brainstorming first** (when superpowers is installed): every annotation that invites new code creation must reference `/superpowers:brainstorming` as the entry point — e.g., *"Before adding a new Parser, run `/superpowers:brainstorming` to explore approaches."*
 4. **Be specific** about *when* to invoke each skill. Vague references like "use feature-dev" are not helpful; *"use `feature-dev:code-architect` when drafting a new Parser contract, then TDD via `superpowers:test-driven-development`"* is.
 5. **Don't repeat root** — the subdirectory block assumes the reader has already seen the root Plugin Integration section.
+6. **Never touch content outside the markers** — drift-time refresh operates only on the delimited region.
 
 **Example annotations**:
 
@@ -211,7 +252,7 @@ Follow `references/rules-guide.md` for patterns and YAML frontmatter.
 
 ### Skills (.claude/skills/)
 
-Follow `references/skills-guide.md` for SKILL.md structure.
+Follow `references/skills-guide.md` for SKILL.md structure AND § Frontmatter Reference for the full field surface the generator emits.
 
 - **Stack-specific**: e.g., React component skill, Django model skill, Go package skill
 - **Workflow-specific**: Based on detected patterns and pain points
@@ -228,17 +269,109 @@ When choosing which 2-3 skills to generate, use this weighting:
 
 **Combined scoring**: A skill that matches both a pain point AND the detected stack gets the highest combined score. When more than 3 candidate skills exist, pain point matches always win over stack-based candidates.
 
+### Skill Frontmatter Emission
+
+Every generated `SKILL.md` carries YAML frontmatter. The generator computes the full surface — `name`, `description`, `user-invocable` / `disable-model-invocation`, plus up to six additional fields (`allowed-tools`, `model`, `effort`, `paths`, `context`, `agent`) — based on archetype inference, wizard-level defaults, and a per-skill developer confirmation step.
+
+**Step 1 — Classify each candidate into an archetype.** Use the draft description + generation rationale (pain point / stack / workflow gap). Five archetypes live in `references/skills-guide.md` § Per-archetype defaults: `research-only`, `scaffolder`, `reviewer`, `orchestrator`, `workflow-specific`. Classification signals are documented in that table and must not be restated here.
+
+**Step 2 — Compose archetype defaults with wizard tuning.** Read `wizardAnswers.skillTuning` (may be absent — treat absence as `{ mode: "defaults" }`):
+
+| `skillTuning.mode` | Effect on archetype output |
+|---|---|
+| `defaults` (or absent) | Emit archetype values as-is. Wherever the archetype says `inherit` for `model` / `effort`, keep it literal so the final `SKILL.md` omits the field (omitting preserves pre-feature behavior exactly). |
+| `tuned` | Replace any `inherit` model/effort with `skillTuning.defaultModel` / `defaultEffort` (unless those are also `inherit`). Apply `preApprovalPosture` clamp to `allowed-tools`: `minimal` strips `Write`/`Edit`/`Bash(*)`, `standard` leaves untouched, `permissive` broadens `Bash(...)` scoping to detected runners (e.g., add `Bash(npm run *:*)`, `Bash(pnpm *:*)` for Node projects). |
+
+**Step 3 — Validation pass (must run before Step 4).** Each computed frontmatter object must pass these checks; failures drop the offending field (never the whole skill) and append to `skillStatus.warnings`:
+
+| Check | Action on fail |
+|---|---|
+| `context: fork` requires a non-empty `agent` that exists in `.claude/agents/` or `effectivePlugins` | Demote to no-fork (drop both fields); warn `context-agent-missing` |
+| `paths` globs match at least one file in the repo today | Still emit; tag `skillStatus.frontmatterFields.<skill>.pathsWarning = "no-match"` (visible warning only; not a failure) |
+| All keys are hyphenated canonical spelling | **Generation bug — fail the skill emission loudly** with a clear error. Underscore keys are silently ignored by Claude Code and must never be written. |
+| `model` / `effort` values match the allowed enum | Drop the field; warn `invalid-<field>-value` |
+
+**Step 4 — Batched confirmation (always runs).** Before writing any `SKILL.md`, present a single table summarizing every candidate skill and its computed frontmatter. Use `AskUserQuestion` with options:
+
+- **Accept all** — default. Guarantees Quick Mode / headless (including `callerExtras.disableSkillTuning: true`) passes through without re-prompting.
+- **Tweak skill N** — re-prompt only that skill's fields (which to change: model / effort / allowed-tools / paths / context+agent). Other skills proceed with their accepted values. Mark tweaked fields `source: "user-tweaked"`.
+- **Skip skill N** — record `skillStatus.skipped[] = [{ "skill": "<name>", "reason": "user-declined-confirmation" }]`. Skipped skills are not written, not snapshotted, and not included in `skillStatus.generated[]`.
+
+**Headless passthrough**: when `callerExtras.disableSkillTuning` is `true`, skip Step 4 entirely and emit with the inferred-plus-tuned values. Record each skill's `frontmatterFields.<name>.source = "inferred"` or `"wizard-default"` per Step 2. This mirrors the `callerExtras.disableMCP` escape hatch in Phase 7a.
+
+**Step 5 — Write `SKILL.md` files.** Emit only fields that have concrete values — never emit empty strings or empty lists. Omitted fields preserve pre-feature-equivalent behavior exactly and keep pre-upgrade fixtures byte-identical.
+
+**Step 6 — Write drift snapshot.** Append `.claude/onboard-skill-snapshot.json` (or create it if absent) with the exact emitted frontmatter block per skill. Same pattern as `.claude/onboard-mcp-snapshot.json` — pure JSON, no maintenance header, consumed by `onboard:update` / `onboard:evolve` as the drift baseline.
+
+```jsonc
+{
+  "react-component": {
+    "allowed-tools": ["Read", "Grep", "Glob", "Write", "Edit"],
+    "effort": "medium",
+    "paths": ["src/components/**/*.tsx"]
+  },
+  "pr-summarizer": {
+    "allowed-tools": ["Read", "Grep", "Glob", "Bash(git diff:*)", "Bash(git log:*)"],
+    "model": "sonnet",
+    "effort": "medium",
+    "context": "fork",
+    "agent": "code-reviewer"
+  }
+}
+```
+
+**Step 7 — Populate `skillStatus`.** Add to `onboard-meta.json` alongside `hookStatus` and `mcpStatus`:
+
+```jsonc
+{
+  "skillStatus": {
+    "planned": ["react-component", "pr-summarizer", "deploy-runner"],
+    "generated": ["react-component", "pr-summarizer"],
+    "skipped": [{ "skill": "deploy-runner", "reason": "user-declined-confirmation" }],
+    "frontmatterFields": {
+      "react-component": {
+        "allowed-tools": ["Read", "Grep", "Glob", "Write", "Edit"],
+        "effort": "medium",
+        "paths": ["src/components/**/*.tsx"],
+        "source": "inferred"
+      },
+      "pr-summarizer": {
+        "allowed-tools": ["Read", "Grep", "Glob", "Bash(git diff:*)", "Bash(git log:*)"],
+        "model": "sonnet",
+        "effort": "medium",
+        "context": "fork",
+        "agent": "code-reviewer",
+        "source": "user-tweaked"
+      }
+    },
+    "existedPreOnboard": [],
+    "warnings": []
+  }
+}
+```
+
+**`source` values** (per-skill provenance):
+
+- `inferred` — archetype defaults only, wizard was in `defaults` mode.
+- `wizard-default` — archetype defaults composed with `skillTuning.mode === "tuned"` values.
+- `user-confirmed` — developer chose "Accept all" in Step 4 with at least one wizard-level override applied.
+- `user-tweaked` — developer used "Tweak skill N" and edited at least one field. `onboard:update` preserves user-tweaked fields on regenerate.
+
+**`existedPreOnboard`** lists skill directory names that already existed on disk before this generation run. Those skills are never rewritten and never enter the snapshot — they're flagged so `onboard:update` can distinguish user-owned skills from generator-owned ones.
+
+**Scope reminder**: `skillStatus` tracks **only** skills emitted by this generator phase. Skills shipped by plugins (via plugin markets) and hand-authored skills that predate onboard are out of scope — the `existedPreOnboard` list names them but does not attempt to track their frontmatter state.
+
 ### Agents (.claude/agents/)
 
-Follow `references/agents-guide.md` for agent file structure.
+Follow `references/agents-guide.md` for agent file structure, archetypes, and frontmatter reference.
 
-- **Model field left empty** — Comment says "set your preferred model"
-- **Scale with team size**:
-  - Solo + superpowers installed: 1 agent (code-reviewer only — superpowers handles TDD)
-  - Solo + no superpowers: 2 agents (code-reviewer, tdd-test-writer)
-  - Small team: 2-3 agents (add security-checker if elevated security)
-  - Large team: 3-4 agents (add documentation-writer, architecture-reviewer)
-- **Each agent** is a single markdown file with clear instructions, allowed tools, and purpose
+**Scale with team size**:
+- Solo + superpowers installed: 1 agent (code-reviewer only — superpowers handles TDD)
+- Solo + no superpowers: 2 agents (code-reviewer, tdd-test-writer)
+- Small team (2-5): 2-3 agents (add security-checker if elevated security)
+- Medium+ team (6+): 3-4 agents (add documentation-writer, architecture-reviewer, cross-package reviewer for monorepos)
+
+Each agent is a single markdown file with YAML frontmatter and free-form instructions body. The `name` frontmatter field must match the filename stem.
 
 #### Plugin-Aware Agent Generation (Headless Mode)
 
@@ -257,6 +390,117 @@ When `effectiveCoveredCapabilities` is non-empty, **skip agents whose capability
 **What to generate instead**: Focus on gap-filling, project-specific agents that no plugin covers — e.g., a `db-migration.md` agent for Prisma projects, or a stack-specific scaffolding agent. These provide value that generic plugins cannot.
 
 **When `effectiveCoveredCapabilities` is empty**: Generate all agents as usual.
+
+### Agent Frontmatter Emission
+
+Every generated agent file carries YAML frontmatter. The generator computes the full surface — `name`, `description`, plus up to nine additional fields (`tools`, `disallowedTools`, `model`, `permissionMode`, `maxTurns`, `effort`, `isolation`, `color`, `background`) — based on archetype inference, wizard-level defaults, and a per-agent developer confirmation step. `proactive` is not a frontmatter field; the convention is encoded via a `description` prefix per the archetype table.
+
+**Step 1 — Classify each candidate into an archetype.** Use the agent's purpose description + generation rationale (team size, security signal, stack fit). Five archetypes live in `references/agents-guide.md` § Per-archetype defaults: `reviewer`, `validator`, `generator`, `architect`, `researcher`. Classification signals are documented in that table and must not be restated here. Ambiguous cases fall back to `researcher` and append an entry to `agentStatus.warnings` (`archetype-inference-fallback`).
+
+**Step 2 — Compose archetype defaults with wizard tuning.** Read `wizardAnswers.agentTuning` (may be absent — treat absence as `{ mode: "defaults" }`):
+
+| `agentTuning.mode` | Effect on archetype output |
+|---|---|
+| `defaults` (or absent) | Emit archetype values as-is. Wherever the archetype says `inherit` for `model` / `effort`, keep it literal so the final agent file omits the field (omitting preserves pre-feature behavior exactly). |
+| `tuned` | Replace any `inherit` model/effort with `agentTuning.defaultModel` / `defaultEffort` (unless those are also `inherit`). Apply `preApprovalPosture` clamp: `minimal` forces `permissionMode: default` and keeps archetype `disallowedTools`; `standard` leaves archetype output untouched; `permissive` may add `permissionMode: acceptEdits` on generator only. Apply `defaultIsolation`: `worktree-for-generators` emits `isolation: worktree` on generator archetype only; `off` never emits `isolation`. |
+
+Archetype-defined `disallowedTools` always win for semantic protection (reviewer/validator/architect/researcher never get `Write`/`Edit`, regardless of posture). Autonomy-level elevation (e.g. `autonomyLevel: "autonomous"`) may broaden `tools` but does not override `disallowedTools`.
+
+**Step 3 — Validation pass (must run before Step 4).** Each computed frontmatter object must pass these checks; failures drop the offending field (never the whole agent) and append to `agentStatus.warnings`:
+
+| Check | Action on fail |
+|---|---|
+| `color` in `{red, blue, green, yellow, purple, orange, pink, cyan}` | Drop field; warn `invalid-color-value` |
+| `effort` in `{low, medium, high, max}` | Drop field; warn `invalid-effort-value` |
+| `isolation` equals `worktree` or omitted (no other values accepted) | Drop field; warn `invalid-isolation-value` |
+| `model` in `{sonnet, opus, haiku, inherit}` or a full model ID | Drop field; warn `invalid-model-value` |
+| `permissionMode` in `{default, acceptEdits, auto, dontAsk, bypassPermissions, plan}` | Drop field; warn `invalid-permissionMode-value` |
+| `isolation: worktree` requires a git repository | Drop field; warn `isolation-non-git-dir` |
+| `name` matches the agent filename stem (kebab-case) | **Generation bug — fail the agent emission loudly** |
+| `maxTurns` is a positive integer | Drop field; warn `invalid-maxTurns-value` |
+
+**Step 4 — Batched confirmation (always runs).** Before writing any agent file, present a single table summarizing every candidate agent and its computed frontmatter. Use `AskUserQuestion` with options:
+
+- **Accept all** — default. Guarantees Quick Mode / headless (including `callerExtras.disableAgentTuning: true`) passes through without re-prompting.
+- **Tweak agent N** — re-prompt only that agent's fields (which to change: model / effort / tools / disallowedTools / color / isolation / maxTurns / permissionMode). Other agents proceed with their accepted values. Mark tweaked fields `source: "user-tweaked"`.
+- **Skip agent N** — record `agentStatus.skipped[] = [{ "agent": "<name>", "reason": "user-declined-confirmation" }]`. Skipped agents are not written, not snapshotted, and not included in `agentStatus.generated[]`.
+
+**Headless passthrough**: when `callerExtras.disableAgentTuning` is `true`, skip Step 4 entirely and emit with the inferred-plus-tuned values. Record each agent's `frontmatterFields.<name>.source = "inferred"` or `"wizard-default"` per Step 2. This mirrors the `callerExtras.disableSkillTuning` escape hatch.
+
+**Step 5 — Write agent files.** Emit only fields that have concrete values — never emit empty strings or empty lists. Omitted fields preserve pre-feature-equivalent behavior exactly and keep pre-upgrade fixtures byte-identical. The description prefix convention (for encoding `proactive` intent per the archetype table) is applied inline in the final description string, not as a separate field.
+
+**Pre-write validation (HARD-FAIL)**: every agent file content MUST start with `---\n` AND contain at minimum `name:` and `description:` lines within the frontmatter block. The 2026-04-16 release-gate run produced 5 agents with 0 working frontmatter because this check did not exist. If the generated content is missing the frontmatter, **hard-fail** the generation rather than write a degraded markdown-sections-only file. See `references/agents-guide.md` § REQUIRED for the template.
+
+**Step 6 — Write drift snapshot (re-read pattern).** After writing each agent file, re-read it from disk, parse the actual YAML frontmatter, and use THAT for the snapshot entry. Do not trust the in-memory string — the snapshot must match what landed on disk. If re-read parse fails (no `---`, malformed YAML, missing `name`/`description`), **hard-fail** — the file failed to write what was intended. Snapshot is `.claude/onboard-agent-snapshot.json` — pure JSON, no maintenance header, consumed by `onboard:update` / `onboard:evolve` as the drift baseline.
+
+```jsonc
+{
+  "code-reviewer": {
+    "tools": "Read, Glob, Grep, Bash(git diff:*), Bash(git log:*)",
+    "disallowedTools": "Write, Edit",
+    "model": "sonnet",
+    "effort": "medium",
+    "color": "blue"
+  },
+  "security-checker": {
+    "tools": "Read, Glob, Grep, Bash",
+    "disallowedTools": "Write, Edit",
+    "model": "haiku",
+    "effort": "low",
+    "color": "green",
+    "maxTurns": 2
+  }
+}
+```
+
+**Step 7 — Populate `agentStatus`.** Add to `onboard-meta.json` alongside `hookStatus`, `mcpStatus`, and `skillStatus`:
+
+```jsonc
+{
+  "agentStatus": {
+    "planned": ["code-reviewer", "tdd-test-writer", "security-checker"],
+    "generated": ["code-reviewer", "security-checker"],
+    "skipped": [{ "agent": "tdd-test-writer", "reason": "covered-by-plugin:superpowers" }],
+    "frontmatterFields": {
+      "code-reviewer": {
+        "tools": "Read, Glob, Grep, Bash(git diff:*), Bash(git log:*)",
+        "disallowedTools": "Write, Edit",
+        "model": "sonnet",
+        "effort": "medium",
+        "color": "blue",
+        "source": "inferred"
+      },
+      "security-checker": {
+        "tools": "Read, Glob, Grep, Bash",
+        "disallowedTools": "Write, Edit",
+        "model": "haiku",
+        "effort": "low",
+        "color": "green",
+        "maxTurns": 2,
+        "source": "user-tweaked"
+      }
+    },
+    "existedPreOnboard": [],
+    "warnings": []
+  }
+}
+```
+
+**`source` values** (per-agent provenance):
+
+- `inferred` — archetype defaults only, wizard was in `defaults` mode.
+- `wizard-default` — archetype defaults composed with `agentTuning.mode === "tuned"` values.
+- `user-confirmed` — developer chose "Accept all" in Step 4 with at least one wizard-level override applied.
+- `user-tweaked` — developer used "Tweak agent N" and edited at least one field. `onboard:update` preserves user-tweaked fields on regenerate.
+
+**`existedPreOnboard`** lists agent filenames (without extension) that already existed on disk before this generation run. Those agents are never rewritten and never enter the snapshot — they're flagged so `onboard:update` can distinguish user-owned agents from generator-owned ones.
+
+**`skipped.reason` values**:
+- `user-declined-confirmation` — Step 4 "Skip agent N" choice.
+- `covered-by-plugin:<plugin-name>` — the capability map in `#### Plugin-Aware Agent Generation` matched an installed plugin.
+- `capability-not-needed` — archetype signal didn't fire for this project (e.g., security-checker skipped on `securitySensitivity: standard`).
+
+**Scope reminder**: `agentStatus` tracks **only** agents emitted by this generator phase. Agents shipped by plugins (via plugin markets) and hand-authored agents that predate onboard are out of scope — the `existedPreOnboard` list names them but does not attempt to track their frontmatter state.
 
 ### Plugin-Aware TDD Workflow
 
@@ -302,6 +546,378 @@ After installing, re-run `/onboard:init` to upgrade from standalone TDD
 artifacts to the integrated plugin-based workflow.
 ```
 
+### MCP Servers (.mcp.json) — Phase 7a
+
+Follow `references/mcp-guide.md` for emission rules, catalog, and transport shapes.
+
+**When to run**: After Recommended Plugins copy is resolved and before Hooks are merged. Phase 7a runs once per generation; drift handling lives in `update`/`evolve`.
+
+**Firing paths** (mutually exclusive — exactly one fires per generation):
+
+| Path | Trigger | Behavior |
+|---|---|---|
+| **Path A — wizard answer** | `wizardAnswers` contains MCP server preferences (rare; MCP is signal-driven, not wizard-gated) | Emit per wizard. |
+| **Path B — Quick Mode default** | wizard absent AND no candidate signals | Emit `mcpStatus: { status: "skipped", reason: "no-candidates" }`. No `.mcp.json`, no snapshot. |
+| **Path C — signal-driven (default)** | `${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh` returns ≥1 candidate | Emit `.mcp.json` + snapshot + telemetry. **This path fires regardless of wizard or headless mode** unless `callerExtras.disableMCP === true`. |
+| **Path SKIP — caller-disabled** | `callerExtras.disableMCP === true` | No `.mcp.json`, no snapshot. Telemetry: `mcpStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [] }`. **Telemetry IS still written.** |
+
+**Inputs**:
+- `analysis.stack` — frameworks, deps, config-file fingerprints
+- `callerExtras.disableMCP` (optional, headless) — see Path SKIP above
+- Output of `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh" <project-root>` — canonical signal list
+
+**Telemetry contract**: `mcpStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | documented | skipped | declined | failed`) per the Default behavior matrix in `generate/SKILL.md`.
+
+**Step 1 — Detect candidates**. Run the detection script; parse JSON output. Candidates marked `confidence: "always"` (context7) emit unconditionally. Candidates marked `confidence: "high"` emit when the signal evaluates unambiguously (see `references/mcp-guide.md` § Confidence Tiers). Dedupe by server name.
+
+**Step 2 — Pre-existing file check**. If `.mcp.json` already exists at project root:
+- Do NOT overwrite
+- Record `mcpStatus.existedPreOnboard: true` and `mcpStatus.preservedFile: ".mcp.json"`
+- Still emit `.claude/rules/mcp-setup.md` describing servers we *would* have emitted, so the user can reconcile manually
+- Skip the write in Step 3 and Step 4
+
+**Step 3 — Write `.mcp.json`**. Use the schema in `references/mcp-guide.md` § Config Shape. Secret references use the `${VAR}` substitution form — never inline real values.
+
+**Step 4 — Write drift snapshot**. Write `.claude/onboard-mcp-snapshot.json` with the exact contents of `.mcp.json` as written. This is the baseline that `onboard:update` / `onboard:evolve` diff against. Do not include a maintenance header — the snapshot is pure JSON consumed by tooling.
+
+**Step 5 — Populate `mcpStatus`**. Add to `onboard-meta.json` alongside `hookStatus`:
+```jsonc
+{
+  "mcpStatus": {
+    "planned": ["context7", "vercel"],
+    "generated": ["context7", "vercel"],
+    "skipped": [{ "server": "github", "reason": "no-github-workflows-detected" }],
+    "autoInstalled": [],
+    "autoInstallFailed": [],
+    "existedPreOnboard": false
+  }
+}
+```
+
+**Step 6 — Write `.claude/rules/mcp-setup.md`** (conditional on at least one server requiring auth OR on `existedPreOnboard: true`). Use the template in `references/mcp-guide.md` § mcp-setup.md Template. Include per-server env-var requirements and OAuth steps. Omit when no auth is needed and no pre-existing file existed.
+
+**Step 7 — Auto-install matching plugins** (after Phase 8 metadata is written, see § Auto-install Plugins below). Running after metadata ensures telemetry is persisted even if install fails.
+
+**Step 8 — Post-emit stdout summary**. Print a terse block listing each emitted server and any pending auth steps. See `references/mcp-guide.md` § Post-emit Summary.
+
+#### Auto-install Plugins
+
+After the metadata file is written in Phase 8, invoke `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugin1> <plugin2> ...` for each server's `plugin` field (if present). The script:
+
+1. Probes `claude plugin list --json` once
+2. Skips plugins already installed
+3. Calls `claude plugin install <plugin>` for each remaining plugin
+4. Logs failures to stdout but always exits 0 — install layer must never fail Phase 7a
+
+On completion, update `mcpStatus.autoInstalled` and `mcpStatus.autoInstallFailed` in `onboard-meta.json` (re-write the single field; do not touch other keys).
+
+### Output Styles (.claude/output-styles/) — Phase 7b
+
+Follow `references/output-styles-guide.md` for archetype inference, frontmatter schema, and `settings.local.json` merge rules. Follow `references/output-styles-catalog.md` for the 5 body templates.
+
+**When to run**: After Phase 7a (MCP) and before Hooks are merged. Phase 7b runs once per generation; drift handling lives in `update`/`evolve`.
+
+**Firing paths** (mutually exclusive — exactly one fires per generation):
+
+| Path | Trigger | Behavior |
+|---|---|---|
+| **Path A — wizard answer** | `wizardAnswers.outputStyleTuning` present with `mode: "tuned"` | Use wizard's archetype override + activation default. Run Step 6 batched confirmation unless headless. |
+| **Path B — Quick Mode default** | wizard absent OR `mode: "defaults"` | Infer top-priority archetype from signals (Steps 1+3). Emit catalog defaults + snapshot + telemetry `status: "emitted"`. **No silent no-op.** |
+| **Path SUPPRESS — tuning disabled** | `callerExtras.disableOutputStyleTuning === true` | Same as Path B but skip Step 6 batched confirmation entirely. Artifacts ARE generated. Telemetry: `outputStyleStatus: { status: "emitted", source: "inferred", ... }`. |
+| **Path DECLINED** | wizard `archetypeOverride === "skip-emit"` | No file written. Telemetry: `outputStyleStatus: { status: "declined", reason: "skip-emit-selected" }`. |
+| **Path NO-CANDIDATES** | candidate set empty after Steps 1+2 | No file written. Telemetry: `outputStyleStatus: { status: "skipped", reason: "archetype-not-fired" }`. |
+
+**Inputs**:
+- `analysis.*` — existing wizard + analysis signals (teamSize, projectMaturity, primaryTasks, securitySensitivity, deployFrequency, painPoints, project description)
+- `wizardAnswers.outputStyleTuning` (optional) — `{ mode, archetypeOverride?, activationDefault? }`. Treat absence as `{ mode: "defaults" }`
+- `callerExtras.disableOutputStyleTuning` (optional, headless) — see Path SUPPRESS above
+
+**Telemetry contract**: `outputStyleStatus` MUST be present in `onboard-meta.json` after every generation. The SUPPRESS-PROMPT-ONLY family (`disableOutputStyleTuning`) MUST NOT collapse to `status: "skipped"` — that's the SKIP-PHASE family's behavior, and Phase 7b has no SKIP-PHASE flag.
+
+**Step 1 — Classify firing archetypes.** Evaluate the 5 firing conditions from `output-styles-guide.md` § Archetype inference. Record the full firing set — even archetypes that won't be chosen — in `outputStyleStatus.planned[]` for telemetry.
+
+**Step 2 — Apply wizard override.** Read `wizardAnswers.outputStyleTuning.archetypeOverride`:
+
+| Override value | Effect |
+|---|---|
+| absent / `"inherit"` | Use Step 1 firing set unchanged; pick top priority in Step 3 |
+| `onboarding` / `teaching` / `production-ops` / `research` / `solo` | Force that archetype as the sole candidate, regardless of Step 1 firing set. Mark `source: "user-tweaked"` |
+| `"skip-emit"` | Record `outputStyleStatus.skipped = [{ reason: "skip-emit-selected" }]`; exit Phase 7b without emitting any file. Do NOT populate snapshot. Do NOT touch settings.local.json |
+
+**Step 3 — Resolve priority.** From the candidate set produced by Steps 1+2, apply priority: `production-ops > onboarding > teaching > research > solo`. Emit ONLY the top match. If the candidate set is empty (no archetype fired, no override), record `outputStyleStatus.skipped = [{ reason: "archetype-not-fired" }]` and exit without emission.
+
+**Step 4 — Pre-existing file check.** Probe `.claude/output-styles/` for a file matching the target filename (e.g., `operator.md` for `production-ops`). If present:
+- Do NOT overwrite
+- Add the filename stem to `outputStyleStatus.existedPreOnboard[]`
+- Do NOT write a snapshot entry for this style
+- Skip Steps 6–8 for this style
+- Continue to Step 9 (telemetry) so the skip is visible
+
+**Step 5 — Compose frontmatter.** Combine catalog defaults from `output-styles-catalog.md` with internal tracking fields:
+
+| Field | Source |
+|---|---|
+| `name` | Filename stem (e.g., `operator`) |
+| `description` | Catalog description verbatim (no project substitution) |
+| `keep-coding-instructions` | `true` (all 5 archetypes) |
+| `archetype` | The chosen archetype string |
+| `source` | `inferred` (Step 1+3 only), `wizard-default` (`tuned` mode with `inherit` override), `user-tweaked` (explicit override), `user-confirmed` (accepted in Step 6 batched confirmation) |
+
+**Step 6 — Batched confirmation.** Present a single `AskUserQuestion` with:
+- One row showing: archetype, target path, activation default
+- Options: **Accept** (default), **Override archetype** (re-prompt with the 7-option archetype list), **Skip emit** (record `{reason: "user-declined-confirmation"}` and exit)
+
+**Headless passthrough**: when `callerExtras.disableOutputStyleTuning` is `true`, skip Step 6 entirely and emit with the Step 5 frontmatter as-is. Mirrors the `callerExtras.disableMCP` and `callerExtras.disableSkillTuning` patterns.
+
+**Step 7 — Write the style file.** Emit `.claude/output-styles/<name>.md` with the frontmatter from Step 5 followed by the catalog body template. Project-specific markers (`<angle-bracket>` placeholders) are filled from `analysis.*`; drop the parent sentence when a marker can't be filled cleanly.
+
+**Step 8 — Write drift snapshot.** Write (or create if absent) `.claude/onboard-output-style-snapshot.json` with ONE entry per emitted style. Snapshot tracks frontmatter fields only — body edits never trigger drift. Pure JSON, no maintenance header. Multi-run accumulation: append, never prune (see `output-styles-guide.md` § Snapshot contract § Multi-run accumulation).
+
+```jsonc
+{
+  "operator": {
+    "name": "operator",
+    "description": "Terse production voice for security-sensitive and infrastructure-critical work...",
+    "keep-coding-instructions": true,
+    "archetype": "production-ops",
+    "source": "inferred"
+  }
+}
+```
+
+**Step 9 — Apply `settings.local.json` merge** (only if `wizardAnswers.outputStyleTuning.activationDefault === "write-to-settings"`). Apply the 4-case merge from `output-styles-guide.md` § settings.local.json merge rules:
+
+| Case | Action | Telemetry |
+|---|---|---|
+| File missing | Warn, do NOT create | `settingsLocalWritten: false`, `settingsLocalWarning: "file-missing"` |
+| Key absent | Read-modify-write: add `"outputStyle": "<emitted-name>"`, preserve all other keys | `settingsLocalWritten: true`, `settingsLocalWarning: null` |
+| Key present, same value | No-op | `settingsLocalWritten: false`, `settingsLocalWarning: "already-set-to-same"` |
+| Key present, different value | Block, warn | `settingsLocalWritten: false`, `settingsLocalWarning: "conflict:<existing-value>"` |
+
+Invariants: never create `settings.local.json` from scratch, never overwrite an existing `outputStyle` value, write value as a JSON-quoted string (strict JSON).
+
+**Step 10 — Populate `outputStyleStatus`.** Add to `onboard-meta.json` alongside `mcpStatus` and `skillStatus`:
+
+```jsonc
+{
+  "outputStyleStatus": {
+    "planned": ["operator"],
+    "generated": ["operator"],
+    "skipped": [],
+    "frontmatterFields": {
+      "operator": {
+        "name": "operator",
+        "description": "...",
+        "keep-coding-instructions": true,
+        "archetype": "production-ops",
+        "source": "inferred"
+      }
+    },
+    "activationDefault": "none",
+    "settingsLocalWritten": false,
+    "settingsLocalWarning": null,
+    "existedPreOnboard": [],
+    "warnings": []
+  }
+}
+```
+
+**`skipped[].reason` values**: `user-declined-confirmation` | `archetype-not-fired` | `skip-emit-selected` | `caller-disabled`.
+**`source` values**: `inferred` | `wizard-default` | `user-confirmed` | `user-tweaked`.
+**`settingsLocalWarning` values**: `null` | `"file-missing"` | `"already-set-to-same"` | `"conflict:<existing-value>"`.
+
+**Step 11 — Post-emit stdout summary.** Print a terse block: the emitted style, activation default, any settings.local.json warning, any pre-existing file we preserved. Keep it under 5 lines — most of the useful detail lives in `onboard-meta.json`.
+
+### LSP Plugin Recommendations — Phase 7c
+
+Follow `references/lsp-plugin-catalog.md` for the 12-entry language→plugin mapping. Phase 7c recommends and installs official marketplace LSP plugins based on detected source-file presence. Onboard does NOT emit any project-level `.lsp.json` — installing the right plugin is the complete story (LSP config ships inside each plugin's manifest).
+
+**When to run**: After Phase 7b (Output Styles) and before Hooks. Runs once per generation; drift handling lives in `update`/`evolve`.
+
+**Firing paths** (mutually exclusive — exactly one fires per generation):
+
+| Path | Trigger | Behavior |
+|---|---|---|
+| **Path A — explicit caller list** | `callerExtras.lspPlugins` is a non-null array | Use it verbatim as the accepted list. Empty array = "detected but declined all" → `lspStatus: { status: "declined", accepted: [] }`. |
+| **Path A — wizard answer** | `wizardAnswers.lspPlugins` present | Use wizard's accepted list. Same `declined` semantics if empty. |
+| **Path B — Quick Mode default** | wizard answer absent AND callerExtras list absent AND detection found candidates | Accept ALL detected plugins. Emit + snapshot + telemetry `status: "emitted"`. |
+| **Path NO-CANDIDATES** | `detect-lsp-signals.sh` returns empty array | No install, no snapshot. Telemetry: `lspStatus: { status: "skipped", reason: "detection-empty", planned: [], generated: [] }`. |
+| **Path SKIP — caller-disabled** | `callerExtras.disableLSP === true` | No script run, no install, no snapshot. Telemetry: `lspStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [] }`. **Telemetry IS still written.** |
+
+**Inputs**:
+- `callerExtras.disableLSP` (optional, headless) — see Path SKIP above; forge passes `true` by default for placeholder code in scaffolds
+- `callerExtras.lspPlugins` (optional, headless) — see Path A above
+- `wizardAnswers.lspPlugins` (optional) — see Path A above
+- Output of `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"` — JSON array sorted by fileCount desc
+
+**Telemetry contract**: `lspStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | documented | skipped | declined | failed`) per the Default behavior matrix in `generate/SKILL.md`.
+
+**Step 1 — Detect candidate plugins.** Run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"`. Output is a JSON array sorted by fileCount desc, e.g.:
+
+```json
+[
+  {"language":"typescript","plugin":"typescript-lsp","fileCount":1247,"extensions":[".ts",".tsx","..."]},
+  {"language":"rust","plugin":"rust-analyzer-lsp","fileCount":312,"extensions":[".rs"]}
+]
+```
+
+Empty array → nothing to recommend. Emit `lspStatus: { planned: [], generated: [] }` and skip the remaining steps.
+
+**Step 2 — Resolve selected plugins.**
+
+- If `callerExtras.lspPlugins` is a non-null array → use it verbatim as the accepted list (headless path; forge supplies an explicit list or nothing).
+- Else if `wizardAnswers.lspPlugins` exists (from wizard Phase 5.6) → use that as the accepted list.
+- Else → use all detected plugins as the accepted list (autonomous Quick Mode path).
+
+Always preserve the full detected list as `recommended`, independent of what was accepted.
+
+**Step 3 — Compose CLAUDE.md "LSP support" subsection.** Append a small subsection under Plugin Integration in the root CLAUDE.md listing the accepted plugins and their language-server binary install prereqs (from `lsp-plugin-catalog.md`). Keep it under 10 lines. When `accepted` is empty but `recommended` is non-empty, list the recommended ones with a "not installed — run `/onboard:evolve` to install" note instead.
+
+**Step 4 — Metadata-first ordering (mirrors Phase 7a).** Install AFTER metadata is written in Phase 8:
+
+1. Add `lspStatus` placeholder to `onboard-meta.json`: `{ planned: [...], generated: [...], accepted: [...], autoInstalled: [], autoInstallFailed: [], skipped: [...] }` with install fields empty.
+2. Wait for Phase 8's metadata write to complete.
+3. Invoke `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugin1> <plugin2> ...` with the accepted list.
+4. Update `onboard-meta.json.lspStatus.autoInstalled` and `.autoInstallFailed` from the install script's JSON output (single-field read-modify-write; don't touch other keys).
+
+Rationale: if `claude plugin install` hangs or errors, telemetry must already be persisted. Same contract as Phase 7a.
+
+**Step 5 — Write `.claude/onboard-lsp-snapshot.json`.** Pure JSON, no maintenance header — this is the drift baseline for `update` Step 4b.8 and `evolve` Step 2g:
+
+```json
+{
+  "recommended": ["typescript-lsp", "rust-analyzer-lsp", "pyright-lsp"],
+  "accepted": ["typescript-lsp", "rust-analyzer-lsp"]
+}
+```
+
+Both arrays are sorted alphabetically for stable diffs. Add the snapshot path to `generatedArtifacts`.
+
+**Step 6 — lspStatus telemetry schema.**
+
+```json
+"lspStatus": {
+  "planned": ["typescript-lsp", "rust-analyzer-lsp", "pyright-lsp"],
+  "accepted": ["typescript-lsp", "rust-analyzer-lsp"],
+  "generated": ["typescript-lsp", "rust-analyzer-lsp"],
+  "skipped": [{"plugin": "pyright-lsp", "reason": "user-declined"}],
+  "autoInstalled": ["typescript-lsp"],
+  "autoInstallFailed": [],
+  "alreadyInstalled": ["rust-analyzer-lsp"]
+}
+```
+
+**`skipped[].reason` values**: `user-declined` | `caller-disabled` | `detection-empty`.
+
+**Step 7 — Post-emit stdout summary.** Print a terse block listing accepted plugins, any auto-install failures, and any language-server binaries the user still needs to install manually (per catalog). Keep under 6 lines.
+
+### Built-in Claude Code Skills — Phase 7d
+
+Follow `references/built-in-skills-catalog.md` for the 9-skill catalog, tier classification (core vs extra), detection signals, and stack-specific example templates.
+
+**When to run**: After Phase 7c (LSP) and before Hooks. Runs once per generation; drift handling lives in `update`/`evolve`.
+
+**Firing paths** (mutually exclusive — exactly one fires per generation):
+
+| Path | Trigger | Behavior |
+|---|---|---|
+| **Path A — explicit caller list** | `callerExtras.builtInSkills` present | Use it verbatim as the accepted list. Empty array = "candidates existed but declined all" → `builtInSkillsStatus: { status: "declined", accepted: [] }`. Non-empty array → `status: "documented"` (CLAUDE.md subsection is the artifact). |
+| **Path A — wizard answer** | `wizardAnswers.builtInSkills` present | Use wizard's accepted list. Same `declined` semantics if empty; `"documented"` status when non-empty. |
+| **Path B — Quick Mode default** | wizard absent AND callerExtras list absent | Accept the full candidate list (4 core + N fired extras). Emit CLAUDE.md subsection + snapshot + telemetry `status: "documented"`. **Built-in skills' core tier always fires; this path NEVER produces an empty result.** |
+| **Path SKIP — caller-disabled** | `callerExtras.disableBuiltInSkills === true` | No CLAUDE.md subsection, no snapshot. Telemetry: `builtInSkillsStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [] }`. **Telemetry IS still written.** |
+
+**Inputs**:
+- `callerExtras.disableBuiltInSkills` (optional, headless) — see Path SKIP above; forge passes `true` by default for placeholder code in scaffolds
+- `callerExtras.builtInSkills` (optional, headless) — see Path A above
+- `wizardAnswers.builtInSkills` (optional) — see Path A above
+
+**Telemetry contract**: `builtInSkillsStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | documented | skipped | declined | failed`) per the Default behavior matrix in `generate/SKILL.md`. **Built-in skills is the primary user of the `"documented"` value** — its "artifact" is a CLAUDE.md subsection rather than a separate file + snapshot, so `"documented"` is semantically more accurate than `"emitted"` when the phase runs. See Phase 7d below for the firing paths.
+
+**Suppression**: Skip entirely when `callerExtras.disableBuiltInSkills: true` (forge default — scaffolded projects have placeholder code so detection signals are premature). When skipped, still emit a `builtInSkillsStatus` entry in meta.json:
+
+```json
+{
+  "builtInSkillsStatus": {
+    "planned": [],
+    "generated": [],
+    "skipped": [{ "skill": "*", "reason": "caller-disabled" }],
+    "warnings": [],
+    "detectionSignals": {}
+  }
+}
+```
+
+**Step 1 — Detect candidates.** Run detection against the codebase analysis report:
+
+- **Core skills** (`/loop`, `/simplify`, `/debug`, `/pr-summary`): always candidates. No detection signal needed.
+- **Extra skills**: check each signal per the catalog's "Detection signal" and "Analysis report field" columns. Record which signals fired and which did not.
+
+Build the full candidate list: 4 core + N extras (0-5) whose signals fired. Record as `planned[]`.
+
+**Step 2 — Resolve accepted list.** Determine which skills to generate from the candidate list:
+
+- If `callerExtras.builtInSkills` is present → use it verbatim as the accepted list (headless mode). An empty array means "declined all".
+- Else if `wizardAnswers.builtInSkills` is present → use it as the accepted list.
+- Else (Quick Mode / absent field) → accept the full candidate list (all core + fired extras).
+
+Record as `generated[]`. Skills in `planned[]` but not in `generated[]` go into `skipped[]` with `reason: "user-declined"`.
+
+**Step 3 — Determine placement path.**
+
+- If `effectivePlugins` is non-empty → emit as `### Built-in Claude Code skills` subsection inside `<!-- onboard:plugin-integration:start/end -->`, after the `### Output styles` subsection (content rule #7), before the Plugin Integration closing marker.
+- If `effectivePlugins` is empty → emit as a standalone `## Built-in Claude Code skills` section, placed after the last onboard-generated section (identified by maintenance header), before any user-added trailing content.
+
+In both cases, wrap the content in `<!-- onboard:builtin-skills:start -->` / `<!-- onboard:builtin-skills:end -->` markers. The markers are always present regardless of placement path — this makes all drift handlers marker-based.
+
+**Step 4 — Compose the subsection.** For each skill in `generated[]`:
+
+1. Look up the skill in the catalog to get the one-line description.
+2. Select the stack-specific example from the catalog's four template tables (frontend / backend / CLI / general), picking the table that matches the project's primary detected stack (highest source file count). If no specific stack matches, use the general fallback.
+3. Emit in this format:
+
+```markdown
+- `/skill-name` — one-line description.
+  Example: project-specific example from catalog.
+```
+
+Use rich narrative voice matching the project's autonomy level (per the Tone rules). The subsection header should briefly explain what built-in skills are: "These Anthropic-provided skills are available in every Claude Code session — no plugin install required."
+
+**Step 5 — Write drift snapshot.** Write `.claude/onboard-builtin-skills-snapshot.json`:
+
+```json
+{
+  "recommended": ["/batch", "/debug", "/loop", "/pr-summary", "/schedule", "/simplify"],
+  "accepted": ["/debug", "/loop", "/pr-summary", "/schedule", "/simplify"]
+}
+```
+
+Plain JSON, no `_generated` header — matches LSP snapshot format. Both arrays sorted alphabetically. Add the snapshot path to `generatedArtifacts` in `onboard-meta.json`.
+
+**Step 6 — Record telemetry.** Add `builtInSkillsStatus` to `onboard-meta.json` alongside `hookStatus`, `mcpStatus`, `skillStatus`, `agentStatus`, `outputStyleStatus`, and `lspStatus`. Use `status: "documented"` when the phase successfully wrote a CLAUDE.md subsection (the primary artifact type for Phase 7d — no separate file), `status: "declined"` when accepted list is empty, `status: "skipped"` for SKIP-PHASE, `status: "failed"` on errors. The `"documented"` value replaces the earlier `"skipped", reason: "built-in-skills-are-user-level-no-project-artifact"` semantic that broke downstream consumers (release-gate finding B13, 2026-04-17).
+
+```json
+{
+  "builtInSkillsStatus": {
+    "status": "documented",
+    "documentedIn": "CLAUDE.md",
+    "planned": ["/loop", "/simplify", "/debug", "/pr-summary", "/schedule", "/batch"],
+    "generated": ["/loop", "/simplify", "/debug", "/pr-summary", "/schedule"],
+    "skipped": [{ "skill": "/batch", "reason": "user-declined" }],
+    "warnings": [],
+    "detectionSignals": {
+      "/schedule": "ci-cd-detected",
+      "/batch": "source-file-count:247"
+    }
+  }
+}
+```
+
+`detectionSignals` only records extras whose signal fired (they appear in `planned`). Core skills don't need detection entries since they're always included.
+
+**`skipped[].reason` values**: `user-declined` | `caller-disabled` | `detection-empty`.
+
+**Step 7 — Post-emit stdout summary.** Print a terse block listing accepted skills and the placement path (inside Plugin Integration or standalone). Keep under 4 lines.
+
 ### Hooks (.claude/settings.json)
 
 Follow `references/hooks-guide.md` for hook configuration.
@@ -337,7 +953,7 @@ When `effectiveQualityGates` is present (from either `callerExtras.qualityGates`
 
 **Hook Status Telemetry**: While walking through the 4 hook categories (`sessionStart`, `preCommit`, `featureStart`, `postFeature`), onboard MUST record what was planned, what was actually generated, and what was skipped (and why) into a structured `hookStatus` object. This object is:
 
-1. Returned from `/onboard:generate` in the result summary (see `onboard/commands/generate.md` § Step 5)
+1. Returned from `/onboard:generate` in the result summary (see `onboard/skills/generate/SKILL.md` § Step 5)
 2. Recorded inside `.claude/onboard-meta.json` under the top-level `hookStatus` key
 3. Mirrored by forge into `.claude/forge-meta.json.generated.toolingFlags.hookStatus` (see `forge/skills/tooling-generation/SKILL.md` § Step 4)
 
@@ -347,37 +963,67 @@ This telemetry enables `/forge:status` to report "X/Y hooks wired" and lays the 
 
 The mental model: `hookStatus` answers "how well did the Plugin Integration contract land?", not "how many shell hooks does this project have total?".
 
+**Scope extension — advanced event hooks**: hooks emitted from the Advanced Event Hooks section (SessionEnd, UserPromptSubmit, PreCompact, SubagentStart, TaskCreated, TaskCompleted, FileChanged, ConfigChange, Elicitation) ARE counted in `hookStatus`. They are part of the Plugin Integration contract when the caller requested them via `callerExtras.qualityGates.<event>[]` OR when the wizard's `advancedHookEvents` opt-in selected them. When the inference rules fire them implicitly (see per-event triggers), they are also tracked — the scope boundary is "did a caller or wizard answer ask for this?" not "did the user type a yes". Format/lint hooks and utility hooks (WorktreeCreate init-runner) remain out of scope.
+
 **Canonical `hookStatus` shape** (the source of truth — all downstream consumers use this exact layout):
+
+**Key format**: `<Event>[:<Matcher>][:<Type>]` where:
+- `<Event>` is the Claude Code event name (e.g., `SessionStart`, `TaskCompleted`).
+- `<Matcher>` is the event's matcher value (tool name, filename glob, MCP server, etc.). Omitted for matcher-incompatible events.
+- `<Type>` is the hook type (`prompt`, `agent`, or `http`). **Omitted entirely when type is `command`** — this keeps every pre-upgrade fixture byte-identical.
+- When matcher is absent but type is present, the double colon is preserved: `Elicitation::http`. This is intentional — it signals "no matcher, but non-default type" unambiguously.
 
 ```jsonc
 "hookStatus": {
   "planned": {
-    "SessionStart": 1,               // count of planned hooks per event key
-    "PreToolUse:Write": 1,           // keys use <Event>[:<Matcher>] format
-    "PreToolUse:Bash": 2,            // multiple entries possible (e.g. 2 preCommit scripts)
-    "Stop": 1
+    "SessionStart":              1,  // command, no matcher, no type suffix
+    "PreToolUse:Write":          1,  // command, matcher present
+    "PreToolUse:Bash":           2,  // command, matcher present, 2 entries
+    "Stop":                      1,  // command
+    "SessionEnd":                1,  // command
+    "PreCompact:auto":           1,  // command, matcher present
+    "FileChanged:package-lock.json|Cargo.lock": 1,  // command with glob matcher
+    // Non-command types surface the :<Type> suffix:
+    "UserPromptSubmit:prompt":   1,  // prompt type, no matcher
+    "TaskCompleted:agent":       1,  // agent type, no matcher
+    "Elicitation::http":         1   // http type, no matcher (double colon preserves position)
+    // With both matcher AND non-command type:
+    // "Elicitation:vercel:http": 1
   },
   "generated": {
-    // list-of-script-basenames per event key (NOT a count map).
-    // Richer than a count: you can see which script is wired to which event without
-    // cross-referencing .claude/settings.json.
+    // Value type varies by hook type — see § Artifact per type:
+    //   command → script basename     (.claude/hooks/<name>.sh)
+    //   prompt  → prompt filename     (.claude/hooks/<name>.prompt.md) OR inline-snippet fallback (first 50 chars + '…')
+    //   agent   → agent name
+    //   http    → URL
     "SessionStart":     ["plugin-integration-reminder.sh"],
     "PreToolUse:Write": ["feature-start-detector.sh"],
     "PreToolUse:Bash":  [
       "pre-commit-code-review.sh",
       "pre-commit-verification-before-completion.sh"
     ],
-    "Stop":             ["post-feature-revise-claude-md.sh"]
+    "Stop":             ["post-feature-revise-claude-md.sh"],
+    "SessionEnd":       ["session-end.sh"],
+    "PreCompact:auto":  ["pre-compact-checkpoint.sh"],
+    "FileChanged:package-lock.json|Cargo.lock": ["file-changed-notice.sh"],
+    "UserPromptSubmit:prompt":   ["user-prompt-secret-scan.prompt.md"],
+    "TaskCompleted:agent":       ["code-reviewer"],
+    "Elicitation::http":         ["https://audit.internal/claude-elicitation"]
   },
   "skipped": [                       // one entry per hook that was planned but NOT generated
     {
-      "event": "Stop",               // event:matcher key from `planned`
+      "event": "Stop",               // matches a key in planned{} (including any :Type suffix)
       "skill": "claude-md-management:revise-claude-md",
       "reason": "plugin-not-installed"
+    },
+    {
+      "event": "Elicitation::http",
+      "reason": "http-not-opted-in"  // callerExtras.allowHttpHooks was not true
     }
   ],
   "warnings": [                      // free-text warnings emitted during hook generation
-    "featureStart.criticalDirs was empty; detector hook not generated"
+    "featureStart.criticalDirs was empty; detector hook not generated",
+    "Elicitation:http entry dropped — set callerExtras.allowHttpHooks: true to enable"
   ],
   "downgradeApplied": {              // OPTIONAL — only present when autonomyLevel forced a mode change
     "rule": "autonomyLevel=always-ask → preCommit[].mode=advisory",
@@ -387,12 +1033,13 @@ The mental model: `hookStatus` answers "how well did the Plugin Integration cont
 ```
 
 **Counting rules**:
-- `planned[event]` = **integer** — number of entries in `callerExtras.qualityGates.<field>[]` that map to that event (e.g. `qualityGates.preCommit[]` length contributes to `PreToolUse:Bash` because pre-commit hooks attach to Bash tool calls). **Only counts qualityGates-derived hooks, never format/lint/forge-internal.**
-- `generated[event]` = **array of script basenames** (relative to `.claude/hooks/`) for hooks actually written to `.claude/settings.json` **from the qualityGates spec**. Not the total event count in settings.json — exclude format/lint/forge-internal scripts.
-- `skipped[]` = a record for every entry in `planned` that did NOT produce a corresponding `generated` entry, with the reason (`plugin-not-installed`, `condition-unsatisfied`, `empty-critical-dirs`, etc.).
+- `planned[key]` = **integer** — number of entries in `callerExtras.qualityGates.<field>[]` that map to that exact `<Event>[:<Matcher>][:<Type>]` key. Entries sharing an event but differing in type count as separate keys (e.g., `TaskCompleted` and `TaskCompleted:agent` are distinct). **Only counts qualityGates-derived hooks, never format/lint/forge-internal.**
+- `generated[key]` = **array** of artifact references for hooks actually written to `.claude/settings.json` from the qualityGates spec. Value semantics depend on type (see § Artifact per type under Advanced Event Hooks).
+- `skipped[]` = a record for every entry in `planned` that did NOT produce a corresponding `generated` entry. The `event` field must match a `planned` key verbatim (including type suffix). Reasons include `plugin-not-installed`, `condition-unsatisfied`, `empty-critical-dirs`, plus the 11 type-validation reasons listed in § Hook Type Validation.
 - `warnings[]` = operator-facing messages (not user-facing) about soft issues during generation.
 - `downgradeApplied` (optional) = records the autonomyLevel-aware preCommit mode downgrade rule when it fires. Only present when the downgrade actually ran — absent means no downgrade was applied. Gives downstream tooling (status reports, adaptive suppression) provenance without re-deriving.
-- **Invariant**: for every event key, `planned[event] - len(generated[event]) == (number of skipped[] entries whose `event` matches)`. If this doesn't balance, the telemetry is broken — treat as a generation bug.
+- **Invariant**: for every event key, `planned[key] - len(generated[key]) == (number of skipped[] entries whose `event` matches that key exactly)`. If this doesn't balance, the telemetry is broken — treat as a generation bug.
+- **Backward compat**: for pre-upgrade callers (no `hookType` fields, no `allowHttpHooks`), every key in `planned` / `generated` has NO type suffix — the shape is byte-identical to pre-upgrade fixtures. Type suffixes only appear when a caller/wizard explicitly used a non-command type.
 
 See `references/hooks-guide.md` for generated script templates, ShellCheck requirements, and concrete examples of sessionStart + featureStart + preCommit hooks.
 
@@ -717,6 +1364,123 @@ Record standalone quality-gate hooks in `onboard-meta.json` under the same `hook
 
 Same as headless mode: read existing `.claude/settings.json` first, merge hook entries, never overwrite. If a hook with the same matcher/event already exists, skip (don't duplicate). Standalone quality-gate hooks coexist with format/lint hooks from the Autonomy Cascade — they use different events/matchers and do not conflict.
 
+#### Advanced Event Hooks (from `qualityGates.<advanced-event>` or wizard opt-in)
+
+In addition to the four core quality-gate categories (sessionStart / preCommit / featureStart / postFeature), onboard emits hooks for nine advanced Claude Code events when the caller requests them or the wizard's advanced-hook step selects them. All templates live in `references/hooks-guide.md` § Advanced Event Templates — this section covers the generation contract only.
+
+##### Input sources (in priority order)
+
+1. **Caller-provided**: `callerExtras.qualityGates.<event>[]` where `<event>` is one of `sessionEnd`, `userPromptSubmit`, `preCompact`, `subagentStart`, `taskCreated`, `taskCompleted`, `fileChanged`, `configChange`, `elicitation`. See `skills/generate/SKILL.md` § Required Context Structure for the per-field shape.
+2. **Wizard opt-in**: `wizardAnswers.advancedHookEvents[]` — array of event names the developer selected in the wizard's optional advanced-hooks step. Maps 1:1 to the caller schema keys (lowercase first letter, e.g., `sessionEnd`, not `SessionEnd`).
+3. **Inference**: when neither source is present, apply the per-event inference rules below. Inference runs last and never overrides an explicit empty selection.
+
+##### Per-event inference rules
+
+| Event | Inference trigger | Template script (in `references/hooks-guide.md`) |
+|---|---|---|
+| `SessionEnd` | Always emit (safe cleanup stub) | `session-end.sh` |
+| `UserPromptSubmit` | `wizardAnswers.securitySensitivity === "high"` OR `hookify` in `effectivePlugins` | `user-prompt-preflight.sh` |
+| `PreCompact` | `wizardAnswers.autonomyLevel ∈ {balanced, autonomous}` AND `analysis.complexity.fileCount > 500` — matcher `"auto"` | `pre-compact-checkpoint.sh` |
+| `SubagentStart` | `enriched.enableTeams === true` | `subagent-start-audit.sh` |
+| `TaskCreated` | `enriched.enableTeams === true` | `task-created-check.sh` |
+| `TaskCompleted` | `enriched.enableTeams === true` AND analyzer detected a test command — replace the `__TEST_CMD__` placeholder in the template with the literal command (e.g. `npm test`, `pytest -q`). Skip this hook entirely if no test command was detected. | `task-completed-verify.sh` |
+| `FileChanged` | `enriched.enableEvolution === true` — use the drift-detection matcher set from `references/evolution-hooks-guide.md`; fall back to the generic lockfile matcher when the caller supplies no explicit matcher | `file-changed-notice.sh` or the drift scripts from evolution-hooks-guide |
+| `ConfigChange` | Analyzer detected `.claude/settings.json` OR `.claude/rules/` under git version control (`versionControlledClaude === true`) — matcher `"project_settings"` | `config-change-warn.sh` |
+| `Elicitation` | `.mcp.json` present in the repo OR analyzer reports MCP servers in the stack — omit matcher unless caller names specific servers | `elicitation-audit.sh` |
+
+##### Per-event defaults (hook type)
+
+When neither the caller's `qualityGates.<event>[].hookType` nor `wizardAnswers.advancedHookTypes[<event>]` is set, generation applies these per-event defaults. The third column shows the inference-path upgrade — when the listed condition fires, the default type is upgraded from `command` to the listed alternative (still overridable by the caller/wizard).
+
+| Event | Default type | Inference-path upgrade (auto-fires when silent) |
+|---|---|---|
+| `SessionStart` | `command` | — |
+| `SessionEnd` | `command` | — |
+| `UserPromptSubmit` | `command` | → `prompt` (using shipped `default-prompts/user-prompt-secret-scan.md`) when `wizardAnswers.securitySensitivity === "high"` |
+| `PreToolUse` / `PostToolUse` | `command` (**locked** — `prompt`/`agent` refused with `unsupported-type-for-event`) | none |
+| `Stop` | `command` | — |
+| `PreCompact` | `command` | — |
+| `SubagentStart` | `command` | — |
+| `TaskCreated` | `command` | — (wizard offers `prompt` as manual upgrade only) |
+| `TaskCompleted` | `command` | → `agent` when `enriched.enableTeams === true` AND caller supplies `qualityGates.taskCompleted[].agentRef` |
+| `FileChanged` | `command` | — |
+| `ConfigChange` | `command` | — |
+| `Elicitation` | `command` | → `http` when caller supplies `qualityGates.elicitation[].httpUrl` AND `callerExtras.allowHttpHooks === true` |
+
+**Inference-path safety invariants**:
+- `UserPromptSubmit` → `prompt` never fires if the wizard/caller explicitly set `hookType: "command"` for that event. Explicit beats inferred.
+- `TaskCompleted` → `agent` requires BOTH `enableTeams` AND an `agentRef`. Missing the ref → stay on `command` (never guess which agent to use).
+- `Elicitation` → `http` requires BOTH `httpUrl` AND `allowHttpHooks`. Missing either → stay on `command`.
+- No `http` path is ever emitted purely from analyzer signals — always requires explicit caller consent (`allowHttpHooks: true`).
+
+##### Hook Type Validation
+
+Each entry passes through this 11-rule validator before the settings.json write. Failures drop the offending entry into `hookStatus.skipped[]` with a structured reason and continue generation. They never abort the run.
+
+| Skip reason | Condition | Remediation hint recorded in `warnings[]` |
+|---|---|---|
+| `missing-prompt-source` | `hookType="prompt"` but neither `promptRef` nor `promptInline` supplied | "Provide `promptRef` (path) or `promptInline` (text) for prompt-type hooks" |
+| `ambiguous-prompt-source` | `hookType="prompt"` with BOTH `promptRef` AND `promptInline` | "Pick exactly one of `promptRef` / `promptInline`" |
+| `prompt-file-not-found` | `hookType="prompt"` + `promptRef` points to a file that does not exist | "Create the prompt file at the supplied path or switch to `promptInline`" |
+| `missing-agentRef` | `hookType="agent"` but `agentRef` is absent or empty | "Provide `agentRef` naming the agent (e.g. `code-reviewer`)" |
+| `missing-httpUrl` | `hookType="http"` but `httpUrl` is absent or empty | "Provide `httpUrl` (https-only)" |
+| `unsupported-type-for-event` | `hookType ∈ {prompt, agent}` on `PreToolUse` or `PostToolUse` | "Use `command` type for per-tool-call events" |
+| `http-not-opted-in` | `hookType="http"` without `callerExtras.allowHttpHooks === true` | "Set `callerExtras.allowHttpHooks: true` to enable http-type hooks" |
+| `insecure-http-url` | `hookType="http"` with URL not starting with `https://` | "Use https; non-https URLs are refused even for loopback" |
+| `agent-not-found` | `hookType="agent"` + `agentRef` referencing an agent whose plugin is not in `effectivePlugins` | "Install the agent's plugin or switch to a `command` hook" |
+| `invalid-timeout` | `timeout` field present but not a positive integer | "Timeout must be a positive integer in milliseconds" |
+| `high-frequency-event-unsuitable-for-agent` | `hookType="agent"` on `UserPromptSubmit` (fires on every prompt; agent latency makes the session unusable) | "Use `prompt` type instead, or keep `command` for low-latency checks" |
+
+**Invariant**: every `skipped[]` entry counts against the event's `planned[eventKey]` in the same way existing skips do. The `planned − len(generated) == count(skipped)` invariant still balances per key.
+
+##### Artifact per type
+
+| Type | `generated[<key>]` array value | Physical file | Plugin-level source of truth |
+|---|---|---|---|
+| `command` | script basename (e.g., `session-end.sh`) | `${project}/.claude/hooks/<name>.sh` | template in `references/hooks-guide.md` |
+| `prompt` | prompt filename (e.g., `user-prompt-secret-scan.prompt.md`) | `${project}/.claude/hooks/<name>.prompt.md` (copied verbatim from `promptRef` file OR written from `promptInline` text if >1 line) | optional default in `references/default-prompts/` |
+| `agent` | agent name (e.g., `code-reviewer`) | no new file — references existing agent via `type: "agent"` settings entry | `effectivePlugins` provides the agent |
+| `http` | URL (e.g., `https://audit.internal/e`) | no new file — URL lives inline in `settings.json` | caller-supplied |
+
+**`promptInline` special case**: if `promptInline` is 1 line AND ≤200 chars, embed directly in `settings.json` `prompt` field (no sidecar file). Otherwise always write a `.prompt.md` sidecar and reference it via file-read at generation time. `generated[<key>]` records the sidecar filename when present; else the inline text's first 50 chars followed by `…`.
+
+##### Generation rules
+
+1. **Matcher-incompatible events MUST NOT emit a `matcher` field** in the settings entry. Applies to: `SessionEnd`, `UserPromptSubmit`, `SubagentStart`, `TaskCompleted`. See `references/hooks-guide.md` § Matcher Compatibility for the authoritative table. Silently ignoring an extraneous matcher is not acceptable — the generated JSON must be honest.
+2. **Matcher-capable events MUST scope narrowly**. `PreCompact` defaults to `"auto"` (manual compactions stay quiet). `FileChanged` must specify a filename glob — omitting the matcher means "watch every file" and produces avoidable noise. `ConfigChange` defaults to `"project_settings"`. `Elicitation` omits the matcher only when the caller explicitly intends to audit every MCP server.
+3. **All advanced events are advisory by default** — the generated scripts always `exit 0`. The caller may upgrade `taskCreated` / `taskCompleted` to `mode: "blocking"` explicitly; all other events ignore `mode` (only advisory is supported because Claude Code does not honor `exit 2` on them).
+4. **Script generation**: copy the corresponding template from `references/hooks-guide.md` § Advanced Event Templates into `<project>/.claude/hooks/<script-name>`, make executable (`chmod +x`), verify `shellcheck -x` passes. Do NOT re-author the templates inline — the guide is authoritative.
+5. **Merge semantics**: same as quality-gate hooks — read existing `.claude/settings.json`, append the new hook entry under its event key, skip if a hook with the same matcher already exists. Never overwrite.
+6. **hookStatus telemetry**: every advanced event hook that is planned, generated, or skipped MUST appear in `hookStatus` under the `<Event>[:<Matcher>][:<Type>]` key. The type suffix is **omitted when type is `command`** (backward compatible — existing fixtures are unchanged). Examples: `"PreCompact:auto"` (command, no suffix), `"UserPromptSubmit:prompt"` (no matcher → single colon before type), `"Elicitation::http"` (no matcher + non-command type → double colon preserves position), `"FileChanged:package-lock.json|Cargo.lock"` (command with matcher). The canonical-shape invariant — `planned[event] - len(generated[event]) == count(skipped where event matches)` — applies equally.
+7. **Plugin availability**: when an advanced event's inference condition references an installed plugin (e.g., `hookify` for `UserPromptSubmit`), verify the plugin is in `effectivePlugins` before emitting. Missing → record in `hookStatus.skipped[]` with reason `plugin-not-installed`.
+8. **Type selection**: apply the per-event default (§ Per-event defaults above) unless the caller/wizard explicitly sets `hookType`. Then run the 11-rule validator (§ Hook Type Validation). A rejected entry records `skipped[]` with the structured reason and NEVER falls back to `command` silently — the caller must see the rejection in telemetry.
+9. **Prompt sidecar file**: when `hookType="prompt"` + `promptRef`, copy the source file to `${project}/.claude/hooks/<slug>.prompt.md`. When `hookType="prompt"` + `promptInline` >1 line OR >200 chars, write the inline text to the same sidecar path and reference it. When `promptInline` fits inline, embed directly in settings.json.
+10. **Timeout**: if caller supplied `timeout`, use it (after positive-integer validation). Else apply the type default: command 5000, prompt 15000, agent 60000, http 5000 ms.
+
+##### Wizard opt-in plumbing
+
+When `wizardAnswers.advancedHookEvents` is present and non-empty, it takes priority over the inference rules for exactly the events it names. Events not in the array fall back to inference. An empty-but-present array (`[]`) means "user said no to all advanced events" — inference is suppressed entirely for that run (the one exception to rule 3 in Input sources above).
+
+`wizardAnswers.advancedHookTypes` (optional) supplies per-event type selection from Phase 5.1.1. Only judgment-capable events (`userPromptSubmit`, `stop`, `taskCreated`, `taskCompleted`, `elicitation`) honor this field; other event keys are ignored silently. `wizardAnswers.advancedHookTypeExtras` supplies the auxiliary field (`agentRef`, `httpUrl`, `promptRef`, `promptInline`) required by the chosen type — same validator applies.
+
+Mapping from wizard names (camelCase) to hookStatus keys (`Event[:Matcher][:Type]`, type suffix omitted for `command`):
+
+| Wizard name | Default type | hookStatus key examples |
+|---|---|---|
+| `sessionEnd` | command | `SessionEnd` |
+| `userPromptSubmit` | command (→ prompt on security-high) | `UserPromptSubmit`, `UserPromptSubmit:prompt` |
+| `preCompact` | command | `PreCompact:auto` |
+| `subagentStart` | command | `SubagentStart` |
+| `taskCreated` | command | `TaskCreated`, `TaskCreated:prompt` (wizard upgrade), `TaskCreated:http` (wizard upgrade) |
+| `taskCompleted` | command (→ agent on teams + agentRef) | `TaskCompleted`, `TaskCompleted:agent`, `TaskCompleted:prompt`, `TaskCompleted:http` |
+| `fileChanged` | command | `FileChanged:<matcher>` (matcher derived from analyzer signals or defaulted to lockfiles) |
+| `configChange` | command | `ConfigChange:project_settings` |
+| `elicitation` | command (→ http on httpUrl + allowHttpHooks) | `Elicitation`, `Elicitation:<mcp-server>`, `Elicitation::http`, `Elicitation:<mcp>:http` |
+
+##### Scope note
+
+Advanced event hooks complement — they do not replace — the core four quality-gate categories. SessionStart (plugin integration reminder), preCommit (commit gating), featureStart (new-file detector), and postFeature (phase-end nudge) continue to fire under their existing rules. Advanced event hooks are additive.
+
 #### Utility Hooks (non-telemetry)
 
 Utility hooks are generated alongside quality-gate hooks but are **NOT** tracked in `hookStatus`. They serve infrastructure purposes. They follow the same shell conventions (`set -u`, `shellcheck -x`, always `exit 0`).
@@ -750,8 +1514,8 @@ Always generate this file with:
 - Wizard answers (structured)
 - List of generated artifacts
 - Model recommendation and whether user approved
-- Plugin detection results: `detectedPlugins` object (only in standalone mode when plugins were self-detected)
-- Plugin source: `pluginSource` — `"callerExtras"` | `"self-detected"` | `"none"` — records how the effective plugin list was resolved
+- Plugin detection results: `detectedPlugins` object — always populated from `effectivePlugins`, `effectiveCoveredCapabilities`, `effectiveQualityGates`, `effectivePhaseSkills` (resolved per § Effective Plugin List Resolution). Populate regardless of `pluginSource` so that `onboard:update` has a single canonical baseline to diff against. When `effectivePlugins` is empty, write `detectedPlugins: { installedPlugins: [], coveredCapabilities: [], qualityGates: {}, phaseSkills: {} }` — do not omit the field.
+- Plugin source: `pluginSource` — `"callerExtras"` | `"self-detected"` | `"none"` — records how the effective plugin list was resolved (headless callers still get `detectedPlugins` mirrored for drift-detection continuity)
 
 ## Quality Checklist
 
@@ -785,11 +1549,38 @@ Before finishing generation, verify:
 - [ ] effectivePlugins resolution works for all three scenarios: headless (callerExtras), standalone with plugins (self-detected), standalone without plugins (none)
 - [ ] Plugin Integration section generates in standalone mode when plugins are self-detected
 - [ ] Plugin-referencing quality-gate hooks generated when effectiveQualityGates is present (regardless of entry point)
-- [ ] onboard-meta.json records pluginSource and detectedPlugins when applicable
+- [ ] onboard-meta.json records pluginSource
+- [ ] onboard-meta.json.detectedPlugins is populated unconditionally (from effectivePlugins resolution), including headless runs — empty object is valid but the field must exist
 - [ ] If both plugins installed: no "Recommended Plugins" section in CLAUDE.md
 - [ ] CLAUDE.md "Development Workflow" references match actually installed plugins (no dangling refs)
 - [ ] PR template includes TDD checklist item ("Tests written first, all pass")
 - [ ] No stale references to `minimal`, `write-after`, or `comprehensive` testing philosophies
+- [ ] Phase 7a ran before Hooks section (when any MCP candidate fires)
+- [ ] `.mcp.json` is pure JSON (no comments) and uses `${VAR}` form for secrets
+- [ ] Pre-existing `.mcp.json` was NOT overwritten (check for `mcpStatus.existedPreOnboard`)
+- [ ] `.claude/onboard-mcp-snapshot.json` matches what was written to `.mcp.json`
+- [ ] `onboard-meta.json.mcpStatus` populated alongside `hookStatus` (with `status` enum value)
+- [ ] `.claude/rules/mcp-setup.md` emitted when any server needs auth OR pre-existing file detected
+- [ ] Auto-install ran after metadata write (never before)
+- [ ] `callerExtras.disableMCP: true` skips artifact writes BUT still emits `mcpStatus: { status: "skipped", reason: "caller-disabled" }` (SKIP-PHASE family contract)
+- [ ] Phase 7b ran after Phase 7a and before Hooks
+- [ ] Emitted output-style file is at `.claude/output-styles/<archetype-name>.md` with matching `name` frontmatter
+- [ ] Pre-existing output-style file was NOT overwritten (check for `outputStyleStatus.existedPreOnboard[]`)
+- [ ] `.claude/onboard-output-style-snapshot.json` contains frontmatter-only entry for the emitted style
+- [ ] `onboard-meta.json.outputStyleStatus` populated alongside `mcpStatus` (with `status` enum value)
+- [ ] `settings.local.json` was NOT created from scratch (Case 1 warns only)
+- [ ] Existing `outputStyle` in `settings.local.json` was NOT overwritten (Cases 3/4 warn only)
+- [ ] `callerExtras.disableOutputStyleTuning: true` ONLY suppresses Step 6 batched confirmation; artifacts + snapshot + `outputStyleStatus: { status: "emitted", source: "inferred" }` are STILL produced (SUPPRESS-PROMPT family contract)
+- [ ] CLAUDE.md Plugin Integration includes the `### Output styles` subsection (built-ins + emitted custom + activation path)
+- [ ] Phase 7c (LSP) emitted `lspStatus` regardless of firing path — `status` is one of: `emitted`, `skipped`, `declined`
+- [ ] `callerExtras.disableLSP: true` skips artifact writes BUT still emits `lspStatus: { status: "skipped", reason: "caller-disabled" }` (SKIP-PHASE family contract)
+- [ ] Phase 7d ran after Phase 7c (LSP) and before Hooks section
+- [ ] `<!-- onboard:builtin-skills:start/end -->` markers present in CLAUDE.md (inside Plugin Integration or standalone)
+- [ ] `.claude/onboard-builtin-skills-snapshot.json` contains `recommended` and `accepted` arrays (plain JSON, no `_generated`)
+- [ ] `onboard-meta.json.builtInSkillsStatus` populated alongside `hookStatus`, `mcpStatus`, `skillStatus`, `agentStatus`, `outputStyleStatus`, `lspStatus` (with `status` enum value)
+- [ ] `callerExtras.disableBuiltInSkills: true` skips artifact writes BUT still emits `builtInSkillsStatus: { status: "skipped", reason: "caller-disabled" }` (SKIP-PHASE family contract)
+- [ ] CLAUDE.md includes `### Built-in Claude Code skills` subsection (or standalone `## Built-in Claude Code skills` section when no plugins) with project-specific examples
+- [ ] **Pre-exit self-audit**: all 4 Phase 7 telemetry keys (`mcpStatus`, `outputStyleStatus`, `lspStatus`, `builtInSkillsStatus`) exist in `onboard-meta.json` — missing key = hard-fail before returning
 
 ## Extended Generation (Enriched Mode)
 
@@ -853,6 +1644,7 @@ TDD is the standard testing approach for all onboarded projects. These artifacts
 - `references/claude-md-guide.md` — CLAUDE.md structure and best practices
 - `references/rules-guide.md` — Path-scoped rules patterns
 - `references/hooks-guide.md` — Hook configuration patterns (format, lint)
+- `references/mcp-guide.md` — MCP server emission rules, catalog, drift handling
 - `references/skills-guide.md` — Skill creation patterns
 - `references/agents-guide.md` — Agent creation patterns
 - `references/collaboration-guide.md` — PR template, commit conventions

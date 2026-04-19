@@ -1,3 +1,8 @@
+---
+name: verify
+description: Independent feature verification for projects scaffolded with forge. Use when user wants to test whether features in docs/feature-list.json pass their acceptance criteria, check sprint gate status, or run verification on F001-style feature IDs. Spawns the feature-evaluator agent in worktree isolation.
+---
+
 # Verify Skill — Independent Feature Evaluation
 
 You are orchestrating an independent verification of features against the project's feature list. This implements the evaluator layer from Anthropic's harness design — a separate agent that judges purely on outcomes, not implementation reasoning.

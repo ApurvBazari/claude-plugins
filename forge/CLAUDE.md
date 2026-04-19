@@ -1,6 +1,6 @@
 # forge — Internal Conventions
 
-Scaffolds new projects with AI-native, auto-evolving Claude Code tooling. Four-phase flow: Context Gathering → Scaffold → AI Tooling → Lifecycle Setup. Delegates tooling generation to onboard's enriched headless mode and engineering document generation to the `engineering` plugin.
+Scaffolds new projects with AI-native, auto-evolving Claude Code tooling. Three-phase flow: Context Gathering → Scaffold → AI Tooling. Delegates tooling generation to onboard's enriched headless mode.
 
 ## Architecture
 
@@ -24,21 +24,12 @@ Phase 3: AI Tooling
      │   ├── init.sh (stack-specific env bootstrap)
      │   └── docs/feature-list.json (from Phase 1 decomposition)
      │
-     ▼
-Phase 4: Lifecycle Setup (optional) ──→ lifecycle-setup skill
-     │                                    ├── engineering:architecture → ADR
-     │                                    ├── engineering:testing-strategy → test plan
-     │                                    ├── engineering:deploy-checklist → checklist
-     │                                    ├── engineering:system-design → design doc
-     │                                    ├── engineering:documentation → runbook
-     │                                    └── engineering:incident-response → playbook
-     │
      └── Handoff ──→ summary + next steps
 ```
 
 ## Dependency on Onboard
 
-Forge is a thin orchestrator. Onboard does ALL tooling generation:
+Forge is a thin orchestrator. Onboard does ALL tooling generation via its `generate` skill (invoked through the Skill tool as `onboard:generate`):
 - Core: CLAUDE.md, rules, skills, agents, hooks, PR template
 - Enriched: CI/CD pipelines, harness guide, evolution hooks, sprint contracts, team support
 
@@ -52,18 +43,26 @@ Forge only generates two artifacts that require scaffold-specific knowledge:
 - `scaffolding/SKILL.md` — Phase 2: execute scaffold, git setup, verify Hello World
 - `tooling-generation/SKILL.md` — Phase 3: prepare context, call enriched onboard, generate init.sh + feature-list.json
 - `plugin-discovery/SKILL.md` — Phase 3 (first step): curated catalog + web search, install plugins, compile capabilities
-- `lifecycle-setup/SKILL.md` — Phase 4: present lifecycle menu, invoke engineering skills, save docs to `docs/engineering/`
 
 ## Agents
 
 - `stack-researcher.md` — web search agent (sonnet) for researching tech stacks during Phase 1
 - `scaffold-analyzer.md` — read-only agent that scans the freshly scaffolded project for onboard context
 
-## Commands
+## Skills
 
-- `/forge:init` — full 4-phase flow (context → scaffold → tooling → lifecycle). Checks for in-flight state at startup and offers resume.
-- `/forge:resume` — resume an in-progress forge session from the last checkpoint in `.claude/forge-state.json`
-- `/forge:status` — project health check; also reports in-flight session state if present
+User-facing skills (show in `/forge:` autocomplete):
+
+- `init/SKILL.md` — full 3-phase flow (context → scaffold → AI tooling). Checks for in-flight state at startup and offers resume. (`disable-model-invocation: true`)
+- `resume/SKILL.md` — resume an in-progress forge session from the last checkpoint in `.claude/forge-state.json` (auto-invocable)
+- `status/SKILL.md` — project health check; also reports in-flight session state if present (auto-invocable)
+
+Internal building blocks (`user-invocable: false`):
+
+- `context-gathering/SKILL.md` — Phase 1 adaptive wizard
+- `scaffolding/SKILL.md` — Phase 2 scaffold execution
+- `plugin-discovery/SKILL.md` — Phase 3a plugin catalog match + install
+- `tooling-generation/SKILL.md` — Phase 3b delegation to `onboard:generate`
 
 Note: `/forge:verify`, `/forge:evolve` are now `/onboard:verify`, `/onboard:evolve` (universally available, not Forge-specific).
 
@@ -80,11 +79,8 @@ Note: `/forge:verify`, `/forge:evolve` are now `/onboard:verify`, `/onboard:evol
 - Web research: stack-researcher agent searches for latest versions and best practices before scaffolding, with main-session fallback when sub-agent web tools are denied
 - Feature decomposition: mandatory — downstream phases depend on `docs/feature-list.json` existing
 - Plugin-aware generation: coveredCapabilities passed to onboard, prevents agent shadowing
-- Forge metadata: `.claude/forge-meta.json` records all context, decisions, and generated artifacts (post-scaffold)
+- Forge metadata: `.claude/forge-meta.json` records all context, decisions, and generated artifacts (post-scaffold). Schema is the single source of truth at `forge/skills/tooling-generation/references/forge-meta.schema.json` — tooling-generation Step 4 validates against it before write. As of the 2026-04-16 release-gate L5 alignment, everything lives under `generated.toolingFlags` (tooling/cicd/harness/installedPlugins/coveredCapabilities/qualityGates/phaseSkills + the seven status mirrors). The earlier `generated.tooling` / `generated.cicd` / `generated.harness` sibling keys are removed; old-shape projects heal on next regeneration (no auto-migration).
 - **Forge state: `.claude/forge-state.json` persists in-flight progress** for `/forge:resume`. Checkpoint after every skill Step. Atomic write via `.tmp` + rename.
-- Lifecycle documents: `docs/engineering/` stores ADRs, strategies, checklists generated by engineering plugin
-- Context mapping: `lifecycle-setup/references/context-mapping.md` defines Phase 1 → engineering skill input transforms
-- Optional dependency: engineering plugin is not required — Phase 4 skips gracefully if absent
 - **Scaffold modes**: `full` (default — complete scaffold, then AI tooling) vs `walking-skeleton` (minimal scaffold → AI tooling → expand). Walking skeleton is for stacks without a mature CLI or with complex architecture.
 
 ## Platform Coverage

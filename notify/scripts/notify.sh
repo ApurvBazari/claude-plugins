@@ -18,6 +18,14 @@ CONFIG_FILE="$BASE_DIR/notify-config.json"
 # User-scoped timestamp file — prevents symlink attacks at a predictable shared path.
 TIMESTAMP_FILE="${TMPDIR:-/tmp}/claude-notify-session-start-${UID:-$(id -u)}"
 
+# Defensive: if another process (or attacker on a world-writable $TMPDIR) has
+# pre-created the path as a symlink, named pipe, or other non-regular file,
+# refuse to reuse it. Delete it and let the normal write create a fresh file.
+# Note: [[ -f ]] follows symlinks, so we test [[ -L ]] first to catch them.
+if [[ -L "$TIMESTAMP_FILE" ]] || { [[ -e "$TIMESTAMP_FILE" ]] && [[ ! -f "$TIMESTAMP_FILE" ]]; }; then
+  rm -f "$TIMESTAMP_FILE" 2>/dev/null
+fi
+
 # --- Detect platform ---
 PLATFORM="unknown"
 case "$(uname -s)" in
@@ -110,8 +118,18 @@ if [[ "$EVENT" = "stop" ]] || [[ "$EVENT" = "subagentStop" ]]; then
   fi
 fi
 
-# Update timestamp on every event (tracks last activity)
-echo "$NOW_EPOCH" > "$TIMESTAMP_FILE" 2>/dev/null
+# Update timestamp on every event (tracks last activity).
+# Atomic write: create in a sibling temp file, then rename. Closes the TOCTOU
+# window between the symlink guard above and the write — even if an attacker
+# drops a symlink at $TIMESTAMP_FILE after the check, the rename replaces the
+# directory entry atomically and never writes through the symlink.
+if tmp="$(mktemp "${TIMESTAMP_FILE}.XXXXXX" 2>/dev/null)"; then
+  if echo "$NOW_EPOCH" > "$tmp" 2>/dev/null; then
+    mv -f "$tmp" "$TIMESTAMP_FILE" 2>/dev/null || rm -f "$tmp" 2>/dev/null
+  else
+    rm -f "$tmp" 2>/dev/null
+  fi
+fi
 
 # --- Read stdin JSON (Claude Code passes context via stdin) ---
 STDIN_JSON=""

@@ -20,6 +20,21 @@ if [[ -z "$FILE_PATH" ]]; then
   exit 0
 fi
 
+# Constrain to project root — refuse to inspect files outside the repo even
+# though this hook is read-only. Defense in depth: prevents accidental reads
+# of /etc/* or parent-directory traversal via ../../.
+PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+FILE_PATH_ABS=""
+if command -v realpath >/dev/null 2>&1; then
+  FILE_PATH_ABS="$(realpath -q "$FILE_PATH" 2>/dev/null || true)"
+elif command -v python3 >/dev/null 2>&1; then
+  FILE_PATH_ABS="$(python3 -c "import os,sys; print(os.path.realpath(sys.argv[1]))" "$FILE_PATH" 2>/dev/null || true)"
+fi
+case "$FILE_PATH_ABS" in
+  "$PROJECT_ROOT"|"$PROJECT_ROOT"/*) ;;   # inside project — ok
+  *) exit 0 ;;                            # outside or unresolved — silently skip
+esac
+
 case "$FILE_PATH" in
   */.claude-plugin/plugin.json)
     echo "REMINDER: plugin.json was modified. Ensure the version matches marketplace.json."
