@@ -61,3 +61,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verify plugin.json versions match marketplace.json entries
         run: .github/scripts/check-version-sync.sh
+
+  state-gitignore:
+    name: State File Gitignore
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify forge/onboard state files are gitignored
+        run: .github/scripts/check-state-gitignore.sh
