@@ -1,5 +1,41 @@
 # Changelog
 
+## [1.10.0](https://github.com/ApurvBazari/claude-plugins/compare/onboard-v1.9.0...onboard-v1.10.0) (2026-04-19)
+
+
+### Features
+
+* add development tooling ecosystem for plugin authoring ([4238a32](https://github.com/ApurvBazari/claude-plugins/commit/4238a3299895101494088943015f7102681c7451))
+* add development tooling ecosystem for plugin authoring ([782413d](https://github.com/ApurvBazari/claude-plugins/commit/782413d07fa7a1fed9f1cd02a7dc613fe91a94e0))
+* add marketplace manifest and bump plugins to v1.0.0 ([9175afb](https://github.com/ApurvBazari/claude-plugins/commit/9175afb1559a756b6593a3cd3585e499e37567ac))
+* **forge,onboard:** Plugin Integration upgrade + D1/D2 deferred items ([#11](https://github.com/ApurvBazari/claude-plugins/issues/11)) ([9e96fbb](https://github.com/ApurvBazari/claude-plugins/commit/9e96fbb74239192733874ec60d36d53d0c51cef3))
+* **forge:** add forge plugin + onboard headless mode ([#7](https://github.com/ApurvBazari/claude-plugins/issues/7)) ([cae3b92](https://github.com/ApurvBazari/claude-plugins/commit/cae3b929258e4e645c1aaf42e3904e9433ebc9c8))
+* **forge:** resume protocol and inline prerequisite handling ([#10](https://github.com/ApurvBazari/claude-plugins/issues/10)) ([2403130](https://github.com/ApurvBazari/claude-plugins/commit/2403130cbf1d14769a3ebee238b542123def6867))
+* **onboard:** built-in Claude Code skill recommendations (1.9.0) ([#39](https://github.com/ApurvBazari/claude-plugins/issues/39)) ([770cdc7](https://github.com/ApurvBazari/claude-plugins/commit/770cdc7b70144a93f395edc293c06d88e5585a12))
+* **onboard:** detect plugin/artifact drift in onboard:update ([#33](https://github.com/ApurvBazari/claude-plugins/issues/33)) ([46a7097](https://github.com/ApurvBazari/claude-plugins/commit/46a70977dcd630c1be06ddf89f93ab685ac1f2ec))
+* **onboard:** emit extended agent frontmatter (1.6.0) ([#36](https://github.com/ApurvBazari/claude-plugins/issues/36)) ([5dd316d](https://github.com/ApurvBazari/claude-plugins/commit/5dd316d0174cef9b967929deb7f30451772e4997))
+* **onboard:** emit project-scoped custom output styles (1.7.0) ([#37](https://github.com/ApurvBazari/claude-plugins/issues/37)) ([a73bd8b](https://github.com/ApurvBazari/claude-plugins/commit/a73bd8bc775676d42f8e4b25c94db0fae7eece02))
+* **onboard:** enforce TDD as the only testing approach ([#8](https://github.com/ApurvBazari/claude-plugins/issues/8)) ([af9fa0f](https://github.com/ApurvBazari/claude-plugins/commit/af9fa0ff5e57184e0288b8564d99330047d2f820))
+* **onboard:** expand hook coverage to 14+ events and 4 execution types ([#34](https://github.com/ApurvBazari/claude-plugins/issues/34)) ([1cce41f](https://github.com/ApurvBazari/claude-plugins/commit/1cce41f3b13ac74701339ac586e3dba5a8fc14ae))
+* **onboard:** generate .mcp.json from detected stack signals ([#35](https://github.com/ApurvBazari/claude-plugins/issues/35)) ([e1a269e](https://github.com/ApurvBazari/claude-plugins/commit/e1a269e856c1710b5d95a881f73f257f105766b4))
+* **onboard:** LSP plugin recommendations (1.8.0) ([#38](https://github.com/ApurvBazari/claude-plugins/issues/38)) ([9a8d183](https://github.com/ApurvBazari/claude-plugins/commit/9a8d1830e2ad1cc054d528238148794438d5a357))
+* **onboard:** native plugin detection + generation quality fixes ([#16](https://github.com/ApurvBazari/claude-plugins/issues/16)) ([77b54ac](https://github.com/ApurvBazari/claude-plugins/commit/77b54ac06c69b515912f994074ce4ec2a857ec47))
+* **onboard:** proactive worktree support via Claude Code native tools ([#12](https://github.com/ApurvBazari/claude-plugins/issues/12)) ([1571702](https://github.com/ApurvBazari/claude-plugins/commit/15717021907df8cf9ce27e83980f6264f17d1044))
+* plugin ecosystem integration — cross-plugin wiring, intelligence, and foundation ([#6](https://github.com/ApurvBazari/claude-plugins/issues/6)) ([06e9f33](https://github.com/ApurvBazari/claude-plugins/commit/06e9f3312300f60a4f4abbad393539d20ab989e2))
+
+
+### Bug Fixes
+
+* address all 29 medium-priority audit items across all plugins ([0edd5f8](https://github.com/ApurvBazari/claude-plugins/commit/0edd5f83ddbb9d837a281fe1c15adbad2abb0f27))
+* address remaining high-priority audit items across all plugins ([5ef654f](https://github.com/ApurvBazari/claude-plugins/commit/5ef654f935c8334b24a2c7731dd172d2822545b7))
+* address security audit findings from PR [#30](https://github.com/ApurvBazari/claude-plugins/issues/30) ([#31](https://github.com/ApurvBazari/claude-plugins/issues/31)) ([d970691](https://github.com/ApurvBazari/claude-plugins/commit/d9706915f999f44f77a900bae8ba1f5c9714a392))
+* **onboard:** correct canonical hook schema in generation references ([#32](https://github.com/ApurvBazari/claude-plugins/issues/32)) ([97d91ce](https://github.com/ApurvBazari/claude-plugins/commit/97d91ce32a7b8ceb8f0130848b44a399e4477563))
+* release-43 security hardening + bot-scope expansion (9 findings, 13 commits) ([#44](https://github.com/ApurvBazari/claude-plugins/issues/44)) ([a048d39](https://github.com/ApurvBazari/claude-plugins/commit/a048d39242e7fa52c5fd64d65f1893cd6d7a351f))
+* release-gate v2 sweep — close 17 findings across 1.9.1 + 1.10.0 bundles ([#41](https://github.com/ApurvBazari/claude-plugins/issues/41)) ([9b3c46f](https://github.com/ApurvBazari/claude-plugins/commit/9b3c46f0cdb3129071fcbd405afc78d24318d28c))
+* resolve critical bugs and high-priority issues across all plugins ([9809b4c](https://github.com/ApurvBazari/claude-plugins/commit/9809b4ce4280e4f82467b13da99d277d1cc8c7ee))
+* resolve ShellCheck errors in CI validation ([ac2868f](https://github.com/ApurvBazari/claude-plugins/commit/ac2868ff05e75bdc6d25c0b01678b5e12bc99759))
+* security audit hardening from PR [#18](https://github.com/ApurvBazari/claude-plugins/issues/18) findings ([#19](https://github.com/ApurvBazari/claude-plugins/issues/19)) ([e5df20b](https://github.com/ApurvBazari/claude-plugins/commit/e5df20b64b860a33d79b070c2ccda7cf95ae7b62))
+
 ## 1.8.0 — 2026-04-16
 
 ### Features
