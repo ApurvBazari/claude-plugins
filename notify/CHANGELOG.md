@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.1.0](https://github.com/ApurvBazari/claude-plugins/compare/notify-v1.0.2...notify-v1.1.0) (2026-04-19)
+
+
+### Features
+
+* **onboard:** detect plugin/artifact drift in onboard:update ([#33](https://github.com/ApurvBazari/claude-plugins/issues/33)) ([46a7097](https://github.com/ApurvBazari/claude-plugins/commit/46a70977dcd630c1be06ddf89f93ab685ac1f2ec))
+* **onboard:** emit project-scoped custom output styles (1.7.0) ([#37](https://github.com/ApurvBazari/claude-plugins/issues/37)) ([a73bd8b](https://github.com/ApurvBazari/claude-plugins/commit/a73bd8bc775676d42f8e4b25c94db0fae7eece02))
+
+
+### Bug Fixes
+
+* address security audit findings from PR [#30](https://github.com/ApurvBazari/claude-plugins/issues/30) ([#31](https://github.com/ApurvBazari/claude-plugins/issues/31)) ([d970691](https://github.com/ApurvBazari/claude-plugins/commit/d9706915f999f44f77a900bae8ba1f5c9714a392))
+* **onboard:** correct canonical hook schema in generation references ([#32](https://github.com/ApurvBazari/claude-plugins/issues/32)) ([97d91ce](https://github.com/ApurvBazari/claude-plugins/commit/97d91ce32a7b8ceb8f0130848b44a399e4477563))
+* release-gate v2 sweep — close 17 findings across 1.9.1 + 1.10.0 bundles ([#41](https://github.com/ApurvBazari/claude-plugins/issues/41)) ([9b3c46f](https://github.com/ApurvBazari/claude-plugins/commit/9b3c46f0cdb3129071fcbd405afc78d24318d28c))
+
 ## [1.0.2](https://github.com/ApurvBazari/claude-plugins/compare/notify-v1.0.1...notify-v1.0.2) (2026-04-14)
 
 
