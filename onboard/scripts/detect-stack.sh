@@ -19,7 +19,7 @@ warn_skip() {
 }
 
 PROJECT_ROOT="${1:-.}"
-PROJECT_ROOT="$(cd "$PROJECT_ROOT" && pwd)"
+PROJECT_ROOT="$(cd "$PROJECT_ROOT" && pwd -P)"
 
 echo "=== TECH STACK DETECTION ==="
 echo "Root: $PROJECT_ROOT"

@@ -198,11 +198,36 @@ Agent-team mode upgrades the base advisory `task-completed-verify.sh` template t
 }
 ```
 
-Replace `[TEST_COMMAND]` with the project's actual test command:
-- Node.js: `npm test` or `npx vitest run`
-- Python: `pytest`
-- Go: `go test ./...`
-- Rust: `cargo test`
+Replace `[TEST_COMMAND]` with the project's actual test command — selected from this **allowlist only**:
+
+| Stack | Allowed `[TEST_COMMAND]` values |
+|---|---|
+| Node.js | `npm test` · `npm run test` · `pnpm test` · `yarn test` · `npx vitest run` · `npx jest` |
+| Python | `pytest` · `python -m pytest` · `python -m unittest` |
+| Go | `go test ./...` |
+| Rust | `cargo test` |
+| Ruby | `bundle exec rspec` · `bundle exec rake test` |
+| Java / Kotlin | `mvn test` · `./gradlew test` |
+
+**Whitelist enforcement**: generation MUST compare the detected command (from `analysis.stack.testCommand`) against the allowlist above. If the detected command is not an exact match, emit the hook entry with the command field **commented out** and add a TODO for the user:
+
+```json
+{
+  "TaskCompleted": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "//": "TODO: onboard could not match the detected test command to its allowlist. Fill in the project's test command manually, then remove this comment.",
+          "command": "# echo 'fill in a test command here' >&2; exit 0"
+        }
+      ]
+    }
+  ]
+}
+```
+
+Never substitute an arbitrary user-provided or heuristically-inferred string directly into `[TEST_COMMAND]`. The allowlist is the contract — a future "custom test command" feature would need its own validation path, not a bypass here.
 
 Exit code 2 prevents task completion and sends the test failure output back to the teammate.
 

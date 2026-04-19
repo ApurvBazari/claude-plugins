@@ -54,21 +54,25 @@ if [[ -z "$SUMMARY" ]]; then
   SUMMARY="See full report: ${REPORT_FILE}"
 fi
 
-# 7. Open PR
+# 7. Write PR body to a tempfile (defense in depth — LLM-generated $SUMMARY
+#    content is never interpolated through shell expansion).
+BODY_FILE="$(mktemp)"
+trap 'rm -f "$BODY_FILE"' EXIT
+
+{
+  printf '## Tooling Gap Audit — %s\n\n' "$DATE"
+  printf '%s\n\n' "$SUMMARY"
+  printf -- '---\n\n'
+  # shellcheck disable=SC2016  # backticks here are markdown code formatting, not shell expansion
+  printf 'Full report: `%s`\n' "$REPORT_FILE"
+} > "$BODY_FILE"
+
+# 8. Open PR
 if gh pr create \
   --base develop \
   --head "$BRANCH" \
   --title "chore(audit): tooling gap report ${DATE}" \
-  --body "$(cat <<EOF
-## Tooling Gap Audit — ${DATE}
-
-${SUMMARY}
-
----
-
-Full report: \`${REPORT_FILE}\`
-EOF
-)"; then
+  --body-file "$BODY_FILE"; then
   echo "PR created successfully"
 else
   echo "WARN: PR creation failed — continuing without PR"

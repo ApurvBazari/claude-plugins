@@ -3,6 +3,15 @@
 .claude/plans/
 .claude/plugins/
 
+# forge + onboard runtime state (may persist user-entered free-text from the
+# wizard; treat as potentially sensitive and never commit)
+.claude/forge-state.json
+.claude/forge-state.json.tmp
+.claude/forge-drift.json
+.claude/forge-meta.json
+.claude/onboard-snapshot.json
+.claude/onboard-meta.json
+
 # OS
 .DS_Store
 Thumbs.db
