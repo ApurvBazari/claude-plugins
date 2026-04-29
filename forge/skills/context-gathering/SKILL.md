@@ -275,6 +275,8 @@ Emit the progress indicator. Present a structured summary of everything gathered
 > ...
 >
 > Ready to scaffold? Or want to adjust the features/settings?
+>
+> **Next**: After confirmation, I'll [if `parkedQuestions.length > 0`: run Phase 1.5 architectural research, then] run Phase 1.7 pre-scaffold validation (a quick ~5-min grill that catches contradictions before scaffolding). You can opt out at the gate if your spec already feels solid.
 
 Wait for confirmation before returning.
 
@@ -398,7 +400,7 @@ Write a checkpoint **after each named Step completes** (not after each individua
 | Step 4 complete (Workflow Preferences) | Add `"step-4-workflow"`, `currentStep: "step-5-cicd"`, all category-4 context fields |
 | Step 5 complete (CI/CD) | Add `"step-5-cicd"`, `currentStep: "step-6-feature-decomp"`, CI/CD fields |
 | Step 6 complete (Feature Decomposition) | Add `"step-6-feature-decomp"`, `currentStep: "step-7-confirmation"`, `context.featureDecomposition` |
-| Step 7 complete (Confirmation) | Add `"step-7-confirmation"`, `currentPhase: "phase-2-scaffold"`, `currentStep: "pre-validation"` (handoff to scaffolding skill) |
+| Step 7 complete (Confirmation) | Add `"step-7-confirmation"`, `currentPhase: "phase-1.7-grill-spec"` (or `"phase-1.5-architectural-research"` if `parkedQuestions.length > 0`), `currentStep: "pre-grill"` (handoff to grill-spec skill, which then hands off to scaffolding) |
 
 ### Atomic write
 Always write to `.claude/forge-state.json.tmp` first, then `mv` to `.claude/forge-state.json`. This avoids corrupted state if the session is killed mid-write. If the tmp file exists from a prior interrupted write, remove it before starting.

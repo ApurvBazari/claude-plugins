@@ -65,7 +65,7 @@ Forge writes to `.claude/forge-state.json` at every natural checkpoint — after
   "version": 1,
   "createdAt": "ISO-8601 timestamp",
   "updatedAt": "ISO-8601 timestamp",
-  "currentPhase": "phase-1-context-gathering | phase-1.5-architectural-research | phase-2-scaffold | phase-3a-plugin-discovery | phase-3b-tooling-generation | complete",
+  "currentPhase": "phase-1-context-gathering | phase-1.5-architectural-research | phase-1.7-grill-spec | phase-2-scaffold | phase-3a-plugin-discovery | phase-3b-tooling-generation | complete",
   "currentStep": "skill-specific step identifier",
   "completedSteps": ["list of completed step identifiers"],
   "context": { /* partial context object, grows as wizard progresses */ },
@@ -91,7 +91,7 @@ Tell the developer:
 > Starting **Forge** — I'll help you create a new project from scratch with AI-native tooling built in from day one.
 >
 > This runs in 3 phases:
-> 1. **Context Gathering** — We'll discuss what you want to build, your tech stack, and preferences
+> 1. **Context Gathering** — We'll discuss what you want to build, your tech stack, and preferences (with an optional pre-scaffold validation gate)
 > 2. **Scaffold** — I'll create the application and set up git
 > 3. **AI Tooling** — I'll generate Claude tooling, CI/CD pipelines, and auto-evolution hooks
 >
@@ -119,7 +119,21 @@ The skill handles:
 
 If any questions were parked during Phase 1, run the new Step 8 of the context-gathering skill: a dedicated research sub-phase that resolves parked questions before scaffolding. This keeps Phase 1 focused and time-boxed while ensuring scaffold decisions are well-researched.
 
-If no questions were parked (which should be the common case for well-scoped projects), skip Phase 1.5 entirely and go directly to Phase 2.
+If no questions were parked (which should be the common case for well-scoped projects), skip Phase 1.5 entirely and go directly to Phase 1.7.
+
+### Phase 1.7: Pre-scaffold Spec Grilling (optional)
+
+Use the `grill-spec` skill. It's a validation gate that walks every spec decision branch — scope, stack alignment, feature conflicts, missing dependencies, security alignment — and forces explicit resolution of any contradictions before scaffolding starts.
+
+The skill is opt-in by default for non-production projects (the user is offered "Run pre-scaffold validation? (Recommended) / Skip"). For production projects (`isProduction: true`) the gate runs by default; the user can still opt out per-run.
+
+Behavior:
+- If `mattpocock-skills:grill-me` is installed, grill-spec invokes it as the grilling backend.
+- Otherwise grill-spec falls back to an inline minimal pattern (`grill-spec/references/inline-grill-fallback.md`).
+- Either way, the spec is hardened in `forge-state.json.context` before Phase 2 starts.
+- The skill can route back to Phase 1.5 if grilling exposes a question that warrants deep research.
+
+After Phase 1.7 completes (or is skipped), `currentPhase` is set to `"phase-2-scaffold"` and control returns here.
 
 **Key reminders:**
 - One question at a time — don't overwhelm
@@ -295,6 +309,16 @@ Every phase has its own failure modes. The table below is the authoritative per-
 | User denies main-session web access too | Policy choice | Degrade to training-data-only mode with explicit warning. Mark `research.mode = "training-data-only"` in state. |
 | Deep-research rabbit hole detected | Scope creep on a single question | "Park it" escape hatch presents Park / Deep-dive / Default options. Never silently continue a 30+ minute research session. |
 | Feature decomposition skipped | Developer said "skip" | NOT allowed — generate a skeletal 3-5 feature list and continue. Downstream phases require this file. |
+
+### Phase 1.7: Pre-scaffold Spec Grilling
+
+| Failure | Cause | Recovery |
+|---|---|---|
+| `mattpocock-skills:grill-me` not installed | User hasn't installed the optional companion plugin | Fall back to inline grill (`references/inline-grill-fallback.md`). One-line note to user; never crash the run. |
+| External grill-me Skill call errors mid-run | Slash form drift, plugin bug | Same fallback as above; log the error to `forge-state.json.research.notes` for later inspection. |
+| Grilling exposes a stack-level conflict | Spec was inconsistent | Step 4 conflict resolution. Options: auto-fix / drop feature / route back to Phase 1.5. Never silent. |
+| User abandons mid-grill (Ctrl-C) | Unexpected | State already checkpointed at category boundaries. `/forge:resume` picks up at the next un-asked category. |
+| Grilling extends past 10-minute timebox without convergence | User exploring deeply | Surface "extend or finish" prompt. If user finishes, capture remaining categories as parked questions. |
 
 ### Phase 2: Scaffold
 

@@ -1,6 +1,6 @@
 {
   "name": "forge",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Scaffold new projects with AI-native tooling that evolves with your code — delegates to onboard for generation",
   "author": {
     "name": "Apurv Bazari"

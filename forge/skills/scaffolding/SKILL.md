@@ -16,6 +16,8 @@ Create a running application from the context gathered in Phase 1. Set up git br
 
 You receive the complete Phase 1 context object containing: stack details, scaffold method, deploy target, branching strategy, and all project preferences. You also receive the stack research findings.
 
+**Note**: The context may have been hardened by Phase 1.7 (grill-spec) — fields like `featureDecomposition`, `auth.strategy`, `outOfScope[]`, and `securityPlan` may reflect grilling outcomes. Treat the context as authoritative regardless of which path produced it; don't re-validate decisions here.
+
 ## Step 1: Pre-Scaffold Validation
 
 Before creating any files:

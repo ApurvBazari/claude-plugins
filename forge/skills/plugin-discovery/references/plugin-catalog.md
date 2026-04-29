@@ -13,6 +13,15 @@ Vetted Claude Code plugins organized by category with matching rules. Use this c
 | **claude-md-management** | Official (Anthropic) | Audit and improve CLAUDE.md quality over time | `/revise-claude-md` |
 | **notify** | In-repo (apurvbazari) | Cross-platform system notifications when Claude finishes tasks or needs attention | `/notify:setup`, `/notify:status` |
 
+### Planning Rigor (Universal)
+
+These plugins reinforce the discipline of *thinking before coding* — both for forge's own pre-scaffold gate and for downstream feature work in the scaffolded project.
+
+| Plugin | Source | What it does | Key skills |
+|---|---|---|---|
+| **grill-me** (mattpocock-skills) | Community (mattpocock) | Relentless interview that walks every decision branch in a plan until shared understanding is reached. Drives forge's Phase 1.7 grill-spec gate when installed. | `grill-me` |
+| **andrej-karpathy-skills** | Community (forrestchang) | Bakes Karpathy's 4 LLM-coding principles (Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven Execution) into Claude Code as a CLAUDE.md-merge skill | `karpathy-guidelines` |
+
 ## Stack-Conditional Plugins
 
 ### Frontend (hasFrontend = true)
@@ -56,6 +65,22 @@ Vetted Claude Code plugins organized by category with matching rules. Use this c
 | **code-review** | Official (Anthropic) | Team project | Multi-agent confidence-scored code review |
 | **pr-review-toolkit** | Official (Anthropic) | Team + formal PR process | Specialized review agents (tests, types, errors) |
 
+### Documentation Rigor (hasDocsDiscipline = true)
+
+For projects following an ADR-driven or jamakhata-style `docs/` discipline.
+
+| Plugin | Source | Condition | What it does |
+|---|---|---|---|
+| **grill-with-docs** (mattpocock-skills) | Community (mattpocock) | hasDocsDiscipline = true | Requirements interview that maintains ADRs and CONTEXT.md alongside design decisions |
+
+### AI-Assisted Review (hasOpenAIAuth = true)
+
+For developers with a ChatGPT subscription or OpenAI API key who want a cross-LLM second opinion.
+
+| Plugin | Source | Condition | What it does |
+|---|---|---|---|
+| **codex-plugin-cc** | Official (OpenAI) | hasOpenAIAuth = true | Codex-powered code review (`/codex:review`), adversarial-review challenge mode (`/codex:adversarial-review`), background task delegation (`/codex:rescue`) |
+
 ### Testing (testingPhilosophy = "tdd")
 
 | Plugin | Source | Condition | What it does |
@@ -70,6 +95,21 @@ For each plugin in the catalog:
 2. If condition matches, add to recommendations
 3. Tag as "recommended" (universal) or "matches: [reason]" (conditional)
 4. Deduplicate (superpowers appears in both universal and TDD)
+
+### Context flags
+
+The catalog's condition expressions reference these context flags. Most are populated by `forge/skills/context-gathering/SKILL.md` from wizard answers; some have defaults.
+
+| Flag | Source | Default | Used by |
+|---|---|---|---|
+| `hasFrontend`, `hasBackend`, `hasAPI`, `hasDatabase` | Inferred from Q1.1, Q3.7 | `false` | Stack-Conditional rows |
+| `hasTeam` | Q3.1 (team size > 1) | `false` | Code Review row |
+| `willDeploy` | Q3.4 (deploy target ≠ "none") | `false` | VCS row |
+| `securitySensitivity` | Q4.4 | `"baseline"` | Security row |
+| `testingPhilosophy` | Q4.3 | `"pragmatic"` | Testing row |
+| `hasDocsDiscipline` | Q4.5 (workflow preferences) — `true` if user mentions ADRs, CONTEXT.md, or jamakhata layout, OR if `hasTeam: true` AND `isProduction: true` | `false` | Documentation Rigor row |
+| `hasOpenAIAuth` | Optional follow-up question; ask only when offering codex-plugin-cc as a candidate. Skip silently if user opts out or hasn't set it up. | `false` | AI-Assisted Review row |
+| `wantsValidationGate` | Defaults to `true` for `isProduction: true` projects; user can opt out during the plugin-discovery checklist | `isProduction` | gates whether forge's Phase 1.7 grill-spec runs by default |
 
 ### Priority Order in Checklist
 
@@ -106,6 +146,12 @@ Each plugin covers specific capabilities. When a plugin is installed, its capabi
 | **github** | `vcs-integration` |
 | **gitlab** | `vcs-integration` |
 | **notify** | `session-monitoring` |
+| **mattpocock-skills (grill-me)** | `plan-validation` |
+| **mattpocock-skills (grill-with-docs)** | `requirements-discovery`, `adr-maintenance` |
+| **andrej-karpathy-skills** | `coding-discipline` |
+| **codex-plugin-cc** | `adversarial-review`, `background-task-delegation` |
+
+> **Disambiguation note**: `superpowers` covers `planning` (the *generative* capability — drafting a plan). `mattpocock-skills:grill-me` covers `plan-validation` (the *critical* capability — stress-testing an existing plan). Both can coexist; they're complementary, not redundant.
 
 ### How to Build the coveredCapabilities List
 

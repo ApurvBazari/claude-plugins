@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.0 (2026-04-28)
+
+### Features
+
+* **forge:** add Phase 1.7 pre-scaffold spec grilling gate (`grill-spec` skill) — walks every spec decision branch and resolves contradictions before scaffolding starts. Uses `mattpocock-skills:grill-me` if installed, falls back to inline 5-category decision-tree walk otherwise.
+* **forge:** expand plugin-discovery catalog with four new entries — `mattpocock-skills:grill-me` (Universal · planning rigor), `forrestchang:andrej-karpathy-skills` (Universal · coding discipline), `mattpocock-skills:grill-with-docs` (Workflow-Conditional · documentation rigor), `openai:codex-plugin-cc` (Workflow-Conditional · AI-assisted review).
+* **forge:** add three new context flags (`hasDocsDiscipline`, `hasOpenAIAuth`, `wantsValidationGate`) and four new capability mappings (`plan-validation`, `coding-discipline`, `requirements-discovery`, `adversarial-review`).
+
 ## [1.1.0](https://github.com/ApurvBazari/claude-plugins/compare/forge-v1.0.0...forge-v1.1.0) (2026-04-19)
 
 

@@ -10,6 +10,13 @@ Scaffolds new projects with AI-native, auto-evolving Claude Code tooling. Three-
      ▼
 Phase 1: Context Gathering ──→ context-gathering skill (adaptive wizard)
      │                            └── stack-researcher agent (WebSearch)
+     │
+     ├── Phase 1.5 (conditional): Architectural Research — resolves parked questions
+     │
+     ▼
+Phase 1.7: Pre-Scaffold Spec Grilling ──→ grill-spec skill
+     │                                       ├── If installed: mattpocock-skills:grill-me
+     │                                       └── Else: inline fallback (5-category walk)
      ▼
 Phase 2: Scaffold ──→ scaffolding skill (execute scaffold + git setup)
      │
@@ -40,6 +47,7 @@ Forge only generates two artifacts that require scaffold-specific knowledge:
 ## Skill Hierarchy
 
 - `context-gathering/SKILL.md` — Phase 1: adaptive state-machine wizard (33 questions, developer answers 8-22)
+- `grill-spec/SKILL.md` — Phase 1.7: pre-scaffold validation gate (5-category decision-tree walk; uses `mattpocock-skills:grill-me` if installed, falls back to inline)
 - `scaffolding/SKILL.md` — Phase 2: execute scaffold, git setup, verify Hello World
 - `tooling-generation/SKILL.md` — Phase 3: prepare context, call enriched onboard, generate init.sh + feature-list.json
 - `plugin-discovery/SKILL.md` — Phase 3 (first step): curated catalog + web search, install plugins, compile capabilities
@@ -60,6 +68,7 @@ User-facing skills (show in `/forge:` autocomplete):
 Internal building blocks (`user-invocable: false`):
 
 - `context-gathering/SKILL.md` — Phase 1 adaptive wizard
+- `grill-spec/SKILL.md` — Phase 1.7 pre-scaffold validation gate
 - `scaffolding/SKILL.md` — Phase 2 scaffold execution
 - `plugin-discovery/SKILL.md` — Phase 3a plugin catalog match + install
 - `tooling-generation/SKILL.md` — Phase 3b delegation to `onboard:generate`
