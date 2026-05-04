@@ -1,36 +1,36 @@
-# forge
+# greenfield
 
 > Part of [`claude-plugins`](../README.md) — see also [`onboard`](../onboard/) (required dependency) and [`notify`](../notify/) (optional add-on).
 
 Stack-agnostic greenfield scaffolder for Claude Code. Researches your stack via WebSearch, scaffolds the app, then **delegates** all Claude tooling generation to `onboard`. Built to compose, not to reinvent.
 
-The defining design choice: forge is a **thin orchestrator**. Tooling generation lives in `onboard`. forge calls it via the `Skill` tool (`/onboard:generate`) and adds only what requires scaffold-specific knowledge — `init.sh`, `docs/feature-list.json`, and the wizard-driven context that onboard needs.
+The defining design choice: greenfield is a **thin orchestrator**. Tooling generation lives in `onboard`. greenfield calls it via the `Skill` tool (`/onboard:generate`) and adds only what requires scaffold-specific knowledge — `init.sh`, `docs/feature-list.json`, and the wizard-driven context that onboard needs.
 
 ## Install
 
 ```bash
-claude plugin install forge@apurvbazari-plugins
+claude plugin install greenfield@apurvbazari-plugins
 ```
 
-`forge` requires the `onboard` plugin for Phase 3 — install it with `claude plugin install onboard@apurvbazari-plugins`. Optionally also install [`notify`](../notify/) so long scaffold sessions notify you when they finish.
+`greenfield` requires the `onboard` plugin for Phase 3 — install it with `claude plugin install onboard@apurvbazari-plugins`. Optionally also install [`notify`](../notify/) so long scaffold sessions notify you when they finish.
 
 ## Skills
 
-All skills are invoked with the `/forge:<name>` slash syntax.
+All skills are invoked with the `/greenfield:<name>` slash syntax.
 
-### `/forge:init` *(destructive — user-invoked only)*
+### `/greenfield:init` *(destructive — user-invoked only)*
 
-Main entry point. Runs the full 3-phase guided workflow, with checkpoints written to `.claude/forge-state.json` after every step so the workflow is interruption-safe. Detects an in-flight session at startup and offers `/forge:resume` instead of restarting.
+Main entry point. Runs the full 3-phase guided workflow, with checkpoints written to `.claude/greenfield-state.json` after every step so the workflow is interruption-safe. Detects an in-flight session at startup and offers `/greenfield:resume` instead of restarting.
 
-### `/forge:resume`
+### `/greenfield:resume`
 
-Resume an in-progress session from the last checkpoint. Reads `.claude/forge-state.json`, shows you where you left off (which phase, which step, what's next), and picks up from that point. Works across fresh Claude Code sessions — close your laptop mid-wizard and come back days later.
+Resume an in-progress session from the last checkpoint. Reads `.claude/greenfield-state.json`, shows you where you left off (which phase, which step, what's next), and picks up from that point. Works across fresh Claude Code sessions — close your laptop mid-wizard and come back days later.
 
-### `/forge:status`
+### `/greenfield:status`
 
 Project health check. If a session is in-flight, reports the state (phase, step, next action). If setup is complete, reports artifact integrity: CLAUDE.md, rules, skills, agents, hooks, CI/CD workflows, pending drift, and stack freshness vs when the project was scaffolded.
 
-> `/forge:evolve` and `/forge:verify` no longer exist — they live in `onboard` as `/onboard:evolve` and `/onboard:verify` (universal, not forge-specific).
+> `/greenfield:evolve` and `/greenfield:verify` no longer exist — they live in `onboard` as `/onboard:evolve` and `/onboard:verify` (universal, not greenfield-specific).
 
 ## The 3 phases
 
@@ -66,11 +66,11 @@ Executes the chosen scaffold approach, adds project infrastructure (`.env`, Dock
 - **C — Developer's template** — clone a user-specified template or boilerplate.
 - **D — Walking skeleton** — scaffolds *one representative example of each architectural pattern* (one entity, one DAO, one service, one route, one test). Phase 3 then runs against the skeleton and Phase 2b expands it under the AI tooling's guidance. Recommended for native mobile, custom backends, game engines.
 
-**Sibling project detection** — before scaffolding, forge scans the parent directory for existing projects in the same stack family and offers to anchor versions to them. Invaluable when you have multiple related projects.
+**Sibling project detection** — before scaffolding, greenfield scans the parent directory for existing projects in the same stack family and offers to anchor versions to them. Invaluable when you have multiple related projects.
 
 ### Phase 3 — AI Tooling
 
-The composability beat. forge does **not** generate Claude tooling itself — it prepares context and calls onboard:
+The composability beat. greenfield does **not** generate Claude tooling itself — it prepares context and calls onboard:
 
 ```
 plugin-discovery skill   →   curated catalog match + web search → install plugins
@@ -80,7 +80,7 @@ tooling-generation skill →   Skill(onboard:generate) (enriched mode)
                               ├── Core:     CLAUDE.md, rules, skills, agents, hooks
                               └── Enriched: CI/CD, harness, evolution, teams, verification
 
-forge-only artifacts     →   init.sh (stack-specific bootstrap)
+greenfield-only artifacts     →   init.sh (stack-specific bootstrap)
                               docs/feature-list.json (from Phase 1 decomposition)
 ```
 
@@ -91,7 +91,7 @@ In walking-skeleton mode (Path D from Phase 2), Phase 3 runs against the skeleto
 A FastAPI scaffold from start to finish:
 
 ```
-> /forge:init
+> /greenfield:init
 
 Phase 1: Context Gathering — Step 1 of 8
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -151,32 +151,32 @@ Next: cd task-manager && /feature-dev Add user registration
 
 ## Resumability
 
-Forge's workflow can take significant time — especially the wizard (Phase 1) and AI tooling generation (Phase 3). If the session is interrupted (session ends, laptop closes, Ctrl-C, crash), nothing is lost.
+Greenfield's workflow can take significant time — especially the wizard (Phase 1) and AI tooling generation (Phase 3). If the session is interrupted (session ends, laptop closes, Ctrl-C, crash), nothing is lost.
 
 **How it works:**
 
-- Every skill writes `.claude/forge-state.json` after each natural checkpoint (each wizard step, each scaffold sub-step, each Phase 3 action).
+- Every skill writes `.claude/greenfield-state.json` after each natural checkpoint (each wizard step, each scaffold sub-step, each Phase 3 action).
 - Writes are atomic (`.tmp` + rename) to avoid corruption if killed mid-write.
 - The state file tracks current phase, current step, completed steps, accumulated context, research findings, and parked questions.
-- `/forge:init` checks for an existing state file at startup and offers resume instead of silently restarting.
-- `/forge:resume` reads the state and fast-forwards the appropriate skill to exactly where you left off.
-- `/forge:status` prominently reports in-flight sessions so you know they exist.
+- `/greenfield:init` checks for an existing state file at startup and offers resume instead of silently restarting.
+- `/greenfield:resume` reads the state and fast-forwards the appropriate skill to exactly where you left off.
+- `/greenfield:status` prominently reports in-flight sessions so you know they exist.
 
 **Cross-session resume** works in a completely fresh Claude Code conversation — the state file is the source of truth; memory files and research findings carry the context.
 
 ## Auto-Evolution
 
-After forge sets up your project, hooks keep tooling in sync. **These hooks are written by `onboard` during Phase 3** — forge doesn't manage drift directly; it just ensures onboard's enriched mode is enabled so the hooks ship with the scaffold:
+After greenfield sets up your project, hooks keep tooling in sync. **These hooks are written by `onboard` during Phase 3** — greenfield doesn't manage drift directly; it just ensures onboard's enriched mode is enabled so the hooks ship with the scaffold:
 
 - **FileChanged hooks** — detect changes to `package.json`, config files, project structure
-- Drift logged to `.claude/forge-drift.json`
+- Drift logged to `.claude/greenfield-drift.json`
 - **SessionStart hook** — summarises drift at the start of each Claude session
 - Apply updates with `/onboard:evolve` (or configure auto-updates during setup) — see [`onboard/README.md`](../onboard/README.md#drift-detection-deep-dive) for the full mechanism
 - **Weekly CI audit** — catches drift that local hooks miss
 
 ## Supported stacks
 
-forge is stack-agnostic in principle — the [`stack-researcher`](./agents/stack-researcher.md) agent investigates whatever stack you describe rather than relying on built-in templates. But some stacks are verified end-to-end, others are known to work, others are experimental:
+greenfield is stack-agnostic in principle — the [`stack-researcher`](./agents/stack-researcher.md) agent investigates whatever stack you describe rather than relying on built-in templates. But some stacks are verified end-to-end, others are known to work, others are experimental:
 
 ### Verified (tested end-to-end)
 
@@ -198,18 +198,18 @@ These lack a mature scaffold CLI or have significantly different architecture fr
 - **Game engines** (Unity, Godot, Bevy) — architecture is framework-specific
 - **Custom backends** without an obvious scaffold tool
 
-If your stack isn't listed, forge will still try. Use `scaffoldMode: walking-skeleton` if you're unsure — it produces a minimal representative project the AI tooling can analyse, rather than guessing at a full scaffold and getting it wrong.
+If your stack isn't listed, greenfield will still try. Use `scaffoldMode: walking-skeleton` if you're unsure — it produces a minimal representative project the AI tooling can analyse, rather than guessing at a full scaffold and getting it wrong.
 
 ## Prerequisites
 
-- **`onboard`** plugin (required) — forge delegates all Claude tooling generation to onboard's headless `/onboard:generate`
+- **`onboard`** plugin (required) — greenfield delegates all Claude tooling generation to onboard's headless `/onboard:generate`
 - **git** — repository setup and branching
 - **`gh`** (GitHub CLI) — branch protection and CI/CD setup (optional if you're not using GitHub)
-- Bash ≥ 4 — all forge scripts
+- Bash ≥ 4 — all greenfield scripts
 
 ## Internals
 
-For internal architecture, agent contracts, state-machine details, and anti-patterns, see [`forge/CLAUDE.md`](./CLAUDE.md).
+For internal architecture, agent contracts, state-machine details, and anti-patterns, see [`greenfield/CLAUDE.md`](./CLAUDE.md).
 
 ## License
 

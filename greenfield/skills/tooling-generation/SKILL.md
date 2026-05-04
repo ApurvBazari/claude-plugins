@@ -1,12 +1,12 @@
 ---
 name: tooling-generation
-description: Forge Phase 3 — prepares scaffold context and delegates to onboard's headless generate skill for CLAUDE.md, rules, skills, agents, hooks, CI/CD, and evolution infrastructure. Internal building block invoked by forge init — not user-invocable.
+description: Greenfield Phase 3 — prepares scaffold context and delegates to onboard's headless generate skill for CLAUDE.md, rules, skills, agents, hooks, CI/CD, and evolution infrastructure. Internal building block invoked by greenfield init — not user-invocable.
 user-invocable: false
 ---
 
 # Tooling Generation Skill — Delegate to Enriched Onboard
 
-You are executing Phase 3 of Forge: generating all AI tooling, CI/CD, harness, and evolution infrastructure by delegating to onboard's enriched headless mode. Forge prepares the context; onboard generates the artifacts.
+You are executing Phase 3 of Greenfield: generating all AI tooling, CI/CD, harness, and evolution infrastructure by delegating to onboard's enriched headless mode. Greenfield prepares the context; onboard generates the artifacts.
 
 ## Guard: onboard prerequisite
 
@@ -32,7 +32,7 @@ Use AskUserQuestion with two options:
 
 1. Run `claude plugin install onboard` via the Bash tool.
 2. Re-run the detection probe above.
-3. **On success** — continue to Step 1. If `/onboard:generate` isn't immediately available in this session (Claude Code sometimes needs a reload for newly installed slash commands), tell the developer: "Onboard is installed, but its commands may not be available until you restart the session. If Phase 3.2 fails to invoke `/onboard:generate`, restart Claude Code and rerun `/forge:init` — it will detect the existing scaffold."
+3. **On success** — continue to Step 1. If `/onboard:generate` isn't immediately available in this session (Claude Code sometimes needs a reload for newly installed slash commands), tell the developer: "Onboard is installed, but its commands may not be available until you restart the session. If Phase 3.2 fails to invoke `/onboard:generate`, restart Claude Code and rerun `/greenfield:init` — it will detect the existing scaffold."
 4. **On install failure** — surface the underlying error verbatim (network, marketplace not added, auth issue). Then abort Phase 3 using the same message as the decline path below.
 
 ### If the developer declines or install fails
@@ -44,17 +44,17 @@ Abort Phase 3 with a clear recovery message:
 > To recover:
 > 1. Install onboard manually: `claude plugin install onboard`
 > 2. Run `/onboard:init` directly on the scaffolded project to generate AI tooling
-> 3. (Optional) Rerun `/forge:init` later for the full 4-phase experience
+> 3. (Optional) Rerun `/greenfield:init` later for the full 4-phase experience
 >
 > Your scaffold and git history are preserved. No cleanup needed.
 
-Do not delete files. Do not touch git. Do not call onboard. Signal abort back to `/forge:init` — the command will skip Phases 3.3, 3.4, and 4 and go straight to a minimal Handoff that reports what was scaffolded and how to recover.
+Do not delete files. Do not touch git. Do not call onboard. Signal abort back to `/greenfield:init` — the command will skip Phases 3.3, 3.4, and 4 and go straight to a minimal Handoff that reports what was scaffolded and how to recover.
 
 ---
 
 ## Purpose
 
-Pass the complete Phase 1 context to onboard headless with enriched flags enabled. Onboard handles ALL generation — CLAUDE.md, rules, skills, agents, hooks, CI/CD, harness, evolution, sprint contracts, and team support. Forge only generates two artifacts itself: `init.sh` and `docs/feature-list.json` (both require scaffold-specific knowledge that onboard doesn't have).
+Pass the complete Phase 1 context to onboard headless with enriched flags enabled. Onboard handles ALL generation — CLAUDE.md, rules, skills, agents, hooks, CI/CD, harness, evolution, sprint contracts, and team support. Greenfield only generates two artifacts itself: `init.sh` and `docs/feature-list.json` (both require scaffold-specific knowledge that onboard doesn't have).
 
 ## Inputs
 
@@ -67,7 +67,7 @@ You receive:
 
 ### Resolve the onboard plugin version (runtime — never hardcode)
 
-Before building the headless context, **read onboard's actual installed version at runtime**. Do not bake a literal version string into the context — the 2026-04-16 release-gate Phase 5 test (finding FO6) found `forge-meta.json` recorded `pluginVersion: "1.2.0"` even though the installed onboard was at 1.9.0, leading to stale snapshots and version checks.
+Before building the headless context, **read onboard's actual installed version at runtime**. Do not bake a literal version string into the context — the 2026-04-16 release-gate Phase 5 test (finding FO6) found `greenfield-meta.json` recorded `pluginVersion: "1.2.0"` even though the installed onboard was at 1.9.0, leading to stale snapshots and version checks.
 
 Resolution order (CLI-first, sibling-path fallback, hard-fail otherwise):
 
@@ -80,7 +80,7 @@ if command -v claude >/dev/null 2>&1; then
 fi
 
 # 2. Sibling-path fallback for the claude-plugins marketplace layout
-#    ($CLAUDE_PLUGIN_ROOT here is forge's plugin root, so onboard is a sibling)
+#    ($CLAUDE_PLUGIN_ROOT here is greenfield's plugin root, so onboard is a sibling)
 if [ -z "$ONBOARD_VERSION" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/../onboard/.claude-plugin/plugin.json" ]; then
   ONBOARD_VERSION=$(jq -r '.version' "${CLAUDE_PLUGIN_ROOT}/../onboard/.claude-plugin/plugin.json")
 fi
@@ -92,9 +92,9 @@ if [ -z "$ONBOARD_VERSION" ]; then
 fi
 ```
 
-Inject `$ONBOARD_VERSION` into the headless context as `meta.onboardVersion` for forge-side telemetry; onboard itself reads its own version from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` when writing `pluginVersion` into `onboard-meta.json` (see `onboard/skills/generate/SKILL.md` § Step 5 for that contract). Do NOT pass `pluginVersion` in `callerExtras` — config-generator authoritatively reads it from disk so onboard upgrades flow through without forge changes.
+Inject `$ONBOARD_VERSION` into the headless context as `meta.onboardVersion` for greenfield-side telemetry; onboard itself reads its own version from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` when writing `pluginVersion` into `onboard-meta.json` (see `onboard/skills/generate/SKILL.md` § Step 5 for that contract). Do NOT pass `pluginVersion` in `callerExtras` — config-generator authoritatively reads it from disk so onboard upgrades flow through without greenfield changes.
 
-The PR-version markers later in this skill (lines mentioning "Onboard 1.5.0", "Onboard 1.6.0", etc.) are an **historical audit trail** of which onboard release introduced each integration — they document when forge first started honoring a given onboard feature. Keep them as comments; the runtime source of truth for the live version is the resolution code above.
+The PR-version markers later in this skill (lines mentioning "Onboard 1.5.0", "Onboard 1.6.0", etc.) are an **historical audit trail** of which onboard release introduced each integration — they document when greenfield first started honoring a given onboard feature. Keep them as comments; the runtime source of truth for the live version is the resolution code above.
 
 ### Build the analysis object
 
@@ -102,7 +102,7 @@ Spawn the `scaffold-analyzer` agent to scan the freshly scaffolded project. The 
 
 ### Map wizard answers
 
-| Forge field | Onboard field | Notes |
+| Greenfield field | Onboard field | Notes |
 |---|---|---|
 | `appDescription` | `projectDescription` | Direct map |
 | `teamSize` | `teamSize` | Direct map |
@@ -120,7 +120,7 @@ Spawn the `scaffold-analyzer` agent to scan the freshly scaffolded project. The 
 
 ### Sanitise free-text wizard answers
 
-Before forwarding to onboard, apply the canonical untrusted-input sanitiser from `${CLAUDE_PLUGIN_ROOT}/../onboard/skills/init/references/onboard-context-builder.md § Untrusted-input sanitiser` to every free-text field captured by the wizard. This is a defence-in-depth layer on top of the `<untrusted-user-input>` XML framing that `onboard/skills/generate/SKILL.md § Validate` applies at dispatch time — callers (forge + onboard:init) are expected to have pre-sanitised these values. Do NOT skip this step; `generate/SKILL.md` explicitly delegates the work to callers and does not duplicate it.
+Before forwarding to onboard, apply the canonical untrusted-input sanitiser from `${CLAUDE_PLUGIN_ROOT}/../onboard/skills/init/references/onboard-context-builder.md § Untrusted-input sanitiser` to every free-text field captured by the wizard. This is a defence-in-depth layer on top of the `<untrusted-user-input>` XML framing that `onboard/skills/generate/SKILL.md § Validate` applies at dispatch time — callers (greenfield + onboard:init) are expected to have pre-sanitised these values. Do NOT skip this step; `generate/SKILL.md` explicitly delegates the work to callers and does not duplicate it.
 
 Apply to these fields (and any future free-text wizard field added to `wizardAnswers`):
 
@@ -145,9 +145,9 @@ Based on Phase 1 context, set the `enriched` object:
 {
   "enriched": {
     "enableCICD": true,          // false if willDeploy === false
-    "enableHarness": true,       // always true for Forge projects
+    "enableHarness": true,       // always true for Greenfield projects
     "enableEvolution": true,     // always true
-    "enableSprintContracts": true, // always true for Forge
+    "enableSprintContracts": true, // always true for Greenfield
     "enableTeams": false,        // true if isProduction && hasTeam
     "enableVerification": true,  // always true
     "willDeploy": true,          // from Phase 1
@@ -169,7 +169,7 @@ Based on Phase 1 context, set the `enriched` object:
     "coveredCapabilities": ["code-review", "test-generation", ...],
     "allowPluginReferences": true,   // default true when installedPlugins is non-empty
 
-    // Headless passthrough flags — forge runs non-interactive. Always pass true.
+    // Headless passthrough flags — greenfield runs non-interactive. Always pass true.
     "disableSkillTuning": true,        // skip per-skill batched confirmation; rely on archetype + wizard defaults
     "disableAgentTuning": true,        // skip per-agent batched confirmation; rely on archetype + wizard defaults
     "disableOutputStyleTuning": true,  // skip Phase 7b batched confirmation; emit archetype-matched style directly
@@ -276,21 +276,21 @@ Call `/onboard:generate` with the prepared context. Onboard now generates EVERYT
 
 **MCP servers (automatic from stack signals):** Onboard emits `.mcp.json` and `.claude/onboard-mcp-snapshot.json` when detected signals match its catalog (e.g., Vercel projects get `vercel`, frontend stacks get `chrome-devtools-mcp`, all projects get `context7`). Matching plugins are auto-installed if not already present. Full rules in `onboard/skills/generation/references/mcp-guide.md`. If a scaffold template already ships its own `.mcp.json`, pass `callerExtras.disableMCP: true` in Step 1 to suppress onboard's emission.
 
-**Skill frontmatter tuning (automatic from archetype classification):** Onboard 1.5.0 emits extended skill frontmatter — `allowed-tools`, `model`, `effort`, `paths`, `context`, `agent` — on every generated skill, composing archetype defaults with wizard-level tuning (`wizardAnswers.skillTuning`). A batched confirmation step runs by default to let the developer tweak per-skill. The snapshot lands at `.claude/onboard-skill-snapshot.json` for drift detection. Forge passes `callerExtras.disableSkillTuning: true` whenever forge is running headless and wants the confirmation suppressed; the generator still emits the full frontmatter using archetype + wizard defaults. Full rules in `onboard/skills/generation/references/skills-guide.md` § Frontmatter Reference.
+**Skill frontmatter tuning (automatic from archetype classification):** Onboard 1.5.0 emits extended skill frontmatter — `allowed-tools`, `model`, `effort`, `paths`, `context`, `agent` — on every generated skill, composing archetype defaults with wizard-level tuning (`wizardAnswers.skillTuning`). A batched confirmation step runs by default to let the developer tweak per-skill. The snapshot lands at `.claude/onboard-skill-snapshot.json` for drift detection. Greenfield passes `callerExtras.disableSkillTuning: true` whenever greenfield is running headless and wants the confirmation suppressed; the generator still emits the full frontmatter using archetype + wizard defaults. Full rules in `onboard/skills/generation/references/skills-guide.md` § Frontmatter Reference.
 
-**Agent frontmatter tuning (automatic from archetype classification):** Onboard 1.6.0 emits extended agent frontmatter — `tools`, `disallowedTools`, `model`, `effort`, `isolation`, `color`, `maxTurns`, `permissionMode` — on every generated agent, composing archetype defaults (reviewer/validator/generator/architect/researcher) with wizard-level tuning (`wizardAnswers.agentTuning`). A batched confirmation step runs by default to let the developer tweak per-agent. The snapshot lands at `.claude/onboard-agent-snapshot.json` for drift detection. Forge passes `callerExtras.disableAgentTuning: true` whenever forge is running headless and wants the confirmation suppressed; the generator still emits the full frontmatter using archetype + wizard defaults. Note: `proactive` is encoded via description prefix (it is not a frontmatter field); `isolation` only accepts `worktree` and is dropped in non-git directories. Full rules in `onboard/skills/generation/references/agents-guide.md` § Frontmatter Reference.
+**Agent frontmatter tuning (automatic from archetype classification):** Onboard 1.6.0 emits extended agent frontmatter — `tools`, `disallowedTools`, `model`, `effort`, `isolation`, `color`, `maxTurns`, `permissionMode` — on every generated agent, composing archetype defaults (reviewer/validator/generator/architect/researcher) with wizard-level tuning (`wizardAnswers.agentTuning`). A batched confirmation step runs by default to let the developer tweak per-agent. The snapshot lands at `.claude/onboard-agent-snapshot.json` for drift detection. Greenfield passes `callerExtras.disableAgentTuning: true` whenever greenfield is running headless and wants the confirmation suppressed; the generator still emits the full frontmatter using archetype + wizard defaults. Note: `proactive` is encoded via description prefix (it is not a frontmatter field); `isolation` only accepts `worktree` and is dropped in non-git directories. Full rules in `onboard/skills/generation/references/agents-guide.md` § Frontmatter Reference.
 
-**Output style generation (automatic from archetype classification):** Onboard 1.7.0 emits one project-scoped custom output style at `.claude/output-styles/<name>.md` based on 5 archetypes (onboarding / teaching / production-ops / research / solo) inferred from existing wizard + analysis signals. Priority: production-ops > onboarding > teaching > research > solo. Built-in styles (Default / Explanatory / Learning) are Anthropic-provided and referenced in the generated CLAUDE.md Plugin Integration section — never re-emitted as files. A batched confirmation runs by default; the snapshot lands at `.claude/onboard-output-style-snapshot.json` for drift detection (frontmatter-only scope — body edits are free). Forge passes `callerExtras.disableOutputStyleTuning: true` whenever forge is running headless and wants the confirmation suppressed; the generator still emits the archetype-matched style. Full rules in `onboard/skills/generation/references/output-styles-guide.md`; 5 body templates in `output-styles-catalog.md`.
+**Output style generation (automatic from archetype classification):** Onboard 1.7.0 emits one project-scoped custom output style at `.claude/output-styles/<name>.md` based on 5 archetypes (onboarding / teaching / production-ops / research / solo) inferred from existing wizard + analysis signals. Priority: production-ops > onboarding > teaching > research > solo. Built-in styles (Default / Explanatory / Learning) are Anthropic-provided and referenced in the generated CLAUDE.md Plugin Integration section — never re-emitted as files. A batched confirmation runs by default; the snapshot lands at `.claude/onboard-output-style-snapshot.json` for drift detection (frontmatter-only scope — body edits are free). Greenfield passes `callerExtras.disableOutputStyleTuning: true` whenever greenfield is running headless and wants the confirmation suppressed; the generator still emits the archetype-matched style. Full rules in `onboard/skills/generation/references/output-styles-guide.md`; 5 body templates in `output-styles-catalog.md`.
 
-**LSP plugin recommendations (automatic from detected source files):** Onboard 1.8.0 detects project languages via `detect-lsp-signals.sh` and offers matching marketplace LSP plugins (`typescript-lsp`, `gopls-lsp`, `rust-analyzer-lsp`, etc. — 12-entry catalog) through wizard Phase 5.6. Forge passes `callerExtras.disableLSP: true` because freshly scaffolded projects have placeholder code that would trigger unreliable file-presence signals. The developer runs `/onboard:evolve` after adding real source files to trigger the prompt. Full rules in `onboard/skills/generation/references/lsp-plugin-catalog.md`. Surface this in the handoff message: "Run `/onboard:evolve` after adding source files to get LSP plugin recommendations."
+**LSP plugin recommendations (automatic from detected source files):** Onboard 1.8.0 detects project languages via `detect-lsp-signals.sh` and offers matching marketplace LSP plugins (`typescript-lsp`, `gopls-lsp`, `rust-analyzer-lsp`, etc. — 12-entry catalog) through wizard Phase 5.6. Greenfield passes `callerExtras.disableLSP: true` because freshly scaffolded projects have placeholder code that would trigger unreliable file-presence signals. The developer runs `/onboard:evolve` after adding real source files to trigger the prompt. Full rules in `onboard/skills/generation/references/lsp-plugin-catalog.md`. Surface this in the handoff message: "Run `/onboard:evolve` after adding source files to get LSP plugin recommendations."
 
-**Built-in skill recommendations (automatic from codebase analysis):** Onboard 1.9.0 recommends built-in Claude Code skills (`/loop`, `/simplify`, `/debug`, `/pr-summary` as core; `/schedule`, `/claude-api`, `/explain-code`, `/codebase-visualizer`, `/batch` as conditional extras) through wizard Phase 5.7 and documents accepted skills in the generated CLAUDE.md with project-specific usage examples. Forge passes `callerExtras.disableBuiltInSkills: true` because freshly scaffolded projects have placeholder code — detection signals (file counts, complexity, dependency lists) are premature. The developer runs `/onboard:evolve` after adding real source files to trigger the prompt. Full rules in `onboard/skills/generation/references/built-in-skills-catalog.md`. Surface this in the handoff message: "Run `/onboard:evolve` after adding source files to get built-in skill recommendations."
+**Built-in skill recommendations (automatic from codebase analysis):** Onboard 1.9.0 recommends built-in Claude Code skills (`/loop`, `/simplify`, `/debug`, `/pr-summary` as core; `/schedule`, `/claude-api`, `/explain-code`, `/codebase-visualizer`, `/batch` as conditional extras) through wizard Phase 5.7 and documents accepted skills in the generated CLAUDE.md with project-specific usage examples. Greenfield passes `callerExtras.disableBuiltInSkills: true` because freshly scaffolded projects have placeholder code — detection signals (file counts, complexity, dependency lists) are premature. The developer runs `/onboard:evolve` after adding real source files to trigger the prompt. Full rules in `onboard/skills/generation/references/built-in-skills-catalog.md`. Surface this in the handoff message: "Run `/onboard:evolve` after adding source files to get built-in skill recommendations."
 
 Present a brief summary after generation. Offer optional review.
 
-## Step 3: Forge-Specific Artifacts
+## Step 3: Greenfield-Specific Artifacts
 
-These two artifacts require scaffold-specific knowledge that only Forge has:
+These two artifacts require scaffold-specific knowledge that only Greenfield has:
 
 ### 3.1: `init.sh` (project root)
 
@@ -304,14 +304,14 @@ Write the feature list from Phase 1 feature decomposition. JSON format with spri
 
 If developer skipped feature decomposition: generate a minimal 3-5 feature list.
 
-## Step 4: Update Forge Metadata
+## Step 4: Update Greenfield Metadata
 
-Update `.claude/forge-meta.json`. The schema lives at `references/forge-meta.schema.json` (committed alongside this skill) and is the authoritative contract — validate the produced object against it via `jq` + `ajv-cli` (or any JSON schema validator) before write. Hard-fail on schema mismatch; never write a forge-meta.json that doesn't match the schema.
+Update `.claude/greenfield-meta.json`. The schema lives at `references/greenfield-meta.schema.json` (committed alongside this skill) and is the authoritative contract — validate the produced object against it via `jq` + `ajv-cli` (or any JSON schema validator) before write. Hard-fail on schema mismatch; never write a greenfield-meta.json that doesn't match the schema.
 
 Note on the 2026-04-16 release-gate finding (FO2): earlier versions wrote `generated.tooling`, `generated.cicd`, `generated.harness` as **siblings** to `generated.toolingFlags`. That dot-notation drift was inconsistent with the documented `toolingFlags` namespace. The shape below consolidates everything under `generated.toolingFlags` — old-shape projects heal on the next regeneration (no auto-migration).
 
 Update with:
-- `generated.toolingFlags`: **the full `callerExtras` object built in Step 1 + the artifact lists + the `hookStatus` object from onboard's response**. Replaces the previous `generated.tooling` / `generated.cicd` / `generated.harness` sibling fields. This persists `tooling` / `cicd` / `harness` artifact lists, `installedPlugins`, `coveredCapabilities`, `qualityGates`, `phaseSkills`, `allowPluginReferences`, and the seven status objects so `/forge:status` can report Plugin Integration Coverage without re-deriving them. Shape:
+- `generated.toolingFlags`: **the full `callerExtras` object built in Step 1 + the artifact lists + the `hookStatus` object from onboard's response**. Replaces the previous `generated.tooling` / `generated.cicd` / `generated.harness` sibling fields. This persists `tooling` / `cicd` / `harness` artifact lists, `installedPlugins`, `coveredCapabilities`, `qualityGates`, `phaseSkills`, `allowPluginReferences`, and the seven status objects so `/greenfield:status` can report Plugin Integration Coverage without re-deriving them. Shape:
 
   ```jsonc
   {
@@ -401,48 +401,48 @@ Update with:
   }
   ```
 
-  **Scope reminder**: `hookStatus` only tracks hooks derived from `callerExtras.qualityGates`. Format/lint hooks, forge-internal hooks, and any other non-Plugin-Integration hooks stay out of these counts even though they're written to `.claude/settings.json`. See `onboard/skills/generation/SKILL.md` § Hook Status Telemetry § Scope boundary for the rationale.
+  **Scope reminder**: `hookStatus` only tracks hooks derived from `callerExtras.qualityGates`. Format/lint hooks, greenfield-internal hooks, and any other non-Plugin-Integration hooks stay out of these counts even though they're written to `.claude/settings.json`. See `onboard/skills/generation/SKILL.md` § Hook Status Telemetry § Scope boundary for the rationale.
 
   **Write rules**:
   - Copy `installedPlugins`, `coveredCapabilities`, `allowPluginReferences`, `allowHttpHooks`, `qualityGates`, `phaseSkills` from the in-memory `callerExtras` object exactly as it was sent to `/onboard:generate` — including the autonomyLevel-downgraded `preCommit[].mode` values and any per-entry `hookType`/`promptRef`/`promptInline`/`agentRef`/`httpUrl`/`httpHeaders`/`timeout` fields. Do not re-derive.
   - Copy `hookStatus` verbatim from the `/onboard:generate` response object (see `onboard/skills/generate/SKILL.md` § Step 5). Do not reshape. `generated` values vary by hook type (script basename for `command`, prompt filename for `prompt`, agent name for `agent`, URL for `http`) — treat the value as an opaque string array.
-  - **Invariant**: `toolingFlags.hookStatus.planned` keys should match what onboard expected to generate from `toolingFlags.qualityGates`. A mismatch signals a contract drift between forge and onboard.
-  - **Key format passthrough**: hookStatus keys use `<Event>[:<Matcher>][:<Type>]` format. The `:<Type>` suffix is OMITTED when the hook type is `command` (backward compatible — pre-upgrade forge-meta.json fixtures remain byte-identical). Non-command types surface as e.g. `TaskCompleted:agent`, `UserPromptSubmit:prompt`, `Elicitation::http` (double colon when matcher is absent but type is non-default). Forge treats these keys as opaque strings and never parses them — parsing happens in downstream consumers (`/forge:status`, `/onboard:status`). See `onboard/skills/generation/SKILL.md` § Hook Status Telemetry for the full key-format contract.
+  - **Invariant**: `toolingFlags.hookStatus.planned` keys should match what onboard expected to generate from `toolingFlags.qualityGates`. A mismatch signals a contract drift between greenfield and onboard.
+  - **Key format passthrough**: hookStatus keys use `<Event>[:<Matcher>][:<Type>]` format. The `:<Type>` suffix is OMITTED when the hook type is `command` (backward compatible — pre-upgrade greenfield-meta.json fixtures remain byte-identical). Non-command types surface as e.g. `TaskCompleted:agent`, `UserPromptSubmit:prompt`, `Elicitation::http` (double colon when matcher is absent but type is non-default). Greenfield treats these keys as opaque strings and never parses them — parsing happens in downstream consumers (`/greenfield:status`, `/onboard:status`). See `onboard/skills/generation/SKILL.md` § Hook Status Telemetry for the full key-format contract.
 
 - `context.verificationStrategy`: the chosen approach
-- `costs.forgeInit`: estimated token usage
+- `costs.greenfieldInit`: estimated token usage
 
 ## Checkpoint Protocol (for resume support)
 
-This skill MUST write `.claude/forge-state.json` after each Step so `/forge:resume` can pick up mid-generation if the session is interrupted. See `skills/init/SKILL.md` for the full state schema.
+This skill MUST write `.claude/greenfield-state.json` after each Step so `/greenfield:resume` can pick up mid-generation if the session is interrupted. See `skills/init/SKILL.md` for the full state schema.
 
 ### When to checkpoint
 
 | After Step | Write to state file |
 |---|---|
 | Step 1 (Prepare Onboard Context) | `completedSteps: [..., "tooling-context-prepared"]`, `currentStep: "onboard-invoke"` |
-| Step 2 (Invoke Onboard Headless) | Add `"onboard-invoke"`, `currentStep: "forge-artifacts"`, `generated.toolingFlags.tooling: [...]` |
-| Step 3 (Forge-Specific Artifacts) | Add `"forge-artifacts"`, `currentStep: "tooling-metadata"`, `generated.toolingFlags.harness: [...]` |
-| Step 4 (Update Forge Metadata) | Add `"tooling-metadata"`, `currentPhase: "phase-4-lifecycle-setup"`, `currentStep: "lifecycle-check"` (handoff to lifecycle-setup) |
+| Step 2 (Invoke Onboard Headless) | Add `"onboard-invoke"`, `currentStep: "greenfield-artifacts"`, `generated.toolingFlags.tooling: [...]` |
+| Step 3 (Greenfield-Specific Artifacts) | Add `"greenfield-artifacts"`, `currentStep: "tooling-metadata"`, `generated.toolingFlags.harness: [...]` |
+| Step 4 (Update Greenfield Metadata) | Add `"tooling-metadata"`, `currentPhase: "phase-4-lifecycle-setup"`, `currentStep: "lifecycle-check"` (handoff to lifecycle-setup) |
 
 ### Critical: onboard is expensive and time-consuming
-Step 2 (invoking `/onboard:generate`) is the single longest-running step in all of forge — it can take many minutes and generates dozens of files. If the session is killed during this step, the next resume will see `onboard-invoke` as NOT complete and must handle it carefully:
+Step 2 (invoking `/onboard:generate`) is the single longest-running step in all of greenfield — it can take many minutes and generates dozens of files. If the session is killed during this step, the next resume will see `onboard-invoke` as NOT complete and must handle it carefully:
 
 - Check whether onboard left any artifacts on disk (look for `CLAUDE.md`, `.claude/rules/`, `.claude/skills/`, etc.).
 - If partial onboard output exists, ask the user: "Onboard was interrupted mid-generation. Should I (a) delete the partial output and retry from scratch, (b) run `/onboard:generate` in recovery mode if it supports it, or (c) fast-forward past this step and assume what's there is good enough?"
 - Never silently retry onboard on top of its own partial output — that can cause corruption or duplicate rules.
 
 ### Atomic write
-Same protocol as other skills: write to `.claude/forge-state.json.tmp`, then `mv` to `.claude/forge-state.json`.
+Same protocol as other skills: write to `.claude/greenfield-state.json.tmp`, then `mv` to `.claude/greenfield-state.json`.
 
 ### Resume entry contract
-When invoked via `/forge:resume`, check `completedSteps` and skip anything already done. Do NOT re-invoke `/onboard:generate` if `onboard-invoke` is in `completedSteps`.
+When invoked via `/greenfield:resume`, check `completedSteps` and skip anything already done. Do NOT re-invoke `/onboard:generate` if `onboard-invoke` is in `completedSteps`.
 
 ## Key Rules
 
-1. **Onboard generates everything except init.sh and feature-list.json** — Forge is a thin orchestrator.
+1. **Onboard generates everything except init.sh and feature-list.json** — Greenfield is a thin orchestrator.
 2. **Validate before calling onboard** — Don't invoke headless with incomplete data.
 3. **JSON for feature list** — Never markdown. Less prone to model drift.
 4. **Sprint contracts are negotiated** — Onboard handles the negotiation in enriched mode.
 5. **Light confirmation after onboard** — Show what was generated, let developer review.
-6. **Checkpoint after every Step** — Always write `forge-state.json` at Step boundaries so resume works. Onboard's long runtime makes checkpointing critical.
+6. **Checkpoint after every Step** — Always write `greenfield-state.json` at Step boundaries so resume works. Onboard's long runtime makes checkpointing critical.

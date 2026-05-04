@@ -45,7 +45,7 @@ For each technology in the stack, the agent searches for:
 - Source: Official docs deploy section, community comparisons
 - Extract: Recommended platforms with reasoning, official integrations
 
-## How Research Feeds into Forge
+## How Research Feeds into Greenfield
 
 Research output stays in conversation context (not written to a file during Phase 1). It informs:
 
@@ -54,10 +54,10 @@ Research output stays in conversation context (not written to a file during Phas
 3. **Phase 2**: Correct CLI flags, version pins, project structure
 4. **Phase 3**: Accurate CI/CD commands, test framework setup
 
-After scaffolding, research findings are saved to `forge-meta.json` under the `webResearch` key.
+After scaffolding, research findings are saved to `greenfield-meta.json` under the `webResearch` key.
 
 ## Freshness
 
 Research happens once during Phase 1. For ongoing freshness:
 - Weekly CI tooling audit can re-check framework versions
-- SessionStart hook can flag if `forge-meta.json` stack version is behind latest
+- SessionStart hook can flag if `greenfield-meta.json` stack version is behind latest

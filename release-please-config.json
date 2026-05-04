@@ -13,8 +13,8 @@
         ".claude-plugin/plugin.json"
       ]
     },
-    "forge": {
-      "package-name": "forge",
+    "greenfield": {
+      "package-name": "greenfield",
       "changelog-path": "CHANGELOG.md",
       "extra-files": [
         ".claude-plugin/plugin.json"

@@ -1,14 +1,14 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/ApurvBazari/claude-plugins/forge/skills/tooling-generation/references/forge-meta.schema.json",
-  "title": "forge-meta.json",
-  "description": "Authoritative schema for forge's per-project metadata file at .claude/forge-meta.json. Validated by tooling-generation/SKILL.md Step 4 before write.",
+  "$id": "https://github.com/ApurvBazari/claude-plugins/greenfield/skills/tooling-generation/references/greenfield-meta.schema.json",
+  "title": "greenfield-meta.json",
+  "description": "Authoritative schema for greenfield's per-project metadata file at .claude/greenfield-meta.json. Validated by tooling-generation/SKILL.md Step 4 before write.",
   "type": "object",
   "required": ["version", "createdAt", "context", "generated"],
   "properties": {
     "version": {
       "type": "string",
-      "description": "Forge plugin version that wrote this file (semver)."
+      "description": "Greenfield plugin version that wrote this file (semver)."
     },
     "createdAt": {
       "type": "string",
@@ -72,7 +72,7 @@
             "harness": {
               "type": "array",
               "items": { "type": "string" },
-              "description": "Forge-only harness artifact paths (init.sh, docs/feature-list.json, docs/progress.md)."
+              "description": "Greenfield-only harness artifact paths (init.sh, docs/feature-list.json, docs/progress.md)."
             },
             "installedPlugins": {
               "type": "array",

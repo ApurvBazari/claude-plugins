@@ -21,7 +21,7 @@ You receive:
 
 ## Headless Mode Guard
 
-When `headlessMode` is `true` in the input context, this skill is being invoked via `/onboard:generate` from an external caller (e.g., the Forge plugin). In headless mode:
+When `headlessMode` is `true` in the input context, this skill is being invoked via `/onboard:generate` from an external caller (e.g., the Greenfield plugin). In headless mode:
 
 - **Skip all interactive steps** — Do not ask the developer any questions, present confirmation prompts, or wait for user input. All decisions have already been made by the caller.
 - **Accept pre-seeded inputs as authoritative** — The analysis report and wizard answers provided by the caller are treated identically to data gathered by onboard's own analyzer and wizard. Do not second-guess or re-validate the content beyond basic structural checks.
@@ -745,7 +745,7 @@ Follow `references/lsp-plugin-catalog.md` for the 12-entry language→plugin map
 | **Path SKIP — caller-disabled** | `callerExtras.disableLSP === true` | No script run, no install, no snapshot. Telemetry: `lspStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [] }`. **Telemetry IS still written.** |
 
 **Inputs**:
-- `callerExtras.disableLSP` (optional, headless) — see Path SKIP above; forge passes `true` by default for placeholder code in scaffolds
+- `callerExtras.disableLSP` (optional, headless) — see Path SKIP above; greenfield passes `true` by default for placeholder code in scaffolds
 - `callerExtras.lspPlugins` (optional, headless) — see Path A above
 - `wizardAnswers.lspPlugins` (optional) — see Path A above
 - Output of `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"` — JSON array sorted by fileCount desc
@@ -765,7 +765,7 @@ Empty array → nothing to recommend. Emit `lspStatus: { planned: [], generated:
 
 **Step 2 — Resolve selected plugins.**
 
-- If `callerExtras.lspPlugins` is a non-null array → use it verbatim as the accepted list (headless path; forge supplies an explicit list or nothing).
+- If `callerExtras.lspPlugins` is a non-null array → use it verbatim as the accepted list (headless path; greenfield supplies an explicit list or nothing).
 - Else if `wizardAnswers.lspPlugins` exists (from wizard Phase 5.6) → use that as the accepted list.
 - Else → use all detected plugins as the accepted list (autonomous Quick Mode path).
 
@@ -827,13 +827,13 @@ Follow `references/built-in-skills-catalog.md` for the 9-skill catalog, tier cla
 | **Path SKIP — caller-disabled** | `callerExtras.disableBuiltInSkills === true` | No CLAUDE.md subsection, no snapshot. Telemetry: `builtInSkillsStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [] }`. **Telemetry IS still written.** |
 
 **Inputs**:
-- `callerExtras.disableBuiltInSkills` (optional, headless) — see Path SKIP above; forge passes `true` by default for placeholder code in scaffolds
+- `callerExtras.disableBuiltInSkills` (optional, headless) — see Path SKIP above; greenfield passes `true` by default for placeholder code in scaffolds
 - `callerExtras.builtInSkills` (optional, headless) — see Path A above
 - `wizardAnswers.builtInSkills` (optional) — see Path A above
 
 **Telemetry contract**: `builtInSkillsStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | documented | skipped | declined | failed`) per the Default behavior matrix in `generate/SKILL.md`. **Built-in skills is the primary user of the `"documented"` value** — its "artifact" is a CLAUDE.md subsection rather than a separate file + snapshot, so `"documented"` is semantically more accurate than `"emitted"` when the phase runs. See Phase 7d below for the firing paths.
 
-**Suppression**: Skip entirely when `callerExtras.disableBuiltInSkills: true` (forge default — scaffolded projects have placeholder code so detection signals are premature). When skipped, still emit a `builtInSkillsStatus` entry in meta.json:
+**Suppression**: Skip entirely when `callerExtras.disableBuiltInSkills: true` (greenfield default — scaffolded projects have placeholder code so detection signals are premature). When skipped, still emit a `builtInSkillsStatus` entry in meta.json:
 
 ```json
 {
@@ -955,11 +955,11 @@ When `effectiveQualityGates` is present (from either `callerExtras.qualityGates`
 
 1. Returned from `/onboard:generate` in the result summary (see `onboard/skills/generate/SKILL.md` § Step 5)
 2. Recorded inside `.claude/onboard-meta.json` under the top-level `hookStatus` key
-3. Mirrored by forge into `.claude/forge-meta.json.generated.toolingFlags.hookStatus` (see `forge/skills/tooling-generation/SKILL.md` § Step 4)
+3. Mirrored by greenfield into `.claude/greenfield-meta.json.generated.toolingFlags.hookStatus` (see `greenfield/skills/tooling-generation/SKILL.md` § Step 4)
 
-This telemetry enables `/forge:status` to report "X/Y hooks wired" and lays the foundation for future adaptive behaviors (e.g. suppress SessionStart reminder after the user dismissed it N times).
+This telemetry enables `/greenfield:status` to report "X/Y hooks wired" and lays the foundation for future adaptive behaviors (e.g. suppress SessionStart reminder after the user dismissed it N times).
 
-**Scope boundary** (load-bearing — read this carefully): `hookStatus` tracks **only** hooks derived from `callerExtras.qualityGates`. Pre-existing format/lint hooks (Prettier, ESLint, Black, rustfmt, etc.), forge-internal hooks (like `forge-evolution-check.sh`), and any other non-Plugin-Integration hooks are **out of scope** for this telemetry. They still get written to `.claude/settings.json` via the normal merge path, but they do **not** appear in `hookStatus.planned` or `hookStatus.generated`. This keeps Plugin Integration Coverage reporting clean — `/forge:status` should never show a confusing "wired 2 hooks but planned 0" because format hooks inflated the count.
+**Scope boundary** (load-bearing — read this carefully): `hookStatus` tracks **only** hooks derived from `callerExtras.qualityGates`. Pre-existing format/lint hooks (Prettier, ESLint, Black, rustfmt, etc.), greenfield-internal hooks (like `greenfield-evolution-check.sh`), and any other non-Plugin-Integration hooks are **out of scope** for this telemetry. They still get written to `.claude/settings.json` via the normal merge path, but they do **not** appear in `hookStatus.planned` or `hookStatus.generated`. This keeps Plugin Integration Coverage reporting clean — `/greenfield:status` should never show a confusing "wired 2 hooks but planned 0" because format hooks inflated the count.
 
 The mental model: `hookStatus` answers "how well did the Plugin Integration contract land?", not "how many shell hooks does this project have total?".
 
@@ -1033,7 +1033,7 @@ The mental model: `hookStatus` answers "how well did the Plugin Integration cont
 ```
 
 **Counting rules**:
-- `planned[key]` = **integer** — number of entries in `callerExtras.qualityGates.<field>[]` that map to that exact `<Event>[:<Matcher>][:<Type>]` key. Entries sharing an event but differing in type count as separate keys (e.g., `TaskCompleted` and `TaskCompleted:agent` are distinct). **Only counts qualityGates-derived hooks, never format/lint/forge-internal.**
+- `planned[key]` = **integer** — number of entries in `callerExtras.qualityGates.<field>[]` that map to that exact `<Event>[:<Matcher>][:<Type>]` key. Entries sharing an event but differing in type count as separate keys (e.g., `TaskCompleted` and `TaskCompleted:agent` are distinct). **Only counts qualityGates-derived hooks, never format/lint/greenfield-internal.**
 - `generated[key]` = **array** of artifact references for hooks actually written to `.claude/settings.json` from the qualityGates spec. Value semantics depend on type (see § Artifact per type under Advanced Event Hooks).
 - `skipped[]` = a record for every entry in `planned` that did NOT produce a corresponding `generated` entry. The `event` field must match a `planned` key verbatim (including type suffix). Reasons include `plugin-not-installed`, `condition-unsatisfied`, `empty-critical-dirs`, plus the 11 type-validation reasons listed in § Hook Type Validation.
 - `warnings[]` = operator-facing messages (not user-facing) about soft issues during generation.

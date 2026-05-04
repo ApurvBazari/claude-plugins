@@ -1,12 +1,12 @@
 ---
 name: context-gathering
-description: Forge Phase 1 — adaptive wizard that gathers project vision, tech stack, features, and preferences through 8 named Steps. Internal building block invoked by forge init — not user-invocable.
+description: Greenfield Phase 1 — adaptive wizard that gathers project vision, tech stack, features, and preferences through 8 named Steps. Internal building block invoked by greenfield init — not user-invocable.
 user-invocable: false
 ---
 
 # Context Gathering Skill — Adaptive Project Wizard
 
-You are guiding a developer through an interactive wizard to understand what they want to build, their tech stack preferences, workflow, and project requirements. This is Phase 1 of the Forge plugin.
+You are guiding a developer through an interactive wizard to understand what they want to build, their tech stack preferences, workflow, and project requirements. This is Phase 1 of the Greenfield plugin.
 
 ## Purpose
 
@@ -84,7 +84,7 @@ The wizard is NOT the place for deep research. If you (Claude) detect a question
 > 3. **Take a default** — I pick the most common reasonable answer and move on. Good if you don't actually care about the decision and just want to ship.
 
 Use `AskUserQuestion` with these three options. On "Park it":
-- Capture the question, your best-effort placeholder answer, and a one-sentence "why this needs research" note into `parkedQuestions[]` in `forge-state.json`
+- Capture the question, your best-effort placeholder answer, and a one-sentence "why this needs research" note into `parkedQuestions[]` in `greenfield-state.json`
 - Continue the wizard with the placeholder
 - At end of Phase 1, if `parkedQuestions.length > 0`, enter **Phase 1.5: Architectural Research** (new optional sub-phase, see below)
 
@@ -104,7 +104,7 @@ When you notice any of these, STOP and:
 1. Summarize what context has been gathered so far
 2. Explicitly name the current Step and how many questions remain in it
 3. Offer the "Park it" escape hatch if a research rabbit hole is brewing
-4. Checkpoint to `forge-state.json` immediately (don't wait for Step completion)
+4. Checkpoint to `greenfield-state.json` immediately (don't wait for Step completion)
 
 ## Flow
 
@@ -121,7 +121,7 @@ Listen carefully. From the answer, infer:
 
 Emit the progress indicator. Ask Q2.1 about their stack preference. If they know, ask Q2.2 for details.
 
-**Research pause**: After gathering the stack, dispatch the `stack-researcher` agent with a clear research brief. The agent's first action is a real npm-registry call (zero overhead when web works) — if that fails, the agent immediately returns the sentinel `STACK_RESEARCH_REQUIRES_MAIN_SESSION` (see `forge/agents/stack-researcher.md` § Sentinel and `forge/skills/init/references/stack-research-checklist.md` § 0 / § Output).
+**Research pause**: After gathering the stack, dispatch the `stack-researcher` agent with a clear research brief. The agent's first action is a real npm-registry call (zero overhead when web works) — if that fails, the agent immediately returns the sentinel `STACK_RESEARCH_REQUIRES_MAIN_SESSION` (see `greenfield/agents/stack-researcher.md` § Sentinel and `greenfield/skills/init/references/stack-research-checklist.md` § 0 / § Output).
 
 **Handling the two possible agent outcomes**:
 
@@ -135,14 +135,14 @@ Detect by greping the agent's response for the literal string `STACK_RESEARCH_RE
 1. Tell the user what happened, concisely:
    > "The background research agent doesn't have web access in this session. I'll run the same research checklist in our main conversation so you can see and approve each web call."
 
-2. Read `forge/skills/init/references/stack-research-checklist.md` and run sections 1-7 inline using main-session `WebSearch` and `WebFetch`. Per-call permission prompts will appear to the user; ask them to approve so research can proceed. The checklist is the single source of truth shared with the agent — following it inline produces the same report shape.
+2. Read `greenfield/skills/init/references/stack-research-checklist.md` and run sections 1-7 inline using main-session `WebSearch` and `WebFetch`. Per-call permission prompts will appear to the user; ask them to approve so research can proceed. The checklist is the single source of truth shared with the agent — following it inline produces the same report shape.
 
 3. If the user denies web access entirely, offer a degraded path:
    > "Without web research, I'll use my training data to make stack recommendations, but please verify versions and scaffold CLIs manually before we proceed with scaffolding — my knowledge may be months out of date."
 
-4. Checkpoint the fallback mode in `forge-state.json` under `research.mode = "main-session" | "training-data-only"` so downstream skills know the research provenance.
+4. Checkpoint the fallback mode in `greenfield-state.json` under `research.mode = "main-session" | "training-data-only"` so downstream skills know the research provenance.
 
-5. **Hard-failure path**: if main-session retries also fail (network down, all per-call permissions denied), surface a clear error to the user — do NOT silently proceed with empty research. Forge's downstream phases need at least the basic stack metadata.
+5. **Hard-failure path**: if main-session retries also fail (network down, all per-call permissions denied), surface a clear error to the user — do NOT silently proceed with empty research. Greenfield's downstream phases need at least the basic stack metadata.
 
 Wait for research results (either via agent or main session). Then ask Q2.3 about the scaffold approach, informed by the research findings.
 
@@ -291,7 +291,7 @@ For each parked question:
 3. Report findings to the user with sources
 4. Confirm the final answer (user can accept your research, override with a different decision, or defer even further)
 5. Update `context` with the final answer
-6. Save to `researchFindings.parkedResearch[questionId]` in `forge-state.json`
+6. Save to `researchFindings.parkedResearch[questionId]` in `greenfield-state.json`
 7. Remove the question from `parkedQuestions[]`
 
 Checkpoint after each parked question is resolved. This keeps the research phase resumable too.
@@ -305,7 +305,7 @@ When all parked questions are resolved, set `currentPhase: "phase-2-scaffold"` i
 
 ## Output
 
-**Sanitisation downstream** — free-text fields captured here (`appDescription`, `painPoints.timeSinks`, `painPoints.errorProne`, `painPoints.automationWishes`, and any future free-text wizard field) are sanitised by `forge/skills/tooling-generation/SKILL.md § Sanitise free-text wizard answers` before dispatch to `/onboard:generate`. The sanitiser applies a 5000-character length cap and strips `\r` — defence-in-depth pairing with the `<untrusted-user-input>` framing that `onboard/skills/generate/SKILL.md § Validate` wraps around the values at agent-prompt build time. Context-gathering itself stores raw answers verbatim; do not pre-sanitise here.
+**Sanitisation downstream** — free-text fields captured here (`appDescription`, `painPoints.timeSinks`, `painPoints.errorProne`, `painPoints.automationWishes`, and any future free-text wizard field) are sanitised by `greenfield/skills/tooling-generation/SKILL.md § Sanitise free-text wizard answers` before dispatch to `/onboard:generate`. The sanitiser applies a 5000-character length cap and strips `\r` — defence-in-depth pairing with the `<untrusted-user-input>` framing that `onboard/skills/generate/SKILL.md § Validate` wraps around the values at agent-prompt build time. Context-gathering itself stores raw answers verbatim; do not pre-sanitise here.
 
 After the wizard completes, compile all answers into a structured context object:
 
@@ -384,7 +384,7 @@ Fields that were skipped are set to `null` or omitted.
 
 ## Checkpoint Protocol (for resume support)
 
-This skill MUST write `.claude/forge-state.json` after each Step so that `/forge:resume` can pick up mid-wizard if the session is interrupted. See `skills/init/SKILL.md` for the full state schema.
+This skill MUST write `.claude/greenfield-state.json` after each Step so that `/greenfield:resume` can pick up mid-wizard if the session is interrupted. See `skills/init/SKILL.md` for the full state schema.
 
 ### When to checkpoint
 Write a checkpoint **after each named Step completes** (not after each individual question within a step):
@@ -401,10 +401,10 @@ Write a checkpoint **after each named Step completes** (not after each individua
 | Step 7 complete (Confirmation) | Add `"step-7-confirmation"`, `currentPhase: "phase-2-scaffold"`, `currentStep: "pre-validation"` (handoff to scaffolding skill) |
 
 ### Atomic write
-Always write to `.claude/forge-state.json.tmp` first, then `mv` to `.claude/forge-state.json`. This avoids corrupted state if the session is killed mid-write. If the tmp file exists from a prior interrupted write, remove it before starting.
+Always write to `.claude/greenfield-state.json.tmp` first, then `mv` to `.claude/greenfield-state.json`. This avoids corrupted state if the session is killed mid-write. If the tmp file exists from a prior interrupted write, remove it before starting.
 
 ### Resume entry contract
-When this skill is invoked via `/forge:resume`, it receives a `completedSteps` list. At the start of the flow, check this list and **skip any Step whose identifier is already in `completedSteps`**. Never re-ask questions whose answers are already in the `context` object.
+When this skill is invoked via `/greenfield:resume`, it receives a `completedSteps` list. At the start of the flow, check this list and **skip any Step whose identifier is already in `completedSteps`**. Never re-ask questions whose answers are already in the `context` object.
 
 ### First write (new sessions)
 On the very first checkpoint of a new session, also populate:
@@ -422,4 +422,4 @@ On the very first checkpoint of a new session, also populate:
 4. **Adaptive, not rigid** — The question order is a guide, not a script. If the developer volunteers information, capture it and skip the corresponding question.
 5. **Never ask what you already know** — If Q1.1 reveals the stack, don't re-ask in Q2.
 6. **Recommend with reasoning** — Always explain why you suggest something, referencing research when available.
-7. **Checkpoint after every Step** — Always write `forge-state.json` at Step boundaries so resume works.
+7. **Checkpoint after every Step** — Always write `greenfield-state.json` at Step boundaries so resume works.

@@ -1,4 +1,4 @@
-# Forge Question Bank
+# Greenfield Question Bank
 
 Complete catalog of Phase 1 questions with conditions, options, and downstream effects. The wizard is an adaptive state machine — each answer updates the context object, and subsequent questions check preconditions before being asked.
 
@@ -252,7 +252,7 @@ Each answer updates this context. Questions use the context to determine whether
 
 ### Q5.2: "Should AI tooling update automatically when code changes?"
 - **Type**: Choice
-- **Options**: "Auto-update in real-time" | "Log changes, I'll run /forge:evolve" | "Just notify me"
+- **Options**: "Auto-update in real-time" | "Log changes, I'll run /greenfield:evolve" | "Just notify me"
 - **Condition**: Always (even local projects have local hooks)
 - **Updates**: `autoEvolutionMode`
 

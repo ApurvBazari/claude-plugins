@@ -156,13 +156,13 @@ When `/onboard:verify --sprint N` runs:
 
 ### When to Generate
 
-- **First sprint contract**: Generated during Phase 3 of Forge (along with feature-list.json). Claude proposes, developer negotiates during the handoff step.
+- **First sprint contract**: Generated during Phase 3 of Greenfield (along with feature-list.json). Claude proposes, developer negotiates during the handoff step.
 - **Subsequent sprints**: Generated at sprint boundary. When Sprint N is complete (all verified), Claude proposes Sprint N+1 contract before work begins.
 
 ### Auto-Proposal Logic
 
 Claude generates proposed criteria based on:
-1. **Project context** from forge-meta.json (testing philosophy, security sensitivity, a11y level, perf targets)
+1. **Project context** from greenfield-meta.json (testing philosophy, security sensitivity, a11y level, perf targets)
 2. **Feature categories** in the sprint (auth features → add security criterion)
 3. **Previous sprint** criteria (carry forward what worked, adjust what was too strict/loose)
 

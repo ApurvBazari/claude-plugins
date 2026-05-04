@@ -1,6 +1,6 @@
 ---
 name: scaffold-analyzer
-description: Read-only post-scaffold analysis. Scans a freshly scaffolded project and produces the structured analysis object needed by onboard's headless generation mode. Runs after forge Phase 2 and before Phase 3.
+description: Read-only post-scaffold analysis. Scans a freshly scaffolded project and produces the structured analysis object needed by onboard's headless generation mode. Runs after greenfield Phase 2 and before Phase 3.
 color: green
 ---
 

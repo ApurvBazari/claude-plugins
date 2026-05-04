@@ -1,6 +1,6 @@
 # onboard — Internal Conventions
 
-Interactive wizard that analyzes codebases and generates complete Claude tooling infrastructure. Supports both standalone use (`/onboard:init`) and headless mode for programmatic consumers like Forge.
+Interactive wizard that analyzes codebases and generates complete Claude tooling infrastructure. Supports both standalone use (`/onboard:init`) and headless mode for programmatic consumers like Greenfield.
 
 ## Phased Architecture
 
@@ -25,9 +25,9 @@ Phase 2.5: Plugin Detection ──→ deep probe (siblings + marketplace cache)
      │                          + plugin-surface-probe (closes G.3)
      ▼
 Phase 2.6: Build Onboard Context ──→ init/references/onboard-context-builder.md
-     │                                (same forge-shaped callerExtras forge emits)
+     │                                (same greenfield-shaped callerExtras greenfield emits)
      ▼
-Phase 3: Generation ──→ Skill(onboard:generate)  [same contract as forge]
+Phase 3: Generation ──→ Skill(onboard:generate)  [same contract as greenfield]
      │                   └── config-generator agent (write)
      │                       ├── Core: CLAUDE.md, rules, skills, agents, hooks
      │                       ├── Enriched: CI/CD, harness, evolution, teams (if enabled)
@@ -45,7 +45,7 @@ Phase 4: Handoff ──→ explains generated artifacts, suggests next steps
 
 ## Headless Mode (`onboard:generate`)
 
-External plugins (e.g., Forge) invoke the `generate` skill via the Skill tool, skipping the wizard and analysis. The skill is `user-invocable: false` so it doesn't clutter the user's slash menu.
+External plugins (e.g., Greenfield) invoke the `generate` skill via the Skill tool, skipping the wizard and analysis. The skill is `user-invocable: false` so it doesn't clutter the user's slash menu.
 
 ```
 generate skill (headless)
@@ -93,7 +93,7 @@ User-facing skills (show in `/onboard:` autocomplete):
 
 Internal building blocks (`user-invocable: false` — hidden from menu):
 
-- `generate/SKILL.md` — headless generation API, invoked by forge via Skill tool
+- `generate/SKILL.md` — headless generation API, invoked by greenfield via Skill tool
 - `wizard/SKILL.md` — drives the interactive Q&A (presets: Minimal/Standard/Comprehensive/Custom)
 - `analysis/SKILL.md` — tech stack pattern matching, model recommendations
 - `generation/SKILL.md` — artifact generation logic, core + enriched modes

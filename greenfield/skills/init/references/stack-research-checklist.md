@@ -1,6 +1,6 @@
 # Stack Research Checklist
 
-Single source of truth for the research questions answered during forge Phase 1 Step 2 (Tech Stack). Both the `stack-researcher` agent and `context-gathering/SKILL.md` (when running in main-session fallback mode) follow this checklist verbatim — keeping one document avoids drift between the agent prompt and the inline fallback.
+Single source of truth for the research questions answered during greenfield Phase 1 Step 2 (Tech Stack). Both the `stack-researcher` agent and `context-gathering/SKILL.md` (when running in main-session fallback mode) follow this checklist verbatim — keeping one document avoids drift between the agent prompt and the inline fallback.
 
 When invoked, run all sections in order against the user's stack inputs. Skip a section only if it's clearly not applicable (e.g., skip "Frontend ecosystem" for a backend-only API).
 
@@ -28,7 +28,7 @@ Source preference: official package registry (`registry.npmjs.org`, `pypi.org`, 
 
 For each framework that has an official CLI:
 - Command + most-current flags (e.g., `pnpm create next-app@latest . --ts --tailwind --eslint --app --turbopack`).
-- Whether it has interactive mode AND accepts all options as flags (forge needs the all-flags variant for headless).
+- Whether it has interactive mode AND accepts all options as flags (greenfield needs the all-flags variant for headless).
 - Default choices made (TypeScript on/off, linting, styling, app router vs pages, etc.).
 
 If no official CLI exists, document the conventional alternative (e.g., manual `cargo new` + community template, or `uv init` for Python).

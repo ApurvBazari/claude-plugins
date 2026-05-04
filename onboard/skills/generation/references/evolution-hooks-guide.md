@@ -2,18 +2,18 @@
 
 Patterns for configuring FileChanged and SessionStart hooks that keep AI tooling in sync with the codebase.
 
-> **Scope note**: the base advisory templates for `FileChanged`, `TaskCreated`, and `TaskCompleted` live in [`hooks-guide.md` § Advanced Event Templates](./hooks-guide.md#advanced-event-templates). This guide owns the drift-detection-specific wiring (the `detect-*-changes.sh` scripts and the `.claude/forge-drift.json` format) and the team-mode overrides. When adding a new generic variant of any event, update `hooks-guide.md` — not this file — and cross-reference back here if drift-specific logic needs to layer on top.
+> **Scope note**: the base advisory templates for `FileChanged`, `TaskCreated`, and `TaskCompleted` live in [`hooks-guide.md` § Advanced Event Templates](./hooks-guide.md#advanced-event-templates). This guide owns the drift-detection-specific wiring (the `detect-*-changes.sh` scripts and the `.claude/greenfield-drift.json` format) and the team-mode overrides. When adding a new generic variant of any event, update `hooks-guide.md` — not this file — and cross-reference back here if drift-specific logic needs to layer on top.
 
 ## Hook Architecture
 
 ```
 FileChanged hooks (command-type, fast, no AI)
-  ├── detect-dep-changes.sh     → logs to forge-drift.json
-  ├── detect-config-changes.sh  → logs to forge-drift.json
-  └── detect-structure-changes.sh → logs to forge-drift.json
+  ├── detect-dep-changes.sh     → logs to greenfield-drift.json
+  ├── detect-config-changes.sh  → logs to greenfield-drift.json
+  └── detect-structure-changes.sh → logs to greenfield-drift.json
 
 SessionStart hook (prompt-type, AI-powered)
-  └── reads forge-drift.json, summarizes changes
+  └── reads greenfield-drift.json, summarizes changes
 ```
 
 ## Settings.json Hook Entries
@@ -57,7 +57,7 @@ SessionStart hook (prompt-type, AI-powered)
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Check if .claude/forge-drift.json exists and has entries since the last session. If drift is detected, briefly summarize what changed and suggest the developer run /forge:evolve to update tooling. If no drift, say nothing."
+            "prompt": "Check if .claude/greenfield-drift.json exists and has entries since the last session. If drift is detected, briefly summarize what changed and suggest the developer run /greenfield:evolve to update tooling. If no drift, say nothing."
           }
         ]
       }
@@ -92,7 +92,7 @@ The `--auto-update` flag tells the script to update CLAUDE.md and rules directly
 
 ## Drift File Format
 
-`.claude/forge-drift.json`:
+`.claude/greenfield-drift.json`:
 
 ```json
 {
@@ -129,13 +129,13 @@ The `--auto-update` flag tells the script to update CLAUDE.md and rules directly
 
 ## Merging with Existing Hooks
 
-When adding Forge hooks to settings.json:
+When adding Greenfield hooks to settings.json:
 
 1. Read existing `.claude/settings.json`
 2. Parse the `hooks` object
 3. For each event type (FileChanged, SessionStart):
    - If the event type doesn't exist, add it
-   - If it exists, append Forge's hook entries to the existing array
+   - If it exists, append Greenfield's hook entries to the existing array
    - Never replace existing entries (onboard may have format/lint hooks)
 4. Write back the merged settings
 
@@ -144,7 +144,7 @@ Example merge scenario:
 BEFORE (from onboard):
   hooks.PostToolUse = [{ formatter hook }, { linter hook }]
 
-AFTER (forge adds):
+AFTER (greenfield adds):
   hooks.PostToolUse = [{ formatter hook }, { linter hook }]  ← preserved
   hooks.FileChanged = [{ dep hook }, { config hook }, { structure hook }]  ← added
   hooks.SessionStart = [{ drift summary hook }]  ← added

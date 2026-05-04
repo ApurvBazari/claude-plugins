@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Independent feature verification for projects scaffolded with forge. Use when user wants to test whether features in docs/feature-list.json pass their acceptance criteria, check sprint gate status, or run verification on F001-style feature IDs. Spawns the feature-evaluator agent in worktree isolation.
+description: Independent feature verification for projects scaffolded with greenfield. Use when user wants to test whether features in docs/feature-list.json pass their acceptance criteria, check sprint gate status, or run verification on F001-style feature IDs. Spawns the feature-evaluator agent in worktree isolation.
 ---
 
 # Verify Skill — Independent Feature Evaluation
@@ -11,9 +11,9 @@ You are orchestrating an independent verification of features against the projec
 
 Read `docs/feature-list.json` in the project root. If not found:
 
-> No feature list found. Run `/forge:init` first to scaffold a project with feature tracking.
+> No feature list found. Run `/greenfield:init` first to scaffold a project with feature tracking.
 >
-> Or create `docs/feature-list.json` manually following the format in the Forge documentation.
+> Or create `docs/feature-list.json` manually following the format in the Greenfield documentation.
 
 Stop and do not proceed.
 
@@ -31,13 +31,13 @@ Report to the developer:
 
 > **Verification mode**: [all incomplete / feature F001 / Sprint 1]
 > **Features to test**: [N]
-> **Strategy**: [verificationStrategy from forge-meta.json]
+> **Strategy**: [verificationStrategy from greenfield-meta.json]
 >
 > Starting independent evaluation...
 
 ## Step 2: Load Verification Context
 
-Read `.claude/forge-meta.json` to get the `verificationStrategy` (browser-automation, api-testing, cli-execution, test-runner, or combination).
+Read `.claude/greenfield-meta.json` to get the `verificationStrategy` (browser-automation, api-testing, cli-execution, test-runner, or combination).
 
 If sprint mode, also read `docs/sprint-contracts/sprint-N.json` for the negotiated criteria.
 

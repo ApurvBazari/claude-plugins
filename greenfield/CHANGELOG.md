@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.0.0] (2026-05-04)
+
+### Breaking changes
+
+* **rename:** plugin renamed from `forge` to `greenfield`. The `forge` name was already taken in `anthropics/claude-plugins-community` by an unrelated plugin, blocking publication. `greenfield` is the standard term for new-from-scratch projects and is unique in the community marketplace.
+* **slash commands:** `/forge:init`, `/forge:resume`, `/forge:status` are now `/greenfield:init`, `/greenfield:resume`, `/greenfield:status`.
+* **state files:** `.claude/forge-state.json` → `.claude/greenfield-state.json`, `.claude/forge-meta.json` → `.claude/greenfield-meta.json`. If you have an in-flight session, run `mv .claude/forge-state.json .claude/greenfield-state.json` (and likewise for forge-meta.json) before invoking `/greenfield:resume`.
+* **schema:** `forge-meta.schema.json` → `greenfield-meta.schema.json`; the `$id` URL has changed.
+
+### Migration
+
+Existing v1.x projects scaffolded by `forge` continue to work — the only file-name dependencies are the two state/meta artifacts above. Cross-plugin integration with `onboard` is unchanged: `greenfield` still calls `Skill(onboard:generate)` with the same `callerExtras` shape.
+
 ## [1.1.0](https://github.com/ApurvBazari/claude-plugins/compare/forge-v1.0.0...forge-v1.1.0) (2026-04-19)
 
 

@@ -54,7 +54,7 @@ For empty repos without a prior stub, use `AskUserQuestion` (single-select, head
 
 > This repository has no source code yet. How would you like to proceed?
 >
-> - **Abort** — stop here. Suggestion: run `/forge:init` to scaffold a project and generate tooling in one step.
+> - **Abort** — stop here. Suggestion: run `/greenfield:init` to scaffold a project and generate tooling in one step.
 > - **Placeholder only** — write a minimal CLAUDE.md placeholder (no `.claude/` directory). Useful if you want to set up Claude context before the code exists but don't want a formal tooling setup.
 > - **Generate canonical stub** (default) — create CLAUDE.md, `.claude/settings.json`, and `.claude/onboard-meta.json` in canonical schema with stub-mode markers. Re-run `/onboard:init` later to upgrade to full tooling.
 
@@ -64,7 +64,7 @@ Default: **Generate canonical stub**.
 
 ### Step 0.4: Execute the selected path
 
-- **Abort** → stop the skill. No files written. Optionally invoke `/forge:init` if the developer explicitly asks.
+- **Abort** → stop the skill. No files written. Optionally invoke `/greenfield:init` if the developer explicitly asks.
 - **Placeholder only** → write CLAUDE.md with the placeholder content from the stub procedure (below) but SKIP the `.claude/` directory. Return minimal handoff. Do not proceed to further phases.
 - **Generate canonical stub** (default) → follow `references/empty-repo-stub-procedure.md`. It prescribes: the 3 files, the canonical `onboard-meta.json` schema with all 7 Phase 7 status keys set to `status: "skipped"` + `reason: "stub-mode-no-code"`, dynamic `pluginVersion` resolution (no hardcoded literals), and the 3-file atomic write order.
 
@@ -228,7 +228,7 @@ Inputs already in conversation context:
 - Phase 2.5 plugin detection results (`installedPlugins`, `coveredCapabilities`, `pluginSurfaces`)
 - Project root path (current working directory)
 
-The builder emits a context object shaped like `forge-onboard-context.json` (forge is the reference — its release-gate Phase 5 pass proves the shape works). Key invariants:
+The builder emits a context object shaped like `greenfield-onboard-context.json` (greenfield is the reference — its release-gate Phase 5 pass proves the shape works). Key invariants:
 
 - All 7 callerExtras Phase-7 flags populated explicitly (`disableMCP`, `disableLSP`, `disableBuiltInSkills`, `disableSkillTuning`, `disableAgentTuning`, `disableOutputStyleTuning`, `allowHttpHooks`) — init-path defaults are `false` for all (Phase 7 blocks run fully; interactive confirmation runs).
 - `callerExtras.installedPlugins` and `pluginSurfaces` populated from Phase 2.5 probes.
@@ -263,7 +263,7 @@ The model choice is written into `context.modelChoice` by the Phase 2.6 builder.
 
 ### Step 3.2: Dispatch to Skill(onboard:generate)
 
-**Invoke `Skill(onboard:generate)` with the context object built in Phase 2.6.** This is the same skill forge uses (via `forge:tooling-generation`) — one contract, one validator, one agent-dispatch boundary.
+**Invoke `Skill(onboard:generate)` with the context object built in Phase 2.6.** This is the same skill greenfield uses (via `greenfield:tooling-generation`) — one contract, one validator, one agent-dispatch boundary.
 
 ```
 Skill(
@@ -274,7 +274,7 @@ Skill(
 
 The generate skill then:
 
-1. Validates the context (same rules as forge — see `../generate/SKILL.md` § Validation)
+1. Validates the context (same rules as greenfield — see `../generate/SKILL.md` § Validation)
 2. Dispatches `Agent(config-generator)` with `dispatchedAsAgent: true`
 3. Runs the full generation pipeline (Phase 7a MCP, 7b Output Styles, 7c LSP, 7d Built-in Skills) per `../generation/SKILL.md`
 4. Runs pre-exit self-audit verifying all 7 Phase 7 telemetry keys are present

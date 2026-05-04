@@ -1,14 +1,14 @@
 # Onboard Context Builder — Init-Path Reference
 
-Canonical procedure for building the headless-generation context object from `/onboard:init` wizard answers + analysis + plugin detection. Produces the same shape forge emits via `forge-onboard-context.json`, so init and forge share **one** dispatch contract into `Skill(onboard:generate) → config-generator` agent.
+Canonical procedure for building the headless-generation context object from `/onboard:init` wizard answers + analysis + plugin detection. Produces the same shape greenfield emits via `greenfield-onboard-context.json`, so init and greenfield share **one** dispatch contract into `Skill(onboard:generate) → config-generator` agent.
 
 ## Why this reference exists
 
-The 2026-04-17 release-gate sweep found 7 blocker-class bugs (B1, B5, B6, B8, B10, B12, B13) clustered in init's context construction. Phase 5 (forge) ran the same generator and produced zero bugs — proving the generator is correct when given a properly-formed context.
+The 2026-04-17 release-gate sweep found 7 blocker-class bugs (B1, B5, B6, B8, B10, B12, B13) clustered in init's context construction. Phase 5 (greenfield) ran the same generator and produced zero bugs — proving the generator is correct when given a properly-formed context.
 
 **Root cause**: init was assembling a *subset* of the expected `callerExtras` structure and passing it via an ad-hoc prompt to the `config-generator` agent. Fields the generator expected but didn't receive fell into "absent-field" skip branches (MCP skipped, snapshot coupling broken, plugin detection shallow, LSP silently dropped, CLAUDE.md sections missing).
 
-**Fix**: all init preset paths (Custom / Standard / Minimal) call the procedure below to emit the full shape. Stub mode (Phase 0, empty-repo) emits a canonical-shape variant per `../references/empty-repo-stub-procedure.md`. Dispatch goes through `Skill(onboard:generate)` — the same path forge uses — so validation + agent dispatch live in one place.
+**Fix**: all init preset paths (Custom / Standard / Minimal) call the procedure below to emit the full shape. Stub mode (Phase 0, empty-repo) emits a canonical-shape variant per `../references/empty-repo-stub-procedure.md`. Dispatch goes through `Skill(onboard:generate)` — the same path greenfield uses — so validation + agent dispatch live in one place.
 
 ## When to invoke this procedure
 
@@ -47,9 +47,9 @@ Matches `generate/SKILL.md` Step 1 § Required Context Structure. All fields pop
 
   "enriched": {
     "enableCICD":           <boolean>,  // derived: wizardAnswers.willDeploy && wizardAnswers.ciPreference !== "none"
-    "enableHarness":        false,      // init-path default; forge sets true for scaffolded projects
+    "enableHarness":        false,      // init-path default; greenfield sets true for scaffolded projects
     "enableEvolution":      true,       // default on; overridden only when wizardAnswers.evolutionPref === "none"
-    "enableSprintContracts": false,     // init-path default; forge-specific enriched artifact
+    "enableSprintContracts": false,     // init-path default; greenfield-specific enriched artifact
     "enableTeams":          <boolean>,  // derived: wizardAnswers.teamSize !== "solo" && wizardAnswers.isProduction === true
     "enableVerification":   true,       // default on
     "willDeploy":           <boolean>,  // from wizardAnswers
@@ -120,9 +120,9 @@ modelChoice = wizardAnswers.skillTuning?.defaultModel
 | Flag | Derivation | Init-path default |
 |---|---|---|
 | `enableCICD` | `wizardAnswers.willDeploy && wizardAnswers.ciPreference !== "none"` | varies |
-| `enableHarness` | — | **false** (harness is forge-specific; not emitted in init) |
+| `enableHarness` | — | **false** (harness is greenfield-specific; not emitted in init) |
 | `enableEvolution` | — | **true** (always on; adds drift-detection hooks) |
-| `enableSprintContracts` | — | **false** (forge-specific) |
+| `enableSprintContracts` | — | **false** (greenfield-specific) |
 | `enableTeams` | `wizardAnswers.teamSize !== "solo" && wizardAnswers.isProduction` | varies |
 | `enableVerification` | — | **true** (always on) |
 | `willDeploy` | `wizardAnswers.willDeploy` | varies |
@@ -223,7 +223,7 @@ Do NOT proceed to dispatch with invalid context.
 
 ## Dispatch contract
 
-After Step 6 passes, init's Phase 3 invokes `Skill(onboard:generate)` with the context object as the single argument. The generate skill validates again (same contract as forge), then dispatches `Agent(config-generator)` with `dispatchedAsAgent: true`.
+After Step 6 passes, init's Phase 3 invokes `Skill(onboard:generate)` with the context object as the single argument. The generate skill validates again (same contract as greenfield), then dispatches `Agent(config-generator)` with `dispatchedAsAgent: true`.
 
 ```
 init Phase 3
@@ -287,6 +287,6 @@ Every default is populated explicitly — downstream generation should never nee
 
 1. **Single source of truth**: every init preset (Custom / Standard / Minimal) calls THIS procedure. Do not maintain preset-specific context builders — that's the drift that caused the original bugs.
 2. **Populate all top-level keys** — never leave `callerExtras.disableMCP` (etc.) undefined. Explicit `false` is the closing-B1 invariant.
-3. **Dispatch via `Skill(onboard:generate)`** — never call `Agent(config-generator)` directly from init. The Skill tool is the contract boundary that both init and forge share.
-4. **Forge shape is the reference** — when in doubt about field semantics, match what `forge/skills/tooling-generation/SKILL.md § Step 1` emits. That path is release-gate-verified clean (Phase 5, 2026-04-17).
+3. **Dispatch via `Skill(onboard:generate)`** — never call `Agent(config-generator)` directly from init. The Skill tool is the contract boundary that both init and greenfield share.
+4. **Greenfield shape is the reference** — when in doubt about field semantics, match what `greenfield/skills/tooling-generation/SKILL.md § Step 1` emits. That path is release-gate-verified clean (Phase 5, 2026-04-17).
 5. **Stub mode is separate** — empty-repo stubs follow `../references/empty-repo-stub-procedure.md`, not this builder. The builder assumes analysis + wizard have produced real data.

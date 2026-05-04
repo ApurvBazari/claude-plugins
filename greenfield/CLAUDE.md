@@ -1,11 +1,11 @@
-# forge — Internal Conventions
+# greenfield — Internal Conventions
 
 Scaffolds new projects with AI-native, auto-evolving Claude Code tooling. Three-phase flow: Context Gathering → Scaffold → AI Tooling. Delegates tooling generation to onboard's enriched headless mode.
 
 ## Architecture
 
 ```
-/forge:init
+/greenfield:init
      │
      ▼
 Phase 1: Context Gathering ──→ context-gathering skill (adaptive wizard)
@@ -20,7 +20,7 @@ Phase 3: AI Tooling
      ├── Onboard Headless ──→ /onboard:generate (enriched mode)
      │                         ├── Core: CLAUDE.md, rules, skills, agents, hooks
      │                         └── Enriched: CI/CD, harness, evolution, teams, verification
-     ├── Forge-only artifacts:
+     ├── Greenfield-only artifacts:
      │   ├── init.sh (stack-specific env bootstrap)
      │   └── docs/feature-list.json (from Phase 1 decomposition)
      │
@@ -29,11 +29,11 @@ Phase 3: AI Tooling
 
 ## Dependency on Onboard
 
-Forge is a thin orchestrator. Onboard does ALL tooling generation via its `generate` skill (invoked through the Skill tool as `onboard:generate`):
+Greenfield is a thin orchestrator. Onboard does ALL tooling generation via its `generate` skill (invoked through the Skill tool as `onboard:generate`):
 - Core: CLAUDE.md, rules, skills, agents, hooks, PR template
 - Enriched: CI/CD pipelines, harness guide, evolution hooks, sprint contracts, team support
 
-Forge only generates two artifacts that require scaffold-specific knowledge:
+Greenfield only generates two artifacts that require scaffold-specific knowledge:
 - `init.sh` — stack-specific install + dev server command (from scaffold output)
 - `docs/feature-list.json` — feature decomposition from Phase 1 app description
 
@@ -51,10 +51,10 @@ Forge only generates two artifacts that require scaffold-specific knowledge:
 
 ## Skills
 
-User-facing skills (show in `/forge:` autocomplete):
+User-facing skills (show in `/greenfield:` autocomplete):
 
 - `init/SKILL.md` — full 3-phase flow (context → scaffold → AI tooling). Checks for in-flight state at startup and offers resume. (`disable-model-invocation: true`)
-- `resume/SKILL.md` — resume an in-progress forge session from the last checkpoint in `.claude/forge-state.json` (auto-invocable)
+- `resume/SKILL.md` — resume an in-progress greenfield session from the last checkpoint in `.claude/greenfield-state.json` (auto-invocable)
 - `status/SKILL.md` — project health check; also reports in-flight session state if present (auto-invocable)
 
 Internal building blocks (`user-invocable: false`):
@@ -64,11 +64,11 @@ Internal building blocks (`user-invocable: false`):
 - `plugin-discovery/SKILL.md` — Phase 3a plugin catalog match + install
 - `tooling-generation/SKILL.md` — Phase 3b delegation to `onboard:generate`
 
-Note: `/forge:verify`, `/forge:evolve` are now `/onboard:verify`, `/onboard:evolve` (universally available, not Forge-specific).
+Note: `/greenfield:verify`, `/greenfield:evolve` are now `/onboard:verify`, `/onboard:evolve` (universally available, not Greenfield-specific).
 
 ## Script Conventions
 
-- `detect-scaffold-cli.sh` — the only Forge-specific script (checks available scaffold CLIs)
+- `detect-scaffold-cli.sh` — the only Greenfield-specific script (checks available scaffold CLIs)
 - All other scripts (drift detection, audit) live in onboard
 
 ## Key Patterns
@@ -79,15 +79,15 @@ Note: `/forge:verify`, `/forge:evolve` are now `/onboard:verify`, `/onboard:evol
 - Web research: stack-researcher agent searches for latest versions and best practices before scaffolding, with main-session fallback when sub-agent web tools are denied
 - Feature decomposition: mandatory — downstream phases depend on `docs/feature-list.json` existing
 - Plugin-aware generation: coveredCapabilities passed to onboard, prevents agent shadowing
-- Forge metadata: `.claude/forge-meta.json` records all context, decisions, and generated artifacts (post-scaffold). Schema is the single source of truth at `forge/skills/tooling-generation/references/forge-meta.schema.json` — tooling-generation Step 4 validates against it before write. As of the 2026-04-16 release-gate L5 alignment, everything lives under `generated.toolingFlags` (tooling/cicd/harness/installedPlugins/coveredCapabilities/qualityGates/phaseSkills + the seven status mirrors). The earlier `generated.tooling` / `generated.cicd` / `generated.harness` sibling keys are removed; old-shape projects heal on next regeneration (no auto-migration).
-- **Forge state: `.claude/forge-state.json` persists in-flight progress** for `/forge:resume`. Checkpoint after every skill Step. Atomic write via `.tmp` + rename.
+- Greenfield metadata: `.claude/greenfield-meta.json` records all context, decisions, and generated artifacts (post-scaffold). Schema is the single source of truth at `greenfield/skills/tooling-generation/references/greenfield-meta.schema.json` — tooling-generation Step 4 validates against it before write. As of the 2026-04-16 release-gate L5 alignment, everything lives under `generated.toolingFlags` (tooling/cicd/harness/installedPlugins/coveredCapabilities/qualityGates/phaseSkills + the seven status mirrors). The earlier `generated.tooling` / `generated.cicd` / `generated.harness` sibling keys are removed; old-shape projects heal on next regeneration (no auto-migration).
+- **Greenfield state: `.claude/greenfield-state.json` persists in-flight progress** for `/greenfield:resume`. Checkpoint after every skill Step. Atomic write via `.tmp` + rename.
 - **Scaffold modes**: `full` (default — complete scaffold, then AI tooling) vs `walking-skeleton` (minimal scaffold → AI tooling → expand). Walking skeleton is for stacks without a mature CLI or with complex architecture.
 
 ## Platform Coverage
 
-Forge's approach varies by stack maturity. Be honest about which stacks are verified vs experimental:
+Greenfield's approach varies by stack maturity. Be honest about which stacks are verified vs experimental:
 
-| Stack family | Forge approach | Mode | Confidence |
+| Stack family | Greenfield approach | Mode | Confidence |
 |---|---|---|---|
 | Next.js App Router | `create-next-app` CLI + onboard patterns | `full` | Verified |
 | Python FastAPI | `uv init` or manual scaffold + onboard | `full` | Verified |
@@ -100,7 +100,7 @@ Forge's approach varies by stack maturity. Be honest about which stacks are veri
 | **Android (Kotlin + Compose)** | No CLI; anchor to sibling project if available, else walking skeleton | `walking-skeleton` | **Experimental** |
 | **iOS (Swift + SwiftUI)** | No CLI; walking skeleton with SPM setup | `walking-skeleton` | **Experimental** |
 | Desktop (Tauri, Electron) | Partial CLI coverage; may use walking skeleton | Either | Experimental |
-| Game engines (Unity, Godot, Bevy) | No standard forge path; walking skeleton per engine | `walking-skeleton` | Experimental |
+| Game engines (Unity, Godot, Bevy) | No standard greenfield path; walking skeleton per engine | `walking-skeleton` | Experimental |
 | Custom / unusual stacks | Research-driven walking skeleton | `walking-skeleton` | Experimental |
 
 **Rule of thumb**: if the stack has an official `create-*` or `init` CLI that produces a runnable starter app, use `full` mode. If it doesn't, or if the architecture is substantially different from a web/server project, use `walking-skeleton`.
@@ -109,6 +109,6 @@ Forge's approach varies by stack maturity. Be honest about which stacks are veri
 
 - **Silent failure on research** — if `stack-researcher` can't reach the web, fall back to main-session research with user-visible permission prompts. Never quietly fail and pretend you researched.
 - **Skipping feature decomposition** — it's mandatory. Downstream phases depend on `docs/feature-list.json` existing.
-- **Re-invoking onboard on partial output** — if a forge session was killed mid-`/onboard:generate`, ask before retrying (onboard's state file may be inconsistent).
+- **Re-invoking onboard on partial output** — if a greenfield session was killed mid-`/onboard:generate`, ask before retrying (onboard's state file may be inconsistent).
 - **Auto-cleaning partial scaffolds** — never delete files the user might want to inspect. Always ask first.
-- **Writing state directly** — always write to `forge-state.json.tmp` then rename, to avoid corruption on interrupt.
+- **Writing state directly** — always write to `greenfield-state.json.tmp` then rename, to avoid corruption on interrupt.

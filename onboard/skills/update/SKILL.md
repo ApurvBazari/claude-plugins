@@ -88,7 +88,7 @@ Detect three classes of drift that the preceding steps don't cover. Each class f
 
 Follow `../generation/references/plugin-drift-detection.md` for the full procedure. Summary for update:
 
-1. **Resolve baseline** using the caller order for `update`: first `.claude/onboard-meta.json.detectedPlugins.installedPlugins`, then `.claude/onboard-meta.json.callerExtras.installedPlugins`, then `.claude/forge-meta.json.generated.toolingFlags.installedPlugins`, else empty.
+1. **Resolve baseline** using the caller order for `update`: first `.claude/onboard-meta.json.detectedPlugins.installedPlugins`, then `.claude/onboard-meta.json.callerExtras.installedPlugins`, then `.claude/greenfield-meta.json.generated.toolingFlags.installedPlugins`, else empty.
 2. **Probe current state** against the Known Plugin Probe List in `../generation/references/plugin-detection-guide.md`. Also probe any plugin in the baseline that isn't in the known list.
 3. **Compute diff** — produce the `driftReport` object described in `plugin-drift-detection.md` § Output Schema.
 4. **Note the baseline source**. If the baseline was empty, flag the findings section with "Plugin Integration not tracked before — all detected plugins offered as new additions."
@@ -269,7 +269,7 @@ Organize findings into categories:
 > - **Agent Teams**: [configured / not applicable]
 >
 > ### Plugin Drift (from Step 4b.1)
-> _Baseline source: [onboard-meta / forge-meta / none]_
+> _Baseline source: [onboard-meta / greenfield-meta / none]_
 > - **Newly installed since baseline**: [plugin names, or "none"]
 > - **Removed since baseline**: [plugin names, or "none"]
 > - Impact: refresh Plugin Integration section in CLAUDE.md, add/remove quality-gate hook scripts, update `phaseSkills`.
@@ -568,7 +568,7 @@ Update `.claude/onboard-meta.json`:
 - **If output style drift was applied in Step 7** — refresh top-level `outputStyleStatus.frontmatterFields[<style>]` to match the applied state, including the refreshed `source` value (`user-confirmed` / `user-tweaked` / `wizard-default` for legacy migrations). Update `.claude/onboard-output-style-snapshot.json` to reflect the new baseline. Keep `outputStyleStatus.existedPreOnboard[]` sticky. Append `legacy-skipped:<style>` or `legacy-no-archetype-match:<style>` entries to `outputStyleStatus.warnings` for any `legacyNoFrontmatter` declined or unclassifiable. Preserve `outputStyleStatus.activationDefault`, `settingsLocalWritten`, and `settingsLocalWarning` from the prior state — `update` does NOT touch settings.local.json.
 - **If LSP drift was applied in Step 7** — refresh top-level `lspStatus`: append newly-installed plugins to `lspStatus.accepted[]` and `lspStatus.generated[]`, merge install-script results into `lspStatus.autoInstalled[]` and `lspStatus.autoInstallFailed[]`. Update `.claude/onboard-lsp-snapshot.json` (both `recommended` and `accepted`) to reflect the new baseline. `lspStatus.skipped[]` is preserved from prior runs — never rewritten during update.
 - **If built-in skills drift was applied in Step 7** — refresh top-level `builtInSkillsStatus`: append newly-accepted skills to `builtInSkillsStatus.generated[]`, update `detectionSignals` for new entries. Update `.claude/onboard-builtin-skills-snapshot.json` (both `recommended` and `accepted`) to reflect the new baseline, preserving alphabetical sort. `builtInSkillsStatus.skipped[]` is preserved from prior runs — never rewritten during update.
-- **Forge-meta mirror (scoped)** — If the project also maintains `.claude/forge-meta.json`, update ONLY these fields to match: `generated.toolingFlags.installedPlugins`, `generated.toolingFlags.coveredCapabilities`, `generated.toolingFlags.qualityGates`, `generated.toolingFlags.phaseSkills`, `generated.toolingFlags.hookStatus`. Read-modify-write the file: preserve every other key (`context.*`, `scaffold.*`, `lastRun`, `pluginVersion`, any caller-specific fields) verbatim. Never rewrite the whole file; never touch `context.autonomyLevel` or any other non-toolingFlags subtree — forge owns those. If `forge-meta.json` is absent, skip this step silently.
+- **Greenfield-meta mirror (scoped)** — If the project also maintains `.claude/greenfield-meta.json`, update ONLY these fields to match: `generated.toolingFlags.installedPlugins`, `generated.toolingFlags.coveredCapabilities`, `generated.toolingFlags.qualityGates`, `generated.toolingFlags.phaseSkills`, `generated.toolingFlags.hookStatus`. Read-modify-write the file: preserve every other key (`context.*`, `scaffold.*`, `lastRun`, `pluginVersion`, any caller-specific fields) verbatim. Never rewrite the whole file; never touch `context.autonomyLevel` or any other non-toolingFlags subtree — greenfield owns those. If `greenfield-meta.json` is absent, skip this step silently.
 - Add an `updateHistory` array entry:
 
 ```json
