@@ -67,7 +67,7 @@ These plugins reinforce the discipline of *thinking before coding* — both for 
 
 ### Documentation Rigor (hasDocsDiscipline = true)
 
-For projects following an ADR-driven or jamakhata-style `docs/` discipline.
+For projects following an ADR-driven or structured design-doc `docs/` discipline.
 
 | Plugin | Source | Condition | What it does |
 |---|---|---|---|
@@ -99,7 +99,7 @@ The catalog's condition expressions reference these context flags. Most are popu
 | `willDeploy` | Q3.4 (deploy target ≠ "none") | `false` | VCS row |
 | `securitySensitivity` | Q4.4 | `"baseline"` | Security row |
 | `testingPhilosophy` | Q4.3 | `"pragmatic"` | Testing row |
-| `hasDocsDiscipline` | Q4.5 (workflow preferences) — `true` if user mentions ADRs, CONTEXT.md, or jamakhata layout, OR if `hasTeam: true` AND `isProduction: true` | `false` | Documentation Rigor row |
+| `hasDocsDiscipline` | Q4.5 (workflow preferences) — `true` if user mentions ADRs, CONTEXT.md, or a structured design-doc workflow, OR if `hasTeam: true` AND `isProduction: true` | `false` | Documentation Rigor row |
 | `wantsValidationGate` | Defaults to `true` for `isProduction: true` projects; user can opt out during the plugin-discovery checklist | `isProduction` | gates whether greenfield's Phase 1.7 grill-spec runs by default |
 
 ### Priority Order in Checklist

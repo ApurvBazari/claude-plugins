@@ -78,7 +78,7 @@ Before scaffolding, check the parent directory for similar existing projects tha
 
 5. If no siblings are found, proceed normally.
 
-**Why this matters**: during the jamakhata session that produced this feature, the sibling `notifyguard` project was the version anchor for Gradle, Kotlin, Hilt, Room, and Compose — saving hours of research and ensuring consistency across the developer's own projects. Without sibling detection, the user would have had to manually tell us about `notifyguard`.
+**Why this matters**: When a developer maintains multiple projects on the same stack, an existing sibling can serve as a version anchor — saving hours of researching current versions and keeping dependencies consistent across their own projects.
 
 **Limits**: do NOT anchor to sibling projects that are very old (check `git log` for recent activity), that use conflicting styles, or that the developer explicitly says are experiments they don't want to replicate. When in doubt, ask.
 
