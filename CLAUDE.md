@@ -1,6 +1,6 @@
 # claude-plugins
 
-Claude Code plugin marketplace by Apurv Bazari. Three plugins — all markdown + shell + JSON, no compiled code.
+Claude Code plugin marketplace by Apurv Bazari. Four plugins — all markdown + shell + JSON, no compiled code.
 
 ## Repository
 
@@ -23,9 +23,15 @@ Claude Code plugin marketplace by Apurv Bazari. Three plugins — all markdown +
          │      │           tooling-generation, plugin-discovery, lifecycle-setup)
          │      └── agents/ (stack-researcher, scaffold-analyzer)
          │
-         └──→ notify/                    ← cross-platform system notifications
-                ├── skills/ (setup, status, uninstall, wizard)
-                └── scripts/ (notify, install-notifier, test-notification)
+         ├──→ notify/                    ← cross-platform system notifications
+         │      ├── skills/ (setup, status, uninstall, wizard)
+         │      └── scripts/ (notify, install-notifier, test-notification)
+         │
+         └──→ mattpocock-skills/          ← vendored subset of mattpocock/skills (MIT)
+                ├── skills/ (grill-me, grill-with-docs, setup-matt-pocock-skills,
+                │           triage, prototype, zoom-out, handoff,
+                │           improve-codebase-architecture)
+                └── scripts/ (sync-from-upstream)
 ```
 
 ## Plugin Structure Convention

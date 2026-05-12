@@ -1,0 +1,21 @@
+{
+  "name": "mattpocock-skills",
+  "version": "0.1.0",
+  "description": "Curated subset of Matt Pocock's engineering skills — vendored for use in Claude Code marketplaces. Includes grill-me, grill-with-docs, setup, triage, prototype, zoom-out, handoff, and improve-codebase-architecture.",
+  "author": {
+    "name": "Matt Pocock (upstream)",
+    "url": "https://github.com/mattpocock/skills"
+  },
+  "repository": "https://github.com/ApurvBazari/claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "engineering-skills",
+    "grill-me",
+    "spec-validation",
+    "planning",
+    "triage",
+    "prototype",
+    "handoff",
+    "vendored"
+  ]
+}

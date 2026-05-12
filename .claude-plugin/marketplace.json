@@ -70,6 +70,23 @@
         "workflow-automation"
       ],
       "license": "MIT"
+    },
+    {
+      "name": "mattpocock-skills",
+      "source": "./mattpocock-skills",
+      "description": "Curated subset of Matt Pocock's engineering skills (grill-me, grill-with-docs, triage, prototype, etc.) — vendored from upstream mattpocock/skills with MIT attribution preserved",
+      "version": "0.1.0",
+      "keywords": [
+        "engineering-skills",
+        "grill-me",
+        "spec-validation",
+        "planning",
+        "triage",
+        "prototype",
+        "handoff",
+        "vendored"
+      ],
+      "license": "MIT"
     }
   ]
 }
