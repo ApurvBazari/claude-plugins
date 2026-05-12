@@ -2,82 +2,96 @@
 
 Vetted Claude Code plugins organized by category with matching rules. Use this catalog to generate recommendations based on the developer's project context.
 
+## Marketplace column schema
+
+Every plugin row has a **Marketplace** column with the install identifier and marketplace-add source. Format:
+
+```
+`<plugin-name>@<marketplace-name>` _(add: `<owner/repo or URL>`; <optional attribution>)_
+```
+
+The `plugin-discovery` skill parses this column directly to drive the install sequence:
+1. Collect each unique `add: <source>` value → run `claude plugin marketplace add <source>` (idempotent).
+2. For each selected plugin → run `claude plugin install <plugin-name>@<marketplace-name> --scope user`.
+
+Entries marked `@TODO-verify-marketplace` are awaiting first-use verification — the skill must flag these to the user as "marketplace source unconfirmed; verify or skip" rather than attempt blind install.
+
 ## Universal Plugins (always recommend)
 
-| Plugin | Source | What it does | Key commands |
+| Plugin | Marketplace | What it does | Key commands |
 |---|---|---|---|
-| **superpowers** | Community (obra) | Planning, TDD, debugging, code review, parallel agents | `/plan`, `/tdd`, `/debug` |
-| **commit-commands** | Official (Anthropic) | Git workflow automation | `/commit`, `/commit-push-pr` |
-| **security-guidance** | Official (Anthropic) | Hook-based security warnings on file edits | (passive hook) |
-| **hookify** | Official (Anthropic) | Create behavioral guardrails from natural language | `/hookify` |
-| **claude-md-management** | Official (Anthropic) | Audit and improve CLAUDE.md quality over time | `/revise-claude-md` |
-| **notify** | In-repo (apurvbazari) | Cross-platform system notifications when Claude finishes tasks or needs attention | `/notify:setup`, `/notify:status` |
+| **superpowers** | `superpowers@claude-plugins-official` _(add: `anthropics/claude-plugins-official`; community origin: obra)_ | Planning, TDD, debugging, code review, parallel agents | `/plan`, `/tdd`, `/debug` |
+| **commit-commands** | `commit-commands@claude-plugins-official` _(add: `anthropics/claude-plugins-official`)_ | Git workflow automation | `/commit`, `/commit-push-pr` |
+| **security-guidance** | `security-guidance@claude-plugins-official` _(add: `anthropics/claude-plugins-official`)_ | Hook-based security warnings on file edits | (passive hook) |
+| **hookify** | `hookify@claude-plugins-official` _(add: `anthropics/claude-plugins-official`)_ | Create behavioral guardrails from natural language | `/hookify` |
+| **claude-md-management** | `claude-md-management@claude-plugins-official` _(add: `anthropics/claude-plugins-official`)_ | Audit and improve CLAUDE.md quality over time | `/revise-claude-md` |
+| **notify** | `notify@apurvbazari-plugins` _(add: `apurvbazari/claude-plugins`)_ | Cross-platform system notifications when Claude finishes tasks or needs attention | `/notify:setup`, `/notify:status` |
 
 ### Planning Rigor (Universal)
 
 These plugins reinforce the discipline of *thinking before coding* — both for greenfield's own pre-scaffold gate and for downstream feature work in the scaffolded project.
 
-| Plugin | Source | What it does | Key skills |
+| Plugin | Marketplace | What it does | Key skills |
 |---|---|---|---|
-| **grill-me** (mattpocock-skills) | Community (mattpocock) | Relentless interview that walks every decision branch in a plan until shared understanding is reached. Drives greenfield's Phase 1.7 grill-spec gate when installed. | `grill-me` |
-| **andrej-karpathy-skills** | Community (forrestchang) | Bakes Karpathy's 4 LLM-coding principles (Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven Execution) into Claude Code as a CLAUDE.md-merge skill | `karpathy-guidelines` |
+| **grill-me** (mattpocock-skills) | `grill-me@TODO-verify-marketplace` _(add source unverified; upstream: mattpocock)_ | Relentless interview that walks every decision branch in a plan until shared understanding is reached. Drives greenfield's Phase 1.7 grill-spec gate when installed. | `grill-me` |
+| **andrej-karpathy-skills** | `andrej-karpathy-skills@TODO-verify-marketplace` _(add source unverified; upstream: forrestchang)_ | Bakes Karpathy's 4 LLM-coding principles (Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven Execution) into Claude Code as a CLAUDE.md-merge skill | `karpathy-guidelines` |
 
 ## Stack-Conditional Plugins
 
 ### Frontend (hasFrontend = true)
 
-| Plugin | Source | Condition | What it does |
+| Plugin | Marketplace | Condition | What it does |
 |---|---|---|---|
-| **frontend-design** | Official (Anthropic) | Any frontend project | Creative, production-grade UI development |
-| **playwright** | Official directory (Microsoft) | Web app + testing enabled | Browser automation and E2E testing |
+| **frontend-design** | `frontend-design@claude-plugins-official` _(add: `anthropics/claude-plugins-official`)_ | Any frontend project | Creative, production-grade UI development |
+| **playwright** | `playwright@claude-plugins-official` _(add: `anthropics/claude-plugins-official`; upstream: Microsoft)_ | Web app + testing enabled | Browser automation and E2E testing |
 
 ### API / Backend (hasAPI = true OR hasBackend = true)
 
-| Plugin | Source | Condition | What it does |
+| Plugin | Marketplace | Condition | What it does |
 |---|---|---|---|
-| **feature-dev** | Official (Anthropic) | Any project with features to build | Guided 7-phase feature development |
+| **feature-dev** | `feature-dev@claude-plugins-official` _(add: `anthropics/claude-plugins-official`)_ | Any project with features to build | Guided 7-phase feature development |
 
 ### Database (hasDatabase = true)
 
-| Plugin | Source | Condition | What it does |
+| Plugin | Marketplace | Condition | What it does |
 |---|---|---|---|
-| **context7** | Official directory (Upstash) | Uses ORM or external libraries | Up-to-date, version-specific docs lookup |
+| **context7** | `context7@claude-plugins-official` _(add: `anthropics/claude-plugins-official`; upstream: Upstash)_ | Uses ORM or external libraries | Up-to-date, version-specific docs lookup |
 
 ### Security (securitySensitivity = "elevated" OR "high")
 
-| Plugin | Source | Condition | What it does |
+| Plugin | Marketplace | Condition | What it does |
 |---|---|---|---|
-| **Trail of Bits skills** | Community | Elevated+ security | Professional security auditing (CodeQL, Semgrep) |
+| **Trail of Bits skills** | `trail-of-bits-skills@TODO-verify-marketplace` _(add source unverified; upstream: Trail of Bits)_ | Elevated+ security | Professional security auditing (CodeQL, Semgrep) |
 
 ## Workflow-Conditional Plugins
 
 ### Version Control (willDeploy = true)
 
-| Plugin | Source | Condition | What it does |
+| Plugin | Marketplace | Condition | What it does |
 |---|---|---|---|
-| **github** | Official directory (GitHub) | Uses GitHub | Full GitHub API: PRs, issues, Actions, releases |
-| **gitlab** | Official directory (GitLab) | Uses GitLab | Full GitLab API: MRs, CI/CD, issues |
+| **github** | `github@claude-plugins-official` _(add: `anthropics/claude-plugins-official`)_ | Uses GitHub | Full GitHub API: PRs, issues, Actions, releases |
+| **gitlab** | `gitlab@TODO-verify-marketplace` _(add source unverified; not yet present in `claude-plugins-official` at last check)_ | Uses GitLab | Full GitLab API: MRs, CI/CD, issues |
 
 ### Code Review (hasTeam = true)
 
-| Plugin | Source | Condition | What it does |
+| Plugin | Marketplace | Condition | What it does |
 |---|---|---|---|
-| **code-review** | Official (Anthropic) | Team project | Multi-agent confidence-scored code review |
-| **pr-review-toolkit** | Official (Anthropic) | Team + formal PR process | Specialized review agents (tests, types, errors) |
+| **code-review** | `code-review@claude-plugins-official` _(add: `anthropics/claude-plugins-official`)_ | Team project | Multi-agent confidence-scored code review |
+| **pr-review-toolkit** | `pr-review-toolkit@claude-plugins-official` _(add: `anthropics/claude-plugins-official`)_ | Team + formal PR process | Specialized review agents (tests, types, errors) |
 
 ### Documentation Rigor (hasDocsDiscipline = true)
 
 For projects following an ADR-driven or structured design-doc `docs/` discipline.
 
-| Plugin | Source | Condition | What it does |
+| Plugin | Marketplace | Condition | What it does |
 |---|---|---|---|
-| **grill-with-docs** (mattpocock-skills) | Community (mattpocock) | hasDocsDiscipline = true | Requirements interview that maintains ADRs and CONTEXT.md alongside design decisions |
+| **grill-with-docs** (mattpocock-skills) | `grill-with-docs@TODO-verify-marketplace` _(add source unverified; upstream: mattpocock)_ | hasDocsDiscipline = true | Requirements interview that maintains ADRs and CONTEXT.md alongside design decisions |
 
 ### Testing (testingPhilosophy = "tdd")
 
-| Plugin | Source | Condition | What it does |
+| Plugin | Marketplace | Condition | What it does |
 |---|---|---|---|
-| **superpowers** | Community (obra) | TDD selected | Includes TDD workflow skill (already in universal) |
+| **superpowers** | `superpowers@claude-plugins-official` _(see Universal Plugins row above)_ | TDD selected | Includes TDD workflow skill (already in universal) |
 
 ## Matching Algorithm
 

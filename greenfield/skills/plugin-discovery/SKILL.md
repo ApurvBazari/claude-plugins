@@ -83,28 +83,121 @@ If no, skip to Step 4.
 
 ## Step 4: Install Selected Plugins
 
-For each selected plugin, install using the Claude Code plugin management commands:
+Use the shell-level Claude Code CLI — `/plugin` slash commands cannot be invoked from a skill, but `claude plugin …` Bash commands can.
+
+### 4.1 — Build the install plan
+
+For each plugin in the user's selected set, read its row in `references/plugin-catalog.md` and extract:
+- `installId` — the `<name>@<marketplace>` token inside backticks in the Marketplace column.
+- `marketplaceSource` — the value after `add: \`` in the same cell.
+
+Filter out any plugin whose `installId` ends in `@TODO-verify-marketplace`. For each filtered-out plugin, tell the user:
+
+> Skipping `<plugin-name>` — its marketplace source is unverified in the catalog. To install manually, see the catalog row and verify the source repo, then re-run plugin discovery.
+
+### 4.2 — Add marketplaces (idempotent)
+
+Collect the unique set of `marketplaceSource` values from the plan. For each one, run:
 
 ```bash
-claude plugin install [plugin-name]
+claude plugin marketplace add <marketplaceSource>
 ```
 
-Report success or failure for each installation.
+Record exit code. A non-zero exit blocks every plugin that depends on this marketplace — mark those plugins as `installStatus: "marketplace-add-failed"` and continue with the remaining marketplaces.
+
+### 4.3 — Install plugins
+
+For each plugin whose marketplace was added successfully:
+
+```bash
+claude plugin install <installId> --scope user
+```
+
+Record exit code per plugin. Non-zero exit → `installStatus: "install-failed"`. Continue with the next plugin; do not abort the batch.
+
+The default scope is `user` (matches `/plugin install`'s slash default). A future enhancement may expose scope as a wizard knob; for now, hardcode `user`.
+
+### 4.4 — Prompt the user to reload
+
+After all installs complete (success or failure), tell the user:
+
+> Plugins installed. Their skills, agents, and hooks won't be active in this session until you run `/reload-plugins` (or restart Claude Code). I'll verify the installs after you confirm.
+
+Then use `AskUserQuestion` with two options:
+- **"I've run /reload-plugins"** → proceed to Step 4b
+- **"Skip reload — continue without verification"** → proceed to Step 5 with every installed plugin marked `verified: false`
+
+Do NOT attempt to invoke `/reload-plugins` yourself — it's a slash command and not callable from a skill.
+
+## Step 4b: Verify Installation
+
+(Skipped if the user chose "Skip reload" in 4.4.)
+
+Run:
+
+```bash
+claude plugin list --json
+```
+
+Parse the JSON. The output shape is an array of objects with these fields (verified against Claude Code CLI as of 2026-05-12):
+
+```json
+{
+  "id": "<plugin-name>@<marketplace>",
+  "version": "x.y.z",
+  "scope": "user|project|local",
+  "enabled": true,
+  "installPath": "/Users/.../<marketplace>/<plugin>/<version>",
+  "installedAt": "ISO-8601",
+  "lastUpdated": "ISO-8601"
+}
+```
+
+For each plugin in the install plan, find the entry whose `id` matches its `installId`. Verification passes when **all** of:
+- An entry exists
+- `enabled === true`
+- `version` is non-empty
+- `scope` matches the requested scope (`user` by default)
+
+For each plugin set `verified: true|false` accordingly. Plugins that fail verification keep `installStatus: "install-failed"` or get the new status `installStatus: "not-loaded"`.
+
+If `claude plugin list --json` itself errors (non-zero exit or unparseable JSON), tell the user:
+
+> Couldn't read the plugin list — verification skipped. Installed plugins will be passed downstream as unverified.
+
+Mark every plugin `verified: false` and continue.
+
+### Optional: deeper skill-resolution check
+
+For each plugin that passed the `enabled` check, also confirm its child skills are loadable:
+
+```bash
+claude plugin details <installId>
+```
+
+The output lists component inventory (skills, agents, commands, hooks). If the plugin's expected skills (per the catalog's "Key skills/commands" column) are not present in the inventory, downgrade `verified` to `false` and note `notLoadedSkills: [...]` in the per-plugin record. This catches the "plugin installed but child skill has broken frontmatter" failure mode.
 
 ## Step 5: Compile Covered Capabilities
 
-After installation, build the `coveredCapabilities` list using the capability mapping table in `references/plugin-catalog.md`:
+After verification, build the `coveredCapabilities` list using the capability mapping table in `references/plugin-catalog.md`:
 
-1. For each successfully installed plugin, look up its capabilities in the "Capability Mapping" table
-2. Combine all capabilities into a deduplicated list
-3. Return both `installedPlugins` (list of plugin names) and `coveredCapabilities` (list of capability strings) to the calling skill (tooling-generation)
+1. For each plugin where `verified === true`, look up its capabilities in the "Capability Mapping" table.
+2. Combine all capabilities into a deduplicated list.
+3. Return to the calling skill (tooling-generation):
+   - `installedPlugins[]` — array of objects `{ name, installId, installStatus, verified, version }` for every plugin that was *attempted* (so onboard can see failures, not just successes)
+   - `coveredCapabilities[]` — capability strings from verified plugins only
 
-This data is passed to onboard headless via `callerExtras`, telling it which agents to skip generating. Without this step, onboard would generate generic agents that shadow the superior plugin versions.
+**Why "verified only" for capabilities**: passing capability strings from an unverified install would tell onboard to skip generating agents that — if the plugin is actually broken — leaves the project with no coverage at all. Better to over-generate and let the user manually skip than to under-generate and ship gaps.
+
+This data is passed to onboard headless via `callerExtras`. Without this step, onboard would generate generic agents that shadow the superior plugin versions.
 
 ## Key Rules
 
 1. **Never install without consent** — Always present the checklist and wait for selection.
 2. **Curated quality first** — The catalog contains vetted plugins. Web search results need quality filtering.
 3. **Explain why** — Every recommendation should explain what matched in the developer's context.
-4. **Handle failures gracefully** — If a plugin fails to install, report the error and continue with others.
+4. **Handle failures gracefully** — Plugin install failures are per-plugin, never batch-fatal. Marketplace-add failures cascade only within their own marketplace.
 5. **Don't over-recommend** — 5-8 plugins is a good range. Don't overwhelm with 15+ suggestions.
+6. **Verify before trusting** — A successful `claude plugin install` exit code only means the install command ran. It doesn't mean the plugin loaded. Step 4b's `enabled === true` check is the actual proof.
+7. **Never invoke slash commands from this skill** — `/plugin install` and `/reload-plugins` are user-only. Always use the `claude plugin …` Bash form for installs; always ask the user to type `/reload-plugins` themselves.
+8. **Skip TODO marketplaces, don't guess** — Plugins with `@TODO-verify-marketplace` in the catalog must be skipped with a clear user-facing message, never installed blindly.
