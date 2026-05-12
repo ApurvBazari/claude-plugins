@@ -35,7 +35,7 @@ These plugins reinforce the discipline of *thinking before coding* — both for 
 
 | Plugin | Marketplace | What it does | Key skills |
 |---|---|---|---|
-| **grill-me** (mattpocock-skills) | `mattpocock-skills@TODO-verify-marketplace` _(upstream `mattpocock/skills` has no `.claude-plugin/marketplace.json`; PRs #8, #32, #40, #41 proposing one were all closed. Workaround: `git clone https://github.com/mattpocock/skills` then `claude --plugin-dir <path>` for per-session use. The Phase 1.7 grill-spec gate has an inline fallback (`greenfield/skills/grill-spec/SKILL.md:50-55`) that works without this plugin installed — install is an enhancement, not a requirement.)_ | Relentless interview that walks every decision branch in a plan until shared understanding is reached. Drives greenfield's Phase 1.7 grill-spec gate when installed. | `grill-me` |
+| **grill-me** (mattpocock-skills) | `mattpocock-skills@apurvbazari-plugins` _(add: `ApurvBazari/claude-plugins`; vendored subset of `mattpocock/skills` since upstream has no `marketplace.json` — see `mattpocock-skills/README.md` for full provenance)_ | Relentless interview that walks every decision branch in a plan until shared understanding is reached. Drives greenfield's Phase 1.7 grill-spec gate when installed. | `grill-me` |
 | **andrej-karpathy-skills** | `andrej-karpathy-skills@karpathy-skills` _(add: `forrestchang/andrej-karpathy-skills`)_ | Bakes Karpathy's 4 LLM-coding principles (Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven Execution) into Claude Code as a CLAUDE.md-merge skill | `karpathy-guidelines` |
 
 ## Stack-Conditional Plugins
@@ -89,7 +89,7 @@ For projects following an ADR-driven or structured design-doc `docs/` discipline
 
 | Plugin | Marketplace | Condition | What it does |
 |---|---|---|---|
-| **grill-with-docs** (mattpocock-skills) | `mattpocock-skills@TODO-verify-marketplace` _(same plugin as the grill-me row above — `mattpocock/skills` is a single plugin contributing both `grill-me` and `grill-with-docs` skills. Same install workaround applies.)_ | hasDocsDiscipline = true | Requirements interview that maintains ADRs and CONTEXT.md alongside design decisions |
+| **grill-with-docs** (mattpocock-skills) | `mattpocock-skills@apurvbazari-plugins` _(same plugin as the grill-me row above — `mattpocock-skills` contributes 8 vendored skills including both `grill-me` and `grill-with-docs`)_ | hasDocsDiscipline = true | Requirements interview that maintains ADRs and CONTEXT.md alongside design decisions |
 
 ### Testing (testingPhilosophy = "tdd")
 
