@@ -14,7 +14,9 @@ The `plugin-discovery` skill parses this column directly to drive the install se
 1. Collect each unique `add: <source>` value → run `claude plugin marketplace add <source>` (idempotent).
 2. For each selected plugin → run `claude plugin install <plugin-name>@<marketplace-name> --scope user`.
 
-Entries marked `@TODO-verify-marketplace` are awaiting first-use verification — the skill must flag these to the user as "marketplace source unconfirmed; verify or skip" rather than attempt blind install.
+Entries marked `@TODO-verify-marketplace` fall into one of two categories — the parenthetical notes in each row distinguish them:
+- **Verified blocked** — upstream is structurally incompatible with standard install (e.g., missing `marketplace.json`). The notes describe a workaround (clone + `--plugin-dir`) and any fallback behavior in dependent skills.
+- **Not yet verified** — first-use verification still pending. The skill should treat both the same: skip with a user-facing message that includes the parenthetical reason verbatim, never attempt blind install.
 
 ## Universal Plugins (always recommend)
 
@@ -33,8 +35,8 @@ These plugins reinforce the discipline of *thinking before coding* — both for 
 
 | Plugin | Marketplace | What it does | Key skills |
 |---|---|---|---|
-| **grill-me** (mattpocock-skills) | `grill-me@TODO-verify-marketplace` _(add source unverified; upstream: mattpocock)_ | Relentless interview that walks every decision branch in a plan until shared understanding is reached. Drives greenfield's Phase 1.7 grill-spec gate when installed. | `grill-me` |
-| **andrej-karpathy-skills** | `andrej-karpathy-skills@TODO-verify-marketplace` _(add source unverified; upstream: forrestchang)_ | Bakes Karpathy's 4 LLM-coding principles (Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven Execution) into Claude Code as a CLAUDE.md-merge skill | `karpathy-guidelines` |
+| **grill-me** (mattpocock-skills) | `mattpocock-skills@TODO-verify-marketplace` _(upstream `mattpocock/skills` has no `.claude-plugin/marketplace.json`; PRs #8, #32, #40, #41 proposing one were all closed. Workaround: `git clone https://github.com/mattpocock/skills` then `claude --plugin-dir <path>` for per-session use. The Phase 1.7 grill-spec gate has an inline fallback (`greenfield/skills/grill-spec/SKILL.md:50-55`) that works without this plugin installed — install is an enhancement, not a requirement.)_ | Relentless interview that walks every decision branch in a plan until shared understanding is reached. Drives greenfield's Phase 1.7 grill-spec gate when installed. | `grill-me` |
+| **andrej-karpathy-skills** | `andrej-karpathy-skills@karpathy-skills` _(add: `forrestchang/andrej-karpathy-skills`)_ | Bakes Karpathy's 4 LLM-coding principles (Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven Execution) into Claude Code as a CLAUDE.md-merge skill | `karpathy-guidelines` |
 
 ## Stack-Conditional Plugins
 
@@ -61,7 +63,9 @@ These plugins reinforce the discipline of *thinking before coding* — both for 
 
 | Plugin | Marketplace | Condition | What it does |
 |---|---|---|---|
-| **Trail of Bits skills** | `trail-of-bits-skills@TODO-verify-marketplace` _(add source unverified; upstream: Trail of Bits)_ | Elevated+ security | Professional security auditing (CodeQL, Semgrep) |
+| **static-analysis** (Trail of Bits) | `static-analysis@trailofbits` _(add: `trailofbits/skills`; the `trailofbits` marketplace contains ~40 security plugins — `static-analysis` is the CodeQL+Semgrep+SARIF toolkit. See footnote below for other notable plugins in this marketplace.)_ | Elevated+ security | Static-analysis toolkit: CodeQL, Semgrep, SARIF parsing for vulnerability detection |
+
+> **Trail of Bits marketplace footnote**: The `trailofbits/skills` marketplace contains ~40 security-focused plugins beyond `static-analysis`. Notable ones for elevated/high security projects: `semgrep-rule-creator` (custom rule authoring), `audit-context-building` (audit prep), `differential-review` (PR review for security regressions), `supply-chain-risk-auditor`, `constant-time-analysis`, `property-based-testing`. Users wanting deeper security coverage can run `claude plugin install <plugin>@trailofbits` for any of these after the marketplace is added.
 
 ## Workflow-Conditional Plugins
 
@@ -70,7 +74,7 @@ These plugins reinforce the discipline of *thinking before coding* — both for 
 | Plugin | Marketplace | Condition | What it does |
 |---|---|---|---|
 | **github** | `github@claude-plugins-official` _(add: `anthropics/claude-plugins-official`)_ | Uses GitHub | Full GitHub API: PRs, issues, Actions, releases |
-| **gitlab** | `gitlab@TODO-verify-marketplace` _(add source unverified; not yet present in `claude-plugins-official` at last check)_ | Uses GitLab | Full GitLab API: MRs, CI/CD, issues |
+| **gitlab** | `gitlab@claude-plugins-official` _(add: `anthropics/claude-plugins-official`)_ | Uses GitLab | Full GitLab API: MRs, CI/CD, issues |
 
 ### Code Review (hasTeam = true)
 
@@ -85,7 +89,7 @@ For projects following an ADR-driven or structured design-doc `docs/` discipline
 
 | Plugin | Marketplace | Condition | What it does |
 |---|---|---|---|
-| **grill-with-docs** (mattpocock-skills) | `grill-with-docs@TODO-verify-marketplace` _(add source unverified; upstream: mattpocock)_ | hasDocsDiscipline = true | Requirements interview that maintains ADRs and CONTEXT.md alongside design decisions |
+| **grill-with-docs** (mattpocock-skills) | `mattpocock-skills@TODO-verify-marketplace` _(same plugin as the grill-me row above — `mattpocock/skills` is a single plugin contributing both `grill-me` and `grill-with-docs` skills. Same install workaround applies.)_ | hasDocsDiscipline = true | Requirements interview that maintains ADRs and CONTEXT.md alongside design decisions |
 
 ### Testing (testingPhilosophy = "tdd")
 
