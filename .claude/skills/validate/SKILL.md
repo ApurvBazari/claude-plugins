@@ -58,10 +58,11 @@ If installed, report any ShellCheck errors as **WARN** (not FAIL — scripts may
 ## Step 7: SKILL.md Section Check
 
 For each `SKILL.md`, verify:
-- H1 title exists and starts with `/`
+- H1 title exists (line begins with `# ` followed by descriptive text)
+- H1 does **NOT** use the `/<plugin>:<skill>` slash form — per `.claude/rules/skills-authoring.md`, the slash is derived from frontmatter `name`, not the H1
 - Has a `## Key Rules` section (or similar closing constraints section)
 
-Report missing sections as **WARN**.
+Report violations as **WARN**.
 
 ## Step 8: Report
 
