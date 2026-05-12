@@ -9,6 +9,13 @@
 * **state files:** `.claude/forge-state.json` → `.claude/greenfield-state.json`, `.claude/forge-meta.json` → `.claude/greenfield-meta.json`. If you have an in-flight session, run `mv .claude/forge-state.json .claude/greenfield-state.json` (and likewise for forge-meta.json) before invoking `/greenfield:resume`.
 * **schema:** `forge-meta.schema.json` → `greenfield-meta.schema.json`; the `$id` URL has changed.
 
+### Features
+
+* **grill-spec:** new Phase 1.7 pre-scaffold validation gate sits between context-gathering and scaffolding. Walks 5 spec categories (scope, stack alignment, feature conflicts, missing dependencies, security) to catch contradictions before any code is written. Uses `mattpocock-skills:grill-me` when installed; falls back to an inline minimal pattern otherwise — never crashes the run if the external skill is absent.
+* **plugin-discovery catalog:** three new entries — `mattpocock-skills:grill-me` (Universal · plan-validation), `forrestchang:andrej-karpathy-skills` (Universal · coding-discipline), `mattpocock-skills:grill-with-docs` (workflow-conditional, gated on `hasDocsDiscipline`).
+* **context flags:** two new context fields — `wantsValidationGate` (defaults `true` for `isProduction: true`, drives Phase 1.7 run/skip) and `hasDocsDiscipline` (routes to grill-with-docs).
+* **capability mappings:** three new entries in the `coveredCapabilities` map so `onboard:generate` skips agent generation when grill-me, grill-with-docs, or andrej-karpathy-skills is installed. Includes a disambiguation note distinguishing `superpowers:planning` (generative) from `grill-me:plan-validation` (critical).
+
 ### Migration
 
 Existing v1.x projects scaffolded by `forge` continue to work — the only file-name dependencies are the two state/meta artifacts above. Cross-plugin integration with `onboard` is unchanged: `greenfield` still calls `Skill(onboard:generate)` with the same `callerExtras` shape.
