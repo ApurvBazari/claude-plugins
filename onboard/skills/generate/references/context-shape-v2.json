@@ -139,7 +139,7 @@
               "before": {},
               "after": {},
               "note": { "type": "string" },
-              "via": { "enum": ["brainstorming+grill-me", "brainstorming-only", "grill-me-only", "inline-fallback"] }
+              "via": { "enum": ["adjust-dialog", "inline-fallback"] }
             }
           }
         }

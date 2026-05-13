@@ -126,9 +126,9 @@ Return control to the caller. The caller decides the next phase.
 
 1. **Operate on context, never solo** — this skill is `user-invocable: false`. If invoked directly, halt with an error pointing at `init/SKILL.md`.
 2. **Atomic writes only** — both the synthesis HTML and the `dependencies.json` must use `.tmp` + rename to avoid corruption on interrupt.
-3. **Never auto-adjust** — Adjust always returns to the developer at least once. Never silently accept brainstormed answers without confirmation.
+3. **Never auto-adjust** — Adjust always returns to the developer at least once. Never silently accept the answer returned by adjust-dialog without developer confirmation.
 4. **Cross-check dependencies on every section** — do not skip the "Assumes P<X> said Y" annotation even if the value looks fine. Surfacing the dependency IS the no-surprises gate.
 5. **Skip needs a reason** — Skip without a note is not allowed. The note becomes the audit record.
 6. **Template missing = halt, not fabricate** — if the per-phase template doesn't exist for the requested `phaseId`, return `synthesisStatus: "no-template"` cleanly. Do not invent sections.
-7. **Preserve developer veto** — if the developer rejects the brainstormed answer in Step 5, return to the original captured value unchanged and record `{ decision: "adjusted-then-reverted" }`.
+7. **Preserve developer veto** — if the developer rejects the adjusted answer in Step 5, return to the original captured value unchanged and record `{ decision: "adjusted-then-reverted" }`.
 8. **Freshness hook is install-once** — never overwrite an existing pre-commit hook. Append only, and only if the marker string is absent.

@@ -45,6 +45,19 @@ After the dialog converges:
    }
    ```
 
+   If the developer ultimately rejects the adjusted answer and reverts to the original value (see synthesis-review Key Rule 7), record instead:
+
+   ```json
+   {
+     "section": "<section_id>",
+     "decision": "adjusted-then-reverted",
+     "before": "<original>"
+   }
+   ```
+
+   Valid `decision` values: `"adjusted"` | `"adjusted-then-reverted"` | `"approved"` | `"skipped"`.
+   Valid `via` values: `"adjust-dialog"` | `"inline-fallback"`.
+
 3. Update the rendered synthesis HTML in-place. The Captured-as block now reflects the adjusted value; a footnote records the original.
 
 ## Loop guards
