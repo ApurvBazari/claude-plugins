@@ -8,7 +8,7 @@
 - `P4` flipped from `_status: "deferred-to-round-2"` to a live `p4Api` definition with 3 required enum-locked fields (`style`, `versioningPolicy`, `asyncPattern`) and 6 loose-string fields (`documentation`, `rateLimit`, `pagination`, `realtime`, `webhooks`, `externalServices[]`).
 - Top-level description updated to reflect that Rounds 1–2 fully specify P3, P4, P8.
 
-**No breaking changes to v2 callers** — Round 2 is purely additive. Existing greenfield 3.0.0-alpha.1 callers (which emit `_status: "deferred-to-round-2"` for P3/P4) continue to work; their `_status` value is now `additionalProperties: true` under the live `p3Data` / `p4Api` definitions until callers upgrade.
+**Breaking for incomplete Round 1 callers:** greenfield 3.0.0-alpha.1 emitted `{ "_status": "deferred-to-round-2" }` for P3 and P4. Under the new strict `p3Data` / `p4Api` definitions (with `additionalProperties: false`), this shape is REJECTED. Callers must construct the new P3/P4 shapes or stay on greenfield 3.0.0-alpha.1 + onboard 2.0.0-alpha.1 as a pinned pair.
 
 **Hard cutover policy reminder:** v1 input is still rejected outright. There is no migration helper from v1 → v2.
 
@@ -106,7 +106,7 @@ If you're staying on the v1 contract, **do not upgrade to onboard 2.x**. Pin to 
 ## Future onboard 2.x changes (non-binding roadmap)
 
 - **2.0.0** (stable, post-Round-1 acceptance): no schema changes; expanded test coverage; minor template polish.
-- **2.1.0** (Round 2 sync): consumes `phases.P3.data` + `phases.P4.api` once greenfield Round 2 ships those wizard sections.
+- **2.0.0-alpha.2** (this release): consumes `phases.P3` + `phases.P4` from greenfield 3.0.0-alpha.2 wizard sections. Future 2.x releases will add P6, P7 (Round 3) and later phases.
 - **2.2.0** (Round 3 sync): consumes `phases.P6.{auth,security,privacy}` + `phases.P7.workflow`.
 - **2.3.0+** (Rounds 4-6 sync): consumes Personas, Domain Modeling, Risk Identification, Feature Roadmap, Schema/API Draft, Frontend/UX expansion + 12 concern areas.
 

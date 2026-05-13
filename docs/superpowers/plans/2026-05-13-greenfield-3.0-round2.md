@@ -32,7 +32,7 @@
 |---|---|
 | `onboard/skills/generate/references/context-shape-v2.json` | Flip P3 + P4 from `deferredPhase` stubs to live definitions with required enum-locked fields + loose strings |
 | `greenfield/skills/context-gathering/references/question-bank.md` | Add Phase P3 (Q3.1–Q3.12) and Phase P4 (Q4.1–Q4.10) sections; mark residual Cat 3 Qs as transitional |
-| `greenfield/skills/context-gathering/SKILL.md` | Insert Step 3 (P3) + Step 4 (P4) with inline synthesis invocations; rename existing Step 3 → Step 5 "Remaining Project Details"; renumber Steps 4→6, 5→7, 6→8, 7→9; update every `Step X of 8` → `Step X of 9`; extend state-transitions table |
+| `greenfield/skills/context-gathering/SKILL.md` | Insert Step 3 (P3) + Step 4 (P4) with inline synthesis invocations; rename existing Step 3 → Step 5 "Remaining Project Details"; renumber Steps 4→6, 5→7, 6→8, 7→9; update every `Step X of 8` → `Step X of 10`; extend state-transitions table |
 | `greenfield/skills/synthesis-review/references/section-prompts.md` | Append P3 and P4 section composition tables + Round 2 contradiction rules |
 | `greenfield/skills/grill-spec/SKILL.md` | Replace any hardcoded "P8" references with dynamic iteration over `context.syntheses.*` (likely 1–2 line edit) |
 | `greenfield/skills/init/SKILL.md` | Extend error matrix + phase enum with `P3` and `P4` |
@@ -907,7 +907,7 @@ Find the line `## Category 3: Project Details (adaptive)` in the question-bank. 
 > - **Moved to P4:** Q3.5 (external APIs) → P4.Q10, Q3.7 (API style) → P4.Q2, Q3.8 (API docs) → P4.Q3, Q3.18 (bg jobs) → P4.Q7
 > - **Staying here (Cat 3 residual):** Q3.1, Q3.3, Q3.4, Q3.6, Q3.9, Q3.10, Q3.11, Q3.12, Q3.13, Q3.14, Q3.15, Q3.F1, Q3.F2 — destined for Rounds 3–6.
 
-This category becomes wizard Step 5 of 9 in Round 2.
+This category becomes wizard Step 5 of 10 in Round 2.
 ```
 
 - [ ] **Step 2: Strip the 7 re-homed questions from Category 3**
@@ -977,10 +977,10 @@ Note the line numbers for each Step heading. The new Step 3 (P3) goes BEFORE the
 
 - [ ] **Step 2: Insert the new Step 3 P3 section**
 
-Find the line that begins the existing Step 3 (likely `### Step 3 of 8: Project Details` or similar). Insert the following BEFORE that line:
+Find the line that begins the existing Step 3 (likely `### Step 3 of 10: Project Details` or similar). Insert the following BEFORE that line:
 
 ```markdown
-### Step 3 of 9: Data Architecture (Phase P3)
+### Step 3 of 10: Data Architecture (Phase P3)
 
 This step is Round 2's first new phase. Captures data-layer decisions via P3.Q1–Q3.12 and closes with an inline Phase 1.8 synthesis-review pass.
 
@@ -988,7 +988,7 @@ This step is Round 2's first new phase. Captures data-layer decisions via P3.Q1�
 
 Tell the developer:
 
-> Step 3 of 9: Data Architecture. I'll ask about your data layer — database engine, ORM, migrations, multi-tenancy, caching, file storage. About 12 questions. Some may be skipped based on your earlier answers.
+> Step 3 of 10: Data Architecture. I'll ask about your data layer — database engine, ORM, migrations, multi-tenancy, caching, file storage. About 12 questions. Some may be skipped based on your earlier answers.
 
 #### P3 questions (Q3.1–Q3.12)
 
@@ -1052,7 +1052,7 @@ adaptive skipping documented."
 Immediately after the Step 3 P3 section (added in T11), insert:
 
 ```markdown
-### Step 4 of 9: API & Integration (Phase P4)
+### Step 4 of 10: API & Integration (Phase P4)
 
 This step is Round 2's second new phase. Captures API surface decisions via P4.Q1–Q4.10 and closes with an inline Phase 1.8 synthesis-review pass.
 
@@ -1060,7 +1060,7 @@ This step is Round 2's second new phase. Captures API surface decisions via P4.Q
 
 Tell the developer:
 
-> Step 4 of 9: API & Integration. I'll ask about your API surface — style (REST/GraphQL/tRPC), versioning, rate limits, async patterns, real-time, webhooks, external services. About 10 questions; some skipped based on whether you expose an API.
+> Step 4 of 10: API & Integration. I'll ask about your API surface — style (REST/GraphQL/tRPC), versioning, rate limits, async patterns, real-time, webhooks, external services. About 10 questions; some skipped based on whether you expose an API.
 
 #### P4 questions (Q4.1–Q4.10)
 
@@ -1116,16 +1116,16 @@ Phase 1.8 synthesis review (phaseId: P4)."
 
 - [ ] **Step 1: Convert the OLD Step 3 header into Step 5 residual**
 
-Find the OLD Step 3 heading (originally `### Step 3 of 8: Project Details (adaptive)` or similar — the one that comes AFTER the Step 4 P4 section you added in T12). Rename it to:
+Find the OLD Step 3 heading (originally `### Step 3 of 10: Project Details (adaptive)` or similar — the one that comes AFTER the Step 4 P4 section you added in T12). Rename it to:
 
 ```markdown
-### Step 5 of 9: Remaining Project Details (residual)
+### Step 5 of 10: Remaining Project Details (residual)
 
 This step holds the 13 Category 3 questions that have NOT been re-homed to P3 (Data) or P4 (API) in Round 2. They stay here as transitional content until Rounds 3–6 re-home them to P0/P5/P6/P7. See `references/question-bank.md § Category 3 (residual)` for the full question list.
 
 Tell the developer:
 
-> Step 5 of 9: Remaining Project Details. A few miscellaneous questions about scale, auth, deploy target, monitoring, environment, dependencies, accessibility, performance, i18n, monorepo, and styling. Skipped if not relevant to your stack.
+> Step 5 of 10: Remaining Project Details. A few miscellaneous questions about scale, auth, deploy target, monitoring, environment, dependencies, accessibility, performance, i18n, monorepo, and styling. Skipped if not relevant to your stack.
 
 Ask Q3.1, Q3.3, Q3.4, Q3.6, Q3.9, Q3.10, Q3.11, Q3.12, Q3.13, Q3.14, Q3.15, Q3.F1, Q3.F2 in order from `references/question-bank.md § Category 3 (residual)`. Honor existing conditions. No synthesis review for this step (it's residual; full split planned for Rounds 3–6).
 
@@ -1136,14 +1136,14 @@ Delete any inline question text that previously lived under this heading (e.g., 
 
 - [ ] **Step 2: Renumber remaining Steps (4 → 6, 5 → 7, 6 → 8, 7 → 9)**
 
-Find every heading of the form `### Step N of 8:` (where N ∈ {4, 5, 6, 7}) and rename:
+Find every heading of the form `### Step N of 10:` (where N ∈ {4, 5, 6, 7}) and rename:
 
 | Old | New |
 |---|---|
-| `### Step 4 of 8: <title>` | `### Step 6 of 9: <title>` |
-| `### Step 5 of 8: <title>` | `### Step 7 of 9: <title>` |
-| `### Step 6 of 8: <title>` | `### Step 8 of 9: <title>` |
-| `### Step 7 of 8: <title>` | `### Step 9 of 9: <title>` |
+| `### Step 4 of 8: <title>` | `### Step 6 of 10: <title>` |
+| `### Step 5 of 8: <title>` | `### Step 7 of 10: <title>` |
+| `### Step 6 of 8: <title>` | `### Step 8 of 10: <title>` |
+| `### Step 7 of 8: <title>` | `### Step 9 of 10: <title>` |
 
 Within each renumbered step's body, also update any "Step X of 8" textual references in the developer prompts.
 
@@ -1151,23 +1151,24 @@ Within each renumbered step's body, also update any "Step X of 8" textual refere
 
 Run: `grep -nE "Step [0-9]+ of 8|of 8\b" greenfield/skills/context-gathering/SKILL.md`
 
-Expected: **0 hits** after edits. If any remain, fix them. The wizard total is 9 now.
+Expected: **0 hits** after edits. If any remain, fix them. The wizard total is 10 now.
 
 - [ ] **Step 4: Verify renumbering completeness**
 
-Run: `grep -nE "^### Step [0-9]+ of 9" greenfield/skills/context-gathering/SKILL.md`
+Run: `grep -nE "^### Step [0-9]+ of 10" greenfield/skills/context-gathering/SKILL.md`
 
-Expected: 9 hits (Steps 1 through 9, in order).
+Expected: 10 hits (Steps 1 through 10, in order).
 
 - [ ] **Step 5: Commit T13**
 
 ```bash
 git add greenfield/skills/context-gathering/SKILL.md
-git commit -m "refactor(greenfield): renumber wizard steps 8 -> 9; convert old Step 3 to residual Step 5
+git commit -m "refactor(greenfield): renumber wizard steps 8 -> 10; convert old Step 3 to residual Step 5
 
 Existing Step 3 (Project Details) becomes Step 5 (residual, 13 Qs from
-Cat 3 that stay until later rounds). Renumber Steps 4-7 to 6-9. Update
-all 'Step X of 8' literals to 'Step X of 9'."
+Cat 3 that stay until later rounds). Renumber Steps 4-7 to 6-9, adding
+two new steps (P3 + P4) to reach 10 total. Update all 'Step X of 8'
+literals to 'Step X of 10'."
 ```
 
 ---
@@ -1272,7 +1273,7 @@ If the wizard was interrupted mid-synthesis (i.e., `currentPhase: phase-1.8-synt
 
 If interrupted mid-wizard-step (P3 between Q3.5 and Q3.6, for example), ask:
 
-> You were in Step {N} of 9 ({stepName}) at question {lastAnsweredQuestionId}. Continue from the next question, or restart this step from question 1?
+> You were in Step {N} of 10 ({stepName}) at question {lastAnsweredQuestionId}. Continue from the next question, or restart this step from question 1?
 ```
 
 Specifically support `lastAnsweredQuestionId` values like `P3.Q5`, `P4.Q3`.
@@ -1291,7 +1292,7 @@ Update any count literal (e.g., `synthesis-count: 1`) to `synthesis-count: 3`.
 
 Run:
 ```bash
-grep -lE "P3|P4|of 9|step-3-data|step-4-api" \
+grep -lE "P3|P4|of 10|step-3-data|step-4-api" \
   greenfield/skills/grill-spec/SKILL.md \
   greenfield/skills/init/SKILL.md \
   greenfield/skills/resume/SKILL.md \
@@ -1400,7 +1401,7 @@ After the "ROUND 1 LOCKED" `<div class="log-entry">` block, insert:
       <li><strong>Hybrid schema strictness</strong> — 3–5 required enum-locked fields per phase (the ones other phases cross-reference); remaining fields are loose strings with "other" escape hatches. Avoids monthly schema releases as new ORMs / DB hosts emerge.</li>
       <li><strong>Backward-only dependency edges</strong> — matches Round 1 P8 precedent. P3 reads from P0/P2; P4 reads from P3/P2.</li>
       <li><strong>Asymmetric depth</strong> — P3 has 7 sections and 12 Qs; P4 has 6 sections and 10 Qs. P3 owns more decision surface under single-owner.</li>
-      <li><strong>Wizard count 8 → 9</strong> — old Step 3 becomes residual Step 5 (13 Qs from Cat 3 destined for Rounds 3–6).</li>
+      <li><strong>Wizard count 8 → 10</strong> — old Step 3 becomes residual Step 5 (13 Qs from Cat 3 destined for Rounds 3–6).</li>
       <li><strong>Codegen Q in P3 only</strong> — even though codegen spans ORM + API, the question lives in P3 with a P4 synthesis cross-reference note.</li>
     </ol>
     <p>Files shipped (5 NEW + 13 MODIFIED = 18 total): see <code>docs/superpowers/specs/2026-05-13-greenfield-3.0-round2-design.md</code> § File inventory.</p>
@@ -1708,13 +1709,13 @@ git init
 
 In a fresh Claude Code session with the user, navigate to `/tmp/greenfield-round2-test`. Run `/greenfield:init`. Walk through:
 
-- Step 1 of 9: Vision — answer "Next.js SaaS for tracking subscriptions"
-- Step 2 of 9: Stack — accept Next.js 16 + TypeScript + PostgreSQL recommendations
-- **Step 3 of 9: Data Architecture (P3)** — answer all 12 questions with realistic values (managed-rdbms, prisma, orm-native, row-level-rls, postgres-fts, redis + event-driven, cloud-s3-like, ['prisma-generate'], managed-provider, gdpr-aware)
+- Step 1 of 10: Vision — answer "Next.js SaaS for tracking subscriptions"
+- Step 2 of 10: Stack — accept Next.js 16 + TypeScript + PostgreSQL recommendations
+- **Step 3 of 10: Data Architecture (P3)** — answer all 12 questions with realistic values (managed-rdbms, prisma, orm-native, row-level-rls, postgres-fts, redis + event-driven, cloud-s3-like, ['prisma-generate'], managed-provider, gdpr-aware)
 - Expected: After P3.Q12, synthesis-review fires. `docs/architecture/p3-data.html` is created. Walk through 7 sections, approve all.
-- **Step 4 of 9: API & Integration (P4)** — answer all 10 questions (rest, openapi-swagger, url-path, fixed-window-redis, cursor, queue-and-worker, none, incoming-only, ['stripe','resend'])
+- **Step 4 of 10: API & Integration (P4)** — answer all 10 questions (rest, openapi-swagger, url-path, fixed-window-redis, cursor, queue-and-worker, none, incoming-only, ['stripe','resend'])
 - Expected: After P4.Q10, synthesis fires. `docs/architecture/p4-api.html` created. Walk through 6 sections, approve all.
-- Step 5 of 9: Remaining Project Details — answer the 13 residual Qs as appropriate
+- Step 5 of 10: Remaining Project Details — answer the 13 residual Qs as appropriate
 - Steps 6–9: existing flow (Workflow, CI/CD, Plugin Discovery, Confirmation)
 
 - [ ] **Step 3: Confirm output artifacts**
@@ -1744,8 +1745,8 @@ Expected: P4 synthesis section 1 renders a `<div class="contradiction">` block s
 
 Start a THIRD throwaway wizard run. In Step 1, describe a CLI tool. Confirm:
 
-- Step 3 of 9 (P3) is announced but immediately skipped with a message like "Skipping P3 — CLI tools don't typically persist data."
-- Step 4 of 9 (P4) is announced but skipped with a similar message
+- Step 3 of 10 (P3) is announced but immediately skipped with a message like "Skipping P3 — CLI tools don't typically persist data."
+- Step 4 of 10 (P4) is announced but skipped with a similar message
 - Flow proceeds directly to Step 5 residual
 
 - [ ] **Step 6: Document verification results**
@@ -1818,7 +1819,7 @@ Tell the user:
 **3. Type / field consistency:**
 - Required P3 fields: `databaseHost`, `orm`, `migrationsTool`, `multiTenancy` — consistent across T1, T3 (template references), T8 (question bank), T11 (SKILL section), T19 (sample context). ✓
 - Required P4 fields: `style`, `versioningPolicy`, `asyncPattern` — consistent across T2, T5, T9, T12, T19. ✓
-- Step numbering: T11 says "Step 3 of 9", T13 renumbers old Step 3 → 5 and Steps 4→6, 5→7, 6→8, 7→9. Consistent. ✓
+- Step numbering: T11 says "Step 3 of 10", T13 renumbers old Step 3 → 5 and Steps 4→6, 5→7, 6→8, 7→9. Consistent. ✓
 - Synthesis section counts: P3=7 sections, P4=6 sections — consistent across T3, T5, T7, T16, T17. ✓
 - Version: `3.0.0-alpha.1` → `3.0.0-alpha.2` for greenfield; `2.0.0-alpha.1` → `2.0.0-alpha.2` for onboard. Consistent T18. ✓
 

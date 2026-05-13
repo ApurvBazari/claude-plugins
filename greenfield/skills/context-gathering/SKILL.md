@@ -363,7 +363,7 @@ Invoke the `synthesis-review` skill via the Skill tool with `phaseId: "P8"`. Thi
 2. Renders `<targetProjectRoot>/docs/architecture/p8-cicd.html` from the template.
 3. Walks the developer through 8 sections of Approve/Adjust/Skip.
 4. Writes `context.syntheses.P8 = { approvedAt, adjustments[] }`.
-5. Returns control here. Set `currentPhase` back to `phase-1-context-gathering` and `currentStep` to `step-6-feature-decomp`.
+5. Returns control here. Set `currentPhase` back to `phase-1-context-gathering` and `currentStep` to `step-8-feature-decomp`.
 
 If the developer adjusts any P8 field via the Adjust dialog, the updated value is in `context.phases.P8.cicd.<field>` — the v1 carryover mirrors do NOT update (they preserve the original answer).
 
@@ -517,6 +517,23 @@ After the wizard completes, compile all answers into a structured context object
   "autoEvolutionMode": "string",
   "prReviewTrigger": "string",
   "phases": {
+    "P3": {
+      "databaseHost": "managed-rdbms",
+      "orm": "prisma",
+      "migrationsTool": "orm-native",
+      "multiTenancy": "none",
+      "engine": "postgresql",
+      "cache": "redis",
+      "fileStorage": "cloud-s3-like",
+      "codegen": ["prisma-generate"]
+    },
+    "P4": {
+      "style": "rest",
+      "versioningPolicy": "url-path",
+      "asyncPattern": "queue-and-worker",
+      "documentation": "openapi-swagger",
+      "rateLimit": "fixed-window-redis"
+    },
     "P8": {
       "cicd": {
         "provider": "github-actions | gitlab-ci | circleci | buildkite | jenkins | none",
@@ -542,6 +559,8 @@ After the wizard completes, compile all answers into a structured context object
     }
   },
   "syntheses": {
+    "P3": { "approvedAt": "ISO-8601", "adjustments": [] },
+    "P4": { "approvedAt": "ISO-8601", "adjustments": [] },
     "P8": { "approvedAt": "ISO-8601", "adjustments": [] }
   },
   "verificationStrategy": "browser-automation | api-testing | cli-execution | test-runner | combination",
@@ -566,9 +585,7 @@ Write a checkpoint **after each named Step completes** (not after each individua
 | After Step | Write to state file |
 |---|---|
 | Step 1 complete (Project Vision) | `completedSteps: ["step-1-vision"]`, `currentStep: "step-2-stack"`, `context.appDescription`, `context.appType` |
-| Step 2 complete (Tech Stack) | Add `"step-2-stack"`, `currentStep: "step-3-details"`, `context.stack`, `researchFindings`, `research.mode` |
-| Step 3 complete (Project Details) | Add `"step-3-details"`, `currentStep: "step-3.5-pain-points"`, all category-3 context fields |
-| Step 3.5 complete (Pain Points) | Add `"step-3.5-pain-points"`, `currentStep: "step-4-workflow"`, `context.painPoints` |
+| Step 2 complete (Tech Stack) | Add `"step-2-stack"`, `currentStep: "step-3-data-architecture"`, `context.stack`, `researchFindings`, `research.mode` |
 | Step 3 — P3.Q1 answered | Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-3-data-architecture"`, `lastAnsweredQuestionId: "P3.Q1"` |
 | Step 3 — P3.Q12 answered (or last applicable) | Set `currentPhase: "phase-1.8-synthesis-review"`, `currentSynthesisPhase: "P3"`, add `"step-3-data-architecture"` to `completedSteps` |
 | Step 3 — synthesis-review(P3) returns | Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-4-api-integration"`, clear `currentSynthesisPhase`. Add `context.syntheses.P3 = { approvedAt, adjustments }` |

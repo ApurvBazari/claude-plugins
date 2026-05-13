@@ -46,7 +46,7 @@ Each new phase ends with an inline Phase 1.8 synthesis-review pass (already infr
 | 2 | **Schema: hybrid strictness.** 3–5 required + enum-locked fields per phase (the ones other phases cross-reference); remaining fields loose strings with `"other"` escape hatch. | Data/API tooling landscape moves quarterly (unlike CI providers); closed enums for every tool would force monthly onboard releases. Keeps contradiction detection on the high-impact cross-phase fields. |
 | 3 | **Dependency direction: backward-only.** P3/P4 declare only what they READ from earlier phases. Future phases (P5/P6/P7) will declare their backward deps on P3/P4 when those rounds land. | Matches Round 1 P8 precedent; avoids forward-anticipation files that bleed Round 6 work into Round 2 edits. |
 | 4 | **Depth: asymmetric (P3 deeper than P4).** P3 = 12 Qs / 7 sections / 4 required. P4 = 10 Qs / 6 sections / 3 required. | P3 covers genuinely more concerns under single-owner (DB + ORM + migrations + multi-tenancy + search + caching + storage + codegen = 7–8). P4 = style + versioning + rate limits + real-time + webhooks + integrations = 5–6. Forcing symmetry would over-engineer P4. |
-| 5 | **Wizard step count: 8 → 9.** Insert two new steps (P3 = Step 3, P4 = Step 4); existing Step 3 ("Project Details") becomes a residual Step 5 with 13 questions destined for later rounds. | Per locked decision #13, "Step X of N" wording bumps to "of 9" — full P-naming rename deferred until Round 6. |
+| 5 | **Wizard step count: 8 → 10.** Insert two new steps (P3 = Step 3, P4 = Step 4); existing Step 3 ("Project Details") becomes a residual Step 5 with 13 questions destined for later rounds. | Per locked decision #13, "Step X of N" wording bumps to "of 10" — full P-naming rename deferred until Round 6. |
 | 6 | **Codegen Q3.16 lands in P3 only** (under single-owner). The question's option list includes both ORM codegen (Prisma, Drizzle generate, SQLC) AND API codegen (GraphQL codegen, OpenAPI TS, Protobuf). P4 synthesis renders a `<div class="note">See P3 §7</div>` cross-reference when the user picks GraphQL/Protobuf. | One source of truth; no duplicated codegen question. |
 
 ## Architecture & data flow
@@ -57,25 +57,25 @@ Each new phase ends with an inline Phase 1.8 synthesis-review pass (already infr
      ▼
 Phase 1: Context Gathering
      │
-     ├── Step 1 of 9: Vision (P0)              ─── unchanged
-     ├── Step 2 of 9: Stack (P2)               ─── unchanged
+     ├── Step 1 of 10: Vision (P0)              ─── unchanged
+     ├── Step 2 of 10: Stack (P2)               ─── unchanged
      │
-     ├── Step 3 of 9: Data Architecture (P3)   ─── ★ NEW
+     ├── Step 3 of 10: Data Architecture (P3)   ─── ★ NEW
      │       ├── Q3.1 (gate) → Q3.12
      │       └── synthesis-review(phaseId: "P3") ◄── inline
      │              ├── docs/architecture/p3-data.html rendered
      │              ├── Approve/Adjust/Skip per section
      │              └── context.syntheses.P3 = { approvedAt, adjustments[] }
      │
-     ├── Step 4 of 9: API & Integration (P4)   ─── ★ NEW
+     ├── Step 4 of 10: API & Integration (P4)   ─── ★ NEW
      │       ├── Q4.1 (gate) → Q4.10
      │       └── synthesis-review(phaseId: "P4") ◄── inline
      │
-     ├── Step 5 of 9: Remaining Project Details ─── residual (13 Qs)
-     ├── Step 6 of 9: Workflow                 ─── renumbered from Step 4
-     ├── Step 7 of 9: CI/CD (P8)               ─── renumbered from Step 5; unchanged logic
-     ├── Step 8 of 9: Plugin Discovery         ─── renumbered from Step 6
-     └── Step 9 of 9: Confirmation             ─── renumbered from Step 7
+     ├── Step 5 of 10: Remaining Project Details ─── residual (13 Qs)
+     ├── Step 6 of 10: Workflow                 ─── renumbered from Step 4
+     ├── Step 7 of 10: CI/CD (P8)               ─── renumbered from Step 5; unchanged logic
+     ├── Step 8 of 10: Plugin Discovery         ─── renumbered from Step 6
+     └── Step 9 of 10: Confirmation             ─── renumbered from Step 7
 
      ▼
 Phase 1.7: grill-spec ─── now cross-checks context.syntheses.{P3, P4, P8}
@@ -299,7 +299,7 @@ Everything else stays loose: the *category-level decision* is stable; the *speci
 1. **Insert Step 3 section** (~120 lines) documenting P3.Q1–Q3.12 with conditions, schema writes to `context.phases.P3.*`. Closes with `Skill(synthesis-review, phaseId: "P3")` invocation.
 2. **Insert Step 4 section** (~100 lines) — same pattern for P4. Closes with `phaseId: "P4"` invocation.
 3. **Edit existing Step 3 → become Step 5 "Remaining Project Details"** — strip the 7 re-homed questions, leave the 13 residual. Update section title + step number.
-4. **Renumber Steps 4 → 6, 5 → 7, 6 → 8, 7 → 9**. Update every "Step X of 8" literal to "Step X of 9".
+4. **Renumber Steps 4 → 6, 5 → 7, 6 → 8, 7 → 9, giving 10 total**. Update every "Step X of 8" literal to "Step X of 10".
 5. **Update the state-machine transitions table** (around line 470). Add rows for `step-3-data-architecture` and `step-4-api-integration` (including synthesis-review return transitions).
 
 ### `greenfield-state.json` additions
@@ -349,7 +349,7 @@ onboard/skills/generate/references/context-shape-v2.json
 
 greenfield/skills/context-gathering/SKILL.md
   ← insert Step 3 (P3) + Step 4 (P4); renumber Steps 4→6, 5→7, 6→8, 7→9;
-    update Step X of 8 → Step X of 9; update state transitions table
+    update Step X of 8 → Step X of 10; update state transitions table
 
 greenfield/skills/context-gathering/references/question-bank.md
   ← add Phase P3 (Q3.1–Q3.12) and Phase P4 (Q4.1–Q4.10) sections;
@@ -400,14 +400,14 @@ Per handoff: "drive the wizard manually through P3 and P4 in a throwaway repo, c
 ### Verification steps
 
 1. **Throwaway-repo manual wizard run** — fresh directory, `/greenfield:init` → walk Steps 1–4 with realistic answers (Next.js + Postgres + Prisma + REST API). Confirm:
-   - Step 3 of 9 wording is correct
+   - Step 3 of 10 wording is correct
    - P3 questions appear in the documented order with correct conditions
    - At end of Step 3, synthesis-review fires for P3
    - `docs/architecture/p3-data.html` is created and renders the 7 sections with captured values
    - Approve/Adjust/Skip flow works on at least 2 sections per phase
-   - Step 4 of 9 wording is correct; P4 flow works analogously
+   - Step 4 of 10 wording is correct; P4 flow works analogously
    - `docs/architecture/p4-api.html` is created
-   - Step 5 of 9 ("Remaining Project Details") appears with the 13 residual Qs
+   - Step 5 of 10 ("Remaining Project Details") appears with the 13 residual Qs
 
 2. **Schema validation** — feed a hand-crafted v2 context JSON with realistic P3/P4 values into `onboard:generate` (via the Skill tool). Confirm:
    - Schema validates (no `additionalProperties: false` violations)
@@ -466,7 +466,7 @@ Estimated revert effort: single commit, ~30 minutes.
 - non-GHA CI provider templates for any P3/P4-related generated artifact (Round 6; Round 2 emits no new generated artifacts anyway)
 - v1 → v2 migration of in-flight greenfield 2.x sessions (locked: hard cutover forever)
 - Round 3 work (P6 Auth, P7 Workflow split) — referenced only as "future cross-check fires when X lands"
-- Renaming `Step X of 9` to canonical `Phase P<n>` labels (locked: deferred to Round 6)
+- Renaming `Step X of 10` to canonical `Phase P<n>` labels (locked: deferred to Round 6)
 
 ---
 

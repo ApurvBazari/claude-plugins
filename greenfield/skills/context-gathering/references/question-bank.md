@@ -237,7 +237,7 @@ Writes to `context.phases.P4.*`. See `onboard/skills/generate/references/context
 > - **Moved to P4:** Q3.5 (external APIs) → P4.Q10, Q3.7 (API style) → P4.Q2, Q3.8 (API docs) → P4.Q3, Q3.18 (bg jobs) → P4.Q7
 > - **Staying here (Cat 3 residual):** Q3.1, Q3.3, Q3.4, Q3.6, Q3.9, Q3.10, Q3.11, Q3.12, Q3.13, Q3.14, Q3.15, Q3.F1, Q3.F2 — destined for Rounds 3–6.
 
-This category becomes wizard Step 5 of 9 in Round 2.
+This category becomes wizard Step 5 of 10 in Round 2.
 
 ### Q3.1: "What's the scale of this project?"
 - **Type**: Choice

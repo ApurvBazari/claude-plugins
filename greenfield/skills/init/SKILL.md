@@ -102,7 +102,7 @@ Tell the developer:
 
 ## Phase 1: Context Gathering
 
-Use the `context-gathering` skill to guide the developer through the adaptive wizard. **The wizard has 8 named Steps and must emit a "Step X of 8" progress indicator at every Step boundary** so both Claude and the user can track progress.
+Use the `context-gathering` skill to guide the developer through the adaptive wizard. **The wizard has 10 named Steps and must emit a "Step X of 10" progress indicator at every Step boundary** so both Claude and the user can track progress.
 
 The skill handles:
 - Project vision (what they want to build)

@@ -13,7 +13,7 @@ You are running Greenfield's pre-scaffold validation gate. This is Phase 1.7 —
 Read `.claude/greenfield-state.json`. The skill MUST refuse to run if any of these hold:
 
 - File missing → tell the developer to start with `/greenfield:init`, do not proceed.
-- `currentPhase` is not in `{"phase-1-context-gathering", "phase-1.5-architectural-research"}` and `completedSteps` does not yet contain `"step-7-confirmation"` → the wizard hasn't finished. Refuse and direct them to complete Phase 1.
+- `currentPhase` is not in `{"phase-1-context-gathering", "phase-1.5-architectural-research"}` and `completedSteps` does not yet contain `"step-9-confirmation"` → the wizard hasn't finished. Refuse and direct them to complete Phase 1.
 - `completedSteps` already contains `"phase-1.7-grill-spec"` or `"phase-1.7-grill-spec-skipped"` → the gate has already run. Skip silently and return control to `greenfield:init`.
 
 If `wantsValidationGate` is `false` in the gathered context AND `isProduction` is `false`, write `"phase-1.7-grill-spec-skipped"` to `completedSteps`, set `currentPhase: "phase-2-scaffold"`, and return immediately. Don't ask the user — they signalled "no gate" already.
