@@ -65,6 +65,96 @@ Each answer updates this context. Questions use the context to determine whether
 
 ---
 
+## Phase P3: Data Architecture (12 questions)
+
+Phase 3 of the 15-phase wizard. Captures data-layer decisions: DB engine + host, ORM, migrations, multi-tenancy, search, caching, file storage, codegen, backup, compliance. Synthesis review fires inline after the last question.
+
+Writes to `context.phases.P3.*`. See `onboard/skills/generate/references/context-shape-v2.json` § `p3Data` for the schema.
+
+### P3.Q1: "Does this app need persistent data?"
+- **Type**: Choice
+- **Options**: "Yes — relational" | "Yes — document/NoSQL" | "Yes — embedded (SQLite/DuckDB)" | "No persistent data" | "Not sure — recommend"
+- **Condition**: Always (gate for the rest of P3)
+- **Updates**: gate flag; if "No persistent data", skip Q2–Q7 but still ask Q8 (in-memory cache), Q9 (FS storage), Q10 (codegen), Q12 (compliance)
+
+### P3.Q2: "Which database engine?"
+- **Type**: Open with stack-informed recommendations
+- **Options**: Dynamically generated (e.g., "PostgreSQL (recommended for Next.js + Prisma)" | "MySQL" | "MongoDB" | "SQLite" | "Turso/libSQL" | "PlanetScale" | "EdgeDB" | "DynamoDB" | "Custom — specify")
+- **Condition**: Q1 = yes (any persistent option)
+- **Updates**: `context.phases.P3.engine` (loose string)
+
+### P3.Q3: "What's the database hosting model?"
+- **Type**: Choice
+- **Options**: "Self-hosted (you manage the server)" | "Managed RDBMS (RDS, Cloud SQL, Supabase)" | "Serverless RDBMS (Neon, PlanetScale, Turso)" | "Managed NoSQL (Atlas, DynamoDB)" | "Embedded (SQLite/DuckDB)" | "None"
+- **Condition**: Q1 = yes
+- **Updates**: `context.phases.P3.databaseHost` (required, enum)
+- **Cross-phase**: P8 reads this for rollback strategy (point-in-time recovery on managed hosts only)
+
+### P3.Q4: "Which ORM or data-access layer?"
+- **Type**: Choice (filtered by P2.stack.language)
+- **Options**: For TypeScript: "Prisma" | "Drizzle" | "Kysely" | "TypeORM" | "Sequelize" | "Raw SQL" | "Other". For Python: "SQLAlchemy" | "Django ORM" | "Raw SQL" | "Other". For Go: "GORM" | "sqlc" | "Raw SQL" | "Other". For Ruby: "Active Record" | "Raw SQL" | "Other". For Elixir: "Ecto" | "Raw SQL" | "Other". For Rust: "Diesel" | "sqlx" | "Raw SQL" | "Other".
+- **Condition**: Q1 = yes
+- **Updates**: `context.phases.P3.orm` (required, enum)
+- **Cross-phase**: P4 reads for codegen + validation library pairing
+
+### P3.Q5: "Migration tool & application mode?"
+- **Type**: Composite (choice + choice)
+- **Sub-questions**:
+  - Tool: "ORM-native (Prisma migrate, Drizzle kit, etc.)" | "Alembic" | "Flyway" | "Liquibase" | "Raw SQL files" | "None — manual schema" | "Other"
+  - Mode: "Developer-applied (dev runs migrations locally)" | "CI-applied (pipeline runs before deploy)" | "Runtime-applied (app applies on boot)"
+- **Condition**: Q1 = yes
+- **Updates**: `context.phases.P3.migrationsTool` (required, enum) + `migrationsMode` (loose)
+
+### P3.Q6: "Multi-tenancy isolation strategy?"
+- **Type**: Choice
+- **Options**: "None — single-tenant" | "Row-level (tenant_id columns + RLS)" | "Schema-per-tenant" | "DB-per-tenant" | "Shared (no isolation — review carefully)"
+- **Condition**: Q1 = yes
+- **Updates**: `context.phases.P3.multiTenancy` (required, enum)
+- **Cross-phase**: Future P6 reads for auth/authz model
+
+### P3.Q7: "Search and retrieval strategy?"
+- **Type**: Choice
+- **Options**: "DB full-text only (Postgres tsvector, MySQL FT)" | "Dedicated engine (Elasticsearch, Meilisearch, Typesense)" | "Vector store (pgvector, Pinecone, Qdrant, Weaviate)" | "Hybrid (FTS + vector)" | "None — no search"
+- **Condition**: Q1 = yes
+- **Updates**: `context.phases.P3.search` (loose)
+
+### P3.Q8: "Caching layer + invalidation pattern?"
+- **Type**: Composite (multi-select + choice)
+- **Sub-questions**:
+  - Layers (multi-select; pad with "None / Skip" if zero matches): "In-memory (app-local)" | "Redis / KeyDB" | "Memcached" | "DB query cache" | "CDN edge"
+  - Invalidation: "TTL only" | "Event-driven (invalidate on write)" | "Manual" | "None — no caching"
+- **Condition**: Always (even no-DB apps can cache)
+- **Updates**: `context.phases.P3.cache` (loose) + `cacheInvalidation` (loose)
+
+### P3.Q9: "File / object storage strategy?"
+- **Type**: Choice
+- **Options**: "Cloud storage (S3 / R2 / Blob / GCS)" | "Local filesystem" | "CDN for static assets" | "Both cloud + CDN" | "No file handling"
+- **Condition**: `hasBackend || hasFrontend`
+- **Updates**: `context.phases.P3.fileStorage` (loose)
+
+### P3.Q10: "Codegen tools?"
+- **Type**: Multi-select
+- **Options**: "Prisma generate" | "Drizzle Kit" | "sqlc" | "GraphQL codegen" | "OpenAPI TypeScript" | "Protocol Buffers" | "None"
+- **Condition**: Applicable to stack (skip if Q1=no AND no API)
+- **Updates**: `context.phases.P3.codegen` (loose array)
+- **Note**: Even though codegen spans ORM (Prisma) and API (GraphQL/OpenAPI), it lives in P3 only per the single-owner boundary. P4 synthesis cross-references this question when style=graphql.
+
+### P3.Q11: "Backup & retention?"
+- **Type**: Choice
+- **Options**: "None — accept loss risk" | "Managed-provider auto-backup (most cloud DBs)" | "Scheduled dumps (custom cron)" | "Continuous (point-in-time recovery)"
+- **Condition**: Q1 = yes && `willDeploy`
+- **Updates**: `context.phases.P3.backup` (loose)
+
+### P3.Q12: "Data residency / compliance constraints?"
+- **Type**: Choice
+- **Options**: "None" | "Region-locked (specify in follow-up)" | "GDPR-aware (EU users)" | "HIPAA" | "PCI-DSS" | "SOC 2"
+- **Condition**: Always
+- **Updates**: `context.phases.P3.compliance` (loose)
+
+**>>> SYNTHESIS PAUSE**: After P3.Q12 (or after earlier final-question if Q1=no), invoke `Skill(synthesis-review, phaseId: "P3")`. Wait for the developer to Approve/Adjust/Skip each section before moving to Phase P4.
+
+---
+
 ## Category 3: Project Details (adaptive)
 
 ### Q3.1: "What's the scale of this project?"
