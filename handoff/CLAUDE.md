@@ -142,6 +142,3 @@ Threat vectors and mitigations:
 
 R9 stronger options (file integrity checks, signatures) considered and declined: surface-and-confirm is the real defense; cryptographic checks add complexity for negligible gain.
 
-## Skill collision note
-
-`mattpocock-skills` (a separate plugin in this marketplace, vendored on a different branch) also has a `handoff` skill. There's no actual collision — plugin namespacing means they coexist as `/handoff:save` (this plugin) and `/mattpocock-skills:handoff` (theirs). The purposes are different: this plugin is about session-continuity at SessionStart; theirs is about engineering-task handoff documentation.
