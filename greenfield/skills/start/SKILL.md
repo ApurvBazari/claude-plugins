@@ -62,7 +62,7 @@ Greenfield writes to `.claude/greenfield-state.json` at every natural checkpoint
 
 ```json
 {
-  "version": 1,
+  "schemaVersion": 1,
   "createdAt": "ISO-8601 timestamp",
   "updatedAt": "ISO-8601 timestamp",
   "currentPhase": "phase-1-context-gathering | phase-1.8-synthesis-review | phase-1.5-architectural-research | phase-1.7-grill-spec | phase-2-scaffold | phase-3a-plugin-discovery | phase-3b-tooling-generation | complete",

@@ -26,13 +26,39 @@ Stop.
 
 ---
 
+## Step 1.5: Check schema version
+
+Before parsing the full state, check the `schemaVersion` field. This early check prevents incompatible state JSON from being loaded.
+
+Read `.claude/greenfield-state.json` and extract the `schemaVersion` field at the root level.
+
+**Expected schema version**: `1`
+
+**If `schemaVersion` is missing or does not equal `1`**:
+
+> ⚠️  This wizard session was saved by a different greenfield version.
+>
+> Detected schemaVersion: [actual value or "missing"] | Expected: 1
+>
+> During alpha (3.0.0-alpha.X), schema changes are not migrated.
+>
+> **Restart with `/greenfield:start`**
+>
+> See `greenfield/skills/start/references/state-schema-evolution.md` for the policy.
+
+Stop. Do not proceed to Step 2. The user must start a fresh session.
+
+**If `schemaVersion === 1`**: proceed to Step 2.
+
+---
+
 ## Step 2: Parse and validate state
 
 Read `.claude/greenfield-state.json`. Expected schema:
 
 ```json
 {
-  "version": 1,
+  "schemaVersion": 1,
   "createdAt": "ISO-8601 timestamp",
   "updatedAt": "ISO-8601 timestamp",
   "currentPhase": "phase-1-context-gathering | phase-1.8-synthesis-review | phase-1.5-architectural-research | phase-1.7-grill-spec | phase-2-scaffold | phase-3a-plugin-discovery | phase-3b-tooling-generation | phase-4-lifecycle-setup | complete",
@@ -50,7 +76,7 @@ Read `.claude/greenfield-state.json`. Expected schema:
 ```
 
 Validate:
-- `version` field exists and equals `1` (future versions will need migration logic)
+- `schemaVersion` field exists and equals `1` (handled by Step 1.5, but double-check here for safety)
 - `currentPhase` is one of the known phases
 - `context` is a valid object (even if partial)
 

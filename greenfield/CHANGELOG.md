@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased] (3.0.0-alpha.3)
+
+### Schema breakage
+
+- **phaseStatus map** (PRE-5): `currentPhase` tracking changes from string to phase-status object with `status: "in-progress" | "complete" | "skipped"` and optional metadata
+- **architecturalFraming and architecturalValidation completedSteps** (PRE-2): two new step identifiers added; clients expecting a fixed set will fail
+- **defaults-driven flow markers** (PRE-6): new context fields like `autoResume: boolean` drive conditional phase skips; old state JSONs lack these fields
+
+**Impact**: Users with in-flight greenfield-state.json from alpha.2 will need to restart with `/greenfield:start`. No automatic migration during alpha.
+
+See [state-schema-evolution.md](greenfield/skills/start/references/state-schema-evolution.md) for the policy: alpha hard-cutover, stable migrations, and version check on resume.
+
 ## [2.0.0] (2026-05-04)
 
 ### Breaking changes
