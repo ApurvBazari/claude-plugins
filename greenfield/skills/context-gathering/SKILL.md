@@ -146,6 +146,43 @@ Detect by greping the agent's response for the literal string `STACK_RESEARCH_RE
 
 Wait for research results (either via agent or main session). Then ask Q2.3 about the scaffold approach, informed by the research findings.
 
+### Step 2.5 of 10: Architectural Framing
+
+Emit the progress indicator. This step gathers the early architectural decisions that inform all detailed phases (P3–P9): service topology, deployment shape, and scale target. Ask questions AF.Q1–AF.Q4 from `references/question-bank.md § Step 2.5: Architectural Framing` in order.
+
+**Data layout** — answers populate `context.phases.architecturalFraming.*` directly. The 3 required enum-locked fields are `topology`, `deploymentShape`, `scaleTarget`; `boundaryNotes` is a loose string.
+
+Tell the developer:
+
+> Step 2.5 of 10: Architectural Framing. Before we dive into data, APIs, and CI/CD, I want to lock in three foundational choices — service topology, deployment shape, and scale target — so the detailed phases inherit consistent assumptions. 4 questions; the last is open-ended.
+
+#### Architectural Framing questions (AF.Q1–AF.Q4)
+
+Ask each question from `references/question-bank.md § Step 2.5: Architectural Framing` in order. Honor the conditions.
+
+| Q | Topic | Writes to (under `context.phases.architecturalFraming`) |
+|---|---|---|
+| AF.Q1 | Service topology | `topology` (required, enum) |
+| AF.Q2 | Deployment shape | `deploymentShape` (required, enum) |
+| AF.Q3 | Scale target | `scaleTarget` (required, enum) |
+| AF.Q4 | Boundary expectations | `boundaryNotes` (loose string) |
+
+**Adaptive skipping**: if `appType: cli`, skip AF.Q2 (deploymentShape) but still ask AF.Q1, AF.Q3, and AF.Q4. If `willDeploy = false`, default `deploymentShape` to `"single-region"` and note the default rather than asking.
+
+**State checkpointing**: after each answered question, write to `greenfield-state.json.tmp` and rename atomically. Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-2.5-architectural-framing"`.
+
+#### Phase 1.8: synthesis review (after AF.Q4, or after the last applicable question if skipping fired)
+
+Invoke the `synthesis-review` skill via the Skill tool with `phaseId: "architecturalFraming"`. The skill:
+
+1. Sets `greenfield-state.json.currentPhase` to `phase-1.8-synthesis-review` and `currentSynthesisPhase: "architecturalFraming"`.
+2. Renders `docs/architecture/architectural-framing.html` in the scaffolded project using the 3-section template.
+3. Walks the developer through Approve/Adjust/Skip per section.
+4. Writes `context.syntheses.architecturalFraming = { approvedAt, adjustments[] }`.
+5. Writes `docs/architecture/architectural-framing-dependencies.json` from the wizard-collected dependency edges.
+
+If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen — `architectural-framing.html` ships in Round 2.5), tell the developer and continue to Step 3.
+
 ### Step 3 of 10: Data Architecture
 
 This step is Round 2's first new phase. Captures data-layer decisions via P3.Q1–P3.Q12 and closes with an inline Phase 1.8 synthesis-review pass.
@@ -517,6 +554,12 @@ After the wizard completes, compile all answers into a structured context object
   "autoEvolutionMode": "string",
   "prReviewTrigger": "string",
   "phases": {
+    "architecturalFraming": {
+      "topology": "monolith | modular-monolith | microservices | serverless",
+      "deploymentShape": "single-region | multi-region | edge-distributed | on-prem",
+      "scaleTarget": "hobby | startup | production-scale | enterprise",
+      "boundaryNotes": "optional free-text"
+    },
     "dataArchitecture": {
       "databaseHost": "managed-rdbms",
       "orm": "prisma",
@@ -559,6 +602,7 @@ After the wizard completes, compile all answers into a structured context object
     }
   },
   "syntheses": {
+    "architecturalFraming": { "approvedAt": "ISO-8601", "adjustments": [] },
     "dataArchitecture": { "approvedAt": "ISO-8601", "adjustments": [] },
     "apiIntegration": { "approvedAt": "ISO-8601", "adjustments": [] },
     "cicdAndDelivery": { "approvedAt": "ISO-8601", "adjustments": [] }
@@ -585,7 +629,10 @@ Write a checkpoint **after each named Step completes** (not after each individua
 | After Step | Write to state file |
 |---|---|
 | Step 1 complete (Project Vision) | `completedSteps: ["step-1-vision"]`, `currentStep: "step-2-stack"`, `context.appDescription`, `context.appType` |
-| Step 2 complete (Tech Stack) | Add `"step-2-stack"`, `currentStep: "step-3-data-architecture"`, `context.stack`, `researchFindings`, `research.mode` |
+| Step 2 complete (Tech Stack) | Add `"step-2-stack"`, `currentStep: "step-2.5-architectural-framing"`, `context.stack`, `researchFindings`, `research.mode` |
+| Step 2.5 — AF.Q1 answered | Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-2.5-architectural-framing"`, `lastAnsweredQuestionId: "AF.Q1"` |
+| Step 2.5 — AF.Q4 answered (or last applicable) | Set `currentPhase: "phase-1.8-synthesis-review"`, `currentSynthesisPhase: "architecturalFraming"`, add `"step-2.5-architectural-framing"` to `completedSteps` |
+| Step 2.5 — synthesis-review(architecturalFraming) returns | Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-3-data-architecture"`, clear `currentSynthesisPhase`. Add `context.syntheses.architecturalFraming = { approvedAt, adjustments }` |
 | Step 3 — P3.Q1 answered | Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-3-data-architecture"`, `lastAnsweredQuestionId: "P3.Q1"` |
 | Step 3 — P3.Q12 answered (or last applicable) | Set `currentPhase: "phase-1.8-synthesis-review"`, `currentSynthesisPhase: "dataArchitecture"`, add `"step-3-data-architecture"` to `completedSteps` |
 | Step 3 — synthesis-review(dataArchitecture) returns | Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-4-api-integration"`, clear `currentSynthesisPhase`. Add `context.syntheses.dataArchitecture = { approvedAt, adjustments }` |

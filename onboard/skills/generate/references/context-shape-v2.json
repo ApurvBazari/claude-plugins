@@ -54,6 +54,7 @@
         "vision":   { "$ref": "#/definitions/deferredPhase" },
         "personas": { "$ref": "#/definitions/deferredPhase" },
         "domain":   { "$ref": "#/definitions/deferredPhase" },
+        "architecturalFraming": { "$ref": "#/definitions/architecturalFraming" },
         "stack":   {
           "description": "Stack details. Greenfield 3.0 Round 1 fills this from wizard Steps 1-2 verbatim (no new fields).",
           "type": "object",
@@ -106,12 +107,36 @@
         "type": "array",
         "items": {
           "type": "string",
-          "pattern": "^(vision|personas|domain|stack|dataArchitecture|apiIntegration|frontend|authSecurity|workflow|pluginRecommendation|cicdAndDelivery|risk|featureRoadmap|pluginInstall|schemaDraftReview)\\..+$"
+          "pattern": "^(vision|personas|domain|architecturalFraming|stack|dataArchitecture|apiIntegration|frontend|authSecurity|workflow|pluginRecommendation|cicdAndDelivery|risk|featureRoadmap|pluginInstall|schemaDraftReview)\\..+$"
         }
       }
     }
   },
   "definitions": {
+    "architecturalFraming": {
+      "type": "object",
+      "description": "Architectural Framing. Fully specified in onboard 2.0.0-alpha.2 Round 2.5 (T5). 3 required enum-locked fields (topology, deploymentShape, scaleTarget) inform all detailed phases P3–P9; boundaryNotes is a loose string for advisory boundary constraints. Placed early in the wizard (Step 2.5) so decisions cascade forward consistently.",
+      "required": ["topology", "deploymentShape", "scaleTarget"],
+      "additionalProperties": false,
+      "properties": {
+        "topology": {
+          "enum": ["monolith", "modular-monolith", "microservices", "serverless"],
+          "description": "Service topology. All P3–P9 phases read this for compatibility checks (e.g., microservices + embedded DB contradict; serverless + ORM-native migrations produce a note). Recommended default: monolith for solo/startup, modular-monolith for team projects."
+        },
+        "deploymentShape": {
+          "enum": ["single-region", "multi-region", "edge-distributed", "on-prem"],
+          "description": "Geographic deployment footprint. cicdAndDelivery reads for env ladder and rollback strategy; dataArchitecture reads for DB hosting model compatibility (edge-distributed constrains ORM choice)."
+        },
+        "scaleTarget": {
+          "enum": ["hobby", "startup", "production-scale", "enterprise"],
+          "description": "Current scale target (not aspirational). Drives caching, backup, compliance, and release pipeline recommendations across P3–P9. authSecurity (Round 3) calibrates identity recommendations against this."
+        },
+        "boundaryNotes": {
+          "type": "string",
+          "description": "Loose advisory field for hard boundary requirements (e.g., 'billing must be isolated from auth', 'PCI data cannot touch user PII'). grill-spec cross-checks against topology; synthesis renders as a note. Empty string OK; null is not."
+        }
+      }
+    },
     "deferredPhase": {
       "type": "object",
       "description": "Stub for phases that will be expanded in later rounds. Onboard 2.0.0-alpha.1 accepts these as inert pass-through metadata.",

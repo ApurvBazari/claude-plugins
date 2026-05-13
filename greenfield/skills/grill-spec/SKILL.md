@@ -70,7 +70,12 @@ Skip categories whose preconditions don't apply. For example, "auth gaps" is sil
 
 ## Step 4: Conflict resolution
 
-After grilling completes (either path), scan the new context against the original AND against every per-phase synthesis record present in `context.syntheses` — iterate dynamically over all keys (Round 2 ships dataArchitecture, apiIntegration, and cicdAndDelivery; future rounds will add more). If any answer contradicts a Phase-1 wizard answer or an approved synthesis section, surface the conflict explicitly:
+After grilling completes (either path), scan the new context against the original AND against every per-phase synthesis record present in `context.syntheses` — iterate dynamically over all keys (Round 2 / 2.5 ships architecturalFraming, dataArchitecture, apiIntegration, and cicdAndDelivery; future rounds will add more). If any answer contradicts a Phase-1 wizard answer or an approved synthesis section, surface the conflict explicitly.
+
+**Architectural Framing cross-checks** (run whenever `context.syntheses.architecturalFraming` is present):
+- If grilling changes `auth.strategy` from `"none"` to any value AND `architecturalFraming.topology === "serverless"`: note that serverless functions often use JWT/JWKS rather than session-based auth — verify the auth strategy is compatible with stateless function invocations.
+- If grilling reveals `boundaryNotes` contains isolation language AND `architecturalFraming.topology === "monolith"`: surface the Architectural Framing contradiction check (§ Step 2.5 isolation-without-microservices rule) and route to Phase 1.5 if the user wants to revisit topology.
+- If grilling changes any stack-level decision that affects topology (e.g., moving from a monorepo to microservices, adding a queue broker): flag that `architecturalFraming.topology` may need to be re-reviewed and offer to route back to Step 2.5.
 
 > **Conflict detected**: Phase 1 said `auth.strategy = "none"` but Step 3 of grilling identified that feature `password-reset` requires authentication.
 >

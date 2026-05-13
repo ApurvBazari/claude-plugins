@@ -24,6 +24,25 @@ Run these checks at compose time. Each one fires only if both endpoint values ex
 
 Round 1 ships only the first check. The second and third require Round 3's `workflow` phase — the rules are documented here so they fire automatically once that phase lands.
 
+## Round 2.5 sections (Step 2.5: Architectural Framing)
+
+Use this table to compose `architectural-framing.html` sections. This synthesis fires before Data Architecture (Step 3), so its dependencies are backward-looking: only vision and stack are earlier phases.
+
+| Section | Maps to (context.phases.architecturalFraming.*) | Cross-checks |
+|---|---|---|
+| Topology & deployment shape | `topology`, `deploymentShape` | Assumes `vision.willDeploy`. Cross-check: `topology: serverless` + `deploymentShape: on-prem` contradicts (serverless requires cloud infrastructure). |
+| Scale & boundaries | `scaleTarget`, `boundaryNotes` | Assumes `vision.teamSize` (deferred to Round 4 — annotate as "not yet captured"). Note if `scaleTarget: enterprise` && `topology: monolith` (not a contradiction, but flag for architectural review). |
+| Downstream implications | (derived) | Note that topology/deploymentShape/scaleTarget will be read by P3 (Data Architecture), P4 (API & Integration), and P7 (CI/CD & Delivery). If the developer adjusts any field here, remind them the detailed steps will inherit the updated value. |
+
+### Contradiction rules specific to Architectural Framing
+
+Append to the contradiction table:
+
+| Check | Condition | Fires |
+|---|---|---|
+| Serverless-on-prem | `phases.architecturalFraming.topology === "serverless"` AND `phases.architecturalFraming.deploymentShape === "on-prem"` | "Architectural Framing picked serverless topology but on-premises deployment. Serverless by definition requires cloud infrastructure — pick a cloud deployment shape or change topology to monolith." |
+| Boundary-without-microservices | `phases.architecturalFraming.boundaryNotes` contains isolation language (e.g., "isolated", "separate", "must not touch") AND `phases.architecturalFraming.topology === "monolith"` | "Architectural Framing notes hard isolation boundaries but topology is monolith. Strict isolation is achievable in a monolith via module boundaries (modular-monolith), but often signals microservices intent. Confirm the topology choice." |
+
 ## Round 1 sections (Step 7: CI/CD & Delivery)
 
 Use this table to compose `cicd-and-delivery.html` sections.
@@ -65,6 +84,17 @@ Use this table to compose `api-integration.html` sections.
 | Async patterns | `asyncPattern` | Contradiction if `asyncPattern: queue-and-worker` && `dataArchitecture.cache` doesn't include a broker-capable store. Note if `asyncPattern: serverless-functions` && `cicdAndDelivery.cicd.provider: none`. |
 | Real-time | `realtime` | Note if `realtime != none` && `vision.willDeploy: false`. |
 | Webhooks & external integrations | `webhooks`, `externalServices[]` | Note if `webhooks` mentions "outgoing" && `externalServices[]` empty. Note PCI-scope flag if `externalServices[]` includes a payment vendor. |
+
+## Round 2.5 contradiction-detection additions (Architectural Framing)
+
+Append to the contradiction table above the section-prompts file:
+
+| Check | Condition | Fires |
+|---|---|---|
+| Serverless-on-prem | `phases.architecturalFraming.topology === "serverless"` AND `phases.architecturalFraming.deploymentShape === "on-prem"` | "Architectural Framing picked serverless topology but on-premises deployment. Serverless requires cloud infrastructure — pick a cloud deployment shape or change topology to monolith." |
+| Serverless-ORM-native-migrations | `phases.architecturalFraming.topology === "serverless"` AND `phases.dataArchitecture.migrationsTool === "orm-native"` | "Architectural Framing picked serverless topology but Data Architecture chose ORM-native migrations. ORM-native migrations (Prisma migrate, Drizzle kit) run as long-lived processes — they conflict with function lifecycle. Switch to Flyway, Liquibase, or raw-SQL migrations run as a separate job." |
+| Microservices-embedded-DB | `phases.architecturalFraming.topology === "microservices"` AND `phases.dataArchitecture.databaseHost === "embedded"` | "Architectural Framing picked microservices but Data Architecture chose an embedded DB. Embedded databases (SQLite, DuckDB) are single-process — they cannot be shared across microservices. Use a managed or serverless RDBMS instead." |
+| Isolation-note-with-monolith | `phases.architecturalFraming.boundaryNotes` includes isolation language AND `phases.architecturalFraming.topology === "monolith"` | "Architectural Framing notes hard isolation requirements but topology is monolith. Consider modular-monolith for enforced module boundaries, or microservices for true runtime isolation." |
 
 ## Round 2 contradiction-detection additions
 

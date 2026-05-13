@@ -67,6 +67,48 @@ Each answer updates this context. Questions use the context to determine whether
 
 ---
 
+## Step 2.5: Architectural Framing (4 questions)
+
+Step 2.5 of the 10-step wizard. Gathers the early architectural choices that inform all detailed phases (P3–P9): service topology, deployment shape, and scale target. Synthesis review fires inline after the last question.
+
+Writes to `context.phases.architecturalFraming.*`. See `onboard/skills/generate/references/context-shape-v2.json` § `architecturalFraming` for the schema.
+
+### AF.Q1: "What's your service topology?"
+- **Type**: Choice
+- **Options**: "Monolith (single deployable unit)" | "Modular monolith (internal modules, single deploy)" | "Microservices (independent services, independent deploys)" | "Serverless (function-per-endpoint, no persistent server)"
+- **Condition**: Always (gate question for the step)
+- **Updates**: `context.phases.architecturalFraming.topology` (required, enum)
+- **Downstream effects**: All detailed phases (P3–P9) read topology. Microservices + monolith DB contradict; serverless + ORM-native migrations produce a note; monolith is the recommended default for solo or startup projects.
+- **Recommend**: Lead with monolith for solo developers (`isProduction: false` or `teamSize = solo-or-pair`); serverless for `appType: api` with `scaleTarget: startup`; microservices only for `teamSize: 5+` or when the user explicitly identifies independently-scalable domains.
+
+### AF.Q2: "What's your deployment shape?"
+- **Type**: Choice
+- **Options**: "Single-region (one cloud region, simplest)" | "Multi-region (active/active or active/passive across regions)" | "Edge-distributed (CDN edge workers, globally distributed)" | "On-premises (self-managed infrastructure)"
+- **Condition**: NOT (`appType: cli`). If `willDeploy = false`, default to `"single-region"` and note rather than asking.
+- **Updates**: `context.phases.architecturalFraming.deploymentShape` (required, enum)
+- **Downstream effects**: cicdAndDelivery reads for env ladder and rollback strategy; dataArchitecture reads for DB hosting model compatibility.
+- **Recommend**: Single-region unless `scaleTarget: enterprise` or user explicitly names a global user base. Edge-distributed is powerful but constrains ORM options (Prisma + serverless edge drivers; SQLAlchemy not edge-compatible).
+
+### AF.Q3: "What's the scale target?"
+- **Type**: Choice
+- **Options**: "Hobby / personal project (single user, occasional traffic)" | "Startup (public launch, growth expected, 100–10k users)" | "Production-scale (established product, sustained load, 10k–1M users)" | "Enterprise (regulated, SLA-backed, 1M+ users or organizational complexity)"
+- **Condition**: Always
+- **Updates**: `context.phases.architecturalFraming.scaleTarget` (required, enum)
+- **Downstream effects**: dataArchitecture caching, backup, and compliance questions weight their recommendations against scale target; cicdAndDelivery env ladder and release pipeline complexity track scale; authSecurity (Round 3) uses scale to calibrate identity recommendations.
+- **Recommend**: Be honest about current scale, not aspirational. Most projects starting today are `startup`; `enterprise` triggers heavier compliance cross-checks.
+
+### AF.Q4: "Do you have any hard architectural boundary requirements or constraints?"
+- **Type**: Open-ended with option-prompted starting points
+- **Suggested prompts**: "Domain separation you know you need (e.g., billing must be isolated from auth)?", "Regulatory constraints that force isolation (e.g., PCI data must not touch user PII)?", "Team ownership lines that need to map to service boundaries?"
+- **Condition**: Always
+- **Updates**: `context.phases.architecturalFraming.boundaryNotes` (loose string — whatever the user says goes in as-is; this is advisory context for later phases, not schema-validated)
+- **Downstream effects**: grill-spec cross-checks `boundaryNotes` against topology when non-empty (e.g., "must isolate payments" + `topology: monolith` produces a contradiction flag); synthesis-review § Downstream Implications renders this as a note.
+- **If no constraints**: capture as `""` (empty string) or `"none stated"`. Do not leave null — the schema accepts empty string; null would fail required-field presence in future tooling.
+
+**>>> SYNTHESIS PAUSE**: After AF.Q4 (or after the last applicable question if skipping fired), invoke `Skill(synthesis-review, phaseId: "architecturalFraming")`. Wait for the developer to Approve/Adjust/Skip each section before moving to Step 3: Data Architecture.
+
+---
+
 ## Step 3: Data Architecture (12 questions)
 
 Step 3 of the 10-step wizard. Captures data-layer decisions: DB engine + host, ORM, migrations, multi-tenancy, search, caching, file storage, codegen, backup, compliance. Synthesis review fires inline after the last question.
