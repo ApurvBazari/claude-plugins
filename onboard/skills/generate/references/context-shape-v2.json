@@ -1,0 +1,254 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/ApurvBazari/claude-plugins/onboard/skills/generate/references/context-shape-v2.json",
+  "title": "Onboard Generate — v2 Context Shape",
+  "description": "Input schema for the onboard:generate skill in onboard 2.x. Hard cutover from v1: v2 callers must emit `version: 2` at the root. v1 input is rejected outright (no migration helper ships in any onboard 2.x release). Round 1 (alpha.1) fully specifies P8 (CI/CD & Operations) — all other phase slots carry `_status: 'deferred-to-round-N'` and become inert pass-through metadata. Greenfield 3.0+ is the canonical caller; direct headless callers must construct v2 contexts directly.",
+  "type": "object",
+  "required": ["version", "source", "projectPath", "callerExtras", "phases"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": 2,
+      "description": "Schema version. HARD-REQUIRED. Missing or any other value → onboard:generate rejects with a pointer to onboard 1.10.0 for legacy callers."
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the calling plugin (e.g., 'greenfield')."
+    },
+    "projectPath": {
+      "type": "string",
+      "description": "Absolute path to the scaffolded project root. Generate writes artifacts under this path."
+    },
+    "callerExtras": {
+      "type": "object",
+      "description": "Runtime-injected payload from the caller. Stays at root (NOT nested under phases) — separates wizard data from caller plumbing.",
+      "additionalProperties": true,
+      "properties": {
+        "installedPlugins": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Plugin names installed by the caller. Drives shadowing prevention in config-generator (agents for covered capabilities are skipped)."
+        },
+        "coveredCapabilities": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Capability tags covered by installed plugins."
+        },
+        "allowPluginReferences": {
+          "type": "boolean",
+          "description": "Permit generated rules/skills to reference installed plugins instead of duplicating their guidance. Defaults to true when installedPlugins is non-empty."
+        },
+        "allowHttpHooks": {
+          "type": "boolean",
+          "description": "OFF by default. Required true for any hookType='http' entry. Never auto-inferred."
+        }
+      }
+    },
+    "phases": {
+      "type": "object",
+      "description": "Wizard-captured per-phase data. Round 1 fully specifies P8; other phase slots are deferred to later rounds (R2-R6) and carry _status only. Phase ids match the 15-phase wizard structure documented in docs/greenfield-overview.html.",
+      "additionalProperties": false,
+      "required": ["P8"],
+      "properties": {
+        "P0":   { "$ref": "#/definitions/deferredPhase" },
+        "P0.5": { "$ref": "#/definitions/deferredPhase" },
+        "P1":   { "$ref": "#/definitions/deferredPhase" },
+        "P2":   {
+          "description": "Stack details. Greenfield 3.0 Round 1 fills this from wizard Steps 1-2 verbatim (no new fields).",
+          "type": "object",
+          "properties": {
+            "stack": {
+              "type": "object",
+              "properties": {
+                "framework": { "type": "string" },
+                "version": { "type": "string" },
+                "language": { "type": "string" },
+                "additional": { "type": "array", "items": { "type": "string" } }
+              }
+            }
+          }
+        },
+        "P3":   { "$ref": "#/definitions/deferredPhase" },
+        "P4":   { "$ref": "#/definitions/deferredPhase" },
+        "P5":   { "$ref": "#/definitions/deferredPhase" },
+        "P6":   { "$ref": "#/definitions/deferredPhase" },
+        "P7":   { "$ref": "#/definitions/deferredPhase" },
+        "P7.5": {
+          "type": "object",
+          "description": "Plugin recommendation pass (P7.5 in the 15-phase wizard). Greenfield 3.0 Round 1 emits as { pluginRecommendations: [] }; reserved for richer structure in later rounds.",
+          "properties": {
+            "pluginRecommendations": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "P8":   { "$ref": "#/definitions/p8Cicd" },
+        "P8.5": { "$ref": "#/definitions/deferredPhase" },
+        "P9":   { "$ref": "#/definitions/deferredPhase" },
+        "P10":  {
+          "type": "object",
+          "description": "Plugin install confirmation (P10 in the 15-phase wizard). Round 1 emits as { installedPlugins: [] } — mirrors callerExtras for symmetry.",
+          "properties": {
+            "installedPlugins": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "P10.5": { "$ref": "#/definitions/deferredPhase" }
+      }
+    },
+    "syntheses": {
+      "type": "object",
+      "description": "Per-phase synthesis-review records. Generate consults these to know which phases the developer explicitly approved; missing syntheses for fully-specified phases produce a warning (not a failure).",
+      "additionalProperties": { "$ref": "#/definitions/synthesisRecord" }
+    },
+    "dependencies": {
+      "type": "object",
+      "description": "Cross-phase dependency assertions, mirrored from the per-project docs/architecture/p*-dependencies.json files. Used for cross-check warnings and metadata.",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "string", "pattern": "^P\\d+(\\.\\d+)?\\..+$" }
+      }
+    }
+  },
+  "definitions": {
+    "deferredPhase": {
+      "type": "object",
+      "description": "Stub for phases that will be expanded in later rounds. Onboard 2.0.0-alpha.1 accepts these as inert pass-through metadata.",
+      "required": ["_status"],
+      "additionalProperties": true,
+      "properties": {
+        "_status": {
+          "type": "string",
+          "pattern": "^deferred-to-round-[1-6?]$",
+          "description": "Marker indicating which round will fully specify this phase. Use 'deferred-to-round-?' if uncertain."
+        }
+      }
+    },
+    "synthesisRecord": {
+      "type": "object",
+      "required": ["approvedAt"],
+      "additionalProperties": false,
+      "properties": {
+        "approvedAt": { "type": "string", "format": "date-time" },
+        "adjustments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["section", "decision"],
+            "properties": {
+              "section": { "type": "string" },
+              "decision": { "enum": ["approved", "adjusted", "skipped", "adjusted-then-reverted"] },
+              "before": {},
+              "after": {},
+              "note": { "type": "string" },
+              "via": { "enum": ["brainstorming+grill-me", "brainstorming-only", "grill-me-only", "inline-fallback"] }
+            }
+          }
+        }
+      }
+    },
+    "p8Cicd": {
+      "type": "object",
+      "description": "Phase 8 — CI/CD & Operations. Fully specified in onboard 2.0.0-alpha.1 Round 1. The cicd subobject is the new wizard surface (Q5.4-Q5.17, 14 fields); _v1_carryover preserves Q5.1-Q5.3 answers.",
+      "required": ["cicd"],
+      "properties": {
+        "cicd": {
+          "type": "object",
+          "required": [
+            "provider", "triggers", "requiredPreMergeChecks", "coverage",
+            "envLadder", "autoDeploy", "deployCadence", "rollback",
+            "secrets", "notifications", "buildMatrix", "caching",
+            "timeBudget", "releasePipeline"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "provider": { "enum": ["github-actions", "gitlab-ci", "circleci", "buildkite", "jenkins", "none"] },
+            "triggers": {
+              "type": "array",
+              "items": { "enum": ["push-to-main", "every-pr", "scheduled", "manual", "tag"] }
+            },
+            "requiredPreMergeChecks": {
+              "type": "array",
+              "items": { "enum": ["lint", "typecheck", "unit", "integration", "e2e", "security-scan", "coverage", "build"] }
+            },
+            "coverage": {
+              "type": "object",
+              "properties": {
+                "threshold": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+                "scope": { "enum": ["global", "per-package", "per-file"] },
+                "blocking": { "type": "boolean" }
+              }
+            },
+            "envLadder": {
+              "type": "array",
+              "items": { "enum": ["dev", "staging", "preview", "prod"] },
+              "description": "Ordered list of environments deploys progress through. Single-env projects emit [prod] only."
+            },
+            "autoDeploy": { "enum": ["auto-on-merge", "manual-button", "scheduled", "tag-triggered", "none"] },
+            "deployCadence": { "enum": ["continuous", "daily", "weekly", "manual", "none"] },
+            "rollback": {
+              "type": "object",
+              "properties": {
+                "strategy": { "enum": ["redeploy-previous-sha", "blue-green", "canary", "none"] },
+                "automation": { "type": "boolean" }
+              }
+            },
+            "secrets": {
+              "type": "object",
+              "properties": {
+                "manager": { "enum": ["provider-stored", "oidc-to-cloud", "vault", "1password", "doppler", "manual"] },
+                "rotation": { "enum": ["manual", "scheduled", "on-incident"] }
+              }
+            },
+            "notifications": {
+              "type": "object",
+              "properties": {
+                "channels": { "type": "array", "items": { "enum": ["slack", "discord", "email", "github-checks"] } },
+                "events": { "type": "array", "items": { "enum": ["build-failure", "deploy-success", "deploy-failure", "security-alert"] } }
+              }
+            },
+            "buildMatrix": {
+              "type": "object",
+              "properties": {
+                "os": { "type": "array", "items": { "enum": ["ubuntu-latest", "macos-latest", "windows-latest"] } },
+                "languageVersions": { "enum": ["single", "multi"] },
+                "parallelization": { "oneOf": [{ "enum": ["auto", "off"] }, { "type": "number" }] }
+              }
+            },
+            "caching": {
+              "type": "object",
+              "properties": {
+                "deps": { "type": "boolean" },
+                "build": { "type": "boolean" },
+                "dockerLayers": { "type": "boolean" },
+                "remote": { "enum": ["turbo", "buildkite", "none"] }
+              }
+            },
+            "timeBudget": {
+              "type": "object",
+              "properties": {
+                "perPipelineMinutes": { "type": "number", "minimum": 1 },
+                "blockingThresholdMinutes": { "type": ["number", "null"], "minimum": 1 }
+              }
+            },
+            "releasePipeline": {
+              "type": "object",
+              "properties": {
+                "separate": { "type": "boolean" },
+                "triggeredBy": { "enum": ["tag", "manual", "schedule"] },
+                "convention": { "enum": ["release-please", "semantic-release", "manual", "none"] }
+              }
+            }
+          }
+        },
+        "_v1_carryover": {
+          "type": "object",
+          "description": "Existing Q5.1/Q5.2/Q5.3 answers preserved verbatim from greenfield 2.x. Mirrored from greenfield-state.json top-level fields during context-gathering Step 5.",
+          "properties": {
+            "ciAuditAction": { "enum": ["create-pr", "comment", "issue"] },
+            "autoEvolutionMode": { "enum": ["auto", "log-then-evolve", "notify"] },
+            "prReviewTrigger": { "enum": ["auto-every", "comment-mention", "auto-with-skip-label"] }
+          }
+        }
+      }
+    }
+  }
+}

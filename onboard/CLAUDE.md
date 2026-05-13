@@ -43,24 +43,78 @@ Phase 4: Handoff ──→ explains generated artifacts, suggests next steps
 - `config-generator` runs second (write) — receives analysis + wizard answers via prompt
 - `feature-evaluator` is available for independent feature testing (spawned by `/onboard:verify`)
 
-## Headless Mode (`onboard:generate`)
+## Headless Mode (`onboard:generate`) — v2-only as of 2.0.0-alpha.1
 
-External plugins (e.g., Greenfield) invoke the `generate` skill via the Skill tool, skipping the wizard and analysis. The skill is `user-invocable: false` so it doesn't clutter the user's slash menu.
+External plugins (e.g., Greenfield 3.0+) invoke the `generate` skill via the Skill tool, skipping the wizard and analysis. The skill is `user-invocable: false` so it doesn't clutter the user's slash menu.
 
 ```
-generate skill (headless)
+generate skill (v2-only, headless)
+     │
+     ├── Step 0: version detection — REJECTS v1 input outright
+     │       (v1 callers must pin to onboard 1.10.0; no migration helper ships)
      │
      ▼
-Pre-seeded context JSON ──→ config-generator agent (write)
-     │                        ├── Core artifacts (always)
-     │                        └── Enriched artifacts (based on enriched flags)
+v2 context JSON ──→ Step 1.5 maps v2 → internal format
+     │              + renders GHA workflow templates from phases.P8.cicd
+     │              + renders sprint-contracts from phases.P8.cicd.envLadder
+     │              + composes evolution-wiring qualityGates entries
+     │              + injects all rendered artifacts into agent prompt
+     │
      ▼
-Results report ──→ lists generated artifacts
+config-generator agent ──→ writes the rendered artifacts + standard generation
+     │                       ├── Core artifacts (always)
+     │                       └── Enriched artifacts (based on internal enriched flags)
+     ▼
+Results report ──→ lists generated artifacts + telemetry
 ```
 
-- Context JSON includes `analysis`, `wizardAnswers`, `enriched` flags, and `callerExtras`
-- `enriched` flags control: CI/CD, harness, evolution hooks, sprint contracts, teams, verification
-- Plugin-aware: `callerExtras.coveredCapabilities` prevents agent shadowing
+### v2 context shape
+
+The canonical schema lives at `skills/generate/references/context-shape-v2.json` (draft-07 JSON Schema). Top-level structure:
+
+```jsonc
+{
+  "version": 2,
+  "source": "greenfield",
+  "projectPath": "/abs/path/to/project",
+  "callerExtras": { "installedPlugins": [], "coveredCapabilities": [] },
+  "phases": {
+    "P2": { "stack": { ... } },
+    "P8": {                              // ★ fully specified in Round 1
+      "cicd": { "provider", "triggers", "requiredPreMergeChecks", "coverage",
+                 "envLadder", "autoDeploy", "deployCadence", "rollback",
+                 "secrets", "notifications", "buildMatrix", "caching",
+                 "timeBudget", "releasePipeline" },
+      "_v1_carryover": { "ciAuditAction", "autoEvolutionMode", "prReviewTrigger" }
+    },
+    // P0, P0.5, P1, P3, P4, P5, P6, P7, P8.5, P9, P10, P10.5
+    // each carry { "_status": "deferred-to-round-N" } in Round 1 alpha
+  },
+  "syntheses": { "P8": { "approvedAt", "adjustments[]" } },
+  "dependencies": { "P8": ["P0.willDeploy", "P0.teamSize", ...] }
+}
+```
+
+### Hard cutover policy
+
+Onboard 2.x rejects v1 input outright. There is no migration helper. v1 callers (greenfield 2.x, any direct callers built before greenfield 3.0) must stay on onboard 1.10.0 for the lifetime of their session. Documented at length in `CHANGELOG-2.0.md`.
+
+The rejection contract is enforced at the top of `skills/generate/SKILL.md § Step 0` — never silent, never partial. The error message is parseable by callers for routing.
+
+### v2-specific templates (Round 1)
+
+- `skills/generate/references/cicd-templates/github-actions/*.yml.tmpl` — 4 GHA workflow templates rendered from P8 fields. Round 1 ships GHA only; non-GHA providers in Round 6.
+- `skills/generate/references/sprint-contracts-template.json` — sprint contract structure consuming `phases.P8.cicd.envLadder` for `deploymentTargets`.
+- `skills/generate/references/evolution-wiring.md` — mapping rules from `phases.P8.cicd.notifications` to project-side `.claude/hooks/notify-on-*.sh` scripts.
+
+### Plugin-aware generation
+
+- `callerExtras.coveredCapabilities` prevents agent shadowing (unchanged from v1)
+- The config-generator agent is unmodified by Round 1 — the existing v1-shaped agent prompt is preserved as the internal contract; only the OUTSIDE (caller-facing schema) is new
+
+### Future onboard 2.x changes
+
+The v2 root shape (with deferred phase stubs) is stable. Future minor versions (2.1, 2.2, ...) fill in deferred phases as greenfield Rounds 2-6 land, without breaking the root schema. See `CHANGELOG-2.0.md § Future onboard 2.x changes` for the non-binding roadmap.
 
 ## Generation Tiers
 
