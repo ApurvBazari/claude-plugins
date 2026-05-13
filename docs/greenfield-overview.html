@@ -286,11 +286,11 @@
       <span class="phase-tag">Inline sub-step</span>
     </div>
     <div class="phase-body">
-      Runs <em>inline at the end of each major wizard step that has a synthesis template</em>. In Round 1, this is wired only for Step 5 (P8 CI/CD) — later rounds add per-phase synthesis for P3, P4, P6, P7, P0/P0.5/P1, P9, P10.5.
+      Runs <em>inline at the end of each major wizard step that has a synthesis template</em>. In Round 2, this is wired for Step 3 (Data Architecture / dataArchitecture), Step 4 (API &amp; Integration / apiIntegration), and Step 7 (CI/CD &amp; Delivery / cicdAndDelivery) — later rounds add per-phase synthesis for authSecurity, workflow, vision/personas/domain, featureRoadmap, and schemaDraftReview.
       <ul>
-        <li>Renders <code>docs/architecture/p&lt;N&gt;-&lt;name&gt;.html</code> in the scaffolded project — a living architecture record, ADR-style, committed to the repo.</li>
+        <li>Renders <code>docs/architecture/&lt;topic-kebab&gt;.html</code> in the scaffolded project — a living architecture record, ADR-style, committed to the repo. (e.g. <code>data-architecture.html</code>, <code>api-integration.html</code>, <code>cicd-and-delivery.html</code>)</li>
         <li>Walks the developer through each section: <strong>Approve</strong> / <strong>Adjust</strong> / <strong>Skip</strong>. Adjust composes <code>superpowers:brainstorming</code> + <code>mattpocock-skills:grill-me</code> (or falls back inline).</li>
-        <li>Writes a machine-readable <code>p&lt;N&gt;-&lt;name&gt;-dependencies.json</code> sidecar for cross-phase dependency tracking. <code>scripts/visualize-graph.sh</code> renders the whole graph as Mermaid on demand.</li>
+        <li>Writes a machine-readable <code>&lt;topic-kebab&gt;-dependencies.json</code> sidecar for cross-phase dependency tracking. <code>scripts/visualize-graph.sh</code> renders the whole graph as Mermaid on demand.</li>
         <li>Installs a one-time pre-commit hook (warning-only) that flags architectural changes lacking a docs/architecture update.</li>
         <li>Brief <code>currentPhase</code> transition: <code>phase-1-context-gathering → phase-1.8-synthesis-review → phase-1-context-gathering</code>. <code>currentSynthesisPhase</code> records which phaseId is in progress.</li>
       </ul>

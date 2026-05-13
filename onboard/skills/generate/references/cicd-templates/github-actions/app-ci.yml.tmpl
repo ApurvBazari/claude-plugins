@@ -1,5 +1,5 @@
 # Application CI pipeline — runs on every PR and push to main.
-# Template rendered by onboard:generate (v2 path) consuming context.phases.P8.cicd.
+# Template rendered by onboard:generate (v2 path) consuming context.phases.cicdAndDelivery.cicd.
 # Placeholders use {{phase.cicd.<field>}} syntax; the generate skill substitutes
 # values from the v2 context before injecting the rendered string into the
 # config-generator agent's prompt for writing to .github/workflows/ci.yml.
@@ -137,7 +137,7 @@ jobs:
       {{/if}}
 
 # References:
-#   - Field semantics: ../../../../skills/generate/references/context-shape-v2.json § p8Cicd
+#   - Field semantics: ../../../../skills/generate/references/context-shape-v2.json § cicdAndDelivery
 #   - Synthesis section map: greenfield/skills/synthesis-review/references/section-prompts.md
 #   - Sprint contracts (consumes envLadder): ./sprint-contracts-template.json (sibling)
 #   - Notification wiring (channels → hook): ./evolution-wiring.md

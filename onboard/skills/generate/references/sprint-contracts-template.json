@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://github.com/ApurvBazari/claude-plugins/onboard/skills/generate/references/sprint-contracts-template.json",
-  "title": "Sprint Contract Template — v2 (P8-aware)",
-  "description": "Structure for the per-sprint contract files emitted by onboard:generate (v2 path) at <projectPath>/docs/sprint-contracts/sprint-<N>.json. The deploymentTargets array is driven by phases.P8.cicd.envLadder, replacing the v1 flat 'targetEnv' field. The exitCriteria.mustPass array integrates with the harness verification flow used by /onboard:verify --sprint.",
+  "title": "Sprint Contract Template — v2 (cicdAndDelivery-aware)",
+  "description": "Structure for the per-sprint contract files emitted by onboard:generate (v2 path) at <projectPath>/docs/sprint-contracts/sprint-<N>.json. The deploymentTargets array is driven by phases.cicdAndDelivery.cicd.envLadder, replacing the v1 flat 'targetEnv' field. The exitCriteria.mustPass array integrates with the harness verification flow used by /onboard:verify --sprint.",
   "type": "object",
   "required": ["sprint", "schemaVersion", "deploymentTargets", "exitCriteria"],
   "additionalProperties": false,
@@ -27,7 +27,7 @@
     },
     "deploymentTargets": {
       "type": "array",
-      "description": "Ordered list of environments this sprint must successfully deploy to before the sprint can close. DERIVED FROM phases.P8.cicd.envLadder — each env in the ladder becomes a target with appropriate verification rules. v1 had a single 'targetEnv' string; v2's array supports staging→prod ladders and preview-environment workflows.",
+      "description": "Ordered list of environments this sprint must successfully deploy to before the sprint can close. DERIVED FROM phases.cicdAndDelivery.cicd.envLadder — each env in the ladder becomes a target with appropriate verification rules. v1 had a single 'targetEnv' string; v2's array supports staging→prod ladders and preview-environment workflows.",
       "items": {
         "type": "object",
         "required": ["env", "verification"],
@@ -48,7 +48,7 @@
           },
           "rollback": {
             "type": "object",
-            "description": "Per-target rollback config. Inherits from phases.P8.cicd.rollback but can be overridden per env (e.g., prod requires manual approval even if other envs auto-rollback).",
+            "description": "Per-target rollback config. Inherits from phases.cicdAndDelivery.cicd.rollback but can be overridden per env (e.g., prod requires manual approval even if other envs auto-rollback).",
             "properties": {
               "strategy": { "enum": ["redeploy-previous-sha", "blue-green", "canary", "none", "inherit-from-p8"] },
               "requireManualApproval": { "type": "boolean" }
@@ -97,9 +97,9 @@
         "generatedAt": { "type": "string", "format": "date-time" },
         "generatedBy": { "type": "string", "description": "onboard plugin identifier + version (e.g., 'onboard@2.0.0-alpha.1')." },
         "v2ContextSource": { "type": "string", "description": "Caller plugin (typically 'greenfield')." },
-        "p8SnapshotAtGeneration": {
+        "cicdSnapshotAtGeneration": {
           "type": "object",
-          "description": "Snapshot of phases.P8.cicd at generation time. If P8 changes later (via /greenfield:pickup), this snapshot becomes stale and the sprint contract should be regenerated. Tracked by the freshness hook for /docs/architecture/."
+          "description": "Snapshot of phases.cicdAndDelivery.cicd at generation time. If cicdAndDelivery changes later (via /greenfield:pickup), this snapshot becomes stale and the sprint contract should be regenerated. Tracked by the freshness hook for /docs/architecture/."
         }
       }
     }
@@ -159,9 +159,9 @@
           },
           {
             "id": "EXIT-04",
-            "description": "P8 synthesis record exists and is approved",
+            "description": "cicdAndDelivery synthesis record exists and is approved",
             "verifier": "synthesis-records-present-for-spec-phases",
-            "params": { "requiredPhases": ["P8"] },
+            "params": { "requiredPhases": ["cicdAndDelivery"] },
             "criticality": "blocking"
           }
         ]

@@ -131,7 +131,7 @@ The descriptive file ALWAYS ships (required); the executable is optional if the 
 - **Remove**: field is deleted; recovery is only possible from backup
 - **Type change**: `isProduction: boolean` → `isProduction: string | boolean` (old clients may assume old type)
 - **Required addition**: a new field becomes mandatory for downstream skills (old state JSONs fail)
-- **Enum restriction**: an optional field's enum values shrink (e.g., `"P3" | "P4" | "P8"` → `"P3" | "P4"`)
+- **Enum restriction**: an optional field's enum values shrink (e.g., `"dataArchitecture" | "apiIntegration" | "cicdAndDelivery"` → `"dataArchitecture" | "apiIntegration"`)
 - **Restructure**: a nested object is flattened or vice versa (e.g., `context.deploy.target` → `context.deployTarget`)
 
 ### Non-breaking (do NOT increment schemaVersion)

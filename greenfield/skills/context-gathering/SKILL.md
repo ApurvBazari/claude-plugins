@@ -146,21 +146,21 @@ Detect by greping the agent's response for the literal string `STACK_RESEARCH_RE
 
 Wait for research results (either via agent or main session). Then ask Q2.3 about the scaffold approach, informed by the research findings.
 
-### Step 3 of 10: Data Architecture (Phase P3)
+### Step 3 of 10: Data Architecture
 
 This step is Round 2's first new phase. Captures data-layer decisions via P3.Q1–Q3.12 and closes with an inline Phase 1.8 synthesis-review pass.
 
-**Data layout** — answers populate `context.phases.P3.*` directly (no v1 carryover). The 4 required enum-locked fields are `databaseHost`, `orm`, `migrationsTool`, `multiTenancy`; remaining fields are loose strings.
+**Data layout** — answers populate `context.phases.dataArchitecture.*` directly (no v1 carryover). The 4 required enum-locked fields are `databaseHost`, `orm`, `migrationsTool`, `multiTenancy`; remaining fields are loose strings.
 
 Tell the developer:
 
 > Step 3 of 10: Data Architecture. I'll ask about your data layer — database engine, ORM, migrations, multi-tenancy, caching, file storage. About 12 questions. Some may be skipped based on your earlier answers.
 
-#### P3 questions (Q3.1–Q3.12)
+#### Data Architecture questions (Q3.1–Q3.12)
 
-Ask each P3 question from `references/question-bank.md § Phase P3` in order. Honor the conditions. Write each answer to its destination field under `context.phases.P3`.
+Ask each question from `references/question-bank.md § Step 3: Data Architecture` in order. Honor the conditions. Write each answer to its destination field under `context.phases.dataArchitecture`.
 
-| Q | Topic | Writes to (under `context.phases.P3`) |
+| Q | Topic | Writes to (under `context.phases.dataArchitecture`) |
 |---|---|---|
 | P3.Q1 | DB needed? (gate) | gate flag |
 | P3.Q2 | Engine | `engine` (loose) |
@@ -181,33 +181,33 @@ Ask each P3 question from `references/question-bank.md § Phase P3` in order. Ho
 
 #### Phase 1.8: synthesis review (after P3.Q12, or after the last applicable question if any skipping fired)
 
-Invoke the `synthesis-review` skill via the Skill tool with `phaseId: "P3"`. This is Round 2's first synthesis pass. The skill:
+Invoke the `synthesis-review` skill via the Skill tool with `phaseId: "dataArchitecture"`. This is Round 2's first synthesis pass. The skill:
 
-1. Sets `greenfield-state.json.currentPhase` to `phase-1.8-synthesis-review` and `currentSynthesisPhase: "P3"`.
-2. Renders `docs/architecture/p3-data.html` in the scaffolded project using the 7-section template.
+1. Sets `greenfield-state.json.currentPhase` to `phase-1.8-synthesis-review` and `currentSynthesisPhase: "dataArchitecture"`.
+2. Renders `docs/architecture/data-architecture.html` in the scaffolded project using the 7-section template.
 3. Walks the developer through Approve/Adjust/Skip per section.
-4. Writes `context.syntheses.P3 = { approvedAt, adjustments[] }`.
-5. Writes `docs/architecture/p3-data-dependencies.json` from the wizard-collected dependency edges.
+4. Writes `context.syntheses.dataArchitecture = { approvedAt, adjustments[] }`.
+5. Writes `docs/architecture/data-architecture-dependencies.json` from the wizard-collected dependency edges.
 
-If the developer adjusts any P3 field via the Adjust dialog, the updated value lives in `context.phases.P3.<field>` directly.
+If the developer adjusts any dataArchitecture field via the Adjust dialog, the updated value lives in `context.phases.dataArchitecture.<field>` directly.
 
-If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen — `p3-data.html` ships in Round 2), tell the developer and continue to Step 4.
+If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen — `data-architecture.html` ships in Round 2), tell the developer and continue to Step 4.
 
-### Step 4 of 10: API & Integration (Phase P4)
+### Step 4 of 10: API & Integration
 
 This step is Round 2's second new phase. Captures API surface decisions via P4.Q1–Q4.10 and closes with an inline Phase 1.8 synthesis-review pass.
 
-**Data layout** — answers populate `context.phases.P4.*` directly. The 3 required enum-locked fields are `style`, `versioningPolicy`, `asyncPattern`; remaining fields are loose strings or arrays.
+**Data layout** — answers populate `context.phases.apiIntegration.*` directly. The 3 required enum-locked fields are `style`, `versioningPolicy`, `asyncPattern`; remaining fields are loose strings or arrays.
 
 Tell the developer:
 
 > Step 4 of 10: API & Integration. I'll ask about your API surface — style (REST/GraphQL/tRPC), versioning, rate limits, async patterns, real-time, webhooks, external services. About 10 questions; some skipped based on whether you expose an API.
 
-#### P4 questions (Q4.1–Q4.10)
+#### API & Integration questions (Q4.1–Q4.10)
 
-Ask each P4 question from `references/question-bank.md § Phase P4` in order. Honor the conditions.
+Ask each question from `references/question-bank.md § Step 4: API & Integration` in order. Honor the conditions.
 
-| Q | Topic | Writes to (under `context.phases.P4`) |
+| Q | Topic | Writes to (under `context.phases.apiIntegration`) |
 |---|---|---|
 | P4.Q1 | API exposed? (gate) | gate flag |
 | P4.Q2 | Style | `style` (required, enum) |
@@ -226,19 +226,19 @@ Ask each P4 question from `references/question-bank.md § Phase P4` in order. Ho
 
 #### Phase 1.8: synthesis review (after P4.Q10, or after the last applicable question)
 
-Invoke the `synthesis-review` skill via the Skill tool with `phaseId: "P4"`. The skill:
+Invoke the `synthesis-review` skill via the Skill tool with `phaseId: "apiIntegration"`. The skill:
 
-1. Sets `currentSynthesisPhase: "P4"`.
-2. Renders `docs/architecture/p4-api.html` using the 6-section template.
+1. Sets `currentSynthesisPhase: "apiIntegration"`.
+2. Renders `docs/architecture/api-integration.html` using the 6-section template.
 3. Walks Approve/Adjust/Skip per section.
-4. Writes `context.syntheses.P4 = { approvedAt, adjustments[] }`.
-5. Writes `docs/architecture/p4-api-dependencies.json`.
+4. Writes `context.syntheses.apiIntegration = { approvedAt, adjustments[] }`.
+5. Writes `docs/architecture/api-integration-dependencies.json`.
 
-If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen — `p4-api.html` ships in Round 2), tell the developer and continue to Step 5.
+If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen — `api-integration.html` ships in Round 2), tell the developer and continue to Step 5.
 
 ### Step 5 of 10: Remaining Project Details (residual)
 
-This step holds the 13 Category 3 questions that have NOT been re-homed to P3 (Data) or P4 (API) in Round 2. They stay here as transitional content until Rounds 3–6 re-home them to P0/P5/P6/P7. See `references/question-bank.md § Category 3 (residual)` for the full question list.
+This step holds the 13 Category 3 questions that have NOT been re-homed to Data Architecture or API & Integration in Round 2. They stay here as transitional content until Rounds 3–6 re-home them to vision/frontend/authSecurity/workflow. See `references/question-bank.md § Category 3 (residual)` for the full question list.
 
 Tell the developer:
 
@@ -318,23 +318,23 @@ Q4.6 (releases) is only asked for production apps.
 
 Store the choice as `verificationStrategy` in the context object. This configures the feature-evaluator agent.
 
-### Step 7 of 10: CI/CD & Auto-Evolution (Category 5 / P8)
+### Step 7 of 10: CI/CD & Auto-Evolution (Category 5 / cicdAndDelivery)
 
 Emit the progress indicator. **Skip Q5.1, Q5.3, and Q5.4–Q5.17 entirely if `willDeploy = false`** — only Q5.2 (auto-evolution mode) applies to local projects.
 
-This step has two halves: the v1 carryover questions (Q5.1–Q5.3) and the expanded P8 question set added in greenfield 3.0 Round 1 (Q5.4–Q5.17 — 14 new questions covering CI provider, gates, env ladder, secrets, notifications, build matrix, caching, release pipeline, and deploy cadence).
+This step has two halves: the v1 carryover questions (Q5.1–Q5.3) and the expanded CI/CD & Delivery question set added in greenfield 3.0 Round 1 (Q5.4–Q5.17 — 14 new questions covering CI provider, gates, env ladder, secrets, notifications, build matrix, caching, release pipeline, and deploy cadence).
 
-**Data layout** — the three v1 questions populate flat top-level context fields (`ciAuditAction`, `autoEvolutionMode`, `prReviewTrigger`) for back-compat AND are mirrored into `context.phases.P8._v1_carryover.*`. The 14 new questions populate `context.phases.P8.cicd.*` directly. Both forms coexist in greenfield-state.json during Round 1; the v1 flat fields are deprecated and slated for removal in Round 6.
+**Data layout** — the three v1 questions populate flat top-level context fields (`ciAuditAction`, `autoEvolutionMode`, `prReviewTrigger`) for back-compat AND are mirrored into `context.phases.cicdAndDelivery._v1_carryover.*`. The 14 new questions populate `context.phases.cicdAndDelivery.cicd.*` directly. Both forms coexist in greenfield-state.json during Round 1; the v1 flat fields are deprecated and slated for removal in Round 6.
 
 #### v1 carryover (Q5.1–Q5.3)
 
-Ask Q5.1 (audit behavior), Q5.2 (auto-evolution mode), Q5.3 (PR review trigger). On answer, write to both the top-level field AND `context.phases.P8._v1_carryover.<field>`.
+Ask Q5.1 (audit behavior), Q5.2 (auto-evolution mode), Q5.3 (PR review trigger). On answer, write to both the top-level field AND `context.phases.cicdAndDelivery._v1_carryover.<field>`.
 
-#### P8 expansion (Q5.4–Q5.17)
+#### CI/CD & Delivery expansion (Q5.4–Q5.17)
 
 Walk these in order. Conditions in the question-bank gate each one — most are `willDeploy`, some additionally require an answer to a prior question (e.g., Q5.7 only fires if Q5.6 selected "Coverage"). Skip silently where the condition is not met.
 
-| Q | Topic | Writes to (under `context.phases.P8.cicd`) |
+| Q | Topic | Writes to (under `context.phases.cicdAndDelivery.cicd`) |
 |---|---|---|
 | Q5.4 | CI provider | `provider` |
 | Q5.5 | CI triggers | `triggers[]` |
@@ -357,17 +357,17 @@ If the developer answers Q5.4 with anything other than `"github-actions"`, captu
 
 #### Phase 1.8: synthesis review (after Q5.17, or after Q5.1/Q5.2/Q5.3 if `willDeploy = false`)
 
-Invoke the `synthesis-review` skill via the Skill tool with `phaseId: "P8"`. This is Round 1's only synthesis pass. The skill:
+Invoke the `synthesis-review` skill via the Skill tool with `phaseId: "cicdAndDelivery"`. This is Round 1's only synthesis pass. The skill:
 
-1. Sets `greenfield-state.json.currentPhase` to `phase-1.8-synthesis-review` and `currentSynthesisPhase: "P8"`.
-2. Renders `<targetProjectRoot>/docs/architecture/p8-cicd.html` from the template.
+1. Sets `greenfield-state.json.currentPhase` to `phase-1.8-synthesis-review` and `currentSynthesisPhase: "cicdAndDelivery"`.
+2. Renders `<targetProjectRoot>/docs/architecture/cicd-and-delivery.html` from the template.
 3. Walks the developer through 8 sections of Approve/Adjust/Skip.
-4. Writes `context.syntheses.P8 = { approvedAt, adjustments[] }`.
+4. Writes `context.syntheses.cicdAndDelivery = { approvedAt, adjustments[] }`.
 5. Returns control here. Set `currentPhase` back to `phase-1-context-gathering` and `currentStep` to `step-8-feature-decomp`.
 
-If the developer adjusts any P8 field via the Adjust dialog, the updated value is in `context.phases.P8.cicd.<field>` — the v1 carryover mirrors do NOT update (they preserve the original answer).
+If the developer adjusts any cicdAndDelivery field via the Adjust dialog, the updated value is in `context.phases.cicdAndDelivery.cicd.<field>` — the v1 carryover mirrors do NOT update (they preserve the original answer).
 
-If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen in Round 1 since `p8-cicd.html` ships in this commit), tell the developer and continue to Step 6.
+If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen in Round 1 since `cicd-and-delivery.html` ships in this commit), tell the developer and continue to Step 6.
 
 ### Step 8 of 10: Feature Decomposition (Harness Preparation) — REQUIRED
 
@@ -517,7 +517,7 @@ After the wizard completes, compile all answers into a structured context object
   "autoEvolutionMode": "string",
   "prReviewTrigger": "string",
   "phases": {
-    "P3": {
+    "dataArchitecture": {
       "databaseHost": "managed-rdbms",
       "orm": "prisma",
       "migrationsTool": "orm-native",
@@ -527,14 +527,14 @@ After the wizard completes, compile all answers into a structured context object
       "fileStorage": "cloud-s3-like",
       "codegen": ["prisma-generate"]
     },
-    "P4": {
+    "apiIntegration": {
       "style": "rest",
       "versioningPolicy": "url-path",
       "asyncPattern": "queue-and-worker",
       "documentation": "openapi-swagger",
       "rateLimit": "fixed-window-redis"
     },
-    "P8": {
+    "cicdAndDelivery": {
       "cicd": {
         "provider": "github-actions | gitlab-ci | circleci | buildkite | jenkins | none",
         "triggers": ["push-to-main", "every-pr", "scheduled", "manual", "tag"],
@@ -559,9 +559,9 @@ After the wizard completes, compile all answers into a structured context object
     }
   },
   "syntheses": {
-    "P3": { "approvedAt": "ISO-8601", "adjustments": [] },
-    "P4": { "approvedAt": "ISO-8601", "adjustments": [] },
-    "P8": { "approvedAt": "ISO-8601", "adjustments": [] }
+    "dataArchitecture": { "approvedAt": "ISO-8601", "adjustments": [] },
+    "apiIntegration": { "approvedAt": "ISO-8601", "adjustments": [] },
+    "cicdAndDelivery": { "approvedAt": "ISO-8601", "adjustments": [] }
   },
   "verificationStrategy": "browser-automation | api-testing | cli-execution | test-runner | combination",
   "pluginsToInstall": [],
@@ -587,15 +587,15 @@ Write a checkpoint **after each named Step completes** (not after each individua
 | Step 1 complete (Project Vision) | `completedSteps: ["step-1-vision"]`, `currentStep: "step-2-stack"`, `context.appDescription`, `context.appType` |
 | Step 2 complete (Tech Stack) | Add `"step-2-stack"`, `currentStep: "step-3-data-architecture"`, `context.stack`, `researchFindings`, `research.mode` |
 | Step 3 — P3.Q1 answered | Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-3-data-architecture"`, `lastAnsweredQuestionId: "P3.Q1"` |
-| Step 3 — P3.Q12 answered (or last applicable) | Set `currentPhase: "phase-1.8-synthesis-review"`, `currentSynthesisPhase: "P3"`, add `"step-3-data-architecture"` to `completedSteps` |
-| Step 3 — synthesis-review(P3) returns | Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-4-api-integration"`, clear `currentSynthesisPhase`. Add `context.syntheses.P3 = { approvedAt, adjustments }` |
+| Step 3 — P3.Q12 answered (or last applicable) | Set `currentPhase: "phase-1.8-synthesis-review"`, `currentSynthesisPhase: "dataArchitecture"`, add `"step-3-data-architecture"` to `completedSteps` |
+| Step 3 — synthesis-review(dataArchitecture) returns | Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-4-api-integration"`, clear `currentSynthesisPhase`. Add `context.syntheses.dataArchitecture = { approvedAt, adjustments }` |
 | Step 4 — P4.Q1 answered | Set `currentStep: "step-4-api-integration"`, `lastAnsweredQuestionId: "P4.Q1"` |
-| Step 4 — P4.Q10 answered (or last applicable) | Set `currentPhase: "phase-1.8-synthesis-review"`, `currentSynthesisPhase: "P4"`, add `"step-4-api-integration"` to `completedSteps` |
-| Step 4 — synthesis-review(P4) returns | Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-5-residual"`, clear `currentSynthesisPhase`. Add `context.syntheses.P4` |
+| Step 4 — P4.Q10 answered (or last applicable) | Set `currentPhase: "phase-1.8-synthesis-review"`, `currentSynthesisPhase: "apiIntegration"`, add `"step-4-api-integration"` to `completedSteps` |
+| Step 4 — synthesis-review(apiIntegration) returns | Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-5-residual"`, clear `currentSynthesisPhase`. Add `context.syntheses.apiIntegration` |
 | Step 5 — last residual Q answered | Add `"step-5-residual"` to `completedSteps`, set `currentStep: "step-6-workflow"` |
 | Step 6 complete (Workflow Preferences) | Add `"step-6-workflow"`, `currentStep: "step-7-cicd"`, all category-4 context fields |
-| Step 7 — Q5.1–Q5.17 answered | Add `"step-7-cicd"`, set `currentPhase: "phase-1.8-synthesis-review"`, `currentSynthesisPhase: "P8"`, all CI/CD fields under both top-level (Q5.1–Q5.3) AND `context.phases.P8.cicd` / `context.phases.P8._v1_carryover` |
-| Step 7 — synthesis-review(P8) returns | Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-8-feature-decomp"`, clear `currentSynthesisPhase`. Add `context.syntheses.P8 = { approvedAt, adjustments }` |
+| Step 7 — Q5.1–Q5.17 answered | Add `"step-7-cicd"`, set `currentPhase: "phase-1.8-synthesis-review"`, `currentSynthesisPhase: "cicdAndDelivery"`, all CI/CD fields under both top-level (Q5.1–Q5.3) AND `context.phases.cicdAndDelivery.cicd` / `context.phases.cicdAndDelivery._v1_carryover` |
+| Step 7 — synthesis-review(cicdAndDelivery) returns | Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-8-feature-decomp"`, clear `currentSynthesisPhase`. Add `context.syntheses.cicdAndDelivery = { approvedAt, adjustments }` |
 | Step 8 complete (Feature Decomposition) | Add `"step-8-feature-decomp"`, `currentStep: "step-9-confirmation"`, `context.featureDecomposition` |
 | Step 9 complete (Confirmation) | Add `"step-9-confirmation"`, `currentPhase: "phase-1.7-grill-spec"` (or `"phase-1.5-architectural-research"` if `parkedQuestions.length > 0`), `currentStep: "pre-grill"` (handoff to grill-spec skill, which then hands off to scaffolding) |
 

@@ -13,8 +13,8 @@
     },
     "phase": {
       "type": "string",
-      "pattern": "^P\\d+(\\.\\d+)?$",
-      "description": "The phase this file describes dependencies for. Format: P<integer>[.<integer>] — e.g., P8, P10.5."
+      "pattern": "^(vision|personas|domain|stack|dataArchitecture|apiIntegration|frontend|authSecurity|workflow|pluginRecommendation|cicdAndDelivery|risk|featureRoadmap|pluginInstall|schemaDraftReview)$",
+      "description": "The phase this file describes dependencies for. Uses topic names — e.g., 'cicdAndDelivery', 'dataArchitecture', 'apiIntegration'."
     },
     "recordedAt": {
       "type": "string",
@@ -31,8 +31,8 @@
         "properties": {
           "path": {
             "type": "string",
-            "pattern": "^P\\d+(\\.\\d+)?\\.[A-Za-z0-9_.\\[\\]]+$",
-            "description": "Dot-path into the v2 context shape, starting at a phase id. Example: P0.willDeploy or P3.data.databaseHost. Phase id and remaining-path are joined by '.'."
+            "pattern": "^(vision|personas|domain|stack|dataArchitecture|apiIntegration|frontend|authSecurity|workflow|pluginRecommendation|cicdAndDelivery|risk|featureRoadmap|pluginInstall|schemaDraftReview)\\.[A-Za-z0-9_.\\[\\]]+$",
+            "description": "Dot-path into the v2 context shape, starting at a topic name. Example: vision.willDeploy or dataArchitecture.databaseHost. Topic name and remaining-path are joined by '.'."
           },
           "value": {
             "description": "Snapshot of the depended-on value at synthesis time. Used by visualize-graph.sh to label edges and by future freshness checks to detect drift. Any JSON value is allowed."

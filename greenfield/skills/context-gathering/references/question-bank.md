@@ -65,37 +65,37 @@ Each answer updates this context. Questions use the context to determine whether
 
 ---
 
-## Phase P3: Data Architecture (12 questions)
+## Step 3: Data Architecture (12 questions)
 
-Phase 3 of the 15-phase wizard. Captures data-layer decisions: DB engine + host, ORM, migrations, multi-tenancy, search, caching, file storage, codegen, backup, compliance. Synthesis review fires inline after the last question.
+Step 3 of the 10-step wizard. Captures data-layer decisions: DB engine + host, ORM, migrations, multi-tenancy, search, caching, file storage, codegen, backup, compliance. Synthesis review fires inline after the last question.
 
-Writes to `context.phases.P3.*`. See `onboard/skills/generate/references/context-shape-v2.json` § `p3Data` for the schema.
+Writes to `context.phases.dataArchitecture.*`. See `onboard/skills/generate/references/context-shape-v2.json` § `dataArchitecture` for the schema.
 
 ### P3.Q1: "Does this app need persistent data?"
 - **Type**: Choice
 - **Options**: "Yes — relational" | "Yes — document/NoSQL" | "Yes — embedded (SQLite/DuckDB)" | "No persistent data" | "Not sure — recommend"
-- **Condition**: Always (gate for the rest of P3)
+- **Condition**: Always (gate for the rest of Step 3 / dataArchitecture)
 - **Updates**: gate flag; if "No persistent data", skip Q2–Q7 but still ask Q8 (in-memory cache), Q9 (FS storage), Q10 (codegen), Q12 (compliance)
 
 ### P3.Q2: "Which database engine?"
 - **Type**: Open with stack-informed recommendations
 - **Options**: Dynamically generated (e.g., "PostgreSQL (recommended for Next.js + Prisma)" | "MySQL" | "MongoDB" | "SQLite" | "Turso/libSQL" | "PlanetScale" | "EdgeDB" | "DynamoDB" | "Custom — specify")
 - **Condition**: Q1 = yes (any persistent option)
-- **Updates**: `context.phases.P3.engine` (loose string)
+- **Updates**: `context.phases.dataArchitecture.engine` (loose string)
 
 ### P3.Q3: "What's the database hosting model?"
 - **Type**: Choice
 - **Options**: "Self-hosted (you manage the server)" | "Managed RDBMS (RDS, Cloud SQL, Supabase)" | "Serverless RDBMS (Neon, PlanetScale, Turso)" | "Managed NoSQL (Atlas, DynamoDB)" | "Embedded (SQLite/DuckDB)" | "None"
 - **Condition**: Q1 = yes
-- **Updates**: `context.phases.P3.databaseHost` (required, enum)
-- **Cross-phase**: P8 reads this for rollback strategy (point-in-time recovery on managed hosts only)
+- **Updates**: `context.phases.dataArchitecture.databaseHost` (required, enum)
+- **Cross-phase**: cicdAndDelivery reads this for rollback strategy (point-in-time recovery on managed hosts only)
 
 ### P3.Q4: "Which ORM or data-access layer?"
 - **Type**: Choice (filtered by P2.stack.language)
 - **Options**: For TypeScript: "Prisma" | "Drizzle" | "Kysely" | "TypeORM" | "Sequelize" | "Raw SQL" | "Other". For Python: "SQLAlchemy" | "Django ORM" | "Raw SQL" | "Other". For Go: "GORM" | "sqlc" | "Raw SQL" | "Other". For Ruby: "Active Record" | "Raw SQL" | "Other". For Elixir: "Ecto" | "Raw SQL" | "Other". For Rust: "Diesel" | "sqlx" | "Raw SQL" | "Other".
 - **Condition**: Q1 = yes
-- **Updates**: `context.phases.P3.orm` (required, enum)
-- **Cross-phase**: P4 reads for codegen + validation library pairing
+- **Updates**: `context.phases.dataArchitecture.orm` (required, enum)
+- **Cross-phase**: apiIntegration reads for codegen + validation library pairing
 
 ### P3.Q5: "Migration tool & application mode?"
 - **Type**: Composite (choice + choice)
@@ -103,20 +103,20 @@ Writes to `context.phases.P3.*`. See `onboard/skills/generate/references/context
   - Tool: "ORM-native (Prisma migrate, Drizzle kit, etc.)" | "Alembic" | "Flyway" | "Liquibase" | "Raw SQL files" | "None — manual schema" | "Other"
   - Mode: "Developer-applied (dev runs migrations locally)" | "CI-applied (pipeline runs before deploy)" | "Runtime-applied (app applies on boot)"
 - **Condition**: Q1 = yes
-- **Updates**: `context.phases.P3.migrationsTool` (required, enum) + `migrationsMode` (loose)
+- **Updates**: `context.phases.dataArchitecture.migrationsTool` (required, enum) + `migrationsMode` (loose)
 
 ### P3.Q6: "Multi-tenancy isolation strategy?"
 - **Type**: Choice
 - **Options**: "None — single-tenant" | "Row-level (tenant_id columns + RLS)" | "Schema-per-tenant" | "DB-per-tenant" | "Shared (no isolation — review carefully)"
 - **Condition**: Q1 = yes
-- **Updates**: `context.phases.P3.multiTenancy` (required, enum)
+- **Updates**: `context.phases.dataArchitecture.multiTenancy` (required, enum)
 - **Cross-phase**: Future P6 reads for auth/authz model
 
 ### P3.Q7: "Search and retrieval strategy?"
 - **Type**: Choice
 - **Options**: "DB full-text only (Postgres tsvector, MySQL FT)" | "Dedicated engine (Elasticsearch, Meilisearch, Typesense)" | "Vector store (pgvector, Pinecone, Qdrant, Weaviate)" | "Hybrid (FTS + vector)" | "None — no search"
 - **Condition**: Q1 = yes
-- **Updates**: `context.phases.P3.search` (loose)
+- **Updates**: `context.phases.dataArchitecture.search` (loose)
 
 ### P3.Q8: "Caching layer + invalidation pattern?"
 - **Type**: Composite (multi-select + choice)
@@ -124,93 +124,93 @@ Writes to `context.phases.P3.*`. See `onboard/skills/generate/references/context
   - Layers (multi-select; pad with "None / Skip" if zero matches): "In-memory (app-local)" | "Redis / KeyDB" | "Memcached" | "DB query cache" | "CDN edge"
   - Invalidation: "TTL only" | "Event-driven (invalidate on write)" | "Manual" | "None — no caching"
 - **Condition**: Always (even no-DB apps can cache)
-- **Updates**: `context.phases.P3.cache` (loose) + `cacheInvalidation` (loose)
+- **Updates**: `context.phases.dataArchitecture.cache` (loose) + `cacheInvalidation` (loose)
 
 ### P3.Q9: "File / object storage strategy?"
 - **Type**: Choice
 - **Options**: "Cloud storage (S3 / R2 / Blob / GCS)" | "Local filesystem" | "CDN for static assets" | "Both cloud + CDN" | "No file handling"
 - **Condition**: `hasBackend || hasFrontend`
-- **Updates**: `context.phases.P3.fileStorage` (loose)
+- **Updates**: `context.phases.dataArchitecture.fileStorage` (loose)
 
 ### P3.Q10: "Codegen tools?"
 - **Type**: Multi-select
 - **Options**: "Prisma generate" | "Drizzle Kit" | "sqlc" | "GraphQL codegen" | "OpenAPI TypeScript" | "Protocol Buffers" | "None"
 - **Condition**: Applicable to stack (skip if Q1=no AND no API)
-- **Updates**: `context.phases.P3.codegen` (loose array)
-- **Note**: Even though codegen spans ORM (Prisma) and API (GraphQL/OpenAPI), it lives in P3 only per the single-owner boundary. P4 synthesis cross-references this question when style=graphql.
+- **Updates**: `context.phases.dataArchitecture.codegen` (loose array)
+- **Note**: Even though codegen spans ORM (Prisma) and API (GraphQL/OpenAPI), it lives in dataArchitecture only per the single-owner boundary. apiIntegration synthesis cross-references this question when style=graphql.
 
 ### P3.Q11: "Backup & retention?"
 - **Type**: Choice
 - **Options**: "None — accept loss risk" | "Managed-provider auto-backup (most cloud DBs)" | "Scheduled dumps (custom cron)" | "Continuous (point-in-time recovery)"
 - **Condition**: Q1 = yes && `willDeploy`
-- **Updates**: `context.phases.P3.backup` (loose)
+- **Updates**: `context.phases.dataArchitecture.backup` (loose)
 
 ### P3.Q12: "Data residency / compliance constraints?"
 - **Type**: Choice
 - **Options**: "None" | "Region-locked (specify in follow-up)" | "GDPR-aware (EU users)" | "HIPAA" | "PCI-DSS" | "SOC 2"
 - **Condition**: Always
-- **Updates**: `context.phases.P3.compliance` (loose)
+- **Updates**: `context.phases.dataArchitecture.compliance` (loose)
 
-**>>> SYNTHESIS PAUSE**: After P3.Q12 (or after earlier final-question if Q1=no), invoke `Skill(synthesis-review, phaseId: "P3")`. Wait for the developer to Approve/Adjust/Skip each section before moving to Phase P4.
+**>>> SYNTHESIS PAUSE**: After P3.Q12 (or after earlier final-question if Q1=no), invoke `Skill(synthesis-review, phaseId: "dataArchitecture")`. Wait for the developer to Approve/Adjust/Skip each section before moving to Step 4: API & Integration.
 
 ---
 
-## Phase P4: API & Integration (10 questions)
+## Step 4: API & Integration (10 questions)
 
-Phase 4 of the 15-phase wizard. Captures API surface decisions: style, documentation, versioning, rate limits, pagination, async patterns, real-time, webhooks, external integrations.
+Step 4 of the 10-step wizard. Captures API surface decisions: style, documentation, versioning, rate limits, pagination, async patterns, real-time, webhooks, external integrations.
 
-Writes to `context.phases.P4.*`. See `onboard/skills/generate/references/context-shape-v2.json` § `p4Api` for the schema.
+Writes to `context.phases.apiIntegration.*`. See `onboard/skills/generate/references/context-shape-v2.json` § `apiIntegration` for the schema.
 
 ### P4.Q1: "Does this app expose an API surface?"
 - **Type**: Choice
 - **Options**: "Yes — public API" | "Yes — internal/private only" | "No — UI-only app" | "Not sure — recommend"
-- **Condition**: Always (gate for the rest of P4)
+- **Condition**: Always (gate for the rest of Step 4 / apiIntegration)
 - **Updates**: gate flag; if "No", skip Q2–Q9, ask Q10 only
 
 ### P4.Q2: "API style?"
 - **Type**: Choice
 - **Options**: "REST" | "GraphQL" | "tRPC (TypeScript-only)" | "gRPC" | "Other RPC" | "No API surface"
 - **Condition**: Q1 = yes
-- **Updates**: `context.phases.P4.style` (required, enum)
-- **Cross-phase**: P3 reads for codegen pairing; future P6 reads for auth integration pattern
+- **Updates**: `context.phases.apiIntegration.style` (required, enum)
+- **Cross-phase**: dataArchitecture reads for codegen pairing; future authSecurity reads for auth integration pattern
 
 ### P4.Q3: "API documentation tool?"
 - **Type**: Choice
 - **Options**: "OpenAPI / Swagger" | "GraphQL Playground / Apollo Studio" | "Auto-from-types (TS-RPC, etc.)" | "Manual (Markdown / Notion)" | "No docs"
 - **Condition**: Q2 ≠ none
-- **Updates**: `context.phases.P4.documentation` (loose)
+- **Updates**: `context.phases.apiIntegration.documentation` (loose)
 
 ### P4.Q4: "Versioning policy?"
 - **Type**: Choice
 - **Options**: "URL path (/v1/, /v2/)" | "Header (Accept-Version)" | "Query string (?v=1)" | "No-breaking-changes policy (additive only)" | "None yet — figure it out later"
 - **Condition**: Q1 = yes && `willDeploy`
-- **Updates**: `context.phases.P4.versioningPolicy` (required, enum)
+- **Updates**: `context.phases.apiIntegration.versioningPolicy` (required, enum)
 - **Cross-phase**: Future P7 reads for breaking-change policy
 
 ### P4.Q5: "Rate limiting strategy?"
 - **Type**: Choice
 - **Options**: "None" | "Fixed window (Redis-backed)" | "Sliding window" | "Token bucket" | "Per-user / per-API-key" | "Per-IP" | "Gateway-level (Cloudflare, AWS API Gateway)"
 - **Condition**: Q1 = yes && `willDeploy`
-- **Updates**: `context.phases.P4.rateLimit` (loose)
+- **Updates**: `context.phases.apiIntegration.rateLimit` (loose)
 
 ### P4.Q6: "Pagination strategy?"
 - **Type**: Choice
 - **Options**: "Offset (LIMIT/OFFSET)" | "Cursor (timestamp or ID-based)" | "Page-based (page=N&size=M)" | "Both offset + cursor (REST: cursor; GraphQL: Relay)" | "None — return all"
 - **Condition**: Q2 ∈ (rest, graphql)
-- **Updates**: `context.phases.P4.pagination` (loose)
+- **Updates**: `context.phases.apiIntegration.pagination` (loose)
 
 ### P4.Q7: "Async pattern for background work?"
 - **Type**: Choice
 - **Options**: "None — all sync" | "Queue + worker (BullMQ, Celery, Sidekiq)" | "Scheduled cron jobs" | "Event-driven (pub/sub)" | "Serverless functions (Lambda, Cloud Functions)" | "Mixed"
 - **Condition**: `hasBackend`
-- **Updates**: `context.phases.P4.asyncPattern` (required, enum)
+- **Updates**: `context.phases.apiIntegration.asyncPattern` (required, enum)
 - **Cross-phase**: Future P7 reads for CI test strategy
 
 ### P4.Q8: "Real-time delivery?"
 - **Type**: Choice
 - **Options**: "None" | "WebSockets" | "Server-Sent Events (SSE)" | "HTTP long-polling" | "External pub/sub (Pusher, Ably, Liveblocks)"
 - **Condition**: `hasBackend && hasFrontend`
-- **Updates**: `context.phases.P4.realtime` (loose)
+- **Updates**: `context.phases.apiIntegration.realtime` (loose)
 
 ### P4.Q9: "Webhooks — incoming and outgoing?"
 - **Type**: Composite (choice + multi-select)
@@ -218,23 +218,23 @@ Writes to `context.phases.P4.*`. See `onboard/skills/generate/references/context
   - Direction: "None" | "Incoming only (we receive)" | "Outgoing only (we send)" | "Both"
   - Tooling (multi-select; pad with "None / Skip" if zero matches): "Signature verification" | "Retry queue" | "Dead-letter handling" | "Webhook registry UI"
 - **Condition**: Q1 = yes
-- **Updates**: `context.phases.P4.webhooks` (loose)
+- **Updates**: `context.phases.apiIntegration.webhooks` (loose)
 
 ### P4.Q10: "External services and integrations?"
 - **Type**: Multi-select free-text
 - **Options**: "Payments (Stripe, Paddle, Lemon Squeezy)" | "Email (Resend, SendGrid, Postmark)" | "SMS (Twilio)" | "Analytics (Segment, Mixpanel, PostHog)" | "Search (Algolia)" | "Storage (S3-compatible)" | "AI / LLM (OpenAI, Anthropic, etc.)" | "Other — specify"
 - **Condition**: Always (even no-API apps integrate with services)
-- **Updates**: `context.phases.P4.externalServices` (loose array)
+- **Updates**: `context.phases.apiIntegration.externalServices` (loose array)
 
-**>>> SYNTHESIS PAUSE**: After P4.Q10, invoke `Skill(synthesis-review, phaseId: "P4")`. Wait for the developer to Approve/Adjust/Skip each section before moving to the remaining Project Details step.
+**>>> SYNTHESIS PAUSE**: After P4.Q10, invoke `Skill(synthesis-review, phaseId: "apiIntegration")`. Wait for the developer to Approve/Adjust/Skip each section before moving to the remaining Project Details step.
 
 ---
 
 ## Category 3 (residual): Remaining Project Details
 
-> **Round 2 note (2026-05-13):** Several Cat 3 questions have been moved to Phase P3 (Data Architecture) and Phase P4 (API & Integration). The 13 questions below stay here as a residual step until later rounds re-home them:
-> - **Moved to P3:** Q3.2 (DB) → P3.Q2+Q3, Q3.16 (codegen) → P3.Q10, Q3.17 (file storage) → P3.Q9
-> - **Moved to P4:** Q3.5 (external APIs) → P4.Q10, Q3.7 (API style) → P4.Q2, Q3.8 (API docs) → P4.Q3, Q3.18 (bg jobs) → P4.Q7
+> **Round 2 note (2026-05-13):** Several Cat 3 questions have been moved to Step 3 (Data Architecture) and Step 4 (API & Integration). The 13 questions below stay here as a residual step until later rounds re-home them:
+> - **Moved to Step 3 (dataArchitecture):** Q3.2 (DB) → P3.Q2+Q3, Q3.16 (codegen) → P3.Q10, Q3.17 (file storage) → P3.Q9
+> - **Moved to Step 4 (apiIntegration):** Q3.5 (external APIs) → P4.Q10, Q3.7 (API style) → P4.Q2, Q3.8 (API docs) → P4.Q3, Q3.18 (bg jobs) → P4.Q7
 > - **Staying here (Cat 3 residual):** Q3.1, Q3.3, Q3.4, Q3.6, Q3.9, Q3.10, Q3.11, Q3.12, Q3.13, Q3.14, Q3.15, Q3.F1, Q3.F2 — destined for Rounds 3–6.
 
 This category becomes wizard Step 5 of 10 in Round 2.
@@ -391,26 +391,26 @@ This category becomes wizard Step 5 of 10 in Round 2.
 - **Type**: Choice
 - **Options**: "Auto-review every PR" | "Only when I comment @claude" | "Auto with skip label"
 - **Condition**: `willDeploy && hasTeam`
-- **Updates**: `prReviewTrigger` AND `phases.P8._v1_carryover.prReviewTrigger`
+- **Updates**: `prReviewTrigger` AND `phases.cicdAndDelivery._v1_carryover.prReviewTrigger`
 
 ### Q5.4: "Which CI provider will you use?"
 - **Type**: Choice
 - **Options**: "GitHub Actions" | "GitLab CI" | "CircleCI" | "BuildKite" | "Jenkins" | "None"
 - **Condition**: `willDeploy`
-- **Updates**: `phases.P8.cicd.provider`
+- **Updates**: `phases.cicdAndDelivery.cicd.provider`
 - **Note**: Round 1 only emits GitHub Actions workflow templates. Non-GHA values are captured but produce a note in synthesis review; non-GHA template support lands in Round 6.
 
 ### Q5.5: "When should CI run?"
 - **Type**: Multi-select
 - **Options**: "Push to main" | "Every PR" | "Scheduled" | "Manual dispatch" | "On tag"
 - **Condition**: `willDeploy`
-- **Updates**: `phases.P8.cicd.triggers[]`
+- **Updates**: `phases.cicdAndDelivery.cicd.triggers[]`
 
 ### Q5.6: "Which checks must pass before a PR can merge?"
 - **Type**: Multi-select
 - **Options**: "Lint" | "Typecheck" | "Unit tests" | "Integration tests" | "E2E tests" | "Security scan" | "Coverage" | "Build"
 - **Condition**: `willDeploy`
-- **Updates**: `phases.P8.cicd.requiredPreMergeChecks[]`
+- **Updates**: `phases.cicdAndDelivery.cicd.requiredPreMergeChecks[]`
 - **Recommend**: Default selection adapts to stack — Node/TS projects get lint+typecheck+unit+build; Python adds ruff in place of lint+typecheck.
 
 ### Q5.7: "Coverage threshold — what value blocks merges, if any?"
@@ -420,26 +420,26 @@ This category becomes wizard Step 5 of 10 in Round 2.
   - Scope: "Global" | "Per-package" | "Per-file"
   - Blocking: yes/no — should coverage drops block PRs?
 - **Condition**: `willDeploy && (Q5.6 selection includes "Coverage")`
-- **Updates**: `phases.P8.cicd.coverage.{threshold,scope,blocking}`
+- **Updates**: `phases.cicdAndDelivery.cicd.coverage.{threshold,scope,blocking}`
 
 ### Q5.8: "Environment ladder — what environments will you deploy to?"
 - **Type**: Choice
 - **Options**: "Single (prod only)" | "Preview + prod" | "Staging + prod" | "Dev + staging + prod" | "Custom"
 - **Condition**: `willDeploy`
-- **Updates**: `phases.P8.cicd.envLadder[]`
+- **Updates**: `phases.cicdAndDelivery.cicd.envLadder[]`
 - **Recommend**: Default to "Preview + prod" for SaaS; "Single" for hobby projects; "Staging + prod" for B2B with paying customers.
 
 ### Q5.9: "How does deployment happen?"
 - **Type**: Choice
 - **Options**: "Auto on merge" | "Manual button" | "Scheduled window" | "Tag-triggered" | "None — I'll deploy by hand"
 - **Condition**: `willDeploy`
-- **Updates**: `phases.P8.cicd.autoDeploy`
+- **Updates**: `phases.cicdAndDelivery.cicd.autoDeploy`
 
 ### Q5.10: "Deploy cadence — how often will you ship?"
 - **Type**: Choice
 - **Options**: "Continuous (multiple per day)" | "Daily" | "Weekly" | "On-demand only" | "Not deploying"
 - **Condition**: `willDeploy`
-- **Updates**: `phases.P8.cicd.deployCadence`
+- **Updates**: `phases.cicdAndDelivery.cicd.deployCadence`
 
 ### Q5.11: "Rollback strategy?"
 - **Type**: Composite (choice + boolean)
@@ -447,7 +447,7 @@ This category becomes wizard Step 5 of 10 in Round 2.
   - Strategy: "Redeploy previous SHA" | "Blue-green" | "Canary" | "None"
   - Automation: yes/no — automated on failure detection?
 - **Condition**: `willDeploy && Q5.9 !== "None"`
-- **Updates**: `phases.P8.cicd.rollback.{strategy,automation}`
+- **Updates**: `phases.cicdAndDelivery.cicd.rollback.{strategy,automation}`
 
 ### Q5.12: "How are CI secrets managed?"
 - **Type**: Composite (choice + choice)
@@ -455,7 +455,7 @@ This category becomes wizard Step 5 of 10 in Round 2.
   - Manager: "Provider-stored (GitHub/GitLab secrets)" | "OIDC to cloud" | "Vault" | "1Password" | "Doppler" | "Manual env files"
   - Rotation: "Manual only" | "Scheduled" | "On incident only"
 - **Condition**: `willDeploy`
-- **Updates**: `phases.P8.cicd.secrets.{manager,rotation}`
+- **Updates**: `phases.cicdAndDelivery.cicd.secrets.{manager,rotation}`
 
 ### Q5.13: "Where should CI notifications go?"
 - **Type**: Composite (multi-select + multi-select)
@@ -463,7 +463,7 @@ This category becomes wizard Step 5 of 10 in Round 2.
   - Channels (multi-select): "Slack" | "Discord" | "Email" | "GitHub checks only"
   - Events (multi-select): "Build failure" | "Deploy success" | "Deploy failure" | "Security alert"
 - **Condition**: `willDeploy`
-- **Updates**: `phases.P8.cicd.notifications.{channels[],events[]}`
+- **Updates**: `phases.cicdAndDelivery.cicd.notifications.{channels[],events[]}`
 - **Note**: Solo developer + Slack channel selection triggers a warning in synthesis review.
 
 ### Q5.14: "Build matrix?"
@@ -473,7 +473,7 @@ This category becomes wizard Step 5 of 10 in Round 2.
   - Language versions: "Single (current LTS)" | "Multi (current LTS + previous)"
   - Parallelization: "Auto (CI provider decides)" | "Off (serial)" | numeric value
 - **Condition**: `willDeploy`
-- **Updates**: `phases.P8.cicd.buildMatrix.{os[],languageVersions,parallelization}`
+- **Updates**: `phases.cicdAndDelivery.cicd.buildMatrix.{os[],languageVersions,parallelization}`
 - **Recommend**: Most projects → single ubuntu-latest. Cross-platform tools → multi-OS. Libraries → multi-version.
 
 ### Q5.15: "Caching strategy?"
@@ -484,7 +484,7 @@ This category becomes wizard Step 5 of 10 in Round 2.
   - Docker layers: cache Docker layers (yes/no)
   - Remote backend: "Turbo Remote Cache" | "BuildKite Cache" | "None"
 - **Condition**: `willDeploy`
-- **Updates**: `phases.P8.cicd.caching.{deps,build,dockerLayers,remote}`
+- **Updates**: `phases.cicdAndDelivery.cicd.caching.{deps,build,dockerLayers,remote}`
 
 ### Q5.16: "CI time budget?"
 - **Type**: Composite (numeric + optional numeric)
@@ -492,7 +492,7 @@ This category becomes wizard Step 5 of 10 in Round 2.
   - Per-pipeline target minutes
   - Blocking threshold minutes (optional — pipelines exceeding this fail; null means no block)
 - **Condition**: `willDeploy`
-- **Updates**: `phases.P8.cicd.timeBudget.{perPipelineMinutes,blockingThresholdMinutes}`
+- **Updates**: `phases.cicdAndDelivery.cicd.timeBudget.{perPipelineMinutes,blockingThresholdMinutes}`
 
 ### Q5.17: "Release pipeline?"
 - **Type**: Composite (boolean + choice + choice)
@@ -501,7 +501,7 @@ This category becomes wizard Step 5 of 10 in Round 2.
   - Triggered by: "Tag" | "Manual" | "Schedule"
   - Convention: "release-please" | "semantic-release" | "Manual" | "None"
 - **Condition**: `willDeploy`
-- **Updates**: `phases.P8.cicd.releasePipeline.{separate,triggeredBy,convention}`
+- **Updates**: `phases.cicdAndDelivery.cicd.releasePipeline.{separate,triggeredBy,convention}`
 - **Note**: `release-please` and `semantic-release` are Node-centric. Mismatches with `P2.stack.framework` (non-Node stacks) trigger a synthesis warning.
 
 ---
@@ -535,7 +535,7 @@ This category becomes wizard Step 5 of 10 in Round 2.
 
 | Developer says | Questions skipped |
 |---|---|
-| CLI tool (appType = cli) | Q3.3, Q3.4 deploy*, Q3.6, P3 entire phase, P4 entire phase, Q3.12-Q3.14, Q3.F1, Q3.F2, Q5.1, Q5.3 |
+| CLI tool (appType = cli) | Q3.3, Q3.4 deploy*, Q3.6, Step 3 (dataArchitecture) entire phase, Step 4 (apiIntegration) entire phase, Q3.12-Q3.14, Q3.F1, Q3.F2, Q5.1, Q5.3 |
 | Side project, not deploying | Q5.1, Q5.3, Q3.6, Q3.11 (auto deps), P3.Q11 (backup), P4.Q4 (versioning), P4.Q5 (rate limit) |
 | API-only backend | Q3.F1, Q3.F2, Q3.12-Q3.14, P4.Q8 (real-time) |
 | Solo developer | Q5.3 (PR review), Q5.13 (notifications warning) |

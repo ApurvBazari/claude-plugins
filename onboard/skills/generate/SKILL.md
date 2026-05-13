@@ -1,6 +1,6 @@
 ---
 name: generate
-description: Headless Claude tooling generation for v2 callers (greenfield 3.0+). Consumes a v2 context per references/context-shape-v2.json (version 2, phases.P*, syntheses, dependencies). REJECTS v1 input outright — v1 callers must stay on onboard 1.10.0. Renders GHA workflow templates + sprint contracts from P8 before dispatching config-generator. Not user-invocable.
+description: Headless Claude tooling generation for v2 callers (greenfield 3.0+). Consumes a v2 context per references/context-shape-v2.json (version 2, phases.*, syntheses, dependencies). REJECTS v1 input outright — v1 callers must stay on onboard 1.10.0. Renders GHA workflow templates + sprint contracts from cicdAndDelivery before dispatching config-generator. Not user-invocable.
 user-invocable: false
 ---
 
@@ -77,9 +77,9 @@ After v2 detection succeeds, validate the input against the schema at `reference
 - `source` (non-empty string)
 - `projectPath` (absolute path that exists)
 - `callerExtras` (object, at minimum empty)
-- `phases.P8` (fully specified per `references/context-shape-v2.json § p8Cicd`)
+- `phases.cicdAndDelivery` (fully specified per `references/context-shape-v2.json § cicdAndDelivery`)
 
-Other phases (`P0`, `P0.5`, `P1`, `P2`, `P3`, `P4`, `P5`, `P6`, `P7`, `P7.5`, `P8.5`, `P9`, `P10`, `P10.5`) are accepted but most carry `_status: deferred-to-round-N` and pass through as inert metadata. Round 1 only fully consumes P8.
+Other phases (`vision`, `personas`, `domain`, `stack`, `dataArchitecture`, `apiIntegration`, `frontend`, `authSecurity`, `workflow`, `pluginRecommendation`, `risk`, `featureRoadmap`, `pluginInstall`, `schemaDraftReview`) are accepted but most carry `_status: deferred-to-round-N` and pass through as inert metadata. Round 1 only fully consumes cicdAndDelivery.
 
 Validation failures (after v2 detection) produce a structured error pointing at the specific field; never silently downgrade.
 
@@ -387,18 +387,18 @@ This step is the v2 → v1-internal translation layer. It runs after Step 0 vali
 | `source` | `source` | Pass-through. |
 | `projectPath` | `projectPath` | Pass-through. |
 | `callerExtras.*` | `callerExtras.*` | Pass-through. The shape stayed compatible across v1→v2; only the top-level location moved (root in both). |
-| `phases.P2.stack` | `analysis.stack` | Move into the analysis report shape Step 2 builds. |
-| `phases.P8.cicd.*` | (used by 1.5.b for template rendering) AND `enriched.*` (partial — see mapping in 1.5.c) | The P8 cicd subobject drives the new templates AND maps individual fields into the existing v1 `enriched.*` slots for back-compat with the unmodified config-generator agent. |
-| `phases.P8._v1_carryover.ciAuditAction` | `enriched.ciAuditAction` | Direct mirror — preserves Q5.1 answer. |
-| `phases.P8._v1_carryover.autoEvolutionMode` | `enriched.autoEvolutionMode` | Direct mirror — preserves Q5.2 answer. |
-| `phases.P8._v1_carryover.prReviewTrigger` | `enriched.prReviewTrigger` | Direct mirror — preserves Q5.3 answer. |
-| `phases.P*` (deferred, `_status: deferred-to-round-N`) | (recorded in metadata only) | Round 1 alpha does not consume these — pass through as `metadata.deferredPhases[]`. |
-| `syntheses.P*` | `metadata.syntheses[*]` | Recorded for telemetry. Missing syntheses for fully-specified phases produce a `warnings[]` entry. |
-| `dependencies.P*` | `metadata.dependencies[*]` | Recorded for telemetry; consumed by visualize-graph.sh in user projects, not by config-generator. |
+| `phases.stack.stack` | `analysis.stack` | Move into the analysis report shape Step 2 builds. |
+| `phases.cicdAndDelivery.cicd.*` | (used by 1.5.b for template rendering) AND `enriched.*` (partial — see mapping in 1.5.c) | The cicdAndDelivery cicd subobject drives the new templates AND maps individual fields into the existing v1 `enriched.*` slots for back-compat with the unmodified config-generator agent. |
+| `phases.cicdAndDelivery._v1_carryover.ciAuditAction` | `enriched.ciAuditAction` | Direct mirror — preserves Q5.1 answer. |
+| `phases.cicdAndDelivery._v1_carryover.autoEvolutionMode` | `enriched.autoEvolutionMode` | Direct mirror — preserves Q5.2 answer. |
+| `phases.cicdAndDelivery._v1_carryover.prReviewTrigger` | `enriched.prReviewTrigger` | Direct mirror — preserves Q5.3 answer. |
+| phases that are deferred (`_status: deferred-to-round-N`) | (recorded in metadata only) | Round 1 alpha does not consume these — pass through as `metadata.deferredPhases[]`. |
+| `syntheses.*` | `metadata.syntheses[*]` | Recorded for telemetry. Missing syntheses for fully-specified phases produce a `warnings[]` entry. |
+| `dependencies.*` | `metadata.dependencies[*]` | Recorded for telemetry; consumed by visualize-graph.sh in user projects, not by config-generator. |
 
-### 1.5.b — Render v2-specific templates from P8 fields
+### 1.5.b — Render v2-specific templates from cicdAndDelivery fields
 
-When `phases.P8.cicd.provider === "github-actions"` AND `phases.P8.cicd.autoDeploy !== "none"`:
+When `phases.cicdAndDelivery.cicd.provider === "github-actions"` AND `phases.cicdAndDelivery.cicd.autoDeploy !== "none"`:
 
 1. Load the 4 GHA template files from `references/cicd-templates/github-actions/`:
    - `app-ci.yml.tmpl`
@@ -406,8 +406,8 @@ When `phases.P8.cicd.provider === "github-actions"` AND `phases.P8.cicd.autoDepl
    - `pr-review.yml.tmpl`
    - `deploy.yml.tmpl`
 2. For each template, substitute placeholders using Mustache-like semantics:
-   - `{{phase.cicd.<field>}}` → value from `phases.P8.cicd.<field>`
-   - `{{_v1_carryover.<field>}}` → value from `phases.P8._v1_carryover.<field>`
+   - `{{phase.cicd.<field>}}` → value from `phases.cicdAndDelivery.cicd.<field>`
+   - `{{_v1_carryover.<field>}}` → value from `phases.cicdAndDelivery._v1_carryover.<field>`
    - `{{#if <cond>}}...{{/if}}` blocks → keep body if cond is truthy
    - `{{#each <array> as <var>, <index>}}...{{/each}}` → iterate (used for envLadder)
    - `{{<value> | as-yaml-array}}` filter → render array as YAML inline list
@@ -415,18 +415,18 @@ When `phases.P8.cicd.provider === "github-actions"` AND `phases.P8.cicd.autoDepl
    - `{{<value> | upper}}` filter → uppercase
 3. Capture the four rendered strings.
 
-When `phases.P8.cicd.provider !== "github-actions"`:
-- Skip GHA rendering. Record a warning: `"P8 picked provider=<value>; non-GHA CI templates land in Round 6. CI/CD workflow generation skipped for this run."`
+When `phases.cicdAndDelivery.cicd.provider !== "github-actions"`:
+- Skip GHA rendering. Record a warning: `"cicdAndDelivery picked provider=<value>; non-GHA CI templates land in Round 6. CI/CD workflow generation skipped for this run."`
 - Skip the deploy template entirely if `autoDeploy === "none"` even on GHA.
 
 For the **sprint-contracts template**:
 1. Load `references/sprint-contracts-template.json`.
 2. Use the structure as the schema for emitted `docs/sprint-contracts/sprint-<N>.json` files (one per sprint declared in the wizard's feature decomposition).
-3. The `deploymentTargets` array is filled from `phases.P8.cicd.envLadder` — each env becomes a target object with default verification/rollback inherited from P8.
+3. The `deploymentTargets` array is filled from `phases.cicdAndDelivery.cicd.envLadder` — each env becomes a target object with default verification/rollback inherited from cicdAndDelivery.
 
 For the **evolution wiring**:
 1. Read `references/evolution-wiring.md` (the mapping rules).
-2. Compute the appropriate `callerExtras.qualityGates.*` entries based on `phases.P8.cicd.notifications.{channels, events}`:
+2. Compute the appropriate `callerExtras.qualityGates.*` entries based on `phases.cicdAndDelivery.cicd.notifications.{channels, events}`:
    - Slack/Discord/email channels with `deploy-success` / `deploy-failure` events → add `Stop` event hook entries
    - Slack/Discord/email channels with `build-failure` events → add `PostToolUse:Bash` entries
    - Slack/Discord/email channels with `security-alert` events → add `fileChanged` matcher entries for `*.audit-report.md`

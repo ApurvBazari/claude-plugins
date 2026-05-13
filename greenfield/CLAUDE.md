@@ -11,7 +11,7 @@ Scaffolds new projects with AI-native, auto-evolving Claude Code tooling. Three-
 Phase 1: Context Gathering ──→ context-gathering skill (adaptive wizard)
      │                            ├── stack-researcher agent (WebSearch)
      │                            └── synthesis-review skill (Phase 1.8 — invoked inline at end of each major step;
-     │                                                         Round 2: Step 3 → P3, Step 4 → P4, Step 7 → P8)
+     │                                                         Round 2: Step 3 → dataArchitecture, Step 4 → apiIntegration, Step 7 → cicdAndDelivery)
      │
      ├── Phase 1.5 (conditional): Architectural Research — resolves parked questions
      │
@@ -19,7 +19,7 @@ Phase 1: Context Gathering ──→ context-gathering skill (adaptive wizard)
 Phase 1.7: Pre-Scaffold Spec Grilling ──→ grill-spec skill
      │                                       ├── adjust-dialog skill (5-category adversarial walk)
      │                                       └── Else: inline fallback (if adjust-dialog unavailable)
-     │                                       Cross-checks against context.syntheses.* (Round 1: just P8)
+     │                                       Cross-checks against context.syntheses.* (Round 1: just cicdAndDelivery)
      ▼
 Phase 2: Scaffold ──→ scaffolding skill (execute scaffold + git setup)
      │
@@ -49,8 +49,8 @@ Greenfield only generates two artifacts that require scaffold-specific knowledge
 
 ## Skill Hierarchy
 
-- `context-gathering/SKILL.md` — Phase 1: adaptive state-machine wizard (3.0 Round 2: 10 wizard steps; Step 3 = P3 Data Architecture (12 Qs), Step 4 = P4 API & Integration (10 Qs), Step 7 = P8 CI/CD (17 Qs from Round 1). Total ~69 wizard questions; developer answers 30-55 depending on stack + deploy)
-- `synthesis-review/SKILL.md` — Phase 1.8: per-phase synthesis review. Renders `docs/architecture/p<N>-<name>.html` in the scaffolded project, walks Approve/Adjust/Skip per section, writes `dependencies.json` sidecar, installs freshness hook. Invoked inline by `context-gathering` at the end of each major step that has a synthesis template (Round 2: P3 at Step 3, P4 at Step 4, P8 at Step 7)
+- `context-gathering/SKILL.md` — Phase 1: adaptive state-machine wizard (3.0 Round 2: 10 wizard steps; Step 3 = Data Architecture / dataArchitecture (12 Qs), Step 4 = API & Integration / apiIntegration (10 Qs), Step 7 = CI/CD & Delivery / cicdAndDelivery (17 Qs from Round 1). Total ~69 wizard questions; developer answers 30-55 depending on stack + deploy)
+- `synthesis-review/SKILL.md` — Phase 1.8: per-phase synthesis review. Renders `docs/architecture/<topic-kebab>.html` in the scaffolded project, walks Approve/Adjust/Skip per section, writes `dependencies.json` sidecar, installs freshness hook. Invoked inline by `context-gathering` at the end of each major step that has a synthesis template (Round 2: dataArchitecture at Step 3, apiIntegration at Step 4, cicdAndDelivery at Step 7)
 - `grill-spec/SKILL.md` — Phase 1.7: pre-scaffold validation gate (5-category decision-tree walk via `greenfield/skills/adjust-dialog/`; falls back to inline if unavailable). Cross-checks against `context.syntheses.*`
 - `scaffolding/SKILL.md` — Phase 2: execute scaffold, git setup, verify Hello World
 - `tooling-generation/SKILL.md` — Phase 3: prepare context, call enriched onboard, generate init.sh + feature-list.json
@@ -72,7 +72,7 @@ User-facing skills (show in `/greenfield:` autocomplete):
 Internal building blocks (`user-invocable: false`):
 
 - `context-gathering/SKILL.md` — Phase 1 adaptive wizard
-- `synthesis-review/SKILL.md` — Phase 1.8 per-phase synthesis review (Round 2: P3 at Step 3, P4 at Step 4, P8 at Step 7)
+- `synthesis-review/SKILL.md` — Phase 1.8 per-phase synthesis review (Round 2: dataArchitecture at Step 3, apiIntegration at Step 4, cicdAndDelivery at Step 7)
 - `grill-spec/SKILL.md` — Phase 1.7 pre-scaffold validation gate
 - `scaffolding/SKILL.md` — Phase 2 scaffold execution
 - `plugin-discovery/SKILL.md` — Phase 3a plugin catalog match + install
