@@ -219,11 +219,56 @@ Q4.6 (releases) is only asked for production apps.
 
 Store the choice as `verificationStrategy` in the context object. This configures the feature-evaluator agent.
 
-### Step 5 of 8: CI/CD & Auto-Evolution (Category 5)
+### Step 5 of 8: CI/CD & Auto-Evolution (Category 5 / P8)
 
-Emit the progress indicator. **Skip entirely if `willDeploy = false`** (except Q5.2 which applies even to local projects).
+Emit the progress indicator. **Skip Q5.1, Q5.3, and Q5.4–Q5.17 entirely if `willDeploy = false`** — only Q5.2 (auto-evolution mode) applies to local projects.
 
-Ask Q5.1 (audit behavior), Q5.2 (auto-evolution mode), Q5.3 (PR review trigger).
+This step has two halves: the v1 carryover questions (Q5.1–Q5.3) and the expanded P8 question set added in greenfield 3.0 Round 1 (Q5.4–Q5.17 — 14 new questions covering CI provider, gates, env ladder, secrets, notifications, build matrix, caching, release pipeline, and deploy cadence).
+
+**Data layout** — the three v1 questions populate flat top-level context fields (`ciAuditAction`, `autoEvolutionMode`, `prReviewTrigger`) for back-compat AND are mirrored into `context.phases.P8._v1_carryover.*`. The 14 new questions populate `context.phases.P8.cicd.*` directly. Both forms coexist in greenfield-state.json during Round 1; the v1 flat fields are deprecated and slated for removal in Round 6.
+
+#### v1 carryover (Q5.1–Q5.3)
+
+Ask Q5.1 (audit behavior), Q5.2 (auto-evolution mode), Q5.3 (PR review trigger). On answer, write to both the top-level field AND `context.phases.P8._v1_carryover.<field>`.
+
+#### P8 expansion (Q5.4–Q5.17)
+
+Walk these in order. Conditions in the question-bank gate each one — most are `willDeploy`, some additionally require an answer to a prior question (e.g., Q5.7 only fires if Q5.6 selected "Coverage"). Skip silently where the condition is not met.
+
+| Q | Topic | Writes to (under `context.phases.P8.cicd`) |
+|---|---|---|
+| Q5.4 | CI provider | `provider` |
+| Q5.5 | CI triggers | `triggers[]` |
+| Q5.6 | Required pre-merge checks | `requiredPreMergeChecks[]` |
+| Q5.7 | Coverage threshold + scope + blocking | `coverage.{threshold,scope,blocking}` |
+| Q5.8 | Environment ladder | `envLadder[]` |
+| Q5.9 | Auto-deploy strategy | `autoDeploy` |
+| Q5.10 | Deploy cadence | `deployCadence` |
+| Q5.11 | Rollback strategy + automation | `rollback.{strategy,automation}` |
+| Q5.12 | Secret manager + rotation | `secrets.{manager,rotation}` |
+| Q5.13 | Notifications channels + events | `notifications.{channels[],events[]}` |
+| Q5.14 | Build matrix | `buildMatrix.{os[],languageVersions,parallelization}` |
+| Q5.15 | Caching strategy | `caching.{deps,build,dockerLayers,remote}` |
+| Q5.16 | CI time budget | `timeBudget.{perPipelineMinutes,blockingThresholdMinutes}` |
+| Q5.17 | Release pipeline | `releasePipeline.{separate,triggeredBy,convention}` |
+
+If the developer answers Q5.4 with anything other than `"github-actions"`, capture the value but tell them:
+
+> Heads-up — Round 1 only generates GitHub Actions workflow templates. Your `provider` answer is captured but won't drive workflow generation until Round 6. The synthesis review will flag this.
+
+#### Phase 1.8: synthesis review (after Q5.17, or after Q5.1/Q5.2/Q5.3 if `willDeploy = false`)
+
+Invoke the `synthesis-review` skill via the Skill tool with `phaseId: "P8"`. This is Round 1's only synthesis pass. The skill:
+
+1. Sets `greenfield-state.json.currentPhase` to `phase-1.8-synthesis-review` and `currentSynthesisPhase: "P8"`.
+2. Renders `<targetProjectRoot>/docs/architecture/p8-cicd.html` from the template.
+3. Walks the developer through 8 sections of Approve/Adjust/Skip.
+4. Writes `context.syntheses.P8 = { approvedAt, adjustments[] }`.
+5. Returns control here. Set `currentPhase` back to `phase-1-context-gathering` and `currentStep` to `step-6-feature-decomp`.
+
+If the developer adjusts any P8 field via the Adjust dialog, the updated value is in `context.phases.P8.cicd.<field>` — the v1 carryover mirrors do NOT update (they preserve the original answer).
+
+If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen in Round 1 since `p8-cicd.html` ships in this commit), tell the developer and continue to Step 6.
 
 ### Step 6 of 8: Feature Decomposition (Harness Preparation) — REQUIRED
 
@@ -372,6 +417,34 @@ After the wizard completes, compile all answers into a structured context object
   "ciAuditAction": "string",
   "autoEvolutionMode": "string",
   "prReviewTrigger": "string",
+  "phases": {
+    "P8": {
+      "cicd": {
+        "provider": "github-actions | gitlab-ci | circleci | buildkite | jenkins | none",
+        "triggers": ["push-to-main", "every-pr", "scheduled", "manual", "tag"],
+        "requiredPreMergeChecks": ["lint", "typecheck", "unit", "integration", "e2e", "security-scan", "coverage", "build"],
+        "coverage": { "threshold": "number | null", "scope": "global | per-package | per-file", "blocking": "boolean" },
+        "envLadder": ["dev", "staging", "preview", "prod"],
+        "autoDeploy": "auto-on-merge | manual-button | scheduled | tag-triggered | none",
+        "deployCadence": "continuous | daily | weekly | manual | none",
+        "rollback": { "strategy": "redeploy-previous-sha | blue-green | canary | none", "automation": "boolean" },
+        "secrets": { "manager": "provider-stored | oidc-to-cloud | vault | 1password | doppler | manual", "rotation": "manual | scheduled | on-incident" },
+        "notifications": { "channels": ["slack", "discord", "email", "github-checks"], "events": ["build-failure", "deploy-success", "deploy-failure", "security-alert"] },
+        "buildMatrix": { "os": ["ubuntu-latest"], "languageVersions": "single | multi", "parallelization": "auto | off | number" },
+        "caching": { "deps": "boolean", "build": "boolean", "dockerLayers": "boolean", "remote": "turbo | buildkite | none" },
+        "timeBudget": { "perPipelineMinutes": "number", "blockingThresholdMinutes": "number | null" },
+        "releasePipeline": { "separate": "boolean", "triggeredBy": "tag | manual | schedule", "convention": "release-please | semantic-release | manual | none" }
+      },
+      "_v1_carryover": {
+        "ciAuditAction": "string (mirror of top-level)",
+        "autoEvolutionMode": "string (mirror of top-level)",
+        "prReviewTrigger": "string (mirror of top-level)"
+      }
+    }
+  },
+  "syntheses": {
+    "P8": { "approvedAt": "ISO-8601", "adjustments": [] }
+  },
   "verificationStrategy": "browser-automation | api-testing | cli-execution | test-runner | combination",
   "pluginsToInstall": [],
   "featureDecomposition": {
@@ -398,7 +471,8 @@ Write a checkpoint **after each named Step completes** (not after each individua
 | Step 3 complete (Project Details) | Add `"step-3-details"`, `currentStep: "step-3.5-pain-points"`, all category-3 context fields |
 | Step 3.5 complete (Pain Points) | Add `"step-3.5-pain-points"`, `currentStep: "step-4-workflow"`, `context.painPoints` |
 | Step 4 complete (Workflow Preferences) | Add `"step-4-workflow"`, `currentStep: "step-5-cicd"`, all category-4 context fields |
-| Step 5 complete (CI/CD) | Add `"step-5-cicd"`, `currentStep: "step-6-feature-decomp"`, CI/CD fields |
+| Step 5 — Q5.1–Q5.17 answered | Add `"step-5-cicd"`, set `currentPhase: "phase-1.8-synthesis-review"`, `currentSynthesisPhase: "P8"`, all CI/CD fields under both top-level (Q5.1–Q5.3) AND `context.phases.P8.cicd` / `context.phases.P8._v1_carryover` |
+| Step 5 — synthesis-review(P8) returns | Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-6-feature-decomp"`, clear `currentSynthesisPhase`. Add `context.syntheses.P8 = { approvedAt, adjustments }` |
 | Step 6 complete (Feature Decomposition) | Add `"step-6-feature-decomp"`, `currentStep: "step-7-confirmation"`, `context.featureDecomposition` |
 | Step 7 complete (Confirmation) | Add `"step-7-confirmation"`, `currentPhase: "phase-1.7-grill-spec"` (or `"phase-1.5-architectural-research"` if `parkedQuestions.length > 0`), `currentStep: "pre-grill"` (handoff to grill-spec skill, which then hands off to scaffolding) |
 

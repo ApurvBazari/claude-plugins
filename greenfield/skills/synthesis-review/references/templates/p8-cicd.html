@@ -1,0 +1,104 @@
+<!--
+  Per-phase synthesis template — P8 (CI/CD & Operations).
+  Loaded by synthesis-review/SKILL.md Step 2 and spliced into synthesis-template.html's {{phase_body}}.
+
+  Placeholders use Mustache-like syntax: {{phase.cicd.<field>}} resolves from
+  context.phases.P8.cicd.<field>. Cross-checks resolve dependency paths from
+  context.phases.<other-phase>.<path>; if the path is not yet captured (later-round phase),
+  the synthesis-review skill renders "not yet captured" rather than blocking.
+
+  Each section follows the anatomy in references/section-prompts.md § Section anatomy:
+    1. section-title
+    2. captured-as
+    3. cross-checks (one per dependency)
+    4. contradictions (only if section-prompts.md rules fire)
+    5. notes (only if the LLM noticed something developer-relevant)
+-->
+
+<h2>Captured decisions</h2>
+
+<!-- Section 1: Pipeline trigger model -->
+<div class="section">
+  <div class="section-title">1. Pipeline trigger model</div>
+  <pre class="captured">provider:  {{phase.cicd.provider}}
+triggers:  {{phase.cicd.triggers}}</pre>
+  <div class="cross-check">Assumes <code>P0.willDeploy = {{P0.willDeploy}}</code> — CI is only meaningful for projects that deploy.</div>
+  <!-- Note injected by section-prompts.md § Round 1 P8 sections if provider !== "github-actions": -->
+  <!-- <div class="note">Heads-up — you picked <code>provider: {{phase.cicd.provider}}</code> but Round 1 only emits GitHub Actions workflow templates. The answer is captured but won't drive workflow generation until Round 6 lands non-GHA templates.</div> -->
+</div>
+
+<!-- Section 2: Pre-merge quality gates -->
+<div class="section">
+  <div class="section-title">2. Pre-merge quality gates</div>
+  <pre class="captured">requiredPreMergeChecks: {{phase.cicd.requiredPreMergeChecks}}
+coverage.threshold:     {{phase.cicd.coverage.threshold}}
+coverage.scope:         {{phase.cicd.coverage.scope}}
+coverage.blocking:      {{phase.cicd.coverage.blocking}}</pre>
+  <div class="cross-check">Assumes <code>P7.testingPhilosophy</code> — not yet captured (deferred to Round 3). Cross-check will fire automatically once P7 is collected.</div>
+</div>
+
+<!-- Section 3: Environment ladder & deploy strategy -->
+<div class="section">
+  <div class="section-title">3. Environment ladder &amp; deploy strategy</div>
+  <pre class="captured">envLadder:     {{phase.cicd.envLadder}}
+autoDeploy:    {{phase.cicd.autoDeploy}}
+deployCadence: {{phase.cicd.deployCadence}}</pre>
+  <div class="cross-check">Assumes <code>P0.willDeploy = {{P0.willDeploy}}</code>. Any env beyond <code>dev</code> requires <code>willDeploy: true</code>.</div>
+  <!-- Contradiction injected by section-prompts.md § Contradiction detection if envLadder includes "prod" && P0.willDeploy === false: -->
+  <!-- <div class="contradiction"><strong>Contradiction:</strong> P8 picked a production environment but P0 said this project won't deploy. One of these is wrong — resolve.</div> -->
+</div>
+
+<!-- Section 4: Secrets & rollback -->
+<div class="section">
+  <div class="section-title">4. Secrets &amp; rollback</div>
+  <pre class="captured">secrets.manager:      {{phase.cicd.secrets.manager}}
+secrets.rotation:     {{phase.cicd.secrets.rotation}}
+rollback.strategy:    {{phase.cicd.rollback.strategy}}
+rollback.automation:  {{phase.cicd.rollback.automation}}</pre>
+  <div class="cross-check">Assumes <code>P3.databaseHost</code> — not yet captured (deferred to Round 2). Rollback strategy needs to know if the DB supports point-in-time recovery; cross-check will fire automatically once P3 is collected.</div>
+</div>
+
+<!-- Section 5: Notifications & on-call -->
+<div class="section">
+  <div class="section-title">5. Notifications &amp; on-call</div>
+  <pre class="captured">notifications.channels: {{phase.cicd.notifications.channels}}
+notifications.events:   {{phase.cicd.notifications.events}}</pre>
+  <div class="cross-check">Assumes <code>P0.teamSize = {{P0.teamSize}}</code>. Solo-developer + Slack notifications combination produces a warning note.</div>
+  <!-- Note injected by section-prompts.md if P0.teamSize === "solo" && channels includes "slack": -->
+  <!-- <div class="note">You're solo but picked Slack notifications. Verify the workspace is yours and the channel exists; otherwise CI failures will silently disappear.</div> -->
+</div>
+
+<!-- Section 6: Performance & cost -->
+<div class="section">
+  <div class="section-title">6. Performance &amp; cost</div>
+  <pre class="captured">buildMatrix.os:               {{phase.cicd.buildMatrix.os}}
+buildMatrix.languageVersions: {{phase.cicd.buildMatrix.languageVersions}}
+buildMatrix.parallelization:  {{phase.cicd.buildMatrix.parallelization}}
+caching.deps:                 {{phase.cicd.caching.deps}}
+caching.build:                {{phase.cicd.caching.build}}
+caching.dockerLayers:         {{phase.cicd.caching.dockerLayers}}
+caching.remote:               {{phase.cicd.caching.remote}}
+timeBudget.perPipelineMinutes:        {{phase.cicd.timeBudget.perPipelineMinutes}}
+timeBudget.blockingThresholdMinutes:  {{phase.cicd.timeBudget.blockingThresholdMinutes}}</pre>
+  <!-- No cross-checks for Round 1 — performance/cost decisions are largely self-contained. -->
+</div>
+
+<!-- Section 7: Release pipeline -->
+<div class="section">
+  <div class="section-title">7. Release pipeline</div>
+  <pre class="captured">releasePipeline.separate:    {{phase.cicd.releasePipeline.separate}}
+releasePipeline.triggeredBy: {{phase.cicd.releasePipeline.triggeredBy}}
+releasePipeline.convention:  {{phase.cicd.releasePipeline.convention}}</pre>
+  <div class="cross-check">Assumes <code>P2.stack.framework = {{P2.stack.framework}}</code>. <code>release-please</code> and <code>semantic-release</code> both expect Node tooling; flag mismatches.</div>
+  <!-- Note injected if convention is release-please/semantic-release and stack.framework is not Node-based: -->
+  <!-- <div class="note">You picked <code>{{phase.cicd.releasePipeline.convention}}</code> but your stack is <code>{{P2.stack.framework}}</code>. These conventions are Node-centric — verify they support your stack or switch to <code>manual</code>.</div> -->
+</div>
+
+<!-- Section 8: Auto-evolution & PR review (Q5.1/Q5.2/Q5.3 from v1, preserved verbatim) -->
+<div class="section">
+  <div class="section-title">8. Auto-evolution &amp; PR review <span style="font-size: 11px; color: var(--muted); font-weight: normal;">(v1 carryover)</span></div>
+  <pre class="captured">ciAuditAction:      {{phase._v1_carryover.ciAuditAction}}       (Q5.1)
+autoEvolutionMode:  {{phase._v1_carryover.autoEvolutionMode}}    (Q5.2)
+prReviewTrigger:    {{phase._v1_carryover.prReviewTrigger}}      (Q5.3)</pre>
+  <!-- No cross-checks — these are legacy answers preserved as-is for back-compat. -->
+</div>

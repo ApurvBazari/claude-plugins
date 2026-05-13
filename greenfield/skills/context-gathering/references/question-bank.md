@@ -260,7 +260,118 @@ Each answer updates this context. Questions use the context to determine whether
 - **Type**: Choice
 - **Options**: "Auto-review every PR" | "Only when I comment @claude" | "Auto with skip label"
 - **Condition**: `willDeploy && hasTeam`
-- **Updates**: `prReviewTrigger`
+- **Updates**: `prReviewTrigger` AND `phases.P8._v1_carryover.prReviewTrigger`
+
+### Q5.4: "Which CI provider will you use?"
+- **Type**: Choice
+- **Options**: "GitHub Actions" | "GitLab CI" | "CircleCI" | "BuildKite" | "Jenkins" | "None"
+- **Condition**: `willDeploy`
+- **Updates**: `phases.P8.cicd.provider`
+- **Note**: Round 1 only emits GitHub Actions workflow templates. Non-GHA values are captured but produce a note in synthesis review; non-GHA template support lands in Round 6.
+
+### Q5.5: "When should CI run?"
+- **Type**: Multi-select
+- **Options**: "Push to main" | "Every PR" | "Scheduled" | "Manual dispatch" | "On tag"
+- **Condition**: `willDeploy`
+- **Updates**: `phases.P8.cicd.triggers[]`
+
+### Q5.6: "Which checks must pass before a PR can merge?"
+- **Type**: Multi-select
+- **Options**: "Lint" | "Typecheck" | "Unit tests" | "Integration tests" | "E2E tests" | "Security scan" | "Coverage" | "Build"
+- **Condition**: `willDeploy`
+- **Updates**: `phases.P8.cicd.requiredPreMergeChecks[]`
+- **Recommend**: Default selection adapts to stack — Node/TS projects get lint+typecheck+unit+build; Python adds ruff in place of lint+typecheck.
+
+### Q5.7: "Coverage threshold — what value blocks merges, if any?"
+- **Type**: Composite (numeric + choice + boolean)
+- **Sub-questions**:
+  - Threshold (numeric 0–100, or `null` for no threshold)
+  - Scope: "Global" | "Per-package" | "Per-file"
+  - Blocking: yes/no — should coverage drops block PRs?
+- **Condition**: `willDeploy && (Q5.6 selection includes "Coverage")`
+- **Updates**: `phases.P8.cicd.coverage.{threshold,scope,blocking}`
+
+### Q5.8: "Environment ladder — what environments will you deploy to?"
+- **Type**: Choice
+- **Options**: "Single (prod only)" | "Preview + prod" | "Staging + prod" | "Dev + staging + prod" | "Custom"
+- **Condition**: `willDeploy`
+- **Updates**: `phases.P8.cicd.envLadder[]`
+- **Recommend**: Default to "Preview + prod" for SaaS; "Single" for hobby projects; "Staging + prod" for B2B with paying customers.
+
+### Q5.9: "How does deployment happen?"
+- **Type**: Choice
+- **Options**: "Auto on merge" | "Manual button" | "Scheduled window" | "Tag-triggered" | "None — I'll deploy by hand"
+- **Condition**: `willDeploy`
+- **Updates**: `phases.P8.cicd.autoDeploy`
+
+### Q5.10: "Deploy cadence — how often will you ship?"
+- **Type**: Choice
+- **Options**: "Continuous (multiple per day)" | "Daily" | "Weekly" | "On-demand only" | "Not deploying"
+- **Condition**: `willDeploy`
+- **Updates**: `phases.P8.cicd.deployCadence`
+
+### Q5.11: "Rollback strategy?"
+- **Type**: Composite (choice + boolean)
+- **Sub-questions**:
+  - Strategy: "Redeploy previous SHA" | "Blue-green" | "Canary" | "None"
+  - Automation: yes/no — automated on failure detection?
+- **Condition**: `willDeploy && Q5.9 !== "None"`
+- **Updates**: `phases.P8.cicd.rollback.{strategy,automation}`
+
+### Q5.12: "How are CI secrets managed?"
+- **Type**: Composite (choice + choice)
+- **Sub-questions**:
+  - Manager: "Provider-stored (GitHub/GitLab secrets)" | "OIDC to cloud" | "Vault" | "1Password" | "Doppler" | "Manual env files"
+  - Rotation: "Manual only" | "Scheduled" | "On incident only"
+- **Condition**: `willDeploy`
+- **Updates**: `phases.P8.cicd.secrets.{manager,rotation}`
+
+### Q5.13: "Where should CI notifications go?"
+- **Type**: Composite (multi-select + multi-select)
+- **Sub-questions**:
+  - Channels (multi-select): "Slack" | "Discord" | "Email" | "GitHub checks only"
+  - Events (multi-select): "Build failure" | "Deploy success" | "Deploy failure" | "Security alert"
+- **Condition**: `willDeploy`
+- **Updates**: `phases.P8.cicd.notifications.{channels[],events[]}`
+- **Note**: Solo developer + Slack channel selection triggers a warning in synthesis review.
+
+### Q5.14: "Build matrix?"
+- **Type**: Composite (multi-select + choice + choice)
+- **Sub-questions**:
+  - OS targets (multi-select): "ubuntu-latest" | "macos-latest" | "windows-latest"
+  - Language versions: "Single (current LTS)" | "Multi (current LTS + previous)"
+  - Parallelization: "Auto (CI provider decides)" | "Off (serial)" | numeric value
+- **Condition**: `willDeploy`
+- **Updates**: `phases.P8.cicd.buildMatrix.{os[],languageVersions,parallelization}`
+- **Recommend**: Most projects → single ubuntu-latest. Cross-platform tools → multi-OS. Libraries → multi-version.
+
+### Q5.15: "Caching strategy?"
+- **Type**: Composite (booleans + choice)
+- **Sub-questions**:
+  - Deps: cache dependency installs (yes/no)
+  - Build: cache build outputs (yes/no)
+  - Docker layers: cache Docker layers (yes/no)
+  - Remote backend: "Turbo Remote Cache" | "BuildKite Cache" | "None"
+- **Condition**: `willDeploy`
+- **Updates**: `phases.P8.cicd.caching.{deps,build,dockerLayers,remote}`
+
+### Q5.16: "CI time budget?"
+- **Type**: Composite (numeric + optional numeric)
+- **Sub-questions**:
+  - Per-pipeline target minutes
+  - Blocking threshold minutes (optional — pipelines exceeding this fail; null means no block)
+- **Condition**: `willDeploy`
+- **Updates**: `phases.P8.cicd.timeBudget.{perPipelineMinutes,blockingThresholdMinutes}`
+
+### Q5.17: "Release pipeline?"
+- **Type**: Composite (boolean + choice + choice)
+- **Sub-questions**:
+  - Separate from main CI: yes/no
+  - Triggered by: "Tag" | "Manual" | "Schedule"
+  - Convention: "release-please" | "semantic-release" | "Manual" | "None"
+- **Condition**: `willDeploy`
+- **Updates**: `phases.P8.cicd.releasePipeline.{separate,triggeredBy,convention}`
+- **Note**: `release-please` and `semantic-release` are Node-centric. Mismatches with `P2.stack.framework` (non-Node stacks) trigger a synthesis warning.
 
 ---
 
