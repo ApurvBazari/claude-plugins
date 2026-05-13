@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Greenfield — Architecture Overview & Discussion Doc</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --surface: #1a1f29;
+    --surface-2: #232a36;
+    --text: #e8eaed;
+    --muted: #9aa4b2;
+    --accent: #6ee7b7;
+    --plugin: #fbbf24;
+    --plugin-bg: rgba(251, 191, 36, 0.08);
+    --warn: #f87171;
+    --warn-bg: rgba(248, 113, 113, 0.08);
+    --line: #2d3543;
+    --code-bg: #0a0e13;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "SF Pro Text", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 32px 48px;
+    line-height: 1.55;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 28px; margin: 0 0 6px; letter-spacing: -0.02em; }
+  h2 { font-size: 20px; margin: 40px 0 16px; color: var(--accent); letter-spacing: -0.01em; }
+  h3 { font-size: 15px; margin: 20px 0 8px; color: var(--text); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+  h4 { font-size: 14px; margin: 14px 0 6px; color: var(--muted); }
+  p { color: var(--text); margin: 0 0 10px; }
+  code {
+    background: var(--code-bg);
+    color: var(--accent);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: 0.88em;
+  }
+  pre {
+    background: var(--code-bg);
+    padding: 12px 16px;
+    border-radius: 6px;
+    overflow-x: auto;
+    border-left: 3px solid var(--accent);
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--text);
+  }
+  pre code { background: none; padding: 0; color: inherit; }
+  .lead { color: var(--muted); font-size: 15px; margin-bottom: 32px; }
+  .phase-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin: 20px 0;
+  }
+  .phase {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 18px 22px;
+    position: relative;
+    transition: border-color 0.15s;
+  }
+  .phase.has-plugin {
+    border-left: 4px solid var(--plugin);
+    background: linear-gradient(to right, var(--plugin-bg), var(--surface) 30%);
+  }
+  .phase-header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .phase-num {
+    background: var(--surface-2);
+    color: var(--accent);
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: "SF Mono", Menlo, monospace;
+  }
+  .phase.has-plugin .phase-num {
+    background: var(--plugin);
+    color: var(--bg);
+  }
+  .phase-title { font-size: 16px; font-weight: 600; }
+  .phase-tag {
+    margin-left: auto;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--surface-2);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .phase.has-plugin .phase-tag {
+    background: var(--plugin);
+    color: var(--bg);
+  }
+  .phase-body { color: var(--text); font-size: 14px; }
+  .phase-body ul { padding-left: 20px; margin: 6px 0; }
+  .phase-body li { margin: 3px 0; }
+  .plugin-note {
+    margin-top: 10px;
+    padding: 10px 14px;
+    background: var(--plugin-bg);
+    border-left: 2px solid var(--plugin);
+    font-size: 13px;
+    color: var(--text);
+    border-radius: 0 4px 4px 0;
+  }
+  .plugin-note strong { color: var(--plugin); }
+  .arrow {
+    text-align: center;
+    color: var(--muted);
+    font-size: 18px;
+    line-height: 1;
+    padding: 2px 0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 24px;
+    font-size: 13.5px;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  th {
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: var(--surface);
+  }
+  td.answer { color: var(--text); }
+  td.q { color: var(--accent); font-weight: 500; }
+  .callout {
+    background: var(--surface);
+    border-left: 4px solid var(--accent);
+    padding: 14px 18px;
+    border-radius: 0 6px 6px 0;
+    margin: 16px 0;
+  }
+  .callout.warn {
+    border-left-color: var(--warn);
+    background: var(--warn-bg);
+  }
+  .callout h4 {
+    margin: 0 0 8px;
+    color: var(--accent);
+    font-size: 13px;
+  }
+  .callout.warn h4 { color: var(--warn); }
+  .discussion-log {
+    background: var(--surface);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-top: 28px;
+  }
+  .log-entry {
+    border-left: 3px solid var(--accent);
+    padding: 8px 14px;
+    margin: 12px 0;
+    background: var(--surface-2);
+    border-radius: 0 4px 4px 0;
+  }
+  .log-entry .meta {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+  }
+  .log-entry .body { font-size: 13.5px; }
+  .log-empty { color: var(--muted); font-style: italic; font-size: 13px; }
+  .legend {
+    display: flex;
+    gap: 16px;
+    font-size: 12.5px;
+    color: var(--muted);
+    margin: -4px 0 24px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-swatch {
+    width: 12px; height: 12px; border-radius: 2px;
+    background: var(--accent);
+  }
+  .legend-swatch.plugin { background: var(--plugin); }
+  .footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+  }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<h1>Greenfield — How It Works</h1>
+<p class="lead">Architecture overview &amp; living discussion doc. Last refreshed: <code>2026-05-12</code>. As we discuss, the <strong>Discussion Log</strong> at the bottom will accumulate the changes/additions/removals we decide on.</p>
+
+<div class="legend">
+  <div class="legend-item"><span class="legend-swatch"></span> Greenfield-owned step</div>
+  <div class="legend-item"><span class="legend-swatch plugin"></span> External-plugin integration point</div>
+</div>
+
+<h2>The End-to-End Flow</h2>
+
+<div class="phase-grid">
+
+  <div class="phase">
+    <div class="phase-header">
+      <span class="phase-num">0</span>
+      <span class="phase-title">Entry — <code>/greenfield:init</code></span>
+      <span class="phase-tag">Skill (user-invoked)</span>
+    </div>
+    <div class="phase-body">
+      User runs <code>/greenfield:init</code>. Greenfield checks <code>.claude/greenfield-state.json</code> — if a prior session is in flight, offers <code>/greenfield:resume</code>. Otherwise, starts fresh and seeds the state file.
+    </div>
+  </div>
+
+  <div class="arrow">▼</div>
+
+  <div class="phase">
+    <div class="phase-header">
+      <span class="phase-num">1</span>
+      <span class="phase-title">Context Gathering — adaptive wizard</span>
+      <span class="phase-tag">8 steps</span>
+    </div>
+    <div class="phase-body">
+      State-machine wizard runs ~8–22 questions (out of 33 possible) based on prior answers.
+      <ul>
+        <li><strong>Step 1</strong> App description &amp; type</li>
+        <li><strong>Step 2</strong> Tech stack → dispatches <code>stack-researcher</code> agent for web research (latest versions, scaffold CLI, best practices)</li>
+        <li><strong>Step 3</strong> Project details (scale, deploy target, scaffold mode)</li>
+        <li><strong>Step 4</strong> Workflow preferences (TDD vs pragmatic, security sensitivity, docs discipline)</li>
+        <li><strong>Step 5–8</strong> Database, auth, API, frontend specifics</li>
+      </ul>
+      Output: a populated <code>context</code> object inside <code>greenfield-state.json</code> — drives every downstream decision.
+    </div>
+  </div>
+
+  <div class="arrow">▼</div>
+
+  <div class="phase">
+    <div class="phase-header">
+      <span class="phase-num">1.5</span>
+      <span class="phase-title">Architectural Research (conditional)</span>
+      <span class="phase-tag">Skipped if no parked questions</span>
+    </div>
+    <div class="phase-body">
+      If the wizard "parked" deep-research questions ("Which on-device LLM tier?", "Multi-tenant DB structure?"), this phase resolves them with focused web/codebase research, then yields back to grilling.
+    </div>
+  </div>
+
+  <div class="arrow">▼</div>
+
+  <div class="phase has-plugin">
+    <div class="phase-header">
+      <span class="phase-num">1.7</span>
+      <span class="phase-title">Grill-Spec — pre-scaffold validation gate</span>
+      <span class="phase-tag">Plugin point</span>
+    </div>
+    <div class="phase-body">
+      Walks the spec one more time and surfaces contradictions before any scaffolding starts. Five categories: Scope, Stack alignment, Feature conflicts, Missing dependencies, Security/compliance.
+    </div>
+    <div class="plugin-note">
+      <strong>Plugin used:</strong> <code>mattpocock-skills:grill-me</code> (vendored in this repo). The skill invokes it via the Skill tool. If unavailable for any reason, falls back to an inline 5-category walk — gate works either way.
+    </div>
+  </div>
+
+  <div class="arrow">▼</div>
+
+  <div class="phase">
+    <div class="phase-header">
+      <span class="phase-num">2</span>
+      <span class="phase-title">Scaffolding</span>
+      <span class="phase-tag">Two modes</span>
+    </div>
+    <div class="phase-body">
+      Executes the actual project scaffold based on Step 3's choice:
+      <ul>
+        <li><strong>full</strong>: runs the official CLI (<code>create-next-app</code>, <code>uv init</code>, <code>cargo new</code>, etc.) with research-informed flags</li>
+        <li><strong>walking-skeleton</strong>: produces one of each architectural pattern (one entity, one DAO, one route, one test) so Phase 3's tooling can learn from real code</li>
+      </ul>
+      Initializes git, verifies "hello world" runs, writes initial commit.
+    </div>
+  </div>
+
+  <div class="arrow">▼</div>
+
+  <div class="phase has-plugin">
+    <div class="phase-header">
+      <span class="phase-num">3a</span>
+      <span class="phase-title">Plugin Discovery — install &amp; verify</span>
+      <span class="phase-tag">★ MAIN plugin point</span>
+    </div>
+    <div class="phase-body">
+      Matches a curated catalog (<code>greenfield/skills/plugin-discovery/references/plugin-catalog.md</code>) against the Phase 1 <code>context</code>.
+      <ul>
+        <li><strong>Step 1</strong> Match catalog rules → ranked list</li>
+        <li><strong>Step 2</strong> Present interactive checklist (multi-select), phase-grouped (Research → Core discipline → Per-feature → Review → Engineering → Guardrails)</li>
+        <li><strong>Step 3</strong> Optional: web-search for extras beyond the catalog</li>
+        <li><strong>Step 4</strong> Install via shell CLI: <code>claude plugin marketplace add &lt;src&gt;</code> + <code>claude plugin install &lt;name&gt;@&lt;mkt&gt; --scope user</code></li>
+        <li><strong>Step 4b</strong> Verify via <code>claude plugin list --json</code> after user runs <code>/reload-plugins</code></li>
+        <li><strong>Step 5</strong> Compile <code>coveredCapabilities[]</code> from verified plugins</li>
+      </ul>
+    </div>
+    <div class="plugin-note">
+      <strong>Plugins typically installed here:</strong> <code>superpowers</code>, <code>commit-commands</code>, <code>security-guidance</code>, <code>hookify</code>, <code>claude-md-management</code>, <code>notify</code>, plus stack-conditional ones (<code>frontend-design</code>, <code>playwright</code>, <code>context7</code>) and the vendored <code>mattpocock-skills</code>.
+    </div>
+  </div>
+
+  <div class="arrow">▼</div>
+
+  <div class="phase has-plugin">
+    <div class="phase-header">
+      <span class="phase-num">3b</span>
+      <span class="phase-title">Tooling Generation — delegated to <code>onboard:generate</code></span>
+      <span class="phase-tag">★ Plugins INFLUENCE output</span>
+    </div>
+    <div class="phase-body">
+      Calls <code>onboard:generate</code> headlessly with <code>callerExtras = { installedPlugins, coveredCapabilities }</code>. Onboard produces the project's Claude tooling:
+      <ul>
+        <li><code>CLAUDE.md</code> — including a <strong>Plugin Integration</strong> section listing installed plugins</li>
+        <li><code>.claude/rules/*.md</code> — project conventions referencing plugin slash commands</li>
+        <li><code>.claude/skills/*</code>, <code>.claude/agents/*.md</code> — only gap-filling; capabilities covered by plugins are skipped</li>
+        <li><code>.claude/hooks/*.sh</code> — standard 5 hooks (per project-standards.md)</li>
+        <li><code>.github/workflows/*.yml</code> — CI/CD pipelines</li>
+        <li><code>docs/sprint-contracts/*.json</code> — sprint exit criteria</li>
+      </ul>
+      Greenfield itself adds two stack-specific artifacts: <code>init.sh</code> and <code>docs/feature-list.json</code>.
+    </div>
+    <div class="plugin-note">
+      <strong>Shadowing prevention:</strong> if <code>coveredCapabilities</code> contains <code>"code-review"</code> (from <code>code-review</code> plugin), onboard <em>skips</em> generating a local <code>code-reviewer.md</code> agent. Without this, you'd end up with two competing reviewers.
+    </div>
+  </div>
+
+  <div class="arrow">▼</div>
+
+  <div class="phase">
+    <div class="phase-header">
+      <span class="phase-num">4</span>
+      <span class="phase-title">Handoff</span>
+      <span class="phase-tag">Summary + next steps</span>
+    </div>
+    <div class="phase-body">
+      Prints a summary of what was scaffolded + installed, the path to start working (<code>./init.sh</code>, <code>docs/feature-list.json</code>), and suggested next commands. State file marked <code>completedAt</code>.
+    </div>
+  </div>
+
+</div>
+
+<h2>Key Questions Answered</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 30%;">Your question</th>
+      <th>Answer</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="q">Are the installed plugins' contents copied into the generated <code>CLAUDE.md</code>?</td>
+      <td class="answer">
+        <strong>No</strong> — their content lives in <code>~/.claude/plugins/cache/&lt;marketplace&gt;/&lt;plugin&gt;/&lt;version&gt;/</code>. The generated <code>CLAUDE.md</code> only <em>references</em> them (a "Plugin Integration" section listing names + capabilities), and surrounding rules/skills point at plugin slash commands like <code>/superpowers:tdd</code>. Plugins remain a separate concern, loaded by Claude Code's plugin system.
+      </td>
+    </tr>
+    <tr>
+      <td class="q">Does <code>CLAUDE.md</code> tell future sessions "these plugins are the base for feature/fix work"?</td>
+      <td class="answer">
+        <strong>Yes, indirectly.</strong> The "Plugin Integration" section + workflow rules say things like "Use <code>/feature-dev:feature-dev</code> for new feature work" and "Run TDD via <code>/superpowers:tdd</code>". Future sessions in the same project see this <code>CLAUDE.md</code>, so the LLM knows the canonical workflow expects these plugins.
+      </td>
+    </tr>
+    <tr>
+      <td class="q">If a developer doesn't have a plugin installed, does it break?</td>
+      <td class="answer">
+        <strong>Partially graceful.</strong> Plugins install at <code>--scope user</code>, so they persist for ANY project the developer opens. Greenfield assumes the same user; if a teammate clones the repo, they'd need to re-install. There's no enforcement — <code>CLAUDE.md</code> mentions them but Claude Code doesn't error if absent. (This is a known gap — see Discussion Log item #1.)
+      </td>
+    </tr>
+    <tr>
+      <td class="q">What happens if I install a NEW plugin later (post-scaffold)?</td>
+      <td class="answer">
+        Two paths today: (1) Manually edit <code>CLAUDE.md</code> to mention it, or (2) run <code>/onboard:evolve</code> which re-runs tooling generation with the updated plugin list, refreshing the Plugin Integration section. Hooks may also queue a drift entry (<code>.claude/drift-queue.json</code>) prompting you to evolve.
+      </td>
+    </tr>
+    <tr>
+      <td class="q">What if upstream plugin authors push breaking changes?</td>
+      <td class="answer">
+        <code>claude plugin update &lt;name&gt;</code> pulls latest; the CLI notes "restart required to apply". For the vendored <code>mattpocock-skills</code>, our <code>scripts/sync-from-upstream.sh</code> diffs against upstream HEAD and reports drift — pulling updates is manual + version-bump-tracked.
+      </td>
+    </tr>
+    <tr>
+      <td class="q">Are plugin-provided skills auto-invokable, or do I have to slash-command them?</td>
+      <td class="answer">
+        Per-skill: each <code>SKILL.md</code> has frontmatter (<code>user-invocable</code>, <code>disable-model-invocation</code>) that controls this. Most skills are model-auto-invokable when their <code>description</code> matches the task — which is why <strong>description quality matters more than name</strong>.
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>What's "Baked In" vs "Loaded Dynamically"</h2>
+
+<div class="grid-2">
+
+  <div class="callout">
+    <h4>Baked into the project repo</h4>
+    <ul style="padding-left: 18px; margin: 4px 0;">
+      <li><code>CLAUDE.md</code> (root + per-area)</li>
+      <li><code>.claude/rules/*.md</code></li>
+      <li><code>.claude/skills/*</code> (project-specific only)</li>
+      <li><code>.claude/agents/*.md</code> (project-specific only)</li>
+      <li><code>.claude/hooks/*.sh</code></li>
+      <li><code>.github/workflows/*.yml</code></li>
+      <li><code>docs/feature-list.json</code></li>
+      <li><code>docs/sprint-contracts/*.json</code></li>
+      <li><code>init.sh</code></li>
+    </ul>
+  </div>
+
+  <div class="callout">
+    <h4>Loaded dynamically from plugins</h4>
+    <ul style="padding-left: 18px; margin: 4px 0;">
+      <li>Plugin <code>SKILL.md</code> files (from <code>~/.claude/plugins/cache/</code>)</li>
+      <li>Plugin <code>agents/*.md</code></li>
+      <li>Plugin <code>hooks/*.sh</code></li>
+      <li>Plugin <code>commands/*</code> (slash commands)</li>
+      <li>Plugin MCP servers (defined in <code>.mcp.json</code> within the plugin)</li>
+    </ul>
+    <p style="font-size: 12.5px; color: var(--muted); margin-top: 8px;">
+      Claude Code's plugin system auto-discovers all of these at session start (or after <code>/reload-plugins</code>). They're available across <em>all</em> projects opened by the same user.
+    </p>
+  </div>
+
+</div>
+
+<h2>Plugin Integration: The 5 Touchpoints</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th style="width: 22%;">Where</th>
+      <th style="width: 22%;">What it does with plugins</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>Phase 1.7 grill-spec</td>
+      <td>Invokes <code>mattpocock-skills:grill-me</code> via Skill tool if available</td>
+      <td>Has inline fallback — gate works without the plugin</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>Phase 3a Step 1 catalog match</td>
+      <td>Reads <code>plugin-catalog.md</code>, matches conditions vs <code>context</code></td>
+      <td>The catalog is curated; web-search adds non-catalog plugins via Step 3</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>Phase 3a Step 4 install</td>
+      <td>Runs <code>claude plugin marketplace add</code> + <code>claude plugin install</code> per selected entry</td>
+      <td><code>--scope user</code> default. Per-plugin failures non-fatal.</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>Phase 3a Step 4b verify</td>
+      <td>Parses <code>claude plugin list --json</code> after user reloads, asserts <code>enabled === true</code></td>
+      <td>Unverified plugins get <code>verified: false</code> and don't contribute to capabilities</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>Phase 3b onboard generation</td>
+      <td>Passes <code>installedPlugins[]</code> + <code>coveredCapabilities[]</code> via <code>callerExtras</code></td>
+      <td>Onboard skips generating agents that would shadow plugins; CLAUDE.md gets a Plugin Integration section</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Where the External Plugins Show Up in the Generated Project</h2>
+
+<pre><code>my-new-project/
+├── CLAUDE.md                          ← lists installed plugins (Plugin Integration §)
+├── init.sh                            ← greenfield-generated, stack-specific
+├── .claude/
+│   ├── rules/                         ← rules mention plugin slash commands
+│   ├── skills/                        ← only gap-filling; covered capabilities skipped
+│   ├── agents/                        ← same — gap-filling only
+│   ├── hooks/                         ← 5 standard hooks (per project-standards.md)
+│   ├── greenfield-state.json          ← persists session state
+│   └── greenfield-meta.json           ← records final decisions (installedPlugins[], etc.)
+├── .github/workflows/                 ← CI/CD (if willDeploy=true)
+├── docs/
+│   ├── HARNESS-GUIDE.md
+│   ├── feature-list.json              ← from Phase 1 feature decomposition
+│   └── sprint-contracts/sprint-1.json
+└── src/                               ← actual project scaffold
+
+  ~/.claude/plugins/cache/             ← THE PLUGINS LIVE HERE (user-scope)
+  ├── claude-plugins-official/
+  │   ├── superpowers/5.1.0/skills/...
+  │   ├── feature-dev/...
+  │   ├── code-review/...
+  │   └── ...
+  ├── apurvbazari-plugins/
+  │   ├── onboard/1.10.0/...
+  │   ├── notify/1.1.0/...
+  │   └── mattpocock-skills/0.1.0/skills/grill-me/SKILL.md
+  └── ...
+</code></pre>
+
+<div class="callout warn">
+  <h4>Important: plugins are user-scoped, not project-scoped</h4>
+  <p style="margin: 0; font-size: 13px;">
+    The default <code>--scope user</code> install means a single set of plugins exists per developer machine, used across <em>every</em> Claude Code project they open. A project's <code>CLAUDE.md</code> tells the LLM "expect these to be present," but doesn't enforce it. A teammate cloning the repo would need to re-install the same plugin set manually. There's no <code>package.json</code>-style lockfile for plugin dependencies (yet).
+  </p>
+</div>
+
+<h2>Discussion Log</h2>
+
+<div class="discussion-log">
+  <p class="log-empty">As we discuss changes, additions, and removals, entries will be added here. Each entry records the date, the topic, and the agreed direction.</p>
+
+  <div class="log-entry">
+    <div class="meta">2026-05-12 · Seed entry</div>
+    <div class="body">
+      Document created. Initial scope: walk through greenfield's plugin-integration flow, identify what's working, what's missing, what could be improved. <strong>Known gap to discuss:</strong> no lockfile / project-scope option for plugin dependencies; teammates can't deterministically reproduce the same plugin set.
+    </div>
+  </div>
+
+  <div class="log-entry">
+    <div class="meta">2026-05-12 · DECISION · Add synthesis-confirmation phases</div>
+    <div class="body">
+      <strong>Diagnosis:</strong> greenfield's current flow is extractive (Phase 1) + decision-tree (Phase 1.7), neither reflects back a synthesized mental model. The LLM never asks "is my understanding of your architecture / flows / CI-CD correct?" before scaffolding.
+      <br><br>
+      <strong>Decision:</strong> Add <strong>two new phases</strong>:
+      <ul>
+        <li><strong>Phase 1.8 Synthesis Review</strong> — after grill-spec, before scaffolding. Generates an HTML file (one section per concern: architecture, request flow, CI/CD, test strategy, feature roadmap). Per-section Approve / Adjust / Skip. "Adjust" enters an interactive sub-dialog (this conversation's style: options + recommendation + iterate).</li>
+        <li><strong>Phase 3c Tooling Plan Preview</strong> — before <code>onboard:generate</code> writes files. Previews CLAUDE.md sections, agents (incl. which are skipped due to plugin coverage), hooks, CI/CD workflow files. Same Approve / Adjust / Skip pattern.</li>
+      </ul>
+      <strong>Format:</strong> HTML files (user accepts the browser-switch cost for richer visuals).<br>
+      <strong>Granularity:</strong> per-section.<br>
+      <strong>Time budget:</strong> up to ~10 min per session — one-time cost vs hours of post-scaffold rework.<br>
+      <strong>Status:</strong> Design agreed; implementation not started.
+    </div>
+  </div>
+
+  <div class="log-entry">
+    <div class="meta">2026-05-12 · PHILOSOPHY SHIFT · "Time is not a constraint"</div>
+    <div class="body">
+      <strong>User clarification:</strong> "<em>Time is not a constraint for this plugin. This plugin can have discussions spanning multiple sessions to get the best output without any surprises. That's the primary job of the plugin.</em>"
+      <br><br>
+      Re-anchors the design north star: <strong>spec quality &gt; session speed</strong>. A greenfield session should be as exhaustive as needed, even across multiple sittings, to produce a spec the developer believes in. Wizard fatigue concerns are deprioritized; "surprises in scaffold" are now the primary failure mode to engineer against.
+      <br><br>
+      <strong>Implication:</strong> the "Option C hybrid" approach (minimal wizard + synthesis review for derived defaults) is rejected. Replaced with <strong>"Option A maximal"</strong> — comprehensive question coverage across all areas (CI/CD, testing, security, database, plus the rest enumerated below).
+    </div>
+  </div>
+
+  <div class="log-entry">
+    <div class="meta">2026-05-12 · DECISION · Comprehensive wizard expansion (4-area scope, with audit)</div>
+    <div class="body">
+      <strong>Scope of "comprehensive":</strong> CI/CD + testing + security + database, with full audit of every other category surfacing additional gaps.
+      <br><br>
+      <strong>Audit result (see <a href="greenfield-wizard-gap-analysis.html" style="color: var(--accent);">greenfield-wizard-gap-analysis.html</a>):</strong>
+      <ul>
+        <li>Current: 33 questions across 7 categories</li>
+        <li>Gaps identified: ~80 missing questions in existing categories + ~12 concern areas never asked + 5 missing phases (domain modeling, personas, risks, feature-roadmap co-design, schema-draft review)</li>
+        <li>Proposed structure: <strong>10 phases (vs 7 categories)</strong>, ~150 total possible questions, ~30–60 actually asked per session via adaptive skipping, per-phase synthesis confirmation</li>
+      </ul>
+      <strong>Proposed implementation phasing</strong> (one round = one branch = one PR):
+      <ol>
+        <li><strong>Round 1</strong>: Expand CI/CD (current Cat 5) + build Phase 1.8 Synthesis Review infrastructure</li>
+        <li><strong>Round 2</strong>: Split Cat 3 → Data Architecture (P3) + API &amp; Integration (P4)</li>
+        <li><strong>Round 3</strong>: Expand Workflow (P7) + split out Auth/Security/Privacy (P6)</li>
+        <li><strong>Round 4</strong>: New phases — Personas, Domain Modeling, Risk Identification</li>
+        <li><strong>Round 5</strong>: Feature Roadmap Co-Design, Schema/API Draft Review</li>
+        <li><strong>Round 6</strong>: Frontend/UX expansion + previously-missing concern areas (caching, search, real-time, payments, etc.)</li>
+      </ol>
+      <strong>Status:</strong> Audit complete; scope-of-this-round decision pending.
+    </div>
+  </div>
+
+  <div class="log-entry">
+    <div class="meta">2026-05-12 · DECISIONS · Round scope + synthesis confirmation policy</div>
+    <div class="body">
+      <strong>Approach:</strong> Full overhaul in one long-lived branch (<code>feat/greenfield-3.0-wizard-overhaul</code>), Rounds 1–6 sequenced as separate commits. Multi-session execution accepted.<br>
+      <strong>Synthesis confirmation:</strong> Every phase ends with a synthesis-review HTML page; Approve / Adjust / Skip per section.<br>
+      <strong>Synthesis HTML persistence:</strong> Commit to <code>docs/architecture/</code> in the scaffolded project. Living architecture records, ADR-like.<br>
+      <strong>Agents for new phases:</strong> Build new dedicated agents only where the work is sub-process-worthy (Risk research gets an agent; domain modeling stays in main session).
+    </div>
+  </div>
+
+  <div class="log-entry">
+    <div class="meta">2026-05-12 · REALITY CHECK · Implementation cost estimate</div>
+    <div class="body">
+      Honest projection of what "Full overhaul, Rounds 1–6" entails:
+      <ul>
+        <li><strong>~15-20 new SKILL files</strong>: 10 phase skills + per-phase synthesis sub-skills + new agents</li>
+        <li><strong>Question-bank rewrite</strong>: 33 Q → ~150 Q reorganized into 10 phases</li>
+        <li><strong>Per-phase HTML templates</strong>: one synthesis template per phase (~10 templates), stack-conditional rendering inside</li>
+        <li><strong>2–3 new agent definitions</strong>: <code>risk-researcher</code>, possibly <code>persona-mapper</code> and <code>domain-modeler</code></li>
+        <li><strong>State machine overhaul</strong>: <code>greenfield-state.json</code> schema bump; new <code>completedSteps</code> values; resume logic; status/init/resume skills</li>
+        <li><strong>Onboard generation upgrade</strong>: new context shape needs <code>onboard:generate</code> upgrade to consume P3/P4/P6/P8 outputs properly</li>
+        <li><strong>Plugin version bump</strong>: greenfield 2.0.0 → 3.0.0 (major: new wizard flow is a breaking change for in-flight sessions)</li>
+        <li><strong>Recommended check-in cadence within the branch</strong>: pause after Round 1 (verify synthesis pattern works), pause after Round 3 (verify expansions land coherently), pause after Round 5 (verify new phases integrate)</li>
+      </ul>
+      <strong>Reasonable estimate</strong>: 2–3 months of focused work for a single contributor. Multi-session discussions through scope-and-design decisions add to that. The user's "time is not a constraint" philosophy explicitly accepts this.
+    </div>
+  </div>
+
+  <div class="log-entry">
+    <div class="meta">2026-05-13 · DECISIONS · Q1-Q4 resolved</div>
+    <div class="body">
+      <strong>Q1 — Migration:</strong> <span style="color: var(--accent);">Break compat</span>. Existing greenfield 2.x in-flight sessions (estimated 0–2) must restart on 3.0. Major version bump justifies this. Completed 2.x scaffolds unaffected (no wizard re-run).
+      <br><br>
+      <strong>Q2 — Cross-phase contradictions:</strong> <span style="color: var(--accent);">Cross-check at each synthesis</span>. Each phase declares its dependencies on earlier phases (e.g., <code>P8 depends on P3.databaseHost</code>). Synthesis review explicitly shows "this assumes P3 said X — confirm still valid". Forces scoped reconciliation at the right moment.
+      <br><br>
+      <strong>Q3 — Adaptive skipping:</strong> <span style="color: var(--accent);">Smart skipping + explicit surfacing</span>. Skip irrelevant questions based on scale/non-deployment, but at end of each phase (and end of wizard) show "I skipped N questions for these reasons. Want to revisit any?" → opt-in deep passes. Respects dev time without invisible omissions. Slight walk-back from "always ask everything" accepted.
+      <br><br>
+      <strong>Q4 — Adjust sub-dialog:</strong> <span style="color: var(--accent);">Two-stage composition</span> — <code>superpowers:brainstorming</code> first to explore what adjustment the dev wants, then <code>mattpocock-skills:grill-me</code> as adversarial verification pass on the adjusted answer. Best of both: brainstorming for open-ended refinement, grill-me to stress-test the result. Falls back to inline if either plugin is missing.
+      <br><br>
+      <strong>Q5 — Plugin discovery placement:</strong> <span style="color: var(--accent);">Decouple recommendation from install</span>. <strong>P7.5 = Plugin Recommendation</strong> (after Auth/Security/Workflow contexts gathered; dev picks the plugin set; no install yet). <strong>P10 = Plugin Install</strong> (final confirmation, then actual install). All synthesis reviews from P8 onward reference the picked plugin set.
+    </div>
+  </div>
+
+  <div class="log-entry">
+    <div class="meta">2026-05-13 · DECISIONS · Secondary items resolved (2, 3, 8, 9, 10, 11)</div>
+    <div class="body">
+      <strong>Item 2 — Stale architecture docs:</strong> <span style="color: var(--accent);">Freshness hooks via git pre-commit</span>. Warn when relevant code changes without doc updates. (Note: bypassable with <code>--no-verify</code> — acceptable risk; the warning surfaces the issue.)
+      <br><br>
+      <strong>Item 3 — Resume granularity:</strong> <span style="color: var(--accent);">Ask the dev on resume</span>. "Pick up at Q5 or restart this phase?" — default pick-up; "restart" option for cold-context returns.
+      <br><br>
+      <strong>Item 8 — Concern-area gating (12 never-asked areas):</strong> <span style="color: var(--accent);">Always ask "do you need X?" individually</span> for each. Most explicit option; matches no-surprises philosophy. Adds 12 yes/no questions per session — acceptable per time-not-constraint commitment.
+      <br><br>
+      <strong>Item 9 — v2 codepath:</strong> <span style="color: var(--accent);">Strict cutover</span>. Only greenfield 3.0 exists going forward. Adaptive skipping in 3.0 handles light use cases.
+      <br><br>
+      <strong>Item 10 — Onboard integration:</strong> <span style="color: var(--accent);">Bump onboard 1.10.0 → 2.0.0 alongside greenfield 3.0</span>. Onboard reads only the new context shape. Direct <code>/onboard:init</code> users migrate alongside. Clean break, matches the cutover philosophy from Item 9.
+      <br><br>
+      <strong>Item 11 — Phase dependency graph location:</strong> <span style="color: var(--accent);">Per-phase JSON files + on-demand visualization script</span>. Each phase owns its <code>dependencies.json</code>; <code>scripts/visualize-graph.sh</code> reads all and outputs a Mermaid diagram. No committed duplication. Phase locality preserved.
+    </div>
+  </div>
+
+  <div class="log-entry">
+    <div class="meta">2026-05-13 · STATUS · Design phase complete</div>
+    <div class="body">
+      <strong>All 11 design questions resolved.</strong> The wizard architecture is locked. Next step: Round 1 implementation planning.
+      <br><br>
+      <strong>What Round 1 covers</strong> (per the rounds plan):
+      <ul>
+        <li>Expand current Cat 5 (CI/CD) — add the ~14 missing pipeline-design questions</li>
+        <li>Build Phase 1.8 Synthesis Review infrastructure (becomes the reusable pattern for all subsequent rounds)</li>
+        <li>Establish per-phase dependency.json structure with one example (P8 → P3, P0 deps)</li>
+        <li>Wire <code>superpowers:brainstorming</code> + <code>mattpocock-skills:grill-me</code> two-stage Adjust dialog</li>
+        <li>Pre-commit freshness hook for <code>docs/architecture/</code></li>
+      </ul>
+      <strong>Decision points for next session</strong>:
+      <ul>
+        <li>Concrete file list for Round 1 (new SKILL files, new agents, modified existing files)</li>
+        <li>Round 1 commit plan (one big or several logical commits)</li>
+        <li>Branch from where? (<code>feat/greenfield-with-grill-spec</code>, <code>feat/greenfield-plugin-install-fix</code>, or fresh from <code>main</code>?)</li>
+        <li>onboard 2.0 contract — what fields does the new shape carry that 1.0 doesn't?</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="log-entry">
+    <div class="meta">2026-05-13 · SESSION CLOSE · Pickup brief for next session</div>
+    <div class="body">
+      <strong>Where to resume:</strong> Round 1 planning. Three open tasks staged:
+      <ol>
+        <li><strong>Concrete file list for Round 1</strong> — every SKILL.md, agent, template, and config file Round 1 will create or modify (CI/CD wizard expansion + Phase 1.8 synthesis-review infrastructure).</li>
+        <li><strong>Branch base decision</strong> — current branch is <code>feat/greenfield-1.2</code> (5 commits ahead of main, contains plugin-install fixes + mattpocock-skills port). Round 1 should branch from main, from this branch, or rebase strategy?</li>
+        <li><strong>onboard 2.0 contract</strong> — document the new context shape the wizard produces (P0/P0.5/P1/P3/P4/P6/P8/P8.5/P9 outputs) so onboard's generator can be developed in parallel.</li>
+      </ol>
+      <strong>Locked decisions to honor in Round 1:</strong>
+      <ul>
+        <li>15-phase wizard (P0 → P10.5), per-phase synthesis confirmation HTMLs in <code>docs/architecture/</code></li>
+        <li>Cross-phase dependency tracking via per-phase <code>dependencies.json</code> + on-demand <code>visualize-graph.sh</code></li>
+        <li>Adjust dialog: <code>superpowers:brainstorming</code> → <code>mattpocock-skills:grill-me</code> two-stage</li>
+        <li>P7.5 = Plugin Recommendation (no install); P10 = Plugin Install (final)</li>
+        <li>Break compat from greenfield 2.x; bump onboard to 2.0 alongside</li>
+        <li>Git pre-commit freshness hook for <code>docs/architecture/</code></li>
+        <li>Always ask "do you need X?" individually for 12 concern areas; surface skipped items at end-of-wizard</li>
+        <li>Resume granularity: ask the dev on resume ("pick up at Q5 or restart phase?")</li>
+      </ul>
+      <strong>This doc + <a href="greenfield-wizard-gap-analysis.html" style="color: var(--accent);">greenfield-wizard-gap-analysis.html</a> are the authoritative design records.</strong> Both committed to the repo on this branch.
+    </div>
+  </div>
+
+  <div class="log-entry">
+    <div class="meta">2026-05-13 · CLOSED · Design unknowns resolved</div>
+    <div class="body">
+      <ol>
+        <li><strong>Migration of existing greenfield 2.x projects</strong>: break compat (users start fresh) / compat-layer (read old state, run new wizard) / explicit <code>/greenfield:migrate</code> command?</li>
+        <li><strong>Stale architecture-doc problem</strong>: if <code>docs/architecture/*.html</code> is committed but the code drifts, the docs become misleading. Add freshness hooks? Auto-regen on relevant code changes? Manual update only?</li>
+        <li><strong>Resume granularity</strong>: at P6 Q5, does <code>/greenfield:resume</code> restart P6, restart from Q5, or pick up at Q5+1?</li>
+        <li><strong>Cross-phase contradictions</strong>: if P8 (CI/CD) reveals that P3 (Data) decisions are invalid, how do we handle backtracking through 5 intervening phases? Reset just contradicted fields? Full re-walk from P3?</li>
+        <li><strong>Adaptive skipping for "side projects"</strong>: does time-not-constraint mean ALWAYS ask everything regardless of scale, or do we keep <code>isProduction === false</code> skipping rules? If we skip, we risk same "surprises" failure mode for hobby projects.</li>
+        <li><strong>"Adjust" sub-dialog implementation</strong>: synthesis-review Adjust path reuses <code>superpowers:brainstorming</code> / <code>mattpocock-skills:grill-me</code> / implements inline?</li>
+        <li><strong>Plugin discovery placement</strong>: currently P10 (penultimate). Plugin choices should INFORM synthesis reviews (e.g., if user picked <code>playwright</code>, P5 testing synthesis should mention it). Move earlier? Run twice (early scan + late confirm)?</li>
+        <li><strong>Concern-area gating</strong>: for the 12 never-asked areas (caching, payments, real-time, etc.) — always ask "do you need this?" up-front, or only when stack/scale signals trigger?</li>
+        <li><strong>v2 codepath</strong>: maintain greenfield 2.x for users who want the lighter wizard? Or strict cutover at 3.0?</li>
+        <li><strong>Onboard integration</strong>: new context shape may break <code>onboard:generate</code>. Bump onboard to 2.0 alongside greenfield 3.0, or version onboard's expected-input contract?</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="log-entry">
+    <div class="meta">2026-05-12 · OPEN · Implementation outline (pending discussion)</div>
+    <div class="body">
+      <strong>New files (~5):</strong>
+      <ul>
+        <li><code>greenfield/skills/synthesis-review/SKILL.md</code></li>
+        <li><code>greenfield/skills/synthesis-review/references/synthesis-template.html</code></li>
+        <li><code>greenfield/skills/synthesis-review/references/section-prompts.md</code></li>
+        <li><code>greenfield/skills/tooling-plan-preview/SKILL.md</code></li>
+        <li><code>greenfield/skills/tooling-plan-preview/references/preview-template.html</code></li>
+      </ul>
+      <strong>Modified files (~10):</strong>
+      <ul>
+        <li><code>greenfield/skills/init/SKILL.md</code> — invoke new phases</li>
+        <li><code>greenfield/skills/grill-spec/SKILL.md</code> — hand off to 1.8</li>
+        <li><code>greenfield/skills/tooling-generation/SKILL.md</code> — gate behind 3c approval</li>
+        <li><code>greenfield/skills/resume/SKILL.md</code>, <code>status/SKILL.md</code> — new phase awareness</li>
+        <li><code>greenfield/CLAUDE.md</code> + <code>plugin.json</code> (2.0.0 → 2.1.0)</li>
+        <li><code>.claude-plugin/marketplace.json</code> version sync</li>
+        <li><code>greenfield-state.json</code> schema — new completedSteps values</li>
+        <li><code>docs/greenfield-overview.html</code> — update the flow diagram</li>
+      </ul>
+      <strong>Pending design decisions:</strong>
+      <ol>
+        <li>HTML template variants per stack (Next.js vs FastAPI vs Go — each needs its own architecture diagram template) — OR — generic templates filled by LLM at runtime?</li>
+        <li>Where on disk does the HTML live? <code>.claude/synthesis-review.html</code>? <code>docs/synthesis-review.html</code>? Gitignored or committed as the agreed architecture record?</li>
+        <li>If committed: does it become a de-facto ADR? Does it stay alongside subsequent feature-dev sessions?</li>
+        <li>Approve/Adjust/Skip per section — but is "Skip" allowed for arch/flow? Or only for optional sections like roadmap?</li>
+        <li>The "Adjust" sub-dialog reuses brainstorming-style interaction. Does it reuse the <code>superpowers:brainstorming</code> skill directly? Or implement inline?</li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  Refresh: <code>open docs/greenfield-overview.html</code>. Edits land here via Claude as we agree on changes.
+</div>
+
+</body>
+</html>

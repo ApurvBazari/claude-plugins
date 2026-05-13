@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Greenfield Wizard — Comprehensive Gap Analysis</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --surface: #1a1f29;
+    --surface-2: #232a36;
+    --text: #e8eaed;
+    --muted: #9aa4b2;
+    --accent: #6ee7b7;
+    --good: #6ee7b7;
+    --partial: #fbbf24;
+    --gap: #f87171;
+    --new: #a78bfa;
+    --line: #2d3543;
+    --code-bg: #0a0e13;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "SF Pro Text", system-ui, sans-serif;
+    background: var(--bg); color: var(--text);
+    margin: 0; padding: 32px 48px; line-height: 1.55;
+    max-width: 1400px; margin: 0 auto;
+  }
+  h1 { font-size: 28px; margin: 0 0 6px; letter-spacing: -0.02em; }
+  h2 { font-size: 20px; margin: 40px 0 12px; color: var(--accent); letter-spacing: -0.01em; }
+  h3 { font-size: 15px; margin: 18px 0 8px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text); font-weight: 600; }
+  h4 { font-size: 14px; margin: 12px 0 6px; color: var(--muted); font-weight: 600; }
+  code {
+    background: var(--code-bg); color: var(--accent);
+    padding: 1px 5px; border-radius: 3px;
+    font-family: "SF Mono", Menlo, monospace; font-size: 0.88em;
+  }
+  pre {
+    background: var(--code-bg); padding: 12px 16px; border-radius: 6px;
+    overflow-x: auto; border-left: 3px solid var(--accent);
+    font-family: "SF Mono", Menlo, monospace; font-size: 12.5px;
+  }
+  .lead { color: var(--muted); font-size: 15px; margin-bottom: 24px; }
+  table {
+    width: 100%; border-collapse: collapse; margin: 10px 0 24px;
+    font-size: 13.5px;
+  }
+  th, td {
+    text-align: left; padding: 9px 12px;
+    border-bottom: 1px solid var(--line); vertical-align: top;
+  }
+  th {
+    color: var(--muted); font-weight: 600; font-size: 11.5px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    background: var(--surface);
+  }
+  td .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .b-good   { background: rgba(110, 231, 183, 0.16); color: var(--good); }
+  .b-partial{ background: rgba(251, 191, 36, 0.16); color: var(--partial); }
+  .b-gap    { background: rgba(248, 113, 113, 0.16); color: var(--gap); }
+  .b-new    { background: rgba(167, 139, 250, 0.16); color: var(--new); }
+  .legend {
+    display: flex; gap: 18px; margin: 8px 0 24px;
+    font-size: 12.5px; color: var(--muted);
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot {
+    width: 10px; height: 10px; border-radius: 5px;
+  }
+  .ld-good   { background: var(--good); }
+  .ld-partial{ background: var(--partial); }
+  .ld-gap    { background: var(--gap); }
+  .ld-new    { background: var(--new); }
+  .callout {
+    background: var(--surface);
+    border-left: 4px solid var(--accent);
+    padding: 14px 18px; border-radius: 0 6px 6px 0; margin: 16px 0;
+  }
+  .callout.warn { border-left-color: var(--partial); }
+  .callout h4 { margin: 0 0 6px; color: var(--accent); }
+  .callout.warn h4 { color: var(--partial); }
+  .phase-stack {
+    display: grid; gap: 8px; margin: 12px 0 28px;
+  }
+  .phase-row {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 6px; padding: 12px 16px;
+    display: grid; grid-template-columns: 60px 1fr 100px; gap: 12px; align-items: center;
+  }
+  .phase-row.new {
+    border-left: 3px solid var(--new);
+    background: linear-gradient(to right, rgba(167, 139, 250, 0.06), var(--surface) 30%);
+  }
+  .phase-row.expand {
+    border-left: 3px solid var(--partial);
+    background: linear-gradient(to right, rgba(251, 191, 36, 0.06), var(--surface) 30%);
+  }
+  .phase-id { font-family: "SF Mono", Menlo, monospace; font-size: 12px; color: var(--muted); }
+  .phase-name { font-weight: 600; font-size: 14px; }
+  .phase-name .small { color: var(--muted); font-weight: normal; font-size: 12.5px; }
+  .phase-q-count { color: var(--muted); font-size: 12px; text-align: right; }
+  .footer {
+    margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
+    color: var(--muted); font-size: 12px; text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<h1>Greenfield Wizard — Comprehensive Gap Analysis</h1>
+<p class="lead">
+  Audit of every project concern a real greenfield session should cover, grouped by phase, with a coverage badge per concern. Generated <code>2026-05-12</code> in response to: "<em>time is not a constraint, surprises are the enemy — the primary job of this plugin is to get the best output without any surprises.</em>"
+</p>
+
+<div class="legend">
+  <div class="legend-item"><span class="legend-dot ld-good"></span> Covered well</div>
+  <div class="legend-item"><span class="legend-dot ld-partial"></span> Partially covered / under-asked</div>
+  <div class="legend-item"><span class="legend-dot ld-gap"></span> Not asked at all</div>
+  <div class="legend-item"><span class="legend-dot ld-new"></span> Proposed new addition</div>
+</div>
+
+<div class="callout">
+  <h4>Headline numbers</h4>
+  Current wizard: <strong>33 questions across 7 categories</strong>. Developer answers 8–22 per session.<br>
+  Identified gaps below: <strong>~80 missing questions</strong> across the same categories plus <strong>~12 missing concern areas</strong> never asked about at all.<br>
+  Plus <strong>5 missing phases</strong> beyond pure Q&amp;A (domain modeling, personas, risks, feature roadmap co-design, schema review).
+</div>
+
+<h2>Section 1 — Audit of existing categories</h2>
+
+<h3>Category 1: Project Vision (currently 2 Q)</h3>
+<table>
+  <thead><tr><th style="width: 28%;">Concern</th><th style="width: 12%;">Status</th><th>Notes / Proposed additions</th></tr></thead>
+  <tbody>
+    <tr><td>What to build</td><td><span class="badge b-good">Covered</span></td><td>Q1.1 open-ended</td></tr>
+    <tr><td>Who / why</td><td><span class="badge b-partial">Light</span></td><td>Q1.2 only asked if Q1.1 is vague — should ALWAYS be asked, deeper</td></tr>
+    <tr><td>Success criteria / KPIs</td><td><span class="badge b-gap">Gap</span></td><td>How do you know it's working? Active users, conversion, retention, p99 latency?</td></tr>
+    <tr><td>Non-goals / scope discipline</td><td><span class="badge b-gap">Gap</span></td><td>What is this <em>explicitly NOT</em>? Critical for sprint scope</td></tr>
+    <tr><td>Timeline / urgency</td><td><span class="badge b-gap">Gap</span></td><td>When does this need to be production-ready? Drives MVP scope</td></tr>
+    <tr><td>Stakeholders</td><td><span class="badge b-gap">Gap</span></td><td>Who else has skin in the game? Drives review process, comms</td></tr>
+    <tr><td>Operating budget</td><td><span class="badge b-gap">Gap</span></td><td>"Must run on $20/mo Vercel hobby" changes stack choices substantially</td></tr>
+  </tbody>
+</table>
+
+<h3>Category 2: Tech Stack (currently 3 Q)</h3>
+<table>
+  <thead><tr><th style="width: 28%;">Concern</th><th style="width: 12%;">Status</th><th>Notes / Proposed additions</th></tr></thead>
+  <tbody>
+    <tr><td>Stack preference (yes/no/help)</td><td><span class="badge b-good">Covered</span></td><td>Q2.1</td></tr>
+    <tr><td>Stack details</td><td><span class="badge b-good">Covered</span></td><td>Q2.2 + stack-researcher agent</td></tr>
+    <tr><td>Scaffold CLI choice</td><td><span class="badge b-good">Covered</span></td><td>Q2.3</td></tr>
+    <tr><td>Language version pin</td><td><span class="badge b-gap">Gap</span></td><td>Node 20 vs 22? Python 3.11 vs 3.12? Drives <code>.nvmrc</code>, <code>.python-version</code></td></tr>
+    <tr><td>Package manager preference</td><td><span class="badge b-gap">Gap</span></td><td>npm / pnpm / yarn / bun — drives lockfile, CI caching, Docker setup</td></tr>
+    <tr><td>Runtime alternatives</td><td><span class="badge b-gap">Gap</span></td><td>Node vs Deno vs Bun; CPython vs PyPy</td></tr>
+    <tr><td>Tool version management</td><td><span class="badge b-gap">Gap</span></td><td>mise / asdf / nvm / pyenv / system?</td></tr>
+    <tr><td>Existing-system constraints</td><td><span class="badge b-gap">Gap</span></td><td>Does this integrate with an existing service / DB / auth provider?</td></tr>
+  </tbody>
+</table>
+
+<h3>Category 3: Project Details (currently 18 Q — densest category, still has gaps)</h3>
+<table>
+  <thead><tr><th style="width: 28%;">Concern</th><th style="width: 12%;">Status</th><th>Notes / Proposed additions</th></tr></thead>
+  <tbody>
+    <tr><td>Scale / team size</td><td><span class="badge b-good">Covered</span></td><td>Q3.1</td></tr>
+    <tr><td>Database choice</td><td><span class="badge b-good">Covered</span></td><td>Q3.2</td></tr>
+    <tr><td>DB: migrations strategy</td><td><span class="badge b-gap">Gap</span></td><td>Declarative (Prisma) / imperative (Alembic) / hand-rolled SQL</td></tr>
+    <tr><td>DB: backup strategy</td><td><span class="badge b-gap">Gap</span></td><td>Daily / continuous / cross-region — drives runbook</td></tr>
+    <tr><td>DB: multi-tenancy model</td><td><span class="badge b-gap">Gap</span></td><td>Single-tenant / tenant_id column / schema-per-tenant / DB-per-tenant</td></tr>
+    <tr><td>DB: connection pooling</td><td><span class="badge b-gap">Gap</span></td><td>Critical for serverless deploys (pgbouncer, Prisma Accelerate, etc.)</td></tr>
+    <tr><td>DB: ORM choice</td><td><span class="badge b-gap">Gap</span></td><td>Prisma / Drizzle / TypeORM / Sequelize / raw SQL / Kysely</td></tr>
+    <tr><td>DB: read replicas</td><td><span class="badge b-gap">Gap</span></td><td>Single-writer or read/write split? Drives connection code</td></tr>
+    <tr><td>Auth strategy (high-level)</td><td><span class="badge b-good">Covered</span></td><td>Q3.3</td></tr>
+    <tr><td>Auth: provider specifics</td><td><span class="badge b-gap">Gap</span></td><td>Q3.3 says "Auth0/Clerk/etc" but doesn't pick — drives env vars + middleware</td></tr>
+    <tr><td>Auth: authorization model</td><td><span class="badge b-gap">Gap</span></td><td>RBAC / ABAC / row-level / attribute-based</td></tr>
+    <tr><td>Auth: session storage</td><td><span class="badge b-gap">Gap</span></td><td>Cookie / DB / Redis — drives infra</td></tr>
+    <tr><td>Auth: MFA requirement</td><td><span class="badge b-gap">Gap</span></td><td>Optional / required / for-admins-only</td></tr>
+    <tr><td>Auth: SSO needs</td><td><span class="badge b-gap">Gap</span></td><td>SAML / OIDC providers — enterprise concern</td></tr>
+    <tr><td>Deploy target</td><td><span class="badge b-good">Covered</span></td><td>Q3.4</td></tr>
+    <tr><td>External APIs/services</td><td><span class="badge b-good">Covered</span></td><td>Q3.5</td></tr>
+    <tr><td>Monitoring (high-level)</td><td><span class="badge b-partial">Light</span></td><td>Q3.6 is multi-select but no provider picks</td></tr>
+    <tr><td>Monitoring: log structure</td><td><span class="badge b-gap">Gap</span></td><td>Structured JSON / human-readable; drives logger choice</td></tr>
+    <tr><td>Monitoring: APM / tracing</td><td><span class="badge b-gap">Gap</span></td><td>OpenTelemetry / Datadog / Honeycomb / none</td></tr>
+    <tr><td>Monitoring: alerting thresholds</td><td><span class="badge b-gap">Gap</span></td><td>Response time, error rate — drives alert rules</td></tr>
+    <tr><td>Monitoring: SLOs / SLAs</td><td><span class="badge b-gap">Gap</span></td><td>"99.9% available" — drives architecture decisions (multi-region, etc.)</td></tr>
+    <tr><td>API design (REST/GQL/RPC)</td><td><span class="badge b-good">Covered</span></td><td>Q3.7</td></tr>
+    <tr><td>API: versioning strategy</td><td><span class="badge b-gap">Gap</span></td><td>URL-based / header / none / breaking-changes-OK</td></tr>
+    <tr><td>API: rate limiting</td><td><span class="badge b-gap">Gap</span></td><td>None / per-user / per-IP / token-bucket — drives infra</td></tr>
+    <tr><td>API: documentation</td><td><span class="badge b-good">Covered</span></td><td>Q3.8</td></tr>
+    <tr><td>Env management</td><td><span class="badge b-good">Covered</span></td><td>Q3.9</td></tr>
+    <tr><td>Docker strategy</td><td><span class="badge b-good">Covered</span></td><td>Q3.10</td></tr>
+    <tr><td>Dependency management</td><td><span class="badge b-good">Covered</span></td><td>Q3.11</td></tr>
+    <tr><td>Accessibility level</td><td><span class="badge b-partial">Light</span></td><td>Q3.12 picks WCAG level; should also ask about testing tools (axe/pa11y/Lighthouse) and screen reader support</td></tr>
+    <tr><td>Performance budget</td><td><span class="badge b-partial">Light</span></td><td>Q3.13 generic; specifics (LCP target, TTI target, bundle size in KB) should follow</td></tr>
+    <tr><td>i18n / l10n</td><td><span class="badge b-partial">Light</span></td><td>Q3.14 yes/no; doesn't pick translation provider (Crowdin, Lokalise, DIY) or handle RTL/plural rules</td></tr>
+    <tr><td>Monorepo / packages</td><td><span class="badge b-good">Covered</span></td><td>Q3.15</td></tr>
+    <tr><td>Code generation</td><td><span class="badge b-good">Covered</span></td><td>Q3.16</td></tr>
+    <tr><td>File storage</td><td><span class="badge b-partial">Light</span></td><td>Q3.17 picks broad category; missing image processing, video, upload security, virus scanning, file-type whitelisting</td></tr>
+    <tr><td>Background jobs</td><td><span class="badge b-partial">Light</span></td><td>Q3.18 yes/no; missing provider, retry strategy, idempotency, dead-letter queue</td></tr>
+    <tr><td>Frontend styling</td><td><span class="badge b-good">Covered</span></td><td>Q3.F1</td></tr>
+    <tr><td>Component library</td><td><span class="badge b-good">Covered</span></td><td>Q3.F2</td></tr>
+  </tbody>
+</table>
+
+<h3>Category 4: Workflow (currently 7 Q)</h3>
+<table>
+  <thead><tr><th style="width: 28%;">Concern</th><th style="width: 12%;">Status</th><th>Notes / Proposed additions</th></tr></thead>
+  <tbody>
+    <tr><td>Branching strategy</td><td><span class="badge b-good">Covered</span></td><td>Q4.1</td></tr>
+    <tr><td>Testing philosophy</td><td><span class="badge b-good">Covered</span></td><td>Q4.2</td></tr>
+    <tr><td>Test coverage targets</td><td><span class="badge b-gap">Gap</span></td><td>Blocking threshold? Per layer? Per file? Codecov / coverallsy?</td></tr>
+    <tr><td>Test layers (unit/int/E2E)</td><td><span class="badge b-gap">Gap</span></td><td>Which layers exist? Runners per layer? E2E browser choice?</td></tr>
+    <tr><td>Test data strategy</td><td><span class="badge b-gap">Gap</span></td><td>Factories / fixtures / seed scripts / snapshot management</td></tr>
+    <tr><td>Performance / load testing</td><td><span class="badge b-gap">Gap</span></td><td>k6 / Artillery / Locust / not needed</td></tr>
+    <tr><td>Mutation testing</td><td><span class="badge b-gap">Gap</span></td><td>Stryker / pytest-mutmut / opt out</td></tr>
+    <tr><td>Autonomy level</td><td><span class="badge b-good">Covered</span></td><td>Q4.3</td></tr>
+    <tr><td>Code style strictness</td><td><span class="badge b-good">Covered</span></td><td>Q4.4 — but doesn't pick specific linters (ESLint, Biome, ruff, golangci-lint)</td></tr>
+    <tr><td>Pre-commit hooks</td><td><span class="badge b-gap">Gap</span></td><td>Husky / lefthook / pre-commit / none — drives <code>.husky/</code> setup</td></tr>
+    <tr><td>Commit message convention</td><td><span class="badge b-gap">Gap</span></td><td>Conventional Commits / freeform / signed / commitlint</td></tr>
+    <tr><td>PR culture</td><td><span class="badge b-gap">Gap</span></td><td>Required reviewers, merge strategy (squash/rebase/merge), PR template</td></tr>
+    <tr><td>ADR culture</td><td><span class="badge b-gap">Gap</span></td><td>Maintain Architecture Decision Records? Where? Trigger plugin-discovery's <code>hasDocsDiscipline</code></td></tr>
+    <tr><td>Documentation strategy</td><td><span class="badge b-gap">Gap</span></td><td>In-repo / external wiki / Notion / mintlify</td></tr>
+    <tr><td>Security sensitivity</td><td><span class="badge b-partial">Light</span></td><td>Q4.5 levels but no specifics</td></tr>
+    <tr><td>Compliance specifics</td><td><span class="badge b-gap">Gap</span></td><td>GDPR (cookie consent, erasure), HIPAA (audit logs, encryption), PCI, SOC2 — each drives concrete configs</td></tr>
+    <tr><td>Privacy: PII handling</td><td><span class="badge b-gap">Gap</span></td><td>What's PII in this app? Encryption at rest? At transit? In logs?</td></tr>
+    <tr><td>Privacy: data subject rights</td><td><span class="badge b-gap">Gap</span></td><td>Export / delete workflows; right-to-erasure handling</td></tr>
+    <tr><td>Audit logging</td><td><span class="badge b-gap">Gap</span></td><td>What events? Retention? Tamper-evidence?</td></tr>
+    <tr><td>Release strategy</td><td><span class="badge b-good">Covered</span></td><td>Q4.6</td></tr>
+    <tr><td>Verification strategy</td><td><span class="badge b-good">Covered</span></td><td>Q4.7</td></tr>
+    <tr><td>Refactoring discipline</td><td><span class="badge b-gap">Gap</span></td><td>Boy-scout-rule / scheduled tech-debt sprints / on-demand</td></tr>
+    <tr><td>Tech debt tracking</td><td><span class="badge b-gap">Gap</span></td><td>Linear board / TODO comments / not tracked</td></tr>
+    <tr><td>On-call / incident response</td><td><span class="badge b-gap">Gap</span></td><td>Who responds? Runbook expectations? Postmortem culture?</td></tr>
+  </tbody>
+</table>
+
+<h3>Category 5: CI/CD &amp; Auto-Evolution (currently 3 Q — the user's flagged gap)</h3>
+<table>
+  <thead><tr><th style="width: 28%;">Concern</th><th style="width: 12%;">Status</th><th>Notes / Proposed additions</th></tr></thead>
+  <tbody>
+    <tr><td>Tooling drift action</td><td><span class="badge b-good">Covered</span></td><td>Q5.1 (auto-evolution, not pipeline)</td></tr>
+    <tr><td>Auto-evolution mode</td><td><span class="badge b-good">Covered</span></td><td>Q5.2</td></tr>
+    <tr><td>PR review trigger</td><td><span class="badge b-good">Covered</span></td><td>Q5.3</td></tr>
+    <tr><td>CI provider</td><td><span class="badge b-gap">Gap</span></td><td>GitHub Actions / GitLab CI / CircleCI / BuildKite / Jenkins / Drone — derivable but never confirmed</td></tr>
+    <tr><td>CI triggers</td><td><span class="badge b-gap">Gap</span></td><td>On push to main / every PR / scheduled / manual / tag</td></tr>
+    <tr><td>Required pre-merge checks</td><td><span class="badge b-gap">Gap</span></td><td>Multi-select: lint / typecheck / unit / int / e2e / security scan / coverage / build</td></tr>
+    <tr><td>Coverage threshold</td><td><span class="badge b-gap">Gap</span></td><td>None / fixed % / per-file / per-package — blocking?</td></tr>
+    <tr><td>Environment ladder</td><td><span class="badge b-gap">Gap</span></td><td>Single / preview+prod / staging+prod / dev+staging+prod / custom</td></tr>
+    <tr><td>Auto-deploy strategy</td><td><span class="badge b-gap">Gap</span></td><td>Auto on merge / manual button / scheduled / tag-triggered</td></tr>
+    <tr><td>Rollback strategy</td><td><span class="badge b-gap">Gap</span></td><td>Re-deploy previous SHA / blue-green / canary / no automation</td></tr>
+    <tr><td>Secret management in CI</td><td><span class="badge b-gap">Gap</span></td><td>Provider-stored / OIDC to cloud / Vault sync — drives auth config</td></tr>
+    <tr><td>CI notifications</td><td><span class="badge b-gap">Gap</span></td><td>None / Slack / Discord / email — drives integrations</td></tr>
+    <tr><td>Build matrix / parallelization</td><td><span class="badge b-gap">Gap</span></td><td>Multi-OS / multi-version / single</td></tr>
+    <tr><td>Caching strategy</td><td><span class="badge b-gap">Gap</span></td><td>npm cache / Docker layers / Turbo remote / per-step</td></tr>
+    <tr><td>CI time budget</td><td><span class="badge b-gap">Gap</span></td><td>5 min / 15 min / 60 min — drives parallelization tradeoffs</td></tr>
+    <tr><td>Release pipeline</td><td><span class="badge b-gap">Gap</span></td><td>Separate from main CI? Tag-triggered? Manual?</td></tr>
+    <tr><td>Deployment cadence</td><td><span class="badge b-gap">Gap</span></td><td>Continuous / daily / weekly / on-demand</td></tr>
+  </tbody>
+</table>
+
+<h2>Section 2 — Concern areas NEVER asked about</h2>
+
+<p style="color: var(--muted); font-size: 14px;">These topics have no questions today. Most are conditional on app type / scale, but the wizard should detect when they apply.</p>
+
+<table>
+  <thead><tr><th style="width: 22%;">Concern area</th><th style="width: 16%;">Conditional on</th><th>Why it matters</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Email &amp; notifications</strong></td><td>Most apps</td><td>Provider choice (Resend / SES / SendGrid / Postmark), templates, transactional vs marketing split, webhook delivery, push notifications. Drives infra + env vars.</td></tr>
+    <tr><td><strong>Caching</strong></td><td>Production apps</td><td>Layer choice (Redis / Memcached / CDN / browser), invalidation strategy, edge caching (Workers / Vercel Edge). Drives architecture.</td></tr>
+    <tr><td><strong>Search</strong></td><td>Apps with user-generated content</td><td>DB-native FTS / Algolia / Meilisearch / Typesense / Elasticsearch. Drives infra + indexing pipelines.</td></tr>
+    <tr><td><strong>Real-time / WebSockets</strong></td><td>Collab / chat / live data apps</td><td>WS / SSE / polling; provider (Pusher / Ably / Socket.io / native). Drives infra + protocol decisions.</td></tr>
+    <tr><td><strong>Payments &amp; subscriptions</strong></td><td>SaaS / commerce apps</td><td>Stripe / Paddle / Lemon Squeezy; subscription model (per-seat / metered / hybrid); tax handling. Drives data model + webhooks.</td></tr>
+    <tr><td><strong>Multi-tenancy / SaaS arch</strong></td><td>B2B SaaS</td><td>Isolation model (already partially under DB but also affects routing, custom domains, white-labeling, quotas).</td></tr>
+    <tr><td><strong>Mobile / cross-platform</strong></td><td>Mobile-targeting apps</td><td>Separate native apps / React Native / Capacitor / PWA. Drives entire scaffold path.</td></tr>
+    <tr><td><strong>SEO &amp; metadata</strong></td><td>Public-facing frontend</td><td>Sitemap, robots.txt, structured data, OG images, canonical URLs. Drives Next.js metadata API usage.</td></tr>
+    <tr><td><strong>Analytics</strong></td><td>Apps with users</td><td>PostHog / Plausible / GA4 / Mixpanel / Amplitude — privacy implications + GDPR consent.</td></tr>
+    <tr><td><strong>Feature flags / A/B testing</strong></td><td>Production apps</td><td>LaunchDarkly / Statsig / GrowthBook / custom — drives release strategy + experimentation infra.</td></tr>
+    <tr><td><strong>Cost management</strong></td><td>Production apps</td><td>Budget alerts, cost-aware architecture, egress concerns. Drives provider choice + caching aggression.</td></tr>
+    <tr><td><strong>Disaster recovery</strong></td><td>Production apps</td><td>RPO/RTO targets, backup frequency, cross-region failover, incident-response runbook. Drives infra cost + complexity.</td></tr>
+    <tr><td><strong>Local development experience</strong></td><td>Always</td><td>Devcontainer / Docker Compose / mise-asdf / DB seed strategy / mocked external services. Drives onboarding speed for future devs.</td></tr>
+    <tr><td><strong>Documentation maintenance</strong></td><td>Production / team apps</td><td>Where docs live, who maintains, freshness checks. Drives plugin choice (mintlify, etc.).</td></tr>
+    <tr><td><strong>Onboarding for new developers</strong></td><td>Team apps</td><td>README structure, quickstart, architecture overview, pair-programming culture.</td></tr>
+    <tr><td><strong>PWA / offline support</strong></td><td>Frontend apps</td><td>Service worker, offline mode, install prompts.</td></tr>
+  </tbody>
+</table>
+
+<h2>Section 3 — Missing phases (beyond questions)</h2>
+
+<p style="color: var(--muted); font-size: 14px;">These are entire interactive phases / sub-skills that don't exist today.</p>
+
+<table>
+  <thead><tr><th style="width: 22%;">Missing phase</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Domain Modeling</strong></td><td>Extract core entities and their relationships ("User has many Posts; Post belongs to User; Comment belongs to Post and User"). This becomes the foundation for DB schema, API design, ER diagrams. Currently emerges implicitly from features.</td></tr>
+    <tr><td><strong>Persona &amp; User Journeys</strong></td><td>Identify 2–3 primary user personas, their goals, pain points, and key journeys through the system. Drives feature priority and verification scenarios.</td></tr>
+    <tr><td><strong>Risk Identification</strong></td><td>Technical risks (scale, complexity, novel tech), business risks (market, regulation, competition), security risks (attack surface, threat model). Informs test strategy, monitoring, deployment caution.</td></tr>
+    <tr><td><strong>Feature Roadmap Co-Design</strong></td><td>Currently <code>docs/feature-list.json</code> is auto-emitted. Should be an interactive phase where dev confirms feature boundaries, dependencies, MVP vs deferred, sprint sizing.</td></tr>
+    <tr><td><strong>Schema / API Draft Review</strong></td><td>Before scaffolding writes any DB code, present a proposed schema (tables, columns, indexes) and a proposed API contract (routes, request/response shapes). Get explicit approval. This is where most cascading misalignments would surface.</td></tr>
+  </tbody>
+</table>
+
+<h2>Section 4 — Proposed new wizard structure</h2>
+
+<p style="color: var(--muted); font-size: 14px;">Replaces the current 7 categories with 10 phases. Each phase has its own confirmation/synthesis checkpoint (per the Phase 1.8 pattern already agreed). Phases are heavily adaptive — most projects answer 30–60 questions out of ~150 possible.</p>
+
+<div class="phase-stack">
+
+  <div class="phase-row new">
+    <div class="phase-id">P0</div>
+    <div class="phase-name">Project Vision &amp; Constraints <span class="small">(NEW — expands current Cat 1)</span></div>
+    <div class="phase-q-count">~7 Q</div>
+  </div>
+  <div class="phase-row new">
+    <div class="phase-id">P0.5</div>
+    <div class="phase-name">Personas &amp; Journeys <span class="small">(NEW phase)</span></div>
+    <div class="phase-q-count">~5 Q</div>
+  </div>
+  <div class="phase-row new">
+    <div class="phase-id">P1</div>
+    <div class="phase-name">Domain Modeling <span class="small">(NEW phase — entities + relationships)</span></div>
+    <div class="phase-q-count">interactive</div>
+  </div>
+  <div class="phase-row expand">
+    <div class="phase-id">P2</div>
+    <div class="phase-name">Tech Stack <span class="small">(EXPAND current Cat 2 — add lang version, pkg mgr, runtime, tool mgr)</span></div>
+    <div class="phase-q-count">~8 Q</div>
+  </div>
+  <div class="phase-row expand">
+    <div class="phase-id">P3</div>
+    <div class="phase-name">Data Architecture <span class="small">(EXPAND DB part of Cat 3 — migrations, multi-tenant, ORM, search, caching)</span></div>
+    <div class="phase-q-count">~12 Q</div>
+  </div>
+  <div class="phase-row expand">
+    <div class="phase-id">P4</div>
+    <div class="phase-name">API &amp; Integration <span class="small">(EXPAND — versioning, rate limits, real-time, jobs, webhooks)</span></div>
+    <div class="phase-q-count">~10 Q</div>
+  </div>
+  <div class="phase-row expand">
+    <div class="phase-id">P5</div>
+    <div class="phase-name">Frontend &amp; UX <span class="small">(EXPAND — a11y testing, perf metrics, SEO, i18n provider, PWA)</span></div>
+    <div class="phase-q-count">~10 Q</div>
+  </div>
+  <div class="phase-row expand">
+    <div class="phase-id">P6</div>
+    <div class="phase-name">Auth, Security &amp; Privacy <span class="small">(EXPAND from Q3.3 + Q4.5 — authz, compliance specifics, audit logs)</span></div>
+    <div class="phase-q-count">~12 Q</div>
+  </div>
+  <div class="phase-row expand">
+    <div class="phase-id">P7</div>
+    <div class="phase-name">Workflow &amp; Quality <span class="small">(EXPAND current Cat 4 — PR culture, ADR, coverage, test layers)</span></div>
+    <div class="phase-q-count">~10 Q</div>
+  </div>
+  <div class="phase-row expand">
+    <div class="phase-id">P8</div>
+    <div class="phase-name">CI/CD &amp; Operations <span class="small">(EXPAND current Cat 5 — provider, gates, envs, secrets, notifications, rollback, on-call)</span></div>
+    <div class="phase-q-count">~15 Q</div>
+  </div>
+  <div class="phase-row new">
+    <div class="phase-id">P8.5</div>
+    <div class="phase-name">Risk Identification <span class="small">(NEW phase — technical + business + security risks)</span></div>
+    <div class="phase-q-count">~5 Q</div>
+  </div>
+  <div class="phase-row new">
+    <div class="phase-id">P9</div>
+    <div class="phase-name">Feature Roadmap Co-Design <span class="small">(NEW phase — replaces auto-emitted feature-list)</span></div>
+    <div class="phase-q-count">interactive</div>
+  </div>
+  <div class="phase-row new">
+    <div class="phase-id">P7.5</div>
+    <div class="phase-name">Plugin Recommendation <span class="small">(MOVED earlier — picks plugin set; install deferred to P10)</span></div>
+    <div class="phase-q-count">interactive</div>
+  </div>
+  <div class="phase-row">
+    <div class="phase-id">P10</div>
+    <div class="phase-name">Plugin Install <span class="small">(final confirmation + actual install of P7.5 picks)</span></div>
+    <div class="phase-q-count">interactive</div>
+  </div>
+  <div class="phase-row new">
+    <div class="phase-id">P10.5</div>
+    <div class="phase-name">Schema &amp; API Draft Review <span class="small">(NEW — proposed schema + API contract for explicit approval)</span></div>
+    <div class="phase-q-count">interactive</div>
+  </div>
+
+</div>
+
+<p style="color: var(--muted); font-size: 13.5px; margin-top: -8px;">
+  Each phase ends with a <strong>synthesis confirmation</strong> (the Phase 1.8 pattern previously agreed): an HTML page summarizes what was captured, dev clicks Approve / Adjust / Skip per section before moving to the next phase. This way misalignment is caught at phase boundaries, not at the end.
+</p>
+
+<div class="callout warn">
+  <h4>Why this isn't 1× big synthesis review at the end</h4>
+  <p style="margin: 0; font-size: 13.5px;">
+    By the time you reach Phase 8 (CI/CD), you've already made decisions in Phase 3 (DB) that depend on Phase 6 (auth model). A single synthesis review at the end would require either: (a) walking everything top-down again (slow), or (b) limited backtracking ability if a late decision invalidates an earlier one. Per-phase confirmation catches contradictions immediately, when the relevant context is fresh.
+  </p>
+</div>
+
+<h2>Section 5 — Implementation phasing</h2>
+
+<p style="color: var(--muted); font-size: 14px;">Given the scope, this can't be one branch / one PR. Proposed sequencing:</p>
+
+<table>
+  <thead><tr><th style="width: 12%;">Round</th><th style="width: 36%;">Scope</th><th>Why this order</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>Round 1</strong></td>
+      <td>Expand Cat 5 (CI/CD) and add Phase 1.8 Synthesis Review for the synthesis pattern itself</td>
+      <td>The user explicitly flagged CI/CD. Building Phase 1.8 establishes the synthesis-confirmation infrastructure that subsequent rounds will reuse.</td>
+    </tr>
+    <tr>
+      <td><strong>Round 2</strong></td>
+      <td>Expand Cat 3 → split into Data Architecture (P3) and API &amp; Integration (P4); add per-phase synthesis</td>
+      <td>Second-largest gap area. Data + API decisions cascade into auth, validation, frontend.</td>
+    </tr>
+    <tr>
+      <td><strong>Round 3</strong></td>
+      <td>Expand Cat 4 → Workflow &amp; Quality (P7); add Auth, Security &amp; Privacy (P6) split-out</td>
+      <td>Workflow + security have similar light-asking patterns. Best done together to keep the question-bank refactor coherent.</td>
+    </tr>
+    <tr>
+      <td><strong>Round 4</strong></td>
+      <td>New phases: Personas (P0.5), Domain Modeling (P1), Risk ID (P8.5)</td>
+      <td>These are <em>new infrastructure</em> rather than question expansions — needs new SKILL files, references, and (probably) new agents.</td>
+    </tr>
+    <tr>
+      <td><strong>Round 5</strong></td>
+      <td>Feature Roadmap Co-Design (P9), Schema &amp; API Draft Review (P10.5)</td>
+      <td>These integrate with Phase 2 scaffolding. Best done after the upstream phases are stable so cascading changes don't reverberate.</td>
+    </tr>
+    <tr>
+      <td><strong>Round 6</strong></td>
+      <td>Frontend &amp; UX expansion (P5); concern areas never asked about (caching, search, real-time, payments, etc.)</td>
+      <td>Lower-priority for typical projects; many are conditional. Done last so the wizard's conditional-skip logic can be exercised against a mature base.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Section 6 — Open design questions for the user</h2>
+
+<p style="color: var(--muted); font-size: 14px;">Listed here for tracking; will be discussed in the chat following this doc.</p>
+
+<ul>
+  <li>Do we want all phases to end in a synthesis confirmation, or only "major decision" phases (P3, P6, P8, P10.5)?</li>
+  <li>Should the synthesis HTML files be committed to the project repo? (Pro: living architecture record. Con: noise / re-gen churn.)</li>
+  <li>For new phases that need agents (Risk Identification might want a research agent), do we add them to <code>greenfield/agents/</code> or compose existing ones?</li>
+  <li>Do we want a "minimal" mode that turns off the comprehensive wizard for users who just want to ship a side project? Or is the new default <em>always</em> comprehensive?</li>
+  <li>How do we handle phase resume? If a session is interrupted at P6 Q5, does <code>/greenfield:resume</code> restart P6 from scratch or continue mid-phase?</li>
+  <li>For "concern areas never asked about" (caching, real-time, payments), should the wizard ALWAYS ask "do you need this?" first, or only ask when stack/scale signals make it likely?</li>
+</ul>
+
+<div class="footer">
+  Companion to <a href="greenfield-overview.html" style="color: var(--accent);">greenfield-overview.html</a>. Decisions captured here will flow back into the overview's Discussion Log.
+</div>
+
+</body>
+</html>
