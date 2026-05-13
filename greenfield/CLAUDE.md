@@ -89,7 +89,7 @@ Note: `/greenfield:verify`, `/greenfield:evolve` are now `/onboard:verify`, `/on
 
 - Adaptive wizard: each answer updates a context object, subsequent questions check preconditions
 - Wizard scope protection: "Park it" escape hatch for deep-research questions, optional Phase 1.5 Architectural Research sub-phase
-- Progress indicator: every wizard Step emits "Step X of 8" so sessions can't silently derail
+- Progress indicator: every wizard Step emits "Step X of 10" so sessions can't silently derail
 - Web research: stack-researcher agent searches for latest versions and best practices before scaffolding, with main-session fallback when sub-agent web tools are denied
 - Feature decomposition: mandatory — downstream phases depend on `docs/feature-list.json` existing
 - Plugin-aware generation: coveredCapabilities passed to onboard, prevents agent shadowing

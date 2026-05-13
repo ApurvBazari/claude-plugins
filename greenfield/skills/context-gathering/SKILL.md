@@ -1,6 +1,6 @@
 ---
 name: context-gathering
-description: Greenfield Phase 1 — adaptive wizard that gathers project vision, tech stack, features, and preferences through 8 named Steps. Internal building block invoked by greenfield init — not user-invocable.
+description: Greenfield Phase 1 — adaptive wizard that gathers project vision, tech stack, features, and preferences through 10 named Steps. Internal building block invoked by greenfield init — not user-invocable.
 user-invocable: false
 ---
 
@@ -62,7 +62,7 @@ Update this after every answer. Before asking each question, check its condition
 
 At the start of every Step (and whenever the user asks "where are we?"), emit a one-line progress indicator so both Claude and the user can see wizard progress:
 
-> **Wizard progress: Step [X] of 8 — [step name]**
+> **Wizard progress: Step [X] of 10 — [step name]**
 > Completed: [list of step names from completedSteps]
 > Up next: [name of the next step, if known]
 
@@ -108,7 +108,7 @@ When you notice any of these, STOP and:
 
 ## Flow
 
-### Step 1 of 8: Project Vision (Category 1)
+### Step 1 of 10: Project Vision (Category 1)
 
 Emit the progress indicator. Then start with Q1.1: "What do you want to build?"
 
@@ -117,7 +117,7 @@ Listen carefully. From the answer, infer:
 - `hasFrontend`, `hasBackend`, `hasAPI`
 - Whether follow-up Q1.2 is needed (if the answer is vague)
 
-### Step 2 of 8: Tech Stack (Category 2)
+### Step 2 of 10: Tech Stack (Category 2)
 
 Emit the progress indicator. Ask Q2.1 about their stack preference. If they know, ask Q2.2 for details.
 
@@ -146,7 +146,7 @@ Detect by greping the agent's response for the literal string `STACK_RESEARCH_RE
 
 Wait for research results (either via agent or main session). Then ask Q2.3 about the scaffold approach, informed by the research findings.
 
-### Step 3 of 9: Data Architecture (Phase P3)
+### Step 3 of 10: Data Architecture (Phase P3)
 
 This step is Round 2's first new phase. Captures data-layer decisions via P3.Q1–Q3.12 and closes with an inline Phase 1.8 synthesis-review pass.
 
@@ -154,7 +154,7 @@ This step is Round 2's first new phase. Captures data-layer decisions via P3.Q1�
 
 Tell the developer:
 
-> Step 3 of 9: Data Architecture. I'll ask about your data layer — database engine, ORM, migrations, multi-tenancy, caching, file storage. About 12 questions. Some may be skipped based on your earlier answers.
+> Step 3 of 10: Data Architecture. I'll ask about your data layer — database engine, ORM, migrations, multi-tenancy, caching, file storage. About 12 questions. Some may be skipped based on your earlier answers.
 
 #### P3 questions (Q3.1–Q3.12)
 
@@ -193,7 +193,7 @@ If the developer adjusts any P3 field via the Adjust dialog, the updated value l
 
 If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen — `p3-data.html` ships in Round 2), tell the developer and continue to Step 4.
 
-### Step 4 of 9: API & Integration (Phase P4)
+### Step 4 of 10: API & Integration (Phase P4)
 
 This step is Round 2's second new phase. Captures API surface decisions via P4.Q1–Q4.10 and closes with an inline Phase 1.8 synthesis-review pass.
 
@@ -201,7 +201,7 @@ This step is Round 2's second new phase. Captures API surface decisions via P4.Q
 
 Tell the developer:
 
-> Step 4 of 9: API & Integration. I'll ask about your API surface — style (REST/GraphQL/tRPC), versioning, rate limits, async patterns, real-time, webhooks, external services. About 10 questions; some skipped based on whether you expose an API.
+> Step 4 of 10: API & Integration. I'll ask about your API surface — style (REST/GraphQL/tRPC), versioning, rate limits, async patterns, real-time, webhooks, external services. About 10 questions; some skipped based on whether you expose an API.
 
 #### P4 questions (Q4.1–Q4.10)
 
@@ -236,11 +236,21 @@ Invoke the `synthesis-review` skill via the Skill tool with `phaseId: "P4"`. The
 
 If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen — `p4-api.html` ships in Round 2), tell the developer and continue to Step 5.
 
-### Step 3 of 8: Project Details (Category 3)
+### Step 5 of 10: Remaining Project Details (residual)
 
-Emit the progress indicator. Work through Category 3 questions adaptively. The question bank specifies conditions for each — only ask what's relevant.
+This step holds the 13 Category 3 questions that have NOT been re-homed to P3 (Data) or P4 (API) in Round 2. They stay here as transitional content until Rounds 3–6 re-home them to P0/P5/P6/P7. See `references/question-bank.md § Category 3 (residual)` for the full question list.
 
-**Scaffold mode question (new, ask once)** — after capturing the basic project details but before asking about database/auth/deploy, ask:
+Tell the developer:
+
+> Step 5 of 10: Remaining Project Details. A few miscellaneous questions about scale, auth, deploy target, monitoring, environment, dependencies, accessibility, performance, i18n, monorepo, and styling. Skipped if not relevant to your stack.
+
+Ask Q3.1, Q3.3, Q3.4, Q3.6, Q3.9, Q3.10, Q3.11, Q3.12, Q3.13, Q3.14, Q3.15, Q3.F1, Q3.F2 in order from `references/question-bank.md § Category 3 (residual)`. Honor existing conditions. No synthesis review for this step (it's residual; full split planned for Rounds 3–6).
+
+State checkpoint: `currentStep: "step-5-residual"`.
+
+Emit the progress indicator. Work through the residual Category 3 questions adaptively. The question bank specifies conditions for each — only ask what's relevant.
+
+**Scaffold mode question (new, ask once)** — after capturing the basic project details but before asking about deploy, ask:
 
 > **Scaffold mode**: How much should I scaffold in Phase 2?
 >
@@ -259,7 +269,6 @@ Capture the answer as `context.scaffoldMode = "full" | "walking-skeleton"`.
 Key branching points:
 - Q3.1 (scale) → updates `isProduction`, `hasTeam`
 - Q3.4 (deploy) → if "Not deploying", sets `willDeploy = false` and skips all CI/CD questions
-- Q3.7 (API design) → if "No API layer", skips Q3.8
 
 For frontend projects, also ask Q3.F1 (styling) and Q3.F2 (component library).
 
@@ -267,9 +276,9 @@ Also capture during this step (can be inferred or asked directly):
 - **`primaryTasks`**: What will the developer mostly do? (feature dev, bug fixes, maintenance, refactoring). Infer from project maturity + type, or ask.
 - **`deployFrequency`**: How often will they deploy? (continuous, daily, weekly, manual, none). Ask alongside Q3.4 if deploying.
 - **`frontendPatterns`**: If frontend project — component library, state management, styling, routing. Partially captured by Q3.F1/Q3.F2, fill in the rest from stack research.
-- **`backendPatterns`**: If backend project — API style (from Q3.7), ORM (from Q3.2/database choice), auth (from Q3.3), error handling. Compose from existing answers.
+- **`backendPatterns`**: If backend project — auth (from Q3.3), error handling. Compose from existing answers.
 
-### Step 3.5 of 8: Pain Points (always ask)
+### Step 3.5 of 10: Pain Points (always ask)
 
 Emit the progress indicator. Ask about where Claude can help most:
 - "What takes the most time in your development workflow?"
@@ -289,7 +298,7 @@ Capture as:
 
 This feeds directly into onboard's skill and agent selection — skills matching pain points get highest priority.
 
-### Step 4 of 8: Workflow Preferences (Category 4)
+### Step 6 of 10: Workflow Preferences (Category 4)
 
 Emit the progress indicator. Ask Q4.1 through Q4.5. For Q4.1 (branching), recommend based on team size from Q3.1.
 
@@ -309,7 +318,7 @@ Q4.6 (releases) is only asked for production apps.
 
 Store the choice as `verificationStrategy` in the context object. This configures the feature-evaluator agent.
 
-### Step 5 of 8: CI/CD & Auto-Evolution (Category 5 / P8)
+### Step 7 of 10: CI/CD & Auto-Evolution (Category 5 / P8)
 
 Emit the progress indicator. **Skip Q5.1, Q5.3, and Q5.4–Q5.17 entirely if `willDeploy = false`** — only Q5.2 (auto-evolution mode) applies to local projects.
 
@@ -360,7 +369,7 @@ If the developer adjusts any P8 field via the Adjust dialog, the updated value i
 
 If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen in Round 1 since `p8-cicd.html` ships in this commit), tell the developer and continue to Step 6.
 
-### Step 6 of 8: Feature Decomposition (Harness Preparation) — REQUIRED
+### Step 8 of 10: Feature Decomposition (Harness Preparation) — REQUIRED
 
 Emit the progress indicator. **This step is mandatory** — downstream phases (tooling generation, onboard's harness mode) depend on a feature list existing. Do NOT skip this silently. If the user explicitly declines feature decomposition, generate a minimal 3-5 feature skeleton from the app description so the JSON file still exists.
 
@@ -384,7 +393,7 @@ Include the feature breakdown in the confirmation summary (see below). The devel
 
 > Before we wrap Phase 1, note: you parked **N** questions for deeper research earlier. When we finish the wizard, I'll enter a short "Architectural Research" sub-phase to deep-dive on those before we scaffold. If you'd rather skip that and just go with the placeholder answers, say "skip research" now.
 
-### Step 7 of 8: Confirmation (Category 7)
+### Step 9 of 10: Confirmation (Category 7)
 
 Emit the progress indicator. Present a structured summary of everything gathered:
 
@@ -415,7 +424,7 @@ Emit the progress indicator. Present a structured summary of everything gathered
 
 Wait for confirmation before returning.
 
-### Step 8 of 8: Phase 1.5 Architectural Research (conditional)
+### Step 10 of 10: Phase 1.5 Architectural Research (conditional)
 
 Emit the progress indicator **only if** `parkedQuestions.length > 0` AND the user didn't say "skip research". Otherwise skip Step 8 and go straight to Output.
 
