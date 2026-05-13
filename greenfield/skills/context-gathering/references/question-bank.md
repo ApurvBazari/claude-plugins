@@ -155,6 +155,81 @@ Writes to `context.phases.P3.*`. See `onboard/skills/generate/references/context
 
 ---
 
+## Phase P4: API & Integration (10 questions)
+
+Phase 4 of the 15-phase wizard. Captures API surface decisions: style, documentation, versioning, rate limits, pagination, async patterns, real-time, webhooks, external integrations.
+
+Writes to `context.phases.P4.*`. See `onboard/skills/generate/references/context-shape-v2.json` § `p4Api` for the schema.
+
+### P4.Q1: "Does this app expose an API surface?"
+- **Type**: Choice
+- **Options**: "Yes — public API" | "Yes — internal/private only" | "No — UI-only app" | "Not sure — recommend"
+- **Condition**: Always (gate for the rest of P4)
+- **Updates**: gate flag; if "No", skip Q2–Q9, ask Q10 only
+
+### P4.Q2: "API style?"
+- **Type**: Choice
+- **Options**: "REST" | "GraphQL" | "tRPC (TypeScript-only)" | "gRPC" | "Other RPC" | "No API surface"
+- **Condition**: Q1 = yes
+- **Updates**: `context.phases.P4.style` (required, enum)
+- **Cross-phase**: P3 reads for codegen pairing; future P6 reads for auth integration pattern
+
+### P4.Q3: "API documentation tool?"
+- **Type**: Choice
+- **Options**: "OpenAPI / Swagger" | "GraphQL Playground / Apollo Studio" | "Auto-from-types (TS-RPC, etc.)" | "Manual (Markdown / Notion)" | "No docs"
+- **Condition**: Q2 ≠ none
+- **Updates**: `context.phases.P4.documentation` (loose)
+
+### P4.Q4: "Versioning policy?"
+- **Type**: Choice
+- **Options**: "URL path (/v1/, /v2/)" | "Header (Accept-Version)" | "Query string (?v=1)" | "No-breaking-changes policy (additive only)" | "None yet — figure it out later"
+- **Condition**: Q1 = yes && `willDeploy`
+- **Updates**: `context.phases.P4.versioningPolicy` (required, enum)
+- **Cross-phase**: Future P7 reads for breaking-change policy
+
+### P4.Q5: "Rate limiting strategy?"
+- **Type**: Choice
+- **Options**: "None" | "Fixed window (Redis-backed)" | "Sliding window" | "Token bucket" | "Per-user / per-API-key" | "Per-IP" | "Gateway-level (Cloudflare, AWS API Gateway)"
+- **Condition**: Q1 = yes && `willDeploy`
+- **Updates**: `context.phases.P4.rateLimit` (loose)
+
+### P4.Q6: "Pagination strategy?"
+- **Type**: Choice
+- **Options**: "Offset (LIMIT/OFFSET)" | "Cursor (timestamp or ID-based)" | "Page-based (page=N&size=M)" | "Both offset + cursor (REST: cursor; GraphQL: Relay)" | "None — return all"
+- **Condition**: Q2 ∈ (rest, graphql)
+- **Updates**: `context.phases.P4.pagination` (loose)
+
+### P4.Q7: "Async pattern for background work?"
+- **Type**: Choice
+- **Options**: "None — all sync" | "Queue + worker (BullMQ, Celery, Sidekiq)" | "Scheduled cron jobs" | "Event-driven (pub/sub)" | "Serverless functions (Lambda, Cloud Functions)" | "Mixed"
+- **Condition**: `hasBackend`
+- **Updates**: `context.phases.P4.asyncPattern` (required, enum)
+- **Cross-phase**: Future P7 reads for CI test strategy
+
+### P4.Q8: "Real-time delivery?"
+- **Type**: Choice
+- **Options**: "None" | "WebSockets" | "Server-Sent Events (SSE)" | "HTTP long-polling" | "External pub/sub (Pusher, Ably, Liveblocks)"
+- **Condition**: `hasBackend && hasFrontend`
+- **Updates**: `context.phases.P4.realtime` (loose)
+
+### P4.Q9: "Webhooks — incoming and outgoing?"
+- **Type**: Composite (choice + multi-select)
+- **Sub-questions**:
+  - Direction: "None" | "Incoming only (we receive)" | "Outgoing only (we send)" | "Both"
+  - Tooling (multi-select; pad with "None / Skip" if zero matches): "Signature verification" | "Retry queue" | "Dead-letter handling" | "Webhook registry UI"
+- **Condition**: Q1 = yes
+- **Updates**: `context.phases.P4.webhooks` (loose)
+
+### P4.Q10: "External services and integrations?"
+- **Type**: Multi-select free-text
+- **Options**: "Payments (Stripe, Paddle, Lemon Squeezy)" | "Email (Resend, SendGrid, Postmark)" | "SMS (Twilio)" | "Analytics (Segment, Mixpanel, PostHog)" | "Search (Algolia)" | "Storage (S3-compatible)" | "AI / LLM (OpenAI, Anthropic, etc.)" | "Other — specify"
+- **Condition**: Always (even no-API apps integrate with services)
+- **Updates**: `context.phases.P4.externalServices` (loose array)
+
+**>>> SYNTHESIS PAUSE**: After P4.Q10, invoke `Skill(synthesis-review, phaseId: "P4")`. Wait for the developer to Approve/Adjust/Skip each section before moving to the remaining Project Details step.
+
+---
+
 ## Category 3: Project Details (adaptive)
 
 ### Q3.1: "What's the scale of this project?"
