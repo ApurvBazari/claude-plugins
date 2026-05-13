@@ -1,0 +1,69 @@
+<!--
+  Per-phase synthesis template — P4 (API & Integration).
+  Loaded by synthesis-review/SKILL.md Step 2 and spliced into synthesis-template.html's {{phase_body}}.
+
+  Section anatomy per references/section-prompts.md.
+  6 sections (P4 is leaner than P3's 7 — fewer concerns under single-owner boundary).
+-->
+
+<h2>Captured decisions</h2>
+
+<!-- Section 1: API style & documentation -->
+<div class="section">
+  <div class="section-title">1. API style &amp; documentation</div>
+  <pre class="captured">style:         {{phase.style}}
+documentation: {{phase.documentation}}</pre>
+  <div class="cross-check">Assumes <code>P2.stack.framework = {{P2.stack.framework}}</code>. API library availability tracks the framework (FastAPI ⊂ Python, Express ⊂ Node, Rails ⊂ Ruby).</div>
+  <!-- Contradiction injected if style === "trpc" && P2.stack.language !== "typescript": -->
+  <!-- <div class="contradiction"><strong>Contradiction:</strong> P4 picked <code>style: trpc</code> but P2 said the language is <code>{{P2.stack.language}}</code>. tRPC is TypeScript-only. Pick REST or GraphQL instead.</div> -->
+  <!-- Note injected if style === "graphql" && P3.codegen doesn't include graphql codegen: -->
+  <!-- <div class="note">You picked GraphQL but P3 §7 codegen doesn't include a GraphQL codegen tool. Consider adding graphql-codegen for type-safe resolvers.</div> -->
+</div>
+
+<!-- Section 2: Versioning -->
+<div class="section">
+  <div class="section-title">2. Versioning</div>
+  <pre class="captured">versioningPolicy: {{phase.versioningPolicy}}</pre>
+  <!-- Note injected if versioningPolicy === "none-yet" && P0.willDeploy === true && P0.teamSize !== "solo": -->
+  <!-- <div class="note">Public API without a versioning policy is technical debt — when you ship a breaking change, clients will be unable to pin. Consider URL-path or header versioning before launch.</div> -->
+</div>
+
+<!-- Section 3: Surface protection (rate limits + pagination) -->
+<div class="section">
+  <div class="section-title">3. Surface protection</div>
+  <pre class="captured">rateLimit:  {{phase.rateLimit}}
+pagination: {{phase.pagination}}</pre>
+  <div class="cross-check">Assumes <code>P3.cache = {{P3.cache}}</code>. Rate limiting needs a fast counter store; pagination strategy affects both client UX and DB query shape.</div>
+  <!-- Note injected if rateLimit is set but P3.cache === "none": -->
+  <!-- <div class="note">Rate limiting wants a fast counter store. P3 captured <code>cache: none</code> — either add a cache layer in P3 or accept DB-backed counters (slower under load).</div> -->
+</div>
+
+<!-- Section 4: Async patterns -->
+<div class="section">
+  <div class="section-title">4. Async patterns</div>
+  <pre class="captured">asyncPattern: {{phase.asyncPattern}}</pre>
+  <div class="cross-check">Assumes <code>P3.cache</code> for queue persistence and <code>P8.cicd.provider</code> for deployment topology.</div>
+  <!-- Contradiction injected if asyncPattern === "queue-and-worker" && P3.cache doesn't include a broker-capable store: -->
+  <!-- <div class="contradiction"><strong>Contradiction:</strong> P4 picked <code>asyncPattern: queue-and-worker</code> but P3 cache doesn't include a broker (Redis, RabbitMQ). Pick a broker-capable cache or switch to scheduled-cron / serverless-functions.</div> -->
+  <!-- Note injected if asyncPattern === "serverless-functions" && P8.cicd.provider === "none": -->
+  <!-- <div class="note">Serverless-functions async pattern usually requires a deploy pipeline. P8 captured <code>provider: none</code> — verify how worker functions get deployed.</div> -->
+</div>
+
+<!-- Section 5: Real-time -->
+<div class="section">
+  <div class="section-title">5. Real-time</div>
+  <pre class="captured">realtime: {{phase.realtime}}</pre>
+  <!-- Note injected if realtime !== "none" && P0.willDeploy === false: -->
+  <!-- <div class="note">Real-time delivery + local-only deployment is unusual. Verify the use case — most real-time features assume internet-facing infrastructure.</div> -->
+</div>
+
+<!-- Section 6: Webhooks & external integrations -->
+<div class="section">
+  <div class="section-title">6. Webhooks &amp; external integrations</div>
+  <pre class="captured">webhooks:         {{phase.webhooks}}
+externalServices: {{phase.externalServices}}</pre>
+  <!-- Note injected if webhooks mentions "outgoing" && externalServices is empty: -->
+  <!-- <div class="note">Outgoing webhooks usually target external services. You captured no external services in section 6 — verify intent.</div> -->
+  <!-- Note injected if externalServices includes a payment vendor (stripe, paddle, etc.): -->
+  <!-- <div class="note">Payment vendor in scope — see P3 §7 for PCI-scope compliance implications. The backup & retention strategy may need to exclude payment data from logs.</div> -->
+</div>
