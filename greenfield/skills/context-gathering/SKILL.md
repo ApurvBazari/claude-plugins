@@ -146,6 +146,53 @@ Detect by greping the agent's response for the literal string `STACK_RESEARCH_RE
 
 Wait for research results (either via agent or main session). Then ask Q2.3 about the scaffold approach, informed by the research findings.
 
+### Step 3 of 9: Data Architecture (Phase P3)
+
+This step is Round 2's first new phase. Captures data-layer decisions via P3.Q1–Q3.12 and closes with an inline Phase 1.8 synthesis-review pass.
+
+**Data layout** — answers populate `context.phases.P3.*` directly (no v1 carryover). The 4 required enum-locked fields are `databaseHost`, `orm`, `migrationsTool`, `multiTenancy`; remaining fields are loose strings.
+
+Tell the developer:
+
+> Step 3 of 9: Data Architecture. I'll ask about your data layer — database engine, ORM, migrations, multi-tenancy, caching, file storage. About 12 questions. Some may be skipped based on your earlier answers.
+
+#### P3 questions (Q3.1–Q3.12)
+
+Ask each P3 question from `references/question-bank.md § Phase P3` in order. Honor the conditions. Write each answer to its destination field under `context.phases.P3`.
+
+| Q | Topic | Writes to (under `context.phases.P3`) |
+|---|---|---|
+| P3.Q1 | DB needed? (gate) | gate flag |
+| P3.Q2 | Engine | `engine` (loose) |
+| P3.Q3 | Hosting model | `databaseHost` (required, enum) |
+| P3.Q4 | ORM | `orm` (required, enum) |
+| P3.Q5 | Migration tool + mode | `migrationsTool` (required) + `migrationsMode` (loose) |
+| P3.Q6 | Multi-tenancy | `multiTenancy` (required, enum) |
+| P3.Q7 | Search | `search` (loose) |
+| P3.Q8 | Cache + invalidation | `cache` + `cacheInvalidation` (loose) |
+| P3.Q9 | File storage | `fileStorage` (loose) |
+| P3.Q10 | Codegen | `codegen[]` (loose array) |
+| P3.Q11 | Backup | `backup` (loose) |
+| P3.Q12 | Compliance | `compliance` (loose) |
+
+**Adaptive skipping**: if P3.Q1 = "No persistent data", skip Q2–Q7 but still ask Q8 (in-memory cache), Q9 (FS storage), Q10 (codegen), Q12 (compliance). If `appType: cli`, skip the entire phase.
+
+**State checkpointing**: after each answered question, write to `greenfield-state.json.tmp` and rename atomically. Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-3-data-architecture"`.
+
+#### Phase 1.8: synthesis review (after P3.Q12, or after the last applicable question if any skipping fired)
+
+Invoke the `synthesis-review` skill via the Skill tool with `phaseId: "P3"`. This is Round 2's first synthesis pass. The skill:
+
+1. Sets `greenfield-state.json.currentPhase` to `phase-1.8-synthesis-review` and `currentSynthesisPhase: "P3"`.
+2. Renders `docs/architecture/p3-data.html` in the scaffolded project using the 7-section template.
+3. Walks the developer through Approve/Adjust/Skip per section.
+4. Writes `context.syntheses.P3 = { approvedAt, adjustments[] }`.
+5. Writes `docs/architecture/p3-data-dependencies.json` from the wizard-collected dependency edges.
+
+If the developer adjusts any P3 field via the Adjust dialog, the updated value lives in `context.phases.P3.<field>` directly.
+
+If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen — `p3-data.html` ships in Round 2), tell the developer and continue to Step 4.
+
 ### Step 3 of 8: Project Details (Category 3)
 
 Emit the progress indicator. Work through Category 3 questions adaptively. The question bank specifies conditions for each — only ask what's relevant.
