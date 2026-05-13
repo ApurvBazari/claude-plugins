@@ -48,7 +48,7 @@ jobs:
           set -euo pipefail
           changed=0
           tmp=$(mktemp)
-          for plugin in onboard forge notify; do
+          for plugin in onboard forge notify handoff; do
             version=$(jq -r '.version' "$plugin/.claude-plugin/plugin.json")
             jq --arg name "$plugin" --arg ver "$version" \
               '.plugins = (.plugins | map(if .name == $name then .version = $ver else . end))' \
