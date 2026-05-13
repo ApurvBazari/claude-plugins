@@ -88,7 +88,7 @@ These plugins reinforce the discipline of *thinking before coding* — both for 
 
 For projects following an ADR-driven or structured design-doc `docs/` discipline.
 
-> **Note**: The vendored `grill-with-docs` skill has been removed from this marketplace. Users wanting ADR-maintaining requirements interviews can install `mattpocock/skills` upstream directly. Greenfield's own Adjust dialog (`greenfield/skills/adjust-dialog/`) covers the adversarial review use case for in-session synthesis work.
+> **Note**: The vendored `grill-with-docs` skill has been removed from this marketplace. For adversarial review of architecture and design decisions, use Greenfield's own `adjust-dialog` skill during synthesis phases.
 
 ### Testing (testingPhilosophy = "tdd")
 
