@@ -78,12 +78,13 @@ stale_day_threshold=90
 deferral_snooze_hours=24
 
 if [[ -f "$SETTINGS_FILE" ]]; then
+  # Only accept positive integers; non-numeric values fall back to defaults.
   v="$(get_fm_value "$SETTINGS_FILE" "stale-commit-threshold")"
-  [[ -n "$v" ]] && stale_commit_threshold="$v"
+  [[ "$v" =~ ^[0-9]+$ ]] && stale_commit_threshold="$v"
   v="$(get_fm_value "$SETTINGS_FILE" "stale-day-threshold")"
-  [[ -n "$v" ]] && stale_day_threshold="$v"
+  [[ "$v" =~ ^[0-9]+$ ]] && stale_day_threshold="$v"
   v="$(get_fm_value "$SETTINGS_FILE" "deferral-snooze-hours")"
-  [[ -n "$v" ]] && deferral_snooze_hours="$v"
+  [[ "$v" =~ ^[0-9]+$ ]] && deferral_snooze_hours="$v"
 fi
 
 # ----- helpers ------------------------------------------------------------
@@ -92,6 +93,9 @@ fi
 iso_to_epoch() {
   local ts="$1"
   [[ -z "$ts" ]] && return 1
+  # Require ISO-8601-shaped input before handing to date(1); rejects
+  # parseable-but-wrong strings that could skew snooze/stale logic.
+  [[ "$ts" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2} ]] || return 1
   # Try GNU date first (Linux), then BSD date (macOS).
   date -d "$ts" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%S%z" "$ts" +%s 2>/dev/null \
     || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$ts" +%s 2>/dev/null \
