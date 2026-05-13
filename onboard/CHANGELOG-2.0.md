@@ -1,5 +1,21 @@
 # Onboard 2.0 — Migration & Breaking Changes
 
+## 2.0.0-alpha.2 — 2026-05-13
+
+**Schema additions (Round 2 of the greenfield 3.0 wizard overhaul):**
+
+- `P3` flipped from `_status: "deferred-to-round-2"` to a live `p3Data` definition with 4 required enum-locked fields (`databaseHost`, `orm`, `migrationsTool`, `multiTenancy`) and 9 loose-string fields (`engine`, `migrationsMode`, `search`, `cache`, `cacheInvalidation`, `fileStorage`, `codegen[]`, `backup`, `compliance`).
+- `P4` flipped from `_status: "deferred-to-round-2"` to a live `p4Api` definition with 3 required enum-locked fields (`style`, `versioningPolicy`, `asyncPattern`) and 6 loose-string fields (`documentation`, `rateLimit`, `pagination`, `realtime`, `webhooks`, `externalServices[]`).
+- Top-level description updated to reflect that Rounds 1–2 fully specify P3, P4, P8.
+
+**No breaking changes to v2 callers** — Round 2 is purely additive. Existing greenfield 3.0.0-alpha.1 callers (which emit `_status: "deferred-to-round-2"` for P3/P4) continue to work; their `_status` value is now `additionalProperties: true` under the live `p3Data` / `p4Api` definitions until callers upgrade.
+
+**Hard cutover policy reminder:** v1 input is still rejected outright. There is no migration helper from v1 → v2.
+
+**No new artifact generation** — Round 2 captures decisions but does not emit new template artifacts. `onboard:generate` accepts P3/P4 data and renders standard CLAUDE.md / rules / skills / agents / hooks. The 4 GHA workflow templates from Round 1 are unchanged.
+
+---
+
 Onboard 2.0 is the headless-generation contract upgrade for callers built against the greenfield 3.0 wizard. **Hard cutover: there is no migration helper, no auto-upgrade, no v1 fallback path.** v1 callers must stay on onboard 1.10.0 for the lifetime of their session; v2 callers run on onboard 2.x.
 
 This document supplements the per-release notes in `CHANGELOG.md`. CHANGELOG entries describe what changed; this file explains the *why* of the cutover and the *what* of the new contract.
