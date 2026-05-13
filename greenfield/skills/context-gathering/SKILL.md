@@ -148,7 +148,7 @@ Wait for research results (either via agent or main session). Then ask Q2.3 abou
 
 ### Step 3 of 10: Data Architecture
 
-This step is Round 2's first new phase. Captures data-layer decisions via P3.Q1–Q3.12 and closes with an inline Phase 1.8 synthesis-review pass.
+This step is Round 2's first new phase. Captures data-layer decisions via P3.Q1–P3.Q12 and closes with an inline Phase 1.8 synthesis-review pass.
 
 **Data layout** — answers populate `context.phases.dataArchitecture.*` directly (no v1 carryover). The 4 required enum-locked fields are `databaseHost`, `orm`, `migrationsTool`, `multiTenancy`; remaining fields are loose strings.
 
@@ -195,7 +195,7 @@ If the synthesis-review skill returns `synthesisStatus: "no-template"` (should n
 
 ### Step 4 of 10: API & Integration
 
-This step is Round 2's second new phase. Captures API surface decisions via P4.Q1–Q4.10 and closes with an inline Phase 1.8 synthesis-review pass.
+This step is Round 2's second new phase. Captures API surface decisions via P4.Q1–P4.Q10 and closes with an inline Phase 1.8 synthesis-review pass.
 
 **Data layout** — answers populate `context.phases.apiIntegration.*` directly. The 3 required enum-locked fields are `style`, `versioningPolicy`, `asyncPattern`; remaining fields are loose strings or arrays.
 
