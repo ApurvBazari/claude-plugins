@@ -1,6 +1,6 @@
 # claude-plugins
 
-> Claude Code plugins for the project lifecycle — `forge` scaffolds new projects, `onboard` keeps AI configs aligned as your code evolves, `notify` closes the loop. Three plugins that work on their own and **compose together**.
+> Claude Code plugins for the project lifecycle — `forge` scaffolds new projects, `onboard` keeps AI configs aligned as your code evolves, `notify` closes the loop, and `handoff` carries session intent across context boundaries. Four plugins that work on their own and **compose together**.
 
 Built on top of [Claude Code](https://code.claude.com/docs/en) by Anthropic. Distributed under [MIT](./LICENSE).
 
@@ -13,6 +13,7 @@ Built on top of [Claude Code](https://code.claude.com/docs/en) by Anthropic. Dis
 | **[forge](./forge/)** | Stack-agnostic greenfield scaffolder — researches your stack via WebSearch, scaffolds the app, then hands off to onboard for Claude tooling. | You're starting a new project from scratch. |
 | **[onboard](./onboard/)** | Lifecycle manager for AI configs — generates initial tooling, then **detects code-vs-config drift** as the project evolves and offers to fix it. | You have an existing repo, OR your AI configs are starting to lag behind the code. |
 | **[notify](./notify/)** | macOS / Linux system notifications when Claude finishes a task. Duration-filtered so short tasks don't spam you. | You leave Claude running long jobs in the background. |
+| **[handoff](./handoff/)** | Save the directive of a wrap-up session, then auto-surface it at the next SessionStart with an Execute / Edit / Discard / Save-for-later prompt. | You end sessions by pasting "continue this work in the new window" prompts into the next session. |
 
 ---
 
@@ -39,10 +40,11 @@ claude plugin install forge@apurvbazari-plugins
 claude plugin install onboard@apurvbazari-plugins
 ```
 
-**Optional add-on for either:**
+**Optional add-ons for either:**
 
 ```bash
 claude plugin install notify@apurvbazari-plugins
+claude plugin install handoff@apurvbazari-plugins
 ```
 
 ---
@@ -54,6 +56,7 @@ Each plugin's README contains a runnable transcript so you can see what a real s
 - **forge** — full 3-phase scaffold of a Python FastAPI project (Context Gathering → Scaffold → AI Tooling delegation to onboard) → [forge/README.md#example](./forge/README.md#example)
 - **onboard** — initial `/onboard:init` on a Next.js 15 project, then `/onboard:evolve` two weeks later detecting drift and proposing updates → [onboard/README.md#example](./onboard/README.md#example)
 - **notify** — `/notify:setup` followed by the duration filter suppressing a fast task and delivering a long one → [notify/README.md#example](./notify/README.md#example)
+- **handoff** — saying "save handoff" mid-conversation, confirming the auto-save, then a fresh session starting with the four-option resume prompt → [handoff/README.md](./handoff/README.md)
 
 The narrative beat to watch for: forge's Phase 3 calls `Skill(onboard:generate)` rather than reinventing tooling generation. That delegation is the composability story this whole repo is built around.
 
@@ -103,6 +106,21 @@ Cross-platform system notifications for Claude Code. macOS via `terminal-notifie
 This plugin is the *"it just works on my machine"* default, not a feature-complete notification platform.
 
 For the full skill reference, install scopes, configuration precedence rules, customisation options (sounds, bundle IDs, duration filter), and troubleshooting: [notify/README.md →](./notify/README.md)
+
+---
+
+## handoff
+
+Long Claude Code sessions often end with the user pasting a paragraph into the *next* session window to continue the work. That paragraph is reproducible — it's just "the directive of where we left off". `handoff` captures it at end-of-session and surfaces it at the start of the next, with a confirmation gate at both ends.
+
+**Two ends of the loop:**
+
+- **Save** — `/handoff:save` (or auto-invoked on phrases like *"pick this up later"* / *"continue in new session"*). Confirms via `AskUserQuestion` before writing — false-positive triggers are zero-cost.
+- **Resume** — SessionStart hook surfaces a saved handoff, then routes to `/handoff:resume` which asks: **Execute / Edit / Discard / Save-for-later**. Snooze defers re-surface for 24h; 90-day stale handoffs auto-archive. Git-activity tags ("3 commits past saved-at", "branch changed") inform the user's choice without dictating it.
+
+**Trust model.** Directive content is wrapped in `<untrusted-source>` framing in the hook output — routing and metadata are trusted, the directive itself is data describing user intent. The four-option flow ensures the user confirms before any action. Standard defense-in-depth for a marketplace plugin.
+
+For the full skill reference (`/handoff:save`, `/handoff:resume`, `/handoff:status`, `/handoff:clear`), the SessionStart hook contract, configuration knobs (`stale-day-threshold`, `deferral-snooze-hours`, `trigger-phrases`), and storage model: [handoff/README.md →](./handoff/README.md)
 
 ---
 
