@@ -145,39 +145,6 @@
         }
       }
     },
-    "p3Data": {
-      "type": "object",
-      "description": "Phase 3 — Data Architecture. Fully specified in onboard 2.0.0-alpha.2 Round 2. Hybrid strictness: 4 required enum-locked fields (databaseHost, orm, migrationsTool, multiTenancy) drive cross-phase contradictions; remaining fields are loose strings to accommodate a fast-moving tooling landscape (Turso, EdgeDB, pgvector, Drizzle, Kysely, etc.).",
-      "required": ["databaseHost", "orm", "migrationsTool", "multiTenancy"],
-      "additionalProperties": false,
-      "properties": {
-        "databaseHost": {
-          "enum": ["self-hosted", "managed-rdbms", "serverless-rdbms", "managed-nosql", "embedded", "none"],
-          "description": "Hosting model category. P8 cross-references for rollback strategy (point-in-time recovery only on managed)."
-        },
-        "orm": {
-          "enum": ["prisma", "drizzle", "typeorm", "sequelize", "kysely", "sqlalchemy", "active-record", "ecto", "gorm", "diesel", "raw-sql", "none", "other"],
-          "description": "Data access layer. P4 reads for validation lib / API codegen pairing. Future P7 reads for CI migration step strategy."
-        },
-        "migrationsTool": {
-          "enum": ["orm-native", "alembic", "flyway", "liquibase", "raw-sql", "none", "other"],
-          "description": "Migration tool. Future P7 reads for CI pipeline migration step."
-        },
-        "multiTenancy": {
-          "enum": ["none", "row-level-rls", "schema-per-tenant", "db-per-tenant", "shared-no-isolation"],
-          "description": "Isolation strategy. Future P6 reads for auth/authz model (RLS vs schema isolation drives session token shape)."
-        },
-        "engine":            { "type": "string", "description": "Specific DB engine (postgresql, mysql, mongodb, edgedb, turso, etc.). Loose for landscape-churn tolerance." },
-        "migrationsMode":    { "type": "string", "description": "Migration application mode (developer-applied, ci-applied, runtime-applied)." },
-        "search":            { "type": "string", "description": "Search/retrieval strategy (DB FTS, dedicated engine, vector store, hybrid, none)." },
-        "cache":             { "type": "string", "description": "Caching layer (none, in-memory, Redis, multi-layer, etc.)." },
-        "cacheInvalidation": { "type": "string", "description": "Invalidation pattern (TTL, event-driven, manual, none)." },
-        "fileStorage":       { "type": "string", "description": "File/object storage (cloud-S3-like, local-FS, CDN-only, hybrid, none)." },
-        "codegen":           { "type": "array", "items": { "type": "string" }, "description": "Codegen tools selected (Prisma generate, Drizzle kit, SQLC, GraphQL codegen, OpenAPI TS, Protobuf, etc.). Empty array OK." },
-        "backup":            { "type": "string", "description": "Backup & retention strategy (none, managed-provider, scheduled-dumps, continuous)." },
-        "compliance":        { "type": "string", "description": "Data residency/compliance constraint (none, region-locked, GDPR-aware, HIPAA, etc.)." }
-      }
-    },
     "p8Cicd": {
       "type": "object",
       "description": "Phase 8 — CI/CD & Operations. Fully specified in onboard 2.0.0-alpha.1 Round 1. The cicd subobject is the new wizard surface (Q5.4-Q5.17, 14 fields); _v1_carryover preserves Q5.1-Q5.3 answers.",
@@ -281,6 +248,39 @@
             "prReviewTrigger": { "enum": ["auto-every", "comment-mention", "auto-with-skip-label"] }
           }
         }
+      }
+    },
+    "p3Data": {
+      "type": "object",
+      "description": "Phase 3 — Data Architecture. Fully specified in onboard 2.0.0-alpha.2 Round 2. Hybrid strictness: 4 required enum-locked fields (databaseHost, orm, migrationsTool, multiTenancy) drive cross-phase contradictions; remaining fields are loose strings to accommodate a fast-moving tooling landscape (Turso, EdgeDB, pgvector, Drizzle, Kysely, etc.).",
+      "required": ["databaseHost", "orm", "migrationsTool", "multiTenancy"],
+      "additionalProperties": false,
+      "properties": {
+        "databaseHost": {
+          "enum": ["self-hosted", "managed-rdbms", "serverless-rdbms", "managed-nosql", "embedded", "none"],
+          "description": "Hosting model category. P8 cross-references for rollback strategy (point-in-time recovery only on managed)."
+        },
+        "orm": {
+          "enum": ["prisma", "drizzle", "typeorm", "sequelize", "kysely", "sqlalchemy", "active-record", "ecto", "gorm", "diesel", "raw-sql", "none", "other"],
+          "description": "Data access layer. P4 reads for validation lib / API codegen pairing. Future P7 reads for CI migration step strategy."
+        },
+        "migrationsTool": {
+          "enum": ["orm-native", "alembic", "flyway", "liquibase", "raw-sql", "none", "other"],
+          "description": "Migration tool. Future P7 reads for CI pipeline migration step."
+        },
+        "multiTenancy": {
+          "enum": ["none", "row-level-rls", "schema-per-tenant", "db-per-tenant", "shared-no-isolation"],
+          "description": "Isolation strategy. Future P6 reads for auth/authz model (RLS vs schema isolation drives session token shape)."
+        },
+        "engine":            { "type": "string", "description": "Specific DB engine (postgresql, mysql, mongodb, edgedb, turso, etc.). Loose for landscape-churn tolerance." },
+        "migrationsMode":    { "type": "string", "description": "Migration application mode (developer-applied, ci-applied, runtime-applied)." },
+        "search":            { "type": "string", "description": "Search/retrieval strategy (DB FTS, dedicated engine, vector store, hybrid, none)." },
+        "cache":             { "type": "string", "description": "Caching layer (none, in-memory, Redis, multi-layer, etc.)." },
+        "cacheInvalidation": { "type": "string", "description": "Invalidation pattern (TTL, event-driven, manual, none)." },
+        "fileStorage":       { "type": "string", "description": "File/object storage (cloud-S3-like, local-FS, CDN-only, hybrid, none)." },
+        "codegen":           { "type": "array", "items": { "type": "string" }, "description": "Codegen tools selected (Prisma generate, Drizzle kit, SQLC, GraphQL codegen, OpenAPI TS, Protobuf, etc.). Empty array OK." },
+        "backup":            { "type": "string", "description": "Backup & retention strategy (none, managed-provider, scheduled-dumps, continuous)." },
+        "compliance":        { "type": "string", "description": "Data residency/compliance constraint (none, region-locked, GDPR-aware, HIPAA, etc.)." }
       }
     }
   }
