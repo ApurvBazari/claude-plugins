@@ -10,8 +10,8 @@ Scaffolds new projects with AI-native, auto-evolving Claude Code tooling. Three-
      ▼
 Phase 1: Context Gathering ──→ context-gathering skill (adaptive wizard)
      │                            ├── stack-researcher agent (WebSearch)
-     │                            └── synthesis-review skill (Phase 1.8 — invoked inline at end of each
-     │                                                         major step; Round 1: only end of Step 5 → P8)
+     │                            └── synthesis-review skill (Phase 1.8 — invoked inline at end of each major step;
+     │                                                         Round 2: Step 3 → P3, Step 4 → P4, Step 7 → P8)
      │
      ├── Phase 1.5 (conditional): Architectural Research — resolves parked questions
      │
@@ -49,8 +49,8 @@ Greenfield only generates two artifacts that require scaffold-specific knowledge
 
 ## Skill Hierarchy
 
-- `context-gathering/SKILL.md` — Phase 1: adaptive state-machine wizard (3.0 Round 1: Step 5 expanded from 3 to 17 questions covering full P8 CI/CD surface; total 47 questions, developer answers ~18-35 depending on `willDeploy`/`hasTeam`)
-- `synthesis-review/SKILL.md` — Phase 1.8: per-phase synthesis review. Renders `docs/architecture/p<N>-<name>.html` in the scaffolded project, walks Approve/Adjust/Skip per section, writes `dependencies.json` sidecar, installs freshness hook. Invoked inline by `context-gathering` at the end of each major step that has a synthesis template (Round 1: P8 only)
+- `context-gathering/SKILL.md` — Phase 1: adaptive state-machine wizard (3.0 Round 2: 10 wizard steps; Step 3 = P3 Data Architecture (12 Qs), Step 4 = P4 API & Integration (10 Qs), Step 7 = P8 CI/CD (17 Qs from Round 1). Total ~69 wizard questions; developer answers 30-55 depending on stack + deploy)
+- `synthesis-review/SKILL.md` — Phase 1.8: per-phase synthesis review. Renders `docs/architecture/p<N>-<name>.html` in the scaffolded project, walks Approve/Adjust/Skip per section, writes `dependencies.json` sidecar, installs freshness hook. Invoked inline by `context-gathering` at the end of each major step that has a synthesis template (Round 2: P3 at Step 3, P4 at Step 4, P8 at Step 7)
 - `grill-spec/SKILL.md` — Phase 1.7: pre-scaffold validation gate (5-category decision-tree walk; uses `mattpocock-skills:grill-me` if installed, falls back to inline). Cross-checks against `context.syntheses.*`
 - `scaffolding/SKILL.md` — Phase 2: execute scaffold, git setup, verify Hello World
 - `tooling-generation/SKILL.md` — Phase 3: prepare context, call enriched onboard, generate init.sh + feature-list.json
@@ -72,7 +72,7 @@ User-facing skills (show in `/greenfield:` autocomplete):
 Internal building blocks (`user-invocable: false`):
 
 - `context-gathering/SKILL.md` — Phase 1 adaptive wizard
-- `synthesis-review/SKILL.md` — Phase 1.8 per-phase synthesis review (Round 1: P8 only)
+- `synthesis-review/SKILL.md` — Phase 1.8 per-phase synthesis review (Round 2: P3 at Step 3, P4 at Step 4, P8 at Step 7)
 - `grill-spec/SKILL.md` — Phase 1.7 pre-scaffold validation gate
 - `scaffolding/SKILL.md` — Phase 2 scaffold execution
 - `plugin-discovery/SKILL.md` — Phase 3a plugin catalog match + install
