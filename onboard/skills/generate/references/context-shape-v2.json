@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://github.com/ApurvBazari/claude-plugins/onboard/skills/generate/references/context-shape-v2.json",
   "title": "Onboard Generate — v2 Context Shape",
-  "description": "Input schema for the onboard:generate skill in onboard 2.x. Hard cutover from v1: v2 callers must emit `version: 2` at the root. v1 input is rejected outright (no migration helper ships in any onboard 2.x release). Rounds 1–2 fully specify P3 (Data Architecture), P4 (API & Integration), and P8 (CI/CD & Operations). Phases P0, P0.5, P1, P5, P6, P7, P8.5, P9, P10.5 carry `_status: 'deferred-to-round-N'` and become inert pass-through metadata. Greenfield 3.0+ is the canonical caller; direct headless callers must construct v2 contexts directly.",
+  "description": "Input schema for the onboard:generate skill in onboard 2.x. Hard cutover from v1: v2 callers must emit `version: 2` at the root. v1 input is rejected outright (no migration helper ships in any onboard 2.x release). Rounds 1–2 fully specify dataArchitecture (Data Architecture), apiIntegration (API & Integration), and cicdAndDelivery (CI/CD & Operations). Phases vision, personas, domain, frontend, authSecurity, workflow, pluginRecommendation, risk, featureRoadmap, pluginInstall, schemaDraftReview carry `_status: 'deferred-to-round-N'` and become inert pass-through metadata. Greenfield 3.0+ is the canonical caller; direct headless callers must construct v2 contexts directly.",
   "type": "object",
   "required": ["version", "source", "projectPath", "callerExtras", "phases"],
   "additionalProperties": false,
@@ -47,14 +47,14 @@
     },
     "phases": {
       "type": "object",
-      "description": "Wizard-captured per-phase data. Rounds 1-2 fully specify P3 (Data Architecture), P4 (API & Integration), and P8 (CI/CD & Operations); other phase slots are deferred to later rounds (R3-R6) and carry _status only. Phase ids match the 15-phase wizard structure documented in docs/greenfield-overview.html.",
+      "description": "Wizard-captured per-phase data. Rounds 1-2 fully specify dataArchitecture (Data Architecture), apiIntegration (API & Integration), and cicdAndDelivery (CI/CD & Operations); other phase slots are deferred to later rounds (R3-R6) and carry _status only. Phase ids match the 15-phase wizard structure documented in docs/greenfield-overview.html.",
       "additionalProperties": false,
-      "required": ["P8"],
+      "required": ["cicdAndDelivery"],
       "properties": {
-        "P0":   { "$ref": "#/definitions/deferredPhase" },
-        "P0.5": { "$ref": "#/definitions/deferredPhase" },
-        "P1":   { "$ref": "#/definitions/deferredPhase" },
-        "P2":   {
+        "vision":   { "$ref": "#/definitions/deferredPhase" },
+        "personas": { "$ref": "#/definitions/deferredPhase" },
+        "domain":   { "$ref": "#/definitions/deferredPhase" },
+        "stack":   {
           "description": "Stack details. Greenfield 3.0 Round 1 fills this from wizard Steps 1-2 verbatim (no new fields).",
           "type": "object",
           "properties": {
@@ -69,29 +69,29 @@
             }
           }
         },
-        "P3":   { "$ref": "#/definitions/p3Data" },
-        "P4":   { "$ref": "#/definitions/p4Api" },
-        "P5":   { "$ref": "#/definitions/deferredPhase" },
-        "P6":   { "$ref": "#/definitions/deferredPhase" },
-        "P7":   { "$ref": "#/definitions/deferredPhase" },
-        "P7.5": {
+        "dataArchitecture":   { "$ref": "#/definitions/dataArchitecture" },
+        "apiIntegration":   { "$ref": "#/definitions/apiIntegration" },
+        "frontend":   { "$ref": "#/definitions/deferredPhase" },
+        "authSecurity":   { "$ref": "#/definitions/deferredPhase" },
+        "workflow":   { "$ref": "#/definitions/deferredPhase" },
+        "pluginRecommendation": {
           "type": "object",
-          "description": "Plugin recommendation pass (P7.5 in the 15-phase wizard). Greenfield 3.0 Round 1 emits as { pluginRecommendations: [] }; reserved for richer structure in later rounds.",
+          "description": "Plugin recommendation pass (pluginRecommendation in the 15-phase wizard). Greenfield 3.0 Round 1 emits as { pluginRecommendations: [] }; reserved for richer structure in later rounds.",
           "properties": {
             "pluginRecommendations": { "type": "array", "items": { "type": "string" } }
           }
         },
-        "P8":   { "$ref": "#/definitions/p8Cicd" },
-        "P8.5": { "$ref": "#/definitions/deferredPhase" },
-        "P9":   { "$ref": "#/definitions/deferredPhase" },
-        "P10":  {
+        "cicdAndDelivery":   { "$ref": "#/definitions/cicdAndDelivery" },
+        "risk": { "$ref": "#/definitions/deferredPhase" },
+        "featureRoadmap":   { "$ref": "#/definitions/deferredPhase" },
+        "pluginInstall":  {
           "type": "object",
-          "description": "Plugin install confirmation (P10 in the 15-phase wizard). Round 1 emits as { installedPlugins: [] } — mirrors callerExtras for symmetry.",
+          "description": "Plugin install confirmation (pluginInstall in the 15-phase wizard). Round 1 emits as { installedPlugins: [] } — mirrors callerExtras for symmetry.",
           "properties": {
             "installedPlugins": { "type": "array", "items": { "type": "string" } }
           }
         },
-        "P10.5": { "$ref": "#/definitions/deferredPhase" }
+        "schemaDraftReview": { "$ref": "#/definitions/deferredPhase" }
       }
     },
     "syntheses": {
@@ -101,10 +101,10 @@
     },
     "dependencies": {
       "type": "object",
-      "description": "Cross-phase dependency assertions, mirrored from the per-project docs/architecture/p*-dependencies.json files. Used for cross-check warnings and metadata.",
+      "description": "Cross-phase dependency assertions, mirrored from the per-project docs/architecture/*-dependencies.json files. Used for cross-check warnings and metadata.",
       "additionalProperties": {
         "type": "array",
-        "items": { "type": "string", "pattern": "^P\\d+(\\.\\d+)?\\..+$" }
+        "items": { "type": "string" }
       }
     }
   },
@@ -145,9 +145,9 @@
         }
       }
     },
-    "p8Cicd": {
+    "cicdAndDelivery": {
       "type": "object",
-      "description": "Phase 8 — CI/CD & Operations. Fully specified in onboard 2.0.0-alpha.1 Round 1. The cicd subobject is the new wizard surface (Q5.4-Q5.17, 14 fields); _v1_carryover preserves Q5.1-Q5.3 answers.",
+      "description": "CI/CD & Operations. Fully specified in onboard 2.0.0-alpha.1 Round 1. The cicd subobject is the new wizard surface (Q5.4-Q5.17, 14 fields); _v1_carryover preserves Q5.1-Q5.3 answers.",
       "required": ["cicd"],
       "properties": {
         "cicd": {
@@ -250,27 +250,27 @@
         }
       }
     },
-    "p3Data": {
+    "dataArchitecture": {
       "type": "object",
-      "description": "Phase 3 — Data Architecture. Fully specified in onboard 2.0.0-alpha.2 Round 2. Hybrid strictness: 4 required enum-locked fields (databaseHost, orm, migrationsTool, multiTenancy) drive cross-phase contradictions; remaining fields are loose strings to accommodate a fast-moving tooling landscape (Turso, EdgeDB, pgvector, Drizzle, Kysely, etc.).",
+      "description": "Data Architecture. Fully specified in onboard 2.0.0-alpha.2 Round 2. Hybrid strictness: 4 required enum-locked fields (databaseHost, orm, migrationsTool, multiTenancy) drive cross-phase contradictions; remaining fields are loose strings to accommodate a fast-moving tooling landscape (Turso, EdgeDB, pgvector, Drizzle, Kysely, etc.).",
       "required": ["databaseHost", "orm", "migrationsTool", "multiTenancy"],
       "additionalProperties": false,
       "properties": {
         "databaseHost": {
           "enum": ["self-hosted", "managed-rdbms", "serverless-rdbms", "managed-nosql", "embedded", "none"],
-          "description": "Hosting model category. P8 cross-references for rollback strategy (point-in-time recovery only on managed)."
+          "description": "Hosting model category. cicdAndDelivery cross-references for rollback strategy (point-in-time recovery only on managed)."
         },
         "orm": {
           "enum": ["prisma", "drizzle", "typeorm", "sequelize", "kysely", "sqlalchemy", "active-record", "ecto", "gorm", "diesel", "raw-sql", "none", "other"],
-          "description": "Data access layer. P4 reads for validation lib / API codegen pairing. Future P7 reads for CI migration step strategy."
+          "description": "Data access layer. apiIntegration reads for validation lib / API codegen pairing. Future workflow reads for CI migration step strategy."
         },
         "migrationsTool": {
           "enum": ["orm-native", "alembic", "flyway", "liquibase", "raw-sql", "none", "other"],
-          "description": "Migration tool. Future P7 reads for CI pipeline migration step."
+          "description": "Migration tool. Future workflow reads for CI pipeline migration step."
         },
         "multiTenancy": {
           "enum": ["none", "row-level-rls", "schema-per-tenant", "db-per-tenant", "shared-no-isolation"],
-          "description": "Isolation strategy. Future P6 reads for auth/authz model (RLS vs schema isolation drives session token shape)."
+          "description": "Isolation strategy. Future authSecurity reads for auth/authz model (RLS vs schema isolation drives session token shape)."
         },
         "engine":            { "type": "string", "description": "Specific DB engine (postgresql, mysql, mongodb, edgedb, turso, etc.). Loose for landscape-churn tolerance." },
         "migrationsMode":    { "type": "string", "description": "Migration application mode (developer-applied, ci-applied, runtime-applied)." },
@@ -283,23 +283,23 @@
         "compliance":        { "type": "string", "description": "Data residency/compliance constraint (none, region-locked, GDPR-aware, HIPAA, etc.)." }
       }
     },
-    "p4Api": {
+    "apiIntegration": {
       "type": "object",
-      "description": "Phase 4 — API & Integration. Fully specified in onboard 2.0.0-alpha.2 Round 2. 3 required enum-locked fields (style, versioningPolicy, asyncPattern) drive cross-phase contradictions; remaining fields loose. Single-owner boundary: real-time, webhooks, jobs live in P4; caching, file storage, codegen live in P3.",
+      "description": "API & Integration. Fully specified in onboard 2.0.0-alpha.2 Round 2. 3 required enum-locked fields (style, versioningPolicy, asyncPattern) drive cross-phase contradictions; remaining fields loose. Single-owner boundary: real-time, webhooks, jobs live in apiIntegration; caching, file storage, codegen live in dataArchitecture.",
       "required": ["style", "versioningPolicy", "asyncPattern"],
       "additionalProperties": false,
       "properties": {
         "style": {
           "enum": ["rest", "graphql", "trpc", "grpc", "rpc-other", "none"],
-          "description": "API style. Drives P3 codegen pairing (GraphQL codegen ↔ style=graphql). Future P6 reads for auth integration pattern."
+          "description": "API style. Drives dataArchitecture codegen pairing (GraphQL codegen ↔ style=graphql). Future authSecurity reads for auth integration pattern."
         },
         "versioningPolicy": {
           "enum": ["url-path", "header", "query-string", "no-breaking-changes-policy", "none-yet"],
-          "description": "Version negotiation strategy. Future P7 reads for ADR template; P8 release pipeline cross-references."
+          "description": "Version negotiation strategy. Future workflow reads for ADR template; cicdAndDelivery release pipeline cross-references."
         },
         "asyncPattern": {
           "enum": ["none", "queue-and-worker", "scheduled-cron", "event-driven", "serverless-functions", "mixed"],
-          "description": "Background-work pattern. Future P7 reads for CI test strategy. P8 conceptually depends for deployment topology."
+          "description": "Background-work pattern. Future workflow reads for CI test strategy. cicdAndDelivery conceptually depends for deployment topology."
         },
         "documentation":    { "type": "string", "description": "API docs tool (OpenAPI/Swagger, GraphQL Playground, auto-from-types, Scalar, Redoc, etc.)." },
         "rateLimit":        { "type": "string", "description": "Rate-limit strategy (none, fixed-window, sliding, token-bucket, per-user, per-IP, gateway-level)." },

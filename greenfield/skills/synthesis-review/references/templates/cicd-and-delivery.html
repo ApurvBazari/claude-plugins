@@ -1,9 +1,9 @@
 <!--
-  Per-phase synthesis template — P8 (CI/CD & Operations).
+  Per-phase synthesis template — CI/CD & Delivery.
   Loaded by synthesis-review/SKILL.md Step 2 and spliced into synthesis-template.html's {{phase_body}}.
 
   Placeholders use Mustache-like syntax: {{phase.cicd.<field>}} resolves from
-  context.phases.P8.cicd.<field>. Cross-checks resolve dependency paths from
+  context.phases.cicdAndDelivery.cicd.<field>. Cross-checks resolve dependency paths from
   context.phases.<other-phase>.<path>; if the path is not yet captured (later-round phase),
   the synthesis-review skill renders "not yet captured" rather than blocking.
 
@@ -22,8 +22,8 @@
   <div class="section-title">1. Pipeline trigger model</div>
   <pre class="captured">provider:  {{phase.cicd.provider}}
 triggers:  {{phase.cicd.triggers}}</pre>
-  <div class="cross-check">Assumes <code>P0.willDeploy = {{P0.willDeploy}}</code> — CI is only meaningful for projects that deploy.</div>
-  <!-- Note injected by section-prompts.md § Round 1 P8 sections if provider !== "github-actions": -->
+  <div class="cross-check">Assumes <code>vision.willDeploy = {{vision.willDeploy}}</code> — CI is only meaningful for projects that deploy.</div>
+  <!-- Note injected by section-prompts.md § Round 1 cicdAndDelivery sections if provider !== "github-actions": -->
   <!-- <div class="note">Heads-up — you picked <code>provider: {{phase.cicd.provider}}</code> but Round 1 only emits GitHub Actions workflow templates. The answer is captured but won't drive workflow generation until Round 6 lands non-GHA templates.</div> -->
 </div>
 
@@ -34,7 +34,7 @@ triggers:  {{phase.cicd.triggers}}</pre>
 coverage.threshold:     {{phase.cicd.coverage.threshold}}
 coverage.scope:         {{phase.cicd.coverage.scope}}
 coverage.blocking:      {{phase.cicd.coverage.blocking}}</pre>
-  <div class="cross-check">Assumes <code>P7.testingPhilosophy</code> — not yet captured (deferred to Round 3). Cross-check will fire automatically once P7 is collected.</div>
+  <div class="cross-check">Assumes <code>workflow.testingPhilosophy</code> — not yet captured (deferred to Round 3). Cross-check will fire automatically once workflow is collected.</div>
 </div>
 
 <!-- Section 3: Environment ladder & deploy strategy -->
@@ -43,9 +43,9 @@ coverage.blocking:      {{phase.cicd.coverage.blocking}}</pre>
   <pre class="captured">envLadder:     {{phase.cicd.envLadder}}
 autoDeploy:    {{phase.cicd.autoDeploy}}
 deployCadence: {{phase.cicd.deployCadence}}</pre>
-  <div class="cross-check">Assumes <code>P0.willDeploy = {{P0.willDeploy}}</code>. Any env beyond <code>dev</code> requires <code>willDeploy: true</code>.</div>
-  <!-- Contradiction injected by section-prompts.md § Contradiction detection if envLadder includes "prod" && P0.willDeploy === false: -->
-  <!-- <div class="contradiction"><strong>Contradiction:</strong> P8 picked a production environment but P0 said this project won't deploy. One of these is wrong — resolve.</div> -->
+  <div class="cross-check">Assumes <code>vision.willDeploy = {{vision.willDeploy}}</code>. Any env beyond <code>dev</code> requires <code>willDeploy: true</code>.</div>
+  <!-- Contradiction injected by section-prompts.md § Contradiction detection if envLadder includes "prod" && vision.willDeploy === false: -->
+  <!-- <div class="contradiction"><strong>Contradiction:</strong> cicdAndDelivery picked a production environment but vision said this project won't deploy. One of these is wrong — resolve.</div> -->
 </div>
 
 <!-- Section 4: Secrets & rollback -->
@@ -55,7 +55,7 @@ deployCadence: {{phase.cicd.deployCadence}}</pre>
 secrets.rotation:     {{phase.cicd.secrets.rotation}}
 rollback.strategy:    {{phase.cicd.rollback.strategy}}
 rollback.automation:  {{phase.cicd.rollback.automation}}</pre>
-  <div class="cross-check">Assumes <code>P3.databaseHost</code> — not yet captured (deferred to Round 2). Rollback strategy needs to know if the DB supports point-in-time recovery; cross-check will fire automatically once P3 is collected.</div>
+  <div class="cross-check">Assumes <code>dataArchitecture.databaseHost</code> — not yet captured (deferred to Round 2). Rollback strategy needs to know if the DB supports point-in-time recovery; cross-check will fire automatically once dataArchitecture is collected.</div>
 </div>
 
 <!-- Section 5: Notifications & on-call -->
@@ -63,8 +63,8 @@ rollback.automation:  {{phase.cicd.rollback.automation}}</pre>
   <div class="section-title">5. Notifications &amp; on-call</div>
   <pre class="captured">notifications.channels: {{phase.cicd.notifications.channels}}
 notifications.events:   {{phase.cicd.notifications.events}}</pre>
-  <div class="cross-check">Assumes <code>P0.teamSize = {{P0.teamSize}}</code>. Solo-developer + Slack notifications combination produces a warning note.</div>
-  <!-- Note injected by section-prompts.md if P0.teamSize === "solo" && channels includes "slack": -->
+  <div class="cross-check">Assumes <code>vision.teamSize = {{vision.teamSize}}</code>. Solo-developer + Slack notifications combination produces a warning note.</div>
+  <!-- Note injected by section-prompts.md if vision.teamSize === "solo" && channels includes "slack": -->
   <!-- <div class="note">You're solo but picked Slack notifications. Verify the workspace is yours and the channel exists; otherwise CI failures will silently disappear.</div> -->
 </div>
 
@@ -89,9 +89,9 @@ timeBudget.blockingThresholdMinutes:  {{phase.cicd.timeBudget.blockingThresholdM
   <pre class="captured">releasePipeline.separate:    {{phase.cicd.releasePipeline.separate}}
 releasePipeline.triggeredBy: {{phase.cicd.releasePipeline.triggeredBy}}
 releasePipeline.convention:  {{phase.cicd.releasePipeline.convention}}</pre>
-  <div class="cross-check">Assumes <code>P2.stack.framework = {{P2.stack.framework}}</code>. <code>release-please</code> and <code>semantic-release</code> both expect Node tooling; flag mismatches.</div>
-  <!-- Note injected if convention is release-please/semantic-release and stack.framework is not Node-based: -->
-  <!-- <div class="note">You picked <code>{{phase.cicd.releasePipeline.convention}}</code> but your stack is <code>{{P2.stack.framework}}</code>. These conventions are Node-centric — verify they support your stack or switch to <code>manual</code>.</div> -->
+  <div class="cross-check">Assumes <code>stack.stack.framework = {{stack.stack.framework}}</code>. <code>release-please</code> and <code>semantic-release</code> both expect Node tooling; flag mismatches.</div>
+  <!-- Note injected if convention is release-please/semantic-release and stack.stack.framework is not Node-based: -->
+  <!-- <div class="note">You picked <code>{{phase.cicd.releasePipeline.convention}}</code> but your stack is <code>{{stack.stack.framework}}</code>. These conventions are Node-centric — verify they support your stack or switch to <code>manual</code>.</div> -->
 </div>
 
 <!-- Section 8: Auto-evolution & PR review (Q5.1/Q5.2/Q5.3 from v1, preserved verbatim) -->

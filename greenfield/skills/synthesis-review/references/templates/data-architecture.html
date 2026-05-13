@@ -1,9 +1,9 @@
 <!--
-  Per-phase synthesis template — P3 (Data Architecture).
+  Per-phase synthesis template — Data Architecture.
   Loaded by synthesis-review/SKILL.md Step 2 and spliced into synthesis-template.html's {{phase_body}}.
 
   Placeholders use Mustache-like syntax: {{phase.<field>}} resolves from
-  context.phases.P3.<field>. Cross-checks resolve dependency paths from
+  context.phases.dataArchitecture.<field>. Cross-checks resolve dependency paths from
   context.phases.<other-phase>.<path>; if the path is not yet captured (later-round phase),
   the synthesis-review skill renders "not yet captured" rather than blocking.
 
@@ -22,9 +22,9 @@
   <div class="section-title">1. Database engine &amp; host</div>
   <pre class="captured">engine:       {{phase.engine}}
 databaseHost: {{phase.databaseHost}}</pre>
-  <div class="cross-check">Assumes <code>P0.willDeploy = {{P0.willDeploy}}</code>. Managed and serverless hosts are only meaningful when deploying.</div>
-  <!-- Note injected by section-prompts.md if databaseHost === "none" && P2.stack.database is set: -->
-  <!-- <div class="note">You picked <code>databaseHost: none</code> but P2 stack research suggested <code>{{P2.stack.database}}</code> — verify intent.</div> -->
+  <div class="cross-check">Assumes <code>vision.willDeploy = {{vision.willDeploy}}</code>. Managed and serverless hosts are only meaningful when deploying.</div>
+  <!-- Note injected by section-prompts.md if databaseHost === "none" && stack.stack.database is set: -->
+  <!-- <div class="note">You picked <code>databaseHost: none</code> but stack research suggested <code>{{stack.stack.database}}</code> — verify intent.</div> -->
 </div>
 
 <!-- Section 2: Schema & migrations -->
@@ -33,16 +33,16 @@ databaseHost: {{phase.databaseHost}}</pre>
   <pre class="captured">orm:            {{phase.orm}}
 migrationsTool: {{phase.migrationsTool}}
 migrationsMode: {{phase.migrationsMode}}</pre>
-  <div class="cross-check">Assumes <code>P2.stack.language = {{P2.stack.language}}</code>. ORM filter: Prisma/Drizzle for TypeScript, SQLAlchemy/Django for Python, GORM for Go, etc.</div>
-  <!-- Contradiction injected if orm === "prisma" && P2.stack.language === "python": -->
-  <!-- <div class="contradiction"><strong>Contradiction:</strong> P3 picked <code>orm: prisma</code> but P2 said the language is Python. Prisma is TypeScript-only. Pick SQLAlchemy / Django ORM / raw-sql instead.</div> -->
+  <div class="cross-check">Assumes <code>stack.stack.language = {{stack.stack.language}}</code>. ORM filter: Prisma/Drizzle for TypeScript, SQLAlchemy/Django for Python, GORM for Go, etc.</div>
+  <!-- Contradiction injected if orm === "prisma" && stack.stack.language === "python": -->
+  <!-- <div class="contradiction"><strong>Contradiction:</strong> dataArchitecture picked <code>orm: prisma</code> but stack said the language is Python. Prisma is TypeScript-only. Pick SQLAlchemy / Django ORM / raw-sql instead.</div> -->
 </div>
 
 <!-- Section 3: Multi-tenancy isolation -->
 <div class="section">
   <div class="section-title">3. Multi-tenancy isolation</div>
   <pre class="captured">multiTenancy: {{phase.multiTenancy}}</pre>
-  <div class="cross-check">Future P6 (Round 3) will read this for auth/authz model — RLS requires row-level Postgres policies, schema-per-tenant requires connection routing. Cross-check fires automatically once P6 lands.</div>
+  <div class="cross-check">Future authSecurity (Round 3) will read this for auth/authz model — RLS requires row-level Postgres policies, schema-per-tenant requires connection routing. Cross-check fires automatically once authSecurity lands.</div>
 </div>
 
 <!-- Section 4: Search & retrieval -->
@@ -58,8 +58,8 @@ migrationsMode: {{phase.migrationsMode}}</pre>
   <div class="section-title">5. Caching</div>
   <pre class="captured">cache:             {{phase.cache}}
 cacheInvalidation: {{phase.cacheInvalidation}}</pre>
-  <div class="cross-check">Assumes <code>P0.teamSize = {{P0.teamSize}}</code>. Solo developer + multi-layer cache is usually over-engineering.</div>
-  <!-- Note injected if P0.teamSize === "solo" && cache mentions "multi-layer": -->
+  <div class="cross-check">Assumes <code>vision.teamSize = {{vision.teamSize}}</code>. Solo developer + multi-layer cache is usually over-engineering.</div>
+  <!-- Note injected if vision.teamSize === "solo" && cache mentions "multi-layer": -->
   <!-- <div class="note">Multi-layer cache for a solo project — verify this isn't premature optimization. Single-layer (Redis or in-memory) is the usual starting point.</div> -->
 </div>
 
@@ -67,8 +67,8 @@ cacheInvalidation: {{phase.cacheInvalidation}}</pre>
 <div class="section">
   <div class="section-title">6. File / object storage</div>
   <pre class="captured">fileStorage: {{phase.fileStorage}}</pre>
-  <div class="cross-check">Assumes <code>P0.willDeploy = {{P0.willDeploy}}</code>. Local-filesystem storage with willDeploy=true is a deployment-portability risk.</div>
-  <!-- Note injected if fileStorage mentions "local" && P0.willDeploy === true: -->
+  <div class="cross-check">Assumes <code>vision.willDeploy = {{vision.willDeploy}}</code>. Local-filesystem storage with willDeploy=true is a deployment-portability risk.</div>
+  <!-- Note injected if fileStorage mentions "local" && vision.willDeploy === true: -->
   <!-- <div class="note">Local-FS storage + cloud deployment means files don't persist across container restarts. Switch to S3-compatible object storage or accept the trade-off explicitly.</div> -->
 </div>
 
