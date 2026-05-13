@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# greenfield:synthesis-freshness
+#
+# Pre-commit warning hook installed by the synthesis-review skill (greenfield 3.x).
+# Warns when staged changes touch architecturally-relevant files but no docs/architecture/
+# synthesis HTML is updated in the same commit. Bypass with `git commit --no-verify`.
+#
+# This is a TEMPLATE — synthesis-review/SKILL.md Step 6 substitutes {{ARCH_PATTERNS}}
+# with stack-specific glob patterns from context.phases.P2.stack at install time.
+
+set -euo pipefail
+
+# Architectural file patterns (substituted from context.phases.P2.stack at install time).
+ARCH_PATTERNS=(
+  {{ARCH_PATTERNS}}
+)
+
+# Always-warn patterns (universal regardless of stack).
+ARCH_PATTERNS+=(
+  "*.tf"
+  ".github/workflows/*"
+  "Dockerfile"
+  "docker-compose*.yml"
+  "package.json"
+  "schema.prisma"
+  "prisma/migrations/**"
+)
+
+staged_files="$(git diff --cached --name-only --diff-filter=ACMR)"
+[ -z "$staged_files" ] && exit 0
+
+# Did we touch any architectural file?
+arch_touched=0
+while IFS= read -r file; do
+  for pattern in "${ARCH_PATTERNS[@]}"; do
+    # shellcheck disable=SC2053
+    if [[ "$file" == $pattern ]]; then
+      arch_touched=1
+      break 2
+    fi
+  done
+done <<< "$staged_files"
+
+[ "$arch_touched" -eq 0 ] && exit 0
+
+# Did we also update any synthesis HTML?
+arch_doc_touched=0
+while IFS= read -r file; do
+  if [[ "$file" == docs/architecture/*.html ]]; then
+    arch_doc_touched=1
+    break
+  fi
+done <<< "$staged_files"
+
+[ "$arch_doc_touched" -eq 1 ] && exit 0
+
+# Warn but don't block.
+{
+  echo ""
+  echo "  greenfield/synthesis-freshness:"
+  echo "  Architectural files changed but no docs/architecture/*.html was updated."
+  echo ""
+  echo "  Consider whether the changes invalidate a synthesis record. If so,"
+  echo "  run /greenfield:resume and restart the affected phase, or update the"
+  echo "  relevant docs/architecture/p*.html by hand."
+  echo ""
+  echo "  This is a warning only — your commit is NOT blocked."
+  echo "  Bypass this hook entirely with: git commit --no-verify"
+  echo ""
+} >&2
+
+exit 0

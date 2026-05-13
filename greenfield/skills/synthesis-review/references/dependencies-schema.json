@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/ApurvBazari/claude-plugins/greenfield/synthesis-review/dependencies-schema.json",
+  "title": "Greenfield Phase Dependencies",
+  "description": "Cross-phase dependency assertions for a single phase in a greenfield 3.x scaffolded project. Emitted by the synthesis-review skill alongside each phase's synthesis HTML. Consumed by scripts/visualize-graph.sh and the pre-commit freshness hook.",
+  "type": "object",
+  "required": ["schemaVersion", "phase", "dependencies"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 1,
+      "description": "Schema version. Currently fixed at 1; bumped if/when the dependency record shape changes."
+    },
+    "phase": {
+      "type": "string",
+      "pattern": "^P\\d+(\\.\\d+)?$",
+      "description": "The phase this file describes dependencies for. Format: P<integer>[.<integer>] — e.g., P8, P10.5."
+    },
+    "recordedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp at which the synthesis review was approved."
+    },
+    "dependencies": {
+      "type": "array",
+      "description": "List of cross-phase dependency assertions. Each entry says: this phase assumes the depended-on path had a particular value at synthesis time.",
+      "items": {
+        "type": "object",
+        "required": ["path", "value"],
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^P\\d+(\\.\\d+)?\\.[A-Za-z0-9_.\\[\\]]+$",
+            "description": "Dot-path into the v2 context shape, starting at a phase id. Example: P0.willDeploy or P3.data.databaseHost. Phase id and remaining-path are joined by '.'."
+          },
+          "value": {
+            "description": "Snapshot of the depended-on value at synthesis time. Used by visualize-graph.sh to label edges and by future freshness checks to detect drift. Any JSON value is allowed."
+          },
+          "rationale": {
+            "type": "string",
+            "description": "One-sentence explanation of why this phase depends on the path. Sourced from section-prompts.md."
+          }
+        }
+      }
+    }
+  }
+}
