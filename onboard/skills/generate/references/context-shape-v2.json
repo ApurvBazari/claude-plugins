@@ -47,7 +47,7 @@
     },
     "phases": {
       "type": "object",
-      "description": "Wizard-captured per-phase data. Round 1 fully specifies P8; other phase slots are deferred to later rounds (R2-R6) and carry _status only. Phase ids match the 15-phase wizard structure documented in docs/greenfield-overview.html.",
+      "description": "Wizard-captured per-phase data. Rounds 1-2 fully specify P3 (Data Architecture), P4 (API & Integration), and P8 (CI/CD & Operations); other phase slots are deferred to later rounds (R3-R6) and carry _status only. Phase ids match the 15-phase wizard structure documented in docs/greenfield-overview.html.",
       "additionalProperties": false,
       "required": ["P8"],
       "properties": {
