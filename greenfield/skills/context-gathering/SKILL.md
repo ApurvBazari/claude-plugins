@@ -193,6 +193,49 @@ If the developer adjusts any P3 field via the Adjust dialog, the updated value l
 
 If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen — `p3-data.html` ships in Round 2), tell the developer and continue to Step 4.
 
+### Step 4 of 9: API & Integration (Phase P4)
+
+This step is Round 2's second new phase. Captures API surface decisions via P4.Q1–Q4.10 and closes with an inline Phase 1.8 synthesis-review pass.
+
+**Data layout** — answers populate `context.phases.P4.*` directly. The 3 required enum-locked fields are `style`, `versioningPolicy`, `asyncPattern`; remaining fields are loose strings or arrays.
+
+Tell the developer:
+
+> Step 4 of 9: API & Integration. I'll ask about your API surface — style (REST/GraphQL/tRPC), versioning, rate limits, async patterns, real-time, webhooks, external services. About 10 questions; some skipped based on whether you expose an API.
+
+#### P4 questions (Q4.1–Q4.10)
+
+Ask each P4 question from `references/question-bank.md § Phase P4` in order. Honor the conditions.
+
+| Q | Topic | Writes to (under `context.phases.P4`) |
+|---|---|---|
+| P4.Q1 | API exposed? (gate) | gate flag |
+| P4.Q2 | Style | `style` (required, enum) |
+| P4.Q3 | Documentation | `documentation` (loose) |
+| P4.Q4 | Versioning | `versioningPolicy` (required, enum) |
+| P4.Q5 | Rate limit | `rateLimit` (loose) |
+| P4.Q6 | Pagination | `pagination` (loose) |
+| P4.Q7 | Async pattern | `asyncPattern` (required, enum) |
+| P4.Q8 | Real-time | `realtime` (loose) |
+| P4.Q9 | Webhooks | `webhooks` (loose) |
+| P4.Q10 | External services | `externalServices[]` (loose array) |
+
+**Adaptive skipping**: if `appType: cli` OR (`!hasBackend && !hasFrontend`), skip the entire phase. If P4.Q1 = "No", skip Q2–Q9 but still ask Q10. If `!willDeploy`, skip Q4 (versioning) and Q5 (rate limit).
+
+**State checkpointing**: set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-4-api-integration"`.
+
+#### Phase 1.8: synthesis review (after P4.Q10, or after the last applicable question)
+
+Invoke the `synthesis-review` skill via the Skill tool with `phaseId: "P4"`. The skill:
+
+1. Sets `currentSynthesisPhase: "P4"`.
+2. Renders `docs/architecture/p4-api.html` using the 6-section template.
+3. Walks Approve/Adjust/Skip per section.
+4. Writes `context.syntheses.P4 = { approvedAt, adjustments[] }`.
+5. Writes `docs/architecture/p4-api-dependencies.json`.
+
+If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen — `p4-api.html` ships in Round 2), tell the developer and continue to Step 5.
+
 ### Step 3 of 8: Project Details (Category 3)
 
 Emit the progress indicator. Work through Category 3 questions adaptively. The question bank specifies conditions for each — only ask what's relevant.
