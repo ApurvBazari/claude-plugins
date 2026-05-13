@@ -278,7 +278,7 @@ Also capture during this step (can be inferred or asked directly):
 - **`frontendPatterns`**: If frontend project — component library, state management, styling, routing. Partially captured by Q3.F1/Q3.F2, fill in the rest from stack research.
 - **`backendPatterns`**: If backend project — auth (from Q3.3), error handling. Compose from existing answers.
 
-### Step 3.5 of 10: Pain Points (always ask)
+### Step 5.5 of 10: Pain Points (always ask)
 
 Emit the progress indicator. Ask about where Claude can help most:
 - "What takes the most time in your development workflow?"

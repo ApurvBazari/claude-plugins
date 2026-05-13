@@ -21,7 +21,7 @@ Before checking completed setup, check for an in-progress session at `.claude/gr
 > **Started**: [createdAt]
 > **Last updated**: [updatedAt] ([time delta])
 > **Currently at**: [currentPhase] / [currentStep]
-> [if currentPhase === "phase-1.8-synthesis-review"]: **Reviewing synthesis for**: [currentSynthesisPhase, e.g., "P8 (CI/CD)"]
+> [if currentPhase === "phase-1.8-synthesis-review"]: **Reviewing synthesis for**: [currentSynthesisPhase, e.g., "P3 (Data Architecture)", "P4 (API & Integration)", "P8 (CI/CD)"]
 > **Completed steps**: [list from completedSteps]
 > [if context.syntheses is non-empty]: **Approved syntheses**: [keys of syntheses, e.g., "P8 (approved 2026-05-13T16:30Z)"]
 > **Next action**: [nextAction]
@@ -142,8 +142,8 @@ Compare `webResearch.stackVersion` from metadata against current `package.json` 
 > | Agents ([N]) | [ok / N missing] |
 > | Hooks | [ok / missing entries] |
 > | CI/CD | [ok / N/A (local project)] |
-> | Synthesis records (`docs/architecture/p*.html`) | [N found / none / docs/architecture/ missing] |
-> | Freshness hook (`.git/hooks/pre-commit` marker `# greenfield:synthesis-freshness`) | [installed / not installed] |
+> | Synthesis records (`docs/architecture/p*.html`) | [N found (expected 3: p3-data.html, p4-api.html, p8-cicd.html) / none / docs/architecture/ missing] |
+> | Freshness hook (`.git/hooks/pre-commit` marker `# greenfield:synthesis-freshness`) | [installed / not installed — covers all 3 synthesis HTMLs] |
 >
 > **Pending Drift**: [N entries] or "None"
 > [If drift exists]: Run `/greenfield:evolve` to apply updates.

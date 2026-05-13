@@ -72,7 +72,7 @@ Skip categories whose preconditions don't apply. For example, "auth gaps" is sil
 
 ## Step 4: Conflict resolution
 
-After grilling completes (either path), scan the new context against the original AND against any per-phase synthesis records in `context.syntheses.*` (Round 1: just `context.syntheses.P8`). If any answer contradicts a Phase-1 wizard answer or an approved synthesis section, surface the conflict explicitly:
+After grilling completes (either path), scan the new context against the original AND against every per-phase synthesis record present in `context.syntheses` — iterate dynamically over all keys (Round 2 ships P3, P4, and P8; future rounds will add more). If any answer contradicts a Phase-1 wizard answer or an approved synthesis section, surface the conflict explicitly:
 
 > **Conflict detected**: Phase 1 said `auth.strategy = "none"` but Step 3 of grilling identified that feature `password-reset` requires authentication.
 >

@@ -66,7 +66,7 @@ Greenfield writes to `.claude/greenfield-state.json` at every natural checkpoint
   "createdAt": "ISO-8601 timestamp",
   "updatedAt": "ISO-8601 timestamp",
   "currentPhase": "phase-1-context-gathering | phase-1.8-synthesis-review | phase-1.5-architectural-research | phase-1.7-grill-spec | phase-2-scaffold | phase-3a-plugin-discovery | phase-3b-tooling-generation | complete",
-  "currentSynthesisPhase": "P8 (only set when currentPhase === 'phase-1.8-synthesis-review'; identifies which phaseId is being reviewed; cleared on return)",
+  "currentSynthesisPhase": "P3 | P4 | P8 (only set when currentPhase === 'phase-1.8-synthesis-review'; identifies which phaseId is currently under review; cleared on return). Valid values in Round 2: \"P3\", \"P4\", \"P8\". Future rounds add P0/P6/P7/P9/P10.5.",
   "currentStep": "skill-specific step identifier",
   "completedSteps": ["list of completed step identifiers"],
   "context": { /* partial context object, grows as wizard progresses */ },
@@ -110,7 +110,7 @@ The skill handles:
 - Project details (database, auth, deploy, monitoring, etc.)
 - Workflow preferences (testing, style, security, autonomy)
 - CI/CD and auto-evolution preferences (Step 5 — expanded in greenfield 3.0 to 17 questions covering provider, gates, env ladder, secrets, notifications, build matrix, caching, release pipeline, deploy cadence)
-- **Phase 1.8 synthesis review for P8** — runs inline at the end of Step 5 via the `synthesis-review` skill. Renders `docs/architecture/p8-cicd.html` in the scaffolded project, walks the developer through Approve/Adjust/Skip per section, then returns to Step 6. Round 1's only synthesis pass; later rounds add per-phase synthesis at the end of their respective steps.
+- **Phase 1.8 synthesis review** — runs inline at the end of each major step that has a synthesis template. Round 2 wires it for P3 (Step 3 — Data Architecture), P4 (Step 4 — API & Integration), and P8 (Step 7 — CI/CD). Each pass renders the corresponding HTML in the scaffolded project (`docs/architecture/p3-data.html`, `docs/architecture/p4-api.html`, `docs/architecture/p8-cicd.html`), walks the developer through Approve/Adjust/Skip per section, then returns to the next wizard step. Future rounds add P0/P6/P7/P9/P10.5.
 - **Feature decomposition** (mandatory — downstream phases depend on it)
 - Confirmation summary
 - Phase 1.5 Architectural Research (conditional — only if parked questions exist)
@@ -326,7 +326,7 @@ Every phase has its own failure modes. The table below is the authoritative per-
 
 | Failure | Cause | Recovery |
 |---|---|---|
-| Per-phase template missing (Round 1 only ships `p8-cicd.html`) | Synthesis invoked with a phaseId that has no template yet | `synthesis-review` returns `synthesisStatus: "no-template"`. Caller (context-gathering) logs a one-line note and continues. Do NOT fabricate sections. |
+| Per-phase template missing (Round 2 ships `p3-data.html`, `p4-api.html`, `p8-cicd.html`; future phases have no template yet) | Synthesis invoked with a phaseId that has no template yet | `synthesis-review` returns `synthesisStatus: "no-template"`. Caller (context-gathering) logs a one-line note and continues. Do NOT fabricate sections. |
 | `superpowers:brainstorming` unavailable during Adjust | Plugin not installed | `synthesis-review` Step 5 skips Stage 1; uses the developer's adjustment intent verbatim. Records `via: "grill-me-only"` or `via: "inline-fallback"`. |
 | `mattpocock-skills:grill-me` unavailable during Adjust | Plugin not installed | `synthesis-review` Step 5 skips Stage 2; developer confirms candidate directly. Records `via: "brainstorming-only"` or `via: "inline-fallback"`. |
 | Both plugins unavailable | Bare-bones environment | Inline 3-question mini-dialog (see `synthesis-review/references/adjust-dialog-protocol.md § Inline fallback`). |
