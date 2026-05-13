@@ -9,7 +9,9 @@ Scaffolds new projects with AI-native, auto-evolving Claude Code tooling. Three-
      │
      ▼
 Phase 1: Context Gathering ──→ context-gathering skill (adaptive wizard)
-     │                            └── stack-researcher agent (WebSearch)
+     │                            ├── stack-researcher agent (WebSearch)
+     │                            └── synthesis-review skill (Phase 1.8 — invoked inline at end of each
+     │                                                         major step; Round 1: only end of Step 5 → P8)
      │
      ├── Phase 1.5 (conditional): Architectural Research — resolves parked questions
      │
@@ -17,6 +19,7 @@ Phase 1: Context Gathering ──→ context-gathering skill (adaptive wizard)
 Phase 1.7: Pre-Scaffold Spec Grilling ──→ grill-spec skill
      │                                       ├── If installed: mattpocock-skills:grill-me
      │                                       └── Else: inline fallback (5-category walk)
+     │                                       Cross-checks against context.syntheses.* (Round 1: just P8)
      ▼
 Phase 2: Scaffold ──→ scaffolding skill (execute scaffold + git setup)
      │
@@ -46,8 +49,9 @@ Greenfield only generates two artifacts that require scaffold-specific knowledge
 
 ## Skill Hierarchy
 
-- `context-gathering/SKILL.md` — Phase 1: adaptive state-machine wizard (33 questions, developer answers 8-22)
-- `grill-spec/SKILL.md` — Phase 1.7: pre-scaffold validation gate (5-category decision-tree walk; uses `mattpocock-skills:grill-me` if installed, falls back to inline)
+- `context-gathering/SKILL.md` — Phase 1: adaptive state-machine wizard (3.0 Round 1: Step 5 expanded from 3 to 17 questions covering full P8 CI/CD surface; total 47 questions, developer answers ~18-35 depending on `willDeploy`/`hasTeam`)
+- `synthesis-review/SKILL.md` — Phase 1.8: per-phase synthesis review. Renders `docs/architecture/p<N>-<name>.html` in the scaffolded project, walks Approve/Adjust/Skip per section, writes `dependencies.json` sidecar, installs freshness hook. Invoked inline by `context-gathering` at the end of each major step that has a synthesis template (Round 1: P8 only)
+- `grill-spec/SKILL.md` — Phase 1.7: pre-scaffold validation gate (5-category decision-tree walk; uses `mattpocock-skills:grill-me` if installed, falls back to inline). Cross-checks against `context.syntheses.*`
 - `scaffolding/SKILL.md` — Phase 2: execute scaffold, git setup, verify Hello World
 - `tooling-generation/SKILL.md` — Phase 3: prepare context, call enriched onboard, generate init.sh + feature-list.json
 - `plugin-discovery/SKILL.md` — Phase 3 (first step): curated catalog + web search, install plugins, compile capabilities
@@ -68,6 +72,7 @@ User-facing skills (show in `/greenfield:` autocomplete):
 Internal building blocks (`user-invocable: false`):
 
 - `context-gathering/SKILL.md` — Phase 1 adaptive wizard
+- `synthesis-review/SKILL.md` — Phase 1.8 per-phase synthesis review (Round 1: P8 only)
 - `grill-spec/SKILL.md` — Phase 1.7 pre-scaffold validation gate
 - `scaffolding/SKILL.md` — Phase 2 scaffold execution
 - `plugin-discovery/SKILL.md` — Phase 3a plugin catalog match + install
@@ -118,6 +123,8 @@ Greenfield's approach varies by stack maturity. Be honest about which stacks are
 
 - **Silent failure on research** — if `stack-researcher` can't reach the web, fall back to main-session research with user-visible permission prompts. Never quietly fail and pretend you researched.
 - **Skipping feature decomposition** — it's mandatory. Downstream phases depend on `docs/feature-list.json` existing.
+- **Silently skipping Phase 1.8 synthesis review** — synthesis is the no-surprises gate that catches contradictions while per-phase context is still fresh. If a synthesis template exists for a phase, you MUST run it; if it's missing, return `synthesisStatus: "no-template"` cleanly rather than fabricating sections.
 - **Re-invoking onboard on partial output** — if a greenfield session was killed mid-`/onboard:generate`, ask before retrying (onboard's state file may be inconsistent).
 - **Auto-cleaning partial scaffolds** — never delete files the user might want to inspect. Always ask first.
 - **Writing state directly** — always write to `greenfield-state.json.tmp` then rename, to avoid corruption on interrupt.
+- **Modifying synthesis HTMLs in scaffolded projects without re-running synthesis-review** — these are living architecture records. Hand-edits create drift the freshness hook will flag but can't reverse. Use `/greenfield:resume` and restart the relevant phase if a synthesis record needs revision.

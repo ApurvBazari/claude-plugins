@@ -279,6 +279,26 @@
 
   <div class="arrow">▼</div>
 
+  <div class="phase">
+    <div class="phase-header">
+      <span class="phase-num">1.8</span>
+      <span class="phase-title">Synthesis Review — per-phase confirmation gate <span style="color: var(--accent); font-weight: 400;">(NEW in 3.0)</span></span>
+      <span class="phase-tag">Inline sub-step</span>
+    </div>
+    <div class="phase-body">
+      Runs <em>inline at the end of each major wizard step that has a synthesis template</em>. In Round 1, this is wired only for Step 5 (P8 CI/CD) — later rounds add per-phase synthesis for P3, P4, P6, P7, P0/P0.5/P1, P9, P10.5.
+      <ul>
+        <li>Renders <code>docs/architecture/p&lt;N&gt;-&lt;name&gt;.html</code> in the scaffolded project — a living architecture record, ADR-style, committed to the repo.</li>
+        <li>Walks the developer through each section: <strong>Approve</strong> / <strong>Adjust</strong> / <strong>Skip</strong>. Adjust composes <code>superpowers:brainstorming</code> + <code>mattpocock-skills:grill-me</code> (or falls back inline).</li>
+        <li>Writes a machine-readable <code>p&lt;N&gt;-&lt;name&gt;-dependencies.json</code> sidecar for cross-phase dependency tracking. <code>scripts/visualize-graph.sh</code> renders the whole graph as Mermaid on demand.</li>
+        <li>Installs a one-time pre-commit hook (warning-only) that flags architectural changes lacking a docs/architecture update.</li>
+        <li>Brief <code>currentPhase</code> transition: <code>phase-1-context-gathering → phase-1.8-synthesis-review → phase-1-context-gathering</code>. <code>currentSynthesisPhase</code> records which phaseId is in progress.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="arrow">▼</div>
+
   <div class="phase has-plugin">
     <div class="phase-header">
       <span class="phase-num">1.7</span>
@@ -691,13 +711,73 @@
   </div>
 
   <div class="log-entry">
+    <div class="meta">2026-05-13 · ROUND 1 LOCKED · file list + branch base + onboard 2.0 contract</div>
+    <div class="body">
+      <strong>All three Round 1 planning tasks resolved.</strong> Implementation can begin.
+      <br><br>
+      <strong>1. File list (locked) — 27 changes across 4 commits on <code>feat/greenfield-1.2</code></strong>
+      <ul>
+        <li><strong>Commit 1 — synthesis-review infrastructure (Group A, 7 new files)</strong>: <code>greenfield/skills/synthesis-review/SKILL.md</code> (Phase 1.8 orchestrator with inline two-stage Adjust dialog), <code>references/synthesis-template.html</code> (generic styled frame), <code>references/section-prompts.md</code>, <code>references/adjust-dialog-protocol.md</code> (brainstorming → grill-me + inline fallback), <code>references/dependencies-schema.json</code>, <code>references/pre-commit-freshness-hook.sh.tmpl</code>, <code>greenfield/scripts/visualize-graph.sh</code>.</li>
+        <li><strong>Commit 2 — P8 wizard expansion (Group B + question bank)</strong>: <code>references/templates/p8-cicd.html</code> (R1 phase template), <code>references/templates/p8-cicd-dependencies.json.example</code>, <code>context-gathering/SKILL.md</code> (Step 5 expanded; "Step 5 of 8" naming preserved per locked decision), <code>question-bank.md</code> (Q5.4–Q5.17: provider, triggers, pre-merge checks, coverage, env ladder, auto-deploy, rollback, secrets, notifications, build matrix, caching, time budget, release pipeline, deploy cadence).</li>
+        <li><strong>Commit 3 — wire Phase 1.8 + greenfield 3.0.0-alpha.1 (Group C, 8 modified)</strong>: <code>init/SKILL.md</code> (insert Phase 1.8 in flow), <code>grill-spec/SKILL.md</code> (handoff to <code>phase-1.8-synthesis-review</code>), <code>resume/SKILL.md</code> (Item 3 prompt: "pick up at Q5 or restart phase?"), <code>status/SKILL.md</code>, <code>greenfield/CLAUDE.md</code>, <code>greenfield/.claude-plugin/plugin.json</code> (2.0.0 → 3.0.0-alpha.1), <code>.claude-plugin/marketplace.json</code> sync, <code>docs/greenfield-overview.html</code> flow update.</li>
+        <li><strong>Commit 4 — onboard 2.0.0-alpha.1 v0 (Group D, 11 files including new <code>cicd-templates/github-actions/</code> dir)</strong>: <code>onboard/skills/generate/references/context-shape-v2.json</code>, <code>onboard/CHANGELOG-2.0.md</code>, <code>onboard/skills/generate/SKILL.md</code> (v2-only; rejects v1 input outright), four GitHub Actions workflow templates (<code>app-ci.yml.tmpl</code>, <code>tooling-audit.yml.tmpl</code>, <code>pr-review.yml.tmpl</code>, <code>deploy.yml.tmpl</code>), <code>sprint-contracts-template.json</code> (consume P8.envLadder), <code>evolution-wiring.md</code> (P8.notifications → hooks), <code>onboard/.claude-plugin/plugin.json</code> (1.10.0 → 2.0.0-alpha.1), <code>onboard/CLAUDE.md</code>.</li>
+      </ul>
+      Per-phase <code>dependencies.json</code> files are NOT committed in greenfield's repo — they are emitted into each scaffolded project's <code>docs/architecture/</code> at runtime. Greenfield ships only the schema + one example.
+      <br><br>
+      <strong>2. Branch base (locked) — stay on <code>feat/greenfield-1.2</code>; subsume 1.2 into 3.0.0-alpha.1</strong>
+      <ul>
+        <li>No new branch. Round 1 commits land directly on <code>feat/greenfield-1.2</code>.</li>
+        <li>The 1.2 release is skipped; first release on PR #50 merge is greenfield <code>3.0.0-alpha.1</code> (and onboard <code>2.0.0-alpha.1</code>).</li>
+        <li>PR #50 retitled → <code>feat(greenfield)!: 3.0.0-alpha.1 — wizard overhaul Round 1 (incl. 1.2 grill-spec gate)</code>; description updated to cover both inherited 1.2 work and Round 1 scope.</li>
+        <li>No rebase logistics; develop merges in via release-please post-merge as usual.</li>
+      </ul>
+      <strong>3. Onboard 2.0 contract (locked)</strong>
+      <pre style="font-size: 11.5px;"><code>{
+  "version": 2,                 // hard-required; v1 input REJECTED (no migration helper ever)
+  "callerExtras": {             // root-level; runtime-injected by greenfield
+    "installedPlugins": [],
+    "coveredCapabilities": []
+  },
+  "phases": {                   // wizard answers
+    "P0":   { "_status": "deferred-to-round-?" },
+    "P0.5": { "_status": "deferred-to-round-4" },     // Personas
+    "P1":   { "_status": "deferred-to-round-4" },     // Domain
+    "P2":   { "stack": {} },
+    "P3":   { "_status": "deferred-to-round-2" },     // Data
+    "P4":   { "_status": "deferred-to-round-2" },     // API
+    "P5":   { "_status": "deferred-to-round-6" },     // Frontend
+    "P6":   { "_status": "deferred-to-round-3" },     // Auth/Sec
+    "P7":   { "_status": "deferred-to-round-3" },     // Workflow
+    "P7.5": { "pluginRecommendations": [] },
+    "P8":   { "cicd": { /* 16 fields, full Round 1 spec */ }, "_v1_carryover": {} },
+    "P8.5": { "_status": "deferred-to-round-4" },     // Risks
+    "P9":   { "_status": "deferred-to-round-5" },     // Roadmap
+    "P10":  { "installedPlugins": [] },
+    "P10.5":{ "_status": "deferred-to-round-5" }      // Schema/API draft
+  },
+  "syntheses": { "P8": { "approvedAt": "...", "adjustments": [] } },
+  "dependencies": { "P8": ["P0.willDeploy", "P0.teamSize", "P3.databaseHost"] }
+}</code></pre>
+      <strong>P8.cicd field set (16):</strong> <code>provider</code>, <code>triggers[]</code>, <code>requiredPreMergeChecks[]</code>, <code>coverage{threshold,scope,blocking}</code>, <code>envLadder[]</code>, <code>autoDeploy</code>, <code>rollback{strategy,automation}</code>, <code>secrets{manager,rotation}</code>, <code>notifications{channels[],events[]}</code>, <code>buildMatrix{os[],languageVersions,parallelization}</code>, <code>caching{deps,build,dockerLayers,remote}</code>, <code>timeBudget{perPipelineMinutes,blockingThresholdMinutes}</code>, <code>releasePipeline{separate,triggeredBy,convention}</code>, <code>deployCadence</code>; plus <code>_v1_carryover</code> for the existing Q5.1/Q5.2/Q5.3 answers.
+      <br><br>
+      <strong>Hard cutover policy (Item 9 + Item 10 confirmed):</strong> v1 callers stay on onboard 1.10.0 forever. v2 callers (greenfield 3.0+) use onboard 2.x. <code>onboard:generate</code> rejects v1 input with an error pointing callers at onboard 1.x. No migration helper ships in any release.
+      <br><br>
+      <strong>CI provider scope for Round 1:</strong> GitHub Actions templates only. Wizard captures the <code>provider</code> answer for all values, but non-GHA selections produce a note + skip CI/CD generation in onboard's v0. Other providers land in Round 6.
+      <br><br>
+      <strong>Adjust dialog implementation:</strong> inline in <code>synthesis-review/SKILL.md</code> (Step 4). Calls <code>superpowers:brainstorming</code> via Skill tool, then <code>mattpocock-skills:grill-me</code>, then writes the adjusted answer back to context. Falls back to inline mini-dialog if either plugin is missing.
+      <br><br>
+      <strong>Synthesis HTML templates:</strong> centralized at <code>greenfield/skills/synthesis-review/references/templates/p&lt;N&gt;-&lt;name&gt;.html</code>. Round 1 ships <code>p8-cicd.html</code>; later rounds add their own files in the same directory.
+    </div>
+  </div>
+
+  <div class="log-entry">
     <div class="meta">2026-05-13 · SESSION CLOSE · Pickup brief for next session</div>
     <div class="body">
       <strong>Where to resume:</strong> Round 1 planning. Three open tasks staged:
       <ol>
-        <li><strong>Concrete file list for Round 1</strong> — every SKILL.md, agent, template, and config file Round 1 will create or modify (CI/CD wizard expansion + Phase 1.8 synthesis-review infrastructure).</li>
-        <li><strong>Branch base decision</strong> — current branch is <code>feat/greenfield-1.2</code> (5 commits ahead of main, contains plugin-install fixes + mattpocock-skills port). Round 1 should branch from main, from this branch, or rebase strategy?</li>
-        <li><strong>onboard 2.0 contract</strong> — document the new context shape the wizard produces (P0/P0.5/P1/P3/P4/P6/P8/P8.5/P9 outputs) so onboard's generator can be developed in parallel.</li>
+        <li><strong>Concrete file list for Round 1</strong> — every SKILL.md, agent, template, and config file Round 1 will create or modify (CI/CD wizard expansion + Phase 1.8 synthesis-review infrastructure). <span style="color: var(--accent);">[RESOLVED — see ROUND 1 LOCKED entry above.]</span></li>
+        <li><strong>Branch base decision</strong> — current branch is <code>feat/greenfield-1.2</code> (5 commits ahead of main, contains plugin-install fixes + mattpocock-skills port). Round 1 should branch from main, from this branch, or rebase strategy? <span style="color: var(--accent);">[RESOLVED — stay on <code>feat/greenfield-1.2</code>; subsume 1.2 into 3.0.0-alpha.1.]</span></li>
+        <li><strong>onboard 2.0 contract</strong> — document the new context shape the wizard produces (P0/P0.5/P1/P3/P4/P6/P8/P8.5/P9 outputs) so onboard's generator can be developed in parallel. <span style="color: var(--accent);">[RESOLVED — schema locked; hard cutover, v1 callers stay on onboard 1.x.]</span></li>
       </ol>
       <strong>Locked decisions to honor in Round 1:</strong>
       <ul>

@@ -35,7 +35,8 @@ Read `.claude/greenfield-state.json`. Expected schema:
   "version": 1,
   "createdAt": "ISO-8601 timestamp",
   "updatedAt": "ISO-8601 timestamp",
-  "currentPhase": "phase-1-context-gathering | phase-1.5-architectural-research | phase-2-scaffold | phase-3a-plugin-discovery | phase-3b-tooling-generation | phase-4-lifecycle-setup | complete",
+  "currentPhase": "phase-1-context-gathering | phase-1.8-synthesis-review | phase-1.5-architectural-research | phase-1.7-grill-spec | phase-2-scaffold | phase-3a-plugin-discovery | phase-3b-tooling-generation | phase-4-lifecycle-setup | complete",
+  "currentSynthesisPhase": "set only when currentPhase === 'phase-1.8-synthesis-review'; identifies which phaseId is being reviewed",
   "currentStep": "step-identifier (skill-specific)",
   "completedSteps": ["list of completed step identifiers"],
   "context": { /* partial context object, grows as wizard progresses */ },
@@ -102,6 +103,34 @@ Wait for explicit confirmation. If the user wants to review first, they can cat 
 
 ---
 
+## Step 4.5: Granularity prompt (when resuming mid-step)
+
+If the resume point is mid-step rather than at a clean step boundary, ask the developer how they want to re-enter. A mid-step resume is detected when:
+
+- `currentStep` matches a sub-step within a phase (e.g., the wizard was paused at `step-5-cicd-q5-9` rather than at the boundary `step-5-cicd-complete`)
+- `currentPhase === "phase-1.8-synthesis-review"` AND `currentSynthesisPhase` is set AND `context.syntheses[currentSynthesisPhase].adjustments.length < <expected section count>`
+
+In those cases, prompt via `AskUserQuestion`:
+
+```
+question: "Where would you like to pick up?"
+options:
+  - "Continue at the next question (Recommended)" — picks up exactly where the session paused
+  - "Restart this step from the beginning" — re-asks everything in the current step;
+    captured answers are preserved but the wizard re-walks them so you can confirm
+  - "Show me what was captured" — read-only preview of `context` for the current step;
+    after preview, the prompt re-appears
+```
+
+Default to "continue" if the developer skips. On "restart this step":
+
+- For wizard steps: clear the step's entry from `completedSteps`, reset `currentStep` to the step's first sub-question, KEEP the captured `context` values (the wizard re-walks them as confirmations; the developer can override).
+- For synthesis-review: clear `context.syntheses[currentSynthesisPhase].adjustments`, reset to Section 1 of the synthesis walk.
+
+Checkpoint the cleared/reset state immediately before dispatching, so an abort during the restart leaves a clean resume point.
+
+If the resume point is AT a step boundary (clean `completedSteps` membership for everything prior, ready to start the next step), skip this prompt and proceed directly to Step 5.
+
 ## Step 5: Dispatch to the correct skill at the right step
 
 Based on `currentPhase`, load the appropriate skill and fast-forward to `currentStep`.
@@ -109,7 +138,9 @@ Based on `currentPhase`, load the appropriate skill and fast-forward to `current
 | currentPhase | Skill to invoke | Notes |
 |---|---|---|
 | `phase-1-context-gathering` | `context-gathering` skill | Skill's flow section must support entering at any step by checking `completedSteps` |
+| `phase-1.8-synthesis-review` | `synthesis-review` skill | Resume the per-phase synthesis walk. Read `currentSynthesisPhase` from state to know which phaseId is in progress (Round 1: only `"P8"`). Skill re-renders the synthesis HTML if missing, then resumes the Approve/Adjust/Skip walk at the next un-decided section. |
 | `phase-1.5-architectural-research` | `context-gathering` skill (new sub-section) | Resume deep-research on `parkedQuestions` |
+| `phase-1.7-grill-spec` | `grill-spec` skill | Resume at the partial step within grilling (Step 2 backend-detect, Step 3 inline-walk, Step 4 conflict-resolve, Step 5 re-confirm). |
 | `phase-2-scaffold` | `scaffolding` skill | Skill checks which sub-steps are complete (pre-validation, scaffold, git setup, verify) |
 | `phase-3a-plugin-discovery` | `plugin-discovery` skill | Resume at catalog-match, user-selection, or install step |
 | `phase-3b-tooling-generation` | `tooling-generation` skill | Resume at analysis, onboard-call, or greenfield-specific-artifacts |

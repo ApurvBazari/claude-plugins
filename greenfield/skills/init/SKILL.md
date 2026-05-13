@@ -65,7 +65,8 @@ Greenfield writes to `.claude/greenfield-state.json` at every natural checkpoint
   "version": 1,
   "createdAt": "ISO-8601 timestamp",
   "updatedAt": "ISO-8601 timestamp",
-  "currentPhase": "phase-1-context-gathering | phase-1.5-architectural-research | phase-1.7-grill-spec | phase-2-scaffold | phase-3a-plugin-discovery | phase-3b-tooling-generation | complete",
+  "currentPhase": "phase-1-context-gathering | phase-1.8-synthesis-review | phase-1.5-architectural-research | phase-1.7-grill-spec | phase-2-scaffold | phase-3a-plugin-discovery | phase-3b-tooling-generation | complete",
+  "currentSynthesisPhase": "P8 (only set when currentPhase === 'phase-1.8-synthesis-review'; identifies which phaseId is being reviewed; cleared on return)",
   "currentStep": "skill-specific step identifier",
   "completedSteps": ["list of completed step identifiers"],
   "context": { /* partial context object, grows as wizard progresses */ },
@@ -108,7 +109,8 @@ The skill handles:
 - Tech stack discussion + web research via the `stack-researcher` agent
 - Project details (database, auth, deploy, monitoring, etc.)
 - Workflow preferences (testing, style, security, autonomy)
-- CI/CD and auto-evolution preferences
+- CI/CD and auto-evolution preferences (Step 5 — expanded in greenfield 3.0 to 17 questions covering provider, gates, env ladder, secrets, notifications, build matrix, caching, release pipeline, deploy cadence)
+- **Phase 1.8 synthesis review for P8** — runs inline at the end of Step 5 via the `synthesis-review` skill. Renders `docs/architecture/p8-cicd.html` in the scaffolded project, walks the developer through Approve/Adjust/Skip per section, then returns to Step 6. Round 1's only synthesis pass; later rounds add per-phase synthesis at the end of their respective steps.
 - **Feature decomposition** (mandatory — downstream phases depend on it)
 - Confirmation summary
 - Phase 1.5 Architectural Research (conditional — only if parked questions exist)
@@ -319,6 +321,18 @@ Every phase has its own failure modes. The table below is the authoritative per-
 | Grilling exposes a stack-level conflict | Spec was inconsistent | Step 4 conflict resolution. Options: auto-fix / drop feature / route back to Phase 1.5. Never silent. |
 | User abandons mid-grill (Ctrl-C) | Unexpected | State already checkpointed at category boundaries. `/greenfield:resume` picks up at the next un-asked category. |
 | Grilling extends past 10-minute timebox without convergence | User exploring deeply | Surface "extend or finish" prompt. If user finishes, capture remaining categories as parked questions. |
+
+### Phase 1.8: Synthesis Review
+
+| Failure | Cause | Recovery |
+|---|---|---|
+| Per-phase template missing (Round 1 only ships `p8-cicd.html`) | Synthesis invoked with a phaseId that has no template yet | `synthesis-review` returns `synthesisStatus: "no-template"`. Caller (context-gathering) logs a one-line note and continues. Do NOT fabricate sections. |
+| `superpowers:brainstorming` unavailable during Adjust | Plugin not installed | `synthesis-review` Step 5 skips Stage 1; uses the developer's adjustment intent verbatim. Records `via: "grill-me-only"` or `via: "inline-fallback"`. |
+| `mattpocock-skills:grill-me` unavailable during Adjust | Plugin not installed | `synthesis-review` Step 5 skips Stage 2; developer confirms candidate directly. Records `via: "brainstorming-only"` or `via: "inline-fallback"`. |
+| Both plugins unavailable | Bare-bones environment | Inline 3-question mini-dialog (see `synthesis-review/references/adjust-dialog-protocol.md § Inline fallback`). |
+| Developer abandons mid-synthesis-walk | Ctrl-C | State already checkpointed at each section's Approve/Adjust/Skip boundary. `/greenfield:resume` reads `currentSynthesisPhase` and re-enters synthesis-review at the next un-decided section. |
+| Adjust dialog loops more than 3 times on one section | Section needs deeper revisiting | Halt the section's loop; offer Skip with a note. Three adjustments without convergence is a sign the section needs a future session. |
+| Pre-commit hook installation fails | `.git/hooks/` missing or read-only | Tell the developer, continue the synthesis. Hook installation is best-effort — synthesis records still get written. |
 
 ### Phase 2: Scaffold
 
