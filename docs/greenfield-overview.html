@@ -796,6 +796,45 @@
   </div>
 
   <div class="log-entry">
+    <div class="meta">2026-05-13 · ROUND 2.5 LOCKED · Foundation pass — 8 cross-cutting decisions before Round 3</div>
+    <div class="body">
+      A post-Round-2 honest-assessment session (&ldquo;will devs use this? what's broken structurally?&rdquo;) surfaced 8 cross-cutting decisions that affect every remaining round. Locking them <strong>before</strong> Round 3 starts on P6/P7 prevents drift and avoids a much larger Round 6 cleanup. The consolidated retrofit work is scoped as <strong>Round 2.5 &ldquo;Foundation pass&rdquo;</strong> (~50-70 files).
+      <br><br>
+      <strong>The 8 decisions:</strong>
+      <ol>
+        <li><strong>Lite mode / on-ramp:</strong> defaults-driven skip. Every Q displays a smart default; Enter accepts, type to override. Synthesis HTMLs still produced. Adjust loop still offered. Preserves the &ldquo;deliberation is the thesis&rdquo; position while letting fast devs blast through.</li>
+        <li><strong>Defaults source:</strong> stack-derived from earlier answers; greenfield-opinionated fallback when no stack signal exists. Every Q in <code>question-bank.md</code> gets a <code>default:</code> derivation rule.</li>
+        <li><strong>Synthesis format:</strong> hybrid — independently authored markdown details + HTML executive summary per phase. PR reviewers get clean diffs; browser readers get richness. 2&times; authoring cost accepted; drift-check hook added between the two files.</li>
+        <li><strong>Approval semantics / late Adjust:</strong> stale-flag with explicit re-walk choice. When P3 is adjusted, downstream phases that reference changed fields are marked stale; on next entry the wizard prompts &ldquo;P8 references P3.databaseHost which changed — re-walk P8? Y/n&rdquo;. Requires dependency-graph traversal + field-level diff capture.</li>
+        <li><strong>Naming consistency:</strong> topic names everywhere. Drop P-codes from schema, code, filenames, dependency refs. <code>p3Data</code> → <code>dataArchitecture</code>; <code>p3-data.html</code> → <code>data-architecture.html</code>. User-facing prompts still say &ldquo;Step 3: Data Architecture&rdquo;. Eliminates the current 5-conventions-for-one-concept cost.</li>
+        <li><strong>Architectural Research positioning:</strong> split into two passes. Early <strong>Architectural Framing</strong> (new Step 2.5, 3-5 Qs: monolith/microservices/modular, deployment topology, scale target) informs P3-P9. Late <strong>Architectural Validation</strong> (renamed Step 10/11) catches gaps the framing missed. Wizard count 10 → 11.</li>
+        <li><strong>Adjust dialog / mattpocock-skills:</strong> build greenfield-owned <code>adjust-dialog</code> skill (5-category adversarial walk: scope / assumptions / alternatives / risks / dependencies). <strong>Remove <code>mattpocock-skills</code> from the marketplace entirely.</strong> Greenfield owns its core thesis end-to-end; no external plugin dependency for Adjust. The 4-plugin marketplace becomes 3 (or 4 once handoff merges).</li>
+        <li><strong>Synthesis directory naming:</strong> <code>docs/adr/</code> (was <code>docs/architecture/</code>) in scaffolded projects. Industry-standard ADR convention; instantly recognizable.</li>
+      </ol>
+      Plus state-JSON evolution policy: <strong>hard cutover during alpha; migrations from 3.0.0 stable onward</strong>. In-flight session breakage documented in CHANGELOG per alpha bump.
+      <br><br>
+      <strong>Round 2.5 PRE-tasks (deliverables before Round 3 begins):</strong>
+      <ol>
+        <li><strong>PRE-1 — Rename pass</strong> (Decision 5): topic names across <code>context-shape-v2.json</code>, all synthesis templates, dependencies.json examples, section-prompts.md, state-transitions enums in init/resume/check/grill-spec. ~25-30 files.</li>
+        <li><strong>PRE-2 — Architectural Research split</strong> (Decision 6): new Step 2.5 Framing + renamed Step 10/11 Validation. New synthesis pairs + schema keys for both.</li>
+        <li><strong>PRE-3 — Remove mattpocock-skills</strong> (Decision 7): delete plugin directory + marketplace.json entry; update root CLAUDE.md plugin count; clean greenfield catalog refs in grill-spec/SKILL.md and plugin-discovery.</li>
+        <li><strong>PRE-4 — Build <code>greenfield/skills/adjust-dialog/</code></strong> (Decision 7): 5-category adversarial walk; wire synthesis-review to use it.</li>
+        <li><strong>PRE-5 — Stale-flag mechanism</strong> (Decision 4): state JSON gets <code>phaseStatus</code> map; dependency-graph traversal logic in synthesis-review; phase entry-guard checks; Adjust dialog captures field-level diff. Retrofit Round 1+2 syntheses with stale-check guards.</li>
+        <li><strong>PRE-6 — Default-value derivation</strong> (Decisions 1+2): add <code>default:</code> rule to every Q in question-bank.md. Stack-derived logic + hardcoded fallback per Q.</li>
+        <li><strong>PRE-7 — Move synthesis dir to docs/adr/</strong> (Decision 8): update all template paths; update freshness pre-commit hook template; document in greenfield CLAUDE.md.</li>
+        <li><strong>PRE-8 — State JSON migration policy doc</strong>: hard cutover during alpha; stub migration framework for post-GA.</li>
+        <li><strong>PRE-9 — Synthesis MD companion templates</strong> (Decision 3): for each existing HTML template (p8/p3/p4 → cicd-and-delivery / data-architecture / api-integration), author the .md companion. Add drift-check hook between the two.</li>
+      </ol>
+      <br>
+      <strong>Honest-assessment context (why these decisions matter):</strong> The session that produced this lock started from a critique that greenfield's audience funnel is narrow (Claude Code users × greenfield projects × deliberation-tolerant × AI-tooling-curious × HTML-reading patient). Realistic adoption ceiling is hundreds, not thousands. The 8 decisions don't try to broaden the audience; they make the experience <em>for the chosen audience</em> rigorous and self-consistent. Lite mode (Decision 1) was deliberately scoped to &ldquo;skip with safety net&rdquo; rather than &ldquo;easy mode&rdquo; — the thesis is preserved.
+      <br><br>
+      Full file inventory + ordering + dependency map between PRE-tasks: see <code>docs/superpowers/specs/2026-05-13-greenfield-3.0-round2.5-design.md</code>.
+      <br><br>
+      Version target after Round 2.5 ships: <code>greenfield@3.0.0-alpha.3</code>, <code>onboard@2.0.0-alpha.3</code>. All rounds 3-6 continue to land on <code>feat/greenfield-1.2</code> per user direction.
+    </div>
+  </div>
+
+  <div class="log-entry">
     <div class="meta">2026-05-13 · SESSION CLOSE · Pickup brief for next session</div>
     <div class="body">
       <strong>Where to resume:</strong> Round 1 planning. Three open tasks staged:
