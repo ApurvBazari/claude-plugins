@@ -1,10 +1,10 @@
 # Inline Grill Fallback
 
-Used by `greenfield:grill-spec` when `mattpocock-skills:grill-me` isn't installed. This is the floor — a minimal version of the same decision-tree walk. The full version is richer; install `mattpocock-skills` for it.
+Used by `greenfield:grill-spec` when `greenfield/skills/adjust-dialog/` is unavailable. This is the floor — a minimal 5-category decision-tree walk. The full version (adjust-dialog) is more capable.
 
 ## Usage
 
-This file is loaded by `grill-spec/SKILL.md § Step 3` when the external skill isn't available. The grill-spec skill walks the categories below, asking one focused question per category, applying answers back to `greenfield-state.json.context`.
+This file is loaded by `grill-spec/SKILL.md § Step 3` when adjust-dialog isn't available. The grill-spec skill walks the categories below, asking one focused question per category, applying answers back to `greenfield-state.json.context`.
 
 ## Conversational frame
 
@@ -92,10 +92,10 @@ After all applicable categories run, hand control back to grill-spec Step 4 (con
 
 ## What this fallback intentionally does NOT do
 
-The full `mattpocock-skills:grill-me` skill is more capable in three ways the inline fallback skips:
+The full `greenfield/skills/adjust-dialog/` skill is more capable in three ways the inline fallback skips:
 
-1. **Recursive decision-tree expansion** — full version drills into a branch indefinitely. Inline asks one question per category and moves on.
-2. **Cross-category dependency analysis** — full version reasons about how an answer in category 2 changes the question space for category 4. Inline treats categories as independent.
-3. **Per-question recommended answer** — full version provides the user with a recommended answer alongside each question. Inline lets the user answer cold.
+1. **Recursive decision-tree expansion** — adjust-dialog drills into a branch with follow-up probes per the 5-category protocol. Inline asks one question per category and moves on.
+2. **Cross-category dependency analysis** — adjust-dialog reasons about how an answer in one category changes the question space for another. Inline treats categories as independent.
+3. **Per-question recommended answer** — adjust-dialog provides structured alternatives (Alternatives category). Inline lets the user answer cold.
 
-If the user finds the inline fallback insufficient, the surfaced note in Step 2 already points them to install the upstream skill. Don't try to replicate the full pattern here — the floor is the floor.
+The floor is the floor. Don't try to replicate the full protocol here.

@@ -35,8 +35,9 @@ These plugins reinforce the discipline of *thinking before coding* — both for 
 
 | Plugin | Marketplace | What it does | Key skills |
 |---|---|---|---|
-| **grill-me** (mattpocock-skills) | `mattpocock-skills@apurvbazari-plugins` _(add: `ApurvBazari/claude-plugins`; vendored subset of `mattpocock/skills` since upstream has no `marketplace.json` — see `mattpocock-skills/README.md` for full provenance)_ | Relentless interview that walks every decision branch in a plan until shared understanding is reached. Drives greenfield's Phase 1.7 grill-spec gate when installed. | `grill-me` |
 | **andrej-karpathy-skills** | `andrej-karpathy-skills@karpathy-skills` _(add: `forrestchang/andrej-karpathy-skills`)_ | Bakes Karpathy's 4 LLM-coding principles (Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven Execution) into Claude Code as a CLAUDE.md-merge skill | `karpathy-guidelines` |
+
+> **Note on spec validation**: Greenfield's pre-scaffold grill-spec gate (Phase 1.7) now uses the built-in `greenfield/skills/adjust-dialog/` skill for its 5-category adversarial walk. No external plugin is needed for this functionality.
 
 ## Stack-Conditional Plugins
 
@@ -87,9 +88,7 @@ These plugins reinforce the discipline of *thinking before coding* — both for 
 
 For projects following an ADR-driven or structured design-doc `docs/` discipline.
 
-| Plugin | Marketplace | Condition | What it does |
-|---|---|---|---|
-| **grill-with-docs** (mattpocock-skills) | `mattpocock-skills@apurvbazari-plugins` _(same plugin as the grill-me row above — `mattpocock-skills` contributes 8 vendored skills including both `grill-me` and `grill-with-docs`)_ | hasDocsDiscipline = true | Requirements interview that maintains ADRs and CONTEXT.md alongside design decisions |
+> **Note**: The vendored `grill-with-docs` skill has been removed from this marketplace. Users wanting ADR-maintaining requirements interviews can install `mattpocock/skills` upstream directly. Greenfield's own Adjust dialog (`greenfield/skills/adjust-dialog/`) covers the adversarial review use case for in-session synthesis work.
 
 ### Testing (testingPhilosophy = "tdd")
 
@@ -117,7 +116,7 @@ The catalog's condition expressions reference these context flags. Most are popu
 | `willDeploy` | Q3.4 (deploy target ≠ "none") | `false` | VCS row |
 | `securitySensitivity` | Q4.4 | `"baseline"` | Security row |
 | `testingPhilosophy` | Q4.3 | `"pragmatic"` | Testing row |
-| `hasDocsDiscipline` | Q4.5 (workflow preferences) — `true` if user mentions ADRs, CONTEXT.md, or a structured design-doc workflow, OR if `hasTeam: true` AND `isProduction: true` | `false` | Documentation Rigor row |
+| `hasDocsDiscipline` | Q4.5 (workflow preferences) — `true` if user mentions ADRs, CONTEXT.md, or a structured design-doc workflow, OR if `hasTeam: true` AND `isProduction: true` | `false` | Documentation Rigor section (reserved — no current catalog entry; `grill-with-docs` vendor removed) |
 | `wantsValidationGate` | Defaults to `true` for `isProduction: true` projects; user can opt out during the plugin-discovery checklist | `isProduction` | gates whether greenfield's Phase 1.7 grill-spec runs by default |
 
 ### Priority Order in Checklist
@@ -155,11 +154,9 @@ Each plugin covers specific capabilities. When a plugin is installed, its capabi
 | **github** | `vcs-integration` |
 | **gitlab** | `vcs-integration` |
 | **notify** | `session-monitoring` |
-| **mattpocock-skills (grill-me)** | `plan-validation` |
-| **mattpocock-skills (grill-with-docs)** | `requirements-discovery`, `adr-maintenance` |
 | **andrej-karpathy-skills** | `coding-discipline` |
 
-> **Disambiguation note**: `superpowers` covers `planning` (the *generative* capability — drafting a plan). `mattpocock-skills:grill-me` covers `plan-validation` (the *critical* capability — stress-testing an existing plan). Both can coexist; they're complementary, not redundant.
+> **Note on plan-validation capability**: Greenfield's built-in `adjust-dialog` skill (Phase 1.7 + synthesis Adjust path) covers the `plan-validation` use case. No external plugin needed.
 
 ### How to Build the coveredCapabilities List
 

@@ -97,10 +97,9 @@ After every section is walked, set `context.syntheses[phaseId] = { approvedAt: <
 
 Refer to `references/adjust-dialog-protocol.md` for the full protocol. Summary:
 
-1. Detect `superpowers:brainstorming` availability via the Skill tool. If present, invoke it with the current section's content and the developer's stated adjustment intent. Capture the explored alternatives.
-2. Detect `mattpocock-skills:grill-me` availability. If present, invoke it to adversarially verify the brainstormed answer (catch hidden contradictions, missing dependencies).
-3. If either plugin is missing, fall back to the inline 3-question mini-dialog documented in `references/adjust-dialog-protocol.md § Inline fallback`.
-4. Write the final adjusted answer back into `context.phases[phaseId]`. Record `via: "brainstorming+grill-me" | "brainstorming-only" | "grill-me-only" | "inline-fallback"`.
+1. Invoke `greenfield/skills/adjust-dialog/` via the Skill tool, passing `phaseId`, `sectionId`, the original value, the developer's stated intent, and all current `listedPhases`. The adjust-dialog skill runs a 5-category adversarial walk (Scope, Assumptions, Alternatives, Risks, Dependencies).
+2. If the Skill tool errors (skill unavailable), fall back to the inline 3-question mini-dialog documented in `references/adjust-dialog-protocol.md § Fallback`.
+3. Write the final adjusted answer back into `context.phases[phaseId]`. Record `via: "adjust-dialog" | "inline-fallback"`.
 
 ## Step 6: First-run freshness hook installation (one-time)
 

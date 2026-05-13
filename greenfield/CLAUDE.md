@@ -17,8 +17,8 @@ Phase 1: Context Gathering ──→ context-gathering skill (adaptive wizard)
      │
      ▼
 Phase 1.7: Pre-Scaffold Spec Grilling ──→ grill-spec skill
-     │                                       ├── If installed: mattpocock-skills:grill-me
-     │                                       └── Else: inline fallback (5-category walk)
+     │                                       ├── adjust-dialog skill (5-category adversarial walk)
+     │                                       └── Else: inline fallback (if adjust-dialog unavailable)
      │                                       Cross-checks against context.syntheses.* (Round 1: just P8)
      ▼
 Phase 2: Scaffold ──→ scaffolding skill (execute scaffold + git setup)
@@ -51,7 +51,7 @@ Greenfield only generates two artifacts that require scaffold-specific knowledge
 
 - `context-gathering/SKILL.md` — Phase 1: adaptive state-machine wizard (3.0 Round 2: 10 wizard steps; Step 3 = P3 Data Architecture (12 Qs), Step 4 = P4 API & Integration (10 Qs), Step 7 = P8 CI/CD (17 Qs from Round 1). Total ~69 wizard questions; developer answers 30-55 depending on stack + deploy)
 - `synthesis-review/SKILL.md` — Phase 1.8: per-phase synthesis review. Renders `docs/architecture/p<N>-<name>.html` in the scaffolded project, walks Approve/Adjust/Skip per section, writes `dependencies.json` sidecar, installs freshness hook. Invoked inline by `context-gathering` at the end of each major step that has a synthesis template (Round 2: P3 at Step 3, P4 at Step 4, P8 at Step 7)
-- `grill-spec/SKILL.md` — Phase 1.7: pre-scaffold validation gate (5-category decision-tree walk; uses `mattpocock-skills:grill-me` if installed, falls back to inline). Cross-checks against `context.syntheses.*`
+- `grill-spec/SKILL.md` — Phase 1.7: pre-scaffold validation gate (5-category decision-tree walk via `greenfield/skills/adjust-dialog/`; falls back to inline if unavailable). Cross-checks against `context.syntheses.*`
 - `scaffolding/SKILL.md` — Phase 2: execute scaffold, git setup, verify Hello World
 - `tooling-generation/SKILL.md` — Phase 3: prepare context, call enriched onboard, generate init.sh + feature-list.json
 - `plugin-discovery/SKILL.md` — Phase 3 (first step): curated catalog + web search, install plugins, compile capabilities

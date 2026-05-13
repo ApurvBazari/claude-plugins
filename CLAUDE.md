@@ -1,6 +1,6 @@
 # claude-plugins
 
-Claude Code plugin marketplace by Apurv Bazari. Four plugins — all markdown + shell + JSON, no compiled code.
+Claude Code plugin marketplace by Apurv Bazari. Four plugins — all markdown + shell + JSON, no compiled code. (onboard, greenfield, notify, handoff — mattpocock-skills removed in Round 2.5; users wanting those skills install upstream directly.)
 
 ## Repository
 
@@ -27,11 +27,8 @@ Claude Code plugin marketplace by Apurv Bazari. Four plugins — all markdown + 
          │      ├── skills/ (setup, status, uninstall, wizard)
          │      └── scripts/ (notify, install-notifier, test-notification)
          │
-         └──→ mattpocock-skills/          ← vendored subset of mattpocock/skills (MIT)
-                ├── skills/ (grill-me, grill-with-docs, setup-matt-pocock-skills,
-                │           triage, prototype, zoom-out, handoff,
-                │           improve-codebase-architecture)
-                └── scripts/ (sync-from-upstream)
+         └──→ handoff/                   ← session handoff continuity
+                └── skills/ (save, status, resume)
 ```
 
 ## Plugin Structure Convention

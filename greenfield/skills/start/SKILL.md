@@ -130,8 +130,8 @@ Use the `grill-spec` skill. It's a validation gate that walks every spec decisio
 The skill is opt-in by default for non-production projects (the user is offered "Run pre-scaffold validation? (Recommended) / Skip"). For production projects (`isProduction: true`) the gate runs by default; the user can still opt out per-run.
 
 Behavior:
-- If `mattpocock-skills:grill-me` is installed, grill-spec invokes it as the grilling backend.
-- Otherwise grill-spec falls back to an inline minimal pattern (`grill-spec/references/inline-grill-fallback.md`).
+- grill-spec invokes the greenfield-owned `greenfield/skills/adjust-dialog/` skill for its 5-category adversarial walk.
+- If adjust-dialog is unavailable, grill-spec falls back to an inline minimal pattern (`grill-spec/references/inline-grill-fallback.md`).
 - Either way, the spec is hardened in `greenfield-state.json.context` before Phase 2 starts.
 - The skill can route back to Phase 1.5 if grilling exposes a question that warrants deep research.
 
@@ -316,8 +316,8 @@ Every phase has its own failure modes. The table below is the authoritative per-
 
 | Failure | Cause | Recovery |
 |---|---|---|
-| `mattpocock-skills:grill-me` not installed | User hasn't installed the optional companion plugin | Fall back to inline grill (`references/inline-grill-fallback.md`). One-line note to user; never crash the run. |
-| External grill-me Skill call errors mid-run | Slash form drift, plugin bug | Same fallback as above; log the error to `greenfield-state.json.research.notes` for later inspection. |
+| `greenfield/skills/adjust-dialog/` unavailable | Skill not yet loaded in this session | Fall back to inline grill (`grill-spec/references/inline-grill-fallback.md`). One-line note to user; never crash the run. |
+| adjust-dialog Skill call errors mid-run | Skill tool error or session issue | Same fallback as above; log the error to `greenfield-state.json.research.notes` for later inspection. |
 | Grilling exposes a stack-level conflict | Spec was inconsistent | Step 4 conflict resolution. Options: auto-fix / drop feature / route back to Phase 1.5. Never silent. |
 | User abandons mid-grill (Ctrl-C) | Unexpected | State already checkpointed at category boundaries. `/greenfield:pickup` picks up at the next un-asked category. |
 | Grilling extends past 10-minute timebox without convergence | User exploring deeply | Surface "extend or finish" prompt. If user finishes, capture remaining categories as parked questions. |
@@ -327,9 +327,7 @@ Every phase has its own failure modes. The table below is the authoritative per-
 | Failure | Cause | Recovery |
 |---|---|---|
 | Per-phase template missing (Round 2 ships `p3-data.html`, `p4-api.html`, `p8-cicd.html`; future phases have no template yet) | Synthesis invoked with a phaseId that has no template yet | `synthesis-review` returns `synthesisStatus: "no-template"`. Caller (context-gathering) logs a one-line note and continues. Do NOT fabricate sections. |
-| `superpowers:brainstorming` unavailable during Adjust | Plugin not installed | `synthesis-review` Step 5 skips Stage 1; uses the developer's adjustment intent verbatim. Records `via: "grill-me-only"` or `via: "inline-fallback"`. |
-| `mattpocock-skills:grill-me` unavailable during Adjust | Plugin not installed | `synthesis-review` Step 5 skips Stage 2; developer confirms candidate directly. Records `via: "brainstorming-only"` or `via: "inline-fallback"`. |
-| Both plugins unavailable | Bare-bones environment | Inline 3-question mini-dialog (see `synthesis-review/references/adjust-dialog-protocol.md § Inline fallback`). |
+| `greenfield/skills/adjust-dialog/` unavailable during Adjust | Skill not yet loaded | `synthesis-review` Step 5 falls back to the inline 3-question mini-dialog (see `synthesis-review/references/adjust-dialog-protocol.md § Fallback`). Records `via: "inline-fallback"`. |
 | Developer abandons mid-synthesis-walk | Ctrl-C | State already checkpointed at each section's Approve/Adjust/Skip boundary. `/greenfield:pickup` reads `currentSynthesisPhase` and re-enters synthesis-review at the next un-decided section. |
 | Adjust dialog loops more than 3 times on one section | Section needs deeper revisiting | Halt the section's loop; offer Skip with a note. Three adjustments without convergence is a sign the section needs a future session. |
 | Pre-commit hook installation fails | `.git/hooks/` missing or read-only | Tell the developer, continue the synthesis. Hook installation is best-effort — synthesis records still get written. |

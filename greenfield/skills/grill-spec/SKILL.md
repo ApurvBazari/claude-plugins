@@ -43,16 +43,14 @@ Apply the AskUserQuestion single-option guard from `.claude/rules/ask-user-quest
 
 If the user picks "Skip", write `"phase-1.7-grill-spec-skipped"` to `completedSteps`, set `currentPhase: "phase-2-scaffold"`, atomic write, return.
 
-## Step 2: Detect grilling backend
+## Step 2: Run the grilling walk
 
-The grilling can run via the external `mattpocock-skills:grill-me` skill (full version) or fall back to an inline minimal pattern. Both produce the same hardened spec.
+The grilling runs via the greenfield-owned `greenfield/skills/adjust-dialog/` skill (5-category adversarial walk: Scope, Assumptions, Alternatives, Risks, Dependencies). Invoke it via the Skill tool with the gathered context as input.
 
-Try invoking `mattpocock-skills:grill-me` via the Skill tool with the gathered context as input. Wrap the call in error handling:
+- If the Skill tool returns successfully: the dialog runs all 5 categories, then yields back. Skip Step 3 and continue to Step 4.
+- If the Skill tool errors (skill not yet installed in this session / call failure): log a one-line note to the user — *"Using built-in grill (adjust-dialog skill unavailable)"* — then load `references/inline-grill-fallback.md` and follow it through Step 3.
 
-- If the Skill tool returns successfully: the external skill runs the full grill, then yields back. Skip Step 3 and continue to Step 4.
-- If the Skill tool errors (skill not installed / different slash form / call failure): log a one-line note to the user — *"Using built-in grill (recommend installing `mattpocock-skills` for the full version)"* — then load `references/inline-grill-fallback.md` and follow it through Step 3.
-
-Never crash the greenfield run if the external skill is unavailable — the inline fallback is the floor.
+Never crash the greenfield run if the skill is unavailable — the inline fallback is the floor.
 
 ## Step 3: Walk the decision tree (inline path only)
 

@@ -1,6 +1,6 @@
 # Spec Decision Tree
 
-The categories `greenfield:grill-spec` walks during the inline fallback path. The external `mattpocock-skills:grill-me` skill, when installed, drives its own decision tree — this file is consulted only by the inline path (see `references/inline-grill-fallback.md`).
+The categories `greenfield:grill-spec` walks during the inline fallback path (used when `greenfield/skills/adjust-dialog/` is unavailable). When adjust-dialog is available, it drives its own 5-category walk — this file is consulted only by the inline path (see `references/inline-grill-fallback.md`).
 
 ## Categories (in order)
 
