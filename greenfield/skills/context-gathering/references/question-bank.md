@@ -230,7 +230,14 @@ Writes to `context.phases.P4.*`. See `onboard/skills/generate/references/context
 
 ---
 
-## Category 3: Project Details (adaptive)
+## Category 3 (residual): Remaining Project Details
+
+> **Round 2 note (2026-05-13):** Several Cat 3 questions have been moved to Phase P3 (Data Architecture) and Phase P4 (API & Integration). The 13 questions below stay here as a residual step until later rounds re-home them:
+> - **Moved to P3:** Q3.2 (DB) → P3.Q2+Q3, Q3.16 (codegen) → P3.Q10, Q3.17 (file storage) → P3.Q9
+> - **Moved to P4:** Q3.5 (external APIs) → P4.Q10, Q3.7 (API style) → P4.Q2, Q3.8 (API docs) → P4.Q3, Q3.18 (bg jobs) → P4.Q7
+> - **Staying here (Cat 3 residual):** Q3.1, Q3.3, Q3.4, Q3.6, Q3.9, Q3.10, Q3.11, Q3.12, Q3.13, Q3.14, Q3.15, Q3.F1, Q3.F2 — destined for Rounds 3–6.
+
+This category becomes wizard Step 5 of 9 in Round 2.
 
 ### Q3.1: "What's the scale of this project?"
 - **Type**: Choice
@@ -238,12 +245,6 @@ Writes to `context.phases.P4.*`. See `onboard/skills/generate/references/context
 - **Condition**: Always
 - **Updates**: `isProduction`, `hasTeam`, `teamSize`
 - **Downstream**: Agent count, rule strictness, PR template complexity
-
-### Q3.2: "Do you need a database?"
-- **Type**: Choice
-- **Options**: "PostgreSQL" | "MySQL" | "SQLite" | "MongoDB" | "Not sure — recommend" | "No database"
-- **Condition**: If project involves data persistence (inferred from Q1)
-- **Updates**: `hasDatabase`, `databaseType`
 
 ### Q3.3: "How do you want to handle authentication?"
 - **Type**: Choice
@@ -258,28 +259,11 @@ Writes to `context.phases.P4.*`. See `onboard/skills/generate/references/context
 - **Updates**: `willDeploy`, `deployTarget`
 - **Critical skip**: If "Not deploying" → `willDeploy = false`, skip ALL Category 5 questions
 
-### Q3.5: "Any specific APIs or services you'll integrate with?"
-- **Type**: Open-ended
-- **Condition**: `hasFrontend || hasBackend`
-- **Updates**: `externalAPIs`
-
 ### Q3.6: "What's your monitoring and observability strategy?"
 - **Type**: Multi-select
 - **Options**: "Logging framework" | "Error tracking (Sentry, etc.)" | "Analytics" | "Uptime monitoring" | "Not needed yet"
 - **Condition**: `isProduction`
 - **Updates**: `monitoring`
-
-### Q3.7: "What's your API design approach?"
-- **Type**: Choice
-- **Options**: "REST" | "GraphQL" | "tRPC / RPC" | "No API layer" | "Not sure — recommend"
-- **Condition**: `hasBackend || hasAPI`
-- **Updates**: `apiStyle`, `hasAPI`
-
-### Q3.8: "Do you want auto-generated API documentation?"
-- **Type**: Choice
-- **Options**: "OpenAPI/Swagger" | "GraphQL playground" | "Auto from types" | "Manual" | "No docs"
-- **Condition**: Q3.7 ≠ "No API layer"
-- **Updates**: `apiDocsTool`
 
 ### Q3.9: "How do you want to manage environment variables and secrets?"
 - **Type**: Choice
@@ -322,24 +306,6 @@ Writes to `context.phases.P4.*`. See `onboard/skills/generate/references/context
 - **Options**: "Single package" | "Monorepo" (follow-up: which packages?) | "Not sure — recommend"
 - **Condition**: Always
 - **Updates**: `isMonorepo`, `monorepoPackages`
-
-### Q3.16: "Do you use code generation tools?"
-- **Type**: Multi-select
-- **Options**: "Prisma generate" | "GraphQL codegen" | "OpenAPI TypeScript" | "Protocol Buffers" | "None"
-- **Condition**: Applicable to stack
-- **Updates**: `codegenTools`
-
-### Q3.17: "Will your app need file storage or asset management?"
-- **Type**: Choice
-- **Options**: "Cloud storage (S3, Blob, R2)" | "Local filesystem" | "CDN for static assets" | "Both cloud + CDN" | "No file handling"
-- **Condition**: `hasBackend || hasFrontend`
-- **Updates**: `storageStrategy`
-
-### Q3.18: "Does your app need background processing or scheduled jobs?"
-- **Type**: Choice
-- **Options**: "Queue system (BullMQ, Celery, etc.)" | "Cron/scheduled jobs" | "Both" | "Not needed"
-- **Condition**: `hasBackend`
-- **Updates**: `backgroundJobs`
 
 ### Q3.F1: "What's your styling approach?" (frontend only)
 - **Type**: Choice
@@ -569,11 +535,11 @@ Writes to `context.phases.P4.*`. See `onboard/skills/generate/references/context
 
 | Developer says | Questions skipped |
 |---|---|
-| CLI tool (appType = cli) | Q3.3, Q3.4 deploy*, Q3.6-Q3.8, Q3.12-Q3.14, Q3.17, Q3.F1, Q3.F2, Q5.1, Q5.3 |
-| Side project, not deploying | Q5.1, Q5.3, Q3.6, Q3.11 (auto deps) |
-| API-only backend | Q3.F1, Q3.F2, Q3.12-Q3.14 |
-| Solo developer | Q5.3 (PR review) |
-| No database | Q3.2 follow-ups, Q3.16 (Prisma) |
-| No API layer | Q3.8 |
+| CLI tool (appType = cli) | Q3.3, Q3.4 deploy*, Q3.6, P3 entire phase, P4 entire phase, Q3.12-Q3.14, Q3.F1, Q3.F2, Q5.1, Q5.3 |
+| Side project, not deploying | Q5.1, Q5.3, Q3.6, Q3.11 (auto deps), P3.Q11 (backup), P4.Q4 (versioning), P4.Q5 (rate limit) |
+| API-only backend | Q3.F1, Q3.F2, Q3.12-Q3.14, P4.Q8 (real-time) |
+| Solo developer | Q5.3 (PR review), Q5.13 (notifications warning) |
+| No database (P3.Q1 = no) | P3.Q2–Q7 |
+| No API layer (P4.Q1 = no) | P4.Q2–Q9 |
 
 *When `willDeploy = false`, the entire Category 5 (CI/CD) except Q5.2 is skipped.
