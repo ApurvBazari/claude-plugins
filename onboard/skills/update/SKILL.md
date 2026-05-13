@@ -24,7 +24,7 @@ Read: .claude/onboard-meta.json
 
 **If not found**:
 
-> This project hasn't been set up with onboard yet. Run `/onboard:init` first to generate your Claude tooling.
+> This project hasn't been set up with onboard yet. Run `/onboard:start` first to generate your Claude tooling.
 
 Stop here.
 
@@ -595,4 +595,4 @@ Update `.claude/onboard-meta.json`:
 > Files unchanged:
 > - [List files that were up-to-date or skipped]
 >
-> Run `/onboard:status` to verify the health of your setup.
+> Run `/onboard:check` to verify the health of your setup.

@@ -18,15 +18,15 @@ claude plugin install greenfield@apurvbazari-plugins
 
 All skills are invoked with the `/greenfield:<name>` slash syntax.
 
-### `/greenfield:init` *(destructive — user-invoked only)*
+### `/greenfield:start` *(destructive — user-invoked only)*
 
-Main entry point. Runs the full 3-phase guided workflow, with checkpoints written to `.claude/greenfield-state.json` after every step so the workflow is interruption-safe. Detects an in-flight session at startup and offers `/greenfield:resume` instead of restarting.
+Main entry point. Runs the full 3-phase guided workflow, with checkpoints written to `.claude/greenfield-state.json` after every step so the workflow is interruption-safe. Detects an in-flight session at startup and offers `/greenfield:pickup` instead of restarting.
 
-### `/greenfield:resume`
+### `/greenfield:pickup`
 
 Resume an in-progress session from the last checkpoint. Reads `.claude/greenfield-state.json`, shows you where you left off (which phase, which step, what's next), and picks up from that point. Works across fresh Claude Code sessions — close your laptop mid-wizard and come back days later.
 
-### `/greenfield:status`
+### `/greenfield:check`
 
 Project health check. If a session is in-flight, reports the state (phase, step, next action). If setup is complete, reports artifact integrity: CLAUDE.md, rules, skills, agents, hooks, CI/CD workflows, pending drift, and stack freshness vs when the project was scaffolded.
 
@@ -91,7 +91,7 @@ In walking-skeleton mode (Path D from Phase 2), Phase 3 runs against the skeleto
 A FastAPI scaffold from start to finish:
 
 ```
-> /greenfield:init
+> /greenfield:start
 
 Phase 1: Context Gathering — Step 1 of 10
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -158,9 +158,9 @@ Greenfield's workflow can take significant time — especially the wizard (Phase
 - Every skill writes `.claude/greenfield-state.json` after each natural checkpoint (each wizard step, each scaffold sub-step, each Phase 3 action).
 - Writes are atomic (`.tmp` + rename) to avoid corruption if killed mid-write.
 - The state file tracks current phase, current step, completed steps, accumulated context, research findings, and parked questions.
-- `/greenfield:init` checks for an existing state file at startup and offers resume instead of silently restarting.
-- `/greenfield:resume` reads the state and fast-forwards the appropriate skill to exactly where you left off.
-- `/greenfield:status` prominently reports in-flight sessions so you know they exist.
+- `/greenfield:start` checks for an existing state file at startup and offers resume instead of silently restarting.
+- `/greenfield:pickup` reads the state and fast-forwards the appropriate skill to exactly where you left off.
+- `/greenfield:check` prominently reports in-flight sessions so you know they exist.
 
 **Cross-session resume** works in a completely fresh Claude Code conversation — the state file is the source of truth; memory files and research findings carry the context.
 

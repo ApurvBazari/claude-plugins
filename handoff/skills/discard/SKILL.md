@@ -1,12 +1,12 @@
 ---
-name: clear
+name: discard
 description: Archive the active handoff without acting on it. Use when the user explicitly wants to discard a saved handoff — same effect as picking Discard in the resume flow, but invokable directly from anywhere.
 disable-model-invocation: true
 ---
 
-# Clear Skill — Discard the Active Handoff
+# Discard Skill — Archive the Active Handoff
 
-You are invoked explicitly by `/handoff:clear`. Archive the active handoff (`.claude/handoff.md`) so it stops surfacing at SessionStart. This skill is destructive in the soft sense — the file is archived (renamed), not deleted, so it remains recoverable.
+You are invoked explicitly by `/handoff:discard`. Archive the active handoff (`.claude/handoff.md`) so it stops surfacing at SessionStart. This skill is destructive in the soft sense — the file is archived (renamed), not deleted, so it remains recoverable.
 
 ## Step 1: Check for an active handoff
 

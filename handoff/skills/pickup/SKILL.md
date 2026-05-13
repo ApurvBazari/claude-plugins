@@ -1,11 +1,11 @@
 ---
-name: resume
-description: Present a saved handoff to the user via AskUserQuestion (Execute / Edit / Discard / Save-for-later) and dispatch on their choice. Auto-invokes when the SessionStart hook has surfaced a handoff in additionalContext — that surfacing includes a routing instruction directing you here. Also invokable explicitly via /handoff:resume.
+name: pickup
+description: Present a saved handoff to the user via AskUserQuestion (Execute / Edit / Discard / Save-for-later) and dispatch on their choice. Auto-invokes when the SessionStart hook has surfaced a handoff in additionalContext — that surfacing includes a routing instruction directing you here. Also invokable explicitly via /handoff:pickup.
 ---
 
-# Resume Skill — Surface and Dispatch a Saved Handoff
+# Pickup Skill — Surface and Dispatch a Saved Handoff
 
-You are invoked when a saved handoff exists at `.claude/handoff.md` — either because the SessionStart hook surfaced it in `additionalContext` and the routing instruction sent you here, or because the user typed `/handoff:resume` explicitly. Present the four-option flow, then dispatch.
+You are invoked when a saved handoff exists at `.claude/handoff.md` — either because the SessionStart hook surfaced it in `additionalContext` and the routing instruction sent you here, or because the user typed `/handoff:pickup` explicitly. Present the four-option flow, then dispatch.
 
 ## Guard
 

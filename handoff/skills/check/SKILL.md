@@ -1,9 +1,9 @@
 ---
-name: status
+name: check
 description: Read-only inspector for saved handoffs. Reports whether .claude/handoff.md exists, its age, saved-at SHA/branch, progress past the save point (commits/branch changes), snooze status, and current settings. Use when the user asks about handoff state, why a handoff isn't surfacing, or wants a quick sanity check before relying on the resume flow.
 ---
 
-# Status Skill — Handoff Health Check
+# Check Skill — Handoff Health Check
 
 You are running a read-only health check for the handoff plugin in the current project. No files are modified.
 

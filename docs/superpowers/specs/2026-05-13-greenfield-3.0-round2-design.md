@@ -52,7 +52,7 @@ Each new phase ends with an inline Phase 1.8 synthesis-review pass (already infr
 ## Architecture & data flow
 
 ```
-/greenfield:init
+/greenfield:start
      │
      ▼
 Phase 1: Context Gathering
@@ -361,13 +361,13 @@ greenfield/skills/synthesis-review/references/section-prompts.md
 greenfield/skills/grill-spec/SKILL.md
   ← (likely no-op; grep for "P8" hardcodes and replace with dynamic iteration if any)
 
-greenfield/skills/init/SKILL.md
+greenfield/skills/start/SKILL.md
   ← update error matrix + enum for new phase IDs (P3, P4) in resume flow
 
-greenfield/skills/resume/SKILL.md
+greenfield/skills/pickup/SKILL.md
   ← extend Step 4.5 phase-resume granularity prompt with P3/P4 options
 
-greenfield/skills/status/SKILL.md
+greenfield/skills/check/SKILL.md
   ← update synthesis HTML count (was 1, now 3); freshness hook covers 3 files
 
 greenfield/CLAUDE.md
@@ -399,7 +399,7 @@ Per handoff: "drive the wizard manually through P3 and P4 in a throwaway repo, c
 
 ### Verification steps
 
-1. **Throwaway-repo manual wizard run** — fresh directory, `/greenfield:init` → walk Steps 1–4 with realistic answers (Next.js + Postgres + Prisma + REST API). Confirm:
+1. **Throwaway-repo manual wizard run** — fresh directory, `/greenfield:start` → walk Steps 1–4 with realistic answers (Next.js + Postgres + Prisma + REST API). Confirm:
    - Step 3 of 10 wording is correct
    - P3 questions appear in the documented order with correct conditions
    - At end of Step 3, synthesis-review fires for P3
@@ -427,7 +427,7 @@ Per handoff: "drive the wizard manually through P3 and P4 in a throwaway repo, c
 
 ## Edge cases
 
-1. **Wizard interrupted mid-P3** — `/greenfield:resume` Step 4.5 granularity prompt asks "pick up at next P3 question / restart P3 from Q1". State file `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-3-data-architecture"`, `lastAnsweredQuestionId: "P3.Q5"`. Resume reads `lastAnsweredQuestionId` and offers both options.
+1. **Wizard interrupted mid-P3** — `/greenfield:pickup` Step 4.5 granularity prompt asks "pick up at next P3 question / restart P3 from Q1". State file `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-3-data-architecture"`, `lastAnsweredQuestionId: "P3.Q5"`. Resume reads `lastAnsweredQuestionId` and offers both options.
 
 2. **User picks `databaseHost: none` but later answers Q9 `fileStorage: cloud`** — both valid (file storage doesn't require a DB). No contradiction. Synthesis §1 shows `databaseHost: none`; §6 shows `fileStorage: cloud-s3-like`.
 
@@ -449,7 +449,7 @@ If Round 2 needs to be reverted:
 4. Revert `question-bank.md` — remove P3/P4 sections; restore the original 7 re-homed Qs in Cat 3 location.
 5. Revert version bumps in `plugin.json` + `marketplace.json` + `CHANGELOG-2.0.md`.
 
-No state migration needed. In-flight greenfield 3.0.0-alpha.2 sessions break (per hard cutover policy, same as Round 1); user re-runs `/greenfield:init`.
+No state migration needed. In-flight greenfield 3.0.0-alpha.2 sessions break (per hard cutover policy, same as Round 1); user re-runs `/greenfield:start`.
 
 Estimated revert effort: single commit, ~30 minutes.
 

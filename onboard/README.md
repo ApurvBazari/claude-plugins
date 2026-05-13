@@ -18,13 +18,13 @@ All skills are invoked with the `/onboard:<name>` slash syntax. Read-only helper
 
 ### `/onboard:evolve` — the drift detection loop
 
-The capability no competitor ships. Reads `.claude/greenfield-drift.json` (populated by auto-evolution hooks `onboard:init` writes during initial setup), compares the snapshot against current code state, and proposes targeted updates: new languages added, new dependencies, structural changes, missing hooks, stale rules.
+The capability no competitor ships. Reads `.claude/greenfield-drift.json` (populated by auto-evolution hooks `onboard:start` writes during initial setup), compares the snapshot against current code state, and proposes targeted updates: new languages added, new dependencies, structural changes, missing hooks, stale rules.
 
 You decide which proposed updates to apply. Snapshot then updates so the next `/onboard:evolve` run is incremental.
 
 This is the lifecycle differentiator — see [Drift detection deep dive](#drift-detection-deep-dive) below.
 
-### `/onboard:init` *(destructive — user-invoked only)*
+### `/onboard:start` *(destructive — user-invoked only)*
 
 Main entry point. Runs a 4-phase guided workflow:
 
@@ -43,7 +43,7 @@ Re-aligns your tooling against the latest Claude Code best practices. Compares c
 
 Independent feature verification. Spawns the `feature-evaluator` agent in worktree isolation to test features against `docs/feature-list.json`. Supports single-feature, sprint, or all-incomplete modes. Includes sprint-contract gate checking.
 
-### `/onboard:status`
+### `/onboard:check`
 
 Quick health check showing last run date, generated artifacts, integrity status, and recommendations.
 
@@ -56,7 +56,7 @@ This is what `greenfield` invokes via the `Skill` tool to delegate Phase 3 of it
 ## Architecture
 
 ```
-/onboard:init
+/onboard:start
      │
      ▼
 Phase 0: Empty-Repo Guard ──→ no source files? 3-option menu
@@ -89,7 +89,7 @@ Internal architecture and agent contracts: [`onboard/CLAUDE.md`](./CLAUDE.md).
 
 ## Drift detection deep dive
 
-When `/onboard:init` runs in **enriched mode** (default for greenfield-scaffolded projects), it installs auto-evolution hooks that quietly track changes:
+When `/onboard:start` runs in **enriched mode** (default for greenfield-scaffolded projects), it installs auto-evolution hooks that quietly track changes:
 
 - **FileChanged hooks** on `package.json`, `tsconfig.json`, `pyproject.toml`, lockfiles, and structural anchors → log diffs to `.claude/greenfield-drift.json`
 - **SessionStart hook** → summarises pending drift at the start of each Claude Code session
@@ -100,10 +100,10 @@ See the [Example](#example) below for a full two-run transcript showing init fol
 
 ## Example
 
-`/onboard:init` on an existing Next.js 15 project, then `/onboard:evolve` two weeks later:
+`/onboard:start` on an existing Next.js 15 project, then `/onboard:evolve` two weeks later:
 
 ```
-> /onboard:init
+> /onboard:start
 
 Phase 1: Analysis
 ━━━━━━━━━━━━━━━━━
@@ -157,7 +157,7 @@ Phase 4: Handoff
 Your project is set up for AI-assisted development. Try:
   1. Open a file — Claude has context about your conventions
   2. Ask Claude to create a new component — it'll follow your patterns
-  3. Run /onboard:status anytime to check the health of your setup
+  3. Run /onboard:check anytime to check the health of your setup
 
 # ── two weeks later — team added Playwright + extracted packages/shared ──
 

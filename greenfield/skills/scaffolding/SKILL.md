@@ -87,7 +87,7 @@ Before scaffolding, check the parent directory for similar existing projects tha
 Based on the `scaffoldMethod` from Phase 1 **and** the `scaffoldMode` (`full` vs `walking-skeleton`):
 
 - `scaffoldMode === "full"` → use Path A, B, or C as defined below, producing a complete runnable scaffold
-- `scaffoldMode === "walking-skeleton"` → use **Path D** (walking skeleton) regardless of what `scaffoldMethod` says; control returns to `/greenfield:init` after Path D completes, which then runs Phase 3 (AI tooling) against the walking skeleton BEFORE a second scaffold expansion in Phase 2b
+- `scaffoldMode === "walking-skeleton"` → use **Path D** (walking skeleton) regardless of what `scaffoldMethod` says; control returns to `/greenfield:start` after Path D completes, which then runs Phase 3 (AI tooling) against the walking skeleton BEFORE a second scaffold expansion in Phase 2b
 
 ### Path A: External CLI Scaffold
 
@@ -158,7 +158,7 @@ Anything more than the minimum defeats the purpose — onboard should derive rul
 
 If the stack isn't on this list and research doesn't give you clear guidance, ask the user: "I'm not sure what a walking skeleton looks like for [stack]. Can you describe the architectural layers your app will have (e.g., data, business, presentation)? I'll create one of each." Then capture the answer and proceed.
 
-**After Path D completes**, return control to `/greenfield:init`. It will run Phase 3 (AI tooling) against the walking skeleton. Phase 3 will generate CLAUDE.md + rules + hooks from the observed patterns. Then the flow enters **Phase 2b: Expand scaffold under AI-tooling guidance** — a second pass through this skill that uses the generated rules to expand the walking skeleton into a fuller scaffold, with each expansion respecting the AI tooling's conventions.
+**After Path D completes**, return control to `/greenfield:start`. It will run Phase 3 (AI tooling) against the walking skeleton. Phase 3 will generate CLAUDE.md + rules + hooks from the observed patterns. Then the flow enters **Phase 2b: Expand scaffold under AI-tooling guidance** — a second pass through this skill that uses the generated rules to expand the walking skeleton into a fuller scaffold, with each expansion respecting the AI tooling's conventions.
 
 ## Step 2.5: Non-interactive package-manager install (Node.js stacks)
 
@@ -392,7 +392,7 @@ Write `.claude/greenfield-meta.json`:
 
 ## Checkpoint Protocol (for resume support)
 
-This skill MUST write `.claude/greenfield-state.json` after each Step so `/greenfield:resume` can pick up mid-scaffold if the session is interrupted. See `skills/init/SKILL.md` for the full state schema.
+This skill MUST write `.claude/greenfield-state.json` after each Step so `/greenfield:pickup` can pick up mid-scaffold if the session is interrupted. See `skills/start/SKILL.md` for the full state schema.
 
 ### When to checkpoint
 
@@ -409,7 +409,7 @@ This skill MUST write `.claude/greenfield-state.json` after each Step so `/green
 Same protocol as context-gathering: write to `.claude/greenfield-state.json.tmp`, then `mv` to `.claude/greenfield-state.json`.
 
 ### Resume entry contract
-When invoked via `/greenfield:resume`, check `completedSteps` and skip anything already done. **Critical**: Steps 2 and 4 are destructive (write files, init git). If they're already complete, do NOT re-run them — resume from the next step. If `completedSteps` says `scaffold-execute` is done but the scaffold directory is empty, abort with an error: the state file and filesystem have diverged, and the user must manually resolve before continuing.
+When invoked via `/greenfield:pickup`, check `completedSteps` and skip anything already done. **Critical**: Steps 2 and 4 are destructive (write files, init git). If they're already complete, do NOT re-run them — resume from the next step. If `completedSteps` says `scaffold-execute` is done but the scaffold directory is empty, abort with an error: the state file and filesystem have diverged, and the user must manually resolve before continuing.
 
 ### Interruption during destructive steps
 If the session is killed mid-scaffold (e.g., during `npm install`), the next resume will see `scaffold-execute` as NOT complete. The user is told:

@@ -1,9 +1,9 @@
 ---
-name: status
+name: check
 description: Greenfield project health check — reports in-flight session state, artifact integrity, pending drift, plugin integration coverage, and stack freshness. Use when user asks about greenfield status, wants to see if their scaffold is healthy, checks on an in-progress session, or asks whether their CI/CD and hooks are wired. Read-only — safe to auto-invoke.
 ---
 
-# Status Skill — Project Health Check
+# Check Skill — Project Health Check
 
 You are running the Greenfield status skill. This provides a quick overview of the project's state — whether a greenfield session is in progress, whether setup completed, and (if complete) the project's AI tooling health, pending drift, and setup metadata.
 
@@ -27,7 +27,7 @@ Before checking completed setup, check for an in-progress session at `.claude/gr
 > **Next action**: [nextAction]
 > **Research mode**: [research.mode]
 >
-> **To continue**: run `/greenfield:resume`
+> **To continue**: run `/greenfield:pickup`
 > **To abandon and start over**: delete `.claude/greenfield-state.json` (irreversible — will lose all gathered context)
 
 Then stop here — do not try to also report post-scaffold health, because the scaffold may not exist yet.
@@ -46,11 +46,11 @@ Read `.claude/greenfield-meta.json`:
 
 > This project hasn't been set up with Greenfield yet.
 >
-> Run `/greenfield:init` to scaffold a new project with AI-native tooling.
+> Run `/greenfield:start` to scaffold a new project with AI-native tooling.
 
 Stop here.
 
-**Note on file distinction**: `.claude/greenfield-meta.json` is the persistent setup metadata (stack, context, generated artifacts, plugin list) used for health checks and status reporting. `.claude/greenfield-state.json` is ephemeral resume state, written during an in-flight session and only relevant for `/greenfield:resume`. Step 1 checks `greenfield-state.json`; Step 2 onward checks `greenfield-meta.json`. If both exist with `greenfield-state.json.currentPhase === "complete"`, the session finished successfully and `greenfield-state.json` can be removed as garbage (optional — it's harmless to keep).
+**Note on file distinction**: `.claude/greenfield-meta.json` is the persistent setup metadata (stack, context, generated artifacts, plugin list) used for health checks and status reporting. `.claude/greenfield-state.json` is ephemeral resume state, written during an in-flight session and only relevant for `/greenfield:pickup`. Step 1 checks `greenfield-state.json`; Step 2 onward checks `greenfield-meta.json`. If both exist with `greenfield-state.json.currentPhase === "complete"`, the session finished successfully and `greenfield-state.json` can be removed as garbage (optional — it's harmless to keep).
 
 ---
 

@@ -35,9 +35,9 @@
 | `greenfield/skills/context-gathering/SKILL.md` | Insert Step 3 (P3) + Step 4 (P4) with inline synthesis invocations; rename existing Step 3 → Step 5 "Remaining Project Details"; renumber Steps 4→6, 5→7, 6→8, 7→9; update every `Step X of 8` → `Step X of 10`; extend state-transitions table |
 | `greenfield/skills/synthesis-review/references/section-prompts.md` | Append P3 and P4 section composition tables + Round 2 contradiction rules |
 | `greenfield/skills/grill-spec/SKILL.md` | Replace any hardcoded "P8" references with dynamic iteration over `context.syntheses.*` (likely 1–2 line edit) |
-| `greenfield/skills/init/SKILL.md` | Extend error matrix + phase enum with `P3` and `P4` |
-| `greenfield/skills/resume/SKILL.md` | Extend Step 4.5 phase-resume granularity prompt with P3/P4 options |
-| `greenfield/skills/status/SKILL.md` | Update synthesis HTML count (1 → 3); freshness hook covers 3 files |
+| `greenfield/skills/start/SKILL.md` | Extend error matrix + phase enum with `P3` and `P4` |
+| `greenfield/skills/pickup/SKILL.md` | Extend Step 4.5 phase-resume granularity prompt with P3/P4 options |
+| `greenfield/skills/check/SKILL.md` | Update synthesis HTML count (1 → 3); freshness hook covers 3 files |
 | `greenfield/CLAUDE.md` | Update arch diagram (3 phases now synthesise); update step count 8→9; note Round 2 status |
 | `docs/greenfield-overview.html` | Add "ROUND 2 LOCKED" entry to Discussion Log; update Phase 1.8 box to show 3 wired phases |
 | `greenfield/.claude-plugin/plugin.json` | Bump 3.0.0-alpha.1 → 3.0.0-alpha.2 |
@@ -1229,9 +1229,9 @@ rows to Step 7 (renumbered)."
 
 **Files:**
 - Modify: `greenfield/skills/grill-spec/SKILL.md`
-- Modify: `greenfield/skills/init/SKILL.md`
-- Modify: `greenfield/skills/resume/SKILL.md`
-- Modify: `greenfield/skills/status/SKILL.md`
+- Modify: `greenfield/skills/start/SKILL.md`
+- Modify: `greenfield/skills/pickup/SKILL.md`
+- Modify: `greenfield/skills/check/SKILL.md`
 
 - [ ] **Step 1: Grill-spec — check for hardcoded "P8"**
 
@@ -1247,7 +1247,7 @@ If grill-spec already iterates dynamically, no edit needed.
 
 - [ ] **Step 2: Init — extend phase enum + error matrix**
 
-In `greenfield/skills/init/SKILL.md`, find the error matrix or phase enum section (grep `phase-1.8\|currentSynthesisPhase`). Add P3 and P4 to any enum/list that currently only includes P8:
+In `greenfield/skills/start/SKILL.md`, find the error matrix or phase enum section (grep `phase-1.8\|currentSynthesisPhase`). Add P3 and P4 to any enum/list that currently only includes P8:
 
 ```markdown
 Valid values for `currentSynthesisPhase`: "P3" | "P4" | "P8" (Round 2). More phases added in future rounds.
@@ -1261,7 +1261,7 @@ Round 2 wires Phase 1.8 for P3 (Step 3), P4 (Step 4), and P8 (Step 7). Future ro
 
 - [ ] **Step 3: Resume — extend phase-resume granularity**
 
-In `greenfield/skills/resume/SKILL.md`, find Step 4.5 (phase-resume granularity prompt). Currently it likely lists P8 only. Update to include P3 + P4:
+In `greenfield/skills/pickup/SKILL.md`, find Step 4.5 (phase-resume granularity prompt). Currently it likely lists P8 only. Update to include P3 + P4:
 
 ```markdown
 If the wizard was interrupted mid-synthesis (i.e., `currentPhase: phase-1.8-synthesis-review`), ask the developer:
@@ -1280,7 +1280,7 @@ Specifically support `lastAnsweredQuestionId` values like `P3.Q5`, `P4.Q3`.
 
 - [ ] **Step 4: Status — update synthesis HTML count + freshness scope**
 
-In `greenfield/skills/status/SKILL.md`, find any narrative that mentions "1 synthesis HTML" or "p8-cicd.html". Update to:
+In `greenfield/skills/check/SKILL.md`, find any narrative that mentions "1 synthesis HTML" or "p8-cicd.html". Update to:
 
 ```markdown
 Round 2 ships three synthesis HTMLs in scaffolded projects: `docs/architecture/p3-data.html`, `docs/architecture/p4-api.html`, `docs/architecture/p8-cicd.html`. The pre-commit freshness hook monitors all three.
@@ -1294,9 +1294,9 @@ Run:
 ```bash
 grep -lE "P3|P4|of 10|step-3-data|step-4-api" \
   greenfield/skills/grill-spec/SKILL.md \
-  greenfield/skills/init/SKILL.md \
-  greenfield/skills/resume/SKILL.md \
-  greenfield/skills/status/SKILL.md
+  greenfield/skills/start/SKILL.md \
+  greenfield/skills/pickup/SKILL.md \
+  greenfield/skills/check/SKILL.md
 ```
 
 Expected: at least 3 of 4 files match (grill-spec may be no-op).
@@ -1305,9 +1305,9 @@ Expected: at least 3 of 4 files match (grill-spec may be no-op).
 
 ```bash
 git add greenfield/skills/grill-spec/SKILL.md \
-        greenfield/skills/init/SKILL.md \
-        greenfield/skills/resume/SKILL.md \
-        greenfield/skills/status/SKILL.md
+        greenfield/skills/start/SKILL.md \
+        greenfield/skills/pickup/SKILL.md \
+        greenfield/skills/check/SKILL.md
 git commit -m "feat(greenfield): support P3 + P4 in init/resume/status/grill-spec
 
 Extend phase enums to include P3, P4. Resume now offers granular
@@ -1705,9 +1705,9 @@ cd /tmp/greenfield-round2-test
 git init
 ```
 
-- [ ] **Step 2: Trigger /greenfield:init in a Claude Code session pointed at /tmp/greenfield-round2-test**
+- [ ] **Step 2: Trigger /greenfield:start in a Claude Code session pointed at /tmp/greenfield-round2-test**
 
-In a fresh Claude Code session with the user, navigate to `/tmp/greenfield-round2-test`. Run `/greenfield:init`. Walk through:
+In a fresh Claude Code session with the user, navigate to `/tmp/greenfield-round2-test`. Run `/greenfield:start`. Walk through:
 
 - Step 1 of 10: Vision — answer "Next.js SaaS for tracking subscriptions"
 - Step 2 of 10: Stack — accept Next.js 16 + TypeScript + PostgreSQL recommendations

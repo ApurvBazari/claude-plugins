@@ -1,11 +1,11 @@
 # onboard — Internal Conventions
 
-Interactive wizard that analyzes codebases and generates complete Claude tooling infrastructure. Supports both standalone use (`/onboard:init`) and headless mode for programmatic consumers like Greenfield.
+Interactive wizard that analyzes codebases and generates complete Claude tooling infrastructure. Supports both standalone use (`/onboard:start`) and headless mode for programmatic consumers like Greenfield.
 
 ## Phased Architecture
 
 ```
-/onboard:init
+/onboard:start
      │
      ▼
 Phase 0: Empty-Repo Guard ──→ SRC_COUNT == 0?
@@ -42,6 +42,7 @@ Phase 4: Handoff ──→ explains generated artifacts, suggests next steps
 - Report stays in conversation context — NOT written to a file
 - `config-generator` runs second (write) — receives analysis + wizard answers via prompt
 - `feature-evaluator` is available for independent feature testing (spawned by `/onboard:verify`)
+
 
 ## Headless Mode (`onboard:generate`) — v2-only as of 2.0.0-alpha.1
 
@@ -139,9 +140,9 @@ The v2 root shape (with deferred phase stubs) is stable. Future minor versions (
 
 User-facing skills (show in `/onboard:` autocomplete):
 
-- `init/SKILL.md` — full interactive wizard + generation (`disable-model-invocation: true`)
+- `start/SKILL.md` — full interactive wizard + generation (`disable-model-invocation: true`)
 - `update/SKILL.md` — align with latest best practices (`disable-model-invocation: true`)
-- `status/SKILL.md` — tooling health check (auto-invocable)
+- `check/SKILL.md` — tooling health check (auto-invocable)
 - `verify/SKILL.md` — independent feature verification via feature-evaluator agent (auto-invocable)
 - `evolve/SKILL.md` — apply pending tooling drift updates (auto-invocable)
 

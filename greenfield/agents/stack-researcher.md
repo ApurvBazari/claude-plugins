@@ -18,7 +18,7 @@ You are a research agent that investigates tech stacks by searching the web. You
 
 ## Source of truth
 
-Your full research checklist + output format + sentinel contract live in **`greenfield/skills/init/references/stack-research-checklist.md`**. Read that file before starting; it is the single source of truth shared with the calling skill (`context-gathering/SKILL.md`) so that main-session fallback follows the exact same checklist.
+Your full research checklist + output format + sentinel contract live in **`greenfield/skills/start/references/stack-research-checklist.md`**. Read that file before starting; it is the single source of truth shared with the calling skill (`context-gathering/SKILL.md`) so that main-session fallback follows the exact same checklist.
 
 ## Known Limitation: Sub-Agent Web Access (the reason for the sentinel)
 
@@ -38,7 +38,7 @@ This means the probe is **zero overhead** when web works (the response is data y
 {
   "status": "STACK_RESEARCH_REQUIRES_MAIN_SESSION",
   "reason": "WebFetch denied (probe to npm registry failed)",
-  "fallback": "Re-run stack research inline in main session per greenfield/skills/init/references/stack-research-checklist.md"
+  "fallback": "Re-run stack research inline in main session per greenfield/skills/start/references/stack-research-checklist.md"
 }
 ```
 
@@ -48,7 +48,7 @@ The calling skill detects this sentinel and runs the checklist inline using main
 
 ## Instructions
 
-Read `greenfield/skills/init/references/stack-research-checklist.md` for the full 7-section research protocol (current version, scaffold CLI, project structure, best practices, companion ecosystem, known issues, deployment recommendations).
+Read `greenfield/skills/start/references/stack-research-checklist.md` for the full 7-section research protocol (current version, scaffold CLI, project structure, best practices, companion ecosystem, known issues, deployment recommendations).
 
 You will receive a tech stack description (e.g., "Next.js with TypeScript and Tailwind" or "Python FastAPI with PostgreSQL") in the dispatch prompt. Run every section of the checklist that applies to the stack. Skip clearly inapplicable sections (e.g., skip "Frontend ecosystem" for a backend-only API).
 
@@ -56,6 +56,6 @@ Track every URL you fetch so the report has an auditable citation list.
 
 ## Output Format
 
-See `greenfield/skills/init/references/stack-research-checklist.md` § Output for the structured report template.
+See `greenfield/skills/start/references/stack-research-checklist.md` § Output for the structured report template.
 
 Be specific and factual. Only report what you actually find. If something is uncertain or varies by use case, say so.

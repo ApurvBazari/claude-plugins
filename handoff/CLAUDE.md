@@ -8,7 +8,7 @@ Save and resume session handoffs. Closest existing plugin in shape is `notify/` 
 |---|---|---|
 | **Storage** | `.claude/handoff.md` (single active slot, in-repo) | Single-source-of-truth, simple, gitignore handles privacy |
 | **Save trigger** | NL detection → confirm via AskUserQuestion → write | Auto-save with a confirm gate; false positives are zero-cost |
-| **Resume flow** | SessionStart hook surfaces → Claude invokes `/handoff:resume` → 4-option AskUserQuestion (Execute / Edit / Discard / Save-for-later) | User stays in control; no implicit action on directive |
+| **Resume flow** | SessionStart hook surfaces → Claude invokes `/handoff:pickup` → 4-option AskUserQuestion (Execute / Edit / Discard / Save-for-later) | User stays in control; no implicit action on directive |
 | **Content** | Directive prose only — no embedded state (commits, branches, tasks) | State is derivable from git/memory/files at resume time; directive captures intent only |
 | **Trust model** | `<untrusted-source>` framing + surface-and-confirm | Defense in depth for marketplace distribution |
 
@@ -33,7 +33,7 @@ The hook emits a single JSON object to stdout per the Claude Code `additionalCon
 
 The `additionalContext` value contains, in order:
 
-1. **Routing instruction (trusted)** — plain text telling Claude to invoke `/handoff:resume`. NOT inside `<untrusted-source>`.
+1. **Routing instruction (trusted)** — plain text telling Claude to invoke `/handoff:pickup`. NOT inside `<untrusted-source>`.
 2. **Metadata (trusted)** — saved-at timestamps, SHA, branch, cwd, progress tags. NOT inside `<untrusted-source>`.
 3. **Directive content (untrusted)** — wrapped in `<untrusted-source description="user-saved handoff directive">…</untrusted-source>`.
 
@@ -55,7 +55,7 @@ Thresholds are overridable in `.claude/handoff-settings.md` frontmatter (`stale-
 
 ## Snooze mechanism
 
-After "Save for later", the resume skill writes `deferred-at: <iso8601>` into the existing handoff frontmatter. Hook on next SessionStart:
+After "Save for later", the pickup skill writes `deferred-at: <iso8601>` into the existing handoff frontmatter. Hook on next SessionStart:
 
 - If `deferred-at` within `deferral-snooze-hours` (default 24): exit silent (no surface).
 - Else: surface as usual.
@@ -101,9 +101,9 @@ Because the save flow is gated by an AskUserQuestion confirm, the whitelist can 
 User-facing skills (show in `/handoff:` autocomplete):
 
 - `save/SKILL.md` — auto-invokable on NL trigger; confirms via AskUserQuestion before writing.
-- `resume/SKILL.md` — auto-invokable when hook surfaces metadata; presents the 4-option flow.
-- `status/SKILL.md` — auto-invokable; read-only inspector.
-- `clear/SKILL.md` — `disable-model-invocation: true`; explicit discard.
+- `pickup/SKILL.md` — auto-invokable when hook surfaces metadata; presents the 4-option flow.
+- `check/SKILL.md` — auto-invokable; read-only inspector.
+- `discard/SKILL.md` — `disable-model-invocation: true`; explicit discard.
 
 No internal building blocks (no `user-invocable: false` skills). Hook script is the only non-skill executable.
 

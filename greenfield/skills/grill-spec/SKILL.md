@@ -12,9 +12,9 @@ You are running Greenfield's pre-scaffold validation gate. This is Phase 1.7 —
 
 Read `.claude/greenfield-state.json`. The skill MUST refuse to run if any of these hold:
 
-- File missing → tell the developer to start with `/greenfield:init`, do not proceed.
+- File missing → tell the developer to start with `/greenfield:start`, do not proceed.
 - `currentPhase` is not in `{"phase-1-context-gathering", "phase-1.5-architectural-research"}` and `completedSteps` does not yet contain `"step-9-confirmation"` → the wizard hasn't finished. Refuse and direct them to complete Phase 1.
-- `completedSteps` already contains `"phase-1.7-grill-spec"` or `"phase-1.7-grill-spec-skipped"` → the gate has already run. Skip silently and return control to `greenfield:init`.
+- `completedSteps` already contains `"phase-1.7-grill-spec"` or `"phase-1.7-grill-spec-skipped"` → the gate has already run. Skip silently and return control to `greenfield:start`.
 
 If `wantsValidationGate` is `false` in the gathered context AND `isProduction` is `false`, write `"phase-1.7-grill-spec-skipped"` to `completedSteps`, set `currentPhase: "phase-2-scaffold"`, and return immediately. Don't ask the user — they signalled "no gate" already.
 
@@ -107,7 +107,7 @@ Write to `.claude/greenfield-state.json` atomically (`.tmp` then rename):
 - Update `context` with all hardened fields
 - Bump `updatedAt`
 
-If the user skipped at any point, append `"phase-1.7-grill-spec-skipped"` instead. Both forms are recognised by `greenfield:resume`.
+If the user skipped at any point, append `"phase-1.7-grill-spec-skipped"` instead. Both forms are recognised by `greenfield:pickup`.
 
 ## Key Rules
 
@@ -118,4 +118,4 @@ If the user skipped at any point, append `"phase-1.7-grill-spec-skipped"` instea
 5. **Single-option AskUserQuestion lists** — apply the guard from `.claude/rules/ask-user-question-guard.md`. For dynamic option lists (Step 3 categories), check `len(options) >= 2` before invoking; convert to yes/no single-select otherwise.
 6. **Atomic writes only** — `.tmp` then rename; never write `greenfield-state.json` directly.
 7. **Timebox** — 5 minutes default. If grilling exceeds 10 minutes without convergence, surface an "extend or finish" prompt.
-8. **Resume-aware** — Guard rejects re-entry if Phase 1.7 already completed; `greenfield:resume` picks up at the partial step otherwise.
+8. **Resume-aware** — Guard rejects re-entry if Phase 1.7 already completed; `greenfield:pickup` picks up at the partial step otherwise.

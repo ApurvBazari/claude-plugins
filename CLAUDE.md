@@ -61,8 +61,8 @@ Apply the right invocation policy per skill:
 
 | Category | Who invokes | Frontmatter | Examples |
 |---|---|---|---|
-| Destructive / setup | User only (explicit) | `disable-model-invocation: true` | `onboard:init`, `onboard:update`, `greenfield:init`, `notify:setup`, `notify:uninstall` |
-| Read-only helpers | User + auto | (default) — write a specific `description` | `onboard:status`, `onboard:verify`, `onboard:evolve`, `greenfield:resume`, `greenfield:status`, `notify:status` |
+| Destructive / setup | User only (explicit) | `disable-model-invocation: true` | `onboard:start`, `onboard:update`, `greenfield:start`, `notify:setup`, `notify:uninstall` |
+| Read-only helpers | User + auto | (default) — write a specific `description` | `onboard:check`, `onboard:verify`, `onboard:evolve`, `greenfield:pickup`, `greenfield:check`, `notify:check` |
 | Programmatic API | Claude only, hidden | `user-invocable: false` | `onboard:generate` (invoked by greenfield via Skill tool) |
 | Internal building blocks | Claude only, hidden | `user-invocable: false` | `wizard`, `analysis`, `generation`, `context-gathering`, `scaffolding`, `plugin-discovery`, `tooling-generation`, `lifecycle-setup` |
 

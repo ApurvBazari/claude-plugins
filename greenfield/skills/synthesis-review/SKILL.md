@@ -10,7 +10,7 @@ You are running the synthesis-review skill, the reusable Phase X.5 confirmation 
 
 ## Guard
 
-This skill operates on the in-memory context object passed by the caller (typically `greenfield/skills/init/SKILL.md`). It expects three inputs:
+This skill operates on the in-memory context object passed by the caller (typically `greenfield/skills/start/SKILL.md`). It expects three inputs:
 
 - `phaseId` — e.g., `"P8"`. Used to load the matching template and locate context.
 - `context` — the v2 greenfield-state.json `context` object (with `phases.<phaseId>` populated by the upstream wizard step).

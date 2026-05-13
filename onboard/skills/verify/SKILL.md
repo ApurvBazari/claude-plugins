@@ -11,7 +11,7 @@ You are orchestrating an independent verification of features against the projec
 
 Read `docs/feature-list.json` in the project root. If not found:
 
-> No feature list found. Run `/greenfield:init` first to scaffold a project with feature tracking.
+> No feature list found. Run `/greenfield:start` first to scaffold a project with feature tracking.
 >
 > Or create `docs/feature-list.json` manually following the format in the Greenfield documentation.
 

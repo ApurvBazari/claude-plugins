@@ -1,6 +1,6 @@
 # Onboard Context Builder — Init-Path Reference
 
-Canonical procedure for building the headless-generation context object from `/onboard:init` wizard answers + analysis + plugin detection. Produces the same shape greenfield emits via `greenfield-onboard-context.json`, so init and greenfield share **one** dispatch contract into `Skill(onboard:generate) → config-generator` agent.
+Canonical procedure for building the headless-generation context object from `/onboard:start` wizard answers + analysis + plugin detection. Produces the same shape greenfield emits via `greenfield-onboard-context.json`, so init and greenfield share **one** dispatch contract into `Skill(onboard:generate) → config-generator` agent.
 
 ## Why this reference exists
 
@@ -33,7 +33,7 @@ Matches `generate/SKILL.md` Step 1 § Required Context Structure. All fields pop
 
 ```jsonc
 {
-  "source": "onboard:init",
+  "source": "onboard:start",
   "version": "1.10.0",               // init-path context-format version; tracks the init refactor, not onboard's plugin version
   "projectPath": "/abs/path/to/project",
 
@@ -94,7 +94,7 @@ Matches `generate/SKILL.md` Step 1 § Required Context Structure. All fields pop
 
 ### Step 1: Populate top-level identity fields
 
-- `source` → literal `"onboard:init"`
+- `source` → literal `"onboard:start"`
 - `version` → literal `"1.10.0"` (the init-path context-format version; bump in sync with init refactor releases, NOT with every onboard patch)
 - `projectPath` → resolved via `pwd` (init runs in the project root)
 
@@ -184,7 +184,7 @@ Filter out any entry whose plugin is not in `installedPlugins` — don't fabrica
 
 Verify before invoking `Skill(onboard:generate)`:
 
-1. `source` non-empty — always `"onboard:init"` from Step 1
+1. `source` non-empty — always `"onboard:start"` from Step 1
 2. `projectPath` absolute + exists on disk
 3. `analysis.stack.languages` has at least one entry (empty repo case is handled by Phase 0 stub procedure, not this builder)
 4. `wizardAnswers.autonomyLevel` ∈ `{always-ask, balanced, autonomous}`

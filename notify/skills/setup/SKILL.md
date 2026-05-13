@@ -258,14 +258,14 @@ Ask the developer if they saw the notification.
 > Let's troubleshoot:
 > 1. Check System Settings > Notifications > terminal-notifier — make sure notifications are allowed
 > 2. Try running manually: `terminal-notifier -title "Test" -message "Hello" -sound "Glass"`
-> 3. Run `/notify:status` for a full health check
+> 3. Run `/notify:check` for a full health check
 
 **If no (Linux):**
 > Let's troubleshoot:
 > 1. Make sure a notification daemon is running (e.g., `dunst`, `mako`, or your desktop environment's built-in)
 > 2. Try running manually: `notify-send "Test" "Hello"`
 > 3. If running in SSH/headless, notifications require a display server
-> 4. Run `/notify:status` for a full health check
+> 4. Run `/notify:check` for a full health check
 
 ---
 
@@ -282,7 +282,7 @@ Ask the developer if they saw the notification.
 > - Edit `$BASE_DIR/notify-config.json` — changes take effect immediately (no need to re-run setup)
 > - Toggle events on/off by setting `"enabled": true/false` in the config
 > - The only setting that requires re-running setup is the Notification `matcher` (stored in `settings.json`)
-> - Run `/notify:status` to check everything is working
+> - Run `/notify:check` to check everything is working
 
 If the scope is per-project, add:
 > **Note:** These hooks only fire when Claude Code is running inside this project directory. Global hooks (if any) still apply alongside project-level hooks.

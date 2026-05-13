@@ -44,15 +44,15 @@ When both `~/.claude/notify-config.json` and `<project>/.claude/notify-config.js
 
 Example: global has `events.stop.sound = "Glass"` and `events.stop.minDurationSeconds = 5`. Project-local sets only `events.stop.message = "Build complete"`. The merged behavior at runtime is `{ sound: "Glass", minDurationSeconds: 5, message: "Build complete" }`.
 
-This precedence is applied at notify setup time (when project-local is being written) — `/onboard:init` § Step 3.5.2 reads global as the base and layers project-local override on top, persisting the merged result. Runtime hook (`notify.sh`) reads only the project-local file when present, falling back to global only when no project-local file exists at all.
+This precedence is applied at notify setup time (when project-local is being written) — `/onboard:start` § Step 3.5.2 reads global as the base and layers project-local override on top, persisting the merged result. Runtime hook (`notify.sh`) reads only the project-local file when present, falling back to global only when no project-local file exists at all.
 
-### Detection (used by /onboard:init before offering project-local setup)
+### Detection (used by /onboard:start before offering project-local setup)
 
 To probe whether global notify is already configured **strictly** (both required to count as configured):
 - `~/.claude/notify-config.json` exists.
 - `~/.claude/settings.json` has a hook entry whose command references **both** `notify.sh` AND `notify-config.json` (single match — both strings present).
 
-If both probes pass, /onboard:init informs the user that global covers them and skips the project-local offer entirely. If only one passes (`globalPartial`), it offers project-local with a hint to repair the global setup.
+If both probes pass, /onboard:start informs the user that global covers them and skips the project-local offer entirely. If only one passes (`globalPartial`), it offers project-local with a hint to repair the global setup.
 
 ## Script Safety
 
@@ -95,7 +95,7 @@ Notifications show repo + branch context:
 User-facing skills (show in `/notify:` autocomplete):
 
 - `setup/SKILL.md` — install + configure notifications (`disable-model-invocation: true`)
-- `status/SKILL.md` — health check (auto-invocable)
+- `check/SKILL.md` — health check (auto-invocable)
 - `uninstall/SKILL.md` — remove hooks + config (`disable-model-invocation: true`)
 
 Internal building blocks (`user-invocable: false`):

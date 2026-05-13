@@ -235,11 +235,11 @@
   <div class="phase">
     <div class="phase-header">
       <span class="phase-num">0</span>
-      <span class="phase-title">Entry — <code>/greenfield:init</code></span>
+      <span class="phase-title">Entry — <code>/greenfield:start</code></span>
       <span class="phase-tag">Skill (user-invoked)</span>
     </div>
     <div class="phase-body">
-      User runs <code>/greenfield:init</code>. Greenfield checks <code>.claude/greenfield-state.json</code> — if a prior session is in flight, offers <code>/greenfield:resume</code>. Otherwise, starts fresh and seeds the state file.
+      User runs <code>/greenfield:start</code>. Greenfield checks <code>.claude/greenfield-state.json</code> — if a prior session is in flight, offers <code>/greenfield:pickup</code>. Otherwise, starts fresh and seeds the state file.
     </div>
   </div>
 
@@ -681,7 +681,7 @@
       <br><br>
       <strong>Item 9 — v2 codepath:</strong> <span style="color: var(--accent);">Strict cutover</span>. Only greenfield 3.0 exists going forward. Adaptive skipping in 3.0 handles light use cases.
       <br><br>
-      <strong>Item 10 — Onboard integration:</strong> <span style="color: var(--accent);">Bump onboard 1.10.0 → 2.0.0 alongside greenfield 3.0</span>. Onboard reads only the new context shape. Direct <code>/onboard:init</code> users migrate alongside. Clean break, matches the cutover philosophy from Item 9.
+      <strong>Item 10 — Onboard integration:</strong> <span style="color: var(--accent);">Bump onboard 1.10.0 → 2.0.0 alongside greenfield 3.0</span>. Onboard reads only the new context shape. Direct <code>/onboard:start</code> users migrate alongside. Clean break, matches the cutover philosophy from Item 9.
       <br><br>
       <strong>Item 11 — Phase dependency graph location:</strong> <span style="color: var(--accent);">Per-phase JSON files + on-demand visualization script</span>. Each phase owns its <code>dependencies.json</code>; <code>scripts/visualize-graph.sh</code> reads all and outputs a Mermaid diagram. No committed duplication. Phase locality preserved.
     </div>
@@ -825,7 +825,7 @@
       <ol>
         <li><strong>Migration of existing greenfield 2.x projects</strong>: break compat (users start fresh) / compat-layer (read old state, run new wizard) / explicit <code>/greenfield:migrate</code> command?</li>
         <li><strong>Stale architecture-doc problem</strong>: if <code>docs/architecture/*.html</code> is committed but the code drifts, the docs become misleading. Add freshness hooks? Auto-regen on relevant code changes? Manual update only?</li>
-        <li><strong>Resume granularity</strong>: at P6 Q5, does <code>/greenfield:resume</code> restart P6, restart from Q5, or pick up at Q5+1?</li>
+        <li><strong>Resume granularity</strong>: at P6 Q5, does <code>/greenfield:pickup</code> restart P6, restart from Q5, or pick up at Q5+1?</li>
         <li><strong>Cross-phase contradictions</strong>: if P8 (CI/CD) reveals that P3 (Data) decisions are invalid, how do we handle backtracking through 5 intervening phases? Reset just contradicted fields? Full re-walk from P3?</li>
         <li><strong>Adaptive skipping for "side projects"</strong>: does time-not-constraint mean ALWAYS ask everything regardless of scale, or do we keep <code>isProduction === false</code> skipping rules? If we skip, we risk same "surprises" failure mode for hobby projects.</li>
         <li><strong>"Adjust" sub-dialog implementation</strong>: synthesis-review Adjust path reuses <code>superpowers:brainstorming</code> / <code>mattpocock-skills:grill-me</code> / implements inline?</li>
@@ -850,10 +850,10 @@
       </ul>
       <strong>Modified files (~10):</strong>
       <ul>
-        <li><code>greenfield/skills/init/SKILL.md</code> — invoke new phases</li>
+        <li><code>greenfield/skills/start/SKILL.md</code> — invoke new phases</li>
         <li><code>greenfield/skills/grill-spec/SKILL.md</code> — hand off to 1.8</li>
         <li><code>greenfield/skills/tooling-generation/SKILL.md</code> — gate behind 3c approval</li>
-        <li><code>greenfield/skills/resume/SKILL.md</code>, <code>status/SKILL.md</code> — new phase awareness</li>
+        <li><code>greenfield/skills/pickup/SKILL.md</code>, <code>check/SKILL.md</code> — new phase awareness</li>
         <li><code>greenfield/CLAUDE.md</code> + <code>plugin.json</code> (2.0.0 → 2.1.0)</li>
         <li><code>.claude-plugin/marketplace.json</code> version sync</li>
         <li><code>greenfield-state.json</code> schema — new completedSteps values</li>

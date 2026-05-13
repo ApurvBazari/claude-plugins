@@ -73,7 +73,7 @@ claude plugin install handoff@apurvbazari-plugins
 Each plugin's README contains a runnable transcript so you can see what a real session looks like before you install:
 
 - **greenfield** — full 3-phase scaffold of a Python FastAPI project (Context Gathering → Scaffold → AI Tooling delegation to onboard) → [greenfield/README.md#example](./greenfield/README.md#example)
-- **onboard** — initial `/onboard:init` on a Next.js 15 project, then `/onboard:evolve` two weeks later detecting drift and proposing updates → [onboard/README.md#example](./onboard/README.md#example)
+- **onboard** — initial `/onboard:start` on a Next.js 15 project, then `/onboard:evolve` two weeks later detecting drift and proposing updates → [onboard/README.md#example](./onboard/README.md#example)
 - **notify** — `/notify:setup` followed by the duration filter suppressing a fast task and delivering a long one → [notify/README.md#example](./notify/README.md#example)
 - **handoff** — saying "save handoff" mid-conversation, confirming the auto-save, then a fresh session starting with the four-option resume prompt → [handoff/README.md](./handoff/README.md)
 
@@ -91,7 +91,7 @@ greenfield is a **thin orchestrator**. The defining design choice: it delegates 
 
 **Prerequisites:** the `onboard` plugin (greenfield calls it for Phase 3 generation).
 
-For the 3-phase walkthrough, full skill reference (`/greenfield:init`, `/greenfield:resume`, `/greenfield:status`), supported stacks, resumability mechanics, and the runnable Example transcript: [greenfield/README.md →](./greenfield/README.md)
+For the 3-phase walkthrough, full skill reference (`/greenfield:start`, `/greenfield:pickup`, `/greenfield:check`), supported stacks, resumability mechanics, and the runnable Example transcript: [greenfield/README.md →](./greenfield/README.md)
 
 ---
 
@@ -135,11 +135,11 @@ Long Claude Code sessions often end with the user pasting a paragraph into the *
 **Two ends of the loop:**
 
 - **Save** — `/handoff:save` (or auto-invoked on phrases like *"pick this up later"* / *"continue in new session"*). Confirms via `AskUserQuestion` before writing — false-positive triggers are zero-cost.
-- **Resume** — SessionStart hook surfaces a saved handoff, then routes to `/handoff:resume` which asks: **Execute / Edit / Discard / Save-for-later**. Snooze defers re-surface for 24h; 90-day stale handoffs auto-archive. Git-activity tags ("3 commits past saved-at", "branch changed") inform the user's choice without dictating it.
+- **Resume** — SessionStart hook surfaces a saved handoff, then routes to `/handoff:pickup` which asks: **Execute / Edit / Discard / Save-for-later**. Snooze defers re-surface for 24h; 90-day stale handoffs auto-archive. Git-activity tags ("3 commits past saved-at", "branch changed") inform the user's choice without dictating it.
 
 **Trust model.** Directive content is wrapped in `<untrusted-source>` framing in the hook output — routing and metadata are trusted, the directive itself is data describing user intent. The four-option flow ensures the user confirms before any action. Standard defense-in-depth for a marketplace plugin.
 
-For the full skill reference (`/handoff:save`, `/handoff:resume`, `/handoff:status`, `/handoff:clear`), the SessionStart hook contract, configuration knobs (`stale-day-threshold`, `deferral-snooze-hours`, `trigger-phrases`), and storage model: [handoff/README.md →](./handoff/README.md)
+For the full skill reference (`/handoff:save`, `/handoff:pickup`, `/handoff:check`, `/handoff:discard`), the SessionStart hook contract, configuration knobs (`stale-day-threshold`, `deferral-snooze-hours`, `trigger-phrases`), and storage model: [handoff/README.md →](./handoff/README.md)
 
 ---
 

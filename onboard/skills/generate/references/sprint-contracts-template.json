@@ -99,7 +99,7 @@
         "v2ContextSource": { "type": "string", "description": "Caller plugin (typically 'greenfield')." },
         "p8SnapshotAtGeneration": {
           "type": "object",
-          "description": "Snapshot of phases.P8.cicd at generation time. If P8 changes later (via /greenfield:resume), this snapshot becomes stale and the sprint contract should be regenerated. Tracked by the freshness hook for /docs/architecture/."
+          "description": "Snapshot of phases.P8.cicd at generation time. If P8 changes later (via /greenfield:pickup), this snapshot becomes stale and the sprint contract should be regenerated. Tracked by the freshness hook for /docs/architecture/."
         }
       }
     }

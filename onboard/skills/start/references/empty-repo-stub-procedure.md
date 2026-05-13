@@ -1,10 +1,10 @@
 # Empty-Repo Stub Procedure
 
-Canonical procedure for generating a minimal, canonical-shape `.claude/` stub when `/onboard:init` runs on a repo with no source code. Invoked by `init/SKILL.md` § Phase 0 (Empty-Repo Guard) after the developer picks option 3 ("Generate canonical stub") from the Phase 0 menu.
+Canonical procedure for generating a minimal, canonical-shape `.claude/` stub when `/onboard:start` runs on a repo with no source code. Invoked by `init/SKILL.md` § Phase 0 (Empty-Repo Guard) after the developer picks option 3 ("Generate canonical stub") from the Phase 0 menu.
 
 ## Why this reference exists
 
-Before Cluster 2 (2026-04-18), `/onboard:init` on an empty repo was intercepted by Claude *before* entering the init skill. Claude improvised a 3-option menu and emitted 3 files ad-hoc. The stub had four problems (2026-04-17 release-gate findings B14, B15, B16):
+Before Cluster 2 (2026-04-18), `/onboard:start` on an empty repo was intercepted by Claude *before* entering the init skill. Claude improvised a 3-option menu and emitted 3 files ad-hoc. The stub had four problems (2026-04-17 release-gate findings B14, B15, B16):
 
 - **B14**: `onboard-meta.json` used a 4th distinct schema with zero top-level keys in common with the canonical shape. Downstream consumers (verify scripts, `/onboard:update`, `/onboard:evolve`) couldn't reason about it.
 - **B15**: The stub hardcoded `version: "1.0.0"` regardless of installed onboard version.
@@ -35,9 +35,9 @@ A minimal placeholder CLAUDE.md with every section marked as pending. Clear stat
 
 # <project-name> — Stub configuration
 
-> **Status**: Stub configuration generated for an empty repository. Re-run `/onboard:init` after scaffolding to produce the full AI tooling setup.
+> **Status**: Stub configuration generated for an empty repository. Re-run `/onboard:start` after scaffolding to produce the full AI tooling setup.
 >
-> **For scaffolding + onboarding in one step**: run `/greenfield:init` instead — it creates a project from a template AND generates the full tooling.
+> **For scaffolding + onboarding in one step**: run `/greenfield:start` instead — it creates a project from a template AND generates the full tooling.
 
 ## Project overview
 
@@ -53,13 +53,13 @@ While this project is empty:
 
 - Ask clarifying questions before creating files — don't invent a stack or framework
 - Confirm file locations before writing (the layout is unsettled)
-- Reference `/greenfield:init` if the developer mentions wanting a scaffold
-- Re-run `/onboard:init` after at least one source file exists, so the full analysis + wizard can run
+- Reference `/greenfield:start` if the developer mentions wanting a scaffold
+- Re-run `/onboard:start` after at least one source file exists, so the full analysis + wizard can run
 
 ## Next steps
 
-1. Add source code (or run `/greenfield:init` for guided scaffolding)
-2. Re-run `/onboard:init` to produce the full tooling setup
+1. Add source code (or run `/greenfield:start` for guided scaffolding)
+2. Re-run `/onboard:start` to produce the full tooling setup
 3. Once tooling is generated, the `## Working notes for Claude` section above will be replaced with the project-specific setup.
 
 <!-- onboard:maintenance-end -->
@@ -88,7 +88,7 @@ Create the `.claude/` directory if absent. Do not add placeholder hooks — they
   "pluginVersion": "<dynamic>",
   "_generated": { "by": "onboard", "version": "<dynamic>", "date": "<ISO-date>" },
   "timestamp": "<ISO-8601 UTC timestamp>",
-  "source": "onboard:init",
+  "source": "onboard:start",
   "mode": "stub-empty-repo",
 
   "wizardAnswers": {},
@@ -120,8 +120,8 @@ Create the `.claude/` directory if absent. Do not add placeholder hooks — they
   ],
 
   "nextSteps": [
-    "Add source code, then re-run /onboard:init",
-    "Or: /greenfield:init for scaffold + onboard in one step"
+    "Add source code, then re-run /onboard:start",
+    "Or: /greenfield:start for scaffold + onboard in one step"
   ]
 }
 ```
@@ -174,7 +174,7 @@ Use atomic writes where possible (`write-to-tmp-then-rename`). On write failure 
 
 > Stub write failed for `<path>`: `<error>`
 >
-> Recovery: check write permissions on the project root and `.claude/` directory, then re-run `/onboard:init`. No partial state was committed.
+> Recovery: check write permissions on the project root and `.claude/` directory, then re-run `/onboard:start`. No partial state was committed.
 
 ## Post-write handoff
 
@@ -188,8 +188,8 @@ After all three files land, return to the init skill for the Phase 4 handoff. Pr
 > - `.claude/onboard-meta.json` (canonical schema, stub mode, `pluginVersion: <version>`)
 >
 > **Next steps:**
-> 1. Add source code (or run `/greenfield:init` for guided scaffolding + full tooling in one step)
-> 2. Re-run `/onboard:init` to produce the full AI tooling setup once source files exist
+> 1. Add source code (or run `/greenfield:start` for guided scaffolding + full tooling in one step)
+> 2. Re-run `/onboard:start` to produce the full AI tooling setup once source files exist
 
 Do NOT run Phase 4's full education/handoff content — the stub has nothing to educate about. Skip straight to this short message and return control.
 

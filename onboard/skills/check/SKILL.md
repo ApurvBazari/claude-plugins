@@ -1,9 +1,9 @@
 ---
-name: status
-description: Health check for Claude tooling setup. Use when user asks about the state of their `.claude/` configuration, artifact drift, whether onboard-generated files are still intact, or wants a summary of what `/onboard:init` produced. Read-only — safe to auto-invoke.
+name: check
+description: Health check for Claude tooling setup. Use when user asks about the state of their `.claude/` configuration, artifact drift, whether onboard-generated files are still intact, or wants a summary of what `/onboard:start` produced. Read-only — safe to auto-invoke.
 ---
 
-# Status Skill — Health Check
+# Check Skill — Health Check
 
 You are running the onboard status skill. This provides a quick overview of the project's Claude tooling health.
 
@@ -17,7 +17,7 @@ Read `.claude/onboard-meta.json`:
 
 > This project hasn't been set up with onboard yet.
 >
-> Run `/onboard:init` to analyze your codebase and generate Claude tooling.
+> Run `/onboard:start` to analyze your codebase and generate Claude tooling.
 
 Stop here.
 
@@ -41,7 +41,7 @@ If `onboard-meta.json` cannot be parsed (corrupted, malformed JSON, or unreadabl
 > The metadata file `.claude/onboard-meta.json` appears to be corrupted and couldn't be parsed.
 >
 > You can:
-> 1. **Re-initialize** — Run `/onboard:init` to start fresh with a new analysis and wizard
+> 1. **Re-initialize** — Run `/onboard:start` to start fresh with a new analysis and wizard
 > 2. **Continue without metadata** — I'll check artifact integrity only (file existence and headers), but skip drift detection and preference display
 
 Wait for the developer's choice before proceeding. If they choose option 2, skip Steps 4 and 6 (drift check and preferences summary) and note the limitation in the status report.

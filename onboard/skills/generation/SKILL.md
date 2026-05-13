@@ -1,6 +1,6 @@
 ---
 name: generation
-description: Core artifact generator for Claude tooling (CLAUDE.md, rules, skills, agents, hooks). Internal building block invoked by the config-generator agent during /onboard:init and /onboard:generate — not user-invocable.
+description: Core artifact generator for Claude tooling (CLAUDE.md, rules, skills, agents, hooks). Internal building block invoked by the config-generator agent during /onboard:start and /onboard:generate — not user-invocable.
 user-invocable: false
 ---
 
@@ -102,7 +102,7 @@ Follow `references/claude-md-guide.md` for structure and best practices.
 - **Tone matches autonomy level**: "always-ask" = more guardrails and "check with developer" language; "autonomous" = more empowering and "go ahead" language; "balanced" = mix
 - **Formatter conventions**: Include formatter settings (from Prettier/Black/rustfmt configs) as explicit conventions in Key Conventions section rather than as path-scoped rules
 - **Commands section**: List every discovered build/test/lint/deploy command with brief descriptions
-- **Ecosystem plugins section** (if any were set up): If `ecosystemPlugins` is present in wizard answers, add a brief "Ecosystem Plugins" section noting which plugins are active (e.g., "notify: system notifications on task completion"). Include relevant commands (`/notify:status`).
+- **Ecosystem plugins section** (if any were set up): If `ecosystemPlugins` is present in wizard answers, add a brief "Ecosystem Plugins" section noting which plugins are active (e.g., "notify: system notifications on task completion"). Include relevant commands (`/notify:check`).
 - **Plugin Integration section** (if `effectivePlugins` is non-empty): Generate a dedicated `## Plugin Integration` section that documents the installed Claude Code plugins and how to use them on this specific project. See "Plugin Integration Section Generation" below for the full spec.
 
 #### Plugin Integration Section Generation
@@ -542,7 +542,7 @@ This project uses TDD. Install these plugins for the best workflow:
 - **feature-dev** (official Anthropic plugin) — Structured feature development
   with code-explorer, code-architect, and code-reviewer agents.
 
-After installing, re-run `/onboard:init` to upgrade from standalone TDD
+After installing, re-run `/onboard:start` to upgrade from standalone TDD
 artifacts to the integrated plugin-based workflow.
 ```
 
@@ -957,9 +957,9 @@ When `effectiveQualityGates` is present (from either `callerExtras.qualityGates`
 2. Recorded inside `.claude/onboard-meta.json` under the top-level `hookStatus` key
 3. Mirrored by greenfield into `.claude/greenfield-meta.json.generated.toolingFlags.hookStatus` (see `greenfield/skills/tooling-generation/SKILL.md` § Step 4)
 
-This telemetry enables `/greenfield:status` to report "X/Y hooks wired" and lays the foundation for future adaptive behaviors (e.g. suppress SessionStart reminder after the user dismissed it N times).
+This telemetry enables `/greenfield:check` to report "X/Y hooks wired" and lays the foundation for future adaptive behaviors (e.g. suppress SessionStart reminder after the user dismissed it N times).
 
-**Scope boundary** (load-bearing — read this carefully): `hookStatus` tracks **only** hooks derived from `callerExtras.qualityGates`. Pre-existing format/lint hooks (Prettier, ESLint, Black, rustfmt, etc.), greenfield-internal hooks (like `greenfield-evolution-check.sh`), and any other non-Plugin-Integration hooks are **out of scope** for this telemetry. They still get written to `.claude/settings.json` via the normal merge path, but they do **not** appear in `hookStatus.planned` or `hookStatus.generated`. This keeps Plugin Integration Coverage reporting clean — `/greenfield:status` should never show a confusing "wired 2 hooks but planned 0" because format hooks inflated the count.
+**Scope boundary** (load-bearing — read this carefully): `hookStatus` tracks **only** hooks derived from `callerExtras.qualityGates`. Pre-existing format/lint hooks (Prettier, ESLint, Black, rustfmt, etc.), greenfield-internal hooks (like `greenfield-evolution-check.sh`), and any other non-Plugin-Integration hooks are **out of scope** for this telemetry. They still get written to `.claude/settings.json` via the normal merge path, but they do **not** appear in `hookStatus.planned` or `hookStatus.generated`. This keeps Plugin Integration Coverage reporting clean — `/greenfield:check` should never show a confusing "wired 2 hooks but planned 0" because format hooks inflated the count.
 
 The mental model: `hookStatus` answers "how well did the Plugin Integration contract land?", not "how many shell hooks does this project have total?".
 

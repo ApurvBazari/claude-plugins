@@ -121,7 +121,7 @@ Listen carefully. From the answer, infer:
 
 Emit the progress indicator. Ask Q2.1 about their stack preference. If they know, ask Q2.2 for details.
 
-**Research pause**: After gathering the stack, dispatch the `stack-researcher` agent with a clear research brief. The agent's first action is a real npm-registry call (zero overhead when web works) — if that fails, the agent immediately returns the sentinel `STACK_RESEARCH_REQUIRES_MAIN_SESSION` (see `greenfield/agents/stack-researcher.md` § Sentinel and `greenfield/skills/init/references/stack-research-checklist.md` § 0 / § Output).
+**Research pause**: After gathering the stack, dispatch the `stack-researcher` agent with a clear research brief. The agent's first action is a real npm-registry call (zero overhead when web works) — if that fails, the agent immediately returns the sentinel `STACK_RESEARCH_REQUIRES_MAIN_SESSION` (see `greenfield/agents/stack-researcher.md` § Sentinel and `greenfield/skills/start/references/stack-research-checklist.md` § 0 / § Output).
 
 **Handling the two possible agent outcomes**:
 
@@ -135,7 +135,7 @@ Detect by greping the agent's response for the literal string `STACK_RESEARCH_RE
 1. Tell the user what happened, concisely:
    > "The background research agent doesn't have web access in this session. I'll run the same research checklist in our main conversation so you can see and approve each web call."
 
-2. Read `greenfield/skills/init/references/stack-research-checklist.md` and run sections 1-7 inline using main-session `WebSearch` and `WebFetch`. Per-call permission prompts will appear to the user; ask them to approve so research can proceed. The checklist is the single source of truth shared with the agent — following it inline produces the same report shape.
+2. Read `greenfield/skills/start/references/stack-research-checklist.md` and run sections 1-7 inline using main-session `WebSearch` and `WebFetch`. Per-call permission prompts will appear to the user; ask them to approve so research can proceed. The checklist is the single source of truth shared with the agent — following it inline produces the same report shape.
 
 3. If the user denies web access entirely, offer a degraded path:
    > "Without web research, I'll use my training data to make stack recommendations, but please verify versions and scaffold CLIs manually before we proceed with scaffolding — my knowledge may be months out of date."
@@ -577,7 +577,7 @@ Fields that were skipped are set to `null` or omitted.
 
 ## Checkpoint Protocol (for resume support)
 
-This skill MUST write `.claude/greenfield-state.json` after each Step so that `/greenfield:resume` can pick up mid-wizard if the session is interrupted. See `skills/init/SKILL.md` for the full state schema.
+This skill MUST write `.claude/greenfield-state.json` after each Step so that `/greenfield:pickup` can pick up mid-wizard if the session is interrupted. See `skills/start/SKILL.md` for the full state schema.
 
 ### When to checkpoint
 Write a checkpoint **after each named Step completes** (not after each individual question within a step):
@@ -603,7 +603,7 @@ Write a checkpoint **after each named Step completes** (not after each individua
 Always write to `.claude/greenfield-state.json.tmp` first, then `mv` to `.claude/greenfield-state.json`. This avoids corrupted state if the session is killed mid-write. If the tmp file exists from a prior interrupted write, remove it before starting.
 
 ### Resume entry contract
-When this skill is invoked via `/greenfield:resume`, it receives a `completedSteps` list. At the start of the flow, check this list and **skip any Step whose identifier is already in `completedSteps`**. Never re-ask questions whose answers are already in the `context` object.
+When this skill is invoked via `/greenfield:pickup`, it receives a `completedSteps` list. At the start of the flow, check this list and **skip any Step whose identifier is already in `completedSteps`**. Never re-ask questions whose answers are already in the `context` object.
 
 ### First write (new sessions)
 On the very first checkpoint of a new session, also populate:

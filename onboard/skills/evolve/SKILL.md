@@ -217,7 +217,7 @@ Run the same drift classification as `../update/SKILL.md` § 4b.8 LSP Plugin Dri
 
 **Snapshot-missing migration** (pre-1.8.0 projects running evolve on 1.8.0+):
 
-When `.claude/onboard-lsp-snapshot.json` is absent, fire a one-time initial prompt just like `/onboard:init` Phase 5.6. After the user's response, write the snapshot with `recommended` = full detected list, `accepted` = user's selected subset. Subsequent evolve runs follow the normal drift flow.
+When `.claude/onboard-lsp-snapshot.json` is absent, fire a one-time initial prompt just like `/onboard:start` Phase 5.6. After the user's response, write the snapshot with `recommended` = full detected list, `accepted` = user's selected subset. Subsequent evolve runs follow the normal drift flow.
 
 **Headless mode** (when called via `generate` with `callerExtras.lspPlugins` set): evolve delegates to the caller's explicit list — no prompt fires. An empty array means "declined all"; an absent caller value falls through to interactive prompting.
 

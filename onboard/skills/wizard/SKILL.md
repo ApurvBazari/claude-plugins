@@ -1,6 +1,6 @@
 ---
 name: wizard
-description: Adaptive Q&A flow for gathering developer preferences during /onboard:init. Internal building block invoked by the init skill — not user-invocable.
+description: Adaptive Q&A flow for gathering developer preferences during /onboard:start. Internal building block invoked by the init skill — not user-invocable.
 user-invocable: false
 ---
 

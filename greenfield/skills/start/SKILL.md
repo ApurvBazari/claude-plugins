@@ -1,10 +1,10 @@
 ---
-name: init
-description: Full 3-phase greenfield orchestrator — context gathering, scaffold, AI tooling. Creates a new project from scratch with AI-native Claude tooling built in from day one. Use only when user explicitly invokes /greenfield:init.
+name: start
+description: Full 3-phase greenfield orchestrator — context gathering, scaffold, AI tooling. Creates a new project from scratch with AI-native Claude tooling built in from day one. Use only when user explicitly invokes /greenfield:start.
 disable-model-invocation: true
 ---
 
-# Init Skill — Scaffold a New Project with AI-Native Tooling
+# Start Skill — Scaffold a New Project with AI-Native Tooling
 
 You are running the Greenfield initialization wizard. This is a guided, 3-phase process that discusses what the developer wants to build, scaffolds the application, and equips it with auto-evolving Claude Code tooling.
 
@@ -25,8 +25,8 @@ Check for `.claude/greenfield-state.json`:
 > **Next action**: [nextAction]
 >
 > Options:
-> 1. **Resume** — continue from where you left off (equivalent to `/greenfield:resume`)
-> 2. **Start fresh** — archive the old state to `.claude/greenfield-state.archived-[timestamp].json` and begin a new `/greenfield:init` run
+> 1. **Resume** — continue from where you left off (equivalent to `/greenfield:pickup`)
+> 2. **Start fresh** — archive the old state to `.claude/greenfield-state.archived-[timestamp].json` and begin a new `/greenfield:start` run
 > 3. **Inspect** — show me the state file contents so I can decide
 
 Use AskUserQuestion. Do not proceed until the user chooses.
@@ -35,9 +35,9 @@ Use AskUserQuestion. Do not proceed until the user chooses.
 
 > This directory already has a completed Greenfield setup (finished [updatedAt]).
 >
-> Re-running `/greenfield:init` would scaffold on top of the existing project, which is probably not what you want. Options:
-> 1. **Start fresh in a new directory** — move to an empty directory and run `/greenfield:init` there
-> 2. **Reconfigure existing** — run `/greenfield:status` to see current state, or `/greenfield:evolve` (from onboard) to update tooling
+> Re-running `/greenfield:start` would scaffold on top of the existing project, which is probably not what you want. Options:
+> 1. **Start fresh in a new directory** — move to an empty directory and run `/greenfield:start` there
+> 2. **Reconfigure existing** — run `/greenfield:check` to see current state, or `/greenfield:evolve` (from onboard) to update tooling
 > 3. **Force re-init** — archive the current state and start over (you'll need to manually clean the scaffold; I won't delete files)
 
 Wait for the user's choice.
@@ -79,9 +79,9 @@ Greenfield writes to `.claude/greenfield-state.json` at every natural checkpoint
 }
 ```
 
-**Checkpoint contract**: every skill that participates in the `/greenfield:init` flow MUST update `greenfield-state.json` after completing a named step. The checkpoint writes must be atomic (write to `.tmp` then rename) to avoid corruption if interrupted mid-write. See individual skill files for the checkpoint sections.
+**Checkpoint contract**: every skill that participates in the `/greenfield:start` flow MUST update `greenfield-state.json` after completing a named step. The checkpoint writes must be atomic (write to `.tmp` then rename) to avoid corruption if interrupted mid-write. See individual skill files for the checkpoint sections.
 
-When the entire workflow completes, set `currentPhase = "complete"` and `updatedAt` as the final write. This is what `/greenfield:status` and `/greenfield:resume` check to distinguish in-progress from finished sessions.
+When the entire workflow completes, set `currentPhase = "complete"` and `updatedAt` as the final write. This is what `/greenfield:check` and `/greenfield:pickup` check to distinguish in-progress from finished sessions.
 
 ---
 
@@ -286,7 +286,7 @@ After all phases complete, present the completion summary:
 > 4. After implementing a feature, run `/onboard:verify F001` for independent evaluation
 > 5. When Sprint 1 features are done, run `/onboard:verify --sprint 1` to check the sprint contract
 > 6. Your tooling evolves — [auto-updates / run /onboard:evolve when notified] to keep AI tooling current
-> 7. Check health — run `/greenfield:status` anytime to verify tooling is in sync
+> 7. Check health — run `/greenfield:check` anytime to verify tooling is in sync
 
 ---
 
@@ -306,7 +306,7 @@ Every phase has its own failure modes. The table below is the authoritative per-
 
 | Failure | Cause | Recovery |
 |---|---|---|
-| Developer abandons mid-wizard (Ctrl-C, session killed) | Unexpected | State is already checkpointed per-step. `/greenfield:resume` picks up at the last completed Step. |
+| Developer abandons mid-wizard (Ctrl-C, session killed) | Unexpected | State is already checkpointed per-step. `/greenfield:pickup` picks up at the last completed Step. |
 | Stack researcher sub-agent denied web tools | Permission sandbox isolation | Fall back to main-session research with user-approved WebFetch. See `context-gathering/SKILL.md` Step 2 "Outcome B". |
 | User denies main-session web access too | Policy choice | Degrade to training-data-only mode with explicit warning. Mark `research.mode = "training-data-only"` in state. |
 | Deep-research rabbit hole detected | Scope creep on a single question | "Park it" escape hatch presents Park / Deep-dive / Default options. Never silently continue a 30+ minute research session. |
@@ -319,7 +319,7 @@ Every phase has its own failure modes. The table below is the authoritative per-
 | `mattpocock-skills:grill-me` not installed | User hasn't installed the optional companion plugin | Fall back to inline grill (`references/inline-grill-fallback.md`). One-line note to user; never crash the run. |
 | External grill-me Skill call errors mid-run | Slash form drift, plugin bug | Same fallback as above; log the error to `greenfield-state.json.research.notes` for later inspection. |
 | Grilling exposes a stack-level conflict | Spec was inconsistent | Step 4 conflict resolution. Options: auto-fix / drop feature / route back to Phase 1.5. Never silent. |
-| User abandons mid-grill (Ctrl-C) | Unexpected | State already checkpointed at category boundaries. `/greenfield:resume` picks up at the next un-asked category. |
+| User abandons mid-grill (Ctrl-C) | Unexpected | State already checkpointed at category boundaries. `/greenfield:pickup` picks up at the next un-asked category. |
 | Grilling extends past 10-minute timebox without convergence | User exploring deeply | Surface "extend or finish" prompt. If user finishes, capture remaining categories as parked questions. |
 
 ### Phase 1.8: Synthesis Review
@@ -330,7 +330,7 @@ Every phase has its own failure modes. The table below is the authoritative per-
 | `superpowers:brainstorming` unavailable during Adjust | Plugin not installed | `synthesis-review` Step 5 skips Stage 1; uses the developer's adjustment intent verbatim. Records `via: "grill-me-only"` or `via: "inline-fallback"`. |
 | `mattpocock-skills:grill-me` unavailable during Adjust | Plugin not installed | `synthesis-review` Step 5 skips Stage 2; developer confirms candidate directly. Records `via: "brainstorming-only"` or `via: "inline-fallback"`. |
 | Both plugins unavailable | Bare-bones environment | Inline 3-question mini-dialog (see `synthesis-review/references/adjust-dialog-protocol.md § Inline fallback`). |
-| Developer abandons mid-synthesis-walk | Ctrl-C | State already checkpointed at each section's Approve/Adjust/Skip boundary. `/greenfield:resume` reads `currentSynthesisPhase` and re-enters synthesis-review at the next un-decided section. |
+| Developer abandons mid-synthesis-walk | Ctrl-C | State already checkpointed at each section's Approve/Adjust/Skip boundary. `/greenfield:pickup` reads `currentSynthesisPhase` and re-enters synthesis-review at the next un-decided section. |
 | Adjust dialog loops more than 3 times on one section | Section needs deeper revisiting | Halt the section's loop; offer Skip with a note. Three adjustments without convergence is a sign the section needs a future session. |
 | Pre-commit hook installation fails | `.git/hooks/` missing or read-only | Tell the developer, continue the synthesis. Hook installation is best-effort — synthesis records still get written. |
 
@@ -342,16 +342,16 @@ Every phase has its own failure modes. The table below is the authoritative per-
 | External CLI scaffold fails mid-execution | Network, bad flags, permission | Leave partial files, show error, offer: retry with different flags / switch to Path B from-scratch / abort. |
 | Git init fails | git not installed, or already a repo | Show error, offer manual resolution. Don't abort the whole phase. |
 | Hello World verification fails | Build succeeds but app doesn't start | Report the error but don't block Phase 3. Developer can debug separately. |
-| Session killed mid-scaffold | — | `/greenfield:resume` detects inconsistency between state file and filesystem. User chooses: inspect, clean-and-retry, or abort. |
+| Session killed mid-scaffold | — | `/greenfield:pickup` detects inconsistency between state file and filesystem. User chooses: inspect, clean-and-retry, or abort. |
 | Walking skeleton Path D fails | Stack-specific | Revert to Path B (from scratch) with guidance, or ask user to describe architectural layers manually. |
 
 ### Phase 3: AI Tooling
 
 | Failure | Cause | Recovery |
 |---|---|---|
-| Onboard plugin missing | Not installed | Offer inline install. If declined or install fails, abort Phase 3 with a recovery message pointing to the intact Phase 2 scaffold and suggesting `/onboard:init` manual recovery. Skip Phases 3.3, 3.4, 4 and go to minimal Handoff. |
+| Onboard plugin missing | Not installed | Offer inline install. If declined or install fails, abort Phase 3 with a recovery message pointing to the intact Phase 2 scaffold and suggesting `/onboard:start` manual recovery. Skip Phases 3.3, 3.4, 4 and go to minimal Handoff. |
 | Onboard invocation errors after being present | Bug in onboard, bad input | Report the error. Partial CI/CD and hooks can still be generated independently. Continue with what works. |
-| Session killed mid-`/onboard:generate` | Long-running step | `/greenfield:resume` detects partial output. User chooses: delete and retry / retry in recovery mode if supported / fast-forward past. Never silently retry on top of partial output. |
+| Session killed mid-`/onboard:generate` | Long-running step | `/greenfield:pickup` detects partial output. User chooses: delete and retry / retry in recovery mode if supported / fast-forward past. Never silently retry on top of partial output. |
 | Plugin discovery fails (catalog unreadable) | Plugin dev issue | Fall back to a hardcoded list of "always install" plugins (superpowers, commit-commands, claude-md-management) and continue. |
 
 
@@ -361,4 +361,4 @@ Every phase has its own failure modes. The table below is the authoritative per-
 - **Always checkpoint before risky operations.** `greenfield-state.json` must be current before any destructive step.
 - **Never force git operations.** No force-push, no branch deletion without explicit confirmation.
 - **Never call a sub-tool silently when it can fail.** Always wrap in try/handle-error and surface meaningful messages.
-- **Always offer a resume path.** Even on abort, leave `greenfield-state.json` in place so `/greenfield:resume` works later.
+- **Always offer a resume path.** Even on abort, leave `greenfield-state.json` in place so `/greenfield:pickup` works later.

@@ -1,9 +1,9 @@
 ---
-name: resume
-description: Resume an in-progress greenfield session from the last checkpoint in .claude/greenfield-state.json. Use when user wants to continue a paused /greenfield:init run, asks about resuming greenfield, mentions a session was interrupted, or opens a fresh Claude Code conversation in a project that has a greenfield session in flight.
+name: pickup
+description: Resume an in-progress greenfield session from the last checkpoint in .claude/greenfield-state.json. Use when user wants to continue a paused /greenfield:start run, asks about resuming greenfield, mentions a session was interrupted, or opens a fresh Claude Code conversation in a project that has a greenfield session in flight.
 ---
 
-# Resume Skill — Resume an In-Progress Greenfield Session
+# Pickup Skill — Resume an In-Progress Greenfield Session
 
 You are resuming an in-progress Greenfield workflow that was paused mid-flight. Greenfield persists its state to `.claude/greenfield-state.json` at every checkpoint, so you can pick up exactly where the previous session left off — even in a completely fresh Claude Code conversation.
 
@@ -17,7 +17,7 @@ Check for `.claude/greenfield-state.json` in the current working directory.
 
 > No in-progress Greenfield session found in this directory.
 >
-> - If this is a new project → run `/greenfield:init` to start.
+> - If this is a new project → run `/greenfield:start` to start.
 > - If you expected a session to be in progress here → you may be in the wrong directory. Greenfield state is project-local; `cd` into the project that was in progress.
 
 Stop.
@@ -60,7 +60,7 @@ Validate:
 >
 > Options:
 > 1. Show me the raw file contents so we can recover together
-> 2. Delete it and start fresh with `/greenfield:init`
+> 2. Delete it and start fresh with `/greenfield:start`
 > 3. Restore from git history if the file is tracked
 
 Ask the user. Do not auto-delete.
@@ -71,9 +71,9 @@ Ask the user. Do not auto-delete.
 
 **If `currentPhase === "complete"`**:
 
-> This Greenfield session already completed on [updatedAt]. Running `/greenfield:resume` does nothing — there's nothing to resume.
+> This Greenfield session already completed on [updatedAt]. Running `/greenfield:pickup` does nothing — there's nothing to resume.
 >
-> Use `/greenfield:status` to inspect the completed project, or start a new project in a different directory with `/greenfield:init`.
+> Use `/greenfield:check` to inspect the completed project, or start a new project in a different directory with `/greenfield:start`.
 
 Stop.
 
@@ -164,7 +164,7 @@ Pass the full `context` object, `researchFindings`, `parkedQuestions`, and `comp
 
 ## Step 6: Continue normally
 
-From this point on, the flow is identical to `/greenfield:init` starting from the resumed phase. The skill continues writing checkpoints to `greenfield-state.json` after each step, so if this session also gets interrupted, the user can resume again.
+From this point on, the flow is identical to `/greenfield:start` starting from the resumed phase. The skill continues writing checkpoints to `greenfield-state.json` after each step, so if this session also gets interrupted, the user can resume again.
 
 At the end of the workflow (all phases complete), set `currentPhase = "complete"` in the state file and proceed to the Handoff summary.
 
@@ -172,16 +172,16 @@ At the end of the workflow (all phases complete), set `currentPhase = "complete"
 
 ## Error handling
 
-- **State file not found**: see Step 1 — instruct the user to run `/greenfield:init` or check their directory.
+- **State file not found**: see Step 1 — instruct the user to run `/greenfield:start` or check their directory.
 - **State file corrupt**: see Step 2 — offer recovery paths, never auto-delete.
 - **Skill fails to resume mid-flow**: if a skill doesn't properly skip completed steps and asks the user something they already answered, apologize and continue; do NOT re-write answers to the state file. Log the issue for future skill improvements.
-- **User aborts during resume**: leave the state file as-is. A subsequent `/greenfield:resume` should work.
+- **User aborts during resume**: leave the state file as-is. A subsequent `/greenfield:pickup` should work.
 
 ---
 
 ## Design notes
 
-- **Why a separate skill?** `/greenfield:init` is already long and complex. Resuming is a distinct user intent ("I was already working on this, continue where I left off") that deserves its own entry point.
-- **Why not auto-resume in `/greenfield:init`?** `/greenfield:init` DOES check for an existing state file and offers resume — this skill is the direct entry point for users who know they want to resume (faster than going through init's guard checks).
+- **Why a separate skill?** `/greenfield:start` is already long and complex. Resuming is a distinct user intent ("I was already working on this, continue where I left off") that deserves its own entry point.
+- **Why not auto-resume in `/greenfield:start`?** `/greenfield:start` DOES check for an existing state file and offers resume — this skill is the direct entry point for users who know they want to resume (faster than going through init's guard checks).
 - **Why JSON, not YAML?** The wizard updates state frequently; JSON parse/stringify is universal and fast. YAML adds no value here.
 - **Why per-project state?** Greenfield state is tied to a specific scaffold. If you had global state, you couldn't work on two projects concurrently.

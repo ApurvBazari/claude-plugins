@@ -32,7 +32,7 @@ Use AskUserQuestion with two options:
 
 1. Run `claude plugin install onboard` via the Bash tool.
 2. Re-run the detection probe above.
-3. **On success** — continue to Step 1. If `/onboard:generate` isn't immediately available in this session (Claude Code sometimes needs a reload for newly installed slash commands), tell the developer: "Onboard is installed, but its commands may not be available until you restart the session. If Phase 3.2 fails to invoke `/onboard:generate`, restart Claude Code and rerun `/greenfield:init` — it will detect the existing scaffold."
+3. **On success** — continue to Step 1. If `/onboard:generate` isn't immediately available in this session (Claude Code sometimes needs a reload for newly installed slash commands), tell the developer: "Onboard is installed, but its commands may not be available until you restart the session. If Phase 3.2 fails to invoke `/onboard:generate`, restart Claude Code and rerun `/greenfield:start` — it will detect the existing scaffold."
 4. **On install failure** — surface the underlying error verbatim (network, marketplace not added, auth issue). Then abort Phase 3 using the same message as the decline path below.
 
 ### If the developer declines or install fails
@@ -43,12 +43,12 @@ Abort Phase 3 with a clear recovery message:
 >
 > To recover:
 > 1. Install onboard manually: `claude plugin install onboard`
-> 2. Run `/onboard:init` directly on the scaffolded project to generate AI tooling
-> 3. (Optional) Rerun `/greenfield:init` later for the full 4-phase experience
+> 2. Run `/onboard:start` directly on the scaffolded project to generate AI tooling
+> 3. (Optional) Rerun `/greenfield:start` later for the full 4-phase experience
 >
 > Your scaffold and git history are preserved. No cleanup needed.
 
-Do not delete files. Do not touch git. Do not call onboard. Signal abort back to `/greenfield:init` — the command will skip Phases 3.3, 3.4, and 4 and go straight to a minimal Handoff that reports what was scaffolded and how to recover.
+Do not delete files. Do not touch git. Do not call onboard. Signal abort back to `/greenfield:start` — the command will skip Phases 3.3, 3.4, and 4 and go straight to a minimal Handoff that reports what was scaffolded and how to recover.
 
 ---
 
@@ -120,7 +120,7 @@ Spawn the `scaffold-analyzer` agent to scan the freshly scaffolded project. The 
 
 ### Sanitise free-text wizard answers
 
-Before forwarding to onboard, apply the canonical untrusted-input sanitiser from `${CLAUDE_PLUGIN_ROOT}/../onboard/skills/init/references/onboard-context-builder.md § Untrusted-input sanitiser` to every free-text field captured by the wizard. This is a defence-in-depth layer on top of the `<untrusted-user-input>` XML framing that `onboard/skills/generate/SKILL.md § Validate` applies at dispatch time — callers (greenfield + onboard:init) are expected to have pre-sanitised these values. Do NOT skip this step; `generate/SKILL.md` explicitly delegates the work to callers and does not duplicate it.
+Before forwarding to onboard, apply the canonical untrusted-input sanitiser from `${CLAUDE_PLUGIN_ROOT}/../onboard/skills/start/references/onboard-context-builder.md § Untrusted-input sanitiser` to every free-text field captured by the wizard. This is a defence-in-depth layer on top of the `<untrusted-user-input>` XML framing that `onboard/skills/generate/SKILL.md § Validate` applies at dispatch time — callers (greenfield + onboard:start) are expected to have pre-sanitised these values. Do NOT skip this step; `generate/SKILL.md` explicitly delegates the work to callers and does not duplicate it.
 
 Apply to these fields (and any future free-text wizard field added to `wizardAnswers`):
 
@@ -311,7 +311,7 @@ Update `.claude/greenfield-meta.json`. The schema lives at `references/greenfiel
 Note on the 2026-04-16 release-gate finding (FO2): earlier versions wrote `generated.tooling`, `generated.cicd`, `generated.harness` as **siblings** to `generated.toolingFlags`. That dot-notation drift was inconsistent with the documented `toolingFlags` namespace. The shape below consolidates everything under `generated.toolingFlags` — old-shape projects heal on the next regeneration (no auto-migration).
 
 Update with:
-- `generated.toolingFlags`: **the full `callerExtras` object built in Step 1 + the artifact lists + the `hookStatus` object from onboard's response**. Replaces the previous `generated.tooling` / `generated.cicd` / `generated.harness` sibling fields. This persists `tooling` / `cicd` / `harness` artifact lists, `installedPlugins`, `coveredCapabilities`, `qualityGates`, `phaseSkills`, `allowPluginReferences`, and the seven status objects so `/greenfield:status` can report Plugin Integration Coverage without re-deriving them. Shape:
+- `generated.toolingFlags`: **the full `callerExtras` object built in Step 1 + the artifact lists + the `hookStatus` object from onboard's response**. Replaces the previous `generated.tooling` / `generated.cicd` / `generated.harness` sibling fields. This persists `tooling` / `cicd` / `harness` artifact lists, `installedPlugins`, `coveredCapabilities`, `qualityGates`, `phaseSkills`, `allowPluginReferences`, and the seven status objects so `/greenfield:check` can report Plugin Integration Coverage without re-deriving them. Shape:
 
   ```jsonc
   {
@@ -407,14 +407,14 @@ Update with:
   - Copy `installedPlugins`, `coveredCapabilities`, `allowPluginReferences`, `allowHttpHooks`, `qualityGates`, `phaseSkills` from the in-memory `callerExtras` object exactly as it was sent to `/onboard:generate` — including the autonomyLevel-downgraded `preCommit[].mode` values and any per-entry `hookType`/`promptRef`/`promptInline`/`agentRef`/`httpUrl`/`httpHeaders`/`timeout` fields. Do not re-derive.
   - Copy `hookStatus` verbatim from the `/onboard:generate` response object (see `onboard/skills/generate/SKILL.md` § Step 5). Do not reshape. `generated` values vary by hook type (script basename for `command`, prompt filename for `prompt`, agent name for `agent`, URL for `http`) — treat the value as an opaque string array.
   - **Invariant**: `toolingFlags.hookStatus.planned` keys should match what onboard expected to generate from `toolingFlags.qualityGates`. A mismatch signals a contract drift between greenfield and onboard.
-  - **Key format passthrough**: hookStatus keys use `<Event>[:<Matcher>][:<Type>]` format. The `:<Type>` suffix is OMITTED when the hook type is `command` (backward compatible — pre-upgrade greenfield-meta.json fixtures remain byte-identical). Non-command types surface as e.g. `TaskCompleted:agent`, `UserPromptSubmit:prompt`, `Elicitation::http` (double colon when matcher is absent but type is non-default). Greenfield treats these keys as opaque strings and never parses them — parsing happens in downstream consumers (`/greenfield:status`, `/onboard:status`). See `onboard/skills/generation/SKILL.md` § Hook Status Telemetry for the full key-format contract.
+  - **Key format passthrough**: hookStatus keys use `<Event>[:<Matcher>][:<Type>]` format. The `:<Type>` suffix is OMITTED when the hook type is `command` (backward compatible — pre-upgrade greenfield-meta.json fixtures remain byte-identical). Non-command types surface as e.g. `TaskCompleted:agent`, `UserPromptSubmit:prompt`, `Elicitation::http` (double colon when matcher is absent but type is non-default). Greenfield treats these keys as opaque strings and never parses them — parsing happens in downstream consumers (`/greenfield:check`, `/onboard:check`). See `onboard/skills/generation/SKILL.md` § Hook Status Telemetry for the full key-format contract.
 
 - `context.verificationStrategy`: the chosen approach
 - `costs.greenfieldInit`: estimated token usage
 
 ## Checkpoint Protocol (for resume support)
 
-This skill MUST write `.claude/greenfield-state.json` after each Step so `/greenfield:resume` can pick up mid-generation if the session is interrupted. See `skills/init/SKILL.md` for the full state schema.
+This skill MUST write `.claude/greenfield-state.json` after each Step so `/greenfield:pickup` can pick up mid-generation if the session is interrupted. See `skills/start/SKILL.md` for the full state schema.
 
 ### When to checkpoint
 
@@ -436,7 +436,7 @@ Step 2 (invoking `/onboard:generate`) is the single longest-running step in all 
 Same protocol as other skills: write to `.claude/greenfield-state.json.tmp`, then `mv` to `.claude/greenfield-state.json`.
 
 ### Resume entry contract
-When invoked via `/greenfield:resume`, check `completedSteps` and skip anything already done. Do NOT re-invoke `/onboard:generate` if `onboard-invoke` is in `completedSteps`.
+When invoked via `/greenfield:pickup`, check `completedSteps` and skip anything already done. Do NOT re-invoke `/onboard:generate` if `onboard-invoke` is in `completedSteps`.
 
 ## Key Rules
 

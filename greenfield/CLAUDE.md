@@ -5,7 +5,7 @@ Scaffolds new projects with AI-native, auto-evolving Claude Code tooling. Three-
 ## Architecture
 
 ```
-/greenfield:init
+/greenfield:start
      │
      ▼
 Phase 1: Context Gathering ──→ context-gathering skill (adaptive wizard)
@@ -65,9 +65,9 @@ Greenfield only generates two artifacts that require scaffold-specific knowledge
 
 User-facing skills (show in `/greenfield:` autocomplete):
 
-- `init/SKILL.md` — full 3-phase flow (context → scaffold → AI tooling). Checks for in-flight state at startup and offers resume. (`disable-model-invocation: true`)
-- `resume/SKILL.md` — resume an in-progress greenfield session from the last checkpoint in `.claude/greenfield-state.json` (auto-invocable)
-- `status/SKILL.md` — project health check; also reports in-flight session state if present (auto-invocable)
+- `start/SKILL.md` — full 3-phase flow (context → scaffold → AI tooling). Checks for in-flight state at startup and offers resume. (`disable-model-invocation: true`)
+- `pickup/SKILL.md` — resume an in-progress greenfield session from the last checkpoint in `.claude/greenfield-state.json` (auto-invocable)
+- `check/SKILL.md` — project health check; also reports in-flight session state if present (auto-invocable)
 
 Internal building blocks (`user-invocable: false`):
 
@@ -94,7 +94,7 @@ Note: `/greenfield:verify`, `/greenfield:evolve` are now `/onboard:verify`, `/on
 - Feature decomposition: mandatory — downstream phases depend on `docs/feature-list.json` existing
 - Plugin-aware generation: coveredCapabilities passed to onboard, prevents agent shadowing
 - Greenfield metadata: `.claude/greenfield-meta.json` records all context, decisions, and generated artifacts (post-scaffold). Schema is the single source of truth at `greenfield/skills/tooling-generation/references/greenfield-meta.schema.json` — tooling-generation Step 4 validates against it before write. As of the 2026-04-16 release-gate L5 alignment, everything lives under `generated.toolingFlags` (tooling/cicd/harness/installedPlugins/coveredCapabilities/qualityGates/phaseSkills + the seven status mirrors). The earlier `generated.tooling` / `generated.cicd` / `generated.harness` sibling keys are removed; old-shape projects heal on next regeneration (no auto-migration).
-- **Greenfield state: `.claude/greenfield-state.json` persists in-flight progress** for `/greenfield:resume`. Checkpoint after every skill Step. Atomic write via `.tmp` + rename.
+- **Greenfield state: `.claude/greenfield-state.json` persists in-flight progress** for `/greenfield:pickup`. Checkpoint after every skill Step. Atomic write via `.tmp` + rename.
 - **Scaffold modes**: `full` (default — complete scaffold, then AI tooling) vs `walking-skeleton` (minimal scaffold → AI tooling → expand). Walking skeleton is for stacks without a mature CLI or with complex architecture.
 
 ## Platform Coverage
@@ -127,4 +127,4 @@ Greenfield's approach varies by stack maturity. Be honest about which stacks are
 - **Re-invoking onboard on partial output** — if a greenfield session was killed mid-`/onboard:generate`, ask before retrying (onboard's state file may be inconsistent).
 - **Auto-cleaning partial scaffolds** — never delete files the user might want to inspect. Always ask first.
 - **Writing state directly** — always write to `greenfield-state.json.tmp` then rename, to avoid corruption on interrupt.
-- **Modifying synthesis HTMLs in scaffolded projects without re-running synthesis-review** — these are living architecture records. Hand-edits create drift the freshness hook will flag but can't reverse. Use `/greenfield:resume` and restart the relevant phase if a synthesis record needs revision.
+- **Modifying synthesis HTMLs in scaffolded projects without re-running synthesis-review** — these are living architecture records. Hand-edits create drift the freshness hook will flag but can't reverse. Use `/greenfield:pickup` and restart the relevant phase if a synthesis record needs revision.

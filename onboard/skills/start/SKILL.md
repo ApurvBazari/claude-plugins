@@ -1,10 +1,10 @@
 ---
-name: init
-description: Full interactive onboarding wizard — analyzes the codebase, gathers developer preferences through adaptive Q&A, then generates a complete tailored Claude Code tooling setup (CLAUDE.md, rules, skills, agents, hooks, metadata). Use only when the user explicitly invokes /onboard:init.
+name: start
+description: Full interactive onboarding wizard — analyzes the codebase, gathers developer preferences through adaptive Q&A, then generates a complete tailored Claude Code tooling setup (CLAUDE.md, rules, skills, agents, hooks, metadata). Use only when the user explicitly invokes /onboard:start.
 disable-model-invocation: true
 ---
 
-# Init Skill — Interactive Onboarding Wizard
+# Start Skill — Interactive Onboarding Wizard
 
 You are running the onboard init skill. This is a guided, 4-phase process that analyzes a developer's codebase and generates complete Claude tooling infrastructure.
 
@@ -54,9 +54,9 @@ For empty repos without a prior stub, use `AskUserQuestion` (single-select, head
 
 > This repository has no source code yet. How would you like to proceed?
 >
-> - **Abort** — stop here. Suggestion: run `/greenfield:init` to scaffold a project and generate tooling in one step.
+> - **Abort** — stop here. Suggestion: run `/greenfield:start` to scaffold a project and generate tooling in one step.
 > - **Placeholder only** — write a minimal CLAUDE.md placeholder (no `.claude/` directory). Useful if you want to set up Claude context before the code exists but don't want a formal tooling setup.
-> - **Generate canonical stub** (default) — create CLAUDE.md, `.claude/settings.json`, and `.claude/onboard-meta.json` in canonical schema with stub-mode markers. Re-run `/onboard:init` later to upgrade to full tooling.
+> - **Generate canonical stub** (default) — create CLAUDE.md, `.claude/settings.json`, and `.claude/onboard-meta.json` in canonical schema with stub-mode markers. Re-run `/onboard:start` later to upgrade to full tooling.
 
 Default: **Generate canonical stub**.
 
@@ -64,7 +64,7 @@ Default: **Generate canonical stub**.
 
 ### Step 0.4: Execute the selected path
 
-- **Abort** → stop the skill. No files written. Optionally invoke `/greenfield:init` if the developer explicitly asks.
+- **Abort** → stop the skill. No files written. Optionally invoke `/greenfield:start` if the developer explicitly asks.
 - **Placeholder only** → write CLAUDE.md with the placeholder content from the stub procedure (below) but SKIP the `.claude/` directory. Return minimal handoff. Do not proceed to further phases.
 - **Generate canonical stub** (default) → follow `references/empty-repo-stub-procedure.md`. It prescribes: the 3 files, the canonical `onboard-meta.json` schema with all 7 Phase 7 status keys set to `status: "skipped"` + `reason: "stub-mode-no-code"`, dynamic `pluginVersion` resolution (no hardcoded literals), and the 3-file atomic write order.
 
@@ -213,7 +213,7 @@ If plugins were detected:
 If no plugins were detected:
 
 > No Claude Code plugins detected. I'll generate standalone tooling.
-> You can install plugins later and re-run `/onboard:init` to integrate them.
+> You can install plugins later and re-run `/onboard:start` to integrate them.
 
 ---
 
@@ -351,7 +351,7 @@ Use AskUserQuestion with two options:
 **If the developer installs:**
 1. Run `claude plugin install <plugin>` via the Bash tool.
 2. Re-run the detection probe to verify.
-3. **On success** — proceed to the corresponding setup step. If the plugin's slash commands/scripts aren't immediately available, note: "Plugin installed, but its scripts may not be on disk yet until you restart the session. If setup fails, restart Claude Code and rerun `/onboard:init`."
+3. **On success** — proceed to the corresponding setup step. If the plugin's slash commands/scripts aren't immediately available, note: "Plugin installed, but its scripts may not be on disk yet until you restart the session. If setup fails, restart Claude Code and rerun `/onboard:start`."
 4. **On install failure** — surface the underlying error verbatim. Then emit the explicit skip message below and continue with the next requested plugin.
 
 **If the developer skips or install fails**, emit a clear skip message (never silent):
@@ -457,12 +457,12 @@ Based on what was generated, suggest what to try first:
 
 > **Next steps:**
 > - Review `CLAUDE.md` and adjust anything that doesn't match your preferences
-> - Run `/onboard:status` anytime to check the health of your setup
+> - Run `/onboard:check` anytime to check the health of your setup
 > - Run `/onboard:update` periodically to align with latest Claude best practices
 > - All generated files have maintenance headers — Claude will let you know when they need updating
 
 If ecosystem plugins were set up, add:
-> - Run `/notify:status` to verify notifications are working
+> - Run `/notify:check` to verify notifications are working
 
 ### Step 4.4: Closing
 

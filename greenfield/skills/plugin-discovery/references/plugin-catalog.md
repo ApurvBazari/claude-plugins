@@ -27,7 +27,7 @@ Entries marked `@TODO-verify-marketplace` fall into one of two categories — th
 | **security-guidance** | `security-guidance@claude-plugins-official` _(add: `anthropics/claude-plugins-official`)_ | Hook-based security warnings on file edits | (passive hook) |
 | **hookify** | `hookify@claude-plugins-official` _(add: `anthropics/claude-plugins-official`)_ | Create behavioral guardrails from natural language | `/hookify` |
 | **claude-md-management** | `claude-md-management@claude-plugins-official` _(add: `anthropics/claude-plugins-official`)_ | Audit and improve CLAUDE.md quality over time | `/revise-claude-md` |
-| **notify** | `notify@apurvbazari-plugins` _(add: `apurvbazari/claude-plugins`)_ | Cross-platform system notifications when Claude finishes tasks or needs attention | `/notify:setup`, `/notify:status` |
+| **notify** | `notify@apurvbazari-plugins` _(add: `apurvbazari/claude-plugins`)_ | Cross-platform system notifications when Claude finishes tasks or needs attention | `/notify:setup`, `/notify:check` |
 
 ### Planning Rigor (Universal)
 

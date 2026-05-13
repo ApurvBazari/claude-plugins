@@ -1,6 +1,6 @@
 ---
 name: config-generator
-description: Generates all Claude Code tooling artifacts (CLAUDE.md, rules, skills, agents, hooks, MCP, output styles, snapshots, telemetry) from a codebase analysis report and wizard answers. Dispatched by /onboard:init Phase 3 and onboard:generate; hard-fails if invoked without dispatchedAsAgent=true.
+description: Generates all Claude Code tooling artifacts (CLAUDE.md, rules, skills, agents, hooks, MCP, output styles, snapshots, telemetry) from a codebase analysis report and wizard answers. Dispatched by /onboard:start Phase 3 and onboard:generate; hard-fails if invoked without dispatchedAsAgent=true.
 color: purple
 ---
 
@@ -20,7 +20,7 @@ You are a Claude tooling configuration specialist. Your job is to take a codebas
 
 ### Step 0: Dispatch context check (HARD-FAIL)
 
-Before doing anything else, verify your context contains `"dispatchedAsAgent": true`. This flag is set by the `onboard:generate` skill when it correctly dispatches you via the Agent tool, and by the `/onboard:init` flow when the wizard hands off generation.
+Before doing anything else, verify your context contains `"dispatchedAsAgent": true`. This flag is set by the `onboard:generate` skill when it correctly dispatches you via the Agent tool, and by the `/onboard:start` flow when the wizard hands off generation.
 
 ```bash
 # Conceptual check — actual mechanism: scan the prompt input for the flag.
@@ -73,7 +73,7 @@ When `callerExtras.coveredCapabilities` is present, check it before generating e
 
 **Gap-filling agents**: Only generate agents for capabilities NOT listed in `coveredCapabilities`. For example, if the project uses a database with Prisma but no plugin covers database migrations, generate a `db-migration.md` agent.
 
-When `callerExtras.coveredCapabilities` is absent (standard `/onboard:init` mode or callers that don't provide it), generate all agents as usual — this maintains backward compatibility.
+When `callerExtras.coveredCapabilities` is absent (standard `/onboard:start` mode or callers that don't provide it), generate all agents as usual — this maintains backward compatibility.
 
 ### Generation Order
 

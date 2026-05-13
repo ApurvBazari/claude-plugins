@@ -11,7 +11,7 @@ Read, Write, Edit, Glob, Grep, Bash
 1. **Understand the request**: clarify what component the user wants to create (new plugin, new skill, new agent, new hook)
 
 2. **Reference existing patterns**: before creating anything, read equivalent files from existing plugins to match the established conventions
-   - User-facing skills: reference `onboard/skills/init/SKILL.md` for the orchestration pattern, `onboard/skills/status/SKILL.md` for a read-only auto-invocable skill
+   - User-facing skills: reference `onboard/skills/start/SKILL.md` for the orchestration pattern, `onboard/skills/check/SKILL.md` for a read-only auto-invocable skill
    - Internal building-block skills: reference `onboard/skills/generation/SKILL.md` for the most complete skill pattern (Guard, steps, Key Rules, references/)
    - Agents: reference `onboard/agents/codebase-analyzer.md` for read-only agents, `onboard/agents/config-generator.md` for write agents
    - Shell scripts: reference `notify/scripts/notify.sh` for hook scripts, `onboard/scripts/detect-stack.sh` for utility scripts

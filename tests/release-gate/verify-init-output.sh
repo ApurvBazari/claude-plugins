@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# verify-init-output.sh — Verify /onboard:init generated artifacts
+# verify-init-output.sh — Verify /onboard:start generated artifacts
 # Usage: verify-init-output.sh <REPO_PATH> <PROFILE>
 # Profiles: nextjs | python | monorepo | empty | forge
 
@@ -25,7 +25,7 @@ pass() { PASSED=$((PASSED + 1)); TOTAL=$((TOTAL + 1)); echo "  PASS: $1"; }
 fail() { FAILED=$((FAILED + 1)); TOTAL=$((TOTAL + 1)); echo "  FAIL: $1"; }
 warn() { WARNINGS=$((WARNINGS + 1)); TOTAL=$((TOTAL + 1)); echo "  WARN: $1"; }
 
-echo "## Verify /onboard:init Output"
+echo "## Verify /onboard:start Output"
 echo ""
 echo "Repo: ${REPO}"
 echo "Profile: ${PROFILE}"

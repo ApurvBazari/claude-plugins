@@ -14,7 +14,7 @@ That's it. Nothing else to configure — the SessionStart hook ships inside the 
 
 ## Skills
 
-All skills are invoked as `/handoff:<name>`. Two are auto-invokable (`save`, `resume`); two require explicit invocation (`status` is auto-invokable but read-only; `clear` is destructive).
+All skills are invoked as `/handoff:<name>`. Two are auto-invokable (`save`, `pickup`); two require explicit invocation (`check` is auto-invokable but read-only; `discard` is destructive).
 
 ### `/handoff:save`
 
@@ -22,7 +22,7 @@ Auto-invokes when you say a wrap-up phrase like *"save handoff"*, *"pick this up
 
 The skill writes a directive (what the next session should pick up) to `.claude/handoff.md` with frontmatter capturing `saved-at`, `saved-at-sha`, `saved-at-branch`, and `saved-from-cwd`. On the first save in a repo, it prompts to add `.claude/handoff*.md` to `.gitignore`.
 
-### `/handoff:resume`
+### `/handoff:pickup`
 
 Auto-invokes after the SessionStart hook surfaces a saved handoff. Asks via AskUserQuestion:
 
@@ -33,13 +33,13 @@ Auto-invokes after the SessionStart hook surfaces a saved handoff. Asks via AskU
 | **Discard** | Archive to `.claude/handoff.discarded-<ts>.md` without acting |
 | **Save for later** | Leave the file in place; snooze for 24h so the next session-start doesn't re-surface immediately |
 
-### `/handoff:status` *(read-only)*
+### `/handoff:check` *(read-only)*
 
 Show whether a saved handoff exists, its age, the saved-at SHA/branch, and how far the repo has moved past it (commits, branch changes). Useful as a sanity check before a session-start, or to diagnose "why isn't this surfacing?".
 
-### `/handoff:clear` *(destructive — user-invoked only)*
+### `/handoff:discard` *(destructive — user-invoked only)*
 
-Archive the active handoff without acting on it. Same effect as picking **Discard** in `/handoff:resume`, but invocable from anywhere.
+Archive the active handoff without acting on it. Same effect as picking **Discard** in `/handoff:pickup`, but invocable from anywhere.
 
 ## SessionStart hook
 
@@ -52,7 +52,7 @@ The plugin registers a SessionStart hook (`hooks/session-start.sh`) automaticall
 5. **Snooze check**: if `deferred-at` is within `deferral-snooze-hours` (default 24), exit silent.
 6. Otherwise, emit `additionalContext` to the session: routing instruction + metadata + directive wrapped in `<untrusted-source>` framing.
 
-Claude then invokes `/handoff:resume`, which presents the four-option AskUserQuestion.
+Claude then invokes `/handoff:pickup`, which presents the four-option AskUserQuestion.
 
 ## Configuration
 
@@ -81,7 +81,7 @@ Edit the file directly — changes take effect on the next save / SessionStart.
 |---|---|
 | `.claude/handoff.md` | The active handoff. One per repo (single-slot). |
 | `.claude/handoff.consumed-<ts>.md` | Archived after Execute. |
-| `.claude/handoff.discarded-<ts>.md` | Archived after Discard or `/handoff:clear`. |
+| `.claude/handoff.discarded-<ts>.md` | Archived after Discard or `/handoff:discard`. |
 | `.claude/handoff.expired-<ts>.md` | Archived after `stale-day-threshold` exceeded. |
 | `.claude/handoff-settings.md` | Optional user-editable settings. |
 

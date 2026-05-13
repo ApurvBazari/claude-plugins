@@ -90,4 +90,4 @@ After the dialog converges:
 ## When to NOT use this dialog
 
 - The section the developer wants to adjust is missing — surface a different error.
-- The developer wants to adjust a captured value in an UPSTREAM phase (e.g., P3 from within a P8 synthesis review). This skill only adjusts its own phase. For upstream changes, point the developer at `/greenfield:resume` and restarting from the relevant phase.
+- The developer wants to adjust a captured value in an UPSTREAM phase (e.g., P3 from within a P8 synthesis review). This skill only adjusts its own phase. For upstream changes, point the developer at `/greenfield:pickup` and restarting from the relevant phase.
