@@ -70,7 +70,7 @@
           }
         },
         "P3":   { "$ref": "#/definitions/p3Data" },
-        "P4":   { "$ref": "#/definitions/deferredPhase" },
+        "P4":   { "$ref": "#/definitions/p4Api" },
         "P5":   { "$ref": "#/definitions/deferredPhase" },
         "P6":   { "$ref": "#/definitions/deferredPhase" },
         "P7":   { "$ref": "#/definitions/deferredPhase" },
@@ -281,6 +281,32 @@
         "codegen":           { "type": "array", "items": { "type": "string" }, "description": "Codegen tools selected (Prisma generate, Drizzle kit, SQLC, GraphQL codegen, OpenAPI TS, Protobuf, etc.). Empty array OK." },
         "backup":            { "type": "string", "description": "Backup & retention strategy (none, managed-provider, scheduled-dumps, continuous)." },
         "compliance":        { "type": "string", "description": "Data residency/compliance constraint (none, region-locked, GDPR-aware, HIPAA, etc.)." }
+      }
+    },
+    "p4Api": {
+      "type": "object",
+      "description": "Phase 4 — API & Integration. Fully specified in onboard 2.0.0-alpha.2 Round 2. 3 required enum-locked fields (style, versioningPolicy, asyncPattern) drive cross-phase contradictions; remaining fields loose. Single-owner boundary: real-time, webhooks, jobs live in P4; caching, file storage, codegen live in P3.",
+      "required": ["style", "versioningPolicy", "asyncPattern"],
+      "additionalProperties": false,
+      "properties": {
+        "style": {
+          "enum": ["rest", "graphql", "trpc", "grpc", "rpc-other", "none"],
+          "description": "API style. Drives P3 codegen pairing (GraphQL codegen ↔ style=graphql). Future P6 reads for auth integration pattern."
+        },
+        "versioningPolicy": {
+          "enum": ["url-path", "header", "query-string", "no-breaking-changes-policy", "none-yet"],
+          "description": "Version negotiation strategy. Future P7 reads for ADR template; P8 release pipeline cross-references."
+        },
+        "asyncPattern": {
+          "enum": ["none", "queue-and-worker", "scheduled-cron", "event-driven", "serverless-functions", "mixed"],
+          "description": "Background-work pattern. Future P7 reads for CI test strategy. P8 conceptually depends for deployment topology."
+        },
+        "documentation":    { "type": "string", "description": "API docs tool (OpenAPI/Swagger, GraphQL Playground, auto-from-types, Scalar, Redoc, etc.)." },
+        "rateLimit":        { "type": "string", "description": "Rate-limit strategy (none, fixed-window, sliding, token-bucket, per-user, per-IP, gateway-level)." },
+        "pagination":       { "type": "string", "description": "Pagination strategy (offset, cursor, page-based, none)." },
+        "realtime":         { "type": "string", "description": "Real-time delivery (none, WebSockets, SSE, HTTP long-poll, external pub/sub)." },
+        "webhooks":         { "type": "string", "description": "Webhook directions (none, incoming-only, outgoing-only, both) + tooling notes." },
+        "externalServices": { "type": "array", "items": { "type": "string" }, "description": "External integrations (Stripe, SendGrid, Twilio, Segment, etc.). Multi-select free-text. Empty array OK." }
       }
     }
   }
