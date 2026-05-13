@@ -2,6 +2,8 @@
 
 Complete catalog of Phase 1 questions with conditions, options, and downstream effects. The wizard is an adaptive state machine — each answer updates the context object, and subsequent questions check preconditions before being asked.
 
+> **Q-ID convention**: Question identifiers (e.g., `P3.Q1`, `P4.Q5`) intentionally retain the P-code prefix as a stable internal reference. Topic-name labels (`dataArchitecture`, `apiIntegration`, `cicdAndDelivery`) are used for everything else — schema keys, dependency paths, filenames, user-facing labels. Q-IDs are never surfaced to the user; they exist purely as durable cross-reference handles for adaptive-skipping rules, state-transitions, and tests.
+
 ## Context Object
 
 The wizard maintains a running context that accumulates through the conversation:
