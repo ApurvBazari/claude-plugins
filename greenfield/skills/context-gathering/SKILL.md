@@ -569,11 +569,18 @@ Write a checkpoint **after each named Step completes** (not after each individua
 | Step 2 complete (Tech Stack) | Add `"step-2-stack"`, `currentStep: "step-3-details"`, `context.stack`, `researchFindings`, `research.mode` |
 | Step 3 complete (Project Details) | Add `"step-3-details"`, `currentStep: "step-3.5-pain-points"`, all category-3 context fields |
 | Step 3.5 complete (Pain Points) | Add `"step-3.5-pain-points"`, `currentStep: "step-4-workflow"`, `context.painPoints` |
-| Step 4 complete (Workflow Preferences) | Add `"step-4-workflow"`, `currentStep: "step-5-cicd"`, all category-4 context fields |
-| Step 5 — Q5.1–Q5.17 answered | Add `"step-5-cicd"`, set `currentPhase: "phase-1.8-synthesis-review"`, `currentSynthesisPhase: "P8"`, all CI/CD fields under both top-level (Q5.1–Q5.3) AND `context.phases.P8.cicd` / `context.phases.P8._v1_carryover` |
-| Step 5 — synthesis-review(P8) returns | Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-6-feature-decomp"`, clear `currentSynthesisPhase`. Add `context.syntheses.P8 = { approvedAt, adjustments }` |
-| Step 6 complete (Feature Decomposition) | Add `"step-6-feature-decomp"`, `currentStep: "step-7-confirmation"`, `context.featureDecomposition` |
-| Step 7 complete (Confirmation) | Add `"step-7-confirmation"`, `currentPhase: "phase-1.7-grill-spec"` (or `"phase-1.5-architectural-research"` if `parkedQuestions.length > 0`), `currentStep: "pre-grill"` (handoff to grill-spec skill, which then hands off to scaffolding) |
+| Step 3 — P3.Q1 answered | Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-3-data-architecture"`, `lastAnsweredQuestionId: "P3.Q1"` |
+| Step 3 — P3.Q12 answered (or last applicable) | Set `currentPhase: "phase-1.8-synthesis-review"`, `currentSynthesisPhase: "P3"`, add `"step-3-data-architecture"` to `completedSteps` |
+| Step 3 — synthesis-review(P3) returns | Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-4-api-integration"`, clear `currentSynthesisPhase`. Add `context.syntheses.P3 = { approvedAt, adjustments }` |
+| Step 4 — P4.Q1 answered | Set `currentStep: "step-4-api-integration"`, `lastAnsweredQuestionId: "P4.Q1"` |
+| Step 4 — P4.Q10 answered (or last applicable) | Set `currentPhase: "phase-1.8-synthesis-review"`, `currentSynthesisPhase: "P4"`, add `"step-4-api-integration"` to `completedSteps` |
+| Step 4 — synthesis-review(P4) returns | Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-5-residual"`, clear `currentSynthesisPhase`. Add `context.syntheses.P4` |
+| Step 5 — last residual Q answered | Add `"step-5-residual"` to `completedSteps`, set `currentStep: "step-6-workflow"` |
+| Step 6 complete (Workflow Preferences) | Add `"step-6-workflow"`, `currentStep: "step-7-cicd"`, all category-4 context fields |
+| Step 7 — Q5.1–Q5.17 answered | Add `"step-7-cicd"`, set `currentPhase: "phase-1.8-synthesis-review"`, `currentSynthesisPhase: "P8"`, all CI/CD fields under both top-level (Q5.1–Q5.3) AND `context.phases.P8.cicd` / `context.phases.P8._v1_carryover` |
+| Step 7 — synthesis-review(P8) returns | Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-8-feature-decomp"`, clear `currentSynthesisPhase`. Add `context.syntheses.P8 = { approvedAt, adjustments }` |
+| Step 8 complete (Feature Decomposition) | Add `"step-8-feature-decomp"`, `currentStep: "step-9-confirmation"`, `context.featureDecomposition` |
+| Step 9 complete (Confirmation) | Add `"step-9-confirmation"`, `currentPhase: "phase-1.7-grill-spec"` (or `"phase-1.5-architectural-research"` if `parkedQuestions.length > 0`), `currentStep: "pre-grill"` (handoff to grill-spec skill, which then hands off to scaffolding) |
 
 ### Atomic write
 Always write to `.claude/greenfield-state.json.tmp` first, then `mv` to `.claude/greenfield-state.json`. This avoids corrupted state if the session is killed mid-write. If the tmp file exists from a prior interrupted write, remove it before starting.
