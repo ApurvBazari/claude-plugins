@@ -93,7 +93,7 @@ Writes to `context.phases.dataArchitecture.*`. See `onboard/skills/generate/refe
 - **Cross-phase**: cicdAndDelivery reads this for rollback strategy (point-in-time recovery on managed hosts only)
 
 ### P3.Q4: "Which ORM or data-access layer?"
-- **Type**: Choice (filtered by P2.stack.language)
+- **Type**: Choice (filtered by `stack.stack.language`)
 - **Options**: For TypeScript: "Prisma" | "Drizzle" | "Kysely" | "TypeORM" | "Sequelize" | "Raw SQL" | "Other". For Python: "SQLAlchemy" | "Django ORM" | "Raw SQL" | "Other". For Go: "GORM" | "sqlc" | "Raw SQL" | "Other". For Ruby: "Active Record" | "Raw SQL" | "Other". For Elixir: "Ecto" | "Raw SQL" | "Other". For Rust: "Diesel" | "sqlx" | "Raw SQL" | "Other".
 - **Condition**: Q1 = yes
 - **Updates**: `context.phases.dataArchitecture.orm` (required, enum)
@@ -504,7 +504,7 @@ This category becomes wizard Step 5 of 10 in Round 2.
   - Convention: "release-please" | "semantic-release" | "Manual" | "None"
 - **Condition**: `willDeploy`
 - **Updates**: `phases.cicdAndDelivery.cicd.releasePipeline.{separate,triggeredBy,convention}`
-- **Note**: `release-please` and `semantic-release` are Node-centric. Mismatches with `P2.stack.framework` (non-Node stacks) trigger a synthesis warning.
+- **Note**: `release-please` and `semantic-release` are Node-centric. Mismatches with `stack.stack.framework` (non-Node stacks) trigger a synthesis warning.
 
 ---
 

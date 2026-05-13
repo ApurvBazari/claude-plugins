@@ -50,7 +50,7 @@
             "type": "object",
             "description": "Per-target rollback config. Inherits from phases.cicdAndDelivery.cicd.rollback but can be overridden per env (e.g., prod requires manual approval even if other envs auto-rollback).",
             "properties": {
-              "strategy": { "enum": ["redeploy-previous-sha", "blue-green", "canary", "none", "inherit-from-p8"] },
+              "strategy": { "enum": ["redeploy-previous-sha", "blue-green", "canary", "none", "inherit-from-cicd"] },
               "requireManualApproval": { "type": "boolean" }
             }
           }
@@ -119,7 +119,7 @@
             "smokeTests": ["smoke-auth", "smoke-home"]
           },
           "rollback": {
-            "strategy": "inherit-from-p8",
+            "strategy": "inherit-from-cicd",
             "requireManualApproval": false
           }
         },
@@ -131,7 +131,7 @@
             "smokeTests": ["smoke-auth", "smoke-home", "smoke-checkout"]
           },
           "rollback": {
-            "strategy": "inherit-from-p8",
+            "strategy": "inherit-from-cicd",
             "requireManualApproval": true
           }
         }

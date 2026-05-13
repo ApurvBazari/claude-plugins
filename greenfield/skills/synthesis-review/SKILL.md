@@ -22,8 +22,8 @@ If any of these are missing, halt with an error pointing the caller at this sect
 
 The skill produces three outputs per phase:
 
-1. `<targetProjectRoot>/docs/architecture/<phaseId-lowercase>-<short-name>.html` — the synthesis record. Living architecture document.
-2. `<targetProjectRoot>/docs/architecture/<phaseId-lowercase>-<short-name>-dependencies.json` — cross-phase dependency snapshot. Used by `visualize-graph.sh` and the freshness hook.
+1. `<targetProjectRoot>/docs/architecture/<phaseId-kebab>-<short-name>.html` — the synthesis record. Living architecture document.
+2. `<targetProjectRoot>/docs/architecture/<phaseId-kebab>-<short-name>-dependencies.json` — cross-phase dependency snapshot. Used by `visualize-graph.sh` and the freshness hook.
 3. Mutations to `context.syntheses[phaseId]` — `{ approvedAt, adjustments[] }` recording the developer's per-section decisions.
 
 The HTML rendering and decision walk happen across seven Steps below.
@@ -50,7 +50,7 @@ Walk the per-phase template's sections. For each section:
 
 Splice the rendered body into the generic frame's `{{phase_body}}` placeholder. Fill in `{{phase_id}}`, `{{phase_name}}`, `{{captured_at}}` (current ISO timestamp), `{{phase_id_lower}}`, `{{phase_short_name}}`, and `{{git_sha}}` (short SHA of HEAD in `targetProjectRoot`).
 
-Write the result to `<targetProjectRoot>/docs/architecture/<phaseId-lowercase>-<short-name>.html` via atomic `.tmp` + rename. Create `docs/architecture/` if missing.
+Write the result to `<targetProjectRoot>/docs/architecture/<phaseId-kebab>-<short-name>.html` via atomic `.tmp` + rename. Create `docs/architecture/` if missing.
 
 Refer to `references/section-prompts.md` for the per-section composition strategy and the Round 1 CI/CD & Delivery section map.
 

@@ -22,7 +22,7 @@ Run these checks at compose time. Each one fires only if both endpoint values ex
 | Notifications-without-channel | `phases.cicdAndDelivery.cicd.notifications.channels` includes a channel whose corresponding stack field (e.g., Slack workspace URL) is unset | "cicdAndDelivery wants to notify on `<channel>` but the connection details haven't been captured yet." |
 | Coverage-blocking-without-tests | `phases.cicdAndDelivery.cicd.coverage.blocking === true` AND `phases.workflow.testingPhilosophy` (Round 3) is `"manual-only"` | "cicdAndDelivery wants coverage to block PRs, but workflow said testing is manual-only. The block will fail every PR." |
 
-Round 1 ships only the first check. The second and third require Round 3 phases (P7) — the rules are documented here so they fire automatically once P7 lands.
+Round 1 ships only the first check. The second and third require Round 3's `workflow` phase — the rules are documented here so they fire automatically once that phase lands.
 
 ## Round 1 sections (Step 7: CI/CD & Delivery)
 
