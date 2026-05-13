@@ -771,6 +771,31 @@
   </div>
 
   <div class="log-entry">
+    <div class="meta">2026-05-13 · ROUND 2 LOCKED</div>
+    <div class="body">
+      Round 2 of the wizard overhaul is complete. Category 3 (Project Details, 18 Qs) has been split into two distinct 15-phase-aligned phases:
+      <ul>
+        <li><strong>P3 Data Architecture</strong> — 12 questions covering DB engine + host, ORM, migrations, multi-tenancy, search, caching, file storage, codegen, backup, compliance. 7 synthesis sections, 4 required enum-locked schema fields (databaseHost, orm, migrationsTool, multiTenancy).</li>
+        <li><strong>P4 API &amp; Integration</strong> — 10 questions covering style (REST/GraphQL/tRPC), versioning, rate limits, pagination, async patterns (jobs/queues), real-time, webhooks, external integrations. 6 synthesis sections, 3 required enum-locked schema fields (style, versioningPolicy, asyncPattern).</li>
+      </ul>
+      Locked design decisions for Round 2:
+      <ol>
+        <li><strong>Single-owner boundary</strong> — file storage + codegen + caching live in P3 only; real-time + webhooks + jobs live in P4 only. Synthesis HTMLs cross-reference each other when needed.</li>
+        <li><strong>Hybrid schema strictness</strong> — 3–5 required enum-locked fields per phase (the ones other phases cross-reference); remaining fields are loose strings with "other" escape hatches. Avoids monthly schema releases as new ORMs / DB hosts emerge.</li>
+        <li><strong>Backward-only dependency edges</strong> — matches Round 1 P8 precedent. P3 reads from P0/P2; P4 reads from P3/P2.</li>
+        <li><strong>Asymmetric depth</strong> — P3 has 7 sections and 12 Qs; P4 has 6 sections and 10 Qs. P3 owns more decision surface under single-owner.</li>
+        <li><strong>Wizard count 8 → 10</strong> — added Step 3 (P3) and Step 4 (P4); old Step 3 becomes residual Step 5 (13 Qs from Cat 3 destined for Rounds 3–6); Phase 1.5 Architectural Research stays at Step 10.</li>
+        <li><strong>Codegen Q in P3 only</strong> — even though codegen spans ORM + API, the question lives in P3 with a P4 synthesis cross-reference note.</li>
+      </ol>
+      Files shipped (5 NEW + 13 MODIFIED = 18 total): see <code>docs/superpowers/specs/2026-05-13-greenfield-3.0-round2-design.md</code> § File inventory.
+      <br><br>
+      Versions: <code>greenfield@3.0.0-alpha.2</code>, <code>onboard@2.0.0-alpha.2</code>.
+      <br><br>
+      <strong>Future rounds:</strong> Round 3 (P6 Auth/Security + P7 Workflow), Round 4 (P0/P0.5/P1/P8.5 new phases), Round 5 (P9/P10.5), Round 6 (P5 Frontend + 12 concern areas + non-GHA CI templates).
+    </div>
+  </div>
+
+  <div class="log-entry">
     <div class="meta">2026-05-13 · SESSION CLOSE · Pickup brief for next session</div>
     <div class="body">
       <strong>Where to resume:</strong> Round 1 planning. Three open tasks staged:
