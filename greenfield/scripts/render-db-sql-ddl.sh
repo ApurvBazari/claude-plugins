@@ -66,8 +66,8 @@ for i in $(seq 0 $((ENTITY_COUNT - 1))); do
 
     PII_HIT=$(jq --arg n "${NAME}.${AN}" '[.[] | select(.path == $n)] | length' <<< "$PII")
     if [[ "$PII_HIT" -gt 0 ]]; then
-      HAS_ENCRYPTION=$(jq --arg n "${NAME}.${AN}" '[.[] | select(.path == $n) | .encryption // ""] | first // ""' <<< "$PII")
-      if [[ -z "$HAS_ENCRYPTION" || "$HAS_ENCRYPTION" == "" ]]; then
+      HAS_ENCRYPTION=$(jq -r --arg n "${NAME}.${AN}" '[.[] | select(.path == $n) | .encryption // ""] | first // ""' <<< "$PII")
+      if [[ -z "$HAS_ENCRYPTION" ]]; then
         WARN_ID="W-DB-${i}-${j}-pii"
         MSG="Field \`${NAME}.${AN}\` (PII) has no encryption hint — review storage strategy"
         WARNINGS=$(jq --arg id "$WARN_ID" --arg msg "$MSG" '. + [{id: $id, level: "warn", message: $msg}]' <<< "$WARNINGS")
