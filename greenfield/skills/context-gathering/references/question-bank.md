@@ -398,6 +398,201 @@ Writes to `context.phases.apiIntegration.*`. See `onboard/skills/generate/refere
 
 ---
 
+## Step 5: Auth (12 questions)
+
+> **Round 3 (alpha.4):** Auth is the 5th major synthesis phase. Strategy is set first because it gates the rest of the phase's question flow. Synthesis output: `docs/adr/auth.html` + `.md`.
+
+### Auth.Q1: "How do you want to handle authentication?"
+- **Type**: Choice
+- **Options**: "None — no auth in scope" | "Hosted (Clerk, Auth0, Supabase Auth, Firebase Auth, Cognito)" | "Self-hosted OSS (Keycloak, Authentik, Ory)" | "Built-in (framework session/JWT)"
+- **Condition**: Always
+- **Updates**: `auth.strategy`, `auth.provider` (follow-up if hosted/self-hosted-oss)
+- **Downstream**: Auth.Q2–Auth.Q12 all consume `auth.strategy`; Privacy phase reads `auth.strategy` for the skip-cascade gate; Security phase reads `auth.strategy` for threat surface sizing
+- **Skip-cascade**: `none` → fires single-Q gate to Privacy ("Do you collect any user data?"). Yes → reduced Privacy; No → Privacy synthesisStatus='n/a' stub.
+- **Default**:
+  - If `stack.stack.framework='next'` AND `Q3.4.deployTarget='vercel'` → `"Hosted (Clerk)"` (greenfield opinion: Clerk is the idiomatic choice for Next on Vercel — drop-in middleware, edge-compatible session tokens, and the richest Next.js SDK on the market)
+  - If `stack.stack.framework='django'` → `"Built-in (framework session/JWT)"` (Django auth is first-class and battle-tested; adding a third-party layer without a specific reason adds complexity)
+  - If `stack.stack.framework='rails'` → `"Built-in (framework session/JWT)"` (Devise is idiomatic for Rails; the ecosystem assumes it)
+  - If `stack.stack.framework∈{fastapi,express,nestjs}` AND `architecturalFraming.scaleTarget∈{production-scale,enterprise}` → `"Hosted (Auth0)"` (greenfield opinion: managed auth eliminates security footguns at production scale — password storage, MFA, session fixation, token rotation are all off your plate)
+  - If `architecturalFraming.scaleTarget='hobby'` → `"None — no auth in scope"` (hobby apps rarely need auth at launch; it can be added later)
+  - Else → `"Hosted (Clerk)"` (greenfield opinion: third-party hosted auth eliminates password/session/MFA security pitfalls and reduces meaningful implementation effort; Clerk has the best DX across the hosted providers)
+
+### Auth.Q2: "Which identity providers should users sign in with?"
+- **Type**: Multi-select
+- **Options**: "Email + password" | "Google" | "GitHub" | "Apple" | "Microsoft / Azure AD" | "SAML SSO (enterprise IdP)" | "Magic link (passwordless email)" | "Passkeys / WebAuthn" | "Phone / SMS OTP" | "Anonymous / guest" | "None — no IdPs yet"
+- **Condition**: `auth.strategy ≠ "None — no auth in scope"`
+- **Updates**: `auth.idps[]`
+- **Downstream**: Auth.Q10 (password policy) is skipped if `"Email + password"` not in `auth.idps[]`; Privacy.Q2 (PII inventory) auto-includes email when any IdP is selected; Security phase reads `auth.idps[]` for attack-surface sizing
+- **Default**:
+  - If `architecturalFraming.scaleTarget='enterprise'` → `["Email + password", "SAML SSO (enterprise IdP)"]` (enterprise apps must support org-wide SSO for IT policy compliance)
+  - If `stack.stack.framework='next'` AND `auth.strategy` includes `"Hosted (Clerk)"` → `["Email + password", "Google"]` (Clerk's most common starter combination; Google OAuth covers the majority of consumer sign-in patterns)
+  - If `appType='mobile'` OR `architecturalFraming.deploymentShape='mobile'` → `["Email + password", "Google", "Apple"]` (Apple requires Sign In with Apple for iOS apps that offer any social login; Google covers Android; email+pw for fallback)
+  - If `architecturalFraming.scaleTarget='hobby'` → `["Email + password"]` (minimal IdP overhead for early-stage projects)
+  - If `auth.strategy='Built-in (framework session/JWT)'` → `["Email + password"]` (built-in auth providers typically only natively manage email+pw; social providers require explicit OAuth library additions)
+  - Else → `["Email + password", "Google"]` (greenfield opinion: Google OAuth is low-friction to add and covers a large share of real-world users; email+pw as fallback ensures universal accessibility)
+
+### Auth.Q3: "What session model should the app use?"
+- **Type**: Choice + Object
+- **Options**: "Cookie-based sessions (server-managed)" | "JWT (stateless, client-holds-token)" | "Hybrid (short-lived JWT + cookie-backed refresh token)" | "Provider-managed (hosted auth handles it)"
+- **Sub-fields** (object, shown after main choice):
+  - `accessTokenTtl`: e.g., `"15m"` — access token or session lifetime
+  - `refreshTokenStrategy`: `"rotating"` | `"absolute"` | `"none"`
+  - `storage`: `"httpOnly-cookie"` | `"localStorage"` | `"sessionStorage"` | `"provider-managed"`
+- **Condition**: `auth.strategy ≠ "None — no auth in scope"`
+- **Updates**: `auth.sessionModel` (object)
+- **Downstream**: Security phase reads `auth.sessionModel.storage` for XSS risk scoring; Auth.Q12 (enforcement point) is influenced by session model (stateless JWT shifts enforcement to the request boundary)
+- **Default**:
+  - If `auth.strategy` includes `"Hosted"` → `"Provider-managed (hosted auth handles it)"` — `storage: "httpOnly-cookie"`, `refreshTokenStrategy: "rotating"` (hosted providers manage session complexity; defer to their defaults unless you have a specific override need)
+  - If `architecturalFraming.topology='serverless'` → `"JWT (stateless, client-holds-token)"` — `accessTokenTtl: "15m"`, `refreshTokenStrategy: "rotating"`, `storage: "httpOnly-cookie"` (serverless functions can't maintain server-side session stores; JWT enables stateless validation at the edge)
+  - If `stack.stack.framework='django'` → `"Cookie-based sessions (server-managed)"` — `storage: "httpOnly-cookie"`, `refreshTokenStrategy: "absolute"` (Django's session engine is mature and handles cookie management correctly out of the box)
+  - If `stack.stack.framework='rails'` → `"Cookie-based sessions (server-managed)"` — `storage: "httpOnly-cookie"`, `refreshTokenStrategy: "absolute"` (Rails' signed/encrypted cookie session store is battle-tested)
+  - If `architecturalFraming.topology='microservices'` → `"Hybrid (short-lived JWT + cookie-backed refresh token)"` — `accessTokenTtl: "5m"`, `refreshTokenStrategy: "rotating"` (services validate JWTs independently without a shared session store; short TTL limits blast radius on token compromise)
+  - Else → `"Hybrid (short-lived JWT + cookie-backed refresh token)"` — `accessTokenTtl: "15m"`, `refreshTokenStrategy: "rotating"`, `storage: "httpOnly-cookie"` (greenfield opinion: hybrid is the safest default — short-lived access tokens limit exposure, httpOnly cookie storage prevents XSS token theft, rotating refresh tokens detect replay attacks)
+
+### Auth.Q4: "What MFA approach do you want?"
+- **Type**: Object
+- **Sub-fields**:
+  - `enforcement`: `"required"` | `"optional-encouraged"` | `"optional-silent"` | `"not-yet"`
+  - `methods` (multi-select): `"TOTP (Authenticator app)"` | `"SMS OTP"` | `"Email OTP"` | `"Passkeys / WebAuthn"` | `"Recovery codes"` | `"None"`
+  - `gracePeriod`: days before MFA is enforced after sign-up (only relevant when `enforcement='required'`)
+- **Condition**: `auth.strategy ≠ "None — no auth in scope"`
+- **Updates**: `auth.mfa` (object)
+- **Downstream**: Security phase reads `auth.mfa.enforcement` for security-posture scoring; Privacy phase reads `auth.mfa.methods` to flag if SMS OTP implies phone PII collection
+- **Default**:
+  - If `dataArchitecture.compliance∈{HIPAA,SOC2,PCI-DSS}` → `enforcement: "required"`, `methods: ["TOTP (Authenticator app)", "Recovery codes"]`, `gracePeriod: 7` (compliance mandates MFA; TOTP is preferred over SMS for HIPAA/SOC2 because SMS is vulnerable to SIM-swap attacks)
+  - If `architecturalFraming.scaleTarget='enterprise'` → `enforcement: "required"`, `methods: ["TOTP (Authenticator app)", "Passkeys / WebAuthn", "Recovery codes"]`, `gracePeriod: 14` (enterprise orgs typically mandate MFA by policy; offer passkeys alongside TOTP for phishing-resistant option)
+  - If `architecturalFraming.scaleTarget='production-scale'` → `enforcement: "optional-encouraged"`, `methods: ["TOTP (Authenticator app)", "Recovery codes"]` (offer MFA as a strong default for user accounts but don't block onboarding)
+  - If `architecturalFraming.scaleTarget='hobby'` → `enforcement: "not-yet"`, `methods: ["None"]` (hobby apps don't justify the MFA implementation and UX cost at launch)
+  - Else → `enforcement: "optional-encouraged"`, `methods: ["TOTP (Authenticator app)", "Recovery codes"]` (greenfield opinion: offer MFA as an option from day one — retrofitting it later requires migrating active sessions and rebuilding enrollment flows; TOTP + recovery codes is the minimum viable secure combination)
+
+### Auth.Q5: "What authorization model does the app need?"
+- **Type**: Choice
+- **Options**: "Flat roles (admin / user / guest)" | "RBAC — Role-Based Access Control (roles have permission sets)" | "ABAC — Attribute-Based Access Control (policies on user+resource attributes)" | "DB-level RLS (Postgres Row-Level Security)" | "Hybrid (RBAC + RLS)" | "None — no authorization needed"
+- **Condition**: `auth.strategy ≠ "None — no auth in scope"`
+- **Updates**: `auth.authzModel`
+- **Downstream**: Auth.Q6 (tenant resolution) interacts with authz model when multi-tenant; Security phase reads `auth.authzModel` for privilege-escalation threat surface
+- **Note**: `"DB-level RLS"` option only shown when `dataArchitecture.engine` includes PostgreSQL/Supabase
+- **Default**:
+  - If `dataArchitecture.multiTenancy∈{row-level,schema-per-tenant}` AND `dataArchitecture.engine` includes `postgresql` OR `supabase` → `"Hybrid (RBAC + RLS)"` (multi-tenant apps need both role-level permission checks and row-level data isolation; RLS without RBAC leaves horizontal privilege escalation vectors open)
+  - If `architecturalFraming.scaleTarget='enterprise'` → `"RBAC — Role-Based Access Control"` (enterprise apps always have multiple distinct permission groups; flat roles break down quickly)
+  - If `dataArchitecture.engine` includes `postgresql` OR `supabase` AND `dataArchitecture.multiTenancy='row-level'` → `"DB-level RLS"` (Postgres RLS is the most reliable enforcement point for row-level isolation; defense-in-depth even if app-layer checks are bypassed)
+  - If `appType∈{fullstack,web-app}` AND `architecturalFraming.scaleTarget∈{startup,production-scale}` → `"RBAC — Role-Based Access Control"` (most SaaS apps need at minimum admin/member/viewer roles; RBAC is straightforward to implement and reason about)
+  - If `architecturalFraming.scaleTarget='hobby'` → `"Flat roles (admin / user / guest)"` (hobby apps rarely need fine-grained permissions; two roles are easier to maintain)
+  - Else → `"RBAC — Role-Based Access Control"` (greenfield opinion: flat roles collapse into RBAC as soon as a third role is needed; start with RBAC now to avoid a painful refactor when the product grows)
+
+### Auth.Q6: "How should the app resolve tenant identity from a request?"
+- **Type**: Choice
+- **Options**: "Subdomain (tenant.app.com)" | "Path prefix (/org/slug/...)" | "JWT claim (tenant_id in token)" | "Custom header (X-Tenant-ID)" | "Hybrid (subdomain + claim)"
+- **Condition**: `dataArchitecture.multiTenancy ≠ "None — single-tenant"` — **SKIP this question entirely if `dataArchitecture.multiTenancy = "None — single-tenant"`**
+- **Updates**: `auth.tenantResolution`
+- **Downstream**: Security phase reads `auth.tenantResolution` for tenant-boundary cross-contamination risk; scaffolding generates middleware templates based on resolution strategy
+- **Default**:
+  - If `architecturalFraming.scaleTarget='enterprise'` AND `dataArchitecture.multiTenancy='schema-per-tenant'` → `"Subdomain (tenant.app.com)"` (enterprise customers expect their own subdomain; it also enables per-tenant TLS certificates and CDN rules)
+  - If `apiIntegration.style='trpc'` OR `apiIntegration.style='graphql'` → `"JWT claim (tenant_id in token)"` (tRPC and GraphQL context objects make JWT-claim extraction ergonomic; subdomain routing requires framework-level middleware that's heavier to set up in these stacks)
+  - If `architecturalFraming.topology='microservices'` → `"Custom header (X-Tenant-ID)"` (service mesh / API gateway can propagate a canonical tenant header; each service doesn't need to re-parse JWTs or inspect hostnames)
+  - If `dataArchitecture.multiTenancy='row-level'` → `"JWT claim (tenant_id in token)"` (RLS policies reference the tenant claim set in the request context; extracting it from the JWT is the lowest-overhead path)
+  - Else → `"Subdomain (tenant.app.com)"` (greenfield opinion: subdomain-per-tenant is the most explicit isolation signal — it's visible in browser URLs, easy to audit in logs, and makes tenant-boundary violations obvious rather than subtle)
+
+### Auth.Q7: "How should services authenticate to each other?"
+- **Type**: Choice
+- **Options**: "API keys (long-lived, secret-manager stored)" | "mTLS (mutual TLS client certificates)" | "Signed JWTs (short-lived service tokens)" | "OIDC workload identity (cloud-native)" | "None — services are co-located / same process"
+- **Condition**: `architecturalFraming.topology = "microservices"` — **SKIP this question entirely if `architecturalFraming.topology ≠ "microservices"`**
+- **Updates**: `auth.serviceAuth`
+- **Downstream**: Security phase reads `auth.serviceAuth` for internal trust boundary threat model; Runtime Operations phase reads `auth.serviceAuth` for secret rotation frequency recommendations
+- **Default**:
+  - If `Q3.4.deployTarget` includes `"kubernetes"` OR `architecturalFraming.deploymentShape` includes `"k8s"` → `"OIDC workload identity (cloud-native)"` (Kubernetes workload identity via SPIFFE/SPIRE or cloud-provider IAM eliminates long-lived credentials entirely — it's the most secure option for k8s-hosted microservices)
+  - If `architecturalFraming.scaleTarget='enterprise'` → `"mTLS (mutual TLS client certificates)"` (enterprise security policies often mandate mTLS for service-to-service; it's the standard in zero-trust network architectures)
+  - If `architecturalFraming.scaleTarget='production-scale'` AND `apiIntegration.style='grpc'` → `"mTLS (mutual TLS client certificates)"` (gRPC already terminates TLS; adding mutual auth is incremental effort with significant security gain)
+  - If `architecturalFraming.scaleTarget∈{startup,production-scale}` → `"Signed JWTs (short-lived service tokens)"` (short-lived JWTs are easier to implement than mTLS, limit blast radius on compromise, and are trivially rotated — a solid production default without the PKI overhead of mTLS)
+  - If `architecturalFraming.scaleTarget='hobby'` → `"API keys (long-lived, secret-manager stored)"` (simple and sufficient for internal hobby-scale services; secret-manager storage mitigates the long-lived risk)
+  - Else → `"Signed JWTs (short-lived service tokens)"` (greenfield opinion: short-lived signed JWTs are the best balance of security and implementation effort for most microservice topologies; they're auditable, revocable via expiry, and require no shared-secret synchronization)
+
+### Auth.Q8: "How should account lifecycle events be handled?"
+- **Type**: Object
+- **Sub-fields**:
+  - `signupFlow`: `"open"` | `"invite-only"` | `"waitlist"` | `"admin-approved"`
+  - `emailVerification`: `"required-before-use"` | `"required-within-grace-period"` | `"optional"` | `"n/a-no-email-idp"`
+  - `passwordReset`: `"email-link"` | `"email-otp"` | `"admin-only"` | `"n/a-no-password-idp"`
+  - `accountDeletion`: `"self-serve-immediate"` | `"self-serve-soft-delete"` | `"admin-initiated-only"` | `"support-ticket"`
+  - `accountSuspension`: `"supported"` | `"not-needed"`
+- **Condition**: `auth.strategy ≠ "None — no auth in scope"`
+- **Updates**: `auth.lifecycle` (object)
+- **Downstream**: Privacy phase reads `auth.lifecycle.accountDeletion` for right-to-erasure flow design; Security phase reads `auth.lifecycle.signupFlow` for account-enumeration attack surface
+- **Default**:
+  - If `architecturalFraming.scaleTarget='enterprise'` → `signupFlow: "invite-only"`, `emailVerification: "required-before-use"`, `passwordReset: "email-link"`, `accountDeletion: "admin-initiated-only"`, `accountSuspension: "supported"` (enterprise apps are provisioned via admin workflows, not self-serve signup; account deletion is a compliance event that requires admin oversight)
+  - If `dataArchitecture.compliance∈{GDPR-aware,HIPAA}` → `accountDeletion: "self-serve-soft-delete"` (GDPR right-to-erasure requires user-initiated deletion; soft-delete + anonymization is preferred over hard-delete because it preserves audit trail integrity)
+  - If `architecturalFraming.scaleTarget='hobby'` → `signupFlow: "open"`, `emailVerification: "optional"`, `passwordReset: "email-link"`, `accountDeletion: "self-serve-immediate"`, `accountSuspension: "not-needed"` (hobby apps prioritize zero-friction onboarding over security theater)
+  - If `appType∈{fullstack,web-app}` AND `architecturalFraming.scaleTarget='startup'` → `signupFlow: "open"`, `emailVerification: "required-within-grace-period"`, `passwordReset: "email-link"`, `accountDeletion: "self-serve-soft-delete"`, `accountSuspension: "supported"` (startup apps need frictionless onboarding but should verify email within 72h to prevent spam accounts; soft-delete preserves data for potential account recovery within a grace window)
+  - Else → `signupFlow: "open"`, `emailVerification: "required-before-use"`, `passwordReset: "email-link"`, `accountDeletion: "self-serve-soft-delete"`, `accountSuspension: "supported"` (greenfield opinion: require email verification before granting access — it's a low-friction fraud signal; soft-delete is safer than hard-delete because deletion is often a misclick that users regret within 24 hours)
+
+### Auth.Q9: "What account recovery options should be available?"
+- **Type**: Choice
+- **Options**: "Email link only" | "Email + phone (SMS)" | "Email + recovery codes" | "SSO-mediated (org admin resets via IdP)" | "Recovery codes only (high-security)" | "None — no recovery path"
+- **Condition**: `auth.strategy ≠ "None — no auth in scope"`
+- **Updates**: `auth.recovery`
+- **Downstream**: Privacy phase auto-flags phone number as a PII category if `auth.recovery` includes phone/SMS; Security phase uses recovery method to assess account-takeover surface area
+- **Default**:
+  - If `architecturalFraming.scaleTarget='enterprise'` AND `auth.idps[]` includes `"SAML SSO (enterprise IdP)"` → `"SSO-mediated (org admin resets via IdP)"` (enterprise accounts are managed by the org's IT admin; self-serve email recovery bypasses organizational access control policies)
+  - If `dataArchitecture.compliance∈{HIPAA,SOC2}` → `"Email + recovery codes"` (high-assurance recovery avoids SMS (SIM-swap risk) while still offering a fallback path; recovery codes are audit-logged events)
+  - If `auth.mfa.methods` includes `"SMS OTP"` → `"Email + phone (SMS)"` (if SMS is already in scope for MFA, phone recovery is marginal incremental cost and improves recovery success rate)
+  - If `architecturalFraming.scaleTarget='hobby'` → `"Email link only"` (simplest path; phone recovery adds Twilio cost and a second PII surface for hobby projects)
+  - If `auth.idps[]` includes `"Passkeys / WebAuthn"` → `"Email + recovery codes"` (passkeys make device-loss recovery critical; recovery codes are the standard FIDO2 complement)
+  - Else → `"Email + recovery codes"` (greenfield opinion: email link covers the common case; recovery codes provide a fallback when email access is also lost — e.g., device-reset scenarios. Adding phone recovery should be an explicit opt-in because it introduces phone PII obligations)
+
+### Auth.Q10: "What password policy should be enforced?"
+- **Type**: Object
+- **Sub-fields**:
+  - `minLength`: integer (minimum password length)
+  - `complexity`: `"none"` | `"lowercase+uppercase"` | `"letters+numbers"` | `"letters+numbers+symbols"`
+  - `breachCheck`: `"hibp-on-signup"` | `"hibp-on-change"` | `"hibp-both"` | `"none"`
+  - `maxAge`: days before forced password rotation, or `"none"` (most modern guidance discourages rotation unless breached)
+  - `history`: number of previous passwords to block re-use, or `"none"`
+- **Condition**: `auth.idps[]` includes `"Email + password"` — **SKIP this question entirely if `"Email + password"` is not in `auth.idps[]`**
+- **Updates**: `auth.passwordPolicy` (object)
+- **Downstream**: Security phase reads `auth.passwordPolicy.breachCheck` for authentication security score; synthesized ADR notes HIBP API dependency
+- **Default**:
+  - If `dataArchitecture.compliance∈{HIPAA,SOC2,PCI-DSS}` → `minLength: 12`, `complexity: "letters+numbers+symbols"`, `breachCheck: "hibp-both"`, `maxAge: 90`, `history: 12` (NIST 800-63B + PCI-DSS v4 mandate minimum 12 characters; breached-password checks are explicitly recommended; history prevents cycling; 90-day rotation is still required by PCI-DSS v4 for privileged accounts)
+  - If `architecturalFraming.scaleTarget='enterprise'` → `minLength: 12`, `complexity: "letters+numbers"`, `breachCheck: "hibp-both"`, `maxAge: "none"`, `history: 5` (NIST SP 800-63B guidance: long passwords beat complexity rules; breach checks are more effective than rotation; history prevents the "Password1!" / "Password2!" pattern)
+  - If `auth.strategy` includes `"Hosted"` → `minLength: 8`, `complexity: "none"`, `breachCheck: "hibp-on-signup"`, `maxAge: "none"`, `history: "none"` (hosted providers typically enforce their own password policies; defer to provider defaults; override only for compliance reasons)
+  - If `architecturalFraming.scaleTarget='hobby'` → `minLength: 8`, `complexity: "none"`, `breachCheck: "none"`, `maxAge: "none"`, `history: "none"` (hobby apps prioritize frictionless login; full policy adds complexity without meaningful benefit at hobby scale)
+  - Else → `minLength: 12`, `complexity: "letters+numbers"`, `breachCheck: "hibp-on-signup"`, `maxAge: "none"`, `history: 5` (greenfield opinion: 12-char minimum aligns with NIST 800-63B; HIBP check on signup blocks the top-10K most-breached passwords at zero UX cost; no forced rotation — NIST guidance shows rotation leads to predictable increment patterns, not stronger passwords)
+
+### Auth.Q11: "What should the auth audit log capture, and for how long?"
+- **Type**: Object
+- **Sub-fields**:
+  - `events` (multi-select): `"login-success"` | `"login-failure"` | `"logout"` | `"password-change"` | `"mfa-enrollment"` | `"mfa-challenge"` | `"token-refresh"` | `"account-created"` | `"account-deleted"` | `"role-change"` | `"permission-escalation"` | `"api-key-issued"` | `"api-key-revoked"` | `"admin-impersonation"` | `"None"`
+  - `retention`: `"30d"` | `"90d"` | `"1y"` | `"3y"` | `"7y"` | `"indefinite"` | `"none"`
+  - `storage`: `"app-db"` | `"separate-audit-db"` | `"log-aggregator (Datadog, Splunk)"` | `"provider-managed"`
+  - `immutable`: `boolean` — whether audit records are append-only / tamper-evident
+- **Condition**: `auth.strategy ≠ "None — no auth in scope"`
+- **Updates**: `auth.auditLog` (object)
+- **Downstream**: Security phase cross-references `auth.auditLog.retention` for compliance gap analysis; Runtime Operations phase reads `auth.auditLog.storage` for log pipeline configuration
+- **Default**:
+  - If `dataArchitecture.compliance` includes `"HIPAA"` → `events: ["login-success","login-failure","logout","password-change","mfa-enrollment","mfa-challenge","role-change","permission-escalation","admin-impersonation"]`, `retention: "7y"`, `storage: "separate-audit-db"`, `immutable: true` (HIPAA §164.312(b) requires audit controls; 6-year retention minimum rounded to 7y; tamper-evidence is a reasonable safeguard)
+  - If `dataArchitecture.compliance` includes `"SOC2"` → `events: ["login-success","login-failure","logout","password-change","mfa-enrollment","role-change","permission-escalation","api-key-issued","api-key-revoked"]`, `retention: "1y"`, `storage: "log-aggregator (Datadog, Splunk)"`, `immutable: true` (SOC 2 CC6.x controls require access monitoring; 1y covers typical audit periods; log aggregator enables alerting and anomaly detection)
+  - If `dataArchitecture.compliance` includes `"PCI-DSS"` → `events: ["login-success","login-failure","logout","password-change","mfa-enrollment","mfa-challenge","role-change","permission-escalation","api-key-issued","api-key-revoked"]`, `retention: "1y"`, `storage: "separate-audit-db"`, `immutable: true` (PCI DSS Req 10 mandates comprehensive logging of all cardholder data access and authentication events; 12-month active retention required)
+  - If `architecturalFraming.scaleTarget='enterprise'` → `events: ["login-success","login-failure","logout","password-change","mfa-enrollment","mfa-challenge","role-change","permission-escalation","admin-impersonation","api-key-issued","api-key-revoked"]`, `retention: "1y"`, `storage: "log-aggregator (Datadog, Splunk)"`, `immutable: true` (enterprise audit requirements even without formal compliance programs; log aggregator integrates with SIEM)
+  - If `architecturalFraming.scaleTarget='hobby'` → `events: ["login-failure","account-created","account-deleted"]`, `retention: "30d"`, `storage: "app-db"`, `immutable: false` (minimal logging for hobby apps — login failures help debug auth issues; 30d is sufficient; no overhead of separate storage)
+  - Else → `events: ["login-success","login-failure","logout","password-change","mfa-enrollment","role-change","account-created","account-deleted"]`, `retention: "90d"`, `storage: "app-db"`, `immutable: false` (greenfield opinion: capture the eight highest-signal events as a baseline — login failures and role changes catch most account-takeover and insider threat patterns; 90d is long enough to investigate incidents without the cost of year-long retention)
+
+### Auth.Q12: "Where should authentication and authorization be enforced?"
+- **Type**: Multi-select
+- **Options**: "Middleware (global request interceptor)" | "Route guards (per-route decorator/handler)" | "DB-level RLS (Postgres policy)" | "API gateway (upstream enforcement before app)" | "Service mesh (sidecar policy)" | "None — enforced inside handlers"
+- **Condition**: `auth.strategy ≠ "None — no auth in scope"`
+- **Updates**: `auth.enforcementPoint[]`
+- **Downstream**: Security phase reads `auth.enforcementPoint[]` for defense-in-depth analysis; scaffolding generates middleware stubs / RLS policy templates based on selected points
+- **Default**:
+  - If `architecturalFraming.topology='microservices'` AND `architecturalFraming.scaleTarget='enterprise'` → `["API gateway (upstream enforcement before app)", "Middleware (global request interceptor)", "Service mesh (sidecar policy)"]` (enterprise microservices require layered enforcement: gateway blocks unauthenticated traffic at the perimeter, middleware enforces per-service policies, sidecar handles lateral movement between services)
+  - If `architecturalFraming.topology='microservices'` → `["API gateway (upstream enforcement before app)", "Middleware (global request interceptor)"]` (gateway handles perimeter auth; each service still validates tokens independently — defense-in-depth without the sidecar overhead at startup scale)
+  - If `dataArchitecture.multiTenancy∈{row-level,schema-per-tenant}` AND `dataArchitecture.engine` includes `postgresql` → `["Middleware (global request interceptor)", "DB-level RLS (Postgres policy)"]` (middleware checks token validity, RLS enforces tenant isolation at the data layer — belt-and-suspenders for multi-tenant data integrity)
+  - If `auth.sessionModel.storage='httpOnly-cookie'` AND `architecturalFraming.topology∈{monolith,modular-monolith}` → `["Middleware (global request interceptor)", "Route guards (per-route decorator/handler)"]` (monolith with cookie sessions: global middleware handles cookie validation and injects user context, route guards enforce per-endpoint permission rules)
+  - If `architecturalFraming.topology='serverless'` → `["Middleware (global request interceptor)", "API gateway (upstream enforcement before app)"]` (serverless functions can't maintain long-lived middleware processes; API gateway offloads cold-start auth overhead; function-level middleware validates the gateway-issued token)
+  - Else → `["Middleware (global request interceptor)", "Route guards (per-route decorator/handler)"]` (greenfield opinion: middleware + route guards is the most universal combination — middleware handles token extraction and session injection globally, route guards handle permission checks at the resource level. DB-level RLS should be added as a second layer whenever the DB engine supports it)
+
+**>>> SYNTHESIS PAUSE**: After Auth.Q12, invoke `Skill(synthesis-review, phaseId: "auth")`. Wait for the developer to Approve/Adjust/Skip each section before moving to Step 6: Privacy.
+
+---
+
 ## Category 3 (residual): Remaining Project Details
 
 > **Round 2 note (2026-05-13):** Several Cat 3 questions have been moved to Step 3 (Data Architecture) and Step 4 (API & Integration). The 13 questions below stay here as a residual step until later rounds re-home them:
