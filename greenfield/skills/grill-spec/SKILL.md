@@ -136,6 +136,27 @@ If any **hard-fail** invariant fails, block Step 15.3 final sign-off. User must 
 
 **Warn** invariants surface in the validation report but do not block. **Suggestion** invariants surface as informational notes only.
 
+## Round 5 invariants (CHECK-R5-*)
+
+Run after the Round 4 pass when `context.phases.featureRoadmap` and/or `context.phases.schemaDraftReview` are present. See `references/check-r5-invariants.md` for full predicate definitions, source phases, and fail messages. CHECK-R5-1 / CHECK-R5-2 / CHECK-R5-6 belong to the **roadmap-integrity** category; CHECK-R5-3 / CHECK-R5-4 / CHECK-R5-5 belong to the **schema-coherence** category of the adversarial walk.
+
+| ID | Severity | Phase deps |
+|---|---|---|
+| CHECK-R5-1 | error | featureRoadmap + personas + domainModel + risks |
+| CHECK-R5-2 | error | featureRoadmap (intra-phase) |
+| CHECK-R5-3 | warn | schemaDraftReview + dataArchitecture + apiIntegration + domainModel |
+| CHECK-R5-4 | error | schemaDraftReview (intra-phase) |
+| CHECK-R5-5 | warn | featureRoadmap (intra-phase) |
+| CHECK-R5-6 | warn | featureRoadmap (intra-phase) |
+
+If any **error** invariant fails, block scaffold. User must either fix the cause (fix Q-bank answer, re-run the affected phase) or explicitly override with `--force` (logged to `greenfield-meta.json.audit[]` with reason). **Warn** invariants surface in the validation report but do not block.
+
+## References
+
+- **Round 3 invariants:** inlined above (CHECK-R3-1 through CHECK-R3-4) — compliance × privacy × auth × security × runtimeOperations cross-checks.
+- **Round 4 invariants:** `references/check-r4-invariants.md` — CHECK-R4-1 through CHECK-R4-8 covering personas + domainModel + risk reconciliation cross-phase consistency.
+- **Round 5 invariants:** `references/check-r5-invariants.md` — CHECK-R5-1 through CHECK-R5-6 covering featureRoadmap + schemaDraftReview cross-phase consistency.
+
 ## Step 5: Re-confirmation
 
 Present a diff of changed spec fields:
