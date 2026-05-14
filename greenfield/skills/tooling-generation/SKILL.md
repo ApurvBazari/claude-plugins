@@ -453,3 +453,41 @@ When invoked via `/greenfield:pickup`, check `completedSteps` and skip anything 
 4. **Sprint contracts are negotiated** — Onboard handles the negotiation in enriched mode.
 5. **Light confirmation after onboard** — Show what was generated, let developer review.
 6. **Checkpoint after every Step** — Always write `greenfield-state.json` at Step boundaries so resume works. Onboard's long runtime makes checkpointing critical.
+
+---
+
+## Round 4 — pass new phases to onboard
+
+In the enriched context passed to `/onboard:generate`, include these R4 additions alongside the existing R3 fields:
+
+```jsonc
+{
+  // ... existing R1–R3 fields preserved verbatim
+  "phases": {
+    // ... existing R3 phases (architecturalFraming, dataArchitecture, apiIntegration,
+    //                       auth, privacy, security, runtimeOperations, cicdAndDelivery,
+    //                       architecturalValidation)
+    "personas": { /* full personas block from greenfield-state.json:
+                     primary[], secondary[], antiPersonas[] */ },
+    "domainModel": { /* full domain model block:
+                       contexts[], entities[], valueObjects[], domainEvents[],
+                       crossContextRelationships[], ubiquitousLanguage[], antiCorruption */ }
+  },
+  "risks": [ /* full top-level risks[] array — each entry has id, originatingPhase,
+                text, tags[], reconciliation: { status, rationale } */ ],
+  "mode": {
+    "depth": "heavy" | "light",
+    "coupling": "auto-loop" | "hybrid",
+    "domainFormat": "full-ddd" | "ddd-lite"
+  }
+}
+```
+
+### Backwards compatibility
+
+Onboard 2.0 alpha.5+ treats `phases.personas`, `phases.domainModel`, `risks`, and `mode` as **optional** — if absent, onboard behaves as alpha.4 (no personas/domain/risk-aware generation). Greenfield always sends them when present, but if the migration shim (pickup T21) has just run on legacy state and the user deferred running the new phases, the blocks may be empty arrays / objects. Onboard must handle empty gracefully — render templates with empty-state placeholders, not error.
+
+### State machine behavior
+
+- If `phaseStatus.personas.status === "user-skipped"`, send `phases.personas` as empty object `{}` (NOT absent — explicit empty signals user-skip vs absent-from-state-shape).
+- If `mode` is missing entirely (e.g., legacy alpha.4 state that didn't trigger pickup migration somehow), send `mode` as `null` and onboard uses comprehensive defaults (heavy + auto-loop + full-ddd) for any new artifact generation. Log a warning that the mode block was synthesized.

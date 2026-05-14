@@ -232,3 +232,15 @@ Compare `webResearch.stackVersion` from metadata against current `package.json` 
 - **Phase synthesis status comes from `phaseStatus` in `greenfield-state.json`** — when reporting the Phase Synthesis Status table, read the `phaseStatus` map directly. If the field is absent (pre-T9 session), report "not tracked" rather than fabricating status values.
 - **Plugin drift is detected via filesystem probe, not config alone** — compare `installedPlugins` from `greenfield-meta.json` against a live probe of `${CLAUDE_PLUGIN_ROOT}/../<plugin>` for each known plugin. Discrepancies are reported; the check skill never applies drift changes.
 - **`hookStatus` is read from `greenfield-meta.json.generated.toolingFlags.hookStatus`** — use the `planned` / `generated` / `skipped` / `warnings` fields directly for the Plugin Integration Coverage report. Do not recompute hook counts from settings.json; the telemetry object is the authoritative source.
+
+---
+
+## Round 4 Checks
+
+Run these assertions when a Round 4 session is detected (i.e., `greenfield-state.json` exists and its `context.mode` field is present — specifically one or more of `mode.depth`, `mode.coupling`, `mode.domainFormat` — OR any of `phaseStatus.personas` / `phaseStatus.domainModel` is non-absent). Report failures inline in Step 7's summary.
+
+- [ ] If `.claude/greenfield-state.json.mode` is set, verify the block exists with all three fields (`mode.depth`, `mode.coupling`, `mode.domainFormat`). Missing fields = state-shape inconsistency (alpha.4→alpha.5 migration may have been interrupted).
+- [ ] If `personas.skipped !== true` AND `phaseStatus.personas.status === "approved"`, verify `docs/adr/personas.html` exists in the scaffolded project. If missing, flag "Personas synthesis not generated despite phase approval — re-run synthesis-review for personas."
+- [ ] If `domainModel.deferred !== true` AND `phaseStatus.domainModel.status === "approved"`, verify `docs/adr/domain-model.html` exists. If missing, flag "Domain-model synthesis not generated."
+- [ ] If at least one phase has been completed (any `phaseStatus.<id>.status === "approved"`), verify `docs/adr/risks.dependencies.json` exists. The expected risks count is `risks[].length >= number of completed phases that captured a Q_RISK`.
+- [ ] If `mode.coupling === "auto-loop"`, verify at least one downstream synthesis HTML in `docs/adr/` contains `sourceRef` annotations (search for the string `source-ref` or `sourceRef` in any `.html` file). If none found, auto-loop ran but didn't trace provenance — flag "Auto-loop coupling chosen but no sourceRef entries found in synthesis outputs."
