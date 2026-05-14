@@ -103,7 +103,7 @@
     },
     "dependencies": {
       "type": "object",
-      "description": "Cross-phase dependency assertions, mirrored from the per-project docs/architecture/*-dependencies.json files. Used for cross-check warnings and metadata. Keys are topic names (e.g., 'cicdAndDelivery', 'dataArchitecture'); values are arrays of dependency path strings.",
+      "description": "Cross-phase dependency assertions, mirrored from the per-project docs/adr/*-dependencies.json files. Used for cross-check warnings and metadata. Keys are topic names (e.g., 'cicdAndDelivery', 'dataArchitecture'); values are arrays of dependency path strings.",
       "additionalProperties": {
         "type": "array",
         "items": {

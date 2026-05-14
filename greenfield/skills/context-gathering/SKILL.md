@@ -176,10 +176,10 @@ Ask each question from `references/question-bank.md § Step 2.5: Architectural F
 Invoke the `synthesis-review` skill via the Skill tool with `phaseId: "architecturalFraming"`. The skill:
 
 1. Sets `greenfield-state.json.currentPhase` to `phase-1.8-synthesis-review` and `currentSynthesisPhase: "architecturalFraming"`.
-2. Renders `docs/architecture/architectural-framing.html` in the scaffolded project using the 3-section template.
+2. Renders `docs/adr/architectural-framing.html` in the scaffolded project using the 3-section template.
 3. Walks the developer through Approve/Adjust/Skip per section.
 4. Writes `context.syntheses.architecturalFraming = { approvedAt, adjustments[] }`.
-5. Writes `docs/architecture/architectural-framing-dependencies.json` from the wizard-collected dependency edges.
+5. Writes `docs/adr/architectural-framing-dependencies.json` from the wizard-collected dependency edges.
 
 If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen — `architectural-framing.html` ships in Round 2.5), tell the developer and continue to Step 3.
 
@@ -221,10 +221,10 @@ Ask each question from `references/question-bank.md § Step 3: Data Architecture
 Invoke the `synthesis-review` skill via the Skill tool with `phaseId: "dataArchitecture"`. This is Round 2's first synthesis pass. The skill:
 
 1. Sets `greenfield-state.json.currentPhase` to `phase-1.8-synthesis-review` and `currentSynthesisPhase: "dataArchitecture"`.
-2. Renders `docs/architecture/data-architecture.html` in the scaffolded project using the 7-section template.
+2. Renders `docs/adr/data-architecture.html` in the scaffolded project using the 7-section template.
 3. Walks the developer through Approve/Adjust/Skip per section.
 4. Writes `context.syntheses.dataArchitecture = { approvedAt, adjustments[] }`.
-5. Writes `docs/architecture/data-architecture-dependencies.json` from the wizard-collected dependency edges.
+5. Writes `docs/adr/data-architecture-dependencies.json` from the wizard-collected dependency edges.
 
 If the developer adjusts any dataArchitecture field via the Adjust dialog, the updated value lives in `context.phases.dataArchitecture.<field>` directly.
 
@@ -266,10 +266,10 @@ Ask each question from `references/question-bank.md § Step 4: API & Integration
 Invoke the `synthesis-review` skill via the Skill tool with `phaseId: "apiIntegration"`. The skill:
 
 1. Sets `currentSynthesisPhase: "apiIntegration"`.
-2. Renders `docs/architecture/api-integration.html` using the 6-section template.
+2. Renders `docs/adr/api-integration.html` using the 6-section template.
 3. Walks Approve/Adjust/Skip per section.
 4. Writes `context.syntheses.apiIntegration = { approvedAt, adjustments[] }`.
-5. Writes `docs/architecture/api-integration-dependencies.json`.
+5. Writes `docs/adr/api-integration-dependencies.json`.
 
 If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen — `api-integration.html` ships in Round 2), tell the developer and continue to Step 5.
 
@@ -397,7 +397,7 @@ If the developer answers Q5.4 with anything other than `"github-actions"`, captu
 Invoke the `synthesis-review` skill via the Skill tool with `phaseId: "cicdAndDelivery"`. This is Round 1's only synthesis pass. The skill:
 
 1. Sets `greenfield-state.json.currentPhase` to `phase-1.8-synthesis-review` and `currentSynthesisPhase: "cicdAndDelivery"`.
-2. Renders `<targetProjectRoot>/docs/architecture/cicd-and-delivery.html` from the template.
+2. Renders `<targetProjectRoot>/docs/adr/cicd-and-delivery.html` from the template.
 3. Walks the developer through 8 sections of Approve/Adjust/Skip.
 4. Writes `context.syntheses.cicdAndDelivery = { approvedAt, adjustments[] }`.
 5. Returns control here. Set `currentPhase` back to `phase-1-context-gathering` and `currentStep` to `step-8-feature-decomp`.
@@ -526,7 +526,7 @@ Capture as `context.phases.architecturalValidation.finalNotes` (free text).
 **On `approved` or `approved-with-noted-divergences`**: invoke the `synthesis-review` skill via the Skill tool with `phaseId: "architecturalValidation"`. The skill:
 
 1. Sets `currentSynthesisPhase: "architecturalValidation"`.
-2. Renders `docs/architecture/architectural-validation.html` using the validation template.
+2. Renders `docs/adr/architectural-validation.html` using the validation template.
 3. Records `context.syntheses.architecturalValidation = { approvedAt, adjustments[] }`.
 4. Returns control here.
 

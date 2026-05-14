@@ -14,7 +14,7 @@ This skill operates on the in-memory context object passed by the caller (typica
 
 - `phaseId` — e.g., `"cicdAndDelivery"`. Used to load the matching template and locate context.
 - `context` — the v2 greenfield-state.json `context` object (with `phases.<phaseId>` populated by the upstream wizard step).
-- `targetProjectRoot` — absolute path to the scaffolded project. Synthesis HTML and `dependencies.json` are written under `<targetProjectRoot>/docs/architecture/`.
+- `targetProjectRoot` — absolute path to the scaffolded project. Synthesis HTML and `dependencies.json` are written under `<targetProjectRoot>/docs/adr/`.
 
 If any of these are missing, halt with an error pointing the caller at this section. Do NOT prompt the developer for them — this skill never runs standalone.
 
@@ -22,8 +22,8 @@ If any of these are missing, halt with an error pointing the caller at this sect
 
 The skill produces three outputs per phase:
 
-1. `<targetProjectRoot>/docs/architecture/<phaseId-kebab>-<short-name>.html` — the synthesis record. Living architecture document.
-2. `<targetProjectRoot>/docs/architecture/<phaseId-kebab>-<short-name>-dependencies.json` — cross-phase dependency snapshot. Used by `visualize-graph.sh` and the freshness hook.
+1. `<targetProjectRoot>/docs/adr/<phaseId-kebab>-<short-name>.html` — the synthesis record. Living architecture document.
+2. `<targetProjectRoot>/docs/adr/<phaseId-kebab>-<short-name>-dependencies.json` — cross-phase dependency snapshot. Used by `visualize-graph.sh` and the freshness hook.
 3. Mutations to `context.syntheses[phaseId]` — `{ approvedAt, adjustments[] }` recording the developer's per-section decisions.
 
 The HTML rendering and decision walk happen across seven Steps below.
@@ -50,7 +50,7 @@ Walk the per-phase template's sections. For each section:
 
 Splice the rendered body into the generic frame's `{{phase_body}}` placeholder. Fill in `{{phase_id}}`, `{{phase_name}}`, `{{captured_at}}` (current ISO timestamp), `{{phase_id_lower}}`, `{{phase_short_name}}`, and `{{git_sha}}` (short SHA of HEAD in `targetProjectRoot`).
 
-Write the result to `<targetProjectRoot>/docs/architecture/<phaseId-kebab>-<short-name>.html` via atomic `.tmp` + rename. Create `docs/architecture/` if missing.
+Write the result to `<targetProjectRoot>/docs/adr/<phaseId-kebab>-<short-name>.html` via atomic `.tmp` + rename. Create `docs/adr/` if missing.
 
 Refer to `references/section-prompts.md` for the per-section composition strategy and the Round 1 CI/CD & Delivery section map.
 
@@ -73,15 +73,15 @@ Compose the dependencies record per the schema at `references/dependencies-schem
 }
 ```
 
-Write to `<targetProjectRoot>/docs/architecture/<phaseId-kebab>-<short-name>-dependencies.json` via atomic `.tmp` + rename.
+Write to `<targetProjectRoot>/docs/adr/<phaseId-kebab>-<short-name>-dependencies.json` via atomic `.tmp` + rename.
 
 ## Step 4: Walk the developer through the synthesis
 
 Tell the developer the HTML is ready:
 
-> I've written the **{phaseId}** synthesis to `docs/architecture/{file}.html`. Opening it in your browser will help:
+> I've written the **{phaseId}** synthesis to `docs/adr/{file}.html`. Opening it in your browser will help:
 >
-> `open docs/architecture/{file}.html`
+> `open docs/adr/{file}.html`
 >
 > Walk through each section. For each, you have three options: **Approve** (looks correct), **Adjust** (needs change), or **Skip** (not relevant — give a one-line reason).
 
@@ -112,7 +112,7 @@ On the FIRST invocation of synthesis-review in a given project (detect by absenc
 
 Tell the developer:
 
-> Installed a pre-commit hook at `.git/hooks/pre-commit` that warns when code changes without updating `docs/architecture/`. The warning is non-blocking — bypass with `git commit --no-verify` if needed.
+> Installed a pre-commit hook at `.git/hooks/pre-commit` that warns when code changes without updating `docs/adr/`. The warning is non-blocking — bypass with `git commit --no-verify` if needed.
 
 Skip this Step on subsequent invocations.
 

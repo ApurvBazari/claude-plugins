@@ -142,7 +142,7 @@ Compare `webResearch.stackVersion` from metadata against current `package.json` 
 > | Agents ([N]) | [ok / N missing] |
 > | Hooks | [ok / missing entries] |
 > | CI/CD | [ok / N/A (local project)] |
-> | Synthesis records (`docs/architecture/*.html`) | [N found (expected 5: architectural-framing.html, data-architecture.html, api-integration.html, cicd-and-delivery.html, architectural-validation.html) / none / docs/architecture/ missing] |
+> | Synthesis records (`docs/adr/*.html`) | [N found (expected 5: architectural-framing.html, data-architecture.html, api-integration.html, cicd-and-delivery.html, architectural-validation.html) / none / docs/adr/ missing] |
 > | Freshness hook (`.git/hooks/pre-commit` marker `# greenfield:synthesis-freshness`) | [installed / not installed — covers all 5 synthesis HTMLs] |
 >
 > **Pending Drift**: [N entries] or "None"

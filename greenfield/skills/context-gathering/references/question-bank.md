@@ -585,7 +585,7 @@ Present the findings to the developer before asking the sign-off question.
   - For divergences: "Note what was changed from the original framing and why — future sessions need this context."
   - For rework: "Describe what needs to be revisited so the next session can resume at the right step."
 
-**>>> SYNTHESIS PAUSE**: After AV.Q1 (and AV.Q2 if applicable), invoke `Skill(synthesis-review, phaseId: "architecturalValidation")`. The synthesis renders `docs/architecture/architectural-validation.html` with the full cross-phase validation report, divergence table, and sign-off status. Wait for the developer to Approve/Adjust/Skip each section before proceeding to Phase 1.7 (grill-spec).
+**>>> SYNTHESIS PAUSE**: After AV.Q1 (and AV.Q2 if applicable), invoke `Skill(synthesis-review, phaseId: "architecturalValidation")`. The synthesis renders `docs/adr/architectural-validation.html` with the full cross-phase validation report, divergence table, and sign-off status. Wait for the developer to Approve/Adjust/Skip each section before proceeding to Phase 1.7 (grill-spec).
 
 ---
 

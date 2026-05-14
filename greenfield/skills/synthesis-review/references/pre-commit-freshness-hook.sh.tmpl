@@ -2,7 +2,7 @@
 # greenfield:synthesis-freshness
 #
 # Pre-commit warning hook installed by the synthesis-review skill (greenfield 3.x).
-# Warns when staged changes touch architecturally-relevant files but no docs/architecture/
+# Warns when staged changes touch architecturally-relevant files but no docs/adr/
 # synthesis HTML is updated in the same commit. Bypass with `git commit --no-verify`.
 #
 # This is a TEMPLATE — synthesis-review/SKILL.md Step 6 substitutes {{ARCH_PATTERNS}}
@@ -46,7 +46,7 @@ done <<< "$staged_files"
 # Did we also update any synthesis HTML?
 arch_doc_touched=0
 while IFS= read -r file; do
-  if [[ "$file" == docs/architecture/*.html ]]; then
+  if [[ "$file" == docs/adr/*.html ]]; then
     arch_doc_touched=1
     break
   fi
@@ -58,11 +58,11 @@ done <<< "$staged_files"
 {
   echo ""
   echo "  greenfield/synthesis-freshness:"
-  echo "  Architectural files changed but no docs/architecture/*.html was updated."
+  echo "  Architectural files changed but no docs/adr/*.html was updated."
   echo ""
   echo "  Consider whether the changes invalidate a synthesis record. If so,"
   echo "  run /greenfield:pickup and restart the affected phase, or update the"
-  echo "  relevant docs/architecture/p*.html by hand."
+  echo "  relevant docs/adr/p*.html by hand."
   echo ""
   echo "  This is a warning only — your commit is NOT blocked."
   echo "  Bypass this hook entirely with: git commit --no-verify"
