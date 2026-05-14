@@ -120,22 +120,29 @@ Spawn the `scaffold-analyzer` agent to scan the freshly scaffolded project. The 
 
 ### Sanitise free-text wizard answers
 
-Before forwarding to onboard, apply the canonical untrusted-input sanitiser from `${CLAUDE_PLUGIN_ROOT}/../onboard/skills/start/references/onboard-context-builder.md § Untrusted-input sanitiser` to every free-text field captured by the wizard. This is a defence-in-depth layer on top of the `<untrusted-user-input>` XML framing that `onboard/skills/generate/SKILL.md § Validate` applies at dispatch time — callers (greenfield + onboard:start) are expected to have pre-sanitised these values. Do NOT skip this step; `generate/SKILL.md` explicitly delegates the work to callers and does not duplicate it.
+Before forwarding to onboard, apply the canonical untrusted-input sanitiser from `${CLAUDE_PLUGIN_ROOT}/../onboard/skills/start/references/onboard-context-builder.md § Untrusted-input sanitiser` to every free-text field anywhere in the dispatched context. This is a defence-in-depth layer on top of the `<untrusted-user-input>` XML framing that `onboard/skills/generate/SKILL.md § Validate` applies at dispatch time. Do NOT skip this step; `generate/SKILL.md` explicitly delegates the cap/strip work to callers and does not duplicate it.
 
-Apply to these fields (and any future free-text wizard field added to `wizardAnswers`):
+**Algorithm — recursive walk.** Walk every string value under `wizardAnswers.*` and the full `context.*` tree (including `context.stack.*`, `context.securityPlan`, `context.phases.*`, `context.syntheses.*`, and anything Rounds 4-6 may add). This covers free-text fields added in any Round without per-round allowlist maintenance. For each string leaf at path `<dotted-path>`:
+
+1. **Length-cap to 16384 bytes (16 KiB).** If the original exceeded the cap, set `context._warnings.<dotted-path>Truncated = true` (e.g., `projectDescriptionTruncated`, `painPoints.timeSinksTruncated`) so the `config-generator` agent can surface a gentle note. The cap was raised from the pre-Round-1 5000-char limit to fit longer architectural notes and security/operations escalation paths that Round 2-3 introduced; **do not raise further** — 32 KiB+ adds prompt-injection attack budget without legitimate-use justification.
+2. **Strip carriage returns** (`\r`) — collapse to `\n`. Prevents terminal-escape-sequence shenanigans in pasted content.
+3. **Decide whether to fence at dispatch** using this denylist + heuristic:
+   - **Skip fencing** (treat as structured value, pass through unwrapped) when the string matches any of:
+     - URL: `^https?://`
+     - File path: `^/` or `^[A-Za-z]:\\`
+     - Version: `^v?\d+\.\d+`
+     - Pure kebab-case: `^[a-z0-9]+(-[a-z0-9]+)*$`
+   - **Apply fencing** otherwise if the value contains whitespace OR length > 120 characters.
+   - Other values (short enum-shaped strings without whitespace) pass through unfenced.
+
+Non-string values (null, undefined, numbers, booleans, arrays, objects) short-circuit the sanitiser — only string leaves get the cap/strip/heuristic. The downstream `projectDescription` non-empty validator catches the truly-missing case.
+
+**Regression guard — these four fields MUST be sanitised** under any future version of the recursive walk (they were the original explicit allowlist before Round 1). If a refactor would skip them, the refactor is wrong:
 
 - `wizardAnswers.projectDescription` (mapped from `appDescription`)
 - `wizardAnswers.painPoints.timeSinks`
 - `wizardAnswers.painPoints.errorProne`
 - `wizardAnswers.painPoints.automationWishes`
-
-Procedure per field (authoritative rule lives in the onboard reference above — do not diverge):
-
-1. **Length-cap to 5000 characters.** If the original exceeded the cap, set `context._warnings.<fieldName>Truncated = true` (e.g., `descriptionTruncated`, `painPointsTimeSinksTruncated`) so the `config-generator` agent can surface a gentle note to the user during generation.
-2. **Strip carriage returns** (`\r`) — collapse to `\n`. Prevents terminal-escape-sequence shenanigans in pasted content.
-3. **Preserve everything else.** Do not attempt heuristic "injection-like" content filtering. The defence is framing (applied downstream), not filtering.
-
-Non-string values (null, undefined, missing field) short-circuit the sanitiser — cap + strip only apply to strings. The downstream `projectDescription` non-empty validator catches the truly-missing case.
 
 ### Set enriched flags
 
