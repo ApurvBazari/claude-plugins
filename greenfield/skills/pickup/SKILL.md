@@ -111,6 +111,22 @@ The migration MUST be idempotent. After the migration, schemaVersion is `"alpha.
 - **Unknown schemaVersion:** halt with diagnostic, never silently treat as alpha.4.
 - **Missing greenfield-state.json:** not a migration scenario — the file should exist if pickup is being invoked. If absent, defer to the existing pickup logic that handles "no in-flight session." (Step 1 below.)
 
+### Migration: alpha.5 → alpha.6 (Round 5)
+
+If `state.meta.schemaVersion` is less than `"3.0.0-alpha.6"`:
+
+1. If `state.phases.featureRoadmap` is absent, inject:
+   ```json
+   { "skipped": true, "deferredReason": "session predates Round 5" }
+   ```
+2. If `state.phases.schemaDraftReview` is absent, inject the same shape.
+3. Set `state.meta.schemaVersion = "3.0.0-alpha.6"`.
+4. Atomic write via `.tmp + rename`.
+5. Surface to user:
+   > Session migrated to alpha.6. Steps 16 (Feature Roadmap) and 19 (Schema Draft Review) are now available via Adjust mode — re-enter them to populate these phases.
+
+The migration is **additive and safe**: existing alpha.5 phase data (personas, domainModel, risks, etc.) is preserved unchanged. Onboard generation falls back to the alpha.5 interactive handoff flow when these phases remain `skipped: true`.
+
 ---
 
 ## Step 1: Locate the state file
@@ -423,6 +439,21 @@ For each adjustment, the side-effects are:
 - Append audit entry to `.claude/greenfield-meta.json.audit[]` with timestamp.
 - Surface confirmation echo: "Mode adjusted: depth=<X>, coupling=<Y>, domainFormat=<Z>. <N> Qs queued for re-ask, <M> answers hidden in synthesis. Continuing from <step>."
 - If pendingQs[] is non-empty after adjustment, the wizard's next prompt is the first queued Q (not the original currentStep). State machine resumes original step after pending queue drains.
+
+### P10.5 Reject branch — Adjust-mode jump-links
+
+When the wizard reaches Step 19 (Schema & API Draft Review) and the user chooses Reject on SDR.Q3 (DB), SDR.Q5 (API), or SDR.Q7 (Event), the rejected draft came from upstream discovery phases. Surface the appropriate jump-link:
+
+| Rejected | Likely upstream cause | Adjust-mode target |
+|---|---|---|
+| DB schema | Domain entity shape mismatch, missing PII encryption hints | Step 2.7 (domainModel) and/or Step 6 (privacy) |
+| API contract | Endpoint shape, missing auth scope, asyncPattern divergence | Step 4 (apiIntegration) and/or Step 5 (auth) |
+| Event schemas | Missing or wrong domainEvents on entities | Step 2.7 (domainModel) |
+
+Prompt:
+> The <db|api|event> part of this draft came from your earlier <phase> answers. Re-enter <Step N> via Adjust mode to fix the upstream values? When you return to Step 19, the renderer re-runs from the updated state.
+
+If the user accepts, set `state.adjustModeTarget = "<phase>"` and `state.returnTo = "step-19"`, then transfer control to the relevant `Step X` block in `context-gathering/SKILL.md` running in Adjust mode. After the user re-completes that phase, the wizard returns to Step 19 and re-invokes `${CLAUDE_PLUGIN_ROOT}/scripts/render-schema-drafts.sh` to regenerate the affected draft(s).
 
 ---
 
