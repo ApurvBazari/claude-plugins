@@ -1,5 +1,34 @@
 # Changelog
 
+## 3.0.0-alpha.5 — Round 4 (Personas + Domain + Distributed Risk)
+
+**New phases:**
+- Step 2.2 — Personas (16 Qs heavy / 4 light)
+- Step 2.7 — Domain Modeling (11 Qs Full DDD / ~8 DDD-lite / ~6 Light)
+
+**New mechanics:**
+- Wizard mode toggles at Step 1.1: `mode.depth` (heavy/light), `mode.coupling` (auto-loop/hybrid), `mode.domainFormat` (full-ddd/ddd-lite). Comprehensive-by-default Recommended posture.
+- Auto-loop: every downstream architectural phase iterates per persona AND per entity in auto-loop mode; critical-only loops (`loopMode: always`) fire in both auto-loop and hybrid; `loopMode: hybrid-only` Qs collapse to single static prompts under hybrid coupling.
+- Inline risk capture: every architectural phase + personas + domain grows one final `Q_RISK`; risks collect to shared top-level `risks[]` array (10 risk-capture Qs total).
+- Risk Reconciliation: new front section in `architectural-validation.html` (Step 15). Buckets risks by reconciliation status (mitigated / partial / accepted-explicit / open-followup / out-of-scope / user-declared-none). Top follow-ups emit `feature-list.json` risk-followup cards.
+- Adjust mode in `/greenfield:pickup` — mid-wizard mode switch with per-field side-effects (queue showInLight=false Qs on Light→Heavy upgrade; preserve+hide on Heavy→Light downgrade; re-ask `hybrid-only` Qs on Hybrid→Auto-loop upgrade; etc.).
+- Persona/entity post-hoc add detection — `/greenfield:pickup` compares current persona/entity counts against per-phase `loopedOver` metadata and surfaces drift.
+
+**Schema:**
+- alpha.4 → alpha.5 is the first **non-hard-cutover** schema bump (additive + auto-migrating).
+- `/greenfield:pickup` auto-migrates alpha.4 state on first run: sets safe defaults (`heavy + hybrid + ddd-lite`), initializes new collections (`personas`, `domainModel`, `risks[]`, `architecturalValidation.riskReconciliation`), bumps version.
+- All R4 fields are optional in onboard 2.0 alpha.5+ — absent blocks mean alpha.4 behavior.
+
+**Cross-phase invariants:**
+- CHECK-R4-1 through CHECK-R4-8 added to grill-spec (4 hard-fail, 3 warn, 1 suggestion).
+
+**Migrations:**
+- Q1.2 ("Who is this for?") demoted to pointer; `vision.users[]` preserved as legacy field with conversion prompt at Step 2.2 entry for alpha.4 sessions.
+
+**Wizard step count:** 15 → 17 (Steps 2.2 + 2.7 added; renumbering uses `.X` notation, no global renumber).
+
+**New files:** see `docs/greenfield-3.0-round4/overview.md § Files added / modified`.
+
 ## [3.0.0-alpha.3] (2026-05-14)
 
 ### Schema breakage

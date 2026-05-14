@@ -1,6 +1,6 @@
 {
   "name": "greenfield",
-  "version": "3.0.0-alpha.4",
+  "version": "3.0.0-alpha.5",
   "description": "Scaffold new projects via adaptive wizard with per-phase synthesis review; delegates to onboard for tooling generation",
   "author": {
     "name": "Apurv Bazari"

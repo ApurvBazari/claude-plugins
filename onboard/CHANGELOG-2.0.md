@@ -1,5 +1,32 @@
 # Onboard 2.0 — Migration & Breaking Changes
 
+## 2.0.0-alpha.5 — Round 4 schema extensions
+
+**context-shape-v2.json additions (additive — alpha.4 sessions auto-migrate via greenfield/skills/pickup/SKILL.md § State migration):**
+- New top-level `mode` block: `{ depth: "heavy"|"light", coupling: "auto-loop"|"hybrid", domainFormat: "full-ddd"|"ddd-lite" }`.
+- New `phases.personas` block: `{ primary: [...], secondary: [...], antiPersonas: [...] }`.
+- New `phases.domainModel` block: `{ contexts, entities, valueObjects, domainEvents, crossContextRelationships, ubiquitousLanguage, antiCorruption }`.
+- Extended `phases.architecturalValidation.riskReconciliation`: `{ summary, topFollowups }`.
+- New top-level `risks[]` array: `[{ id, originatingPhase, text, tags[], reconciliation: { status, rationale } }, ...]`.
+
+**dependencies-schema.json additions:**
+- Phase enum extends: `personas`, `domainModel`, `risks`.
+- Path pattern extends to allow `personas.*`, `domainModel.*`, `risks[]` paths.
+- New optional `sourceRef: { phase, id }` field on dependency entries. Required when produced by auto-loop coupling; absent when produced by static/hybrid-collapsed Qs.
+
+**generation/SKILL.md updates:**
+- `## Round 4 — new phase blocks` section documents how generation layers R4-aware behaviors on top of alpha.4 baseline:
+  - `phases.personas` → role-specific agent generation, persona-aware UI scaffolding (R6 consumer).
+  - `phases.domainModel` → per-entity migration scaffolds, per-aggregate route maps, entity-ID-aware drift detection.
+  - `risks[]` with open-followups → prepends `docs/risks.md` listing open follow-ups grouped by originating phase.
+  - `mode.coupling == "auto-loop"` → metadata note in generated CLAUDE.md pointing at `docs/adr/*.dependencies.json` sourceRef traces.
+  - `mode.depth == "light"` → gates aspirational sections (skip "Detailed architecture diagrams", "Production readiness checklist"; replace with "Prototype mode" header).
+- All R4 fields optional; absence behaves as alpha.4. Generation is **layered, not gated**.
+
+**Backwards compatibility:** alpha.4 and alpha.5 wizards/generators can read each other's state files non-destructively. alpha.4 ignores unknown keys (mode, risks, personas, domainModel). alpha.5 runs the migration shim on alpha.4 input.
+
+---
+
 ## 2.0.0-alpha.4 — 2026-05-14 (Round 3)
 
 **Schema additions (Round 3 of the greenfield 3.0 wizard overhaul):**

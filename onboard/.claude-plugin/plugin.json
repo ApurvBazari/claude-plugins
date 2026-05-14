@@ -1,6 +1,6 @@
 {
   "name": "onboard",
-  "version": "2.0.0-alpha.4",
+  "version": "2.0.0-alpha.5",
   "description": "Analyze codebases and generate tailored Claude tooling — v2 context shape; rejects v1 input (use onboard@1.10.0 for v1)",
   "author": {
     "name": "Apurv Bazari"
