@@ -160,6 +160,28 @@
             "vdp":                  { "enum": ["none", "private", "public"], "description": "Bug bounty / VDP program. Auto-skipped for hobby." }
           }
         },
+        "runtimeOperations": {
+          "type": "object",
+          "description": "Phase: Runtime Operations — background jobs, observability, alerting, feature flags, and incident process. Round 3 (alpha.4). Required fields gated by upstream skip cascades.",
+          "required": [],
+          "additionalProperties": false,
+          "properties": {
+            "jobs":             { "type": "object", "description": "Background job system: provider (Redis/BullMQ, Sidekiq, Celery, SQS, Cloud Tasks, Inngest, Temporal, none). Auto-skipped when apiIntegration.async='no'." },
+            "retryStrategy":    { "type": "object", "description": "Retry / idempotency: at-least-once vs exactly-once, retry policy, dead-letter queue." },
+            "scheduling":       { "type": "object", "description": "Scheduled tasks: distributed scheduler or platform cron (Vercel Cron, GH Actions, k8s CronJob)." },
+            "metrics":          { "type": "object", "description": "Metrics: Prometheus / DataDog / Grafana Cloud / platform-native / none." },
+            "traces":           { "type": "object", "description": "Traces: OTel + backend (Honeycomb, DataDog APM, Tempo) / none." },
+            "logs":             { "type": "object", "description": "Logs: structured JSON; aggregator (Loki, Logtail, DataDog, CloudWatch); retention." },
+            "alerting":         { "type": "object", "description": "Alerting & paging: tool (PagerDuty / OpsGenie / Slack-Discord / none), threshold strategy. Required ≠ none when security.sensitivityTier='high'." },
+            "slo":              { "type": "object", "description": "SLI/SLO: which metrics, error budget policy. Auto-skipped when scaleTarget ∉ {production-scale, enterprise}." },
+            "featureFlags":     { "type": "object", "description": "Feature flag system: provider (LaunchDarkly, Unleash, PostHog, Flagsmith, none), flag lifecycle." },
+            "maintenanceMode":  { "type": "object", "description": "Maintenance mode / graceful degradation: mechanism (DB-flag, env, CDN rule), user UX." },
+            "healthChecks":     { "type": "object", "description": "Health checks: liveness, readiness, deep health. Platform-driven default." },
+            "runbooks":         { "type": "object", "description": "Runbooks: storage path (docs/runbooks/), template style, ownership." },
+            "incidentProcess":  { "type": "object", "description": "Incident process: severity levels, escalation chain, postmortem template." },
+            "onCall":           { "type": "object", "description": "On-call rotation: tool (PagerDuty schedule, OpsGenie schedule, Discord bot, none)." }
+          }
+        },
         "frontend":   { "$ref": "#/definitions/deferredPhase" },
         "authSecurity":   { "$ref": "#/definitions/deferredPhase" },
         "workflow":   { "$ref": "#/definitions/deferredPhase" },
@@ -195,7 +217,7 @@
         "type": "array",
         "items": {
           "type": "string",
-          "pattern": "^(vision|personas|domain|architecturalFraming|architecturalValidation|stack|auth|privacy|security|dataArchitecture|apiIntegration|frontend|authSecurity|workflow|pluginRecommendation|cicdAndDelivery|risk|featureRoadmap|pluginInstall|schemaDraftReview)\\..+$"
+          "pattern": "^(vision|personas|domain|architecturalFraming|architecturalValidation|stack|auth|privacy|security|runtimeOperations|dataArchitecture|apiIntegration|frontend|authSecurity|workflow|pluginRecommendation|cicdAndDelivery|risk|featureRoadmap|pluginInstall|schemaDraftReview)\\..+$"
         }
       }
     }
