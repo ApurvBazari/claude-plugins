@@ -8,6 +8,32 @@ user-invocable: false
 
 You are running the synthesis-review skill, the reusable Phase X.5 confirmation gate that runs after each major wizard phase in the 15-phase greenfield 3.x flow. Round 1 wires this in only for Phase 1.8 (after the CI/CD step, cicdAndDelivery). Rounds 2–6 will wire it in for dataArchitecture, apiIntegration, authSecurity, workflow, vision/personas/domain, featureRoadmap, and schemaDraftReview.
 
+## Step 0: Stale-check entry-guard
+
+Before rendering or walking any synthesis, check whether the incoming phase has already been approved and has since been marked stale.
+
+Read `context.phaseStatus[phaseId].status`. If the value is `"stale"`:
+
+1. Surface the stale notice to the developer via `AskUserQuestion`:
+
+> The **{phaseId}** synthesis was previously approved, but a dependency has changed since then.
+>
+> **Reason**: {context.phaseStatus[phaseId].staleReason}
+>
+> The captured values in this synthesis may no longer reflect the current spec.
+>
+> Would you like to re-walk this phase?
+
+Options:
+- **Re-walk (Recommended)** — clear `staleReason`, set `context.phaseStatus[phaseId].status = "in-progress"`, continue to Step 1 normally.
+- **Skip for now** — preserve the existing synthesis as-is. Return control to the caller with `synthesisStatus: "stale-deferred"`. The phase remains marked `stale` so the next entry picks it up again. Do NOT proceed to Step 1.
+
+If the status is anything other than `"stale"` (including `"not-yet-walked"`, `"in-progress"`, `"approved"`, `"approved-with-noted-divergences"`, or the field is absent), proceed to Step 1 normally.
+
+See `references/stale-detection.md` for the full entry-guard protocol and status enum.
+
+---
+
 ## Guard
 
 This skill operates on the in-memory context object passed by the caller (typically `greenfield/skills/start/SKILL.md`). It expects three inputs:
@@ -93,13 +119,29 @@ Iterate through the sections in order. For each section, ask via `AskUserQuestio
 
 After every section is walked, set `context.syntheses[phaseId] = { approvedAt: <ISO>, adjustments: [...] }`.
 
-## Step 5: Adjust dialog (invoked from Step 4 on "Adjust")
+## Step 5: Adjust dialog (invoked from Step 4 on "Adjust") + field-level diff capture
 
 Refer to `references/adjust-dialog-protocol.md` for the full protocol. Summary:
 
-1. Invoke `greenfield/skills/adjust-dialog/` via the Skill tool, passing `phaseId`, `sectionId`, the original value, the developer's stated intent, and all current `listedPhases`. The adjust-dialog skill runs a 5-category adversarial walk (Scope, Assumptions, Alternatives, Risks, Dependencies).
-2. If the Skill tool errors (skill unavailable), fall back to the inline 3-question mini-dialog documented in `references/adjust-dialog-protocol.md § Fallback`.
-3. Write the final adjusted answer back into `context.phases[phaseId]`. Record `via: "adjust-dialog" | "inline-fallback"`.
+1. Before invoking adjust-dialog, snapshot the current value for every field in the section being adjusted. Store as `beforeSnapshot = { <fieldPath>: <currentValue>, ... }`.
+2. Invoke `greenfield/skills/adjust-dialog/` via the Skill tool, passing `phaseId`, `sectionId`, the original value, the developer's stated intent, and all current `listedPhases`. The adjust-dialog skill runs a 5-category adversarial walk (Scope, Assumptions, Alternatives, Risks, Dependencies).
+3. If the Skill tool errors (skill unavailable), fall back to the inline 3-question mini-dialog documented in `references/adjust-dialog-protocol.md § Fallback`.
+4. Write the final adjusted answer back into `context.phases[phaseId]`. Record `via: "adjust-dialog" | "inline-fallback"`.
+5. **Capture the field-level diff**: compare `beforeSnapshot` against the updated `context.phases[phaseId]` to build a list of changed field paths. For each changed field, write an entry into `context.adjustmentDiffs[phaseId][sectionId]`:
+
+   ```jsonc
+   {
+     "before": "<original value (scalar or object)>",
+     "after": "<updated value>",
+     "field": "<dot-path within the phase, e.g. architecturalFraming.topology>"
+   }
+   ```
+
+   If a section involves multiple fields (e.g., section 1 of architecturalFraming captures both `topology` and `deploymentShape`), emit one `adjustmentDiffs` entry per changed field path. Unchanged fields are not included.
+
+6. Collect all changed dot-paths as `changedFields[]` — this list is passed to the propagation step in Step 7.
+
+The `adjustmentDiffs` structure is used by Step 7 for stale propagation and is available to future skills (e.g., `/greenfield:check`) for auditing what changed and when.
 
 ## Step 6: First-run freshness hook installation (one-time)
 
@@ -116,9 +158,50 @@ Tell the developer:
 
 Skip this Step on subsequent invocations.
 
-## Step 7: Checkpoint and return
+## Step 7: Propagate stale flags, then checkpoint and return
 
-Write `context.syntheses[phaseId]` to `greenfield-state.json` via the standard atomic `.tmp` + rename pattern (see `start/SKILL.md` § State persistence).
+After the developer completes the section walk (all sections Approve/Adjust/Skip), and `context.syntheses[phaseId] = { approvedAt: <ISO>, adjustments: [...] }` is set:
+
+### 7a: Update phaseStatus for the current phase
+
+Set `context.phaseStatus[phaseId]`:
+```jsonc
+{
+  "status": "approved",
+  "approvedAt": "<same ISO as context.syntheses[phaseId].approvedAt>",
+  "lastModified": "<now>",
+  "staleReason": null
+}
+```
+
+### 7b: Propagate stale to dependent phases
+
+If any section was Adjusted (i.e., `context.adjustmentDiffs[phaseId]` is non-empty), collect all changed field dot-paths from the adjustmentDiffs entries and run the stale-propagation algorithm documented in `references/stale-detection.md § Propagation algorithm`.
+
+For each approved downstream phase Q whose dependency list (from `context.dependencies[Q]`) includes one or more of the changed paths:
+
+1. Set `context.phaseStatus[Q].status = "stale"`
+2. Set `context.phaseStatus[Q].staleReason = "<phaseId>.<changedField> changed"` (first matching changed field)
+3. Set `context.phaseStatus[Q].lastModified = <now>`
+
+**Rules**:
+- Only propagate to phases with `status === "approved"` or `"approved-with-noted-divergences"`. Skip `not-yet-walked`, `in-progress`, `stale`, and `requires-rework`.
+- Do NOT propagate to the phase that was just approved (P itself).
+- Propagation is NOT recursive in this round — only direct dependents of P are marked.
+
+If N > 0 phases were marked stale, tell the developer:
+
+> Marked **N** phase(s) stale because {phaseId} was adjusted:
+> - {Q1}: "{staleReason}"
+> - {Q2}: ...
+>
+> When you next enter those phases, I'll offer a re-walk prompt.
+
+If N === 0, no output for this step (silent).
+
+### 7c: Checkpoint
+
+Write `context.syntheses[phaseId]`, `context.phaseStatus`, and `context.adjustmentDiffs[phaseId]` to `greenfield-state.json` via the standard atomic `.tmp` + rename pattern (see `start/SKILL.md` § State persistence).
 
 Return control to the caller. The caller decides the next phase.
 
@@ -130,5 +213,9 @@ Return control to the caller. The caller decides the next phase.
 4. **Cross-check dependencies on every section** — do not skip the "Assumes [topic-name] said Y" annotation even if the value looks fine. Surfacing the dependency IS the no-surprises gate.
 5. **Skip needs a reason** — Skip without a note is not allowed. The note becomes the audit record.
 6. **Template missing = halt, not fabricate** — if the per-phase template doesn't exist for the requested `phaseId`, return `synthesisStatus: "no-template"` cleanly. Do not invent sections.
-7. **Preserve developer veto** — if the developer rejects the adjusted answer in Step 5, return to the original captured value unchanged and record `{ decision: "adjusted-then-reverted" }`.
+7. **Preserve developer veto** — if the developer rejects the adjusted answer in Step 5, return to the original captured value unchanged and record `{ decision: "adjusted-then-reverted" }`. When a section is `adjusted-then-reverted`, do NOT include that field in `changedFields[]` for propagation — the final value is unchanged.
 8. **Freshness hook is install-once** — never overwrite an existing pre-commit hook. Append only, and only if the marker string is absent.
+9. **Stale entry-guard is always first** — Step 0 fires before any rendering (Step 1) or dependency loading. Never render or walk a stale synthesis without offering the re-walk choice.
+10. **Propagation is NOT recursive** — only direct dependents of the adjusted phase are marked stale. If marking Q stale would logically also stale R, that happens when the developer re-walks Q and triggers a new adjustment event.
+11. **`staleReason` captures the first matching field only** — if multiple changed fields in P affect Q, `staleReason` captures the first one. The developer can see all changes in the `adjustmentDiffs` record on re-walk.
+12. **`stale-deferred` is ephemeral** — it is only used as a return value to the caller; do NOT write it to `context.phaseStatus[phaseId].status`. The status stays `"stale"` so the next entry picks it up again.

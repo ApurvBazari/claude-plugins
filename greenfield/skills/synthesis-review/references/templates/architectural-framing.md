@@ -6,6 +6,26 @@
 
 ---
 
+## Stale status
+
+{{stale_block}}
+
+<!-- stale_block rendering rules (applied by synthesis-review SKILL.md Step 2):
+  If phaseStatus.architecturalFraming.status === "stale":
+    "⚠️ **Stale synthesis** — this phase was previously approved but a dependency changed since then.
+    **Reason**: {staleReason}
+    **Last approved**: {approvedAt}
+    The synthesis-review Step 0 entry-guard offered a re-walk. Review the sections below with the changed dependency in mind."
+
+  If phaseStatus.architecturalFraming.status === "approved" or "approved-with-noted-divergences":
+    "✅ **Synthesis current** — approved {approvedAt}. No upstream changes detected."
+
+  Otherwise (in-progress / not-yet-walked):
+    "Phase status: {status}."
+-->
+
+---
+
 ## Captured decisions
 
 ### Topology & deployment shape

@@ -6,6 +6,26 @@
 
 ---
 
+## Stale status
+
+{{stale_block}}
+
+<!-- stale_block rendering rules (applied by synthesis-review SKILL.md Step 2):
+  architecturalValidation depends on ALL prior phases; it becomes stale when any upstream phase changes.
+  If phaseStatus.architecturalValidation.status === "stale":
+    "⚠️ **Stale validation** — one or more upstream phases changed since this validation was approved.
+    **Reason**: {staleReason}
+    **Last approved**: {approvedAt}
+    Review all sections below with the changed upstream value in mind. Re-evaluate the sign-off section (Section 5)."
+
+  If phaseStatus.architecturalValidation.status === "approved" or "approved-with-noted-divergences":
+    "✅ **Validation current** — signed off {approvedAt}. No upstream changes detected."
+
+  Otherwise (in-progress / not-yet-walked): "Phase status: {status}."
+-->
+
+---
+
 ## Overview
 
 This is a read-only cross-phase validation pass. It reads from all approved phase syntheses

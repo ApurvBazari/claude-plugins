@@ -13,6 +13,29 @@
     3. cross-checks
     4. contradictions (only if rules fire)
     5. notes (only if developer-relevant)
+
+  Stale-status block: rendered by synthesis-review SKILL.md Step 2 using phaseStatus.dataArchitecture.
+  CSS for .stale-status is injected by synthesis-template.html (the outer frame).
+-->
+
+<!-- Stale status block — rendered by synthesis-review SKILL.md Step 2 before the section walk -->
+<div class="stale-status {{stale_status_class}}">
+  {{stale_block}}
+</div>
+<!-- stale_block rendering rules (applied by synthesis-review Step 2):
+  dataArchitecture depends on: architecturalFraming.topology, architecturalFraming.deploymentShape, vision.willDeploy.
+  If phaseStatus.dataArchitecture.status === "stale":
+    stale_status_class = "is-stale"
+    stale_block = "<strong>⚠️ Stale synthesis</strong> — this phase was previously approved but a dependency changed.<br>
+    <strong>Reason</strong>: {staleReason}<br>
+    <strong>Last approved</strong>: {approvedAt}<br>
+    <em>Review sections below with the changed dependency in mind.</em>"
+
+  If phaseStatus.dataArchitecture.status === "approved" or "approved-with-noted-divergences":
+    stale_status_class = "is-approved"
+    stale_block = "✅ <strong>Synthesis current</strong> — approved {approvedAt}. No upstream changes detected."
+
+  Otherwise: stale_status_class = "is-other"; stale_block = "Phase status: {status}."
 -->
 
 <h2>Captured decisions</h2>

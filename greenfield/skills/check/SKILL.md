@@ -27,6 +27,19 @@ Before checking completed setup, check for an in-progress session at `.claude/gr
 > **Next action**: [nextAction]
 > **Research mode**: [research.mode]
 >
+> **Phase Synthesis Status**
+> [For each phase in phaseStatus, render one row of the table; omit phases that are "not-yet-walked" if the list would be noisy — show at least all non-"not-yet-walked" entries]:
+>
+> | Phase | Status | Approved at | Stale reason |
+> |---|---|---|---|
+> | architecturalFraming | [status] | [approvedAt or —] | [staleReason or —] |
+> | dataArchitecture | [status] | [approvedAt or —] | [staleReason or —] |
+> | apiIntegration | [status] | [approvedAt or —] | [staleReason or —] |
+> | cicdAndDelivery | [status] | [approvedAt or —] | [staleReason or —] |
+> | architecturalValidation | [status] | [approvedAt or —] | [staleReason or —] |
+>
+> [if ANY phase.status === "stale"]: ⚠️ **Stale phases detected** — re-walk on next entry or use `/greenfield:pickup` to resume.
+>
 > **To continue**: run `/greenfield:pickup`
 > **To abandon and start over**: delete `.claude/greenfield-state.json` (irreversible — will lose all gathered context)
 
@@ -132,6 +145,18 @@ Compare `webResearch.stackVersion` from metadata against current `package.json` 
 > **Stack**: [framework] v[version] (scaffolded [date])
 > **Deploy**: [target] | **Branching**: [strategy]
 > **Auto-evolution**: [mode]
+>
+> **Phase Synthesis Status**
+> | Phase | Status | Approved at | Stale reason |
+> |---|---|---|---|
+> | architecturalFraming | [status from phaseStatus or —] | [approvedAt or —] | [staleReason or —] |
+> | dataArchitecture | [status from phaseStatus or —] | [approvedAt or —] | [staleReason or —] |
+> | apiIntegration | [status from phaseStatus or —] | [approvedAt or —] | [staleReason or —] |
+> | cicdAndDelivery | [status from phaseStatus or —] | [approvedAt or —] | [staleReason or —] |
+> | architecturalValidation | [status from phaseStatus or —] | [approvedAt or —] | [staleReason or —] |
+>
+> [If any phase has status "stale"]: ⚠️ **Stale phases** — use `/greenfield:pickup` to re-walk them.
+> [If phaseStatus is absent from state file (pre-T9 session)]: phaseStatus not tracked (pre-3.0.0-alpha.3 session — re-run synthesis to populate).
 >
 > **Tooling Health**
 > | Artifact | Status |

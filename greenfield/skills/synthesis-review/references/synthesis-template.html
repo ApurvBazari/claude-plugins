@@ -117,6 +117,30 @@
     font-size: 12px;
     text-align: center;
   }
+  /* Stale-status block (T9 / Round 2.5) — rendered before {{phase_body}} sections */
+  .stale-status {
+    border-radius: 6px;
+    padding: 12px 18px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .stale-status.is-stale {
+    background: rgba(251, 191, 36, 0.12);
+    border: 1px solid var(--warn);
+    color: var(--text);
+  }
+  .stale-status.is-stale strong { color: var(--warn); }
+  .stale-status.is-approved {
+    background: rgba(74, 222, 128, 0.08);
+    border: 1px solid #4ade80;
+    color: var(--muted);
+  }
+  .stale-status.is-other {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    color: var(--muted);
+  }
 </style>
 </head>
 <body>

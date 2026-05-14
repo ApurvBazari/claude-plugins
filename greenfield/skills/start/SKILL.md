@@ -75,9 +75,55 @@ Greenfield writes to `.claude/greenfield-state.json` at every natural checkpoint
   "nextAction": "human-readable description of what happens next",
   "research": {
     "mode": "agent | main-session | training-data-only"
+  },
+  "phaseStatus": {
+    "architecturalFraming": {
+      "status": "not-yet-walked",
+      "approvedAt": null,
+      "lastModified": "ISO-8601 timestamp",
+      "staleReason": null
+    },
+    "dataArchitecture": {
+      "status": "not-yet-walked",
+      "approvedAt": null,
+      "lastModified": "ISO-8601 timestamp",
+      "staleReason": null
+    },
+    "apiIntegration": {
+      "status": "not-yet-walked",
+      "approvedAt": null,
+      "lastModified": "ISO-8601 timestamp",
+      "staleReason": null
+    },
+    "cicdAndDelivery": {
+      "status": "not-yet-walked",
+      "approvedAt": null,
+      "lastModified": "ISO-8601 timestamp",
+      "staleReason": null
+    },
+    "architecturalValidation": {
+      "status": "not-yet-walked",
+      "approvedAt": null,
+      "lastModified": "ISO-8601 timestamp",
+      "staleReason": null
+    }
   }
 }
 ```
+
+**`phaseStatus` — stale-flag tracking (Round 2.5 / T9)**:
+
+The `phaseStatus` map is initialized on first session write with all known wizard phases set to `{ status: "not-yet-walked", approvedAt: null, lastModified: <now>, staleReason: null }`. It is updated by the `synthesis-review` skill at the end of each phase's Approve/Adjust/Skip walk.
+
+Status lifecycle:
+- `not-yet-walked` → `in-progress` (on entering the phase wizard step)
+- `in-progress` → `approved` (on synthesis review sign-off)
+- `approved` → `stale` (when a dependency field in an upstream phase is adjusted; triggered by `synthesis-review` Step 7 propagation)
+- `stale` → `in-progress` (on developer choosing "Re-walk" in the Step 0 entry-guard)
+
+When any phase transitions to `stale`, the `staleReason` field is set to a short description of what changed (e.g., `"architecturalFraming.topology changed"`). `staleReason` is reset to `null` when the phase returns to `in-progress` or `approved`.
+
+See `synthesis-review/references/stale-detection.md` for the full propagation algorithm and entry-guard protocol.
 
 **Checkpoint contract**: every skill that participates in the `/greenfield:start` flow MUST update `greenfield-state.json` after completing a named step. The checkpoint writes must be atomic (write to `.tmp` then rename) to avoid corruption if interrupted mid-write. See individual skill files for the checkpoint sections.
 

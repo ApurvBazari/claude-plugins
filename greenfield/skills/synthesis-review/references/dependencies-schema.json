@@ -40,6 +40,12 @@
           "rationale": {
             "type": "string",
             "description": "One-sentence explanation of why this phase depends on the path. Sourced from section-prompts.md."
+          },
+          "staleTrackingMode": {
+            "type": "string",
+            "enum": ["all", "explicit"],
+            "default": "explicit",
+            "description": "Controls how field-level changes in the source phase trigger stale marking for this dependency. 'explicit' (default) = only changes to this specific path trigger stale marking. 'all' = any field change in the source phase marks this phase stale regardless of which field changed."
           }
         }
       }

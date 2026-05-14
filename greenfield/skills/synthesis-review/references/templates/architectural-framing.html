@@ -31,7 +31,32 @@
   .btn-adjust  { background: #e3f2fd; }
   .btn-skip    { background: #f5f5f5; }
   .downstream  { background: #f0f4ff; border: 1px solid #b0c0e8; border-radius: 4px; padding: 0.75rem 1rem; margin-bottom: 1rem; }
+  .stale-status { border-radius: 4px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; font-size: 0.9em; }
+  .stale-status.is-stale { background: #fff3cd; border: 1px solid #ffc107; }
+  .stale-status.is-approved { background: #e8f5e9; border: 1px solid #4caf50; }
+  .stale-status.is-other { background: #f5f5f5; border: 1px solid #ddd; }
 </style>
+
+<!-- Stale status block — rendered by synthesis-review SKILL.md Step 2 before the section walk -->
+<div class="stale-status {{stale_status_class}}">
+  {{stale_block}}
+</div>
+<!-- stale_block rendering rules (applied by synthesis-review Step 2):
+  If phaseStatus.architecturalFraming.status === "stale":
+    stale_status_class = "is-stale"
+    stale_block = "<strong>⚠️ Stale synthesis</strong> — this phase was previously approved but a dependency changed since then.<br>
+    <strong>Reason</strong>: {staleReason}<br>
+    <strong>Last approved</strong>: {approvedAt}<br>
+    <em>The synthesis-review Step 0 entry-guard has already offered a re-walk. You chose to proceed; review the sections below with the changed dependency in mind.</em>"
+
+  If phaseStatus.architecturalFraming.status === "approved" or "approved-with-noted-divergences":
+    stale_status_class = "is-approved"
+    stale_block = "✅ <strong>Synthesis current</strong> — approved {approvedAt}. No upstream changes detected."
+
+  Otherwise (in-progress / not-yet-walked):
+    stale_status_class = "is-other"
+    stale_block = "Phase status: {status}."
+-->
 
 <h2>Captured decisions — Architectural Framing (Step 2.5)</h2>
 

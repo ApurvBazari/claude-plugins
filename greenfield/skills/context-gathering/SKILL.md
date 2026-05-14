@@ -150,6 +150,8 @@ Wait for research results (either via agent or main session). Then ask Q2.3 abou
 
 Emit the progress indicator. This step gathers the early architectural decisions that inform all detailed phases (P3–P9): service topology, deployment shape, and scale target. Ask questions AF.Q1–AF.Q4 from `references/question-bank.md § Step 2.5: Architectural Framing` in order.
 
+**Stale entry-guard** (check before any wizard prompt fires for this step): read `context.phaseStatus.architecturalFraming.status`. If it is `"stale"`, this guard triggers before the synthesis-review skill is invoked — it is handled inside `synthesis-review` Step 0 when re-entry is attempted. If `completedSteps` already contains `"step-2.5-architectural-framing"` AND `phaseStatus.architecturalFraming.status === "stale"`, skip re-asking the wizard questions (the answers are still in `context.phases.architecturalFraming`) and proceed directly to the synthesis-review call, which will surface the Step 0 re-walk prompt.
+
 **Data layout** — answers populate `context.phases.architecturalFraming.*` directly. The 3 required enum-locked fields are `topology`, `deploymentShape`, `scaleTarget`; `boundaryNotes` is a loose string.
 
 Tell the developer:
@@ -186,6 +188,8 @@ If the synthesis-review skill returns `synthesisStatus: "no-template"` (should n
 ### Step 3 of 11: Data Architecture
 
 This step is Round 2's first new phase. Captures data-layer decisions via P3.Q1–P3.Q12 and closes with an inline Phase 1.8 synthesis-review pass.
+
+**Stale entry-guard** (check before any wizard prompt fires for this step): if `completedSteps` already contains `"step-3-data-architecture"` AND `context.phaseStatus.dataArchitecture.status === "stale"`, skip re-asking the wizard questions and proceed directly to the synthesis-review call. Synthesis-review Step 0 will surface the re-walk prompt to the developer.
 
 **Data layout** — answers populate `context.phases.dataArchitecture.*` directly (no v1 carryover). The 4 required enum-locked fields are `databaseHost`, `orm`, `migrationsTool`, `multiTenancy`; remaining fields are loose strings.
 
@@ -233,6 +237,8 @@ If the synthesis-review skill returns `synthesisStatus: "no-template"` (should n
 ### Step 4 of 11: API & Integration
 
 This step is Round 2's second new phase. Captures API surface decisions via P4.Q1–P4.Q10 and closes with an inline Phase 1.8 synthesis-review pass.
+
+**Stale entry-guard**: if `completedSteps` already contains `"step-4-api-integration"` AND `context.phaseStatus.apiIntegration.status === "stale"`, skip re-asking wizard questions and proceed directly to synthesis-review (which handles the re-walk prompt in Step 0).
 
 **Data layout** — answers populate `context.phases.apiIntegration.*` directly. The 3 required enum-locked fields are `style`, `versioningPolicy`, `asyncPattern`; remaining fields are loose strings or arrays.
 
@@ -391,6 +397,10 @@ Walk these in order. Conditions in the question-bank gate each one — most are 
 If the developer answers Q5.4 with anything other than `"github-actions"`, capture the value but tell them:
 
 > Heads-up — Round 1 only generates GitHub Actions workflow templates. Your `provider` answer is captured but won't drive workflow generation until Round 6. The synthesis review will flag this.
+
+#### Stale entry-guard for cicdAndDelivery
+
+Before asking Q5.1 (or the first applicable question): if `completedSteps` already contains `"step-7-cicd"` AND `context.phaseStatus.cicdAndDelivery.status === "stale"`, skip re-asking Q5.1–Q5.17 and proceed directly to the synthesis-review call below. Synthesis-review Step 0 will surface the re-walk prompt.
 
 #### Phase 1.8: synthesis review (after Q5.17, or after Q5.1/Q5.2/Q5.3 if `willDeploy = false`)
 

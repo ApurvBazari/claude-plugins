@@ -71,6 +71,13 @@ Read `.claude/greenfield-state.json`. Expected schema:
   "nextAction": "human-readable description of what happens next",
   "research": {
     "mode": "agent | main-session | training-data-only"
+  },
+  "phaseStatus": {
+    "architecturalFraming": { "status": "not-yet-walked | in-progress | approved | stale | approved-with-noted-divergences | requires-rework", "approvedAt": "ISO-8601 or null", "lastModified": "ISO-8601", "staleReason": "null or string" },
+    "dataArchitecture": { "status": "...", "approvedAt": "...", "lastModified": "...", "staleReason": "..." },
+    "apiIntegration": { "status": "...", "approvedAt": "...", "lastModified": "...", "staleReason": "..." },
+    "cicdAndDelivery": { "status": "...", "approvedAt": "...", "lastModified": "...", "staleReason": "..." },
+    "architecturalValidation": { "status": "...", "approvedAt": "...", "lastModified": "...", "staleReason": "..." }
   }
 }
 ```
@@ -118,6 +125,16 @@ Show the user what will happen:
 > **Progress so far**:
 > - ✅ [completedSteps rendered as a checklist with friendly names]
 >
+> **Phase synthesis status**:
+> [For each phase in phaseStatus, render one line:]
+> - [phaseId]: [status emoji] [status] [if stale: "— {staleReason}"]
+>
+> Status legend: ✅ approved | 🔄 in-progress | ⚠️ stale | 🔁 approved-with-noted-divergences | ❌ requires-rework | — not-yet-walked
+>
+> [If ANY phase has status === "stale"]:
+> **⚠️ Stale phases detected**: [list of stale phaseIds and their staleReasons]
+> These phases reference values that changed since they were approved. When you re-enter them, I'll offer a re-walk prompt.
+>
 > **Next action**:
 > [nextAction from state file, e.g., "Continue Phase 1 Step 3 — Project Details (Q3.4: deploy target)"]
 >
@@ -126,6 +143,8 @@ Show the user what will happen:
 > Ready to continue? (yes/no)
 
 Wait for explicit confirmation. If the user wants to review first, they can cat `.claude/greenfield-state.json` or ask you to show specific fields.
+
+**Stale-awareness on dispatch**: if the developer is resuming to a phase Q that has a different `currentPhase` target (i.e., they are about to re-enter a wizard step that is NOT the stale phase), still mention the stale phase in the summary. Do not reroute the developer away from their resume target — the stale-check entry-guard in `synthesis-review` Step 0 will catch it when Q is actually entered.
 
 ---
 
