@@ -387,6 +387,32 @@ If the synthesis-review skill returns `synthesisStatus: "no-template"` (should n
 
 ---
 
+### Step 7 of 15: Security
+
+Emit the progress indicator. This step covers application security posture: sensitivity tier, secret management, vulnerability scanning, threat model, encryption, headers, input validation, audit retention, IR pointer, pentest cadence, VDP, supply chain. About 13 questions; some may be skipped based on `security.sensitivityTier` and `architecturalFraming.scaleTarget`.
+
+**Stale entry-guard**: if `completedSteps` already contains `"step-7-security"` AND `context.phaseStatus.security.status === "stale"`, skip re-asking wizard questions and proceed directly to the synthesis-review call.
+
+Tell the developer (verbatim):
+
+> Step 7 of 15: Security. I'll ask about sensitivity tier, secret management, vulnerability scanning, threat model, encryption, audit logging, incident response, and supply chain. About 13 questions. Some may be skipped for hobby-scale projects.
+
+Then run the wizard.
+
+Ask each question from `references/question-bank.md § Step 7: Security` (Sec.Q1 through Sec.Q13) in order. Honor the conditions. Write each answer to its destination field under `context.phases.security`.
+
+**State checkpointing**: set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-7-security"`.
+
+**At end of step**, invoke synthesis-review inline:
+
+```
+Skill(synthesis-review, phaseId: "security")
+```
+
+If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen — `security.html`/`.md` ship in Round 3 commit `4288039`), tell the developer and continue to Step 8.
+
+---
+
 ### Step 5 of 11: Remaining Project Details (residual)
 
 This step holds the 13 Category 3 questions that have NOT been re-homed to Data Architecture or API & Integration in Round 2. They stay here as transitional content until Rounds 3–6 re-home them to vision/frontend/authSecurity/workflow. See `references/question-bank.md § Category 3 (residual)` for the full question list.
