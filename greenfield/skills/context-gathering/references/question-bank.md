@@ -1217,6 +1217,9 @@ Writes to `context.phases.apiIntegration.*`. See `onboard/skills/generate/refere
 > - **Moved to Step 4 (apiIntegration):** Q3.5 (external APIs) → P4.Q10, Q3.7 (API style) → P4.Q2, Q3.8 (API docs) → P4.Q3, Q3.18 (bg jobs) → P4.Q7
 > - **Staying here (Cat 3 residual):** Q3.1, Q3.3, Q3.4, Q3.6, Q3.9, Q3.10, Q3.11, Q3.12, Q3.13, Q3.14, Q3.15, Q3.F1, Q3.F2 — destined for Rounds 3–6.
 
+> **Round 3 note (2026-05-14):** Q3.3 (auth) → Step 5 Auth.Q1. Q3.6 (monitoring) → Step 8 Ops.Q4/Q5/Q6 (product analytics deferred to Round 6). Q3.9 (env vars/secrets) → Step 7 Sec.Q2.
+> **Staying here:** Q3.1, Q3.4, Q3.10, Q3.11, Q3.12, Q3.13, Q3.14, Q3.15, Q3.F1, Q3.F2 (10 Qs total — down from 13).
+
 This category becomes wizard Step 5 of 11 in Round 2.
 
 ### Q3.1: "What's the scale of this project?"
@@ -1230,17 +1233,8 @@ This category becomes wizard Step 5 of 11 in Round 2.
   - If `architecturalFraming.scaleTarget: "enterprise"` → `"Production app (larger team, 5+)"`
   - Else → `"Production app (solo)"` (greenfield opinion: most developers using greenfield are building something real, not just learning)
 
-### Q3.3: "How do you want to handle authentication?"
-- **Type**: Choice
-- **Options**: "No auth" | "Third-party (Auth0, Clerk, etc.)" | "Built-in (session/JWT)" | "Skip for now"
-- **Condition**: `hasFrontend || hasAPI`
-- **Updates**: `authStrategy`
-- **Default**: `"Third-party (Auth0, Clerk, etc.)"`
-  - If `appType: "api"` AND `architecturalFraming.scaleTarget ∈ (production-scale, enterprise)` → `"Built-in (session/JWT)"` (greenfield opinion: API services often need fine-grained JWT control that third-party providers don't expose)
-  - If `architecturalFraming.scaleTarget: "hobby"` → `"No auth"` (hobby projects often have a single user)
-  - If `stack.stack.framework: "django"` → `"Built-in (session/JWT)"` (Django's auth system is first-class)
-  - If `stack.stack.framework: "rails"` → `"Built-in (session/JWT)"` (Devise is idiomatic Rails)
-  - Else → `"Third-party (Auth0, Clerk, etc.)"` (greenfield opinion: third-party auth eliminates security footguns around password hashing, session management, and MFA)
+### Q3.3: (moved to Auth.Q1 in Round 3)
+- Moved to Step 5 (Auth) — see `### Auth.Q1`
 
 ### Q3.4: "Where do you want to deploy?"
 - **Type**: Choice (research-informed)
@@ -1349,6 +1343,8 @@ This category becomes wizard Step 5 of 11 in Round 2.
 ---
 
 ## Category 4: Workflow (adaptive)
+
+> **Round 3 (2026-05-14):** Q4.5 (security sensitivity) → Step 7 Sec.Q1. Cat 4 retains 6 Qs (Q4.1-Q4.4, Q4.6, Q4.7).
 
 ### Q4.1: "What branching strategy works for you?"
 - **Type**: Choice (recommendation based on team size)
