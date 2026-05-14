@@ -97,8 +97,13 @@ The canonical schema lives at `skills/generate/references/context-shape-v2.json`
     // Round 2.5 live: above + "P11" (architecturalValidation)
     // Round 3 live: above + "P5" (auth), "P6" (privacy), "P7" (security), "P8b" (runtimeOperations)
     //   cicdAndDelivery renumbered to Step 11; architecturalValidation renumbered to Step 15
+    // Round 4 live: above + "personas" (Step 2.2), "domainModel" (Step 2.7)
     "P8": { "approvedAt", "adjustments[]" }
   },
+  "risks": [                          // ★ Round 4 — top-level array; see § Round 4 phase additions below
+    { "id": "R-SEC-1", "originatingPhase": "security", "text": "...",
+      "tags": ["security"], "reconciliation": { "status": "open-followup", "rationale": "..." } }
+  ],
   "dependencies": { "P8": ["P0.willDeploy", "P0.teamSize", ...] }
 }
 ```
@@ -108,6 +113,36 @@ The canonical schema lives at `skills/generate/references/context-shape-v2.json`
 Onboard 2.x rejects v1 input outright. There is no migration helper. v1 callers (greenfield 2.x, any direct callers built before greenfield 3.0) must stay on onboard 1.10.0 for the lifetime of their session. Documented at length in `CHANGELOG-2.0.md`.
 
 The rejection contract is enforced at the top of `skills/generate/SKILL.md § Step 0` — never silent, never partial. The error message is parseable by callers for routing.
+
+### Round 4 phase additions (alpha.5)
+
+Three schema additions land in Round 4; all are optional — if absent, generation behaves as alpha.4.
+
+**`phases.personas`** (Step 2.2 in the greenfield wizard)
+- New discovery phase that captures primary personas (up to 5, each with id/name/role/goal, optional context/jobs/constraints), secondary personas (up to 3), and optional `antiPersonas[]`.
+- Set `skipped: true` + `deferredReason` when the project has no meaningful user differentiation.
+- Drives auto-loop in downstream architectural phases: auth, privacy, security, runtimeOps iterate per persona when `mode.coupling = "auto-loop"`.
+- If absent, generate skips persona-driven loop expansion silently.
+
+**`phases.domainModel`** (Step 2.7 in the greenfield wizard)
+- New discovery phase that captures bounded contexts (`contexts[]`), entities (with `isAggregateRoot` flags and `relationships[]`), value objects, domain events, cross-context relationships, ubiquitous language glossary, and `antiCorruption` (single string).
+- Mode-gated fields: `valueObjects`, `domainEvents`, `antiCorruption` are skipped in `mode.domainFormat = "ddd-lite"` and `mode.depth = "light"`.
+- Drives auto-loop in dataArchitecture, apiIntegration, security when entities are present.
+- Set `deferred: true` when the project is too early-stage for domain modeling.
+
+**`phases.architecturalValidation.riskReconciliation`** (Round 4 extension to Step 15)
+- New nested block under the existing `architecturalValidation` phase.
+- `summary` — per-status counts: `mitigated[]`, `partial[]`, `acceptedExplicit[]`, `openFollowup[]`, `outOfScope[]` (each an array of risk IDs).
+- `topFollowups[]` — risk IDs that emit feature-list.json risk-followup cards after generation.
+
+**Top-level `risks[]`**
+- Array of cross-cutting risks captured inline at each phase's `Q_RISK` trailer question (flag: `isRiskCapture: true` in the question bank).
+- Entry shape: `{ id, originatingPhase, text, tags[], reconciliation: { status, rationale } }`.
+- `id` pattern: `R-<PHASE>-<N>` (e.g., `R-SEC-1`, `R-DA-2`).
+- `originatingPhase` enum: `personas | domainModel | architecturalFraming | dataArchitecture | apiIntegration | auth | privacy | security | runtimeOperations | cicdAndDelivery`.
+- `reconciliation.status` enum: `mitigated | partial | accepted-explicit | open-followup | out-of-scope | user-declared-none`.
+- Risks are reconciled at Step 15 (Risk Reconciliation, front section of architecturalValidation).
+- Post-generation: if any entry has `reconciliation.status == "open-followup"`, generate emits `docs/risks.md` listing those entries as action items.
 
 ### v2-specific templates (Round 1 — Round 3 complete)
 
