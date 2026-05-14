@@ -117,6 +117,25 @@ If `context.phases.security.sensitivityTier === "high"`, then `context.phases.ru
 
 These 4 checks are evaluated alongside the existing grill-spec pass. They surface as Adjust prompts during the pre-scaffold validation gate.
 
+## Round 4 invariants (CHECK-R4-*)
+
+Run after Step 15.2 (cross-phase invariant check). See `references/check-r4-invariants.md` for full predicate definitions, source phases, and fail messages.
+
+| ID | Severity | Phase deps |
+|---|---|---|
+| CHECK-R4-1 | hard-fail | personas |
+| CHECK-R4-2 | hard-fail | domainModel + dataArchitecture |
+| CHECK-R4-3 | hard-fail | personas + auto-loop downstream phases |
+| CHECK-R4-4 | hard-fail | risks (any) + architecturalValidation |
+| CHECK-R4-5 | warn | domainModel + auth |
+| CHECK-R4-6 | warn | domainModel |
+| CHECK-R4-7 | warn | personas |
+| CHECK-R4-8 | suggestion | mode (any) |
+
+If any **hard-fail** invariant fails, block Step 15.3 final sign-off. User must either fix the cause (preferred — fix Q-bank answer, re-run the affected phase) or explicitly override with `--force` (logged to `greenfield-meta.json.audit[]` with reason).
+
+**Warn** invariants surface in the validation report but do not block. **Suggestion** invariants surface as informational notes only.
+
 ## Step 5: Re-confirmation
 
 Present a diff of changed spec fields:

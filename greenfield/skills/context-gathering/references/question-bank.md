@@ -1698,4 +1698,70 @@ Present the findings to the developer before asking the sign-off question.
 | No database (P3.Q1 = no) | P3.Q2–Q7 |
 | No API layer (P4.Q1 = no) | P4.Q2–Q9 |
 
+---
+
+## Round 4 Q-bank flag reference
+
+This section documents the Q-bank metadata flags introduced in Round 4. All flags apply to per-phase Q-bank files (e.g., `personas.q-bank.md`, `domain-model.q-bank.md`, `data-architecture.q-bank.md`) — the consolidated `question-bank.md` retains the R3-style format for historical reference until a future cleanup round removes the migrated sections.
+
+### `showInLight: boolean` (default: true)
+
+If `false`, the Q is skipped when `mode.depth == "light"`. Used to gate depth-only Qs in:
+
+- personas (Q4–Q5, Q7–Q8, Q9–Q11 — secondary persona scaffolding)
+- domain-model (Q6 value objects, Q7 domain events, Q10 anti-corruption)
+- 8 architectural phases (per-phase depth gating per the per-phase q-bank header notes)
+
+### `loopOver: string` (optional)
+
+If set, the Q iterates once per item in the named collection. Valid source paths:
+
+- `personas.primary` — fires once per primary persona
+- `personas.secondary` — fires once per secondary persona
+- `domainModel.entities` — fires once per entity (across all bounded contexts)
+- `domainModel.aggregates` — derived view: fires once per entity where `isAggregateRoot == true`
+
+Per Phase B grill-spec rule, every `loopOver` path MUST reference one of the four valid sources. Any other value is a state-machine bug.
+
+### `loopMode: "always" | "hybrid-only"` (default: "always" when loopOver is set)
+
+Controls whether the Q loops under hybrid coupling:
+
+- `always` — loops in BOTH auto-loop AND hybrid coupling modes. Used for critical decisions where per-iteration capture is essential (e.g., `auth.roles` per persona, `data.persistence` per entity).
+- `hybrid-only` — loops only when `mode.coupling == "auto-loop"`. Under `mode.coupling == "hybrid"`, the Q fires ONCE as static with a single answer. Used for nice-to-have decisions where per-iteration capture is valuable in tight coupling but optional in loose (e.g., `security.threat-model` per persona, `runtimeOps.SLO` per persona).
+
+**Misnomer warning:** `hybrid-only` semantically means "skip the loop in hybrid mode" — a clearer name in retrospect would be `hybrid-skip`. The spec is locked at `hybrid-only`. Document the surprise here so future readers don't misread the semantics.
+
+### `isRiskCapture: boolean` (default: false)
+
+If `true`, the Q's answer appends to the top-level `context.risks[]` array (NOT to the originating phase's block). Used by `Q_RISK` trailer entries:
+
+- 8 architectural phase Q-banks (ArchFraming.Q_RISK, Data.Q_RISK, Api.Q_RISK, Auth.Q_RISK, Privacy.Q_RISK, Sec.Q_RISK, Ops.Q_RISK, CICD.Q_RISK)
+- 2 discovery phase Q-banks (Persona.Q_RISK, Domain.Q_RISK)
+
+Total: 10 inline risk-capture Qs. See `inline-risk.q-bank.md` for the cross-cutting schema doc.
+
+### `feedsIntoConsolidation: boolean` (default: false)
+
+If `true` (always paired with `isRiskCapture: true`), the captured risk participates in Step 15 Risk Reconciliation. Currently identical to `isRiskCapture` semantically — every captured risk is reconciled. The flag is kept separate for future extensibility (e.g., risks that are captured for reporting but excluded from the reconciliation walk).
+
+### Bullet ordering (per-phase Q-bank convention)
+
+Within a Q's metadata block:
+
+```
+- **type:** <registry value>
+- **options:** [<for select types only>]
+- **showInLight:** <boolean>
+- **isRiskCapture:** <boolean>
+- **condition:** <when this Q fires>
+- **R3-updates-path:** <provenance — migrated phases only>
+- **loopOver:** <source path>           (if Q loops)
+- **loopMode:** <always|hybrid-only>    (if Q loops)
+```
+
+Other flags (`required`, `tagSuggestions`, `feedsIntoConsolidation`, etc.) interleave per Q.
+
+Then a `**Prompt:**` paragraph, followed by `**Stores to:**`, followed by R3-preserved paragraphs (Downstream effects, Recommend, Default).
+
 *When `willDeploy = false`, the entire Category 5 (CI/CD) except Q5.2 is skipped.
