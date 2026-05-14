@@ -1,0 +1,209 @@
+<!--
+  Per-phase synthesis template — Privacy.
+  Loaded by synthesis-review/SKILL.md Step 2 and spliced into synthesis-template.html's {{phase_body}}.
+
+  Placeholders use Mustache-like syntax: {{privacy.<field>}} resolves from
+  context.phases.privacy.<field>. Cross-checks resolve dependency paths from
+  context.phases.<other-phase>.<path>; if the path is not yet captured (later-round phase),
+  the synthesis-review skill renders "not yet captured" rather than blocking.
+
+  Section anatomy (per references/section-prompts.md):
+    1. section-title
+    2. captured-as
+    3. cross-checks
+    4. contradictions (only if rules fire)
+    5. notes (only if developer-relevant)
+
+  Stale-status block: rendered by synthesis-review SKILL.md Step 2 using phaseStatus.privacy.
+  CSS for .stale-status is injected by synthesis-template.html (the outer frame).
+
+  synthesisStatus="n/a" stub case:
+    Triggered when auth.strategy === "none" AND the developer confirms no user data is
+    collected in Privacy.Gate. All content sections are conditional on synthesisStatus === "complete".
+    The stub-banner below renders when synthesisStatus === "n/a" and explains the skip.
+-->
+
+<!-- Stale status block — rendered by synthesis-review SKILL.md Step 2 before the section walk -->
+<div class="stale-status {{stale_status_class}}">
+  {{stale_block}}
+</div>
+<!-- stale_block rendering rules (applied by synthesis-review Step 2):
+  privacy depends on: auth.strategy, dataArchitecture.compliance, apiIntegration.externalServices.
+  If phaseStatus.privacy.status === "stale":
+    stale_status_class = "is-stale"
+    stale_block = "<strong>⚠️ Stale synthesis</strong> — this phase was previously approved but a dependency changed.<br>
+    <strong>Reason</strong>: {staleReason}<br>
+    <strong>Last approved</strong>: {approvedAt}<br>
+    <em>Review sections below with the changed dependency in mind.</em>"
+
+  If phaseStatus.privacy.status === "approved" or "approved-with-noted-divergences":
+    stale_status_class = "is-approved"
+    stale_block = "✅ <strong>Synthesis current</strong> — approved {approvedAt}. No upstream changes detected."
+
+  Otherwise: stale_status_class = "is-other"; stale_block = "Phase status: {status}."
+-->
+
+<!-- Synthesis status — n/a stub banner (Privacy-specific) -->
+<!-- Rendered only when privacy.synthesisStatus === "n/a" -->
+<div class="stub-banner">
+  {{#if privacy.synthesisStatus === "n/a"}}
+  <strong>Privacy phase skipped (n/a stub)</strong> — <code>auth.strategy</code> is <code>none</code> and the Privacy Gate confirmed that this project collects no user data. No regulatory obligations, PII inventory, consent manager, or DSAR flow is required at this stage.<br>
+  <em>If the project later introduces user accounts or data collection, re-run Privacy synthesis from <code>/greenfield:pickup</code> to walk all eight sections.</em>
+  {{/if}}
+</div>
+<!-- stub-banner rendering rules:
+  Rendered only when privacy.synthesisStatus === "n/a".
+  When synthesisStatus === "complete", the stub-banner div is hidden (CSS: display: none or the skill omits it).
+  When synthesisStatus is unset (phase not yet walked), render nothing.
+-->
+
+<h2>Captured decisions</h2>
+
+<!-- Section 1: Regulatory Scope -->
+<!-- Rendered when privacy.synthesisStatus === "complete" -->
+<div class="section">
+  <div class="section-title">1. Regulatory Scope</div>
+  <pre class="captured">regulations: {{privacy.regulations | join: ", "}}</pre>
+  <div class="cross-check">Pre-filled from <code>dataArchitecture.compliance = {{dataArchitecture.compliance}}</code>. The compliance field in Data Architecture §7 is the upstream source of truth for regulatory scope. If dataArchitecture.compliance was left as <code>none</code> but the product serves EU or California residents, update it before approving this section.</div>
+  <!-- Note injected if privacy.regulations is empty or "none" && dataArchitecture.compliance !== "none": -->
+  <!-- <div class="note">dataArchitecture.compliance is set to <code>{{dataArchitecture.compliance}}</code> but privacy.regulations is empty. The regulations field should at minimum mirror the compliance value from Data Architecture. Update regulations or set dataArchitecture.compliance to <code>none</code> explicitly.</div> -->
+</div>
+
+<!-- Section 2: PII Inventory -->
+<!-- Rendered when privacy.synthesisStatus === "complete" -->
+<div class="section">
+  <div class="section-title">2. PII Inventory</div>
+  <pre class="captured">piiCategories: {{privacy.piiCategories | join: ", "}}</pre>
+  <div class="cross-check">Cross-link: <code>dataArchitecture</code> user schema defines which tables and columns hold personal data. The PII inventory here must be consistent with the data model — any PII category listed here that has no corresponding table/column in the data schema is a design gap.</div>
+  <table>
+    <thead>
+      <tr>
+        <th>PII Category</th>
+        <th>Typical fields</th>
+        <th>Sensitivity</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Identity (name, email)</td>
+        <td>users.name, users.email</td>
+        <td>Standard</td>
+      </tr>
+      <tr>
+        <td>Contact (phone, address)</td>
+        <td>users.phone, users.address</td>
+        <td>Standard</td>
+      </tr>
+      <tr>
+        <td>Financial (card, bank)</td>
+        <td>payment_methods.*, transactions.*</td>
+        <td>High — PCI DSS scope</td>
+      </tr>
+      <tr>
+        <td>Health (medical records)</td>
+        <td>health_records.*, diagnoses.*</td>
+        <td>Special — HIPAA PHI</td>
+      </tr>
+      <tr>
+        <td>Behavioral (usage, clicks)</td>
+        <td>events.*, analytics.*</td>
+        <td>Low–Medium (pseudonymous)</td>
+      </tr>
+      <tr>
+        <td>Biometric (fingerprint, face)</td>
+        <td>biometrics.*</td>
+        <td>Special — biometric data law</td>
+      </tr>
+    </tbody>
+  </table>
+  <!-- Note injected if privacy.piiCategories includes "health" && privacy.regulations does not include "HIPAA": -->
+  <!-- <div class="note">Health PII listed but HIPAA not in regulations. Health data collected by covered entities or their business associates is subject to HIPAA regardless of project intent. Add HIPAA to regulations or confirm this project is not a covered entity.</div> -->
+</div>
+
+<!-- Section 3: Lawful Basis & Consent -->
+<!-- Rendered only when GDPR or UK-GDPR is in privacy.regulations -->
+<div class="section">
+  <div class="section-title">3. Lawful Basis &amp; Consent</div>
+  <!-- Conditional: rendered only if privacy.regulations includes "GDPR" or "UK-GDPR" -->
+  <!-- If neither applies: <div class="note">Section 3 (Lawful Basis & Consent) is not applicable — GDPR and UK-GDPR are not in the regulatory scope for this project.</div> -->
+  <pre class="captured">lawfulBasis:    {{privacy.lawfulBasis}}
+consentManager: {{privacy.consentManager}}</pre>
+  <div class="cross-check">GDPR Article 6 requires a documented lawful basis for each processing activity. Consent is only one of six bases — legitimate interest, contract performance, legal obligation, vital interests, and public task are alternatives that do not require a cookie banner. The consent manager (OneTrust, Cookiebot, custom) determines the technical mechanism for capturing and storing consent records.</div>
+  <!-- Contradiction injected if privacy.lawfulBasis === "consent" && privacy.consentManager === "none": -->
+  <!-- <div class="contradiction"><strong>Contradiction:</strong> privacy picked <code>lawfulBasis: consent</code> but <code>consentManager: none</code>. Consent as lawful basis requires a mechanism to capture, store, and revoke consent records. Add a consent manager before scaffolding.</div> -->
+  <!-- Note injected if privacy.lawfulBasis === "legitimate-interest": -->
+  <!-- <div class="note">Legitimate interest as lawful basis requires a documented Legitimate Interest Assessment (LIA). The assessment must balance the organisation's interest against the data subject's rights. Document the LIA in the privacy policy and ADR.</div> -->
+</div>
+
+<!-- Section 4: Retention & Deletion -->
+<!-- Rendered when privacy.synthesisStatus === "complete" -->
+<div class="section">
+  <div class="section-title">4. Retention &amp; Deletion</div>
+  <pre class="captured">retention.policy:       {{privacy.retention.policy}}
+retention.duration:     {{privacy.retention.duration}}
+deletionFlow.trigger:   {{privacy.deletionFlow.trigger}}
+deletionFlow.mechanism: {{privacy.deletionFlow.mechanism}}
+deletionFlow.auditTrail: {{privacy.deletionFlow.auditTrail}}</pre>
+  <div class="cross-check">Assumes <code>auth.lifecycle.accountDeletion = {{auth.lifecycle.accountDeletion}}</code>. The deletion flow here (privacy layer) must align with the auth lifecycle deletion path (auth layer). Hard-delete in auth must cascade to all PII stores, or residual personal data creates a GDPR Article 17 violation. Retention duration drives the scheduled purge job requirement — this must appear in the data architecture schema as a <code>deleted_at</code> or <code>expires_at</code> column with an index.</div>
+  <!-- Contradiction injected if privacy.deletionFlow.mechanism === "hard-delete" && auth.lifecycle.accountDeletion !== "hard-delete": -->
+  <!-- <div class="contradiction"><strong>Contradiction:</strong> privacy defines hard-delete deletion flow but auth.lifecycle.accountDeletion is <code>{{auth.lifecycle.accountDeletion}}</code>. Both layers must agree on delete semantics. Align them before scaffolding.</div> -->
+</div>
+
+<!-- Section 5: DSAR & Data Export -->
+<!-- Rendered only when GDPR or CCPA is in privacy.regulations -->
+<div class="section">
+  <div class="section-title">5. DSAR &amp; Data Export</div>
+  <!-- Conditional: rendered only if privacy.regulations includes "GDPR" or "CCPA" -->
+  <!-- If neither applies: <div class="note">Section 5 (DSAR & Data Export) is not applicable — GDPR and CCPA are not in the regulatory scope for this project.</div> -->
+  <pre class="captured">dsar.sladays:  {{privacy.dsar.sladays}}
+dsar.format:   {{privacy.dsar.format}}
+dsar.workflow: {{privacy.dsar.workflow}}</pre>
+  <div class="cross-check">GDPR Article 15 (right of access) and CCPA Section 1798.100 both grant data subjects the right to request a copy of their personal data. GDPR mandates a 30-day response SLA (extendable to 90 with notice); CCPA mandates 45 days. The DSAR workflow must enumerate all data stores that hold PII (from the PII inventory in Section 2) and produce a machine-readable export (JSON or CSV) covering all of them. If the PII inventory changes, the DSAR workflow must be updated to match.</div>
+  <!-- Note injected if privacy.dsar.workflow === "manual" && privacy.piiCategories.length > 3: -->
+  <!-- <div class="note">Manual DSAR workflow with more than 3 PII categories — consider automating. Manual workflows don't scale and are error-prone when PII spans multiple tables. An automated export pipeline reduces response time and ensures completeness.</div> -->
+</div>
+
+<!-- Section 6: Third-Party Processors -->
+<!-- Rendered when privacy.synthesisStatus === "complete" -->
+<div class="section">
+  <div class="section-title">6. Third-Party Processors</div>
+  <!-- Array field pre-filled from apiIntegration.externalServices -->
+  <pre class="captured">processors: {{privacy.processors | join: ", "}}</pre>
+  <div class="cross-check">Pre-filled from <code>apiIntegration.externalServices = {{apiIntegration.externalServices | join: ", "}}</code>. Any external service that touches personal data is a data processor under GDPR Article 28 and must have a Data Processing Agreement (DPA) in place. Review the pre-filled list and remove any service that does not handle personal data. Add any services from the PII inventory not already listed.</div>
+  <!-- Note injected if privacy.regulations includes "GDPR" && privacy.processors is non-empty: -->
+  <!-- <div class="note">GDPR requires a Data Processing Agreement with each listed processor. Verify that DPAs are in place or obtainable for: <code>{{privacy.processors | join: ", "}}</code>. Most major SaaS providers (Stripe, Segment, SendGrid, etc.) offer standard DPAs — link them in the privacy policy.</div> -->
+  <!-- Note injected if privacy.processors includes "segment" || "mixpanel" || "amplitude": -->
+  <!-- <div class="note">Analytics processor detected. Behavioral analytics platforms (Segment, Mixpanel, Amplitude) collect IP addresses and device identifiers that qualify as personal data under GDPR. Ensure consent is captured before initialising the analytics SDK.</div> -->
+</div>
+
+<!-- Section 7: Data Minimization & Residency -->
+<!-- Rendered when privacy.synthesisStatus === "complete" -->
+<div class="section">
+  <div class="section-title">7. Data Minimization &amp; Residency</div>
+  <pre class="captured">minimization.principle:   {{privacy.minimization.principle}}
+minimization.pseudonymize: {{privacy.minimization.pseudonymize}}
+dataResidency.region:     {{privacy.dataResidency.region}}
+dataResidency.restriction: {{privacy.dataResidency.restriction}}</pre>
+  <div class="cross-check">Data residency is determined upstream by <code>architecturalFraming.deploymentShape</code> and the infrastructure region chosen during scaffolding. If GDPR is in scope, personal data transferred outside the EEA requires a legal transfer mechanism (Standard Contractual Clauses, adequacy decision, or Binding Corporate Rules). Pseudonymization (replacing direct identifiers with tokens) is a GDPR Article 25 data-protection-by-design requirement that reduces breach severity.</div>
+  <!-- Contradiction injected if privacy.dataResidency.restriction === "eu-only" && architecturalFraming.deploymentShape includes a non-EU region: -->
+  <!-- <div class="contradiction"><strong>Contradiction:</strong> privacy requires EU-only data residency but the deployment shape includes a non-EU region. Either restrict the infrastructure to EU regions or add a Standard Contractual Clause transfer mechanism.</div> -->
+  <!-- Note injected if privacy.minimization.pseudonymize === false && privacy.piiCategories includes "health" or "financial": -->
+  <!-- <div class="note">High-sensitivity PII (health, financial) without pseudonymization — consider pseudonymizing analytics and reporting pipelines at minimum. Storing direct identifiers in analytics tables creates unnecessary breach exposure.</div> -->
+</div>
+
+<!-- Section 8: Access Audit -->
+<!-- Rendered only when HIPAA is in privacy.regulations (mandatory if HIPAA) -->
+<div class="section">
+  <div class="section-title">8. Access Audit</div>
+  <!-- Conditional: mandatory if privacy.regulations includes "HIPAA"; informational otherwise -->
+  <!-- If HIPAA not in regulations: <div class="note">Section 8 (Access Audit) is not required — HIPAA is not in the regulatory scope. Access audit logging is still recommended as a security best practice.</div> -->
+  <pre class="captured">accessAudit.scope:      {{privacy.accessAudit.scope}}
+accessAudit.store:      {{privacy.accessAudit.store}}
+accessAudit.retention:  {{privacy.accessAudit.retention}}
+accessAudit.alerting:   {{privacy.accessAudit.alerting}}</pre>
+  <div class="cross-check">HIPAA § 164.312(b) requires audit controls that record and examine activity in systems containing electronic Protected Health Information (ePHI). Assumes <code>dataArchitecture.engine = {{dataArchitecture.engine}}</code>. Audit log writes must be append-only and stored separately from the application database — a breach of the application database must not allow an attacker to erase audit evidence. Cross-link to auth.auditLog (Section 7 of Auth synthesis) — the auth audit log covers authentication events; this section covers data access events (read, update, delete on ePHI tables).</div>
+  <!-- Contradiction injected if privacy.regulations includes "HIPAA" && privacy.accessAudit.store === "none": -->
+  <!-- <div class="contradiction"><strong>Contradiction:</strong> HIPAA is in scope but accessAudit.store is <code>none</code>. HIPAA § 164.312(b) mandates access audit controls for ePHI. Define an audit store (append-only DB table, CloudWatch Logs, Datadog) before scaffolding.</div> -->
+  <!-- Note injected if privacy.accessAudit.retention < 6 years (HIPAA minimum): -->
+  <!-- <div class="note">HIPAA requires audit log retention of at minimum 6 years from creation or last effective date. Verify <code>accessAudit.retention</code> meets this requirement.</div> -->
+</div>
