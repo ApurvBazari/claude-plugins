@@ -312,6 +312,34 @@ Invoke the `synthesis-review` skill via the Skill tool with `phaseId: "apiIntegr
 
 If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen — `api-integration.html` ships in Round 2), tell the developer and continue to Step 5.
 
+### Step 5 of 15: Auth
+
+Emit the progress indicator. This step gathers identity and access control decisions: strategy, identity providers, session model, MFA, authorization, tenancy, service-to-service auth, lifecycle, recovery, password policy, audit log, enforcement point. About 12 questions; some may be skipped based on `auth.strategy` and earlier framing/data/api answers.
+
+**Stale entry-guard** (check before any wizard prompt fires for this step): if `completedSteps` already contains `"step-5-auth"` AND `context.phaseStatus.auth.status === "stale"`, skip re-asking the wizard questions and proceed directly to the synthesis-review call. Synthesis-review Step 0 will surface the re-walk prompt.
+
+Tell the developer (verbatim):
+
+> Step 5 of 15: Auth. I'll ask about authentication strategy, identity providers, session model, MFA, authorization, and audit. About 12 questions. Some may be skipped based on your earlier framing and data decisions.
+
+Then run the wizard.
+
+Ask each question from `references/question-bank.md § Step 5: Auth` in order (Auth.Q1 through Auth.Q12). Honor the conditions. Write each answer to its destination field under `context.phases.auth`.
+
+**State checkpointing**: after each answered question, write to `greenfield-state.json.tmp` and rename atomically. Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-5-auth"`.
+
+**At end of step**, invoke synthesis-review inline:
+
+```
+Skill(synthesis-review, phaseId: "auth")
+```
+
+This will render `docs/adr/auth.md` + `docs/adr/auth.html` and walk the developer through approve/adjust/skip for each section. Returns control here with `phaseStatus.auth.status` updated.
+
+If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen — `auth.html`/`.md` ship in Round 3 commit `ccffdd6`), tell the developer and continue to Step 6.
+
+---
+
 ### Step 5 of 11: Remaining Project Details (residual)
 
 This step holds the 13 Category 3 questions that have NOT been re-homed to Data Architecture or API & Integration in Round 2. They stay here as transitional content until Rounds 3–6 re-home them to vision/frontend/authSecurity/workflow. See `references/question-bank.md § Category 3 (residual)` for the full question list.
