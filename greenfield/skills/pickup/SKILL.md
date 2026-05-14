@@ -148,6 +148,36 @@ Wait for explicit confirmation. If the user wants to review first, they can cat 
 
 ---
 
+## Step 4.2: Skip-cascade reversal invariant (Round 3)
+
+When resuming a session, check for cases where a phase was previously skipped via skip-cascade but the cascade's upstream gate has since changed. If detected, prompt the developer to un-skip.
+
+**Detection rules:**
+
+1. **Privacy un-skip when auth.strategy changes:**
+   - If `context.phaseStatus.privacy.status === "skipped"` AND `context.phases.auth.strategy !== "none"`:
+     - The skip was triggered by `auth.strategy='none'`. The developer has since changed auth strategy.
+     - Tell the developer (verbatim):
+       > Your Auth strategy has changed from "none" to "{auth.strategy}", which un-skips the Privacy phase. Would you like to walk through Privacy now?
+     - If Yes: set `currentStep: "step-6-privacy"`; clear `phaseStatus.privacy.status`; route into Step 6.
+     - If No: keep skipped; emit warning that Privacy synthesis remains stub.
+
+2. **Runtime Ops jobs un-skip when apiIntegration.asyncPattern changes:**
+   - If `context.phaseStatus.runtimeOperations.jobs` was skipped (Ops.Q1-Q3) AND `context.phases.apiIntegration.asyncPattern !== "none"`:
+     - The skip was triggered by `apiIntegration.asyncPattern='none'`. The developer has since added async work.
+     - Apply the same un-skip prompt for Step 8 (Runtime Operations), specifically re-walking Ops.Q1-Q3.
+
+3. **Security cannot skip when compliance is non-empty:**
+   - If `context.phases.dataArchitecture.compliance` is non-empty AND `context.phaseStatus.security.status === "skipped"`:
+     - The skip was previously allowed under hobby/empty-compliance. Compliance scope now non-empty forbids skipping Security.
+     - Tell the developer (verbatim):
+       > Compliance scope `{compliance}` requires Security to be walked. Skipping is not allowed at this tier.
+     - Route into Step 7 unconditionally (no opt-out).
+
+These invariants run at session resume time, before normal mid-step or mid-phase resume logic.
+
+---
+
 ## Step 4.5: Granularity prompt (when resuming mid-step)
 
 If the resume point is mid-step rather than at a clean step boundary, ask the developer how they want to re-enter. A mid-step resume is detected when:
