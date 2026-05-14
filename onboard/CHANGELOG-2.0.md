@@ -1,5 +1,29 @@
 # Onboard 2.0 — Migration & Breaking Changes
 
+## 2.0.0-alpha.4 — 2026-05-14 (Round 3)
+
+**Schema additions (Round 3 of the greenfield 3.0 wizard overhaul):**
+
+- `auth` (Step 5): new live phase block in `context.phases` with 4 required enum-locked fields (`strategy`, `sessionModel`, `authzModel`, `enforcementPoint`) and 9 loose fields (provider, idps, mfa, tenantResolution, serviceAuth, lifecycle, recovery, passwordPolicy, auditLog).
+- `privacy` (Step 6): new live phase block with 1 required field (`synthesisStatus` enum: `complete | n/a`) supporting the skip-cascade n/a stub, plus 11 loose fields (regulations, piiCategories, lawfulBasis, retention, deletionFlow, consentManager, dsar, processors, minimization, dataResidency, accessAudit).
+- `security` (Step 7): new live phase block with 3 required fields (`sensitivityTier`, `threatModel`, `supplyChain`) and 10 loose fields covering secrets, scanning, encryption, headers, input validation, audit retention, IR pointer, pentest cadence, VDP.
+- `runtimeOperations` (Step 8): new live phase block with 14 fields covering jobs, retry/idempotency, scheduling, observability (metrics/traces/logs), alerting, SLO, feature flags, maintenance mode, health checks, runbooks, incident process, on-call. No hard-required fields (all gated by upstream skip cascades).
+- `dependencies` pattern: extended to include the 4 new Round 3 phase names (`auth`, `privacy`, `security`, `runtimeOperations`) plus the Round 2.5 phases (`architecturalFraming`, `architecturalValidation`) as valid alternatives in both the `phase` enum and the per-dependency `path` pattern.
+
+**Schema break notice (hard cutover during alpha):**
+
+- In-flight `2.0.0-alpha.3` greenfield sessions cannot be resumed under `2.0.0-alpha.4`.
+- The `pickup` skill detects `schemaVersion` mismatch and presents two recovery options:
+  1. Finish the session on `alpha.4` (re-checkout the older greenfield branch)
+  2. Discard the session and restart on `alpha.4`
+- No migration framework ships (per Round 2.5 Decision 8 — migrations only from stable).
+
+**Removed:**
+
+- Nothing removed; schema additions are additive.
+
+---
+
 ## 2.0.0-alpha.3 — 2026-05-14
 
 **Schema additions (Round 2.5 of the greenfield 3.0 wizard overhaul):**
