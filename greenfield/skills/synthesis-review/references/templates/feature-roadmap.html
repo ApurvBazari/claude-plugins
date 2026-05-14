@@ -2,10 +2,13 @@
   Per-phase synthesis template — Feature Roadmap (Phase 2.8).
   Loaded by synthesis-review/SKILL.md Step 2 and spliced into synthesis-template.html's {{phase_body}}.
 
-  Placeholders use Mustache-like syntax: {{phases.featureRoadmap.<field>}} resolves from
-  context.phases.featureRoadmap.<field>. Cross-checks resolve dependency paths from
-  context.phases.<other-phase>.<path>; if the path is not yet captured (later-round phase),
-  the synthesis-review skill renders "not yet captured" rather than blocking.
+  Placeholders use Handlebars-style syntax: {{featureRoadmap.<field>}} resolves from
+  context.phases.featureRoadmap.<field> (phase-rooted — no `phases.` prefix). Cross-checks
+  resolve dependency paths from context.phases.<other-phase>.<path>; if the path is not yet
+  captured (later-round phase), the synthesis-review skill renders "not yet captured" rather
+  than blocking.
+
+  Iteration uses {{#each items}}...{{this.<field>}}...{{/each}}.
 
   Section anatomy (per references/section-prompts.md):
     1. Header banner (horizon + MVP boundary)
@@ -106,9 +109,9 @@
   <div class="section">
     <div class="section-title">1. Horizon + MVP Boundary</div>
     <div class="header-banner">
-      <div class="horizon">Horizon: {{phases.featureRoadmap.horizon}}</div>
-      <div class="mvp-boundary"><strong>MVP boundary</strong>: {{phases.featureRoadmap.mvpBoundary}}</div>
-      <div class="cross-check" style="margin-top:0.5rem;">Sizing scale: <code>{{phases.featureRoadmap.sizingScale}}</code></div>
+      <div class="horizon">Horizon: {{featureRoadmap.horizon}}</div>
+      <div class="mvp-boundary"><strong>MVP boundary</strong>: {{featureRoadmap.mvpBoundary}}</div>
+      <div class="cross-check" style="margin-top:0.5rem;">Sizing scale: <code>{{featureRoadmap.sizingScale}}</code></div>
     </div>
     <div class="cross-check">Horizon scopes the roadmap window (e.g., "MVP", "12-week pre-launch", "v1.0 GA"). MVP boundary explicitly names what is in vs. out of the first release — features beyond the boundary live in later sprints but are still inventoried. The sizing scale anchors the histogram in Section 5 and determines which scale values are valid in <code>features[].size</code>.</div>
     <!-- Contradiction injected if mvpBoundary is missing or empty: -->
@@ -124,23 +127,23 @@
   <div class="section">
     <div class="section-title">2. Epic Tree</div>
     <ul class="epic-tree">
-      {{#phases.featureRoadmap.epics}}
+      {{#each featureRoadmap.epics}}
       <li>
-        <span class="epic-title">[{{id}}] {{title}}</span>
-        {{#sequenceAfter}}<span class="cross-check"> — sequence after {{.}}</span>{{/sequenceAfter}}
+        <span class="epic-title">[{{this.id}}] {{this.title}}</span>
+        {{#if this.sequenceAfter}}<span class="cross-check"> — sequence after {{this.sequenceAfter}}</span>{{/if}}
         <ul>
-          {{#phases.featureRoadmap.features}}
-          {{#epicMatches}}
-          <li>[{{id}}] {{title}} <span class="chip">{{category}}</span> <span class="chip">{{size}}</span></li>
-          {{/epicMatches}}
-          {{/phases.featureRoadmap.features}}
+          {{#each ../featureRoadmap.features}}
+          {{#if this.epicMatches}}
+          <li>[{{this.id}}] {{this.title}} <span class="chip">{{this.category}}</span> <span class="chip">{{this.size}}</span></li>
+          {{/if}}
+          {{/each}}
         </ul>
       </li>
-      {{/phases.featureRoadmap.epics}}
+      {{/each}}
     </ul>
     <div class="cross-check">Epics group related features. <code>sequenceAfter</code> records dependencies between epics (e.g., epic E2 cannot start before E1 is in flight). The synthesis-review skill walks features under their owning epic — features whose <code>epicId</code> doesn't match any captured epic surface a contradiction.</div>
     <!-- Contradiction injected if any feature.epicId doesn't match a captured epic: -->
-    <!-- <div class="contradiction"><strong>Contradiction:</strong> Feature {featureId} references epicId {epicId}, which is not captured in phases.featureRoadmap.epics.</div> -->
+    <!-- <div class="contradiction"><strong>Contradiction:</strong> Feature {featureId} references epicId {epicId}, which is not captured in featureRoadmap.epics.</div> -->
     <div class="controls">
       <button class="btn btn-approve">Approve</button>
       <button class="btn btn-adjust">Adjust</button>
@@ -165,18 +168,18 @@
         </tr>
       </thead>
       <tbody>
-        {{#phases.featureRoadmap.features}}
+        {{#each featureRoadmap.features}}
         <tr>
-          <td class="id-col">{{id}}</td>
-          <td>{{title}}</td>
-          <td>{{category}}</td>
-          <td>{{size}}</td>
-          <td>{{#personaIds}}<span class="chip chip-persona">{{.}}</span>{{/personaIds}}</td>
-          <td>{{#entityIds}}<span class="chip chip-entity">{{.}}</span>{{/entityIds}}</td>
-          <td>{{#riskIds}}<span class="chip chip-risk">{{.}}</span>{{/riskIds}}</td>
-          <td><span class="chip">{{sprintAssignment}}</span></td>
+          <td class="id-col">{{this.id}}</td>
+          <td>{{this.title}}</td>
+          <td>{{this.category}}</td>
+          <td>{{this.size}}</td>
+          <td>{{#each this.personaIds}}<span class="chip chip-persona">{{this}}</span>{{/each}}</td>
+          <td>{{#each this.entityIds}}<span class="chip chip-entity">{{this}}</span>{{/each}}</td>
+          <td>{{#each this.riskIds}}<span class="chip chip-risk">{{this}}</span>{{/each}}</td>
+          <td><span class="chip">{{this.sprintAssignment}}</span></td>
         </tr>
-        {{/phases.featureRoadmap.features}}
+        {{/each}}
       </tbody>
     </table>
     <div class="cross-check">Each feature carries cross-references into upstream phases: <code>personaIds</code> must resolve in <code>personas.primary[].id</code> ∪ <code>personas.secondary[].id</code>; <code>entityIds</code> must resolve in <code>domainModel.entities[].id</code>; <code>riskIds</code> must resolve in <code>risks[].id</code>. <code>sprintAssignment</code> ties the feature to a sprint number (or <code>backlog</code>) — sprint-1 features are surfaced in Section 4.</div>
@@ -193,21 +196,21 @@
   <div class="section">
     <div class="section-title">4. Sprint-1 Definition</div>
     <div class="sprint-callout">
-      <h4>{{phases.featureRoadmap.sprint1.name}}</h4>
+      <h4>{{featureRoadmap.sprint1.name}}</h4>
       <div><strong>Feature IDs in scope:</strong>
-        {{#phases.featureRoadmap.sprint1.featureIds}}<span class="chip">{{.}}</span>{{/phases.featureRoadmap.sprint1.featureIds}}
+        {{#each featureRoadmap.sprint1.featureIds}}<span class="chip">{{this}}</span>{{/each}}
       </div>
       <table>
         <thead>
           <tr><th>#</th><th>Criterion</th></tr>
         </thead>
         <tbody>
-          {{#phases.featureRoadmap.sprint1.criteria}}
-          <tr><td>{{index}}</td><td>{{text}}</td></tr>
-          {{/phases.featureRoadmap.sprint1.criteria}}
+          {{#each featureRoadmap.sprint1.criteria}}
+          <tr><td>{{this.index}}</td><td>{{this.text}}</td></tr>
+          {{/each}}
         </tbody>
       </table>
-      <p style="margin-top:0.5rem;"><strong>Completion gate:</strong> {{phases.featureRoadmap.sprint1.completionGate}}</p>
+      <p style="margin-top:0.5rem;"><strong>Completion gate:</strong> {{featureRoadmap.sprint1.completionGate}}</p>
     </div>
     <div class="cross-check">Sprint-1 is the load-bearing contract for the first development cycle. Its <code>featureIds</code> are written into <code>docs/feature-list.json</code> as sprint-1 entries; its <code>criteria</code> become <code>mustPass</code> entries in <code>docs/sprint-contracts/sprint-1.json</code>; its <code>completionGate</code> becomes the explicit ship/no-ship decision boundary for the sprint-verify skill.</div>
     <!-- Contradiction injected if sprint1.featureIds is empty or references unknown features: -->
@@ -224,23 +227,23 @@
     <div class="section-title">5. Sizing Histogram</div>
     <div class="histogram">
       <div class="bar">
-        <div class="fill" style="height: {{phases.featureRoadmap.sizingHistogram.S.heightPct}}%"></div>
-        <div class="count">{{phases.featureRoadmap.sizingHistogram.S.count}}</div>
+        <div class="fill" style="height: {{featureRoadmap.sizingHistogram.S.heightPct}}%"></div>
+        <div class="count">{{featureRoadmap.sizingHistogram.S.count}}</div>
         <div class="label">S</div>
       </div>
       <div class="bar">
-        <div class="fill" style="height: {{phases.featureRoadmap.sizingHistogram.M.heightPct}}%"></div>
-        <div class="count">{{phases.featureRoadmap.sizingHistogram.M.count}}</div>
+        <div class="fill" style="height: {{featureRoadmap.sizingHistogram.M.heightPct}}%"></div>
+        <div class="count">{{featureRoadmap.sizingHistogram.M.count}}</div>
         <div class="label">M</div>
       </div>
       <div class="bar">
-        <div class="fill" style="height: {{phases.featureRoadmap.sizingHistogram.L.heightPct}}%"></div>
-        <div class="count">{{phases.featureRoadmap.sizingHistogram.L.count}}</div>
+        <div class="fill" style="height: {{featureRoadmap.sizingHistogram.L.heightPct}}%"></div>
+        <div class="count">{{featureRoadmap.sizingHistogram.L.count}}</div>
         <div class="label">L</div>
       </div>
       <div class="bar">
-        <div class="fill" style="height: {{phases.featureRoadmap.sizingHistogram.XL.heightPct}}%"></div>
-        <div class="count">{{phases.featureRoadmap.sizingHistogram.XL.count}}</div>
+        <div class="fill" style="height: {{featureRoadmap.sizingHistogram.XL.heightPct}}%"></div>
+        <div class="count">{{featureRoadmap.sizingHistogram.XL.count}}</div>
         <div class="label">XL</div>
       </div>
     </div>
@@ -258,11 +261,11 @@
     <div class="section-title">6. Cross-Cutting Features</div>
     <p class="back-fill-note">Features with no <code>personaIds</code> — these touch every persona or are infrastructure-level. They are listed here so they don't get lost in the persona-keyed sprint walk.</p>
     <ul class="cross-cutting-list">
-      {{#phases.featureRoadmap.features}}
-      {{#isCrossCutting}}
-      <li>[{{id}}] {{title}} <span class="chip">{{category}}</span> <span class="chip">{{size}}</span> <span class="chip">{{sprintAssignment}}</span></li>
-      {{/isCrossCutting}}
-      {{/phases.featureRoadmap.features}}
+      {{#each featureRoadmap.features}}
+      {{#if this.isCrossCutting}}
+      <li>[{{this.id}}] {{this.title}} <span class="chip">{{this.category}}</span> <span class="chip">{{this.size}}</span> <span class="chip">{{this.sprintAssignment}}</span></li>
+      {{/if}}
+      {{/each}}
     </ul>
     <div class="cross-check">Cross-cutting features (empty <code>personaIds[]</code>) typically include observability, logging, deployment plumbing, internal tooling, and platform-level concerns. They must still be sized and sprint-assigned, but they bypass persona-driven prioritization. If this list is empty, the roadmap is fully persona-attributed — flag for confirmation since most non-trivial products have at least one platform-level feature.</div>
     <!-- Note injected if cross-cutting list is empty: -->

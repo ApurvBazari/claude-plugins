@@ -37,34 +37,34 @@
 
 | Field | Captured value |
 |---|---|
-| `horizon` | {{phases.featureRoadmap.horizon}} |
-| `mvpBoundary` | {{phases.featureRoadmap.mvpBoundary}} |
-| `sizingScale` | {{phases.featureRoadmap.sizingScale}} |
+| `horizon` | {{featureRoadmap.horizon}} |
+| `mvpBoundary` | {{featureRoadmap.mvpBoundary}} |
+| `sizingScale` | {{featureRoadmap.sizingScale}} |
 
 **Cross-check**: Horizon scopes the roadmap window (e.g., "MVP", "12-week pre-launch", "v1.0 GA"). MVP boundary explicitly names what is in vs. out of the first release — features beyond the boundary live in later sprints but are still inventoried. The sizing scale anchors the histogram in Section 5 and determines which scale values are valid in `features[].size`.
 
 **Rationale**: The horizon and MVP boundary are the two most consequential roadmap-level decisions — they constrain every per-feature sizing and sprint-assignment decision downstream. Without an explicit MVP boundary, "what ships first" devolves into per-feature debate during sprint planning; capturing it once here anchors the rest of the walk.
 
-**Contradiction check — missing MVP boundary**: fires if `phases.featureRoadmap.mvpBoundary` is empty. Sprint-1 cannot be sized without an explicit MVP cut.
+**Contradiction check — missing MVP boundary**: fires if `featureRoadmap.mvpBoundary` is empty. Sprint-1 cannot be sized without an explicit MVP cut.
 
 ---
 
 ### 2. Epic Tree
 
-{{#phases.featureRoadmap.epics}}
-#### [{{id}}] {{title}}
+{{#each featureRoadmap.epics}}
+#### [{{this.id}}] {{this.title}}
 
-{{#sequenceAfter}}_Sequence after_: `{{.}}`{{/sequenceAfter}}
+{{#if this.sequenceAfter}}_Sequence after_: `{{this.sequenceAfter}}`{{/if}}
 
 **Features in this epic:**
 
-{{#phases.featureRoadmap.features}}
-{{#epicMatches}}
-- [{{id}}] {{title}} (category: {{category}}, size: {{size}})
-{{/epicMatches}}
-{{/phases.featureRoadmap.features}}
+{{#each ../featureRoadmap.features}}
+{{#if this.epicMatches}}
+- [{{this.id}}] {{this.title}} (category: {{this.category}}, size: {{this.size}})
+{{/if}}
+{{/each}}
 
-{{/phases.featureRoadmap.epics}}
+{{/each}}
 
 **Cross-check**: Epics group related features. `sequenceAfter` records dependencies between epics (e.g., epic E2 cannot start before E1 is in flight). The synthesis-review skill walks features under their owning epic — features whose `epicId` doesn't match any captured epic surface a contradiction.
 
@@ -78,9 +78,9 @@
 
 | id | title | category | size | personaIds | entityIds | riskIds | sprintAssignment |
 |---|---|---|---|---|---|---|---|
-{{#phases.featureRoadmap.features}}
-| {{id}} | {{title}} | {{category}} | {{size}} | {{#personaIds}}`{{.}}` {{/personaIds}} | {{#entityIds}}`{{.}}` {{/entityIds}} | {{#riskIds}}`{{.}}` {{/riskIds}} | {{sprintAssignment}} |
-{{/phases.featureRoadmap.features}}
+{{#each featureRoadmap.features}}
+| {{this.id}} | {{this.title}} | {{this.category}} | {{this.size}} | {{#each this.personaIds}}`{{this}}` {{/each}} | {{#each this.entityIds}}`{{this}}` {{/each}} | {{#each this.riskIds}}`{{this}}` {{/each}} | {{this.sprintAssignment}} |
+{{/each}}
 
 **Cross-check**: Each feature carries cross-references into upstream phases:
 - `personaIds` must resolve in `personas.primary[].id` ∪ `personas.secondary[].id`
@@ -96,28 +96,28 @@
 
 ### 4. Sprint-1 Definition
 
-**Sprint name**: {{phases.featureRoadmap.sprint1.name}}
+**Sprint name**: {{featureRoadmap.sprint1.name}}
 
 **Feature IDs in scope**:
-{{#phases.featureRoadmap.sprint1.featureIds}}
-- `{{.}}`
-{{/phases.featureRoadmap.sprint1.featureIds}}
+{{#each featureRoadmap.sprint1.featureIds}}
+- `{{this}}`
+{{/each}}
 
 **Criteria**:
 
 | # | Criterion |
 |---|---|
-{{#phases.featureRoadmap.sprint1.criteria}}
-| {{index}} | {{text}} |
-{{/phases.featureRoadmap.sprint1.criteria}}
+{{#each featureRoadmap.sprint1.criteria}}
+| {{this.index}} | {{this.text}} |
+{{/each}}
 
-**Completion gate**: {{phases.featureRoadmap.sprint1.completionGate}}
+**Completion gate**: {{featureRoadmap.sprint1.completionGate}}
 
 **Cross-check**: Sprint-1 is the load-bearing contract for the first development cycle. Its `featureIds` are written into `docs/feature-list.json` as sprint-1 entries; its `criteria` become `mustPass` entries in `docs/sprint-contracts/sprint-1.json`; its `completionGate` becomes the explicit ship/no-ship decision boundary for the sprint-verify skill.
 
 **Rationale**: Sprint-1 is captured in this synthesis (rather than deferred until after scaffold) for a reason: the development tooling generation phase needs the sprint-1 contract to seed the verification harness. If sprint-1 isn't decided now, the post-scaffold sprint-verify skill has nothing to gate against, and the project ships with a stub sprint contract that nobody updates.
 
-**Contradiction check — empty sprint-1**: fires if `phases.featureRoadmap.sprint1.featureIds` is empty or references feature IDs not present in `phases.featureRoadmap.features[].id`.
+**Contradiction check — empty sprint-1**: fires if `featureRoadmap.sprint1.featureIds` is empty or references feature IDs not present in `featureRoadmap.features[].id`.
 
 ---
 
@@ -125,10 +125,10 @@
 
 | Size | Count |
 |---|---|
-| S | {{phases.featureRoadmap.sizingHistogram.S.count}} |
-| M | {{phases.featureRoadmap.sizingHistogram.M.count}} |
-| L | {{phases.featureRoadmap.sizingHistogram.L.count}} |
-| XL | {{phases.featureRoadmap.sizingHistogram.XL.count}} |
+| S | {{featureRoadmap.sizingHistogram.S.count}} |
+| M | {{featureRoadmap.sizingHistogram.M.count}} |
+| L | {{featureRoadmap.sizingHistogram.L.count}} |
+| XL | {{featureRoadmap.sizingHistogram.XL.count}} |
 
 **Cross-check**: The histogram is computed by the synthesis-review skill before render: it counts each value of `features[].size` against the `sizingScale` (S/M/L/XL). A heavy XL-skew suggests the scope is too ambitious for the horizon; a heavy S-skew suggests features may need further decomposition.
 
@@ -142,11 +142,11 @@
 
 Features with no `personaIds` — these touch every persona or are infrastructure-level. They are listed here so they don't get lost in the persona-keyed sprint walk.
 
-{{#phases.featureRoadmap.features}}
-{{#isCrossCutting}}
-- [{{id}}] {{title}} (category: {{category}}, size: {{size}}, sprint: {{sprintAssignment}})
-{{/isCrossCutting}}
-{{/phases.featureRoadmap.features}}
+{{#each featureRoadmap.features}}
+{{#if this.isCrossCutting}}
+- [{{this.id}}] {{this.title}} (category: {{this.category}}, size: {{this.size}}, sprint: {{this.sprintAssignment}})
+{{/if}}
+{{/each}}
 
 **Cross-check**: Cross-cutting features (empty `personaIds[]`) typically include observability, logging, deployment plumbing, internal tooling, and platform-level concerns. They must still be sized and sprint-assigned, but they bypass persona-driven prioritization.
 
