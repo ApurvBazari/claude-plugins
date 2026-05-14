@@ -1,0 +1,102 @@
+{
+  "schemaVersion": "alpha.5",
+  "version": 2,
+  "createdAt": "2026-05-14T18:00:00Z",
+  "updatedAt": "2026-05-14T22:00:00Z",
+  "currentPhase": "phase-1-context-gathering",
+  "currentStep": "step-5-auth",
+  "mode": {
+    "depth": "heavy",
+    "coupling": "auto-loop",
+    "domainFormat": "full-ddd"
+  },
+  "phases": {
+    "architecturalFraming": {
+      "topology": "monolith",
+      "scaleTarget": "startup",
+      "deploymentShape": "Single-region",
+      "boundaryNotes": ""
+    },
+    "personas": {
+      "primary": [
+        {
+          "id": "P1",
+          "name": "Sara",
+          "role": "Field Auditor",
+          "goal": "Record findings on-site, sync later",
+          "context": {
+            "device": ["iPad"],
+            "connection": "spotty",
+            "techSophistication": "Basic"
+          },
+          "jobs": [
+            { "id": "J1", "story": "Photo + note in <30s" },
+            { "id": "J2", "story": "Sync queued items once back on wifi" }
+          ],
+          "constraints": "Spotty connectivity on remote sites; needs offline-first writes."
+        },
+        {
+          "id": "P2",
+          "name": "Carl",
+          "role": "Compliance Officer",
+          "goal": "Review audit trails weekly",
+          "context": {
+            "device": ["Desktop"],
+            "connection": "strong-wifi",
+            "techSophistication": "Comfortable"
+          },
+          "jobs": [
+            { "id": "J3", "story": "Generate weekly compliance report" },
+            { "id": "J4", "story": "Annotate findings with regulatory references" }
+          ],
+          "constraints": ""
+        }
+      ],
+      "secondary": [],
+      "antiPersonas": ["External API consumers", "Anonymous public visitors"]
+    },
+    "domainModel": {
+      "contexts": [
+        { "id": "BC1", "name": "Field-Audit", "responsibility": "Capture findings on site" }
+      ],
+      "entities": [
+        {
+          "id": "Audit",
+          "contextId": "BC1",
+          "isAggregateRoot": true,
+          "relationships": [
+            { "target": "Finding", "kind": "has-many" }
+          ]
+        },
+        {
+          "id": "Finding",
+          "contextId": "BC1",
+          "isAggregateRoot": false,
+          "relationships": []
+        }
+      ],
+      "valueObjects": ["GPS-coordinate", "Photo-blob-ref"],
+      "domainEvents": ["AuditStarted", "FindingRecorded", "AuditCompleted"],
+      "crossContextRelationships": [],
+      "ubiquitousLanguage": [
+        { "term": "Audit", "definition": "A single on-site inspection session, bounded by start + complete events." },
+        { "term": "Finding", "definition": "A discrete observation captured during an Audit (photo + note + GPS)." }
+      ],
+      "antiCorruption": ""
+    }
+  },
+  "risks": [],
+  "phaseStatus": {
+    "architecturalFraming": { "status": "approved", "approvedAt": "2026-05-14T19:30:00Z", "lastModified": "2026-05-14T19:30:00Z", "staleReason": null },
+    "personas": { "status": "approved", "approvedAt": "2026-05-14T20:00:00Z", "lastModified": "2026-05-14T20:00:00Z", "staleReason": null },
+    "domainModel": { "status": "approved", "approvedAt": "2026-05-14T20:30:00Z", "lastModified": "2026-05-14T20:30:00Z", "staleReason": null },
+    "dataArchitecture": { "status": "not-yet-walked", "approvedAt": null, "lastModified": "2026-05-14T18:00:00Z", "staleReason": null },
+    "apiIntegration": { "status": "not-yet-walked", "approvedAt": null, "lastModified": "2026-05-14T18:00:00Z", "staleReason": null },
+    "auth": { "status": "not-yet-walked", "approvedAt": null, "lastModified": "2026-05-14T18:00:00Z", "staleReason": null },
+    "privacy": { "status": "not-yet-walked", "approvedAt": null, "lastModified": "2026-05-14T18:00:00Z", "staleReason": null },
+    "security": { "status": "not-yet-walked", "approvedAt": null, "lastModified": "2026-05-14T18:00:00Z", "staleReason": null },
+    "runtimeOperations": { "status": "not-yet-walked", "approvedAt": null, "lastModified": "2026-05-14T18:00:00Z", "staleReason": null },
+    "cicdAndDelivery": { "status": "not-yet-walked", "approvedAt": null, "lastModified": "2026-05-14T18:00:00Z", "staleReason": null },
+    "architecturalValidation": { "status": "not-yet-walked", "approvedAt": null, "lastModified": "2026-05-14T18:00:00Z", "staleReason": null }
+  }
+}

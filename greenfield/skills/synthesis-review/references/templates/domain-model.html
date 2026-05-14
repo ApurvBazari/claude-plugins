@@ -1,0 +1,279 @@
+<!--
+  Per-phase synthesis template — Domain Model (Phase 2.7).
+  Loaded by synthesis-review/SKILL.md Step 2 and spliced into synthesis-template.html's {{phase_body}}.
+
+  Placeholders use Mustache-like syntax: {{domainModel.<field>}} resolves from
+  context.phases.domainModel.<field>. Cross-checks resolve dependency paths from
+  context.phases.<other-phase>.<path>; if the path is not yet captured (later-round phase),
+  the synthesis-review skill renders "not yet captured" rather than blocking.
+
+  Section anatomy (per references/section-prompts.md):
+    1. section-title
+    2. captured-as
+    3. cross-checks
+    4. contradictions (only if rules fire)
+    5. notes (only if developer-relevant)
+
+  Mode-gating (enforced by synthesis-review state machine — T17):
+    Sections 4 (Value Objects), 5 (Domain Events), 8 (Anti-Corruption Layers):
+      deferred when mode.depth = "light" OR mode.domain = "ddd-lite"
+      Light placeholder: "(deferred — Light mode)"
+      DDD-lite placeholder: "(deferred — DDD-lite mode)"
+    Sections 6 (Cross-Context Relationships), 7 (Ubiquitous Language):
+      deferred when mode.depth = "light"
+      Light placeholder: "(deferred — Light mode)"
+    Light wins over DDD-lite when both flags are set.
+
+  This synthesis fires at Step 2.7 — before dataArchitecture. All downstream
+  dependency paths annotate as "not yet captured" at synthesis time.
+  Downstream traces back-fill after downstream phases complete and run synthesis-review.
+-->
+
+<style>
+  .section { border: 1px solid #ddd; border-radius: 4px; padding: 1rem; margin-bottom: 1rem; }
+  .section-title { font-weight: bold; font-size: 1.05em; margin-bottom: 0.5rem; }
+  .captured { background: #f5f5f5; padding: 0.5rem; border-radius: 3px; font-family: monospace; white-space: pre; margin: 0.5rem 0; }
+  .cross-check { color: #555; font-size: 0.9em; margin: 0.4rem 0; }
+  .contradiction { background: #fff0f0; border-left: 4px solid #c00; padding: 0.5rem 0.75rem; margin: 0.5rem 0; }
+  .note { background: #fffbea; border-left: 4px solid #cc0; padding: 0.5rem 0.75rem; margin: 0.5rem 0; }
+  .controls { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+  .btn { padding: 0.35rem 0.9rem; border: 1px solid #aaa; border-radius: 3px; cursor: pointer; font-size: 0.9em; }
+  .btn-approve { background: #e8f5e9; }
+  .btn-adjust  { background: #e3f2fd; }
+  .btn-skip    { background: #f5f5f5; }
+  .downstream  { background: #f0f4ff; border: 1px solid #b0c0e8; border-radius: 4px; padding: 0.75rem 1rem; margin-bottom: 1rem; }
+  .stale-status { border-radius: 4px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; font-size: 0.9em; }
+  .stale-status.is-stale { background: #fff3cd; border: 1px solid #ffc107; }
+  .stale-status.is-approved { background: #e8f5e9; border: 1px solid #4caf50; }
+  .stale-status.is-other { background: #f5f5f5; border: 1px solid #ddd; }
+  .context-block { margin-bottom: 0.75rem; }
+  .entity-list { list-style: none; padding-left: 0; margin: 0.25rem 0; }
+  .entity-list li { padding: 0.15rem 0; font-family: monospace; font-size: 0.9em; }
+  .entity-list li.owned { padding-left: 1.5rem; }
+  .placeholder { color: #888; font-style: italic; font-size: 0.9em; }
+  .back-fill-note { color: #888; font-style: italic; font-size: 0.9em; }
+</style>
+
+<!-- Stale status block — rendered by synthesis-review SKILL.md Step 2 before the section walk -->
+<div class="stale-status {{stale_status_class}}">
+  {{stale_block}}
+</div>
+<!-- stale_block rendering rules (applied by synthesis-review Step 2):
+  domainModel depends on: personas (IDs used in this phase's entity-attribution loops).
+  If phaseStatus.domainModel.status === "stale":
+    stale_status_class = "is-stale"
+    stale_block = "<strong>⚠️ Stale synthesis</strong> — this phase was previously approved but a dependency changed since then.<br>
+    <strong>Reason</strong>: {staleReason}<br>
+    <strong>Last approved</strong>: {approvedAt}<br>
+    <em>Review sections below with the changed dependency in mind.</em>"
+
+  If phaseStatus.domainModel.status === "approved" or "approved-with-noted-divergences":
+    stale_status_class = "is-approved"
+    stale_block = "✅ <strong>Synthesis current</strong> — approved {approvedAt}. No upstream changes detected."
+
+  Otherwise (in-progress / not-yet-walked):
+    stale_status_class = "is-other"
+    stale_block = "Phase status: {status}."
+-->
+
+<h2>Captured decisions — Domain Model (Phase 2.7)</h2>
+<p class="meta">Captured {{captured.at}} — Round 4</p>
+
+<!-- Section 1: Mode + Coupling -->
+<div class="section">
+  <div class="section-title">1. Mode + Coupling</div>
+  <pre class="captured">coupling: {{mode.coupling}}
+depth:    {{mode.depth}}
+domain:   {{mode.domain}}</pre>
+  <div class="cross-check">Domain mode governs which DDD constructs are captured. <code>full-ddd</code> = entities + bounded contexts + aggregates + value objects + domain events + ubiquitous language + ACLs. <code>ddd-lite</code> drops value objects, domain events, and ACLs. <code>light</code> collapses to a single default bounded context and skips aggregate distinction entirely.</div>
+  <div class="controls">
+    <button class="btn btn-approve">Approve</button>
+    <button class="btn btn-adjust">Adjust</button>
+    <button class="btn btn-skip">Skip</button>
+  </div>
+</div>
+
+<!-- Section 2: Bounded Contexts -->
+<div class="section">
+  <div class="section-title">2. Bounded Contexts</div>
+  {{#each domainModel.contexts}}
+  <div class="context-block">
+    <pre class="captured">[{{this.id}}] {{this.name}}
+responsibility: {{this.responsibility}}</pre>
+  </div>
+  {{/each}}
+  <div class="cross-check">Bounded context IDs (<code>BC1</code>, <code>BC2</code>, …) partition the data and API surface. Each context becomes a candidate for its own repository boundary, service, or module in the dataArchitecture + apiIntegration phases. Cross-context relationships (Section 6) record how contexts depend on each other.</div>
+  <!-- Contradiction injected if domainModel.contexts is empty or has a single default BC in light mode: -->
+  <!-- <div class="contradiction"><strong>Contradiction:</strong> No bounded contexts defined. At least one context is required — downstream phases use context IDs to partition entity loops and repository boundaries.</div> -->
+  <div class="controls">
+    <button class="btn btn-approve">Approve</button>
+    <button class="btn btn-adjust">Adjust</button>
+    <button class="btn btn-skip">Skip</button>
+  </div>
+</div>
+
+<!-- Section 3: Entities per Context (with aggregate marks) -->
+<div class="section">
+  <div class="section-title">3. Entities per Context</div>
+  {{#each domainModel.contexts}}
+  <h4>{{this.name}} ({{this.id}})</h4>
+  <ul class="entity-list">
+    {{#each ../domainModel.entities}}
+      {{#if (eq this.contextId ../this.id)}}
+        {{#if this.isAggregateRoot}}
+        <li>⊕ <strong>{{this.id}}</strong> — {{this.description}}</li>
+        {{else if this.ownedBy}}
+        <li class="owned">↳ {{this.id}} — {{this.description}} <em>(owned by {{this.ownedBy}})</em></li>
+        {{else}}
+        <li>{{this.id}} — {{this.description}}</li>
+        {{/if}}
+      {{/if}}
+    {{/each}}
+  </ul>
+  {{/each}}
+  <!-- mode gating: Section 3 always renders entity names. In light mode, isAggregateRoot defaults to false
+       (all entities are Standalone) — the ⊕ branch is absent; the ↳ branch may still appear if ownedBy was
+       recorded. The synthesis-review skill omits the ⊕ branch automatically when mode.depth=light. -->
+  <div class="cross-check">Aggregate roots (⊕) are independent transactional boundaries — they become repository interfaces in the dataArchitecture phase. Owned entities (↳) are accessed only through their aggregate root. Standalone entities have no aggregate distinction and map to simple CRUD repositories. Entity IDs cascade into the auto-loop in dataArchitecture + apiIntegration.</div>
+  <div class="controls">
+    <button class="btn btn-approve">Approve</button>
+    <button class="btn btn-adjust">Adjust</button>
+    <button class="btn btn-skip">Skip</button>
+  </div>
+</div>
+
+<!-- Section 4: Value Objects -->
+<!-- mode gating: this section is replaced with a placeholder by the synthesis-review skill when
+     mode.depth=light OR mode.domain=ddd-lite AND section in [4,5,8] -->
+<div class="section">
+  <div class="section-title">4. Value Objects</div>
+  {{#if (eq mode.depth "light")}}
+  <p class="placeholder">(deferred — Light mode)</p>
+  {{else if (eq mode.domain "ddd-lite")}}
+  <p class="placeholder">(deferred — DDD-lite mode)</p>
+  {{else}}
+  <ul>
+    {{#each domainModel.valueObjects}}<li>{{this}}</li>{{/each}}
+  </ul>
+  <div class="cross-check">Value objects are immutable values defined by attributes, not identity (e.g., Money, Email, GPSCoordinate). They do not become repository boundaries — they are embedded within aggregate-root persistence schemas. Each value object captured here is a candidate for a dedicated type/class in the data architecture phase.</div>
+  {{/if}}
+  <div class="controls">
+    <button class="btn btn-approve">Approve</button>
+    <button class="btn btn-adjust">Adjust</button>
+    <button class="btn btn-skip">Skip</button>
+  </div>
+</div>
+
+<!-- Section 5: Domain Events -->
+<!-- mode gating: this section is replaced with a placeholder by the synthesis-review skill when
+     mode.depth=light OR mode.domain=ddd-lite AND section in [4,5,8] -->
+<div class="section">
+  <div class="section-title">5. Domain Events</div>
+  {{#if (eq mode.depth "light")}}
+  <p class="placeholder">(deferred — Light mode)</p>
+  {{else if (eq mode.domain "ddd-lite")}}
+  <p class="placeholder">(deferred — DDD-lite mode)</p>
+  {{else}}
+  <ul>
+    {{#each domainModel.domainEvents}}<li>{{this}}</li>{{/each}}
+  </ul>
+  <div class="cross-check">Domain events (past-tense facts: FindingRecorded, AuditCompleted) drive event-sourcing patterns in the data architecture and async messaging in the API integration phase. Each event captured here is a candidate for a queue topic, webhook payload, or audit-log entry in downstream phases.</div>
+  {{/if}}
+  <div class="controls">
+    <button class="btn btn-approve">Approve</button>
+    <button class="btn btn-adjust">Adjust</button>
+    <button class="btn btn-skip">Skip</button>
+  </div>
+</div>
+
+<!-- Section 6: Cross-Context Relationships -->
+<!-- mode gating: this section is replaced with a placeholder by the synthesis-review skill when
+     mode.depth=light -->
+<div class="section">
+  <div class="section-title">6. Cross-Context Relationships</div>
+  {{#if (eq mode.depth "light")}}
+  <p class="placeholder">(deferred — Light mode)</p>
+  {{else}}
+  {{#each domainModel.crossContextRelationships}}
+  <pre class="captured">{{this.from}} → {{this.to}}   [{{this.kind}}]</pre>
+  {{/each}}
+  <div class="cross-check">Cross-context relationships use free-form verb-phrase kinds (e.g., "publishes-events-to", "provides-auth-to") — not an enum. Each relationship here maps to a service boundary, event bus topic, or API gateway integration in the apiIntegration + runtimeOperations phases. Circular dependencies flag as contradictions in the grill-spec gate.</div>
+  {{/if}}
+  <div class="controls">
+    <button class="btn btn-approve">Approve</button>
+    <button class="btn btn-adjust">Adjust</button>
+    <button class="btn btn-skip">Skip</button>
+  </div>
+</div>
+
+<!-- Section 7: Ubiquitous Language -->
+<!-- mode gating: this section is replaced with a placeholder by the synthesis-review skill when
+     mode.depth=light -->
+<div class="section">
+  <div class="section-title">7. Ubiquitous Language</div>
+  {{#if (eq mode.depth "light")}}
+  <p class="placeholder">(deferred — Light mode)</p>
+  {{else}}
+  {{#each domainModel.ubiquitousLanguage}}
+  <pre class="captured">{{this.term}}: {{this.definition}}</pre>
+  {{/each}}
+  <div class="cross-check">Ubiquitous language terms must be used consistently in entity IDs, event names, API endpoint paths, and CLAUDE.md documentation. Discrepancies between this glossary and entity/event names in Sections 2–5 are flagged as contradictions by the grill-spec gate. Minimum 3 terms required in Full DDD mode.</div>
+  {{/if}}
+  <div class="controls">
+    <button class="btn btn-approve">Approve</button>
+    <button class="btn btn-adjust">Adjust</button>
+    <button class="btn btn-skip">Skip</button>
+  </div>
+</div>
+
+<!-- Section 8: Anti-Corruption Layers -->
+<!-- mode gating: this section is replaced with a placeholder by the synthesis-review skill when
+     mode.depth=light OR mode.domain=ddd-lite AND section in [4,5,8] -->
+<div class="section">
+  <div class="section-title">8. Anti-Corruption Layers</div>
+  {{#if (eq mode.depth "light")}}
+  <p class="placeholder">(deferred — Light mode)</p>
+  {{else if (eq mode.domain "ddd-lite")}}
+  <p class="placeholder">(deferred — DDD-lite mode)</p>
+  {{else}}
+  <pre class="captured">{{domainModel.antiCorruption}}</pre>
+  <div class="cross-check">ACLs prevent external vocabulary from leaking into the domain model. Each ACL recorded here identifies an external system and the mapping layer (e.g., "legacy CRM uses Lead/Account — map to Customer/Order at boundary"). The apiIntegration phase must implement an adapter or translation layer for each ACL. Missing ACLs when external systems are listed in apiIntegration fire a contradiction in grill-spec.</div>
+  {{/if}}
+  <div class="controls">
+    <button class="btn btn-approve">Approve</button>
+    <button class="btn btn-adjust">Adjust</button>
+    <button class="btn btn-skip">Skip</button>
+  </div>
+</div>
+
+<!-- Section 9: Domain Risks Identified -->
+<div class="section">
+  <div class="section-title">9. Domain Risks Identified</div>
+  {{#each risks}}
+    {{#if (eq this.originatingPhase "domainModel")}}
+    <p>• {{this.text}}</p>
+    {{/if}}
+  {{/each}}
+  <div class="cross-check">Risks captured during the domain modeling Q-bank walk are surfaced here. Each risk is tagged <code>originatingPhase: "domainModel"</code> in the risks array and rendered inline. Risks without a resolution path by end of synthesis-review are escalated to the drift queue.</div>
+  <div class="controls">
+    <button class="btn btn-approve">Approve</button>
+    <button class="btn btn-adjust">Adjust</button>
+    <button class="btn btn-skip">Skip</button>
+  </div>
+</div>
+
+<!-- Section 10: Decisions Driven Downstream -->
+<div class="section">
+  <div class="section-title">10. Decisions Driven Downstream</div>
+  <p class="back-fill-note">{{#unless downstreamTraces}}This section back-fills after downstream phases complete and run synthesis-review.{{/unless}}</p>
+  <div class="downstream">
+    {{#each downstreamTraces}}
+    <p>→ {{this.phase}}.{{this.path}}: {{this.summary}}</p>
+    {{/each}}
+  </div>
+  <div class="cross-check">Downstream traces are written by later synthesis-review runs. Each trace records the phase, the path within that phase's context, and a one-line summary of how the domain model decision influenced the outcome. Entity IDs, aggregate-root flags, and bounded-context IDs are the primary keys that cascade into dataArchitecture, apiIntegration, and security auto-loops.</div>
+  <div class="controls">
+    <button class="btn btn-approve">Approve</button>
+    <button class="btn btn-skip">Skip</button>
+  </div>
+</div>

@@ -172,7 +172,21 @@ Tell the developer:
 
 ## Phase 1: Context Gathering
 
-Use the `context-gathering` skill to guide the developer through the adaptive wizard. **The wizard has 15 named Steps and must emit a "Step X of 15" progress indicator at every Step boundary** so both Claude and the user can track progress.
+Use the `context-gathering` skill to guide the developer through the adaptive wizard. **The wizard has 17 named Steps and must emit a "Step X of 17" progress indicator at every Step boundary** so both Claude and the user can track progress. (Round 4 added Step 2.2 Personas and Step 2.7 Domain Modeling to the previous 15-step flow.)
+
+### Step 1.1 — Mode toggles (Round 4 entry gate)
+
+Before any Q-bank content, the wizard fires three mode-toggle `AskUserQuestion` calls (defined verbatim in `context-gathering/SKILL.md § Step 1.1 — Mode toggles`):
+
+1. **Depth** — `Heavy (Recommended)` or `Light`. Persists to `.claude/greenfield-state.json.mode.depth`.
+2. **Coupling** — `Auto-loop (Recommended)` or `Hybrid`. Persists to `.claude/greenfield-state.json.mode.coupling`.
+3. **Domain format** — `Full DDD (Recommended)` or `DDD-lite`. Persists to `.claude/greenfield-state.json.mode.domainFormat`.
+
+After all three are captured, surface a confirmation echo:
+
+> Wizard configured: **{mode.depth}** depth, **{mode.coupling}** coupling, **{mode.domainFormat}** domain. Press Enter to continue.
+
+The defaults reflect a comprehensive-by-default posture — Heavy + Auto-loop + Full DDD are calibrated for production work. Users targeting prototypes / spike work should flip all three to Light + Hybrid + DDD-lite. The wizard surfaces a one-time downgrade prompt at the start of Step 2 (vision/scope) if Heavy + Full DDD + Auto-loop is chosen AND the project description suggests prototype scale (< 200 chars or contains "weekend"/"learning"/"toy"/"experiment"/"spike") — see `context-gathering/SKILL.md § Step 1.1 § Adjacent runaway guard`.
 
 The skill handles:
 - Project vision (what they want to build)

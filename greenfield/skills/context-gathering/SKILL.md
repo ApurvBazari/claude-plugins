@@ -1,6 +1,6 @@
 ---
 name: context-gathering
-description: Greenfield Phase 1 — adaptive wizard that gathers project vision, tech stack, features, and preferences through 15 named Steps. Internal building block invoked by greenfield init — not user-invocable.
+description: Greenfield Phase 1 — adaptive wizard that gathers project vision, tech stack, features, and preferences through 17 named Steps. Internal building block invoked by greenfield init — not user-invocable.
 user-invocable: false
 ---
 
@@ -95,7 +95,7 @@ Update this after every answer. Before asking each question, check its condition
 
 At the start of every Step (and whenever the user asks "where are we?"), emit a one-line progress indicator so both Claude and the user can see wizard progress:
 
-> **Wizard progress: Step [X] of 15 — [step name]**
+> **Wizard progress: Step [X] of 17 — [step name]**
 > Completed: [list of step names from completedSteps]
 > Up next: [name of the next step, if known]
 
@@ -141,16 +141,65 @@ When you notice any of these, STOP and:
 
 ## Flow
 
-### Step 1 of 15: Project Vision (Category 1)
+### Step 1 of 17: Project Vision (Category 1)
 
 Emit the progress indicator. Then start with Q1.1: "What do you want to build?"
 
 Listen carefully. From the answer, infer:
 - `appType` (web-app, api, cli, library, fullstack, mobile-backend)
 - `hasFrontend`, `hasBackend`, `hasAPI`
-- Whether follow-up Q1.2 is needed (if the answer is vague)
 
-### Step 2 of 15: Tech Stack (Category 2)
+**Q1.2 (legacy, Round 4 demoted):** Q1.2 "Who is this for? What problem does it solve?" was demoted to a pointer in Round 4 — the structured Personas capture at Step 2.2 supersedes it. **Do not ask Q1.2 in new wizard runs.** Skip directly from Q1.1 → Step 1.1 mode toggles.
+
+**Backward-compat for alpha.4 sessions:** if `.claude/greenfield-state.json` has `vision.users[]` populated (from a pre-R4 alpha.4 wizard run that the pickup migration shim restored), surface to the user at Step 2.2 entry:
+
+> Migrated from Step 1 of alpha.4 wizard: `{{vision.users|join(', ')}}`. Want to restructure these into the new Personas format?
+
+Default: Yes. If user accepts, use the legacy strings as draft `personas.primary[].name` values; Q2-Q8 of Step 2.2 then enrich each. If declined, preserve `vision.users[]` as-is in state (Q_RISK auto-loop in Step 5+ falls back to top-level users-of-app description rather than per-persona loops).
+
+### Step 1.1 — Mode toggles
+
+After intro narration, capture three mode dimensions via batched AskUserQuestion. All three have ≥ 2 static options — no `ask-user-question-guard.md` padded-None branch needed (single batched call, three single-select questions).
+
+**Defaults reflect a comprehensive-by-default posture.** Lighter modes are explicit opt-ins.
+
+**Question 1 — Depth**
+
+```
+"Wizard depth — comprehensive or stripped-down?"
+  • Heavy (Recommended) — ~120 Qs total, comprehensive for production projects
+  • Light                — ~65 Qs total, stripped for prototypes / spike work
+```
+
+Persist as `mode.depth` (`"heavy"` | `"light"`).
+
+**Question 2 — Coupling**
+
+```
+"Coupling between discovery (personas/domain) and architecture — tight or loose?"
+  • Auto-loop (Recommended) — every architectural phase iterates per persona AND per entity
+  • Hybrid                   — only `loopMode: always` Qs loop; `loopMode: hybrid-only` Qs fire static once
+```
+
+Persist as `mode.coupling` (`"auto-loop"` | `"hybrid"`).
+
+**Question 3 — Domain format**
+
+```
+"Domain modeling depth — full DDD or lite?"
+  • Full DDD (Recommended) — bounded contexts + entities + value objects + domain events + ubiquitous language + anti-corruption layers
+  • DDD-lite               — drops value objects, domain events, anti-corruption (Steps 2.7 Q6, Q7, Q10 skip)
+```
+
+Persist as `mode.domainFormat` (`"full-ddd"` | `"ddd-lite"`).
+
+**Adjacent runaway guard** — if the user picks Heavy + Full DDD + Auto-loop AND the project description (from Step 1) is < 200 chars OR contains any of {"weekend", "learning", "toy", "experiment", "spike"} (case-insensitive), surface ONE-TIME prompt at the start of Step 2 (vision/scope):
+
+> "Heavy + Full DDD + Auto-loop is calibrated for production projects. Your description suggests a smaller-scale effort. Switch to Light + DDD-lite + Hybrid? (Yes / No, keep current)"
+
+Persist any switch to `mode.*` and append an audit entry to `greenfield-meta.json.audit[]`.
+
+### Step 2 of 17: Tech Stack (Category 2)
 
 Emit the progress indicator. Ask Q2.1 about their stack preference. If they know, ask Q2.2 for details.
 
@@ -179,7 +228,24 @@ Detect by greping the agent's response for the literal string `STACK_RESEARCH_RE
 
 Wait for research results (either via agent or main session). Then ask Q2.3 about the scaffold approach, informed by the research findings.
 
-### Step 2.5 of 15: Architectural Framing
+### Step 2.2 — Personas
+
+- **Q-bank:** `personas.q-bank.md` (16 Qs heavy / 4 light)
+- **Loop structure:**
+  - Q1 sets primary persona count → Q2–Q8 loop once per primary persona
+  - Q9 asks whether secondary personas exist → Q10–Q11 loop once per secondary
+  - Q12 captures anti-pattern notes (top-level)
+  - Q_RISK fires once at end
+- **Skip path:** if user opts "Capture anti-personas only" at Q1, set `personas.skipped: true` and jump to Q12 + Q_RISK
+- **Persona aggregation rules:** after Q2–Q8 loop completes for all primary personas, derive `personas.antiPersonas[]` by collecting every non-empty `personas.primary[*].antiPersona` value (de-duplicated, preserve insertion order). Both paths coexist: per-persona for capture provenance, top-level for synthesis rendering.
+- **On phase completion:**
+  1. Write `docs/adr/personas.html` + `personas.md` via synthesis-review (template variables include the aggregated `personas.antiPersonas[]` and a pre-rendered `context.deviceLabel` scalar for each persona — see § Render hooks)
+  2. Write `docs/adr/personas.dependencies.json`
+  3. Append `Persona.Q_RISK` answer to top-level `risks[]` array (id auto-assigned `R-PERSONAS-1`)
+  4. Checkpoint state to `.claude/greenfield-state.json`
+- **State-machine constraint:** auto-loop downstream phases (Step 5 auth, Step 6 privacy, Step 7 security, Step 8 runtimeOps) MUST observe `personas.primary[]` length when iterating any Q with `loopOver: personas.primary`. If length is 0 (user skipped), downstream loops skip too.
+
+### Step 2.5 of 17: Architectural Framing
 
 Emit the progress indicator. This step gathers the early architectural decisions that inform all detailed phases (P3–P9): service topology, deployment shape, and scale target. Ask questions AF.Q1–AF.Q4 from `references/question-bank.md § Step 2.5: Architectural Framing` in order.
 
@@ -189,7 +255,7 @@ Emit the progress indicator. This step gathers the early architectural decisions
 
 Tell the developer:
 
-> Step 2.5 of 15: Architectural Framing. Before we dive into data, APIs, and CI/CD, I want to lock in three foundational choices — service topology, deployment shape, and scale target — so the detailed phases inherit consistent assumptions. 4 questions; the last is open-ended.
+> Step 2.5 of 17: Architectural Framing. Before we dive into data, APIs, and CI/CD, I want to lock in three foundational choices — service topology, deployment shape, and scale target — so the detailed phases inherit consistent assumptions. 4 questions; the last is open-ended.
 
 #### Architectural Framing questions (AF.Q1–AF.Q4)
 
@@ -216,9 +282,29 @@ Invoke the `synthesis-review` skill via the Skill tool with `phaseId: "architect
 4. Writes `context.syntheses.architecturalFraming = { approvedAt, adjustments[] }`.
 5. Writes `docs/adr/architectural-framing-dependencies.json` from the wizard-collected dependency edges.
 
-If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen — `architectural-framing.html` ships in Round 2.5), tell the developer and continue to Step 3.
+If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen — `architectural-framing.html` ships in Round 2.5), tell the developer and continue to Step 2.7.
 
-### Step 3 of 15: Data Architecture
+### Step 2.7 — Domain Modeling
+
+- **Q-bank:** `domain-model.q-bank.md` (11 Qs Full DDD / ~8 DDD-lite / ~6 Light)
+- **Loop structure:**
+  - Q1 sets bounded-context list → Q2 loops once per BC (responsibility)
+  - Q3 loops once per BC (entities under that BC; each entity captured with `id`, `contextId`, `isAggregateRoot`)
+  - Q4 + Q5 nested-loop per entity (aggregate-root flag, relationships)
+  - Q6 (value objects), Q7 (domain events), Q10 (anti-corruption) are **mode-gated** — skip when `mode.domainFormat == "ddd-lite"` OR `mode.depth == "light"`
+  - Q8 captures cross-context relationships (top-level)
+  - Q9 captures ubiquitous language glossary (top-level)
+  - Q_RISK fires once at end
+- **Mode-gated rendering:** synthesis HTML/MD render mode-gated sections as `(deferred — DDD-lite mode)` or `(deferred — Light mode)` placeholders (handled by synthesis-review skill; no action needed here).
+- **Deferred fields:** owned-entity rendering (`↳` indentation in synthesis) and entity descriptions are deferred; entities render flat in synthesis until a follow-up round extends Q3.
+- **On phase completion:**
+  1. Write `docs/adr/domain-model.html` + `domain-model.md` via synthesis-review
+  2. Write `docs/adr/domain-model.dependencies.json`
+  3. Append `Domain.Q_RISK` answer to `risks[]` (id `R-DOMAINMODEL-1`)
+  4. Checkpoint state
+- **State-machine constraint:** auto-loop downstream phases that loop over entities (Step 3 dataArchitecture, Step 4 apiIntegration, Step 7 security `attack-surface`) MUST observe `domainModel.entities[]` length. If length is 0 (no entities — possible in a pure-API project or a project with auth-only scope), downstream entity loops skip too.
+
+### Step 3 of 17: Data Architecture
 
 This step is Round 2's first new phase. Captures data-layer decisions via P3.Q1–P3.Q12 and closes with an inline Phase 1.8 synthesis-review pass.
 
@@ -228,7 +314,7 @@ This step is Round 2's first new phase. Captures data-layer decisions via P3.Q1�
 
 Tell the developer:
 
-> Step 3 of 15: Data Architecture. I'll ask about your data layer — database engine, ORM, migrations, multi-tenancy, caching, file storage. About 12 questions. Some may be skipped based on your earlier answers.
+> Step 3 of 17: Data Architecture. I'll ask about your data layer — database engine, ORM, migrations, multi-tenancy, caching, file storage. About 12 questions. Some may be skipped based on your earlier answers.
 
 #### Data Architecture questions (Q3.1–Q3.12)
 
@@ -267,7 +353,7 @@ If the developer adjusts any dataArchitecture field via the Adjust dialog, the u
 
 If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen — `data-architecture.html` ships in Round 2), tell the developer and continue to Step 4.
 
-### Step 4 of 15: API & Integration
+### Step 4 of 17: API & Integration
 
 This step is Round 2's second new phase. Captures API surface decisions via P4.Q1–P4.Q10 and closes with an inline Phase 1.8 synthesis-review pass.
 
@@ -277,7 +363,7 @@ This step is Round 2's second new phase. Captures API surface decisions via P4.Q
 
 Tell the developer:
 
-> Step 4 of 15: API & Integration. I'll ask about your API surface — style (REST/GraphQL/tRPC), versioning, rate limits, async patterns, real-time, webhooks, external services. About 10 questions; some skipped based on whether you expose an API.
+> Step 4 of 17: API & Integration. I'll ask about your API surface — style (REST/GraphQL/tRPC), versioning, rate limits, async patterns, real-time, webhooks, external services. About 10 questions; some skipped based on whether you expose an API.
 
 #### API & Integration questions (Q4.1–Q4.10)
 
@@ -312,7 +398,7 @@ Invoke the `synthesis-review` skill via the Skill tool with `phaseId: "apiIntegr
 
 If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen — `api-integration.html` ships in Round 2), tell the developer and continue to Step 5.
 
-### Step 5 of 15: Auth
+### Step 5 of 17: Auth
 
 Emit the progress indicator. This step gathers identity and access control decisions: strategy, identity providers, session model, MFA, authorization, tenancy, service-to-service auth, lifecycle, recovery, password policy, audit log, enforcement point. About 12 questions; some may be skipped based on `auth.strategy` and earlier framing/data/api answers.
 
@@ -320,7 +406,7 @@ Emit the progress indicator. This step gathers identity and access control decis
 
 Tell the developer (verbatim):
 
-> Step 5 of 15: Auth. I'll ask about authentication strategy, identity providers, session model, MFA, authorization, and audit. About 12 questions. Some may be skipped based on your earlier framing and data decisions.
+> Step 5 of 17: Auth. I'll ask about authentication strategy, identity providers, session model, MFA, authorization, and audit. About 12 questions. Some may be skipped based on your earlier framing and data decisions.
 
 Then run the wizard.
 
@@ -340,7 +426,7 @@ If the synthesis-review skill returns `synthesisStatus: "no-template"` (should n
 
 ---
 
-### Step 6 of 15: Privacy
+### Step 6 of 17: Privacy
 
 Emit the progress indicator. This step classifies the data and gates regulatory scope. If `auth.strategy = 'none'`, the wizard fires a single-Q gate FIRST. If the gate returns "No data collected", Privacy synthesis is rendered as an n/a stub and Q1-Q11 are skipped.
 
@@ -367,7 +453,7 @@ If the answer is "Yes":
 
 Tell the developer (verbatim, after the gate decision):
 
-> Step 6 of 15: Privacy. I'll ask about regulatory scope, PII inventory, consent, retention, deletion, DSAR, and data residency. About 11 questions; some may be skipped based on regulations and data architecture.
+> Step 6 of 17: Privacy. I'll ask about regulatory scope, PII inventory, consent, retention, deletion, DSAR, and data residency. About 11 questions; some may be skipped based on regulations and data architecture.
 
 Then run the wizard.
 
@@ -387,7 +473,7 @@ If the synthesis-review skill returns `synthesisStatus: "no-template"` (should n
 
 ---
 
-### Step 7 of 15: Security
+### Step 7 of 17: Security
 
 Emit the progress indicator. This step covers application security posture: sensitivity tier, secret management, vulnerability scanning, threat model, encryption, headers, input validation, audit retention, IR pointer, pentest cadence, VDP, supply chain. About 13 questions; some may be skipped based on `security.sensitivityTier` and `architecturalFraming.scaleTarget`.
 
@@ -395,7 +481,7 @@ Emit the progress indicator. This step covers application security posture: sens
 
 Tell the developer (verbatim):
 
-> Step 7 of 15: Security. I'll ask about sensitivity tier, secret management, vulnerability scanning, threat model, encryption, audit logging, incident response, and supply chain. About 13 questions. Some may be skipped for hobby-scale projects.
+> Step 7 of 17: Security. I'll ask about sensitivity tier, secret management, vulnerability scanning, threat model, encryption, audit logging, incident response, and supply chain. About 13 questions. Some may be skipped for hobby-scale projects.
 
 Then run the wizard.
 
@@ -413,7 +499,7 @@ If the synthesis-review skill returns `synthesisStatus: "no-template"` (should n
 
 ---
 
-### Step 8 of 15: Runtime Operations
+### Step 8 of 17: Runtime Operations
 
 Emit the progress indicator. This step covers background jobs, observability, alerting, feature flags, maintenance mode, health checks, runbooks, incident process, and on-call. About 14 questions; Ops.Q1-Q3 (jobs/retry/scheduling) skip when `apiIntegration.asyncPattern='none'`. Ops.Q8 (SLO) skips for non-production scale targets. Ops.Q12, Ops.Q14 auto-skip for hobby.
 
@@ -421,7 +507,7 @@ Emit the progress indicator. This step covers background jobs, observability, al
 
 Tell the developer (verbatim):
 
-> Step 8 of 15: Runtime Operations. I'll ask about background jobs, observability (metrics/traces/logs), alerting, feature flags, maintenance mode, health checks, runbooks, and incident response. About 14 questions. Some are skipped for hobby projects or no-async-work setups.
+> Step 8 of 17: Runtime Operations. I'll ask about background jobs, observability (metrics/traces/logs), alerting, feature flags, maintenance mode, health checks, runbooks, and incident response. About 14 questions. Some are skipped for hobby projects or no-async-work setups.
 
 Then run the wizard.
 
@@ -439,13 +525,13 @@ If the synthesis-review skill returns `synthesisStatus: "no-template"` (should n
 
 ---
 
-### Step 9 of 15: Remaining Project Details (residual)
+### Step 9 of 17: Remaining Project Details (residual)
 
 This step holds the 13 Category 3 questions that have NOT been re-homed to Data Architecture or API & Integration in Round 2. They stay here as transitional content until Rounds 3–6 re-home them to vision/frontend/authSecurity/workflow. See `references/question-bank.md § Category 3 (residual)` for the full question list.
 
 Tell the developer:
 
-> Step 9 of 15: Remaining Project Details. A few miscellaneous questions about scale, auth, deploy target, monitoring, environment, dependencies, accessibility, performance, i18n, monorepo, and styling. Skipped if not relevant to your stack.
+> Step 9 of 17: Remaining Project Details. A few miscellaneous questions about scale, auth, deploy target, monitoring, environment, dependencies, accessibility, performance, i18n, monorepo, and styling. Skipped if not relevant to your stack.
 
 Ask Q3.1, Q3.3, Q3.4, Q3.6, Q3.9, Q3.10, Q3.11, Q3.12, Q3.13, Q3.14, Q3.15, Q3.F1, Q3.F2 in order from `references/question-bank.md § Category 3 (residual)`. Honor existing conditions. No synthesis review for this step (it's residual; full split planned for Rounds 3–6).
 
@@ -481,7 +567,7 @@ Also capture during this step (can be inferred or asked directly):
 - **`frontendPatterns`**: If frontend project — component library, state management, styling, routing. Partially captured by Q3.F1/Q3.F2, fill in the rest from stack research.
 - **`backendPatterns`**: If backend project — auth (from Q3.3), error handling. Compose from existing answers.
 
-### Step 9.5 of 15: Pain Points (always ask)
+### Step 9.5 of 17: Pain Points (always ask)
 
 Emit the progress indicator. Ask about where Claude can help most:
 - "What takes the most time in your development workflow?"
@@ -501,7 +587,7 @@ Capture as:
 
 This feeds directly into onboard's skill and agent selection — skills matching pain points get highest priority.
 
-### Step 10 of 15: Workflow Preferences (Category 4)
+### Step 10 of 17: Workflow Preferences (Category 4)
 
 Emit the progress indicator. Ask Q4.1 through Q4.5. For Q4.1 (branching), recommend based on team size from Q3.1.
 
@@ -521,7 +607,7 @@ Q4.6 (releases) is only asked for production apps.
 
 Store the choice as `verificationStrategy` in the context object. This configures the feature-evaluator agent.
 
-### Step 11 of 15: CI/CD & Auto-Evolution (Category 5 / cicdAndDelivery)
+### Step 11 of 17: CI/CD & Auto-Evolution (Category 5 / cicdAndDelivery)
 
 Emit the progress indicator. **Skip Q5.1, Q5.3, and Q5.4–Q5.17 entirely if `willDeploy = false`** — only Q5.2 (auto-evolution mode) applies to local projects.
 
@@ -576,7 +662,7 @@ If the developer adjusts any cicdAndDelivery field via the Adjust dialog, the up
 
 If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen in Round 1 since `cicd-and-delivery.html` ships in this commit), tell the developer and continue to Step 12.
 
-### Step 12 of 15: Feature Decomposition (Harness Preparation) — REQUIRED
+### Step 12 of 17: Feature Decomposition (Harness Preparation) — REQUIRED
 
 Emit the progress indicator. **This step is mandatory** — downstream phases (tooling generation, onboard's harness mode) depend on a feature list existing. Do NOT skip this silently. If the user explicitly declines feature decomposition, generate a minimal 3-5 feature skeleton from the app description so the JSON file still exists.
 
@@ -600,7 +686,7 @@ Include the feature breakdown in the confirmation summary (see below). The devel
 
 > Before we wrap Phase 1, note: you parked **N** questions for deeper research earlier. When we finish the wizard, I'll enter a short "Architectural Research" sub-phase to deep-dive on those before we scaffold. If you'd rather skip that and just go with the placeholder answers, say "skip research" now.
 
-### Step 13 of 15: Confirmation (Category 7)
+### Step 13 of 17: Confirmation (Category 7)
 
 Emit the progress indicator. Present a structured summary of everything gathered:
 
@@ -631,7 +717,7 @@ Emit the progress indicator. Present a structured summary of everything gathered
 
 Wait for confirmation before returning.
 
-### Step 14 of 15: Phase 1.5 Architectural Research (conditional)
+### Step 14 of 17: Phase 1.5 Architectural Research (conditional)
 
 Emit the progress indicator **only if** `parkedQuestions.length > 0` AND the user didn't say "skip research". Otherwise skip Step 14 and go straight to Step 15.
 
@@ -656,7 +742,7 @@ Checkpoint after each parked question is resolved. This keeps the research phase
 
 When all parked questions are resolved, proceed to Step 15: Architectural Validation.
 
-### Step 15 of 15: Architectural Validation
+### Step 15 of 17: Architectural Validation
 
 Emit the progress indicator. This is the final wizard step — a cross-phase sign-off pass that reads from all approved phase syntheses to detect contradictions and drift since they were captured.
 
@@ -666,7 +752,7 @@ Emit the progress indicator. This is the final wizard step — a cross-phase sig
 
 Tell the developer:
 
-> Step 15 of 15: Architectural Validation. Before we scaffold, I'll cross-check all your approved synthesis records for contradictions and drift since your early framing decisions. This is a sign-off step — you'll review what was found and either approve the full spec, note divergences, or send it back for rework.
+> Step 15 of 17: Architectural Validation. Before we scaffold, I'll cross-check all your approved synthesis records for contradictions and drift since your early framing decisions. This is a sign-off step — you'll review what was found and either approve the full spec, note divergences, or send it back for rework.
 
 **Cross-validation checks to perform** (read from `context.syntheses.*` and `context.phases.*`):
 
@@ -701,6 +787,49 @@ Capture as `context.phases.architecturalValidation.finalNotes` (free text).
 4. Returns control here.
 
 Then set `currentPhase: "phase-2-scaffold"` in the state file and hand off to the scaffolding skill.
+
+## Auto-loop mechanic
+
+For each Q-bank entry Q being asked during state-machine traversal:
+
+1. **If Q lacks `loopOver`:** fire Q once (static). Move to next Q.
+2. **If Q has `loopOver`** (valid values: `personas.primary`, `personas.secondary`, `domainModel.entities`):
+   - Read `mode.coupling` from `.claude/greenfield-state.json.mode.coupling`.
+   - **If `mode.coupling == "auto-loop"`:** fire Q once per item in the source collection. Set the iteration context variable (`{{persona}}` or `{{entity}}`) to the current item.
+   - **If `mode.coupling == "hybrid"`:**
+     - If `Q.loopMode == "always"`: fire Q once per item (still loops in hybrid mode).
+     - Else (`Q.loopMode == "hybrid-only"` or omitted): fire Q ONCE as a static prompt; user types free-form. Use the Q's "Prompt (hybrid fallback)" template if the Q provides one (security.q-bank.md and runtime-operations.q-bank.md both define hybrid-fallback prompts for their hybrid-only loops).
+3. **For each looped fire**, render `Q.promptTemplate` with `{{persona.id}}` / `{{entity.id}}` etc. substituted from the iteration context.
+4. **For each looped answer**, write a `derivedFrom` field to the synthesis output AND a `sourceRef: { phase, id }` field to the dependencies.json sidecar (synthesis-review consumes this; T19 wires the rendering).
+
+### Loop progress indicator
+
+When firing a looped Q, render the wizard header:
+
+```
+─────────────────────────────────────────
+  Step 5 — Auth         [Persona 1 of 2]
+─────────────────────────────────────────
+```
+
+After every loop iteration completes, the state machine checkpoints state (`.claude/greenfield-state.json`) so `/greenfield:pickup` can resume mid-loop precisely.
+
+### Loop hard-cap
+
+If a single phase's loop iteration count > 200 Qs (e.g., 5 personas × 6 entities × 8 looped Qs = 240), the wizard surfaces a soft warning: *"You may have too many personas/entities — consider consolidating before continuing."* and logs `degradation: { phase, reason: "loop-cap-exceeded", count: <n> }` to the state file. The user can opt to continue or run `/greenfield:pickup → Adjust mode → consolidate`.
+
+## Render hooks
+
+The state machine pre-computes derived scalars before passing context to synthesis-review:
+
+| Hook | Source path | Derived path | Transformation |
+|---|---|---|---|
+| persona-device-label | `personas.primary[].context.device[]` (array) | `personas.primary[].context.deviceLabel` (scalar) | Comma-joined (e.g., `["phone", "tablet"]` → `"phone, tablet"`) |
+| anti-personas-aggregate | `personas.primary[].antiPersona` (per-persona) | `personas.antiPersonas[]` (top-level array) | Collect non-empty values, de-duplicate, preserve order |
+| risks-by-status | `risks[]` | `risks.byStatus.{mitigated,partial,acceptedExplicit,openFollowup,outOfScope}[]` + `.length` per bucket | Group by `risk.reconciliation.status`; used by `arch-val-risk-reconciliation-section.html` (T15) |
+| risks-distinct-phase-count | `risks[]` | `risks.distinctPhaseCount` (scalar) | Count of distinct `risk.originatingPhase` values |
+
+Synthesis-review reads from the derived paths first, falls back to source paths if a derived value isn't present (e.g., for legacy alpha.4 contexts after migration shim).
 
 ## Output
 

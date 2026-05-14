@@ -9,9 +9,13 @@ Scaffolds new projects with AI-native, auto-evolving Claude Code tooling. Three-
      │
      ▼
 Phase 1: Context Gathering ──→ context-gathering skill (adaptive wizard)
+     │                            ├── Step 1.1: mode toggles (depth / coupling / domainFormat) → gates all downstream Q counts
+     │                            ├── Step 2.2: Personas (personas phase — Round 4 insert; 16 Qs heavy / 4 light)
+     │                            ├── Step 2.5: Architectural Framing (architecturalFraming)
+     │                            ├── Step 2.7: Domain Modeling (domainModel phase — Round 4 insert; 11 Qs Full DDD / ~8 DDD-lite / ~6 Light)
      │                            ├── stack-researcher agent (WebSearch)
      │                            └── synthesis-review skill (Phase 1.8 — invoked inline at end of each major step;
-     │                                                         Round 2 / 2.5 / 3: Step 2.5 → architecturalFraming, Step 3 → dataArchitecture, Step 4 → apiIntegration, Step 5 → auth, Step 6 → privacy, Step 7 → security, Step 8 → runtimeOperations, Step 11 → cicdAndDelivery, Step 15 → architecturalValidation)
+     │                                                         Round 2 / 2.5 / 3 / 4: Step 2.2 → personas, Step 2.5 → architecturalFraming, Step 2.7 → domainModel, Step 3 → dataArchitecture, Step 4 → apiIntegration, Step 5 → auth, Step 6 → privacy, Step 7 → security, Step 8 → runtimeOperations, Step 11 → cicdAndDelivery, Step 15 → architecturalValidation)
      │
      ├── Phase 1.5 (conditional): Architectural Research — resolves parked questions
      │
@@ -49,8 +53,8 @@ Greenfield only generates two artifacts that require scaffold-specific knowledge
 
 ## Skill Hierarchy
 
-- `context-gathering/SKILL.md` — Phase 1: adaptive state-machine wizard (3.0 Round 2 / 2.5 / 3: 15 wizard steps (1–15 including Step 2.5); Step 2.5 = Architectural Framing / architecturalFraming (4 Qs — topology, deploymentShape, scaleTarget, boundaryNotes), Step 3 = Data Architecture / dataArchitecture (12 Qs), Step 4 = API & Integration / apiIntegration (10 Qs), Step 5 = Auth & Identity / auth, Step 6 = Privacy & Data Governance / privacy, Step 7 = Security / security, Step 8 = Runtime Operations / runtimeOperations, Step 11 = CI/CD & Delivery / cicdAndDelivery (17 Qs from Round 1), Step 15 = Architectural Validation / architecturalValidation (1–2 Qs — final cross-phase sign-off). Total ~75+ wizard questions; developer answers 30-57 depending on stack + deploy)
-- `synthesis-review/SKILL.md` — Phase 1.8: per-phase synthesis review. Renders `docs/adr/<topic-kebab>.html` in the scaffolded project, walks Approve/Adjust/Skip per section, writes `dependencies.json` sidecar, installs freshness hook. Invoked inline by `context-gathering` at the end of each major step that has a synthesis template (Round 2 / 2.5 / 3: architecturalFraming at Step 2.5, dataArchitecture at Step 3, apiIntegration at Step 4, auth at Step 5, privacy at Step 6, security at Step 7, runtimeOperations at Step 8, cicdAndDelivery at Step 11, architecturalValidation at Step 15)
+- `context-gathering/SKILL.md` — Phase 1: adaptive state-machine wizard (3.0 Round 2 / 2.5 / 3 / 4: 17 wizard steps (1–15 + Round 4 inserts at 2.2 + 2.7); Step 2.2 = Personas / personas (16 Qs heavy / 4 Qs light — Round 4), Step 2.5 = Architectural Framing / architecturalFraming (4 Qs — topology, deploymentShape, scaleTarget, boundaryNotes), Step 2.7 = Domain Modeling / domainModel (11 Qs Full DDD / ~8 DDD-lite / ~6 Light — Round 4), Step 3 = Data Architecture / dataArchitecture (12 Qs), Step 4 = API & Integration / apiIntegration (10 Qs), Step 5 = Auth & Identity / auth, Step 6 = Privacy & Data Governance / privacy, Step 7 = Security / security, Step 8 = Runtime Operations / runtimeOperations, Step 11 = CI/CD & Delivery / cicdAndDelivery (17 Qs from Round 1), Step 15 = Architectural Validation / architecturalValidation (1–2 Qs — final cross-phase sign-off). Round 4 mode toggles (depth / coupling / domainFormat) set at Step 1.1 and gate downstream Q counts. Round 4 Q-bank flags: `showInLight` gates light-mode display; `isRiskCapture` routes answers to top-level `risks[]`; `loopOver`/`loopMode` drive per-persona/entity auto-loop. Total ~120 Qs heavy / ~65 Qs light depending on stack + deploy + persona/entity loop counts.)
+- `synthesis-review/SKILL.md` — Phase 1.8: per-phase synthesis review. Renders `docs/adr/<topic-kebab>.html` in the scaffolded project, walks Approve/Adjust/Skip per section, writes `dependencies.json` sidecar, installs freshness hook. Invoked inline by `context-gathering` at the end of each major step that has a synthesis template (Round 2 / 2.5 / 3: architecturalFraming at Step 2.5, dataArchitecture at Step 3, apiIntegration at Step 4, auth at Step 5, privacy at Step 6, security at Step 7, runtimeOperations at Step 8, cicdAndDelivery at Step 11, architecturalValidation at Step 15). Round 4 templates added: `personas.html`/`md`, `domain-model.html`/`md`, `arch-val-risk-reconciliation-section.html` (fragment inserted into architectural-validation.html as Section 1).
 - `grill-spec/SKILL.md` — Phase 1.7: pre-scaffold validation gate (5-category decision-tree walk via `greenfield/skills/adjust-dialog/`; falls back to inline if unavailable). Cross-checks against `context.syntheses.*`
 - `scaffolding/SKILL.md` — Phase 2: execute scaffold, git setup, verify Hello World
 - `tooling-generation/SKILL.md` — Phase 3: prepare context, call enriched onboard, generate init.sh + feature-list.json
@@ -72,7 +76,7 @@ User-facing skills (show in `/greenfield:` autocomplete):
 Internal building blocks (`user-invocable: false`):
 
 - `context-gathering/SKILL.md` — Phase 1 adaptive wizard
-- `synthesis-review/SKILL.md` — Phase 1.8 per-phase synthesis review (Round 2 / 2.5 / 3: architecturalFraming at Step 2.5, dataArchitecture at Step 3, apiIntegration at Step 4, auth at Step 5, privacy at Step 6, security at Step 7, runtimeOperations at Step 8, cicdAndDelivery at Step 11, architecturalValidation at Step 15)
+- `synthesis-review/SKILL.md` — Phase 1.8 per-phase synthesis review (Round 2 / 2.5 / 3 / 4: personas at Step 2.2, architecturalFraming at Step 2.5, domainModel at Step 2.7, dataArchitecture at Step 3, apiIntegration at Step 4, auth at Step 5, privacy at Step 6, security at Step 7, runtimeOperations at Step 8, cicdAndDelivery at Step 11, architecturalValidation at Step 15)
 - `grill-spec/SKILL.md` — Phase 1.7 pre-scaffold validation gate
 - `scaffolding/SKILL.md` — Phase 2 scaffold execution
 - `plugin-discovery/SKILL.md` — Phase 3a plugin catalog match + install
@@ -89,13 +93,14 @@ Note: `/greenfield:verify`, `/greenfield:evolve` are now `/onboard:verify`, `/on
 
 - Adaptive wizard: each answer updates a context object, subsequent questions check preconditions
 - Wizard scope protection: "Park it" escape hatch for deep-research questions, optional Phase 1.5 Architectural Research sub-phase
-- Progress indicator: every wizard Step emits "Step X of 15" so sessions can't silently derail
+- Progress indicator: every wizard Step emits "Step X of 17" so sessions can't silently derail (17 = 15 R3 steps + Round 4 Step 2.2 Personas + Step 2.7 Domain Modeling)
 - Web research: stack-researcher agent searches for latest versions and best practices before scaffolding, with main-session fallback when sub-agent web tools are denied
 - Feature decomposition: mandatory — downstream phases depend on `docs/feature-list.json` existing
 - Plugin-aware generation: coveredCapabilities passed to onboard, prevents agent shadowing
 - Greenfield metadata: `.claude/greenfield-meta.json` records all context, decisions, and generated artifacts (post-scaffold). Schema is the single source of truth at `greenfield/skills/tooling-generation/references/greenfield-meta.schema.json` — tooling-generation Step 4 validates against it before write. As of the 2026-04-16 release-gate L5 alignment, everything lives under `generated.toolingFlags` (tooling/cicd/harness/installedPlugins/coveredCapabilities/qualityGates/phaseSkills + the seven status mirrors). The earlier `generated.tooling` / `generated.cicd` / `generated.harness` sibling keys are removed; old-shape projects heal on next regeneration (no auto-migration).
 - **Greenfield state: `.claude/greenfield-state.json` persists in-flight progress** for `/greenfield:pickup`. Checkpoint after every skill Step. Atomic write via `.tmp` + rename.
 - **Scaffold modes**: `full` (default — complete scaffold, then AI tooling) vs `walking-skeleton` (minimal scaffold → AI tooling → expand). Walking skeleton is for stacks without a mature CLI or with complex architecture.
+- **Round 4 Q-bank flags:** `showInLight` (light-mode gating), `loopOver` + `loopMode` (auto-loop on `personas.primary` / `personas.secondary` / `domainModel.entities`), `isRiskCapture` (collects to shared top-level `risks[]`), `feedsIntoConsolidation` (participates in Step 15 Risk Reconciliation). See `context-gathering/references/question-bank.md § Round 4 Q-bank flag reference`.
 
 ## Platform Coverage
 

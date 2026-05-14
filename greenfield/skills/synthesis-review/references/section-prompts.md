@@ -240,3 +240,29 @@ This synthesis is read-only — it does not capture new wizard answers (those ca
 - `security.sensitivityTier='high'` + `runtimeOperations.alerting.tool='none'` → "High sensitivity tier requires non-trivial alerting."
 - `runtimeOperations.slo` non-empty + `runtimeOperations.metrics.tool='none'` → "SLO requires a metrics backend."
 - `apiIntegration.asyncPattern ≠ 'none'` + `runtimeOperations.jobs.provider='none'` → "API integration declares async work but Runtime Ops has no job system."
+
+## personas — Section prompts
+
+| Section | Title | Approve/Adjust/Skip prompt |
+|---|---|---|
+| 1 | Mode + Decisions | "Mode toggle values look right?" |
+| 2 | Primary Personas | "Primary personas accurately captured?" |
+| 3 | Secondary Personas | "Secondary personas captured if applicable?" |
+| 4 | Anti-Personas | "Anti-personas correctly excluded?" |
+| 5 | Persona Risks Identified | "Persona-related risk recorded?" |
+| 6 | Decisions Driven Downstream | _(auto, back-fills after downstream phases — no user prompt at this stage)_ |
+
+## domainModel — Section prompts
+
+| Section | Title | Approve/Adjust/Skip prompt |
+|---|---|---|
+| 1 | Mode + Coupling | "Format + coupling values look right?" |
+| 2 | Bounded Contexts | "Bounded contexts capture the major sub-domains?" |
+| 3 | Entities per Context | "Entities + relationships + aggregate roots accurate?" |
+| 4 | Value Objects | "Value objects captured?" _(skipped in DDD-lite)_ |
+| 5 | Domain Events | "Domain events captured?" _(skipped in DDD-lite)_ |
+| 6 | Cross-Context Relationships | "Cross-context relationships captured?" |
+| 7 | Ubiquitous Language | "Glossary terms agree with how the team speaks?" |
+| 8 | Anti-Corruption Layers | "Boundary translations identified?" _(skipped in DDD-lite)_ |
+| 9 | Domain Risks Identified | "Domain risk recorded?" |
+| 10 | Decisions Driven Downstream | _(auto, back-fills)_ |

@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "phase": "risks",
+  "recordedAt": "2026-05-15T11:00:00Z",
+  "risks": [
+    {
+      "id": "R-DATAARCHITECTURE-1",
+      "originatingPhase": "dataArchitecture",
+      "text": "Single Postgres for OLTP+analytics will need split by Y2",
+      "tags": ["scaling"],
+      "reconciliation": {
+        "status": "mitigated",
+        "rationale": "Adopted read-replica plan in apiIntegration.Q3"
+      }
+    },
+    {
+      "id": "R-AUTH-1",
+      "originatingPhase": "auth",
+      "text": "JWT-only means revocation latency in compromised-token case",
+      "tags": ["security"],
+      "reconciliation": {
+        "status": "partial",
+        "rationale": "Short JWT TTL adopted; explicit revocation deferred to Sprint 3"
+      }
+    },
+    {
+      "id": "R-PERSONAS-1",
+      "originatingPhase": "personas",
+      "text": "No persona covers regulator audit access",
+      "tags": ["compliance"],
+      "reconciliation": {
+        "status": "open-followup",
+        "rationale": "Add regulator persona in v2; defer corresponding auth role"
+      }
+    }
+  ]
+}
