@@ -13,8 +13,8 @@
     },
     "phase": {
       "type": "string",
-      "pattern": "^(vision|personas|domain|stack|dataArchitecture|apiIntegration|frontend|authSecurity|workflow|pluginRecommendation|cicdAndDelivery|risk|featureRoadmap|pluginInstall|schemaDraftReview)$",
-      "description": "The phase this file describes dependencies for. Uses topic names — e.g., 'cicdAndDelivery', 'dataArchitecture', 'apiIntegration'."
+      "pattern": "^(vision|personas|domain|stack|architecturalFraming|architecturalValidation|dataArchitecture|apiIntegration|auth|privacy|security|runtimeOperations|frontend|authSecurity|workflow|pluginRecommendation|cicdAndDelivery|risk|featureRoadmap|pluginInstall|schemaDraftReview)$",
+      "description": "The phase this file describes dependencies for. Uses topic names — e.g., 'cicdAndDelivery', 'dataArchitecture', 'apiIntegration', 'auth', 'privacy', 'security', 'runtimeOperations'."
     },
     "recordedAt": {
       "type": "string",
@@ -31,7 +31,7 @@
         "properties": {
           "path": {
             "type": "string",
-            "pattern": "^(vision|personas|domain|stack|dataArchitecture|apiIntegration|frontend|authSecurity|workflow|pluginRecommendation|cicdAndDelivery|risk|featureRoadmap|pluginInstall|schemaDraftReview)\\.[A-Za-z0-9_.\\[\\]]+$",
+            "pattern": "^(vision|personas|domain|stack|architecturalFraming|architecturalValidation|dataArchitecture|apiIntegration|auth|privacy|security|runtimeOperations|frontend|authSecurity|workflow|pluginRecommendation|cicdAndDelivery|risk|featureRoadmap|pluginInstall|schemaDraftReview)\\.[A-Za-z0-9_.\\[\\]]+$",
             "description": "Dot-path into the v2 context shape, starting at a topic name. Example: vision.willDeploy or dataArchitecture.databaseHost. Topic name and remaining-path are joined by '.'."
           },
           "value": {
