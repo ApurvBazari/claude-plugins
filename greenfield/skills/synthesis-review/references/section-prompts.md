@@ -106,6 +106,37 @@ Append to the contradiction table above the section-prompts file:
 | tRPC-on-non-TS | `phases.apiIntegration.style === "trpc"` AND `phases.stack.stack.language !== "typescript"` | "API & Integration picked tRPC but Stack said the language isn't TypeScript. tRPC is TS-only — pick REST or GraphQL instead." |
 | Queue-without-broker | `phases.apiIntegration.asyncPattern === "queue-and-worker"` AND `phases.dataArchitecture.cache` is empty OR doesn't include a broker-capable string | "API & Integration wants a queue+worker but Data Architecture cache doesn't include a broker. Either add Redis/RabbitMQ to dataArchitecture cache or pick scheduled-cron." |
 
+## Round 2.5 sections (Step 11: Architectural Validation)
+
+Use this table to compose `architectural-validation.html` sections. This synthesis fires LAST — after all other phases have been approved. Its dependencies are forward-looking (all prior phases) rather than backward-looking.
+
+| Section | Maps to (context.phases.architecturalValidation.* + prior phases) | Cross-checks |
+|---|---|---|
+| Framing → Data Architecture divergences | Compare `architecturalFraming.{topology,deploymentShape,scaleTarget}` against `dataArchitecture.*` final values | Serverless + orm-native migrations; microservices + embedded DB; edge-distributed + managed RDBMS driver issues |
+| Framing → API & Integration divergences | Compare `architecturalFraming.topology` against `apiIntegration.asyncPattern` | Serverless + queue-and-worker contradict; microservices + no-api-surface unusual |
+| Framing → CI/CD divergences | Compare `architecturalFraming.scaleTarget` against `cicdAndDelivery.cicd.{envLadder,releasePipeline}` | Hobby + full release pipeline over-engineered; enterprise + no env ladder under-specified |
+| Data ↔ API cross-checks | `apiIntegration.asyncPattern` vs `dataArchitecture.cache` | Queue-and-worker without a broker-capable cache store |
+| Sign-off & divergence record | `signOffStatus`, `divergences[]`, `unresolvedContradictions[]`, `finalNotes` | None — this section records the developer's explicit sign-off and any noted exceptions |
+
+### Contradiction rules specific to Architectural Validation
+
+All pre-existing contradiction rules from earlier phases are re-evaluated here with final values. Additional rules:
+
+| Check | Condition | Fires |
+|---|---|---|
+| Framing-drift-serverless-orm | `phases.architecturalFraming.topology === "serverless"` AND `phases.dataArchitecture.migrationsTool === "orm-native"` (final approved) | "Architectural Framing set topology=serverless but Data Architecture approved orm-native migrations. ORM-native migrations (Prisma migrate, Drizzle kit) are long-lived processes — they conflict with serverless function lifecycle. Record as divergence or send back for rework." |
+| Framing-drift-microservices-embedded | `phases.architecturalFraming.topology === "microservices"` AND `phases.dataArchitecture.databaseHost === "embedded"` (final approved) | "Architectural Framing set topology=microservices but Data Architecture approved an embedded DB. Embedded databases cannot be shared across service boundaries. Record as divergence or send back for rework." |
+| Framing-drift-hobby-enterprise-pipeline | `phases.architecturalFraming.scaleTarget === "hobby"` AND `phases.cicdAndDelivery.cicd.releasePipeline.separate === true` | "Architectural Framing set scaleTarget=hobby but CI/CD approved a separate release pipeline. A full release pipeline for a hobby project is over-engineered; note as divergence." |
+| Unapproved-synthesis | Any key in `{ "architecturalFraming", "dataArchitecture", "apiIntegration", "cicdAndDelivery" }` missing from `context.syntheses` entirely | "Phase <X> has no synthesis record — it was never reviewed via Approve/Adjust/Skip. Validation is incomplete for that phase." |
+
+### Section composition notes for Architectural Validation
+
+This synthesis is read-only — it does not capture new wizard answers (those came in Steps 1–10). The synthesis-review skill must:
+1. Build the divergence table by diffing `context.phases.architecturalFraming.*` against the final approved values in all subsequent phases.
+2. Render each contradiction that fired as a row in the "Unresolved Contradictions" section if `signOffStatus !== "approved"`.
+3. Render `finalNotes` verbatim (developer owns this text; do not paraphrase or truncate).
+4. The "Sign-off" section renders `signOffStatus` prominently — this is the gate that grill-spec reads.
+
 ## Tone
 
 - Render captured values verbatim. Do not paraphrase.

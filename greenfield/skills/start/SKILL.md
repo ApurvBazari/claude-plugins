@@ -66,7 +66,7 @@ Greenfield writes to `.claude/greenfield-state.json` at every natural checkpoint
   "createdAt": "ISO-8601 timestamp",
   "updatedAt": "ISO-8601 timestamp",
   "currentPhase": "phase-1-context-gathering | phase-1.8-synthesis-review | phase-1.5-architectural-research | phase-1.7-grill-spec | phase-2-scaffold | phase-3a-plugin-discovery | phase-3b-tooling-generation | complete",
-  "currentSynthesisPhase": "architecturalFraming | dataArchitecture | apiIntegration | cicdAndDelivery (only set when currentPhase === 'phase-1.8-synthesis-review'; identifies which phaseId is currently under review; cleared on return). Valid values in Round 2 / Round 2.5: \"architecturalFraming\", \"dataArchitecture\", \"apiIntegration\", \"cicdAndDelivery\". Future rounds add vision/authSecurity/workflow/featureRoadmap/schemaDraftReview.",
+  "currentSynthesisPhase": "architecturalFraming | dataArchitecture | apiIntegration | cicdAndDelivery | architecturalValidation (only set when currentPhase === 'phase-1.8-synthesis-review'; identifies which phaseId is currently under review; cleared on return). Valid values in Round 2 / Round 2.5: \"architecturalFraming\", \"dataArchitecture\", \"apiIntegration\", \"cicdAndDelivery\", \"architecturalValidation\". Future rounds add vision/authSecurity/workflow/featureRoadmap/schemaDraftReview.",
   "currentStep": "skill-specific step identifier",
   "completedSteps": ["list of completed step identifiers"],
   "context": { /* partial context object, grows as wizard progresses */ },
@@ -102,7 +102,7 @@ Tell the developer:
 
 ## Phase 1: Context Gathering
 
-Use the `context-gathering` skill to guide the developer through the adaptive wizard. **The wizard has 10 named Steps and must emit a "Step X of 10" progress indicator at every Step boundary** so both Claude and the user can track progress.
+Use the `context-gathering` skill to guide the developer through the adaptive wizard. **The wizard has 11 named Steps and must emit a "Step X of 11" progress indicator at every Step boundary** so both Claude and the user can track progress.
 
 The skill handles:
 - Project vision (what they want to build)
@@ -110,7 +110,7 @@ The skill handles:
 - Project details (database, auth, deploy, monitoring, etc.)
 - Workflow preferences (testing, style, security, autonomy)
 - CI/CD and auto-evolution preferences (Step 5 — expanded in greenfield 3.0 to 17 questions covering provider, gates, env ladder, secrets, notifications, build matrix, caching, release pipeline, deploy cadence)
-- **Phase 1.8 synthesis review** — runs inline at the end of each major step that has a synthesis template. Round 2 / 2.5 wires it for architecturalFraming (Step 2.5 — Architectural Framing), dataArchitecture (Step 3 — Data Architecture), apiIntegration (Step 4 — API & Integration), and cicdAndDelivery (Step 7 — CI/CD). Each pass renders the corresponding HTML in the scaffolded project (`docs/architecture/architectural-framing.html`, `docs/architecture/data-architecture.html`, `docs/architecture/api-integration.html`, `docs/architecture/cicd-and-delivery.html`), walks the developer through Approve/Adjust/Skip per section, then returns to the next wizard step. Future rounds add vision/authSecurity/workflow/featureRoadmap/schemaDraftReview.
+- **Phase 1.8 synthesis review** — runs inline at the end of each major step that has a synthesis template. Round 2 / 2.5 wires it for architecturalFraming (Step 2.5 — Architectural Framing), dataArchitecture (Step 3 — Data Architecture), apiIntegration (Step 4 — API & Integration), cicdAndDelivery (Step 7 — CI/CD), and architecturalValidation (Step 11 — final cross-phase sign-off). Each pass renders the corresponding HTML in the scaffolded project (`docs/architecture/architectural-framing.html`, `docs/architecture/data-architecture.html`, `docs/architecture/api-integration.html`, `docs/architecture/cicd-and-delivery.html`, `docs/architecture/architectural-validation.html`), walks the developer through Approve/Adjust/Skip per section, then returns to the next wizard step. Future rounds add vision/authSecurity/workflow/featureRoadmap/schemaDraftReview.
 - **Feature decomposition** (mandatory — downstream phases depend on it)
 - Confirmation summary
 - Phase 1.5 Architectural Research (conditional — only if parked questions exist)

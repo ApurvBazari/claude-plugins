@@ -21,7 +21,7 @@ Before checking completed setup, check for an in-progress session at `.claude/gr
 > **Started**: [createdAt]
 > **Last updated**: [updatedAt] ([time delta])
 > **Currently at**: [currentPhase] / [currentStep]
-> [if currentPhase === "phase-1.8-synthesis-review"]: **Reviewing synthesis for**: [currentSynthesisPhase, e.g., "architecturalFraming (Architectural Framing)", "dataArchitecture (Data Architecture)", "apiIntegration (API & Integration)", "cicdAndDelivery (CI/CD & Delivery)"]
+> [if currentPhase === "phase-1.8-synthesis-review"]: **Reviewing synthesis for**: [currentSynthesisPhase, e.g., "architecturalFraming (Architectural Framing)", "dataArchitecture (Data Architecture)", "apiIntegration (API & Integration)", "cicdAndDelivery (CI/CD & Delivery)", "architecturalValidation (Architectural Validation)"]
 > **Completed steps**: [list from completedSteps]
 > [if context.syntheses is non-empty]: **Approved syntheses**: [keys of syntheses, e.g., "architecturalFraming (approved 2026-05-14T10:00Z)", "cicdAndDelivery (approved 2026-05-13T16:30Z)"]
 > **Next action**: [nextAction]
@@ -142,8 +142,8 @@ Compare `webResearch.stackVersion` from metadata against current `package.json` 
 > | Agents ([N]) | [ok / N missing] |
 > | Hooks | [ok / missing entries] |
 > | CI/CD | [ok / N/A (local project)] |
-> | Synthesis records (`docs/architecture/*.html`) | [N found (expected 4: architectural-framing.html, data-architecture.html, api-integration.html, cicd-and-delivery.html) / none / docs/architecture/ missing] |
-> | Freshness hook (`.git/hooks/pre-commit` marker `# greenfield:synthesis-freshness`) | [installed / not installed — covers all 4 synthesis HTMLs] |
+> | Synthesis records (`docs/architecture/*.html`) | [N found (expected 5: architectural-framing.html, data-architecture.html, api-integration.html, cicd-and-delivery.html, architectural-validation.html) / none / docs/architecture/ missing] |
+> | Freshness hook (`.git/hooks/pre-commit` marker `# greenfield:synthesis-freshness`) | [installed / not installed — covers all 5 synthesis HTMLs] |
 >
 > **Pending Drift**: [N entries] or "None"
 > [If drift exists]: Run `/greenfield:evolve` to apply updates.

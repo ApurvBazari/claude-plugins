@@ -1,6 +1,6 @@
 ---
 name: context-gathering
-description: Greenfield Phase 1 — adaptive wizard that gathers project vision, tech stack, features, and preferences through 10 named Steps. Internal building block invoked by greenfield init — not user-invocable.
+description: Greenfield Phase 1 — adaptive wizard that gathers project vision, tech stack, features, and preferences through 11 named Steps. Internal building block invoked by greenfield init — not user-invocable.
 user-invocable: false
 ---
 
@@ -62,7 +62,7 @@ Update this after every answer. Before asking each question, check its condition
 
 At the start of every Step (and whenever the user asks "where are we?"), emit a one-line progress indicator so both Claude and the user can see wizard progress:
 
-> **Wizard progress: Step [X] of 10 — [step name]**
+> **Wizard progress: Step [X] of 11 — [step name]**
 > Completed: [list of step names from completedSteps]
 > Up next: [name of the next step, if known]
 
@@ -108,7 +108,7 @@ When you notice any of these, STOP and:
 
 ## Flow
 
-### Step 1 of 10: Project Vision (Category 1)
+### Step 1 of 11: Project Vision (Category 1)
 
 Emit the progress indicator. Then start with Q1.1: "What do you want to build?"
 
@@ -117,7 +117,7 @@ Listen carefully. From the answer, infer:
 - `hasFrontend`, `hasBackend`, `hasAPI`
 - Whether follow-up Q1.2 is needed (if the answer is vague)
 
-### Step 2 of 10: Tech Stack (Category 2)
+### Step 2 of 11: Tech Stack (Category 2)
 
 Emit the progress indicator. Ask Q2.1 about their stack preference. If they know, ask Q2.2 for details.
 
@@ -146,7 +146,7 @@ Detect by greping the agent's response for the literal string `STACK_RESEARCH_RE
 
 Wait for research results (either via agent or main session). Then ask Q2.3 about the scaffold approach, informed by the research findings.
 
-### Step 2.5 of 10: Architectural Framing
+### Step 2.5 of 11: Architectural Framing
 
 Emit the progress indicator. This step gathers the early architectural decisions that inform all detailed phases (P3–P9): service topology, deployment shape, and scale target. Ask questions AF.Q1–AF.Q4 from `references/question-bank.md § Step 2.5: Architectural Framing` in order.
 
@@ -154,7 +154,7 @@ Emit the progress indicator. This step gathers the early architectural decisions
 
 Tell the developer:
 
-> Step 2.5 of 10: Architectural Framing. Before we dive into data, APIs, and CI/CD, I want to lock in three foundational choices — service topology, deployment shape, and scale target — so the detailed phases inherit consistent assumptions. 4 questions; the last is open-ended.
+> Step 2.5 of 11: Architectural Framing. Before we dive into data, APIs, and CI/CD, I want to lock in three foundational choices — service topology, deployment shape, and scale target — so the detailed phases inherit consistent assumptions. 4 questions; the last is open-ended.
 
 #### Architectural Framing questions (AF.Q1–AF.Q4)
 
@@ -183,7 +183,7 @@ Invoke the `synthesis-review` skill via the Skill tool with `phaseId: "architect
 
 If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen — `architectural-framing.html` ships in Round 2.5), tell the developer and continue to Step 3.
 
-### Step 3 of 10: Data Architecture
+### Step 3 of 11: Data Architecture
 
 This step is Round 2's first new phase. Captures data-layer decisions via P3.Q1–P3.Q12 and closes with an inline Phase 1.8 synthesis-review pass.
 
@@ -191,7 +191,7 @@ This step is Round 2's first new phase. Captures data-layer decisions via P3.Q1�
 
 Tell the developer:
 
-> Step 3 of 10: Data Architecture. I'll ask about your data layer — database engine, ORM, migrations, multi-tenancy, caching, file storage. About 12 questions. Some may be skipped based on your earlier answers.
+> Step 3 of 11: Data Architecture. I'll ask about your data layer — database engine, ORM, migrations, multi-tenancy, caching, file storage. About 12 questions. Some may be skipped based on your earlier answers.
 
 #### Data Architecture questions (Q3.1–Q3.12)
 
@@ -230,7 +230,7 @@ If the developer adjusts any dataArchitecture field via the Adjust dialog, the u
 
 If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen — `data-architecture.html` ships in Round 2), tell the developer and continue to Step 4.
 
-### Step 4 of 10: API & Integration
+### Step 4 of 11: API & Integration
 
 This step is Round 2's second new phase. Captures API surface decisions via P4.Q1–P4.Q10 and closes with an inline Phase 1.8 synthesis-review pass.
 
@@ -238,7 +238,7 @@ This step is Round 2's second new phase. Captures API surface decisions via P4.Q
 
 Tell the developer:
 
-> Step 4 of 10: API & Integration. I'll ask about your API surface — style (REST/GraphQL/tRPC), versioning, rate limits, async patterns, real-time, webhooks, external services. About 10 questions; some skipped based on whether you expose an API.
+> Step 4 of 11: API & Integration. I'll ask about your API surface — style (REST/GraphQL/tRPC), versioning, rate limits, async patterns, real-time, webhooks, external services. About 10 questions; some skipped based on whether you expose an API.
 
 #### API & Integration questions (Q4.1–Q4.10)
 
@@ -273,13 +273,13 @@ Invoke the `synthesis-review` skill via the Skill tool with `phaseId: "apiIntegr
 
 If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen — `api-integration.html` ships in Round 2), tell the developer and continue to Step 5.
 
-### Step 5 of 10: Remaining Project Details (residual)
+### Step 5 of 11: Remaining Project Details (residual)
 
 This step holds the 13 Category 3 questions that have NOT been re-homed to Data Architecture or API & Integration in Round 2. They stay here as transitional content until Rounds 3–6 re-home them to vision/frontend/authSecurity/workflow. See `references/question-bank.md § Category 3 (residual)` for the full question list.
 
 Tell the developer:
 
-> Step 5 of 10: Remaining Project Details. A few miscellaneous questions about scale, auth, deploy target, monitoring, environment, dependencies, accessibility, performance, i18n, monorepo, and styling. Skipped if not relevant to your stack.
+> Step 5 of 11: Remaining Project Details. A few miscellaneous questions about scale, auth, deploy target, monitoring, environment, dependencies, accessibility, performance, i18n, monorepo, and styling. Skipped if not relevant to your stack.
 
 Ask Q3.1, Q3.3, Q3.4, Q3.6, Q3.9, Q3.10, Q3.11, Q3.12, Q3.13, Q3.14, Q3.15, Q3.F1, Q3.F2 in order from `references/question-bank.md § Category 3 (residual)`. Honor existing conditions. No synthesis review for this step (it's residual; full split planned for Rounds 3–6).
 
@@ -315,7 +315,7 @@ Also capture during this step (can be inferred or asked directly):
 - **`frontendPatterns`**: If frontend project — component library, state management, styling, routing. Partially captured by Q3.F1/Q3.F2, fill in the rest from stack research.
 - **`backendPatterns`**: If backend project — auth (from Q3.3), error handling. Compose from existing answers.
 
-### Step 5.5 of 10: Pain Points (always ask)
+### Step 5.5 of 11: Pain Points (always ask)
 
 Emit the progress indicator. Ask about where Claude can help most:
 - "What takes the most time in your development workflow?"
@@ -335,7 +335,7 @@ Capture as:
 
 This feeds directly into onboard's skill and agent selection — skills matching pain points get highest priority.
 
-### Step 6 of 10: Workflow Preferences (Category 4)
+### Step 6 of 11: Workflow Preferences (Category 4)
 
 Emit the progress indicator. Ask Q4.1 through Q4.5. For Q4.1 (branching), recommend based on team size from Q3.1.
 
@@ -355,7 +355,7 @@ Q4.6 (releases) is only asked for production apps.
 
 Store the choice as `verificationStrategy` in the context object. This configures the feature-evaluator agent.
 
-### Step 7 of 10: CI/CD & Auto-Evolution (Category 5 / cicdAndDelivery)
+### Step 7 of 11: CI/CD & Auto-Evolution (Category 5 / cicdAndDelivery)
 
 Emit the progress indicator. **Skip Q5.1, Q5.3, and Q5.4–Q5.17 entirely if `willDeploy = false`** — only Q5.2 (auto-evolution mode) applies to local projects.
 
@@ -406,7 +406,7 @@ If the developer adjusts any cicdAndDelivery field via the Adjust dialog, the up
 
 If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen in Round 1 since `cicd-and-delivery.html` ships in this commit), tell the developer and continue to Step 6.
 
-### Step 8 of 10: Feature Decomposition (Harness Preparation) — REQUIRED
+### Step 8 of 11: Feature Decomposition (Harness Preparation) — REQUIRED
 
 Emit the progress indicator. **This step is mandatory** — downstream phases (tooling generation, onboard's harness mode) depend on a feature list existing. Do NOT skip this silently. If the user explicitly declines feature decomposition, generate a minimal 3-5 feature skeleton from the app description so the JSON file still exists.
 
@@ -430,7 +430,7 @@ Include the feature breakdown in the confirmation summary (see below). The devel
 
 > Before we wrap Phase 1, note: you parked **N** questions for deeper research earlier. When we finish the wizard, I'll enter a short "Architectural Research" sub-phase to deep-dive on those before we scaffold. If you'd rather skip that and just go with the placeholder answers, say "skip research" now.
 
-### Step 9 of 10: Confirmation (Category 7)
+### Step 9 of 11: Confirmation (Category 7)
 
 Emit the progress indicator. Present a structured summary of everything gathered:
 
@@ -461,9 +461,9 @@ Emit the progress indicator. Present a structured summary of everything gathered
 
 Wait for confirmation before returning.
 
-### Step 10 of 10: Phase 1.5 Architectural Research (conditional)
+### Step 10 of 11: Phase 1.5 Architectural Research (conditional)
 
-Emit the progress indicator **only if** `parkedQuestions.length > 0` AND the user didn't say "skip research". Otherwise skip Step 8 and go straight to Output.
+Emit the progress indicator **only if** `parkedQuestions.length > 0` AND the user didn't say "skip research". Otherwise skip Step 10 and go straight to Step 11.
 
 This is a dedicated sub-phase for deep research on questions parked during the wizard. The goal is to produce informed answers for parkedQuestions BEFORE scaffolding begins, so downstream phases aren't building on placeholder assumptions.
 
@@ -484,7 +484,53 @@ Checkpoint after each parked question is resolved. This keeps the research phase
 - If research hits its time box without a clear answer, present what was found and let the user decide
 - Don't spawn new parked questions during architectural research — flag them for post-Phase-1.5 decisions instead
 
-When all parked questions are resolved, set `currentPhase: "phase-2-scaffold"` in the state file and hand off to the scaffolding skill.
+When all parked questions are resolved, proceed to Step 11: Architectural Validation.
+
+### Step 11 of 11: Architectural Validation
+
+Emit the progress indicator. This is the final wizard step — a cross-phase sign-off pass that reads from all approved phase syntheses to detect contradictions and drift since they were captured.
+
+**Purpose**: Step 2.5 (Architectural Framing) captured early architectural assumptions. By the time we reach Step 11, the developer has answered ~73 wizard questions across Data Architecture, API & Integration, CI/CD, and all residual phases. This step checks whether the final approved values are still consistent with the framing decisions and with each other.
+
+**Run condition**: always — even if no parked questions existed (this is not conditional like Step 10). Step 11 runs after Step 10 completes (or is skipped if no parked questions).
+
+Tell the developer:
+
+> Step 11 of 11: Architectural Validation. Before we scaffold, I'll cross-check all your approved synthesis records for contradictions and drift since your early framing decisions. This is a sign-off step — you'll review what was found and either approve the full spec, note divergences, or send it back for rework.
+
+**Cross-validation checks to perform** (read from `context.syntheses.*` and `context.phases.*`):
+
+1. **Framing → Data Architecture**: does `architecturalFraming.topology` still hold given `dataArchitecture.databaseHost`, `.orm`, `.migrationsTool`? (e.g., serverless + orm-native migrations contradict; microservices + embedded DB contradict)
+2. **Framing → API & Integration**: does `architecturalFraming.topology` hold given `apiIntegration.asyncPattern`? (serverless + queue-and-worker contradict)
+3. **Framing → CI/CD**: does `architecturalFraming.scaleTarget` align with `cicdAndDelivery.cicd.envLadder` and `releasePipeline.convention`? (hobby + full release pipeline is unusual)
+4. **Data ↔ API**: does `dataArchitecture.cache` include a broker if `apiIntegration.asyncPattern === "queue-and-worker"`?
+5. **Any synthesis unapproved**: if any major phase synthesis was skipped entirely (not Approve/Adjust/Skip-per-section but the entire synthesis-review was bypassed), note it here.
+
+**Ask AV.Q1** (from `references/question-bank.md § Step 11: Architectural Validation`):
+
+> After reviewing the cross-phase validation findings above, what is your sign-off status?
+
+Options:
+- "Approved — everything looks consistent" → `signOffStatus: "approved"`
+- "Approved with noted divergences — proceed with caution notes" → `signOffStatus: "approved-with-noted-divergences"` (triggers AV.Q2)
+- "Requires rework — send back to address contradictions" → `signOffStatus: "requires-rework"` (routes back to the relevant wizard step via `/greenfield:pickup`)
+
+**AV.Q2** (conditional — only if `signOffStatus` is `"approved-with-noted-divergences"` or `"requires-rework"`):
+
+> What's the final note for future maintainers about the divergences or rework needed?
+
+Capture as `context.phases.architecturalValidation.finalNotes` (free text).
+
+**On `requires-rework`**: set `currentPhase: "phase-1-context-gathering"`, add the rework scope to `parkedQuestions[]`, write checkpoint, and offer `/greenfield:pickup` for the relevant step. Do NOT proceed to Output.
+
+**On `approved` or `approved-with-noted-divergences`**: invoke the `synthesis-review` skill via the Skill tool with `phaseId: "architecturalValidation"`. The skill:
+
+1. Sets `currentSynthesisPhase: "architecturalValidation"`.
+2. Renders `docs/architecture/architectural-validation.html` using the validation template.
+3. Records `context.syntheses.architecturalValidation = { approvedAt, adjustments[] }`.
+4. Returns control here.
+
+Then set `currentPhase: "phase-2-scaffold"` in the state file and hand off to the scaffolding skill.
 
 ## Output
 
@@ -577,6 +623,12 @@ After the wizard completes, compile all answers into a structured context object
       "documentation": "openapi-swagger",
       "rateLimit": "fixed-window-redis"
     },
+    "architecturalValidation": {
+      "signOffStatus": "approved | approved-with-noted-divergences | requires-rework",
+      "divergences": [],
+      "unresolvedContradictions": [],
+      "finalNotes": ""
+    },
     "cicdAndDelivery": {
       "cicd": {
         "provider": "github-actions | gitlab-ci | circleci | buildkite | jenkins | none",
@@ -605,7 +657,8 @@ After the wizard completes, compile all answers into a structured context object
     "architecturalFraming": { "approvedAt": "ISO-8601", "adjustments": [] },
     "dataArchitecture": { "approvedAt": "ISO-8601", "adjustments": [] },
     "apiIntegration": { "approvedAt": "ISO-8601", "adjustments": [] },
-    "cicdAndDelivery": { "approvedAt": "ISO-8601", "adjustments": [] }
+    "cicdAndDelivery": { "approvedAt": "ISO-8601", "adjustments": [] },
+    "architecturalValidation": { "approvedAt": "ISO-8601", "adjustments": [] }
   },
   "verificationStrategy": "browser-automation | api-testing | cli-execution | test-runner | combination",
   "pluginsToInstall": [],
@@ -644,7 +697,10 @@ Write a checkpoint **after each named Step completes** (not after each individua
 | Step 7 — Q5.1–Q5.17 answered | Add `"step-7-cicd"`, set `currentPhase: "phase-1.8-synthesis-review"`, `currentSynthesisPhase: "cicdAndDelivery"`, all CI/CD fields under both top-level (Q5.1–Q5.3) AND `context.phases.cicdAndDelivery.cicd` / `context.phases.cicdAndDelivery._v1_carryover` |
 | Step 7 — synthesis-review(cicdAndDelivery) returns | Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-8-feature-decomp"`, clear `currentSynthesisPhase`. Add `context.syntheses.cicdAndDelivery = { approvedAt, adjustments }` |
 | Step 8 complete (Feature Decomposition) | Add `"step-8-feature-decomp"`, `currentStep: "step-9-confirmation"`, `context.featureDecomposition` |
-| Step 9 complete (Confirmation) | Add `"step-9-confirmation"`, `currentPhase: "phase-1.7-grill-spec"` (or `"phase-1.5-architectural-research"` if `parkedQuestions.length > 0`), `currentStep: "pre-grill"` (handoff to grill-spec skill, which then hands off to scaffolding) |
+| Step 9 complete (Confirmation) | Add `"step-9-confirmation"`, `currentPhase: "phase-1.5-architectural-research"` (if `parkedQuestions.length > 0`) OR `"phase-1-context-gathering"` `currentStep: "step-11-architectural-validation"`, then after Step 11 proceed to `"phase-1.7-grill-spec"` |
+| Step 10 complete (Phase 1.5 Research, conditional) | Add `"step-10-architectural-research"` (only if parked questions were present), `currentStep: "step-11-architectural-validation"` |
+| Step 11 — AV.Q1 answered | Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-11-architectural-validation"`, `lastAnsweredQuestionId: "AV.Q1"` |
+| Step 11 — synthesis-review(architecturalValidation) returns | Add `"step-11-architectural-validation"` to `completedSteps`, set `currentPhase: "phase-1.7-grill-spec"`, `currentStep: "pre-grill"`, clear `currentSynthesisPhase`. Add `context.syntheses.architecturalValidation = { approvedAt, adjustments }` |
 
 ### Atomic write
 Always write to `.claude/greenfield-state.json.tmp` first, then `mv` to `.claude/greenfield-state.json`. This avoids corrupted state if the session is killed mid-write. If the tmp file exists from a prior interrupted write, remove it before starting.

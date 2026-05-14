@@ -69,7 +69,7 @@ Each answer updates this context. Questions use the context to determine whether
 
 ## Step 2.5: Architectural Framing (4 questions)
 
-Step 2.5 of the 10-step wizard. Gathers the early architectural choices that inform all detailed phases (P3–P9): service topology, deployment shape, and scale target. Synthesis review fires inline after the last question.
+Step 2.5 of the 11-step wizard. Gathers the early architectural choices that inform all detailed phases (P3–P9): service topology, deployment shape, and scale target. Synthesis review fires inline after the last question.
 
 Writes to `context.phases.architecturalFraming.*`. See `onboard/skills/generate/references/context-shape-v2.json` § `architecturalFraming` for the schema.
 
@@ -111,7 +111,7 @@ Writes to `context.phases.architecturalFraming.*`. See `onboard/skills/generate/
 
 ## Step 3: Data Architecture (12 questions)
 
-Step 3 of the 10-step wizard. Captures data-layer decisions: DB engine + host, ORM, migrations, multi-tenancy, search, caching, file storage, codegen, backup, compliance. Synthesis review fires inline after the last question.
+Step 3 of the 11-step wizard. Captures data-layer decisions: DB engine + host, ORM, migrations, multi-tenancy, search, caching, file storage, codegen, backup, compliance. Synthesis review fires inline after the last question.
 
 Writes to `context.phases.dataArchitecture.*`. See `onboard/skills/generate/references/context-shape-v2.json` § `dataArchitecture` for the schema.
 
@@ -201,7 +201,7 @@ Writes to `context.phases.dataArchitecture.*`. See `onboard/skills/generate/refe
 
 ## Step 4: API & Integration (10 questions)
 
-Step 4 of the 10-step wizard. Captures API surface decisions: style, documentation, versioning, rate limits, pagination, async patterns, real-time, webhooks, external integrations.
+Step 4 of the 11-step wizard. Captures API surface decisions: style, documentation, versioning, rate limits, pagination, async patterns, real-time, webhooks, external integrations.
 
 Writes to `context.phases.apiIntegration.*`. See `onboard/skills/generate/references/context-shape-v2.json` § `apiIntegration` for the schema.
 
@@ -281,7 +281,7 @@ Writes to `context.phases.apiIntegration.*`. See `onboard/skills/generate/refere
 > - **Moved to Step 4 (apiIntegration):** Q3.5 (external APIs) → P4.Q10, Q3.7 (API style) → P4.Q2, Q3.8 (API docs) → P4.Q3, Q3.18 (bg jobs) → P4.Q7
 > - **Staying here (Cat 3 residual):** Q3.1, Q3.3, Q3.4, Q3.6, Q3.9, Q3.10, Q3.11, Q3.12, Q3.13, Q3.14, Q3.15, Q3.F1, Q3.F2 — destined for Rounds 3–6.
 
-This category becomes wizard Step 5 of 10 in Round 2.
+This category becomes wizard Step 5 of 11 in Round 2.
 
 ### Q3.1: "What's the scale of this project?"
 - **Type**: Choice
@@ -547,6 +547,45 @@ This category becomes wizard Step 5 of 10 in Round 2.
 - **Condition**: `willDeploy`
 - **Updates**: `phases.cicdAndDelivery.cicd.releasePipeline.{separate,triggeredBy,convention}`
 - **Note**: `release-please` and `semantic-release` are Node-centric. Mismatches with `stack.stack.framework` (non-Node stacks) trigger a synthesis warning.
+
+---
+
+## Step 11: Architectural Validation (1–2 questions)
+
+Step 11 of the 11-step wizard. Final cross-phase sign-off pass — reads from all approved phase syntheses to detect contradictions and drift since the early framing decisions were captured at Step 2.5. Only 1–2 questions; most of the value is in the synthesis HTML that renders the cross-validation report for developer review.
+
+This step fires ALWAYS — after Step 10 (Architectural Research, conditional) completes or is skipped.
+
+Writes to `context.phases.architecturalValidation.*`. See `onboard/skills/generate/references/context-shape-v2.json` § `architecturalValidation` for the schema.
+
+**Pre-question cross-validation** (Claude runs automatically before asking AV.Q1): Claude reads `context.syntheses.*` and `context.phases.*` and produces a short contradiction report:
+- Framing → Data Architecture compatibility checks
+- Framing → API & Integration compatibility checks
+- Framing → CI/CD compatibility checks
+- Data ↔ API cross-checks
+- Any synthesis entirely bypassed (not Approve/Adjust/Skip'd at all)
+
+Present the findings to the developer before asking the sign-off question.
+
+### AV.Q1: "Review the cross-phase validation report. What is your sign-off status?"
+- **Type**: Single-select choice
+- **Options**:
+  - "Approved — everything looks consistent" → `signOffStatus: "approved"`
+  - "Approved with noted divergences — proceed, I've noted the exceptions" → `signOffStatus: "approved-with-noted-divergences"` (triggers AV.Q2)
+  - "Requires rework — I want to fix contradictions before scaffolding" → `signOffStatus: "requires-rework"` (routes back; triggers AV.Q2 for rework scope note)
+- **Condition**: Always (this is the gate question for Step 11)
+- **Updates**: `context.phases.architecturalValidation.signOffStatus` (required, enum)
+- **Downstream effects**: grill-spec reads `signOffStatus` — `requires-rework` blocks Phase 2 and routes back to the relevant wizard step; `approved-with-noted-divergences` passes through with a pre-scaffold awareness note.
+
+### AV.Q2: "What's the final note for future maintainers about the divergences or rework needed?"
+- **Type**: Open-ended (free text)
+- **Condition**: ONLY if `AV.Q1 === "approved-with-noted-divergences"` OR `AV.Q1 === "requires-rework"`. Skip entirely if `approved`.
+- **Updates**: `context.phases.architecturalValidation.finalNotes` (loose string — developer writes whatever is relevant; captured verbatim)
+- **Prompt examples**:
+  - For divergences: "Note what was changed from the original framing and why — future sessions need this context."
+  - For rework: "Describe what needs to be revisited so the next session can resume at the right step."
+
+**>>> SYNTHESIS PAUSE**: After AV.Q1 (and AV.Q2 if applicable), invoke `Skill(synthesis-review, phaseId: "architecturalValidation")`. The synthesis renders `docs/architecture/architectural-validation.html` with the full cross-phase validation report, divergence table, and sign-off status. Wait for the developer to Approve/Adjust/Skip each section before proceeding to Phase 1.7 (grill-spec).
 
 ---
 

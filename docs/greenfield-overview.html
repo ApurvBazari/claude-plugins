@@ -249,16 +249,19 @@
     <div class="phase-header">
       <span class="phase-num">1</span>
       <span class="phase-title">Context Gathering — adaptive wizard</span>
-      <span class="phase-tag">8 steps</span>
+      <span class="phase-tag">11 steps</span>
     </div>
     <div class="phase-body">
-      State-machine wizard runs ~8–22 questions (out of 33 possible) based on prior answers.
+      State-machine wizard runs ~30–57 questions (out of ~75 possible) based on prior answers.
       <ul>
-        <li><strong>Step 1</strong> App description &amp; type</li>
+        <li><strong>Step 1</strong> App description &amp; type (Project Vision)</li>
         <li><strong>Step 2</strong> Tech stack → dispatches <code>stack-researcher</code> agent for web research (latest versions, scaffold CLI, best practices)</li>
-        <li><strong>Step 3</strong> Project details (scale, deploy target, scaffold mode)</li>
-        <li><strong>Step 4</strong> Workflow preferences (TDD vs pragmatic, security sensitivity, docs discipline)</li>
-        <li><strong>Step 5–8</strong> Database, auth, API, frontend specifics</li>
+        <li><strong>Step 2.5</strong> Architectural Framing — topology, deployment shape, scale target, boundary notes (4 Qs; synthesis fires inline)</li>
+        <li><strong>Step 3</strong> Data Architecture — DB engine + host, ORM, migrations, multi-tenancy, caching, file storage, codegen, backup, compliance (12 Qs; synthesis fires inline)</li>
+        <li><strong>Step 4</strong> API &amp; Integration — style, versioning, rate limits, async patterns, real-time, webhooks, external services (10 Qs; synthesis fires inline)</li>
+        <li><strong>Steps 5–9</strong> Remaining project details, pain points, workflow preferences, CI/CD &amp; Delivery (Step 7 synthesis), feature decomposition, confirmation</li>
+        <li><strong>Step 10</strong> Architectural Research (conditional — only if parked questions exist)</li>
+        <li><strong>Step 11</strong> Architectural Validation — cross-phase sign-off, divergence table, contradiction check (1–2 Qs; synthesis fires inline)</li>
       </ul>
       Output: a populated <code>context</code> object inside <code>greenfield-state.json</code> — drives every downstream decision.
     </div>
@@ -286,9 +289,9 @@
       <span class="phase-tag">Inline sub-step</span>
     </div>
     <div class="phase-body">
-      Runs <em>inline at the end of each major wizard step that has a synthesis template</em>. In Round 2, this is wired for Step 3 (Data Architecture / dataArchitecture), Step 4 (API &amp; Integration / apiIntegration), and Step 7 (CI/CD &amp; Delivery / cicdAndDelivery) — later rounds add per-phase synthesis for authSecurity, workflow, vision/personas/domain, featureRoadmap, and schemaDraftReview.
+      Runs <em>inline at the end of each major wizard step that has a synthesis template</em>. In Round 2 / 2.5, this is wired for Step 2.5 (Architectural Framing / architecturalFraming), Step 3 (Data Architecture / dataArchitecture), Step 4 (API &amp; Integration / apiIntegration), Step 7 (CI/CD &amp; Delivery / cicdAndDelivery), and Step 11 (Architectural Validation / architecturalValidation) — later rounds add per-phase synthesis for authSecurity, workflow, vision/personas/domain, featureRoadmap, and schemaDraftReview.
       <ul>
-        <li>Renders <code>docs/architecture/&lt;topic-kebab&gt;.html</code> in the scaffolded project — a living architecture record, ADR-style, committed to the repo. (e.g. <code>data-architecture.html</code>, <code>api-integration.html</code>, <code>cicd-and-delivery.html</code>)</li>
+        <li>Renders <code>docs/architecture/&lt;topic-kebab&gt;.html</code> in the scaffolded project — a living architecture record, ADR-style, committed to the repo. (e.g. <code>architectural-framing.html</code>, <code>data-architecture.html</code>, <code>api-integration.html</code>, <code>cicd-and-delivery.html</code>, <code>architectural-validation.html</code>)</li>
         <li>Walks the developer through each section: <strong>Approve</strong> / <strong>Adjust</strong> / <strong>Skip</strong>. Adjust composes <code>superpowers:brainstorming</code> + <code>mattpocock-skills:grill-me</code> (or falls back inline).</li>
         <li>Writes a machine-readable <code>&lt;topic-kebab&gt;-dependencies.json</code> sidecar for cross-phase dependency tracking. <code>scripts/visualize-graph.sh</code> renders the whole graph as Mermaid on demand.</li>
         <li>Installs a one-time pre-commit hook (warning-only) that flags architectural changes lacking a docs/architecture update.</li>

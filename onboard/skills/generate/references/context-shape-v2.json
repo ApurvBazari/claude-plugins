@@ -55,6 +55,7 @@
         "personas": { "$ref": "#/definitions/deferredPhase" },
         "domain":   { "$ref": "#/definitions/deferredPhase" },
         "architecturalFraming": { "$ref": "#/definitions/architecturalFraming" },
+        "architecturalValidation": { "$ref": "#/definitions/architecturalValidation" },
         "stack":   {
           "description": "Stack details. Greenfield 3.0 Round 1 fills this from wizard Steps 1-2 verbatim (no new fields).",
           "type": "object",
@@ -107,7 +108,7 @@
         "type": "array",
         "items": {
           "type": "string",
-          "pattern": "^(vision|personas|domain|architecturalFraming|stack|dataArchitecture|apiIntegration|frontend|authSecurity|workflow|pluginRecommendation|cicdAndDelivery|risk|featureRoadmap|pluginInstall|schemaDraftReview)\\..+$"
+          "pattern": "^(vision|personas|domain|architecturalFraming|architecturalValidation|stack|dataArchitecture|apiIntegration|frontend|authSecurity|workflow|pluginRecommendation|cicdAndDelivery|risk|featureRoadmap|pluginInstall|schemaDraftReview)\\..+$"
         }
       }
     }
@@ -134,6 +135,54 @@
         "boundaryNotes": {
           "type": "string",
           "description": "Loose advisory field for hard boundary requirements (e.g., 'billing must be isolated from auth', 'PCI data cannot touch user PII'). grill-spec cross-checks against topology; synthesis renders as a note. Empty string OK; null is not."
+        }
+      }
+    },
+    "architecturalValidation": {
+      "type": "object",
+      "description": "Architectural Validation. Fully specified in onboard 2.0.0-alpha.2 Round 2.5 (T6). Final wizard step (Step 11) — a meta-phase that reads from all approved phase syntheses (architecturalFraming, dataArchitecture, apiIntegration, cicdAndDelivery) and records the developer's cross-phase sign-off. Does not capture new primitive answers; captures sign-off status, detected divergences from framing values, any unresolved contradictions, and final maintainer notes.",
+      "required": ["signOffStatus"],
+      "additionalProperties": false,
+      "properties": {
+        "signOffStatus": {
+          "enum": ["approved", "approved-with-noted-divergences", "requires-rework"],
+          "description": "Developer's final sign-off on the cross-phase validation report. 'approved' = all phases consistent; 'approved-with-noted-divergences' = divergences acknowledged, proceed with caution; 'requires-rework' = contradictions must be resolved before scaffolding (grill-spec blocks Phase 2)."
+        },
+        "divergences": {
+          "type": "array",
+          "description": "List of detected divergences where a final phase value differs from the architectural framing assumption. Each entry records which phase changed, from what value to what value, and why. Optional — empty array is acceptable.",
+          "items": {
+            "type": "object",
+            "required": ["phase", "fromFramingValue", "toFinalValue", "reason"],
+            "additionalProperties": false,
+            "properties": {
+              "phase": {
+                "type": "string",
+                "description": "Phase ID that diverged from framing (e.g., 'dataArchitecture', 'apiIntegration', 'cicdAndDelivery')."
+              },
+              "fromFramingValue": {
+                "type": "string",
+                "description": "Value assumed at Architectural Framing (Step 2.5)."
+              },
+              "toFinalValue": {
+                "type": "string",
+                "description": "Final value approved in the later phase synthesis."
+              },
+              "reason": {
+                "type": "string",
+                "description": "Why the divergence occurred or was accepted."
+              }
+            }
+          }
+        },
+        "unresolvedContradictions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of contradiction descriptions that could not be resolved before sign-off. Non-empty only when signOffStatus is 'approved-with-noted-divergences'. Grill-spec surfaces these as awareness notes (non-blocking for that status). Optional — empty array is acceptable."
+        },
+        "finalNotes": {
+          "type": "string",
+          "description": "Free-text note for future maintainers about divergences, rework scope, or sign-off context. Populated from AV.Q2 (conditional). Empty string OK; null is not."
         }
       }
     },

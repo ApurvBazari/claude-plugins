@@ -62,7 +62,7 @@ Read `.claude/greenfield-state.json`. Expected schema:
   "createdAt": "ISO-8601 timestamp",
   "updatedAt": "ISO-8601 timestamp",
   "currentPhase": "phase-1-context-gathering | phase-1.8-synthesis-review | phase-1.5-architectural-research | phase-1.7-grill-spec | phase-2-scaffold | phase-3a-plugin-discovery | phase-3b-tooling-generation | phase-4-lifecycle-setup | complete",
-  "currentSynthesisPhase": "architecturalFraming | dataArchitecture | apiIntegration | cicdAndDelivery — set only when currentPhase === 'phase-1.8-synthesis-review'; identifies which phaseId is being reviewed. Valid values in Round 2 / Round 2.5: \"architecturalFraming\", \"dataArchitecture\", \"apiIntegration\", \"cicdAndDelivery\".",
+  "currentSynthesisPhase": "architecturalFraming | dataArchitecture | apiIntegration | cicdAndDelivery | architecturalValidation — set only when currentPhase === 'phase-1.8-synthesis-review'; identifies which phaseId is being reviewed. Valid values in Round 2 / Round 2.5: \"architecturalFraming\", \"dataArchitecture\", \"apiIntegration\", \"cicdAndDelivery\", \"architecturalValidation\".",
   "currentStep": "step-identifier (skill-specific)",
   "completedSteps": ["list of completed step identifiers"],
   "context": { /* partial context object, grows as wizard progresses */ },
@@ -133,8 +133,8 @@ Wait for explicit confirmation. If the user wants to review first, they can cat 
 
 If the resume point is mid-step rather than at a clean step boundary, ask the developer how they want to re-enter. A mid-step resume is detected when:
 
-- `currentStep` matches a sub-step within a phase (e.g., the wizard was paused at `step-5-cicd-q5-9`, `step-2.5-architectural-framing`, `step-3-data-architecture`, or `step-4-api-integration` rather than at the boundary `step-N-complete`). Also handles new step IDs added in Round 2 / 2.5: `step-2.5-architectural-framing`, `step-3-data-architecture`, `step-4-api-integration`, `step-5-residual`.
-- `currentPhase === "phase-1.8-synthesis-review"` AND `currentSynthesisPhase` is set AND `context.syntheses[currentSynthesisPhase].adjustments.length < <expected section count>`. Round 2 / 2.5 supports `currentSynthesisPhase` values of `"architecturalFraming"`, `"dataArchitecture"`, `"apiIntegration"`, and `"cicdAndDelivery"` — e.g., `lastAnsweredQuestionId` may be `"AF.Q2"`, `"P3.Q5"`, `"P4.Q3"`, or similar.
+- `currentStep` matches a sub-step within a phase (e.g., the wizard was paused at `step-5-cicd-q5-9`, `step-2.5-architectural-framing`, `step-3-data-architecture`, `step-4-api-integration`, or `step-11-architectural-validation` rather than at the boundary `step-N-complete`). Also handles step IDs added in Round 2 / 2.5: `step-2.5-architectural-framing`, `step-3-data-architecture`, `step-4-api-integration`, `step-5-residual`, `step-11-architectural-validation`.
+- `currentPhase === "phase-1.8-synthesis-review"` AND `currentSynthesisPhase` is set AND `context.syntheses[currentSynthesisPhase].adjustments.length < <expected section count>`. Round 2 / 2.5 supports `currentSynthesisPhase` values of `"architecturalFraming"`, `"dataArchitecture"`, `"apiIntegration"`, `"cicdAndDelivery"`, and `"architecturalValidation"` — e.g., `lastAnsweredQuestionId` may be `"AF.Q2"`, `"P3.Q5"`, `"P4.Q3"`, `"AV.Q1"`, or similar.
 
 In those cases, prompt via `AskUserQuestion`:
 
@@ -148,7 +148,7 @@ options:
     after preview, the prompt re-appears
 ```
 
-For mid-synthesis resumes (architecturalFraming, dataArchitecture, apiIntegration, or cicdAndDelivery), also include:
+For mid-synthesis resumes (architecturalFraming, dataArchitecture, apiIntegration, cicdAndDelivery, or architecturalValidation), also include:
 
 ```
 question: "You were in the middle of reviewing the {currentSynthesisPhase} synthesis when this session was interrupted."
@@ -174,7 +174,7 @@ Based on `currentPhase`, load the appropriate skill and fast-forward to `current
 | currentPhase | Skill to invoke | Notes |
 |---|---|---|
 | `phase-1-context-gathering` | `context-gathering` skill | Skill's flow section must support entering at any step by checking `completedSteps` |
-| `phase-1.8-synthesis-review` | `synthesis-review` skill | Resume the per-phase synthesis walk. Read `currentSynthesisPhase` from state to know which phaseId is in progress (Round 2 / 2.5: `"architecturalFraming"`, `"dataArchitecture"`, `"apiIntegration"`, or `"cicdAndDelivery"`). Skill re-renders the synthesis HTML if missing, then resumes the Approve/Adjust/Skip walk at the next un-decided section. |
+| `phase-1.8-synthesis-review` | `synthesis-review` skill | Resume the per-phase synthesis walk. Read `currentSynthesisPhase` from state to know which phaseId is in progress (Round 2 / 2.5: `"architecturalFraming"`, `"dataArchitecture"`, `"apiIntegration"`, `"cicdAndDelivery"`, or `"architecturalValidation"`). Skill re-renders the synthesis HTML if missing, then resumes the Approve/Adjust/Skip walk at the next un-decided section. |
 | `phase-1.5-architectural-research` | `context-gathering` skill (new sub-section) | Resume deep-research on `parkedQuestions` |
 | `phase-1.7-grill-spec` | `grill-spec` skill | Resume at the partial step within grilling (Step 2 backend-detect, Step 3 inline-walk, Step 4 conflict-resolve, Step 5 re-confirm). |
 | `phase-2-scaffold` | `scaffolding` skill | Skill checks which sub-steps are complete (pre-validation, scaffold, git setup, verify) |

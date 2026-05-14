@@ -70,7 +70,9 @@ Skip categories whose preconditions don't apply. For example, "auth gaps" is sil
 
 ## Step 4: Conflict resolution
 
-After grilling completes (either path), scan the new context against the original AND against every per-phase synthesis record present in `context.syntheses` — iterate dynamically over all keys (Round 2 / 2.5 ships architecturalFraming, dataArchitecture, apiIntegration, and cicdAndDelivery; future rounds will add more). If any answer contradicts a Phase-1 wizard answer or an approved synthesis section, surface the conflict explicitly.
+After grilling completes (either path), scan the new context against the original AND against every per-phase synthesis record present in `context.syntheses` — iterate dynamically over all keys (Round 2 / 2.5 ships architecturalFraming, dataArchitecture, apiIntegration, cicdAndDelivery, and architecturalValidation; future rounds will add more). If any answer contradicts a Phase-1 wizard answer or an approved synthesis section, surface the conflict explicitly.
+
+**Note on architecturalValidation**: when `context.syntheses.architecturalValidation` is present, grill-spec should read its `signOffStatus`. If `signOffStatus === "requires-rework"`, refuse to proceed to Phase 2 and route back to the relevant wizard step. If `signOffStatus === "approved-with-noted-divergences"`, surface the `divergences[]` list as a pre-scaffold awareness note (non-blocking).
 
 **Architectural Framing cross-checks** (run whenever `context.syntheses.architecturalFraming` is present):
 - If grilling changes `auth.strategy` from `"none"` to any value AND `architecturalFraming.topology === "serverless"`: note that serverless functions often use JWT/JWKS rather than session-based auth — verify the auth strategy is compatible with stateless function invocations.
