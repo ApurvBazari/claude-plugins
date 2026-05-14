@@ -166,7 +166,7 @@
           "required": [],
           "additionalProperties": false,
           "properties": {
-            "jobs":             { "type": "object", "description": "Background job system: provider (Redis/BullMQ, Sidekiq, Celery, SQS, Cloud Tasks, Inngest, Temporal, none). Auto-skipped when apiIntegration.async='no'." },
+            "jobs":             { "type": "object", "description": "Background job system: provider (Redis/BullMQ, Sidekiq, Celery, SQS, Cloud Tasks, Inngest, Temporal, none). Auto-skipped when apiIntegration.asyncPattern='none'." },
             "retryStrategy":    { "type": "object", "description": "Retry / idempotency: at-least-once vs exactly-once, retry policy, dead-letter queue." },
             "scheduling":       { "type": "object", "description": "Scheduled tasks: distributed scheduler or platform cron (Vercel Cron, GH Actions, k8s CronJob)." },
             "metrics":          { "type": "object", "description": "Metrics: Prometheus / DataDog / Grafana Cloud / platform-native / none." },
