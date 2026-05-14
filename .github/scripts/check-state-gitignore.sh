@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# check-state-gitignore.sh — verify the root .gitignore ignores forge+onboard
+# check-state-gitignore.sh — verify the root .gitignore ignores greenfield+onboard
 # runtime state files.
 #
 # These files persist wizard answers that may include user-entered free-text
@@ -8,10 +8,10 @@
 # the next `git add .`. Keeping them gitignored is a simple, durable guard.
 #
 # Required entries:
-#   .claude/forge-state.json
-#   .claude/forge-state.json.tmp
-#   .claude/forge-drift.json
-#   .claude/forge-meta.json
+#   .claude/greenfield-state.json
+#   .claude/greenfield-state.json.tmp
+#   .claude/greenfield-drift.json
+#   .claude/greenfield-meta.json
 #   .claude/onboard-snapshot.json
 #   .claude/onboard-meta.json
 
@@ -25,10 +25,10 @@ if [[ ! -f "$gitignore" ]]; then
 fi
 
 required=(
-  ".claude/forge-state.json"
-  ".claude/forge-state.json.tmp"
-  ".claude/forge-drift.json"
-  ".claude/forge-meta.json"
+  ".claude/greenfield-state.json"
+  ".claude/greenfield-state.json.tmp"
+  ".claude/greenfield-drift.json"
+  ".claude/greenfield-meta.json"
   ".claude/onboard-snapshot.json"
   ".claude/onboard-meta.json"
 )
@@ -42,7 +42,7 @@ done
 
 if [[ "${#missing[@]}" -gt 0 ]]; then
   {
-    echo "::error::.gitignore is missing required forge/onboard state-file entries:"
+    echo "::error::.gitignore is missing required greenfield/onboard state-file entries:"
     printf '  %s\n' "${missing[@]}"
     echo ""
     echo "Add these lines to .gitignore — they persist wizard answers that may contain user-entered secrets."
@@ -50,4 +50,4 @@ if [[ "${#missing[@]}" -gt 0 ]]; then
   exit 1
 fi
 
-echo "All forge/onboard state-file entries are present in .gitignore"
+echo "All greenfield/onboard state-file entries are present in .gitignore"

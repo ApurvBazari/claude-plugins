@@ -55,8 +55,9 @@ for json_file in \
   .claude-plugin/marketplace.json \
   .claude/audit-baseline.json \
   onboard/.claude-plugin/plugin.json \
-  forge/.claude-plugin/plugin.json \
-  notify/.claude-plugin/plugin.json; do
+  greenfield/.claude-plugin/plugin.json \
+  notify/.claude-plugin/plugin.json \
+  handoff/.claude-plugin/plugin.json; do
   if [[ ! -f "$json_file" ]]; then
     fail "missing: $json_file"
   elif jq empty "$json_file" 2>/dev/null; then
@@ -199,7 +200,7 @@ echo ""
 # ─────────────────────────────────────────────────
 echo "### 8. Version sync check"
 # ─────────────────────────────────────────────────
-for plugin_dir in onboard forge notify; do
+for plugin_dir in onboard greenfield notify handoff; do
   MANIFEST="${plugin_dir}/.claude-plugin/plugin.json"
   if [[ -f "$MANIFEST" ]]; then
     PLUGIN_VER=$(jq -r '.version' "$MANIFEST")
@@ -248,33 +249,6 @@ else
   fail "URL convention: legacy URLs still present in:"
   # shellcheck disable=SC2001  # per-line indent is clearer with sed than parameter expansion
   echo "$LEGACY_URL_HITS" | sed 's/^/      /'
-fi
-echo ""
-
-# ─────────────────────────────────────────────────
-echo "### 11. Engineering plugin removed from forge (M6 release-gate sweep)"
-# ─────────────────────────────────────────────────
-# forge/skills/lifecycle-setup/ deleted entirely; plugin-catalog.md must not
-# reference engineering; onboard's plugin-detection-guide.md must not list
-# engineering capabilities.
-if [[ -d "forge/skills/lifecycle-setup" ]]; then
-  fail "lifecycle-setup directory still exists at forge/skills/lifecycle-setup"
-else
-  pass "lifecycle-setup directory removed"
-fi
-
-if grep -qE '\| \*\*engineering\*\*|engineering-lifecycle' \
-   forge/skills/plugin-discovery/references/plugin-catalog.md 2>/dev/null; then
-  fail "engineering plugin still referenced in forge plugin-catalog.md"
-else
-  pass "engineering plugin removed from forge plugin-catalog.md"
-fi
-
-if grep -qE "\| \`engineering\`|engineering-lifecycle" \
-   onboard/skills/generation/references/plugin-detection-guide.md 2>/dev/null; then
-  fail "engineering capabilities still listed in onboard plugin-detection-guide.md"
-else
-  pass "engineering capabilities removed from onboard plugin-detection-guide.md"
 fi
 echo ""
 

@@ -67,5 +67,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify forge/onboard state files are gitignored
+      - name: Verify greenfield/onboard state files are gitignored
         run: .github/scripts/check-state-gitignore.sh

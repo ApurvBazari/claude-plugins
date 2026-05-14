@@ -8,12 +8,12 @@
 .claude/handoff*.md
 .claude/handoff-settings.md
 
-# forge + onboard runtime state (may persist user-entered free-text from the
-# wizard; treat as potentially sensitive and never commit)
-.claude/forge-state.json
-.claude/forge-state.json.tmp
-.claude/forge-drift.json
-.claude/forge-meta.json
+# greenfield + onboard runtime state (may persist user-entered free-text from
+# the wizard; treat as potentially sensitive and never commit)
+.claude/greenfield-state.json
+.claude/greenfield-state.json.tmp
+.claude/greenfield-drift.json
+.claude/greenfield-meta.json
 .claude/onboard-snapshot.json
 .claude/onboard-meta.json
 
