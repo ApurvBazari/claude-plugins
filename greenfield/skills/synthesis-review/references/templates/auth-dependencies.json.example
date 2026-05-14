@@ -1,0 +1,14 @@
+{
+  "phaseId": "auth",
+  "version": 1,
+  "dependsOn": {
+    "dataArchitecture.engine": "auth.authzModel (RLS feasibility)",
+    "dataArchitecture.multiTenancy":   "auth.tenantResolution",
+    "apiIntegration.style":            "auth.enforcementPoint (gateway vs middleware)",
+    "architecturalFraming.topology":   "auth.serviceAuth (s2s only for microservices)",
+    "architecturalFraming.scaleTarget":"auth.mfa.required (locked when High tier)"
+  },
+  "downstreamFor": [
+    "privacy", "security", "runtimeOperations"
+  ]
+}
