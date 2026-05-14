@@ -150,3 +150,93 @@ This synthesis is read-only — it does not capture new wizard answers (those ca
 - Don't soften contradictions. They're the point.
 - Don't write more than ~3 lines per section's Notes block. Long notes belong in `CLAUDE.md`.
 - Don't omit the `Captured-as` block even if the value is `null` — render `null` explicitly so the developer sees the gap.
+
+## Round 3 sections (Step 5: Auth)
+
+**Section composition rules:**
+
+| Section | Source fields | Conditional rules |
+|---|---|---|
+| Strategy & Provider | strategy, provider | always |
+| Identity Providers | idps | hidden if strategy='none' |
+| Session & Token Model | sessionModel | hidden if strategy='none' |
+| MFA & Account Security | mfa, passwordPolicy, recovery | hidden if strategy='none' |
+| Authorization & Tenancy | authzModel, enforcementPoint, tenantResolution | always |
+| Service-to-Service Auth | serviceAuth | hidden if architecturalFraming.topology='monolith' |
+| Audit & Lifecycle | auditLog, lifecycle | always |
+| Downstream Impact | (computed) | always |
+
+**Contradiction rules (surfaced as Adjust prompts):**
+
+- `auth.strategy='none'` + dataArchitecture.compliance contains any of {HIPAA, PCI, SOC2} → "HIPAA/PCI/SOC2 require user authentication. No-auth strategy is incompatible with the compliance scope in Data Architecture."
+- `auth.serviceAuth='none'` + architecturalFraming.topology='microservices' → "Microservice topology without service-to-service auth leaves internal endpoints unprotected. Consider mTLS or signed JWTs."
+
+---
+
+## Round 3 sections (Step 6: Privacy)
+
+**Section composition rules:**
+
+| Section | Source fields | Conditional rules |
+|---|---|---|
+| Synthesis Status Banner | synthesisStatus | shown only if synthesisStatus='n/a' |
+| Regulatory Scope | regulations | hidden if n/a |
+| PII Inventory | piiCategories | hidden if n/a |
+| Lawful Basis & Consent | lawfulBasis, consentManager | hidden if GDPR not in regulations |
+| Retention & Deletion | retention, deletionFlow | hidden if n/a |
+| DSAR & Data Export | dsar | hidden if neither GDPR nor CCPA in regulations |
+| Third-Party Processors | processors | hidden if n/a |
+| Data Minimization & Residency | minimization, dataResidency | hidden if n/a |
+| Access Audit | accessAudit | hidden unless regulations contains HIPAA |
+
+**Contradiction rules:**
+
+- `privacy.regulations` does NOT contain `dataArchitecture.compliance` entry → "Data Architecture declared {X}, but Privacy regulations does not include it."
+- `privacy.synthesisStatus='n/a'` + ANY piiCategories non-empty → "Privacy synthesis is n/a stub but PII categories are declared. Either change to complete synthesis or remove the PII entries."
+- `privacy.regulations` contains GDPR + `privacy.dsar` empty → "GDPR requires a Data Subject Access Request process. Define DSAR flow."
+
+---
+
+## Round 3 sections (Step 7: Security)
+
+**Section composition rules:**
+
+| Section | Source fields | Conditional rules |
+|---|---|---|
+| Sensitivity Tier | sensitivityTier | always |
+| Secret Management | secrets | always |
+| Vulnerability Scanning | scanning | always |
+| Threat Model | threatModel | always |
+| Encryption | encryptionAtRest, encryptionInTransit | always |
+| Application Security | headers, inputValidation | hidden if no apiIntegration AND no frontend |
+| Audit & Incident Response | auditRetention, ir | shown if sensitivityTier ≠ standard for auditRetention |
+| Pentest, VDP, Supply Chain | pentestCadence, vdp, supplyChain | hidden when scaleTarget='hobby' and sensitivityTier='standard' |
+
+**Contradiction rules:**
+
+- `security.sensitivityTier='standard'` + `dataArchitecture.compliance` non-empty → "Compliance scope requires sensitivityTier 'elevated' or 'high'."
+- `security.sensitivityTier='high'` + `security.encryptionAtRest.perColumnForPII=false` → "High tier with PII typically requires per-column encryption beyond DB-default."
+- `security.supplyChain.sbom=false` + `dataArchitecture.compliance` contains 'SOC 2' → "SOC 2 expects SBOM as evidence artifact."
+
+---
+
+## Round 3 sections (Step 8: Runtime Operations)
+
+**Section composition rules:**
+
+| Section | Source fields | Conditional rules |
+|---|---|---|
+| Background Jobs & Retries | jobs, retryStrategy | hidden if apiIntegration.asyncPattern='none' |
+| Scheduled Tasks | scheduling | always |
+| Observability — Metrics | metrics | always |
+| Observability — Traces | traces | gated on topology=microservices OR scaleTarget=production-scale+ |
+| Observability — Logs | logs | always |
+| Alerting & On-Call | alerting, onCall | always |
+| SLO & Feature Flags | slo, featureFlags | SLO sub-section hidden when scaleTarget ∉ {production-scale, enterprise} |
+| Operations Process | maintenanceMode, healthChecks, runbooks, incidentProcess | always |
+
+**Contradiction rules:**
+
+- `security.sensitivityTier='high'` + `runtimeOperations.alerting.tool='none'` → "High sensitivity tier requires non-trivial alerting."
+- `runtimeOperations.slo` non-empty + `runtimeOperations.metrics.tool='none'` → "SLO requires a metrics backend."
+- `apiIntegration.asyncPattern ≠ 'none'` + `runtimeOperations.jobs.provider='none'` → "API integration declares async work but Runtime Ops has no job system."
