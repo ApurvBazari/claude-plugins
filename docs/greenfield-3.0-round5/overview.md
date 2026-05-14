@@ -49,4 +49,36 @@ Key locked decisions (from 2026-05-15 brainstorm):
 
 ## Commit log
 
-<filled-by-final-task>
+PR: https://github.com/ApurvBazari/claude-plugins/pull/53
+Branch: `feat/greenfield-1.4` (off `develop`)
+Total commits: 27 (24 new files + 19 modified = 43 files touched)
+
+```
+693ec71 chore(release): R5 — version bumps to alpha.6 + CHANGELOGs + Discussion Log entry
+57c9ed8 docs(greenfield+onboard): R5 — CLAUDE.md updates (20-step wizard, R5 phase additions block)
+710b002 docs(greenfield-3.0): Round 5 companion docs — overview + migration-notes + coupling-matrix
+e499674 test(greenfield): R5 — feature-roadmap fixture + smoke + alpha.5→alpha.6 migration test
+843590d feat(onboard): R5 — deterministic feature-list.json + sprint-1.json + schema/contract file outputs from featureRoadmap + schemaDraftReview phases
+3fd80a2 feat(greenfield): R5 — CHECK-R5-1..6 invariants + grill-spec wiring + question-bank reference
+45bbfdc fix(greenfield): R5 — correct step labels (Feature Roadmap + Schema & API Draft Review)
+e97cf9a chore(greenfield): R5 — bump start skill wizard step count to 20
+d569ad1 feat(greenfield): R5 — pass featureRoadmap + schemaDraftReview to onboard generation
+aee2578 feat(greenfield): R5 — add 3 health-check assertions (featureRoadmap, schemaDraftReview, sprint-1 contract)
+43ce41c feat(greenfield): R5 — pickup alpha.5→alpha.6 migration shim + P10.5 Reject Adjust-mode jump-links
+3a89f91 feat(greenfield): R5 — index feature-roadmap + schema-draft-review templates in synthesis-review
+2c33d0d feat(greenfield): R5 — wire Step 16 (featureRoadmap) + Step 19 (schemaDraftReview); renumber wizard 17→20
+5be27f7 feat(greenfield): R5 — schema-draft-review synthesis templates (3-panel HTML + linear MD)
+7a31642 fix(greenfield): R5 — align feature-roadmap templates to phase-rooted Handlebars convention
+a247acd feat(greenfield): R5 — feature-roadmap synthesis templates (HTML + MD + dependencies example)
+9096549 fix(greenfield): R5 — PII encryption check uses jq -r (raw output)
+627a6ca feat(greenfield): R5 — render-event-json-schema.sh (JSON Schema event renderer)
+ed4f815 feat(greenfield): R5 — render-event-asyncapi.sh (AsyncAPI 2.6 event renderer)
+b96914b feat(greenfield): R5 — render-api-graphql.sh (GraphQL SDL API renderer)
+c9d6429 feat(greenfield): R5 — render-api-openapi.sh (OpenAPI 3.0 API renderer with PII/scope/entity warnings)
+cdbfc37 feat(greenfield): R5 — render-db-sql-ddl.sh (SQL DDL DB renderer)
+697fb78 feat(greenfield): R5 — render-db-prisma.sh (Prisma DB renderer with PII/PK warnings)
+646df64 feat(greenfield): R5 — render-schema-drafts.sh entrypoint dispatches to per-language modules
+b897ae9 feat(greenfield): R5 — schema-draft-review q-bank (12 Qs heavy / 6 light + auto-render hook)
+befb784 feat(greenfield): R5 — feature-roadmap q-bank (14 Qs heavy / 7 light + per-persona auto-loop)
+d7d91a6 feat(onboard): R5 — replace featureRoadmap + schemaDraftReview deferred stubs in context-shape-v2
+```
