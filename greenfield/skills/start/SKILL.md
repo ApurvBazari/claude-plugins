@@ -172,7 +172,7 @@ Tell the developer:
 
 ## Phase 1: Context Gathering
 
-Use the `context-gathering` skill to guide the developer through the adaptive wizard. **The wizard has 15 named Steps and must emit a "Step X of 15" progress indicator at every Step boundary** so both Claude and the user can track progress.
+Use the `context-gathering` skill to guide the developer through the adaptive wizard. **The wizard has 17 named Steps and must emit a "Step X of 17" progress indicator at every Step boundary** so both Claude and the user can track progress. (Round 4 added Step 2.2 Personas and Step 2.7 Domain Modeling to the previous 15-step flow.)
 
 The skill handles:
 - Project vision (what they want to build)
