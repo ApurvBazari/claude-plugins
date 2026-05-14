@@ -302,7 +302,82 @@
           }
         },
         "cicdAndDelivery":   { "$ref": "#/definitions/cicdAndDelivery" },
-        "featureRoadmap":   { "$ref": "#/definitions/deferredPhase" },
+        "featureRoadmap": {
+          "type": "object",
+          "description": "Round 5 — Feature roadmap captured at Step 16. Produces docs/feature-list.json + docs/sprint-contracts/sprint-1.json deterministically.",
+          "properties": {
+            "horizon": {
+              "type": "string",
+              "enum": ["mvp-only", "3-months", "6-months", "1-year", "open-ended"]
+            },
+            "mvpBoundary": { "type": "string" },
+            "sizingScale": {
+              "type": "string",
+              "enum": ["tshirt", "fibonacci", "hours", "none"],
+              "default": "tshirt"
+            },
+            "epics": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string", "pattern": "^E[0-9]+$" },
+                  "title": { "type": "string" },
+                  "personaIds": { "type": "array", "items": { "type": "string" } },
+                  "sequenceAfter": { "type": "array", "items": { "type": "string" } }
+                },
+                "required": ["id", "title"]
+              }
+            },
+            "features": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string", "pattern": "^F[0-9]{3}$" },
+                  "title": { "type": "string" },
+                  "category": {
+                    "type": "string",
+                    "enum": ["ui", "api", "data", "infra", "ops", "docs", "other"]
+                  },
+                  "epicId": { "type": ["string", "null"] },
+                  "personaIds": { "type": "array", "items": { "type": "string" } },
+                  "entityIds": { "type": "array", "items": { "type": "string" } },
+                  "riskIds": { "type": "array", "items": { "type": "string" } },
+                  "size": { "type": ["string", "number", "null"] },
+                  "acceptanceCriteria": { "type": "array", "items": { "type": "string" } },
+                  "verificationSteps": { "type": "array", "items": { "type": "string" } },
+                  "sprintAssignment": { "type": ["integer", "null"] }
+                },
+                "required": ["id", "title", "category"]
+              }
+            },
+            "sprint1": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "featureIds": { "type": "array", "items": { "type": "string" } },
+                "criteria": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": { "type": "string" },
+                      "weight": { "type": "string", "enum": ["required", "recommended", "aspirational"] },
+                      "description": { "type": "string" },
+                      "threshold": { "type": "string" }
+                    },
+                    "required": ["name", "weight"]
+                  }
+                },
+                "completionGate": { "type": "string" }
+              }
+            },
+            "skipped": { "type": "boolean", "default": false },
+            "deferredReason": { "type": "string", "default": "" }
+          }
+        },
         "pluginInstall":  {
           "type": "object",
           "description": "Plugin install confirmation (pluginInstall in the 15-phase wizard). Round 1 emits as { installedPlugins: [] } — mirrors callerExtras for symmetry.",
@@ -310,7 +385,54 @@
             "installedPlugins": { "type": "array", "items": { "type": "string" } }
           }
         },
-        "schemaDraftReview": { "$ref": "#/definitions/deferredPhase" }
+        "schemaDraftReview": {
+          "type": "object",
+          "description": "Round 5 — Schema & API Draft Review at Step 19. Auto-renders DB/API/Event drafts from R3+R4 discovery, then user reviews/locks.",
+          "properties": {
+            "applicableArtifacts": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["db", "api", "event"] }
+            },
+            "languages": {
+              "type": "object",
+              "properties": {
+                "db":    { "type": "string", "enum": ["prisma", "sql-ddl", "typeorm", "sqlalchemy", "none"] },
+                "api":   { "type": "string", "enum": ["openapi-3.0", "graphql-sdl", "trpc", "postman", "none"] },
+                "event": { "type": "string", "enum": ["asyncapi", "json-schema", "avro", "none"] }
+              }
+            },
+            "drafts": {
+              "type": "object",
+              "properties": {
+                "db":    { "$ref": "#/definitions/schemaDraft" },
+                "api":   { "$ref": "#/definitions/schemaDraft" },
+                "event": { "$ref": "#/definitions/schemaDraft" }
+              }
+            },
+            "crossCheckWarnings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string" },
+                  "level": { "type": "string", "enum": ["error", "warn", "info"] },
+                  "message": { "type": "string" },
+                  "addressed": { "type": "boolean", "default": false },
+                  "addressedNote": { "type": "string" }
+                },
+                "required": ["id", "level", "message"]
+              }
+            },
+            "outputStrategy": {
+              "type": "string",
+              "enum": ["project-root", "docs-drafts"],
+              "default": "project-root"
+            },
+            "lockedAt": { "type": "string", "format": "date-time" },
+            "skipped": { "type": "boolean", "default": false },
+            "deferredReason": { "type": "string", "default": "" }
+          }
+        }
       }
     },
     "syntheses": {
@@ -452,6 +574,37 @@
           "pattern": "^deferred-to-round-[1-6?]$",
           "description": "Marker indicating which round will fully specify this phase. Use 'deferred-to-round-?' if uncertain."
         }
+      }
+    },
+    "schemaDraft": {
+      "type": "object",
+      "properties": {
+        "renderedAt": { "type": "string", "format": "date-time" },
+        "sourceRefs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": { "type": "string" },
+              "renderedAs": { "type": "string" }
+            },
+            "required": ["path"]
+          }
+        },
+        "content": { "type": "string" },
+        "adjustments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "at": { "type": "string", "format": "date-time" },
+              "change": { "type": "string" },
+              "rationale": { "type": "string" }
+            }
+          }
+        },
+        "approved": { "type": "boolean", "default": false },
+        "skipped": { "type": "boolean", "default": false }
       }
     },
     "synthesisRecord": {
