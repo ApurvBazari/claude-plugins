@@ -144,6 +144,28 @@ Three schema additions land in Round 4; all are optional — if absent, generati
 - Risks are reconciled at Step 15 (Risk Reconciliation, front section of architecturalValidation).
 - Post-generation: if any entry has `reconciliation.status == "open-followup"`, generate emits `docs/risks.md` listing those entries as action items.
 
+### Round 5 phase additions (greenfield 3.0.0-alpha.6 → onboard 2.0.0-alpha.6)
+
+Two new phase keys land in the v2 context shape (`onboard/skills/generate/references/context-shape-v2.json`):
+
+- **`phases.featureRoadmap`** — read by `generation/SKILL.md` to deterministically write:
+  - `docs/feature-list.json` (from `features[]`)
+  - `docs/sprint-contracts/sprint-1.json` (from `sprint1`)
+
+  Fallback: if `featureRoadmap.skipped = true` OR `features[]` empty, onboard uses the existing interactive handoff flow (pre-R5 behavior).
+
+- **`phases.schemaDraftReview`** — read by `generation/SKILL.md` to write verbatim schema/contract files when locked:
+  - DB → `prisma/schema.prisma` or `sql/migrations/0001_init.sql`
+  - API → `docs/api/openapi.yaml` or `schema.graphql`
+  - Event → `docs/events/event-schemas.yaml` or `.json`
+  - `outputStrategy = "docs-drafts"` routes all three under `docs/drafts/` instead.
+
+  Fallback: if `schemaDraftReview.skipped = true` OR `lockedAt` is absent, onboard writes nothing — alpha.5 behavior preserved.
+
+Schema bump alpha.5 → alpha.6 is **purely additive**. Pickup migration shim in `greenfield/skills/pickup/SKILL.md` auto-injects `{skipped: true, deferredReason}` defaults for in-flight alpha.5 sessions.
+
+See: `onboard/CHANGELOG-2.0.md` (when released) for the formal alpha.6 entry.
+
 ### v2-specific templates (Round 1 — Round 3 complete)
 
 Rounds 1–3 are complete. Round 1 wired CI/CD (P8). Rounds 2 / 2.5 wired architectural synthesis phases (architecturalFraming, dataArchitecture, apiIntegration, architecturalValidation). Round 3 adds auth, privacy, security, runtimeOperations synthesis phases (Steps 5–8 in the greenfield wizard; cicdAndDelivery renumbered to Step 11; architecturalValidation renumbered to Step 15).
