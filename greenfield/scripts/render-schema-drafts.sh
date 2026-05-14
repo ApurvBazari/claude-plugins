@@ -29,8 +29,12 @@ fi
 
 WARNINGS_JSON="[]"
 
-for ART in $ARTIFACTS; do
-  LANG=$(jq -r ".phases.schemaDraftReview.languages.$ART // \"none\"" "$STATE_FILE")
+# Iterate one artifact per line via here-string + read; avoids the word-splitting
+# idiom and reads even if a value ever picks up an embedded space (defence-in-depth
+# on top of the enum constraint in the schema).
+while IFS= read -r ART; do
+  [[ -z "$ART" ]] && continue
+  LANG=$(jq -r --arg art "$ART" '.phases.schemaDraftReview.languages[$art] // "none"' "$STATE_FILE")
   case "$ART:$LANG" in
     db:prisma)         MODULE="render-db-prisma.sh" ;;
     db:sql-ddl)        MODULE="render-db-sql-ddl.sh" ;;
@@ -39,8 +43,11 @@ for ART in $ARTIFACTS; do
     event:asyncapi)    MODULE="render-event-asyncapi.sh" ;;
     event:json-schema) MODULE="render-event-json-schema.sh" ;;
     *)
-      echo "render-schema-drafts: language '$LANG' for artifact '$ART' not yet supported in R5. Skipping; user must re-answer SDR.Q2 with a supported language or set drafts.$ART.skipped=true." >&2
-      jq ".phases.schemaDraftReview.drafts.$ART = (.phases.schemaDraftReview.drafts.$ART // {}) + {skipped: true, deferredReason: \"language '$LANG' not yet supported in R5\"}" "$TMP_OUT" > "${TMP_OUT}.x" && mv "${TMP_OUT}.x" "$TMP_OUT"
+      DEFERRED_REASON="language '$LANG' not yet supported in R5"
+      echo "render-schema-drafts: $DEFERRED_REASON for artifact '$ART'. Skipping; user must re-answer SDR.Q2 with a supported language or set drafts.$ART.skipped=true." >&2
+      jq --arg art "$ART" --arg reason "$DEFERRED_REASON" \
+         '.phases.schemaDraftReview.drafts[$art] = ((.phases.schemaDraftReview.drafts[$art] // {}) + {skipped: true, deferredReason: $reason})' \
+         "$TMP_OUT" > "${TMP_OUT}.x" && mv "${TMP_OUT}.x" "$TMP_OUT"
       continue
       ;;
   esac
@@ -71,9 +78,9 @@ for ART in $ARTIFACTS; do
      "$TMP_OUT" > "${TMP_OUT}.x" && mv "${TMP_OUT}.x" "$TMP_OUT"
 
   WARNINGS_JSON=$(echo "$WARNINGS_JSON $MODULE_WARNINGS" | jq -s 'add')
-done
+done <<< "$ARTIFACTS"
 
 jq --argjson w "$WARNINGS_JSON" '.phases.schemaDraftReview.crossCheckWarnings = $w' "$TMP_OUT" > "${TMP_OUT}.x" && mv "${TMP_OUT}.x" "$TMP_OUT"
 
 mv "$TMP_OUT" "$STATE_FILE"
-echo "render-schema-drafts: completed; drafts populated for [$ARTIFACTS]"
+echo "render-schema-drafts: completed; drafts populated for [$(echo "$ARTIFACTS" | tr '\n' ' ' | sed 's/ *$//')]"
