@@ -1,5 +1,29 @@
 # Changelog
 
+## 3.0.0-alpha.6 (2026-05-15) — Round 5
+
+### Added
+- Step 16 — Feature Roadmap phase (`featureRoadmap`): 14 Qs heavy / 7 light, per-persona auto-loop (FR.Q4-Q9), deterministic `docs/feature-list.json` + `docs/sprint-contracts/sprint-1.json` generation via onboard.
+- Step 19 — Schema & API Draft Review phase (`schemaDraftReview`): 12 Qs, auto-renders DB/API/Event drafts from R3+R4 discovery via `scripts/render-schema-drafts.sh` mid-flow, then user reviews/locks. Onboard writes locked drafts verbatim to canonical paths per `outputStrategy`.
+- 7 renderer scripts: `render-schema-drafts.sh` (entrypoint) + 6 per-language modules (Prisma, SQL DDL, OpenAPI 3.0, GraphQL SDL, AsyncAPI, JSON Schema).
+- 6 cross-phase invariants: CHECK-R5-1 through CHECK-R5-6 (`grill-spec/references/check-r5-invariants.md`).
+- Synthesis templates: `feature-roadmap.html`/`md`, `schema-draft-review.html`/`md` + dependencies examples.
+- Smoke tests: `tests/round-5/feature-roadmap-smoke.sh` (10 checks) + `tests/round-5/migration-test.sh` (8 checks).
+- Pickup migration shim: alpha.5 → alpha.6 (auto-migrating, additive).
+- 3 health checks in `check/SKILL.md` (featureRoadmap completeness, schemaDraftReview lockedAt presence, sprint-1 contract presence).
+
+### Changed
+- Wizard step count 17 → 20.
+- `tooling-generation/SKILL.md` passes `phases.featureRoadmap` + `phases.schemaDraftReview` to onboard.
+- `start/SKILL.md`, `context-gathering/SKILL.md`, `synthesis-review/SKILL.md`, `pickup/SKILL.md`, `check/SKILL.md`, `grill-spec/SKILL.md`, `CLAUDE.md` updated for R5.
+
+### Migration
+- Auto-migrating via `/greenfield:pickup`. No manual action required.
+- Sessions predating alpha.6 get `{skipped: true, deferredReason}` defaults on featureRoadmap + schemaDraftReview. Re-enter Steps 16/19 via Adjust mode to populate.
+
+### Rollback
+- Single revert commit on `develop` reverts the R5 PR. alpha.6 sessions calling alpha.5 pickup gracefully drop unknown R5 fields.
+
 ## 3.0.0-alpha.5 — Round 4 (Personas + Domain + Distributed Risk)
 
 **New phases:**
