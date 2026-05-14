@@ -55,6 +55,132 @@ The skill produces four outputs per phase:
 
 The HTML + markdown rendering and decision walk happen across seven Steps below.
 
+## Per-phase template index
+
+The table below lists the wizard steps this skill renders synthesis for, in the order they appear in `context-gathering/SKILL.md`. The Step 1 template loader expects each entry's template trio (HTML + MD + dependencies.json.example) to exist at `references/templates/` under the kebab-case name.
+
+| Phase ID | Wizard Step | Templates | Notes |
+|---|---|---|---|
+| personas | Step 2.2 | `personas.html` + `personas.md` + `personas-dependencies.json.example` | 6 sections; Section 6 ("Decisions Driven Downstream") back-fills after downstream phases complete |
+| architecturalFraming | Step 2.5 | `architectural-framing.html` + `.md` + `architectural-framing-dependencies.json.example` | Round 2.5 — topology, deploymentShape, scaleTarget, boundaryNotes |
+| domainModel | Step 2.7 | `domain-model.html` + `domain-model.md` + `domain-model-dependencies.json.example` | 10 sections; sections 4 (Value Objects), 5 (Domain Events), 8 (Anti-Corruption) mode-gated (skip when domainFormat=ddd-lite OR depth=light); Section 10 back-fills |
+| dataArchitecture | Step 3 | `data-architecture.html` + `.md` + `data-architecture-dependencies.json.example` | Round 2 |
+| apiIntegration | Step 4 | `api-integration.html` + `.md` + `api-integration-dependencies.json.example` | Round 2 |
+| auth | Step 5 | `auth.html` + `.md` + `auth-dependencies.json.example` | Round 3 |
+| privacy | Step 6 | `privacy.html` + `.md` + `privacy-dependencies.json.example` | Round 3 |
+| security | Step 7 | `security.html` + `.md` + `security-dependencies.json.example` | Round 3 |
+| runtimeOperations | Step 8 | `runtime-operations.html` + `.md` + `runtime-operations-dependencies.json.example` | Round 3 |
+| cicdAndDelivery | Step 11 | `cicd-and-delivery.html` + `.md` + `cicd-and-delivery-dependencies.json.example` | Round 1 |
+| architecturalValidation | Step 15 | `architectural-validation.html` + `.md` + `architectural-validation-dependencies.json.example` | Round 2.5 — final cross-phase sign-off |
+
+If a future round adds a new phase template, append a row here and ensure the corresponding section composition notes land in `references/section-prompts.md`.
+
+## sourceRef rendering (Round 4)
+
+When a synthesis HTML section displays an answer that has a `sourceRef` in its dependencies.json sidecar, render the source as a small visual link/badge next to the value. This makes upstream-loop provenance visible — readers can trace why a per-persona auth role decision exists by clicking through to the originating persona in `personas.html`.
+
+### sourceRef shape
+
+```jsonc
+{
+  "path": "auth.access[3].roles[0]",
+  "value": "FieldAuditor",
+  "sourceRef": { "phase": "personas", "id": "P1" },
+  "rationale": "Per-persona authz mapping captured during Step 5 auth loop"
+}
+```
+
+### HTML rendering
+
+Append `<span class="source-ref">` next to the value. The anchor links to the originating phase's HTML in the project's `docs/adr/` directory.
+
+```html
+<tr>
+  <td>FieldAuditor</td>
+  <td>{{this.permissions}}</td>
+  <td class="source-ref">[from <a href="{{this.sourceRef.phase}}.html#{{this.sourceRef.id}}">{{this.sourceRef.id}}</a>]</td>
+</tr>
+```
+
+Mustache rendering pattern — wrap the source-ref column in `{{#if this.sourceRef}}...{{/if}}` so loops that produce static (non-looped) values render no badge.
+
+### Markdown rendering
+
+Append ` (from {{sourceRef.phase}}/{{sourceRef.id}})` in parentheses after the value, on the same line:
+
+```markdown
+- FieldAuditor (from personas/P1)
+- Auditor (from personas/P2)
+```
+
+Same `{{#if this.sourceRef}}` guard applies — non-looped values render no parenthetical.
+
+### When sourceRef is required
+
+The state machine (`context-gathering/SKILL.md` § Auto-loop mechanic, step 4 — and § Render hooks for the downstream contract) writes a `sourceRef` entry for every looped fire — both `loopMode: always` AND `loopMode: hybrid-only` when the latter fires per-item under `mode.coupling = auto-loop`. Static fires (no `loopOver` OR hybrid-mode collapse) MUST NOT have a `sourceRef`; the rendering guard above skips the badge.
+
+### sourceRef integrity check
+
+During Approve walk, surface a warning if any answer has a `sourceRef` pointing to a phase that doesn't exist in `context.phases.*` (e.g., `sourceRef.phase = "personas"` but `personas` was skipped). The warning lists the offending value(s) and offers: "Continue and render badge as `[from personas/P1 — phase skipped]`" or "Strip sourceRef and re-render as static".
+
+## Back-fill mechanic (Round 4)
+
+Two synthesis HTMLs have a "Decisions Driven Downstream" section that is initially empty when the phase first renders:
+
+- `personas.html` Section 6
+- `domain-model.html` Section 10
+
+These sections cannot be populated when the phase first runs synthesis-review — there are no downstream decisions yet. They back-fill **after** each downstream phase completes and runs its own synthesis-review.
+
+### Trigger
+
+After any downstream phase Approval (the synthesis-review skill returns `status: "approved"` for that phase), invoke `back-fill-downstream-section.sh` (script authored in T22). The script handles both personas Section 6 and domain-model Section 10 in one pass.
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/back-fill-downstream-section.sh" "$PROJECT_ROOT" "$APPROVED_PHASE_ID"
+```
+
+### What the back-fill writer does
+
+1. Reads every downstream phase's `docs/adr/<phase>.dependencies.json` sidecar.
+2. Filters entries by `sourceRef.phase`:
+   - For personas back-fill: filter `sourceRef.phase == "personas"`.
+   - For domain-model back-fill: filter `sourceRef.phase == "domainModel"`.
+3. Aggregates entries grouped by downstream phase ID. Renders as:
+
+   ```markdown
+   ### Aggregated downstream decisions referencing this phase
+
+   **auth** — 4 decisions referencing personas:
+   - auth.access[0] → "FieldAuditor reads own audits" (sourceRef: P1)
+   - auth.access[1] → "Reviewer reads all audits in own team" (sourceRef: P2)
+   ...
+
+   **privacy** — 2 decisions referencing personas:
+   - privacy.dataAccess[0] → "FieldAuditor: own-only data scope" (sourceRef: P1)
+   ...
+   ```
+4. Re-renders the phase's HTML and MD via the existing template, with the new Section 6 / Section 10 content slotted in. **Preserves all other sections' Approved state** — the back-fill does NOT trigger re-Approve walk for the originating phase. Approval state is sticky across back-fills.
+5. Updates the phase's `.dependencies.json` to record the back-fill timestamp: `{ "lastBackFilledAt": "<iso8601>", "downstreamPhases": ["auth", "privacy", ...] }`.
+
+### Idempotency
+
+The back-fill writer is idempotent — running it multiple times with the same input set produces identical output. Each downstream phase Approval triggers a re-run; the writer detects no-change cases and exits without rewriting if nothing changed.
+
+### Stale detection on back-filled sections
+
+If a downstream phase that originally contributed to the back-fill is later Adjusted (its sourceRef-bearing values change or it's unwound via `/greenfield:pickup → Adjust mode`), the personas/domain-model HTML's `<p class="back-fill-note">` paragraph surfaces:
+
+> *Back-filled at &lt;iso8601&gt;. Downstream phase `auth` was Adjusted after this back-fill — re-run synthesis-review on personas to refresh.*
+
+The detection runs at Step 0 stale-check entry-guard for personas + domainModel: compare `dependencies.json.lastBackFilledAt` against every downstream phase's `approvedAt` timestamp. If any downstream phase's `approvedAt > lastBackFilledAt`, surface the stale note.
+
+### Empty back-fill rendering
+
+If a downstream phase has been Approved but contributes zero `sourceRef.phase == "personas"` (resp. "domainModel") entries, the back-fill writer records the phase ID in `dependencies.json.downstreamPhases[]` for traceability but does NOT add a row to the section. The section's empty-state message updates to:
+
+> *N downstream phases have completed. None reference this phase yet. Sections back-fill as auto-looped phases capture per-persona/per-entity decisions.*
+
 ## Step 1: Load the per-phase template
 
 Locate the per-phase template pair at `${CLAUDE_PLUGIN_ROOT}/skills/synthesis-review/references/templates/`:
