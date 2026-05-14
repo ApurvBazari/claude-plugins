@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased] (3.0.0-alpha.3)
+## [3.0.0-alpha.3] (2026-05-14)
 
 ### Schema breakage
 

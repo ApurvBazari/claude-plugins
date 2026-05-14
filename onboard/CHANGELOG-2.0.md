@@ -1,5 +1,19 @@
 # Onboard 2.0 — Migration & Breaking Changes
 
+## 2.0.0-alpha.3 — 2026-05-14
+
+**Schema additions (Round 2.5 of the greenfield 3.0 wizard overhaul):**
+
+- `architecturalFraming` (Step 2.5): new synthesis section added to context.syntheses capturing topology, deploymentShape, scaleTarget, boundaryNotes from Step 2.5 questions.
+- `architecturalValidation` (Step 11): new synthesis section added to context.syntheses capturing final cross-phase sign-off from Step 11 questions.
+- `dependencies` pattern (Round 2.5 solidified): cross-phase dependency assertions now include all topic names (P* phase, topic-name enum) and dependency edges; `dependencies.<phaseId>` is now fully structured and validated.
+
+**Breaking for Round 1 alpha.1 callers:** greenfield 3.0.0-alpha.2 was the first released version using P3/P4 full shapes; 3.0.0-alpha.3 adds two new synthesis sections (`architecturalFraming`, `architecturalValidation`) and strict dependency structures. Callers on alpha.2 will need to emit these sections or accept validation warnings. See greenfield CHANGELOG for Full Foundation pass details.
+
+**No artifact generation changes** — the 9 PRE-task deliverables (PRE-1 through PRE-9) landed on this branch as code/config updates only. `onboard:generate` accepts the new synthesis shapes and processes them cleanly. New templates are deferred to later rounds.
+
+---
+
 ## 2.0.0-alpha.2 — 2026-05-13
 
 **Schema additions (Round 2 of the greenfield 3.0 wizard overhaul):**
