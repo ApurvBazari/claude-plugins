@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://github.com/ApurvBazari/claude-plugins/onboard/skills/generate/references/context-shape-v2.json",
   "title": "Onboard Generate — v2 Context Shape",
-  "description": "Input schema for the onboard:generate skill in onboard 2.x. Hard cutover from v1: v2 callers must emit `version: 2` at the root. v1 input is rejected outright (no migration helper ships in any onboard 2.x release). Rounds 1–3 fully specify architecturalFraming, dataArchitecture (Data Architecture), apiIntegration (API & Integration), auth, privacy, security, runtimeOperations, cicdAndDelivery (CI/CD & Operations), architecturalValidation. Phases vision, personas, domain, frontend, authSecurity, workflow, pluginRecommendation, risk, featureRoadmap, pluginInstall, schemaDraftReview carry `_status: 'deferred-to-round-N'` and become inert pass-through metadata. Greenfield 3.0+ is the canonical caller; direct headless callers must construct v2 contexts directly.",
+  "description": "Input schema for the onboard:generate skill in onboard 2.x. Hard cutover from v1: v2 callers must emit `version: 2` at the root. v1 input is rejected outright (no migration helper ships in any onboard 2.x release). Rounds 1–3 fully specify architecturalFraming, dataArchitecture (Data Architecture), apiIntegration (API & Integration), auth, privacy, security, runtimeOperations, cicdAndDelivery (CI/CD & Operations), architecturalValidation. Phases vision, personas, domain, frontend, authSecurity, workflow, pluginRecommendation, risk, featureRoadmap, pluginInstall, schemaDraftReview carry `_status: 'deferred-to-round-N'` and become inert pass-through metadata. Greenfield 3.0+ is the canonical caller; direct headless callers must construct v2 contexts directly. Round 4 extension: adds mode toggles, personas/domainModel phases, riskReconciliation in architecturalValidation, and top-level risks[].",
   "type": "object",
   "required": ["version", "source", "projectPath", "callerExtras", "phases"],
   "additionalProperties": false,
@@ -10,6 +10,31 @@
     "version": {
       "const": 2,
       "description": "Schema version. HARD-REQUIRED. Missing or any other value → onboard:generate rejects with a pointer to onboard 1.10.0 for legacy callers."
+    },
+    "mode": {
+      "type": "object",
+      "description": "Wizard-level mode toggles set at Step 1. Persisted in greenfield-state.json.",
+      "properties": {
+        "depth": {
+          "type": "string",
+          "enum": ["heavy", "light"],
+          "default": "heavy",
+          "description": "Heavy: full Q-bank (~120 Qs total). Light: showInLight=true Qs only (~65)."
+        },
+        "coupling": {
+          "type": "string",
+          "enum": ["auto-loop", "hybrid"],
+          "default": "auto-loop",
+          "description": "Auto-loop: every downstream phase iterates per persona/entity. Hybrid: only loopMode=always Qs iterate."
+        },
+        "domainFormat": {
+          "type": "string",
+          "enum": ["full-ddd", "ddd-lite"],
+          "default": "full-ddd",
+          "description": "Full DDD includes value objects, domain events, anti-corruption. DDD-lite drops them."
+        }
+      },
+      "required": ["depth", "coupling", "domainFormat"]
     },
     "source": {
       "type": "string",
@@ -52,8 +77,92 @@
       "required": ["cicdAndDelivery"],
       "properties": {
         "vision":   { "$ref": "#/definitions/deferredPhase" },
-        "personas": { "$ref": "#/definitions/deferredPhase" },
-        "domain":   { "$ref": "#/definitions/deferredPhase" },
+        "personas": {
+          "type": "object",
+          "description": "Round 4 — discovery phase (Step 2.2). Produces persona reference data for auto-loop.",
+          "properties": {
+            "primary": {
+              "type": "array",
+              "maxItems": 5,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string", "pattern": "^P[0-9]+$" },
+                  "name": { "type": "string" },
+                  "role": { "type": "string" },
+                  "goal": { "type": "string" },
+                  "context": {
+                    "type": "object",
+                    "properties": {
+                      "device": { "type": "array", "items": { "type": "string" } },
+                      "connection": { "type": "string" },
+                      "techSophistication": { "type": "string", "enum": ["Power user","Comfortable","Basic","Novice"] }
+                    }
+                  },
+                  "jobs": {
+                    "type": "array",
+                    "items": { "type": "object", "properties": { "id":{"type":"string"}, "story":{"type":"string"} } }
+                  },
+                  "constraints": { "type": "string" },
+                  "antiPersona": { "type": "string" }
+                },
+                "required": ["id", "name", "role", "goal"]
+              }
+            },
+            "secondary": {
+              "type": "array",
+              "maxItems": 3,
+              "items": {
+                "type": "object",
+                "properties": { "id":{"type":"string"}, "name":{"type":"string"}, "role":{"type":"string"}, "context":{"type":"string"} }
+              }
+            },
+            "antiPersonas": { "type": "array", "items": { "type": "string" } },
+            "skipped": { "type": "boolean", "default": false },
+            "deferredReason": { "type": "string" }
+          }
+        },
+        "domainModel": {
+          "type": "object",
+          "description": "Round 4 — discovery phase (Step 2.7). Produces domain reference data for auto-loop.",
+          "properties": {
+            "contexts": {
+              "type": "array",
+              "items": { "type": "object", "properties": { "id":{"type":"string","pattern":"^BC[0-9]+$"}, "name":{"type":"string"}, "responsibility":{"type":"string"} } }
+            },
+            "entities": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string" },
+                  "contextId": { "type": "string" },
+                  "isAggregateRoot": { "type": "boolean" },
+                  "relationships": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": { "target":{"type":"string"}, "kind":{"type":"string","enum":["has-one","has-many","belongs-to","refs"]} }
+                    }
+                  }
+                },
+                "required": ["id", "contextId", "isAggregateRoot"]
+              }
+            },
+            "valueObjects": { "type": "array", "items": { "type": "string" } },
+            "domainEvents": { "type": "array", "items": { "type": "string" } },
+            "crossContextRelationships": {
+              "type": "array",
+              "items": { "type": "object", "properties": { "from":{"type":"string"}, "to":{"type":"string"}, "kind":{"type":"string"} } }
+            },
+            "ubiquitousLanguage": {
+              "type": "array",
+              "items": { "type": "object", "properties": { "term":{"type":"string"}, "definition":{"type":"string"} } }
+            },
+            "antiCorruption": { "type": "string" },
+            "deferred": { "type": "boolean", "default": false }
+          }
+        },
         "architecturalFraming": { "$ref": "#/definitions/architecturalFraming" },
         "architecturalValidation": { "$ref": "#/definitions/architecturalValidation" },
         "stack":   {
@@ -193,7 +302,6 @@
           }
         },
         "cicdAndDelivery":   { "$ref": "#/definitions/cicdAndDelivery" },
-        "risk": { "$ref": "#/definitions/deferredPhase" },
         "featureRoadmap":   { "$ref": "#/definitions/deferredPhase" },
         "pluginInstall":  {
           "type": "object",
@@ -219,6 +327,27 @@
           "type": "string",
           "pattern": "^(vision|personas|domain|architecturalFraming|architecturalValidation|stack|auth|privacy|security|runtimeOperations|dataArchitecture|apiIntegration|frontend|authSecurity|workflow|pluginRecommendation|cicdAndDelivery|risk|featureRoadmap|pluginInstall|schemaDraftReview)\\..+$"
         }
+      }
+    },
+    "risks": {
+      "type": "array",
+      "description": "Cross-cutting risks collected from inline Q_RISK in each architectural phase + 2 discovery phases. 10 entries max in default cadence.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "pattern": "^R-[A-Z]+-[0-9]+$" },
+          "originatingPhase": { "type": "string", "enum": ["personas","domainModel","architecturalFraming","dataArchitecture","apiIntegration","auth","privacy","security","runtimeOperations","cicdAndDelivery"] },
+          "text": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string", "enum": ["scaling","security","dataloss","vendor-lock","compliance","performance","ops","team","market"] } },
+          "reconciliation": {
+            "type": "object",
+            "properties": {
+              "status": { "type": "string", "enum": ["mitigated","partial","accepted-explicit","open-followup","out-of-scope","user-declared-none"] },
+              "rationale": { "type": "string" }
+            }
+          }
+        },
+        "required": ["id", "originatingPhase", "text"]
       }
     }
   },
@@ -292,6 +421,23 @@
         "finalNotes": {
           "type": "string",
           "description": "Free-text note for future maintainers about divergences, rework scope, or sign-off context. Populated from AV.Q2 (conditional). Empty string OK; null is not."
+        },
+        "riskReconciliation": {
+          "type": "object",
+          "description": "Round 4 — front section of Step 15. Walks each captured risk + asks reconciliation status.",
+          "properties": {
+            "summary": {
+              "type": "object",
+              "properties": {
+                "mitigated":         { "type": "array", "items": { "type": "string" } },
+                "partial":           { "type": "array", "items": { "type": "string" } },
+                "acceptedExplicit":  { "type": "array", "items": { "type": "string" } },
+                "openFollowup":      { "type": "array", "items": { "type": "string" } },
+                "outOfScope":        { "type": "array", "items": { "type": "string" } }
+              }
+            },
+            "topFollowups": { "type": "array", "items": { "type": "string" }, "description": "Risk IDs flagged as worth a feature-list.json followup card." }
+          }
         }
       }
     },
