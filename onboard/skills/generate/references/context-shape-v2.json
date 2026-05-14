@@ -155,7 +155,7 @@
             "headers":              { "type": "object", "description": "Security headers: CORS, CSP, X-Frame-Options defaults." },
             "inputValidation":      { "type": "object", "description": "Input validation policy: boundaries-only vs everywhere; library choice." },
             "auditRetention":       { "type": "object", "description": "Audit log retention: window, tamper-evidence (hash chain, write-once storage). Required when sensitivityTier ≠ standard." },
-            "ir":                   { "type": "object", "description": "Incident response: runbook style, notification SLA. Pointer to runtimeOperations.incidentProcess for full detail." },
+            "ir":                   { "type": "object", "description": "Incident response policy: runbook style, notification SLA. Cross-references runtimeOperations.incidentProcess (added by T4 in the same Round 3 batch)." },
             "pentestCadence":       { "enum": ["none", "annual", "quarterly", "continuous"], "description": "Pentest cadence. Auto-skipped for hobby scaleTarget." },
             "vdp":                  { "enum": ["none", "private", "public"], "description": "Bug bounty / VDP program. Auto-skipped for hobby." }
           }
