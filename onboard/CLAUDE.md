@@ -91,7 +91,14 @@ The canonical schema lives at `skills/generate/references/context-shape-v2.json`
     // P0, P0.5, P1, P3, P4, P5, P6, P7, P8.5, P9, P10, P10.5
     // each carry { "_status": "deferred-to-round-N" } in Round 1 alpha
   },
-  "syntheses": { "P8": { "approvedAt", "adjustments[]" } },
+  "syntheses": {
+    // Round 1 live: "P8" (cicdAndDelivery)
+    // Round 2 live: "P2.5" (architecturalFraming), "P3" (dataArchitecture), "P4" (apiIntegration)
+    // Round 2.5 live: above + "P11" (architecturalValidation)
+    // Round 3 live: above + "P5" (auth), "P6" (privacy), "P7" (security), "P8b" (runtimeOperations)
+    //   cicdAndDelivery renumbered to Step 11; architecturalValidation renumbered to Step 15
+    "P8": { "approvedAt", "adjustments[]" }
+  },
   "dependencies": { "P8": ["P0.willDeploy", "P0.teamSize", ...] }
 }
 ```
@@ -102,7 +109,9 @@ Onboard 2.x rejects v1 input outright. There is no migration helper. v1 callers 
 
 The rejection contract is enforced at the top of `skills/generate/SKILL.md § Step 0` — never silent, never partial. The error message is parseable by callers for routing.
 
-### v2-specific templates (Round 1)
+### v2-specific templates (Round 1 — Round 3 complete)
+
+Rounds 1–3 are complete. Round 1 wired CI/CD (P8). Rounds 2 / 2.5 wired architectural synthesis phases (architecturalFraming, dataArchitecture, apiIntegration, architecturalValidation). Round 3 adds auth, privacy, security, runtimeOperations synthesis phases (Steps 5–8 in the greenfield wizard; cicdAndDelivery renumbered to Step 11; architecturalValidation renumbered to Step 15).
 
 - `skills/generate/references/cicd-templates/github-actions/*.yml.tmpl` — 4 GHA workflow templates rendered from P8 fields. Round 1 ships GHA only; non-GHA providers in Round 6.
 - `skills/generate/references/sprint-contracts-template.json` — sprint contract structure consuming `phases.P8.cicd.envLadder` for `deploymentTargets`.

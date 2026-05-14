@@ -11,7 +11,7 @@ Scaffolds new projects with AI-native, auto-evolving Claude Code tooling. Three-
 Phase 1: Context Gathering ──→ context-gathering skill (adaptive wizard)
      │                            ├── stack-researcher agent (WebSearch)
      │                            └── synthesis-review skill (Phase 1.8 — invoked inline at end of each major step;
-     │                                                         Round 2 / 2.5: Step 2.5 → architecturalFraming, Step 3 → dataArchitecture, Step 4 → apiIntegration, Step 7 → cicdAndDelivery, Step 11 → architecturalValidation)
+     │                                                         Round 2 / 2.5 / 3: Step 2.5 → architecturalFraming, Step 3 → dataArchitecture, Step 4 → apiIntegration, Step 5 → auth, Step 6 → privacy, Step 7 → security, Step 8 → runtimeOperations, Step 11 → cicdAndDelivery, Step 15 → architecturalValidation)
      │
      ├── Phase 1.5 (conditional): Architectural Research — resolves parked questions
      │
@@ -19,7 +19,7 @@ Phase 1: Context Gathering ──→ context-gathering skill (adaptive wizard)
 Phase 1.7: Pre-Scaffold Spec Grilling ──→ grill-spec skill
      │                                       ├── adjust-dialog skill (5-category adversarial walk)
      │                                       └── Else: inline fallback (if adjust-dialog unavailable)
-     │                                       Cross-checks against context.syntheses.* (Round 2.5: architecturalFraming, dataArchitecture, apiIntegration, cicdAndDelivery, architecturalValidation)
+     │                                       Cross-checks against context.syntheses.* (Round 2.5 / 3: architecturalFraming, dataArchitecture, apiIntegration, auth, privacy, security, runtimeOperations, cicdAndDelivery, architecturalValidation)
      ▼
 Phase 2: Scaffold ──→ scaffolding skill (execute scaffold + git setup)
      │
@@ -49,8 +49,8 @@ Greenfield only generates two artifacts that require scaffold-specific knowledge
 
 ## Skill Hierarchy
 
-- `context-gathering/SKILL.md` — Phase 1: adaptive state-machine wizard (3.0 Round 2 / 2.5: 11 wizard steps (1–11 including Step 2.5); Step 2.5 = Architectural Framing / architecturalFraming (4 Qs — topology, deploymentShape, scaleTarget, boundaryNotes), Step 3 = Data Architecture / dataArchitecture (12 Qs), Step 4 = API & Integration / apiIntegration (10 Qs), Step 7 = CI/CD & Delivery / cicdAndDelivery (17 Qs from Round 1), Step 11 = Architectural Validation / architecturalValidation (1–2 Qs — final cross-phase sign-off). Total ~75 wizard questions; developer answers 30-57 depending on stack + deploy)
-- `synthesis-review/SKILL.md` — Phase 1.8: per-phase synthesis review. Renders `docs/adr/<topic-kebab>.html` in the scaffolded project, walks Approve/Adjust/Skip per section, writes `dependencies.json` sidecar, installs freshness hook. Invoked inline by `context-gathering` at the end of each major step that has a synthesis template (Round 2 / 2.5: architecturalFraming at Step 2.5, dataArchitecture at Step 3, apiIntegration at Step 4, cicdAndDelivery at Step 7, architecturalValidation at Step 11)
+- `context-gathering/SKILL.md` — Phase 1: adaptive state-machine wizard (3.0 Round 2 / 2.5 / 3: 15 wizard steps (1–15 including Step 2.5); Step 2.5 = Architectural Framing / architecturalFraming (4 Qs — topology, deploymentShape, scaleTarget, boundaryNotes), Step 3 = Data Architecture / dataArchitecture (12 Qs), Step 4 = API & Integration / apiIntegration (10 Qs), Step 5 = Auth & Identity / auth, Step 6 = Privacy & Data Governance / privacy, Step 7 = Security / security, Step 8 = Runtime Operations / runtimeOperations, Step 11 = CI/CD & Delivery / cicdAndDelivery (17 Qs from Round 1), Step 15 = Architectural Validation / architecturalValidation (1–2 Qs — final cross-phase sign-off). Total ~75+ wizard questions; developer answers 30-57 depending on stack + deploy)
+- `synthesis-review/SKILL.md` — Phase 1.8: per-phase synthesis review. Renders `docs/adr/<topic-kebab>.html` in the scaffolded project, walks Approve/Adjust/Skip per section, writes `dependencies.json` sidecar, installs freshness hook. Invoked inline by `context-gathering` at the end of each major step that has a synthesis template (Round 2 / 2.5 / 3: architecturalFraming at Step 2.5, dataArchitecture at Step 3, apiIntegration at Step 4, auth at Step 5, privacy at Step 6, security at Step 7, runtimeOperations at Step 8, cicdAndDelivery at Step 11, architecturalValidation at Step 15)
 - `grill-spec/SKILL.md` — Phase 1.7: pre-scaffold validation gate (5-category decision-tree walk via `greenfield/skills/adjust-dialog/`; falls back to inline if unavailable). Cross-checks against `context.syntheses.*`
 - `scaffolding/SKILL.md` — Phase 2: execute scaffold, git setup, verify Hello World
 - `tooling-generation/SKILL.md` — Phase 3: prepare context, call enriched onboard, generate init.sh + feature-list.json
@@ -72,7 +72,7 @@ User-facing skills (show in `/greenfield:` autocomplete):
 Internal building blocks (`user-invocable: false`):
 
 - `context-gathering/SKILL.md` — Phase 1 adaptive wizard
-- `synthesis-review/SKILL.md` — Phase 1.8 per-phase synthesis review (Round 2 / 2.5: architecturalFraming at Step 2.5, dataArchitecture at Step 3, apiIntegration at Step 4, cicdAndDelivery at Step 7, architecturalValidation at Step 11)
+- `synthesis-review/SKILL.md` — Phase 1.8 per-phase synthesis review (Round 2 / 2.5 / 3: architecturalFraming at Step 2.5, dataArchitecture at Step 3, apiIntegration at Step 4, auth at Step 5, privacy at Step 6, security at Step 7, runtimeOperations at Step 8, cicdAndDelivery at Step 11, architecturalValidation at Step 15)
 - `grill-spec/SKILL.md` — Phase 1.7 pre-scaffold validation gate
 - `scaffolding/SKILL.md` — Phase 2 scaffold execution
 - `plugin-discovery/SKILL.md` — Phase 3a plugin catalog match + install
@@ -89,7 +89,7 @@ Note: `/greenfield:verify`, `/greenfield:evolve` are now `/onboard:verify`, `/on
 
 - Adaptive wizard: each answer updates a context object, subsequent questions check preconditions
 - Wizard scope protection: "Park it" escape hatch for deep-research questions, optional Phase 1.5 Architectural Research sub-phase
-- Progress indicator: every wizard Step emits "Step X of 11" so sessions can't silently derail
+- Progress indicator: every wizard Step emits "Step X of 15" so sessions can't silently derail
 - Web research: stack-researcher agent searches for latest versions and best practices before scaffolding, with main-session fallback when sub-agent web tools are denied
 - Feature decomposition: mandatory — downstream phases depend on `docs/feature-list.json` existing
 - Plugin-aware generation: coveredCapabilities passed to onboard, prevents agent shadowing

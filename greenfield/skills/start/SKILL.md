@@ -66,7 +66,7 @@ Greenfield writes to `.claude/greenfield-state.json` at every natural checkpoint
   "createdAt": "ISO-8601 timestamp",
   "updatedAt": "ISO-8601 timestamp",
   "currentPhase": "phase-1-context-gathering | phase-1.8-synthesis-review | phase-1.5-architectural-research | phase-1.7-grill-spec | phase-2-scaffold | phase-3a-plugin-discovery | phase-3b-tooling-generation | complete",
-  "currentSynthesisPhase": "architecturalFraming | dataArchitecture | apiIntegration | cicdAndDelivery | architecturalValidation (only set when currentPhase === 'phase-1.8-synthesis-review'; identifies which phaseId is currently under review; cleared on return). Valid values in Round 2 / Round 2.5: \"architecturalFraming\", \"dataArchitecture\", \"apiIntegration\", \"cicdAndDelivery\", \"architecturalValidation\". Future rounds add vision/authSecurity/workflow/featureRoadmap/schemaDraftReview.",
+  "currentSynthesisPhase": "architecturalFraming | dataArchitecture | apiIntegration | auth | privacy | security | runtimeOperations | cicdAndDelivery | architecturalValidation (only set when currentPhase === 'phase-1.8-synthesis-review'; identifies which phaseId is currently under review; cleared on return). Valid values in Round 2 / 2.5 / 3: \"architecturalFraming\", \"dataArchitecture\", \"apiIntegration\", \"auth\", \"privacy\", \"security\", \"runtimeOperations\", \"cicdAndDelivery\", \"architecturalValidation\". Future rounds add vision/workflow/featureRoadmap/schemaDraftReview.",
   "currentStep": "skill-specific step identifier",
   "completedSteps": ["list of completed step identifiers"],
   "context": { /* partial context object, grows as wizard progresses */ },
@@ -90,6 +90,30 @@ Greenfield writes to `.claude/greenfield-state.json` at every natural checkpoint
       "staleReason": null
     },
     "apiIntegration": {
+      "status": "not-yet-walked",
+      "approvedAt": null,
+      "lastModified": "ISO-8601 timestamp",
+      "staleReason": null
+    },
+    "auth": {
+      "status": "not-yet-walked",
+      "approvedAt": null,
+      "lastModified": "ISO-8601 timestamp",
+      "staleReason": null
+    },
+    "privacy": {
+      "status": "not-yet-walked",
+      "approvedAt": null,
+      "lastModified": "ISO-8601 timestamp",
+      "staleReason": null
+    },
+    "security": {
+      "status": "not-yet-walked",
+      "approvedAt": null,
+      "lastModified": "ISO-8601 timestamp",
+      "staleReason": null
+    },
+    "runtimeOperations": {
       "status": "not-yet-walked",
       "approvedAt": null,
       "lastModified": "ISO-8601 timestamp",
@@ -148,7 +172,7 @@ Tell the developer:
 
 ## Phase 1: Context Gathering
 
-Use the `context-gathering` skill to guide the developer through the adaptive wizard. **The wizard has 11 named Steps and must emit a "Step X of 11" progress indicator at every Step boundary** so both Claude and the user can track progress.
+Use the `context-gathering` skill to guide the developer through the adaptive wizard. **The wizard has 15 named Steps and must emit a "Step X of 15" progress indicator at every Step boundary** so both Claude and the user can track progress.
 
 The skill handles:
 - Project vision (what they want to build)
@@ -156,7 +180,7 @@ The skill handles:
 - Project details (database, auth, deploy, monitoring, etc.)
 - Workflow preferences (testing, style, security, autonomy)
 - CI/CD and auto-evolution preferences (Step 5 — expanded in greenfield 3.0 to 17 questions covering provider, gates, env ladder, secrets, notifications, build matrix, caching, release pipeline, deploy cadence)
-- **Phase 1.8 synthesis review** — runs inline at the end of each major step that has a synthesis template. Round 2 / 2.5 wires it for architecturalFraming (Step 2.5 — Architectural Framing), dataArchitecture (Step 3 — Data Architecture), apiIntegration (Step 4 — API & Integration), cicdAndDelivery (Step 7 — CI/CD), and architecturalValidation (Step 11 — final cross-phase sign-off). Each pass renders the corresponding HTML in the scaffolded project (`docs/adr/architectural-framing.html`, `docs/adr/data-architecture.html`, `docs/adr/api-integration.html`, `docs/adr/cicd-and-delivery.html`, `docs/adr/architectural-validation.html`), walks the developer through Approve/Adjust/Skip per section, then returns to the next wizard step. Future rounds add vision/authSecurity/workflow/featureRoadmap/schemaDraftReview.
+- **Phase 1.8 synthesis review** — runs inline at the end of each major step that has a synthesis template. Round 2 / 2.5 / 3 wires it for architecturalFraming (Step 2.5 — Architectural Framing), dataArchitecture (Step 3 — Data Architecture), apiIntegration (Step 4 — API & Integration), auth (Step 5 — Auth & Identity), privacy (Step 6 — Privacy & Data Governance), security (Step 7 — Security), runtimeOperations (Step 8 — Runtime Operations), cicdAndDelivery (Step 11 — CI/CD), and architecturalValidation (Step 15 — final cross-phase sign-off). Each pass renders the corresponding HTML in the scaffolded project (`docs/adr/architectural-framing.html`, `docs/adr/data-architecture.html`, `docs/adr/api-integration.html`, `docs/adr/auth.html`, `docs/adr/privacy.html`, `docs/adr/security.html`, `docs/adr/runtime-operations.html`, `docs/adr/cicd-and-delivery.html`, `docs/adr/architectural-validation.html`), walks the developer through Approve/Adjust/Skip per section, then returns to the next wizard step. Future rounds add vision/workflow/featureRoadmap/schemaDraftReview.
 - **Feature decomposition** (mandatory — downstream phases depend on it)
 - Confirmation summary
 - Phase 1.5 Architectural Research (conditional — only if parked questions exist)
