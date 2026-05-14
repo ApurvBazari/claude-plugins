@@ -1,0 +1,168 @@
+<!--
+  Per-phase synthesis template — Security.
+  Loaded by synthesis-review/SKILL.md Step 2 and spliced into synthesis-template.html's {{phase_body}}.
+
+  Placeholders use Mustache-like syntax: {{security.<field>}} resolves from
+  context.phases.security.<field>. Cross-checks resolve dependency paths from
+  context.phases.<other-phase>.<path>; if the path is not yet captured (later-round phase),
+  the synthesis-review skill renders "not yet captured" rather than blocking.
+
+  Section anatomy (per references/section-prompts.md):
+    1. section-title
+    2. captured-as
+    3. cross-checks
+    4. contradictions (only if rules fire)
+    5. notes (only if developer-relevant)
+
+  Stale-status block: rendered by synthesis-review SKILL.md Step 2 using phaseStatus.security.
+  CSS for .stale-status is injected by synthesis-template.html (the outer frame).
+-->
+
+<!-- Stale status block — rendered by synthesis-review SKILL.md Step 2 before the section walk -->
+<div class="stale-status {{stale_status_class}}">
+  {{stale_block}}
+</div>
+<!-- stale_block rendering rules (applied by synthesis-review Step 2):
+  security depends on: dataArchitecture.compliance, apiIntegration.externalServices, auth.strategy,
+  privacy.piiCategories, architecturalFraming.topology, architecturalFraming.scaleTarget.
+  If phaseStatus.security.status === "stale":
+    stale_status_class = "is-stale"
+    stale_block = "<strong>⚠️ Stale synthesis</strong> — this phase was previously approved but a dependency changed.<br>
+    <strong>Reason</strong>: {staleReason}<br>
+    <strong>Last approved</strong>: {approvedAt}<br>
+    <em>Review sections below with the changed dependency in mind.</em>"
+
+  If phaseStatus.security.status === "approved" or "approved-with-noted-divergences":
+    stale_status_class = "is-approved"
+    stale_block = "✅ <strong>Synthesis current</strong> — approved {approvedAt}. No upstream changes detected."
+
+  Otherwise: stale_status_class = "is-other"; stale_block = "Phase status: {status}."
+-->
+
+<h2>Captured decisions</h2>
+
+<!-- Section 1: Sensitivity Tier -->
+<div class="section">
+  <div class="section-title">1. Sensitivity Tier</div>
+  <pre class="captured">sensitivityTier: {{security.sensitivityTier}}</pre>
+  <div class="cross-check">Derives from <code>dataArchitecture.compliance = {{dataArchitecture.compliance}}</code> and <code>apiIntegration.externalServices = {{apiIntegration.externalServices | join: ", "}}</code>. Non-empty compliance scope (SOC 2, HIPAA, PCI DSS) locks tier to <code>high</code>. Payment providers in external services (Stripe, Braintree, Adyen) elevate to <code>elevated</code> at minimum — payment card data is PCI DSS scope regardless of compliance field. <code>privacy.piiCategories = {{privacy.piiCategories | join: ", "}}</code>: non-empty PII inventory also elevates above <code>standard</code>.</div>
+  <!-- Contradiction injected if security.sensitivityTier === "standard" && dataArchitecture.compliance is non-empty: -->
+  <!-- <div class="contradiction"><strong>Contradiction:</strong> sensitivityTier is <code>standard</code> but <code>dataArchitecture.compliance</code> is <code>{{dataArchitecture.compliance}}</code>. Non-empty compliance scope requires <code>sensitivityTier: high</code>. Update the tier or remove the compliance declaration.</div> -->
+  <!-- Note injected if apiIntegration.externalServices contains a payment provider && security.sensitivityTier === "standard": -->
+  <!-- <div class="note">Payment provider detected in external services but sensitivityTier is <code>standard</code>. Payment card data handling triggers PCI DSS scope, which requires at minimum <code>elevated</code> tier. Review and update sensitivityTier.</div> -->
+</div>
+
+<!-- Section 2: Secret Management -->
+<div class="section">
+  <div class="section-title">2. Secret Management</div>
+  <pre class="captured">secrets.backend:  {{security.secrets.backend}}
+secrets.rotation: {{security.secrets.rotation}}</pre>
+  <div class="cross-check">Each entry in <code>apiIntegration.externalServices = {{apiIntegration.externalServices | join: ", "}}</code> implies at least one API key or secret. <code>auth.strategy = {{auth.strategy}}</code>: hosted providers contribute OAuth client secrets; built-in auth contributes session signing secrets and password pepper. All must be in the declared secrets backend — none should appear in source code, CI environment variables, or unencrypted config files.</div>
+  <!-- Contradiction injected if security.secrets.backend === "env-only" && security.sensitivityTier !== "standard": -->
+  <!-- <div class="contradiction"><strong>Contradiction:</strong> secrets.backend is <code>env-only</code> but sensitivityTier is <code>{{security.sensitivityTier}}</code>. Elevated and high tier projects require a dedicated secrets manager (Vault, AWS Secrets Manager, GCP Secret Manager, Doppler). Plain environment variables lack audit trails, access controls, and rotation support.</div> -->
+  <!-- Note injected if security.secrets.rotation === "none" && apiIntegration.externalServices is non-empty: -->
+  <!-- <div class="note">External services are configured but secret rotation is unset. Unrotated long-lived credentials are the most common vector for account compromise. Define a rotation cadence (manual-quarterly at minimum; automated is preferred).</div> -->
+</div>
+
+<!-- Section 3: Vulnerability Scanning -->
+<div class="section">
+  <div class="section-title">3. Vulnerability Scanning</div>
+  <pre class="captured">scanning.deps:          {{security.scanning.deps}}
+scanning.sast:          {{security.scanning.sast}}
+scanning.dast:          {{security.scanning.dast}}
+scanning.containerScan: {{security.scanning.containerScan}}
+scanning.cadence:       {{security.scanning.cadence}}</pre>
+  <div class="cross-check">Dependency scanning (<code>deps</code>) is table stakes for any project with package dependencies. SAST (static analysis: CodeQL, Semgrep, Snyk Code) is recommended when <code>sensitivityTier</code> is <code>elevated</code> or higher. DAST (dynamic analysis: OWASP ZAP, Burp Suite automated scan) is recommended when <code>sensitivityTier = high</code> — it catches runtime injection and authentication bypass issues that SAST misses. Container scanning is relevant when <code>architecturalFraming.topology</code> includes containerised workloads.</div>
+  <!-- Note injected if security.scanning.sast === "none" && security.sensitivityTier !== "standard": -->
+  <!-- <div class="note">SAST is not configured but sensitivityTier is <code>{{security.sensitivityTier}}</code>. SAST runs in CI and catches injection flaws, hardcoded secrets, and insecure patterns before they reach production. Add at minimum Semgrep OSS or CodeQL (free for public repos).</div> -->
+  <!-- Note injected if security.scanning.dast === "none" && security.sensitivityTier === "high": -->
+  <!-- <div class="note">DAST is not configured but sensitivityTier is <code>high</code>. DAST validates runtime authentication, session handling, and injection surfaces that static analysis cannot reach. Add OWASP ZAP in CI or a scheduled headless scan.</div> -->
+</div>
+
+<!-- Section 4: Threat Model -->
+<div class="section">
+  <div class="section-title">4. Threat Model</div>
+  <pre class="captured">threatModel: {{security.threatModel}}</pre>
+  <div class="cross-check">Should align with <code>sensitivityTier</code>: <code>none</code> is appropriate only for <code>standard</code> tier; <code>stride-lite</code> (abbreviated STRIDE worksheet) is appropriate for <code>elevated</code>; <code>formal</code> (full STRIDE or PASTA threat model document) is required for <code>high</code>. Cross-inputs: <code>auth.strategy = {{auth.strategy}}</code> (determines which auth threat vectors apply), <code>apiIntegration.externalServices = {{apiIntegration.externalServices | join: ", "}}</code> (each external integration is a threat boundary).</div>
+  <!-- Contradiction injected if security.threatModel === "none" && security.sensitivityTier !== "standard": -->
+  <!-- <div class="contradiction"><strong>Contradiction:</strong> threatModel is <code>none</code> but sensitivityTier is <code>{{security.sensitivityTier}}</code>. Elevated and high tier projects require at minimum a STRIDE-lite threat assessment. Define the threat model before scaffolding security controls.</div> -->
+  <!-- Note injected if security.threatModel === "formal" && architecturalFraming.scaleTarget === "hobby": -->
+  <!-- <div class="note">Formal threat model for a hobby-scale project — this is likely more overhead than needed. Consider <code>stride-lite</code> unless there is a specific compliance driver requiring formal documentation.</div> -->
+</div>
+
+<!-- Section 5: Encryption -->
+<div class="section">
+  <div class="section-title">5. Encryption</div>
+  <pre class="captured">encryptionAtRest.dbDefault:       {{security.encryptionAtRest.dbDefault}}
+encryptionAtRest.perColumnForPII: {{security.encryptionAtRest.perColumnForPII}}
+encryptionAtRest.appManaged:      {{security.encryptionAtRest.appManaged}}
+
+encryptionInTransit.tls:   {{security.encryptionInTransit.tls}}
+encryptionInTransit.mtls:  {{security.encryptionInTransit.mtls}}
+encryptionInTransit.hsts:  {{security.encryptionInTransit.hsts}}</pre>
+  <div class="cross-check">Per-column PII encryption (<code>perColumnForPII</code>) is recommended when <code>privacy.piiCategories = {{privacy.piiCategories | join: ", "}}</code> is non-empty — particularly for financial and health categories. mTLS for service-to-service communication is recommended when <code>architecturalFraming.topology = {{architecturalFraming.topology}}</code> is <code>microservices</code> — all inter-service calls traverse a network boundary and should authenticate both peers. Database-level encryption at rest (<code>dbDefault</code>) is the baseline and is provided by most managed databases; app-managed encryption (<code>appManaged</code>) provides an additional layer independent of the DB provider.</div>
+  <!-- Contradiction injected if security.encryptionInTransit.tls === false: -->
+  <!-- <div class="contradiction"><strong>Contradiction:</strong> TLS in transit is disabled. All network traffic carrying user data must be encrypted in transit — this is a baseline requirement regardless of sensitivityTier. Enable TLS before scaffolding.</div> -->
+  <!-- Note injected if security.encryptionInTransit.mtls === false && architecturalFraming.topology === "microservices": -->
+  <!-- <div class="note">Microservices topology detected but mTLS is not configured. Inter-service calls without mTLS are unauthenticated on the wire — an attacker with internal network access can intercept or forge traffic. Add mTLS via service mesh (Istio, Linkerd) or library-level (go-grpc TLS, Rust tonic TLS).</div> -->
+  <!-- Note injected if security.encryptionAtRest.perColumnForPII === false && privacy.piiCategories is non-empty: -->
+  <!-- <div class="note">PII categories are declared but per-column encryption is not configured. Database-level encryption protects the storage medium; per-column encryption protects individual fields from application-layer access. Consider per-column encryption for financial and health PII at minimum.</div> -->
+</div>
+
+<!-- Section 6: Application Security -->
+<!-- Conditional: skip if no apiIntegration AND no frontend framework detected -->
+<div class="section">
+  <div class="section-title">6. Application Security</div>
+  <!-- Conditional: rendered when apiIntegration.style is not "none" OR stack.stack.framework implies a frontend -->
+  <!-- If no API and no frontend: <div class="note">Section 6 (Application Security) is not applicable — no API integration and no frontend framework detected. Application security controls (CORS, CSP, input validation) are relevant when the project exposes HTTP endpoints or renders HTML.</div> -->
+  <pre class="captured">headers.cors:              {{security.headers.cors}}
+headers.csp:               {{security.headers.csp}}
+headers.xFrameOptions:     {{security.headers.xFrameOptions}}
+
+inputValidation.policy:    {{security.inputValidation.policy}}
+inputValidation.library:   {{security.inputValidation.library}}</pre>
+  <div class="cross-check">CORS policy should restrict origins to known domains — <code>*</code> is only acceptable for fully public, unauthenticated APIs. CSP (Content Security Policy) prevents XSS by declaring which sources may load scripts, styles, and media. <code>X-Frame-Options: DENY</code> prevents clickjacking. Input validation must cover every entry point: HTTP request bodies, query parameters, path parameters, headers, and WebSocket messages. Assumes <code>apiIntegration.style = {{apiIntegration.style}}</code>: GraphQL APIs require additional input depth-limit and complexity controls to prevent denial-of-service via deeply nested queries.</div>
+  <!-- Contradiction injected if security.headers.cors === "*" && security.sensitivityTier !== "standard": -->
+  <!-- <div class="contradiction"><strong>Contradiction:</strong> CORS is <code>*</code> (allow all origins) but sensitivityTier is <code>{{security.sensitivityTier}}</code>. Wildcard CORS on an authenticated API allows any origin to make credentialed requests. Restrict to specific allowed origins.</div> -->
+  <!-- Note injected if security.inputValidation.library === "none": -->
+  <!-- <div class="note">No input validation library defined. Manual validation is error-prone and inconsistently applied. Use a schema validation library appropriate to your stack: Zod (TypeScript), Pydantic (Python), go-playground/validator (Go), joi (Node.js).</div> -->
+</div>
+
+<!-- Section 7: Audit & Incident Response -->
+<div class="section">
+  <div class="section-title">7. Audit &amp; Incident Response</div>
+  <pre class="captured">auditRetention.window:        {{security.auditRetention.window}}
+auditRetention.tamperEvidence: {{security.auditRetention.tamperEvidence}}
+
+ir.runbookStyle:   {{security.ir.runbookStyle}}
+ir.notificationSLA: {{security.ir.notificationSLA}}</pre>
+  <div class="cross-check">Cross-link to <code>runtimeOperations.incidentProcess</code> for full IR process detail — security defines the runbook style and notification SLA here; runtime operations defines the on-call rotation, escalation paths, and tooling. Tamper-evident audit logs (append-only tables, write-once object storage, external SIEM) are required when <code>sensitivityTier</code> is <code>elevated</code> or <code>high</code> — an attacker who can delete audit logs can erase their tracks. Audit retention window must meet the longest applicable compliance requirement: SOC 2 typically requires 1 year; HIPAA requires 6 years; PCI DSS requires 1 year online + 3 years archived.</div>
+  <!-- Contradiction injected if security.auditRetention.tamperEvidence === false && security.sensitivityTier !== "standard": -->
+  <!-- <div class="contradiction"><strong>Contradiction:</strong> tamperEvidence is <code>false</code> but sensitivityTier is <code>{{security.sensitivityTier}}</code>. Elevated and high tier projects require tamper-evident audit logs. An attacker who compromises the application must not be able to erase their audit trail. Enable append-only writes or route logs to an external immutable store.</div> -->
+  <!-- Note injected if security.ir.runbookStyle === "none" && security.sensitivityTier !== "standard": -->
+  <!-- <div class="note">No IR runbook style defined for an elevated/high sensitivity project. Without a runbook, incident response is ad-hoc and slow. Define at minimum a lightweight runbook (Notion page, Markdown in repo) covering: detection → containment → eradication → recovery → post-mortem. Cross-link to runtimeOperations.incidentProcess for the escalation chain.</div> -->
+</div>
+
+<!-- Section 8: Pentest, VDP & Supply Chain -->
+<!-- Conditional: pentest/VDP shown when architecturalFraming.scaleTarget is "production-scale" or "enterprise" OR sensitivityTier is not "standard" -->
+<div class="section">
+  <div class="section-title">8. Pentest, VDP &amp; Supply Chain</div>
+  <!-- Conditional rendering comment:
+    If architecturalFraming.scaleTarget === "hobby" AND security.sensitivityTier === "standard":
+      Pentest and VDP subsections are hidden. Only supply chain fields are shown.
+      <div class="note">Pentest cadence and VDP are shown for production-scale/enterprise projects or elevated/high sensitivity tiers. Hobby-scale standard-tier projects can skip these — supply chain hygiene (lockfile pinning, signed commits) is still recommended.</div>
+    Otherwise: render all fields below.
+  -->
+  <pre class="captured">pentestCadence: {{security.pentestCadence}}
+vdp:            {{security.vdp}}
+
+supplyChain.lockfilePinning: {{security.supplyChain.lockfilePinning}}
+supplyChain.signedCommits:   {{security.supplyChain.signedCommits}}
+supplyChain.sbom:            {{security.supplyChain.sbom}}
+supplyChain.provenance:      {{security.supplyChain.provenance}}</pre>
+  <div class="cross-check">Pentest cadence (<code>pentestCadence</code>) gates on <code>architecturalFraming.scaleTarget = {{architecturalFraming.scaleTarget}}</code> — annual penetration testing is the baseline for production-scale and enterprise targets; hobby-scale can skip. SBOM (<code>supplyChain.sbom</code>) should be <code>true</code> when <code>dataArchitecture.compliance = {{dataArchitecture.compliance}}</code> includes SOC 2 or equivalent — SOC 2 Type II controls increasingly require a software bill of materials as evidence of supply chain visibility. Signed commits (<code>supplyChain.signedCommits</code>) and lockfile pinning (<code>supplyChain.lockfilePinning</code>) are baseline supply-chain hygiene applicable at all tiers.</div>
+  <!-- Contradiction injected if security.supplyChain.sbom === false && dataArchitecture.compliance includes "SOC 2": -->
+  <!-- <div class="contradiction"><strong>Contradiction:</strong> supplyChain.sbom is <code>false</code> but <code>dataArchitecture.compliance</code> includes SOC 2. SOC 2 Type II audits increasingly require an SBOM as evidence of supply chain visibility and dependency risk management. Enable SBOM generation (e.g., <code>syft</code>, <code>cyclonedx-npm</code>) as part of CI.</div> -->
+  <!-- Note injected if security.pentestCadence === "none" && architecturalFraming.scaleTarget === "enterprise": -->
+  <!-- <div class="note">Enterprise scale target but no pentest cadence defined. Enterprise customers and their security teams routinely require evidence of annual penetration testing before approving vendor relationships. Define a cadence and budget for it before the first enterprise sales cycle.</div> -->
+</div>
