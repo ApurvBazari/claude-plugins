@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "phase": "apiIntegration",
+  "recordedAt": "2026-05-13T16:30:00Z",
+  "dependencies": [
+    {
+      "path": "dataArchitecture.orm",
+      "value": "prisma",
+      "rationale": "API codegen tool (GraphQL codegen, OpenAPI TS) and validation library pairing both track with the ORM choice. Synthesis section 1 cross-checks codegen alignment."
+    },
+    {
+      "path": "stack.stack.framework",
+      "value": "next.js",
+      "rationale": "API style options and library availability depend on the framework (FastAPI ⊂ Python, Express ⊂ Node, Rails ⊂ Ruby). Drives wizard option filtering."
+    },
+    {
+      "path": "dataArchitecture.databaseHost",
+      "value": "managed-rdbms",
+      "rationale": "Rate-limit counter store choice + async-queue persistence both depend on whether the DB supports atomic increments and persistent queues. Synthesis section 3 cross-checks rate limiting feasibility."
+    }
+  ]
+}

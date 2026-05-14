@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "phase": "dataArchitecture",
+  "recordedAt": "2026-05-13T16:30:00Z",
+  "dependencies": [
+    {
+      "path": "vision.willDeploy",
+      "value": true,
+      "rationale": "Managed and serverless DB hosts are only meaningful when the project will deploy. Embedded DB + willDeploy=false is fine. vision is deferred to Round 4; cross-check fires automatically once vision lands."
+    },
+    {
+      "path": "stack.stack.database",
+      "value": "postgresql",
+      "rationale": "stack captures a rough DB hint during stack research; dataArchitecture promotes it to a concrete engine + host. Mismatch flagged in synthesis section 1."
+    },
+    {
+      "path": "stack.stack.language",
+      "value": "typescript",
+      "rationale": "ORM filter — Prisma/Drizzle for TypeScript, SQLAlchemy/Django ORM for Python, GORM for Go, etc. Drives wizard option filtering and synthesis contradiction check in section 2."
+    }
+  ]
+}

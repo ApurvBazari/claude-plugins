@@ -1,6 +1,6 @@
 ---
 name: analysis
-description: Read-only codebase analysis — tech stack detection, model recommendations, complexity scoring. Internal building block invoked by the codebase-analyzer agent during /onboard:init — not user-invocable.
+description: Read-only codebase analysis — tech stack detection, model recommendations, complexity scoring. Internal building block invoked by the codebase-analyzer agent during /onboard:start — not user-invocable.
 user-invocable: false
 ---
 
@@ -136,3 +136,11 @@ Compile everything into a clear, organized report with these sections:
 - `references/tech-stack-patterns.md` — Maps detected stacks to optimal configurations
 - `references/model-recommendations.md` — Project complexity → model recommendation logic
 - `references/config-extraction-guide.md` — Config file extraction and pattern scanning guide
+
+## Key Rules
+
+- **Never write or modify any file** — this skill is strictly read-only. All output is a structured report returned to the caller; no files are created or changed.
+- **Script failure is non-blocking** — if any of the three analysis scripts fail, log the failure and continue with deep codebase exploration only. Never abort because a script timed out or hit a permission error.
+- **Only report what is actually found** — do not infer or guess framework versions, conventions, or CI setups. Flag ambiguity as "uncertain" rather than fabricating a value that flows into generation.
+- **Complexity score drives model recommendation via the reference, not ad-hoc** — always use `references/model-recommendations.md` to map the score to a model. Never override the recommendation based on other subjective factors not in the reference.
+- **Existing Claude config is flagged, not silently accepted** — if a substantial CLAUDE.md or `.claude/` directory is present, surface it explicitly in the report and note that the developer may want `/onboard:update` instead of a fresh start.

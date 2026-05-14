@@ -87,3 +87,11 @@ Read `$BASE_DIR/settings.json` and confirm no notify hooks remain.
 > - [list hook entries removed from settings.json]
 >
 > Your other Claude settings are unchanged.
+
+## Key Rules
+
+- **Explicit confirmation required before any deletion** — Step 2 presents the full list of what will be removed and waits for the developer's response. Never delete files or hook entries without this confirmation.
+- **`settings.json` removal is surgical** — only entries whose `command` field contains `notify.sh` are removed. All other hooks, settings, and keys in the file are preserved verbatim. Never overwrite the whole file.
+- **Scope selection requires detection, not assumption** — Step 1 probes both global and project locations before offering scope choices. If only one scope has artifacts, proceed with that scope directly without asking. If neither has artifacts, stop immediately.
+- **Empty arrays and objects are cleaned up** — after removing notify hook entries, if a hook event array becomes empty, remove the array key. If the `hooks` object itself becomes empty, remove it. Leave `settings.json` in the minimal clean state, not with dangling empty containers.
+- **Hooks directory is removed only when empty** — `rmdir "$BASE_DIR/hooks"` is run only after deleting `notify.sh`. If other files exist in the directory, the `rmdir` will fail silently (via `2>/dev/null || true`) — this is correct behavior; do not force-remove.

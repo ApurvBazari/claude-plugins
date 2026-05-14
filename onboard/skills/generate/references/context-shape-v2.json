@@ -1,0 +1,499 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/ApurvBazari/claude-plugins/onboard/skills/generate/references/context-shape-v2.json",
+  "title": "Onboard Generate — v2 Context Shape",
+  "description": "Input schema for the onboard:generate skill in onboard 2.x. Hard cutover from v1: v2 callers must emit `version: 2` at the root. v1 input is rejected outright (no migration helper ships in any onboard 2.x release). Rounds 1–3 fully specify architecturalFraming, dataArchitecture (Data Architecture), apiIntegration (API & Integration), auth, privacy, security, runtimeOperations, cicdAndDelivery (CI/CD & Operations), architecturalValidation. Phases vision, personas, domain, frontend, authSecurity, workflow, pluginRecommendation, risk, featureRoadmap, pluginInstall, schemaDraftReview carry `_status: 'deferred-to-round-N'` and become inert pass-through metadata. Greenfield 3.0+ is the canonical caller; direct headless callers must construct v2 contexts directly.",
+  "type": "object",
+  "required": ["version", "source", "projectPath", "callerExtras", "phases"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": 2,
+      "description": "Schema version. HARD-REQUIRED. Missing or any other value → onboard:generate rejects with a pointer to onboard 1.10.0 for legacy callers."
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the calling plugin (e.g., 'greenfield')."
+    },
+    "projectPath": {
+      "type": "string",
+      "description": "Absolute path to the scaffolded project root. Generate writes artifacts under this path."
+    },
+    "callerExtras": {
+      "type": "object",
+      "description": "Runtime-injected payload from the caller. Stays at root (NOT nested under phases) — separates wizard data from caller plumbing.",
+      "additionalProperties": true,
+      "properties": {
+        "installedPlugins": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Plugin names installed by the caller. Drives shadowing prevention in config-generator (agents for covered capabilities are skipped)."
+        },
+        "coveredCapabilities": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Capability tags covered by installed plugins."
+        },
+        "allowPluginReferences": {
+          "type": "boolean",
+          "description": "Permit generated rules/skills to reference installed plugins instead of duplicating their guidance. Defaults to true when installedPlugins is non-empty."
+        },
+        "allowHttpHooks": {
+          "type": "boolean",
+          "description": "OFF by default. Required true for any hookType='http' entry. Never auto-inferred."
+        }
+      }
+    },
+    "phases": {
+      "type": "object",
+      "description": "Wizard-captured per-phase data. Rounds 1-2 fully specify dataArchitecture (Data Architecture), apiIntegration (API & Integration), and cicdAndDelivery (CI/CD & Operations); other phase slots are deferred to later rounds (R3-R6) and carry _status only. Phase ids match the 15-phase wizard structure documented in docs/greenfield-overview.html.",
+      "additionalProperties": false,
+      "required": ["cicdAndDelivery"],
+      "properties": {
+        "vision":   { "$ref": "#/definitions/deferredPhase" },
+        "personas": { "$ref": "#/definitions/deferredPhase" },
+        "domain":   { "$ref": "#/definitions/deferredPhase" },
+        "architecturalFraming": { "$ref": "#/definitions/architecturalFraming" },
+        "architecturalValidation": { "$ref": "#/definitions/architecturalValidation" },
+        "stack":   {
+          "description": "Stack details. Greenfield 3.0 Round 1 fills this from wizard Steps 1-2 verbatim (no new fields).",
+          "type": "object",
+          "properties": {
+            "stack": {
+              "type": "object",
+              "properties": {
+                "framework": { "type": "string" },
+                "version": { "type": "string" },
+                "language": { "type": "string" },
+                "additional": { "type": "array", "items": { "type": "string" } }
+              }
+            }
+          }
+        },
+        "dataArchitecture":   { "$ref": "#/definitions/dataArchitecture" },
+        "apiIntegration":   { "$ref": "#/definitions/apiIntegration" },
+        "auth": {
+          "type": "object",
+          "description": "Phase: Auth — identity and access control decisions. Round 3 (alpha.4). Hybrid strictness: 4 required enum-locked fields drive cross-phase contradictions; remaining fields loose to accommodate provider catalog churn (Clerk, Auth0, Supabase, Firebase, Cognito).",
+          "required": ["strategy", "sessionModel", "authzModel", "enforcementPoint"],
+          "additionalProperties": false,
+          "properties": {
+            "strategy": {
+              "enum": ["none", "hosted", "self-hosted-oss", "built-in"],
+              "description": "Auth strategy. 'hosted' = Clerk/Auth0/Supabase/Firebase/Cognito; 'self-hosted-oss' = Keycloak/Authentik/Ory; 'built-in' = framework session/JWT; 'none' = no auth (Privacy auto-skip gate fires)."
+            },
+            "sessionModel": {
+              "enum": ["cookie", "jwt", "hybrid", "n/a"],
+              "description": "Session container. 'n/a' valid only when strategy='none'."
+            },
+            "authzModel": {
+              "enum": ["flat-roles", "rbac", "abac", "db-rls", "n/a"],
+              "description": "Authorization model. RLS gated by dataArchitecture.engine support."
+            },
+            "enforcementPoint": {
+              "type": "array",
+              "items": { "enum": ["middleware", "route-guard", "db-rls", "api-gateway"] },
+              "description": "Where authorization checks live. Multi-select."
+            },
+            "provider":         { "type": "string", "description": "Specific provider name (Clerk, Auth0, Supabase Auth, Firebase Auth, Cognito, Keycloak, Authentik, Ory, framework-native). Loose for catalog churn." },
+            "idps":             { "type": "array", "items": { "type": "string" }, "description": "Identity providers selected (email+pw, Google, GitHub, Apple, SAML SSO, magic links, passkeys/WebAuthn)." },
+            "mfa":              { "type": "object", "description": "MFA configuration: required (bool), methods (array: TOTP, SMS, passkeys)." },
+            "tenantResolution": { "type": "string", "description": "Tenant resolution strategy when dataArchitecture.multiTenancy ≠ none (subdomain, path, claim, header). Empty when not multi-tenant." },
+            "serviceAuth":      { "enum": ["api-keys", "mtls", "signed-jwt", "none", "n/a"], "description": "Service-to-service auth. 'n/a' when topology=monolith." },
+            "lifecycle":        { "type": "object", "description": "Account lifecycle: signup flow, email verification, password reset, deletion." },
+            "recovery":         { "type": "string", "description": "Account recovery (email-only, phone, recovery-codes, SSO-mediated)." },
+            "passwordPolicy":   { "type": "object", "description": "Password policy: length, complexity, breach check (HIBP), or passkey-only." },
+            "auditLog":         { "type": "object", "description": "Auth audit log: events captured, retention window." }
+          }
+        },
+        "privacy": {
+          "type": "object",
+          "description": "Phase: Privacy — privacy, consent, and data-rights decisions. Round 3 (alpha.4). Supports synthesisStatus='n/a' stub when auth.strategy='none' AND no-data-collected gate passes.",
+          "required": ["synthesisStatus"],
+          "additionalProperties": false,
+          "properties": {
+            "synthesisStatus": {
+              "enum": ["complete", "n/a"],
+              "description": "'n/a' triggers stub synthesis when no auth + no data collected. All other fields optional when n/a."
+            },
+            "regulations":     { "type": "array", "items": { "type": "string" }, "description": "Regulatory scope (GDPR, CCPA, LGPD, PIPEDA, HIPAA, none). Pre-filled from dataArchitecture.compliance." },
+            "piiCategories":   { "type": "array", "items": { "type": "string" }, "description": "PII categories collected (email, name, address, phone, location, payment, health, biometric, behavioral)." },
+            "lawfulBasis":     { "type": "object", "description": "Lawful basis per PII category (consent, contract, legitimate-interest, vital-interest). Required if GDPR/UK-GDPR in regulations." },
+            "retention":       { "type": "object", "description": "Retention policy: per-category retention windows." },
+            "deletionFlow":    { "type": "string", "description": "Right-to-erasure (hard-delete, soft-delete-and-anonymize, deletion-request-workflow)." },
+            "consentManager":  { "type": "object", "description": "Consent management: banner needed, granular categories, storage mechanism." },
+            "dsar":            { "type": "object", "description": "DSAR / data export flow: format (JSON/CSV), SLA." },
+            "processors":      { "type": "array", "items": { "type": "string" }, "description": "Third-party PII processors. Pre-filled from apiIntegration.externalServices." },
+            "minimization":    { "type": "object", "description": "Data minimization: anonymization in analytics, IP truncation, etc." },
+            "dataResidency":   { "type": "object", "description": "Cross-border transfer: residency requirements, transfer mechanisms (SCC, adequacy)." },
+            "accessAudit":     { "type": "object", "description": "PII access audit log: who/when/what. Mandatory when regulations includes HIPAA." }
+          }
+        },
+        "security": {
+          "type": "object",
+          "description": "Phase: Security — application security posture and operational controls. Round 3 (alpha.4). 3 required enum-locked fields drive cross-phase contradictions.",
+          "required": ["sensitivityTier", "threatModel", "supplyChain"],
+          "additionalProperties": false,
+          "properties": {
+            "sensitivityTier": {
+              "enum": ["standard", "elevated", "high"],
+              "description": "Sensitivity tier. Locked to 'high' if dataArchitecture.compliance non-empty. 'elevated' for PII/payments. Drives Sec.Q9/Q11/Q12 conditional flow."
+            },
+            "threatModel": {
+              "enum": ["none", "stride-lite", "formal"],
+              "description": "Threat model approach. STRIDE-lite checklist or formal session."
+            },
+            "supplyChain": {
+              "type": "object",
+              "description": "Supply-chain posture: lockfile pinning (bool), signed commits (bool), SBOM generation (bool), provenance attestation (bool)."
+            },
+            "secrets":              { "type": "object", "description": "Secret management: storage backend (.env, platform-managed, Vault/Doppler, cloud-KMS), rotation cadence." },
+            "scanning":             { "type": "object", "description": "Vulnerability scanning: deps (Dependabot/Snyk), SAST (Semgrep/CodeQL), DAST (ZAP), container scan, cadence." },
+            "encryptionAtRest":     { "type": "object", "description": "Encryption at rest: DB-default, per-column for PII, app-managed." },
+            "encryptionInTransit":  { "type": "object", "description": "Encryption in transit: TLS everywhere, mTLS for s2s, HSTS posture." },
+            "headers":              { "type": "object", "description": "Security headers: CORS, CSP, X-Frame-Options defaults." },
+            "inputValidation":      { "type": "object", "description": "Input validation policy: boundaries-only vs everywhere; library choice." },
+            "auditRetention":       { "type": "object", "description": "Audit log retention: window, tamper-evidence (hash chain, write-once storage). Required when sensitivityTier ≠ standard." },
+            "ir":                   { "type": "object", "description": "Incident response policy: runbook style, notification SLA. Cross-references runtimeOperations.incidentProcess (added by T4 in the same Round 3 batch)." },
+            "pentestCadence":       { "enum": ["none", "annual", "quarterly", "continuous"], "description": "Pentest cadence. Auto-skipped for hobby scaleTarget." },
+            "vdp":                  { "enum": ["none", "private", "public"], "description": "Bug bounty / VDP program. Auto-skipped for hobby." }
+          }
+        },
+        "runtimeOperations": {
+          "type": "object",
+          "description": "Phase: Runtime Operations — background jobs, observability, alerting, feature flags, and incident process. Round 3 (alpha.4). Required fields gated by upstream skip cascades.",
+          "required": [],
+          "additionalProperties": false,
+          "properties": {
+            "jobs":             { "type": "object", "description": "Background job system: provider (Redis/BullMQ, Sidekiq, Celery, SQS, Cloud Tasks, Inngest, Temporal, none). Auto-skipped when apiIntegration.asyncPattern='none'." },
+            "retryStrategy":    { "type": "object", "description": "Retry / idempotency: at-least-once vs exactly-once, retry policy, dead-letter queue." },
+            "scheduling":       { "type": "object", "description": "Scheduled tasks: distributed scheduler or platform cron (Vercel Cron, GH Actions, k8s CronJob)." },
+            "metrics":          { "type": "object", "description": "Metrics: Prometheus / DataDog / Grafana Cloud / platform-native / none." },
+            "traces":           { "type": "object", "description": "Traces: OTel + backend (Honeycomb, DataDog APM, Tempo) / none." },
+            "logs":             { "type": "object", "description": "Logs: structured JSON; aggregator (Loki, Logtail, DataDog, CloudWatch); retention." },
+            "alerting":         { "type": "object", "description": "Alerting & paging: tool (PagerDuty / OpsGenie / Slack-Discord / none), threshold strategy. Required ≠ none when security.sensitivityTier='high'." },
+            "slo":              { "type": "object", "description": "SLI/SLO: which metrics, error budget policy. Auto-skipped when scaleTarget ∉ {production-scale, enterprise}." },
+            "featureFlags":     { "type": "object", "description": "Feature flag system: provider (LaunchDarkly, Unleash, PostHog, Flagsmith, none), flag lifecycle." },
+            "maintenanceMode":  { "type": "object", "description": "Maintenance mode / graceful degradation: mechanism (DB-flag, env, CDN rule), user UX." },
+            "healthChecks":     { "type": "object", "description": "Health checks: liveness, readiness, deep health. Platform-driven default." },
+            "runbooks":         { "type": "object", "description": "Runbooks: storage path (docs/runbooks/), template style, ownership." },
+            "incidentProcess":  { "type": "object", "description": "Incident process: severity levels, escalation chain, postmortem template." },
+            "onCall":           { "type": "object", "description": "On-call rotation: tool (PagerDuty schedule, OpsGenie schedule, Discord bot, none)." }
+          }
+        },
+        "frontend":   { "$ref": "#/definitions/deferredPhase" },
+        "authSecurity":   { "$ref": "#/definitions/deferredPhase" },
+        "workflow":   { "$ref": "#/definitions/deferredPhase" },
+        "pluginRecommendation": {
+          "type": "object",
+          "description": "Plugin recommendation pass (pluginRecommendation in the 15-phase wizard). Greenfield 3.0 Round 1 emits as { pluginRecommendations: [] }; reserved for richer structure in later rounds.",
+          "properties": {
+            "pluginRecommendations": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "cicdAndDelivery":   { "$ref": "#/definitions/cicdAndDelivery" },
+        "risk": { "$ref": "#/definitions/deferredPhase" },
+        "featureRoadmap":   { "$ref": "#/definitions/deferredPhase" },
+        "pluginInstall":  {
+          "type": "object",
+          "description": "Plugin install confirmation (pluginInstall in the 15-phase wizard). Round 1 emits as { installedPlugins: [] } — mirrors callerExtras for symmetry.",
+          "properties": {
+            "installedPlugins": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "schemaDraftReview": { "$ref": "#/definitions/deferredPhase" }
+      }
+    },
+    "syntheses": {
+      "type": "object",
+      "description": "Per-phase synthesis-review records. Generate consults these to know which phases the developer explicitly approved; missing syntheses for fully-specified phases produce a warning (not a failure).",
+      "additionalProperties": { "$ref": "#/definitions/synthesisRecord" }
+    },
+    "dependencies": {
+      "type": "object",
+      "description": "Cross-phase dependency assertions, mirrored from the per-project docs/adr/*-dependencies.json files. Used for cross-check warnings and metadata. Keys are topic names (e.g., 'cicdAndDelivery', 'dataArchitecture'); values are arrays of dependency path strings.",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "pattern": "^(vision|personas|domain|architecturalFraming|architecturalValidation|stack|auth|privacy|security|runtimeOperations|dataArchitecture|apiIntegration|frontend|authSecurity|workflow|pluginRecommendation|cicdAndDelivery|risk|featureRoadmap|pluginInstall|schemaDraftReview)\\..+$"
+        }
+      }
+    }
+  },
+  "definitions": {
+    "architecturalFraming": {
+      "type": "object",
+      "description": "Architectural Framing. Fully specified in onboard 2.0.0-alpha.2 Round 2.5 (T5). 3 required enum-locked fields (topology, deploymentShape, scaleTarget) inform all detailed phases P3–P9; boundaryNotes is a loose string for advisory boundary constraints. Placed early in the wizard (Step 2.5) so decisions cascade forward consistently.",
+      "required": ["topology", "deploymentShape", "scaleTarget"],
+      "additionalProperties": false,
+      "properties": {
+        "topology": {
+          "enum": ["monolith", "modular-monolith", "microservices", "serverless"],
+          "description": "Service topology. All P3–P9 phases read this for compatibility checks (e.g., microservices + embedded DB contradict; serverless + ORM-native migrations produce a note). Recommended default: monolith for solo/startup, modular-monolith for team projects."
+        },
+        "deploymentShape": {
+          "enum": ["single-region", "multi-region", "edge-distributed", "on-prem"],
+          "description": "Geographic deployment footprint. cicdAndDelivery reads for env ladder and rollback strategy; dataArchitecture reads for DB hosting model compatibility (edge-distributed constrains ORM choice)."
+        },
+        "scaleTarget": {
+          "enum": ["hobby", "startup", "production-scale", "enterprise"],
+          "description": "Current scale target (not aspirational). Drives caching, backup, compliance, and release pipeline recommendations across P3–P9. authSecurity (Round 3) calibrates identity recommendations against this."
+        },
+        "boundaryNotes": {
+          "type": "string",
+          "description": "Loose advisory field for hard boundary requirements (e.g., 'billing must be isolated from auth', 'PCI data cannot touch user PII'). grill-spec cross-checks against topology; synthesis renders as a note. Empty string OK; null is not."
+        }
+      }
+    },
+    "architecturalValidation": {
+      "type": "object",
+      "description": "Architectural Validation. Fully specified in onboard 2.0.0-alpha.2 Round 2.5 (T6). Final wizard step (Step 11) — a meta-phase that reads from all approved phase syntheses (architecturalFraming, dataArchitecture, apiIntegration, cicdAndDelivery) and records the developer's cross-phase sign-off. Does not capture new primitive answers; captures sign-off status, detected divergences from framing values, any unresolved contradictions, and final maintainer notes.",
+      "required": ["signOffStatus"],
+      "additionalProperties": false,
+      "properties": {
+        "signOffStatus": {
+          "enum": ["approved", "approved-with-noted-divergences", "requires-rework"],
+          "description": "Developer's final sign-off on the cross-phase validation report. 'approved' = all phases consistent; 'approved-with-noted-divergences' = divergences acknowledged, proceed with caution; 'requires-rework' = contradictions must be resolved before scaffolding (grill-spec blocks Phase 2)."
+        },
+        "divergences": {
+          "type": "array",
+          "description": "List of detected divergences where a final phase value differs from the architectural framing assumption. Each entry records which phase changed, from what value to what value, and why. Optional — empty array is acceptable.",
+          "items": {
+            "type": "object",
+            "required": ["phase", "fromFramingValue", "toFinalValue", "reason"],
+            "additionalProperties": false,
+            "properties": {
+              "phase": {
+                "type": "string",
+                "description": "Phase ID that diverged from framing (e.g., 'dataArchitecture', 'apiIntegration', 'cicdAndDelivery')."
+              },
+              "fromFramingValue": {
+                "type": "string",
+                "description": "Value assumed at Architectural Framing (Step 2.5)."
+              },
+              "toFinalValue": {
+                "type": "string",
+                "description": "Final value approved in the later phase synthesis."
+              },
+              "reason": {
+                "type": "string",
+                "description": "Why the divergence occurred or was accepted."
+              }
+            }
+          }
+        },
+        "unresolvedContradictions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of contradiction descriptions that could not be resolved before sign-off. Non-empty only when signOffStatus is 'approved-with-noted-divergences'. Grill-spec surfaces these as awareness notes (non-blocking for that status). Optional — empty array is acceptable."
+        },
+        "finalNotes": {
+          "type": "string",
+          "description": "Free-text note for future maintainers about divergences, rework scope, or sign-off context. Populated from AV.Q2 (conditional). Empty string OK; null is not."
+        }
+      }
+    },
+    "deferredPhase": {
+      "type": "object",
+      "description": "Stub for phases that will be expanded in later rounds. Onboard 2.0.0-alpha.1 accepts these as inert pass-through metadata.",
+      "required": ["_status"],
+      "additionalProperties": true,
+      "properties": {
+        "_status": {
+          "type": "string",
+          "pattern": "^deferred-to-round-[1-6?]$",
+          "description": "Marker indicating which round will fully specify this phase. Use 'deferred-to-round-?' if uncertain."
+        }
+      }
+    },
+    "synthesisRecord": {
+      "type": "object",
+      "required": ["approvedAt"],
+      "additionalProperties": false,
+      "properties": {
+        "approvedAt": { "type": "string", "format": "date-time" },
+        "adjustments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["section", "decision"],
+            "properties": {
+              "section": { "type": "string" },
+              "decision": { "enum": ["approved", "adjusted", "skipped", "adjusted-then-reverted"] },
+              "before": {},
+              "after": {},
+              "note": { "type": "string" },
+              "via": { "enum": ["adjust-dialog", "inline-fallback"] }
+            }
+          }
+        }
+      }
+    },
+    "cicdAndDelivery": {
+      "type": "object",
+      "description": "CI/CD & Operations. Fully specified in onboard 2.0.0-alpha.1 Round 1. The cicd subobject is the new wizard surface (Q5.4-Q5.17, 14 fields); _v1_carryover preserves Q5.1-Q5.3 answers.",
+      "required": ["cicd"],
+      "properties": {
+        "cicd": {
+          "type": "object",
+          "required": [
+            "provider", "triggers", "requiredPreMergeChecks", "coverage",
+            "envLadder", "autoDeploy", "deployCadence", "rollback",
+            "secrets", "notifications", "buildMatrix", "caching",
+            "timeBudget", "releasePipeline"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "provider": { "enum": ["github-actions", "gitlab-ci", "circleci", "buildkite", "jenkins", "none"] },
+            "triggers": {
+              "type": "array",
+              "items": { "enum": ["push-to-main", "every-pr", "scheduled", "manual", "tag"] }
+            },
+            "requiredPreMergeChecks": {
+              "type": "array",
+              "items": { "enum": ["lint", "typecheck", "unit", "integration", "e2e", "security-scan", "coverage", "build"] }
+            },
+            "coverage": {
+              "type": "object",
+              "properties": {
+                "threshold": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+                "scope": { "enum": ["global", "per-package", "per-file"] },
+                "blocking": { "type": "boolean" }
+              }
+            },
+            "envLadder": {
+              "type": "array",
+              "items": { "enum": ["dev", "staging", "preview", "prod"] },
+              "description": "Ordered list of environments deploys progress through. Single-env projects emit [prod] only."
+            },
+            "autoDeploy": { "enum": ["auto-on-merge", "manual-button", "scheduled", "tag-triggered", "none"] },
+            "deployCadence": { "enum": ["continuous", "daily", "weekly", "manual", "none"] },
+            "rollback": {
+              "type": "object",
+              "properties": {
+                "strategy": { "enum": ["redeploy-previous-sha", "blue-green", "canary", "none"] },
+                "automation": { "type": "boolean" }
+              }
+            },
+            "secrets": {
+              "type": "object",
+              "properties": {
+                "manager": { "enum": ["provider-stored", "oidc-to-cloud", "vault", "1password", "doppler", "manual"] },
+                "rotation": { "enum": ["manual", "scheduled", "on-incident"] }
+              }
+            },
+            "notifications": {
+              "type": "object",
+              "properties": {
+                "channels": { "type": "array", "items": { "enum": ["slack", "discord", "email", "github-checks"] } },
+                "events": { "type": "array", "items": { "enum": ["build-failure", "deploy-success", "deploy-failure", "security-alert"] } }
+              }
+            },
+            "buildMatrix": {
+              "type": "object",
+              "properties": {
+                "os": { "type": "array", "items": { "enum": ["ubuntu-latest", "macos-latest", "windows-latest"] } },
+                "languageVersions": { "enum": ["single", "multi"] },
+                "parallelization": { "oneOf": [{ "enum": ["auto", "off"] }, { "type": "number" }] }
+              }
+            },
+            "caching": {
+              "type": "object",
+              "properties": {
+                "deps": { "type": "boolean" },
+                "build": { "type": "boolean" },
+                "dockerLayers": { "type": "boolean" },
+                "remote": { "enum": ["turbo", "buildkite", "none"] }
+              }
+            },
+            "timeBudget": {
+              "type": "object",
+              "properties": {
+                "perPipelineMinutes": { "type": "number", "minimum": 1 },
+                "blockingThresholdMinutes": { "type": ["number", "null"], "minimum": 1 }
+              }
+            },
+            "releasePipeline": {
+              "type": "object",
+              "properties": {
+                "separate": { "type": "boolean" },
+                "triggeredBy": { "enum": ["tag", "manual", "schedule"] },
+                "convention": { "enum": ["release-please", "semantic-release", "manual", "none"] }
+              }
+            }
+          }
+        },
+        "_v1_carryover": {
+          "type": "object",
+          "description": "Existing Q5.1/Q5.2/Q5.3 answers preserved verbatim from greenfield 2.x. Mirrored from greenfield-state.json top-level fields during context-gathering Step 5.",
+          "properties": {
+            "ciAuditAction": { "enum": ["create-pr", "comment", "issue"] },
+            "autoEvolutionMode": { "enum": ["auto", "log-then-evolve", "notify"] },
+            "prReviewTrigger": { "enum": ["auto-every", "comment-mention", "auto-with-skip-label"] }
+          }
+        }
+      }
+    },
+    "dataArchitecture": {
+      "type": "object",
+      "description": "Data Architecture. Fully specified in onboard 2.0.0-alpha.2 Round 2. Hybrid strictness: 4 required enum-locked fields (databaseHost, orm, migrationsTool, multiTenancy) drive cross-phase contradictions; remaining fields are loose strings to accommodate a fast-moving tooling landscape (Turso, EdgeDB, pgvector, Drizzle, Kysely, etc.).",
+      "required": ["databaseHost", "orm", "migrationsTool", "multiTenancy"],
+      "additionalProperties": false,
+      "properties": {
+        "databaseHost": {
+          "enum": ["self-hosted", "managed-rdbms", "serverless-rdbms", "managed-nosql", "embedded", "none"],
+          "description": "Hosting model category. cicdAndDelivery cross-references for rollback strategy (point-in-time recovery only on managed)."
+        },
+        "orm": {
+          "enum": ["prisma", "drizzle", "typeorm", "sequelize", "kysely", "sqlalchemy", "active-record", "ecto", "gorm", "diesel", "raw-sql", "none", "other"],
+          "description": "Data access layer. apiIntegration reads for validation lib / API codegen pairing. Future workflow reads for CI migration step strategy."
+        },
+        "migrationsTool": {
+          "enum": ["orm-native", "alembic", "flyway", "liquibase", "raw-sql", "none", "other"],
+          "description": "Migration tool. Future workflow reads for CI pipeline migration step."
+        },
+        "multiTenancy": {
+          "enum": ["none", "row-level-rls", "schema-per-tenant", "db-per-tenant", "shared-no-isolation"],
+          "description": "Isolation strategy. Future authSecurity reads for auth/authz model (RLS vs schema isolation drives session token shape)."
+        },
+        "engine":            { "type": "string", "description": "Specific DB engine (postgresql, mysql, mongodb, edgedb, turso, etc.). Loose for landscape-churn tolerance." },
+        "migrationsMode":    { "type": "string", "description": "Migration application mode (developer-applied, ci-applied, runtime-applied)." },
+        "search":            { "type": "string", "description": "Search/retrieval strategy (DB FTS, dedicated engine, vector store, hybrid, none)." },
+        "cache":             { "type": "string", "description": "Caching layer (none, in-memory, Redis, multi-layer, etc.)." },
+        "cacheInvalidation": { "type": "string", "description": "Invalidation pattern (TTL, event-driven, manual, none)." },
+        "fileStorage":       { "type": "string", "description": "File/object storage (cloud-S3-like, local-FS, CDN-only, hybrid, none)." },
+        "codegen":           { "type": "array", "items": { "type": "string" }, "description": "Codegen tools selected (Prisma generate, Drizzle kit, SQLC, GraphQL codegen, OpenAPI TS, Protobuf, etc.). Empty array OK." },
+        "backup":            { "type": "string", "description": "Backup & retention strategy (none, managed-provider, scheduled-dumps, continuous)." },
+        "compliance":        { "type": "string", "description": "Data residency/compliance constraint (none, region-locked, GDPR-aware, HIPAA, etc.)." }
+      }
+    },
+    "apiIntegration": {
+      "type": "object",
+      "description": "API & Integration. Fully specified in onboard 2.0.0-alpha.2 Round 2. 3 required enum-locked fields (style, versioningPolicy, asyncPattern) drive cross-phase contradictions; remaining fields loose. Single-owner boundary: real-time, webhooks, jobs live in apiIntegration; caching, file storage, codegen live in dataArchitecture.",
+      "required": ["style", "versioningPolicy", "asyncPattern"],
+      "additionalProperties": false,
+      "properties": {
+        "style": {
+          "enum": ["rest", "graphql", "trpc", "grpc", "rpc-other", "none"],
+          "description": "API style. Drives dataArchitecture codegen pairing (GraphQL codegen ↔ style=graphql). Future authSecurity reads for auth integration pattern."
+        },
+        "versioningPolicy": {
+          "enum": ["url-path", "header", "query-string", "no-breaking-changes-policy", "none-yet"],
+          "description": "Version negotiation strategy. Future workflow reads for ADR template; cicdAndDelivery release pipeline cross-references."
+        },
+        "asyncPattern": {
+          "enum": ["none", "queue-and-worker", "scheduled-cron", "event-driven", "serverless-functions", "mixed"],
+          "description": "Background-work pattern. Future workflow reads for CI test strategy. cicdAndDelivery conceptually depends for deployment topology."
+        },
+        "documentation":    { "type": "string", "description": "API docs tool (OpenAPI/Swagger, GraphQL Playground, auto-from-types, Scalar, Redoc, etc.)." },
+        "rateLimit":        { "type": "string", "description": "Rate-limit strategy (none, fixed-window, sliding, token-bucket, per-user, per-IP, gateway-level)." },
+        "pagination":       { "type": "string", "description": "Pagination strategy (offset, cursor, page-based, none)." },
+        "realtime":         { "type": "string", "description": "Real-time delivery (none, WebSockets, SSE, HTTP long-poll, external pub/sub)." },
+        "webhooks":         { "type": "string", "description": "Webhook directions (none, incoming-only, outgoing-only, both) + tooling notes." },
+        "externalServices": { "type": "array", "items": { "type": "string" }, "description": "External integrations (Stripe, SendGrid, Twilio, Segment, etc.). Multi-select free-text. Empty array OK." }
+      }
+    }
+  }
+}

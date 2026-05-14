@@ -1,6 +1,6 @@
 # claude-plugins
 
-Claude Code plugin marketplace by Apurv Bazari. Three plugins — all markdown + shell + JSON, no compiled code.
+Claude Code plugin marketplace by Apurv Bazari. Four plugins — all markdown + shell + JSON, no compiled code. (onboard, greenfield, notify, handoff — mattpocock-skills removed in Round 2.5; users wanting those skills install upstream directly.)
 
 ## Repository
 
@@ -18,14 +18,17 @@ Claude Code plugin marketplace by Apurv Bazari. Three plugins — all markdown +
          │      ├── agents/ (codebase-analyzer, config-generator, feature-evaluator)
          │      └── scripts/ (analyze-structure, detect-stack, measure-complexity)
          │
-         ├──→ forge/                     ← project scaffolder with AI-native tooling
+         ├──→ greenfield/                ← project scaffolder with AI-native tooling
          │      ├── skills/ (init, resume, status, context-gathering, scaffolding,
          │      │           tooling-generation, plugin-discovery, lifecycle-setup)
          │      └── agents/ (stack-researcher, scaffold-analyzer)
          │
-         └──→ notify/                    ← cross-platform system notifications
-                ├── skills/ (setup, status, uninstall, wizard)
-                └── scripts/ (notify, install-notifier, test-notification)
+         ├──→ notify/                    ← cross-platform system notifications
+         │      ├── skills/ (setup, status, uninstall, wizard)
+         │      └── scripts/ (notify, install-notifier, test-notification)
+         │
+         └──→ handoff/                   ← session handoff continuity
+                └── skills/ (save, status, resume)
 ```
 
 ## Plugin Structure Convention
@@ -55,9 +58,9 @@ Apply the right invocation policy per skill:
 
 | Category | Who invokes | Frontmatter | Examples |
 |---|---|---|---|
-| Destructive / setup | User only (explicit) | `disable-model-invocation: true` | `onboard:init`, `onboard:update`, `forge:init`, `notify:setup`, `notify:uninstall` |
-| Read-only helpers | User + auto | (default) — write a specific `description` | `onboard:status`, `onboard:verify`, `onboard:evolve`, `forge:resume`, `forge:status`, `notify:status` |
-| Programmatic API | Claude only, hidden | `user-invocable: false` | `onboard:generate` (invoked by forge via Skill tool) |
+| Destructive / setup | User only (explicit) | `disable-model-invocation: true` | `onboard:start`, `onboard:update`, `greenfield:start`, `notify:setup`, `notify:uninstall` |
+| Read-only helpers | User + auto | (default) — write a specific `description` | `onboard:check`, `onboard:verify`, `onboard:evolve`, `greenfield:pickup`, `greenfield:check`, `notify:check` |
+| Programmatic API | Claude only, hidden | `user-invocable: false` | `onboard:generate` (invoked by greenfield via Skill tool) |
 | Internal building blocks | Claude only, hidden | `user-invocable: false` | `wizard`, `analysis`, `generation`, `context-gathering`, `scaffolding`, `plugin-discovery`, `tooling-generation`, `lifecycle-setup` |
 
 Canonical frontmatter spelling is **hyphenated** (`user-invocable`, `disable-model-invocation`) per the Claude Code docs. Underscore spelling is silently ignored.
@@ -65,15 +68,15 @@ Canonical frontmatter spelling is **hyphenated** (`user-invocable`, `disable-mod
 ## Naming Conventions
 
 - File names: kebab-case (`codebase-analyzer.md`, `validate-bash.sh`)
-- Plugin directories: lowercase (`onboard`, `forge`, `notify`)
+- Plugin directories: lowercase (`onboard`, `greenfield`, `notify`)
 - Manifest names: match directory name
 - Skill references: always in `references/` subdirectory inside the skill
 - Skill `name` frontmatter: lowercase letters, numbers, hyphens only (max 64 chars). If omitted, derives from the directory name.
 
 ## Cross-Plugin Integration
 
-- **forge → onboard**: forge delegates all Claude tooling generation to onboard's headless `generate` skill (invoked via Skill tool as `onboard:generate`)
-- **forge → notify**: forge-scaffolded projects can include notify configuration as part of plugin discovery
+- **greenfield → onboard**: greenfield delegates all Claude tooling generation to onboard's headless `generate` skill (invoked via Skill tool as `onboard:generate`)
+- **greenfield → notify**: greenfield-scaffolded projects can include notify configuration as part of plugin discovery
 
 ## Quality Checks
 

@@ -11,8 +11,8 @@
     {
       "name": "onboard",
       "source": "./onboard",
-      "description": "Analyze codebases and generate tailored Claude tooling — CLAUDE.md, rules, skills, agents, hooks, and CI/CD",
-      "version": "1.10.0",
+      "description": "Analyze codebases and generate tailored Claude tooling — v2 context shape; rejects v1 input (use onboard@1.10.0 for v1)",
+      "version": "2.0.0-alpha.4",
       "keywords": [
         "onboarding",
         "setup",
@@ -41,10 +41,10 @@
       "license": "MIT"
     },
     {
-      "name": "forge",
-      "source": "./forge",
-      "description": "Scaffold new projects with AI-native tooling that evolves with your code — delegates to onboard for generation",
-      "version": "1.1.0",
+      "name": "greenfield",
+      "source": "./greenfield",
+      "description": "Scaffold new projects via adaptive wizard with per-phase synthesis review; delegates to onboard for tooling generation",
+      "version": "3.0.0-alpha.4",
       "keywords": [
         "scaffold",
         "project-generator",

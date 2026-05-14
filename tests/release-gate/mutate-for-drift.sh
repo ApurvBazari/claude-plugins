@@ -3,7 +3,7 @@ set -euo pipefail
 
 # mutate-for-drift.sh — Apply drift mutations for Phase 4 testing
 # Usage: mutate-for-drift.sh <REPO_PATH>
-# Run AFTER /onboard:init has completed on the repo.
+# Run AFTER /onboard:start has completed on the repo.
 # Then run /onboard:update to test drift detection.
 
 REPO="${1:-}"

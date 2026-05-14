@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "phase": "architecturalFraming",
+  "recordedAt": "2026-05-14T10:00:00Z",
+  "dependencies": [
+    {
+      "path": "vision.willDeploy",
+      "value": "not yet captured",
+      "rationale": "Deployment shape (single-region, multi-region, edge-distributed, on-prem) is only meaningful when the project will deploy. vision is deferred to Round 4; cross-check fires automatically once vision lands. In the interim, the wizard infers willDeploy from Q3.4 (deploy target) and falls back to false if that question was skipped."
+    },
+    {
+      "path": "vision.teamSize",
+      "value": "not yet captured",
+      "rationale": "Scale target and topology recommendations both track team size (solo → monolith; 5+ → microservices consideration). vision is deferred to Round 4. The wizard captures teamSize from Q3.1 (scale question in Category 3 residual); until that step runs, this dependency is unresolved."
+    },
+    {
+      "path": "stack.stack.framework",
+      "value": "next.js",
+      "rationale": "Framework affects topology compatibility — Next.js App Router has first-class serverless/edge support; Django/Rails are monolith-native by convention. Stack is captured at Step 2 before this synthesis fires, so this dependency is typically available by synthesis time."
+    }
+  ]
+}

@@ -1,0 +1,176 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/ApurvBazari/claude-plugins/onboard/skills/generate/references/sprint-contracts-template.json",
+  "title": "Sprint Contract Template — v2 (cicdAndDelivery-aware)",
+  "description": "Structure for the per-sprint contract files emitted by onboard:generate (v2 path) at <projectPath>/docs/sprint-contracts/sprint-<N>.json. The deploymentTargets array is driven by phases.cicdAndDelivery.cicd.envLadder, replacing the v1 flat 'targetEnv' field. The exitCriteria.mustPass array integrates with the harness verification flow used by /onboard:verify --sprint.",
+  "type": "object",
+  "required": ["sprint", "schemaVersion", "deploymentTargets", "exitCriteria"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 2,
+      "description": "Sprint contract schema version. v2 splits deployment into envLadder-driven array; v1 used a flat targetEnv string."
+    },
+    "sprint": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Sprint number (1-indexed). Filename is sprint-<N>.json."
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable sprint name (e.g., 'MVP foundation'). Sourced from docs/feature-list.json's sprint groupings."
+    },
+    "features": {
+      "type": "array",
+      "description": "Feature IDs included in this sprint (e.g., ['F001', 'F002']). Cross-references docs/feature-list.json.",
+      "items": { "type": "string", "pattern": "^F\\d{3}$" }
+    },
+    "deploymentTargets": {
+      "type": "array",
+      "description": "Ordered list of environments this sprint must successfully deploy to before the sprint can close. DERIVED FROM phases.cicdAndDelivery.cicd.envLadder — each env in the ladder becomes a target with appropriate verification rules. v1 had a single 'targetEnv' string; v2's array supports staging→prod ladders and preview-environment workflows.",
+      "items": {
+        "type": "object",
+        "required": ["env", "verification"],
+        "properties": {
+          "env": { "enum": ["dev", "staging", "preview", "prod"] },
+          "verification": {
+            "type": "object",
+            "description": "How to verify the deployment to this env succeeded. Composes onboard's verify skill with environment-specific URL/credentials.",
+            "properties": {
+              "type": { "enum": ["browser-automation", "api-testing", "cli-execution", "test-runner", "combination"] },
+              "url": { "type": "string", "description": "Substituted at deploy time from CI env vars (e.g., ${PREVIEW_URL})." },
+              "smokeTests": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Test IDs that must pass post-deploy."
+              }
+            }
+          },
+          "rollback": {
+            "type": "object",
+            "description": "Per-target rollback config. Inherits from phases.cicdAndDelivery.cicd.rollback but can be overridden per env (e.g., prod requires manual approval even if other envs auto-rollback).",
+            "properties": {
+              "strategy": { "enum": ["redeploy-previous-sha", "blue-green", "canary", "none", "inherit-from-cicd"] },
+              "requireManualApproval": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+    "exitCriteria": {
+      "type": "object",
+      "required": ["mustPass"],
+      "description": "Hard gates that must pass before this sprint can close. /onboard:verify --sprint <N> runs these and fails the sprint if any gate fails. The mustPass array is the canonical exit gate.",
+      "properties": {
+        "mustPass": {
+          "type": "array",
+          "description": "Boolean assertions evaluated against project state at sprint-close time. Each entry maps to a verifier method.",
+          "items": {
+            "type": "object",
+            "required": ["id", "description", "verifier"],
+            "properties": {
+              "id": { "type": "string", "pattern": "^EXIT-\\d{2}$" },
+              "description": { "type": "string", "description": "Human-readable assertion (e.g., 'All Sprint 1 features pass their verification steps')." },
+              "verifier": {
+                "type": "string",
+                "enum": [
+                  "all-features-pass-verification",
+                  "ci-pipeline-green",
+                  "coverage-above-threshold",
+                  "no-critical-security-findings",
+                  "deployments-to-all-targets-green",
+                  "synthesis-records-present-for-spec-phases",
+                  "no-pending-tooling-drift"
+                ]
+              },
+              "params": { "type": "object", "description": "Verifier-specific parameters (e.g., { 'threshold': 80 } for coverage-above-threshold)." },
+              "criticality": { "enum": ["blocking", "advisory"], "description": "blocking: sprint cannot close. advisory: warning only. Defaults to blocking." }
+            }
+          }
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Provenance and bookkeeping. Onboard writes these at generation time.",
+      "properties": {
+        "generatedAt": { "type": "string", "format": "date-time" },
+        "generatedBy": { "type": "string", "description": "onboard plugin identifier + version (e.g., 'onboard@2.0.0-alpha.1')." },
+        "v2ContextSource": { "type": "string", "description": "Caller plugin (typically 'greenfield')." },
+        "cicdSnapshotAtGeneration": {
+          "type": "object",
+          "description": "Snapshot of phases.cicdAndDelivery.cicd at generation time. If cicdAndDelivery changes later (via /greenfield:pickup), this snapshot becomes stale and the sprint contract should be regenerated. Tracked by the freshness hook for /docs/adr/."
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "schemaVersion": 2,
+      "sprint": 1,
+      "name": "MVP foundation",
+      "features": ["F001", "F002", "F003"],
+      "deploymentTargets": [
+        {
+          "env": "preview",
+          "verification": {
+            "type": "combination",
+            "url": "${PREVIEW_URL}",
+            "smokeTests": ["smoke-auth", "smoke-home"]
+          },
+          "rollback": {
+            "strategy": "inherit-from-cicd",
+            "requireManualApproval": false
+          }
+        },
+        {
+          "env": "prod",
+          "verification": {
+            "type": "combination",
+            "url": "https://app.example.com",
+            "smokeTests": ["smoke-auth", "smoke-home", "smoke-checkout"]
+          },
+          "rollback": {
+            "strategy": "inherit-from-cicd",
+            "requireManualApproval": true
+          }
+        }
+      ],
+      "exitCriteria": {
+        "mustPass": [
+          {
+            "id": "EXIT-01",
+            "description": "All Sprint 1 features pass their verification steps",
+            "verifier": "all-features-pass-verification",
+            "criticality": "blocking"
+          },
+          {
+            "id": "EXIT-02",
+            "description": "Preview and prod deployments are green",
+            "verifier": "deployments-to-all-targets-green",
+            "criticality": "blocking"
+          },
+          {
+            "id": "EXIT-03",
+            "description": "Coverage above 80% globally",
+            "verifier": "coverage-above-threshold",
+            "params": { "threshold": 80 },
+            "criticality": "blocking"
+          },
+          {
+            "id": "EXIT-04",
+            "description": "cicdAndDelivery synthesis record exists and is approved",
+            "verifier": "synthesis-records-present-for-spec-phases",
+            "params": { "requiredPhases": ["cicdAndDelivery"] },
+            "criticality": "blocking"
+          }
+        ]
+      },
+      "metadata": {
+        "generatedAt": "2026-05-13T16:30:00Z",
+        "generatedBy": "onboard@2.0.0-alpha.1",
+        "v2ContextSource": "greenfield"
+      }
+    }
+  ]
+}

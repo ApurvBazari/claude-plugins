@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "phase": "cicdAndDelivery",
+  "recordedAt": "2026-05-13T16:30:00Z",
+  "dependencies": [
+    {
+      "path": "vision.willDeploy",
+      "value": true,
+      "rationale": "cicdAndDelivery's CI/CD configuration is only meaningful when the project will deploy. If vision changes to willDeploy=false, cicdAndDelivery should be revisited."
+    },
+    {
+      "path": "vision.teamSize",
+      "value": "small-team",
+      "rationale": "Notifications and PR review trigger choices depend on team size. Solo-developer + Slack notifications is a common misfire."
+    },
+    {
+      "path": "dataArchitecture.databaseHost",
+      "value": null,
+      "rationale": "Rollback strategy needs to know whether the DB supports point-in-time recovery. dataArchitecture is deferred to Round 2 so the value is null at synthesis time; cross-check fires automatically once dataArchitecture lands."
+    },
+    {
+      "path": "stack.stack.framework",
+      "value": "next.js",
+      "rationale": "Release tooling (release-please vs semantic-release vs manual) and CI cache configuration both depend on the stack framework."
+    },
+    {
+      "path": "workflow.testingPhilosophy",
+      "value": null,
+      "rationale": "Coverage threshold + blocking decisions assume tests exist. workflow is deferred to Round 3; cross-check fires when workflow lands."
+    }
+  ]
+}

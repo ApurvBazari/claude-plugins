@@ -1,0 +1,180 @@
+<!--
+  Per-phase synthesis template — Auth (Authentication & Authorization).
+  Loaded by synthesis-review/SKILL.md Step 2 and spliced into synthesis-template.html's {{phase_body}}.
+
+  Placeholders use Mustache-like syntax: {{auth.<field>}} resolves from
+  context.phases.auth.<field>. Cross-checks resolve dependency paths from
+  context.phases.<other-phase>.<path>; if the path is not yet captured (later-round phase),
+  the synthesis-review skill renders "not yet captured" rather than blocking.
+
+  Section anatomy (per references/section-prompts.md):
+    1. section-title
+    2. captured-as
+    3. cross-checks
+    4. contradictions (only if rules fire)
+    5. notes (only if developer-relevant)
+
+  Stale-status block: rendered by synthesis-review SKILL.md Step 2 using phaseStatus.auth.
+  CSS for .stale-status is injected by synthesis-template.html (the outer frame).
+-->
+
+<!-- Stale status block — rendered by synthesis-review SKILL.md Step 2 before the section walk -->
+<div class="stale-status {{stale_status_class}}">
+  {{stale_block}}
+</div>
+<!-- stale_block rendering rules (applied by synthesis-review Step 2):
+  auth depends on: dataArchitecture.engine, dataArchitecture.multiTenancy, apiIntegration.style, architecturalFraming.topology, architecturalFraming.scaleTarget.
+  If phaseStatus.auth.status === "stale":
+    stale_status_class = "is-stale"
+    stale_block = "<strong>⚠️ Stale synthesis</strong> — this phase was previously approved but a dependency changed.<br>
+    <strong>Reason</strong>: {staleReason}<br>
+    <strong>Last approved</strong>: {approvedAt}<br>
+    <em>Review sections below with the changed dependency in mind.</em>"
+
+  If phaseStatus.auth.status === "approved" or "approved-with-noted-divergences":
+    stale_status_class = "is-approved"
+    stale_block = "✅ <strong>Synthesis current</strong> — approved {approvedAt}. No upstream changes detected."
+
+  Otherwise: stale_status_class = "is-other"; stale_block = "Phase status: {status}."
+-->
+
+<h2>Captured decisions</h2>
+
+<!-- Section 1: Strategy & Provider -->
+<div class="section">
+  <div class="section-title">1. Strategy &amp; Provider</div>
+  <pre class="captured">strategy: {{auth.strategy}}
+provider: {{auth.provider}}</pre>
+  <div class="cross-check">Assumes <code>stack.stack.framework = {{stack.stack.framework}}</code>. Provider SDK availability and first-party integration depth track the framework (NextAuth ⊂ Next.js, Auth.js ⊂ multi-framework, firebase-admin ⊂ Node, etc.).</div>
+  <!-- Contradiction injected if strategy === "self-hosted" && provider === "none": -->
+  <!-- <div class="contradiction"><strong>Contradiction:</strong> auth picked <code>strategy: self-hosted</code> but <code>provider: none</code>. Self-hosted auth requires an implementation choice — pick a library (Lucia, Oslo, Passport) or framework-native sessions rather than leaving it undefined.</div> -->
+  <!-- Note injected if strategy === "third-party" && architecturalFraming.scaleTarget === "High": -->
+  <!-- <div class="note">Third-party auth at high scale — vendor rate limits and token quotas can become bottlenecks. Confirm your chosen provider's pricing tier supports your projected MAU.</div> -->
+</div>
+
+<!-- Section 2: Identity Providers (IdPs) -->
+<div class="section">
+  <div class="section-title">2. Identity Providers (IdPs)</div>
+  <!-- Array field — synthesis-review skill serializes auth.idps as comma-joined values -->
+  <pre class="captured">idps: {{auth.idps | join: ", "}}</pre>
+  <div class="cross-check">Each IdP adds an OAuth callback route, a user-creation branch, and account-linking logic. Assumes <code>apiIntegration.style = {{apiIntegration.style}}</code> — GraphQL APIs require additional middleware to expose session context on the server.</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Provider</th>
+        <th>Web applicability</th>
+        <th>Mobile applicability</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Email / password</td>
+        <td>First-class</td>
+        <td>First-class</td>
+      </tr>
+      <tr>
+        <td>Google OAuth 2.0</td>
+        <td>First-class</td>
+        <td>First-class (Google Identity)</td>
+      </tr>
+      <tr>
+        <td>GitHub OAuth</td>
+        <td>First-class (dev tools)</td>
+        <td>Browser-redirect only</td>
+      </tr>
+      <tr>
+        <td>Apple Sign-In</td>
+        <td>Required for web if iOS exists</td>
+        <td>Mandatory for App Store apps</td>
+      </tr>
+      <tr>
+        <td>SAML / OIDC (enterprise)</td>
+        <td>First-class</td>
+        <td>Browser-redirect only</td>
+      </tr>
+    </tbody>
+  </table>
+  <!-- Note injected if auth.idps includes "apple" && architecturalFraming.topology !== "mobile-first" && vision.willDeploy !== true: -->
+  <!-- <div class="note">Apple Sign-In is mandatory for App Store distribution but optional for web-only. If this is a web-only project, it can be deferred.</div> -->
+</div>
+
+<!-- Section 3: Session & Token Model -->
+<div class="section">
+  <div class="section-title">3. Session &amp; Token Model</div>
+  <pre class="captured">sessionModel: {{auth.sessionModel}}
+tokenRefresh: {{auth.tokenRefresh}}</pre>
+  <div class="cross-check">Assumes <code>architecturalFraming.topology = {{architecturalFraming.topology}}</code>. Cookie-based sessions are simplest for monoliths and SSR; JWT bearer tokens are the default for microservices and decoupled SPAs. Edge deployments may require stateless tokens due to lack of session store access.</div>
+  <!-- Contradiction injected if sessionModel === "cookie-session" && architecturalFraming.topology === "microservices": -->
+  <!-- <div class="contradiction"><strong>Contradiction:</strong> auth picked <code>sessionModel: cookie-session</code> but the topology is microservices. Shared cookie-session stores require a distributed cache (Redis cluster) accessible to all services — if that's not in dataArchitecture, add it or switch to JWT.</div> -->
+  <!-- Note injected if sessionModel === "jwt" && auth.tokenRefresh === "none": -->
+  <!-- <div class="note">JWT without a refresh strategy means access tokens are either long-lived (security risk) or sessions expire frequently (UX problem). Add a refresh token rotation strategy.</div> -->
+</div>
+
+<!-- Section 4: MFA & Account Security -->
+<div class="section">
+  <div class="section-title">4. MFA &amp; Account Security</div>
+  <pre class="captured">mfa.required:              {{auth.mfa.required}}
+mfa.methods:               {{auth.mfa.methods | join: ", "}}
+passwordPolicy.minLength:  {{auth.passwordPolicy.minLength}}
+passwordPolicy.breachCheck: {{auth.passwordPolicy.breachCheck}}
+recovery:                  {{auth.recovery}}</pre>
+  <div class="cross-check">Assumes <code>architecturalFraming.scaleTarget = {{architecturalFraming.scaleTarget}}</code>. MFA is locked to <code>required</code> when scaleTarget is High (enterprise SLA tier). TOTP and hardware key flows need an enrollment UI + backup code store.</div>
+  <!-- Note injected if auth.mfa.required === true && auth.recovery === "none": -->
+  <!-- <div class="note">MFA enabled without a recovery path — users who lose their second factor will be permanently locked out. Add recovery codes, backup email, or admin override as a minimum.</div> -->
+  <!-- Contradiction injected if auth.mfa.required === false && architecturalFraming.scaleTarget === "High": -->
+  <!-- <div class="contradiction"><strong>Contradiction:</strong> MFA marked optional but scaleTarget is High. High-tier means enterprise/compliance environment; MFA is non-negotiable. Set <code>mfa.required: true</code> or document explicit compliance exception.</div> -->
+</div>
+
+<!-- Section 5: Authorization & Tenancy -->
+<div class="section">
+  <div class="section-title">5. Authorization &amp; Tenancy</div>
+  <pre class="captured">authzModel:       {{auth.authzModel}}
+enforcementPoint: {{auth.enforcementPoint}}
+tenantResolution: {{auth.tenantResolution}}</pre>
+  <div class="cross-check">Assumes <code>dataArchitecture.engine = {{dataArchitecture.engine}}</code> and <code>dataArchitecture.multiTenancy = {{dataArchitecture.multiTenancy}}</code>. RLS (row-level security) authz is only feasible with Postgres; schema-per-tenant isolation aligns with <code>authzModel: tenant-scoped</code> and requires tenant context to be injected into every DB connection. See Data Architecture §3 for multi-tenancy isolation choice.</div>
+  <!-- Contradiction injected if auth.authzModel === "rls" && dataArchitecture.engine !== "postgresql": -->
+  <!-- <div class="contradiction"><strong>Contradiction:</strong> auth picked <code>authzModel: rls</code> but dataArchitecture uses <code>engine: {{dataArchitecture.engine}}</code>. RLS policies are a Postgres-specific feature. Switch to application-level RBAC or use Postgres.</div> -->
+  <!-- Note injected if dataArchitecture.multiTenancy === "schema-per-tenant" && auth.tenantResolution === "none": -->
+  <!-- <div class="note">Schema-per-tenant isolation is active but tenantResolution is unset. Every DB query needs to know which schema to target — set <code>tenantResolution</code> to subdomain, path-prefix, header, or JWT-claim before scaffolding.</div> -->
+</div>
+
+<!-- Section 6: Service-to-Service Auth -->
+<!-- Rendered only if architecturalFraming.topology === "microservices" -->
+<div class="section">
+  <div class="section-title">6. Service-to-Service Auth</div>
+  <pre class="captured">serviceAuth: {{auth.serviceAuth}}</pre>
+  <div class="cross-check">Applies only when <code>architecturalFraming.topology = microservices</code> (current: <code>{{architecturalFraming.topology}}</code>). If topology is not microservices, this section is informational only — service-to-service auth is not required for monoliths or modular monoliths.</div>
+  <!-- Note injected if architecturalFraming.topology === "microservices" && auth.serviceAuth === "none": -->
+  <!-- <div class="note">Microservices topology but no service-to-service auth defined. Inter-service calls will be unauthenticated. Add mTLS, internal JWT, or SPIFFE/SPIRE before scaffolding.</div> -->
+  <!-- Note injected if architecturalFraming.topology !== "microservices": -->
+  <!-- <div class="note">This section is not applicable for <code>topology: {{architecturalFraming.topology}}</code>. Service-to-service auth is only needed in microservices architectures.</div> -->
+</div>
+
+<!-- Section 7: Audit & Lifecycle -->
+<div class="section">
+  <div class="section-title">7. Audit &amp; Lifecycle</div>
+  <pre class="captured">auditLog.events:             {{auth.auditLog.events | join: ", "}}
+auditLog.retention:          {{auth.auditLog.retention}}
+lifecycle.signup:            {{auth.lifecycle.signup}}
+lifecycle.emailVerification: {{auth.lifecycle.emailVerification}}
+lifecycle.passwordReset:     {{auth.lifecycle.passwordReset}}
+lifecycle.accountDeletion:   {{auth.lifecycle.accountDeletion}}</pre>
+  <div class="cross-check">Audit log events (login, logout, password change, MFA enroll/unenroll, account delete) must be append-only and tamper-evident. Assumes <code>dataArchitecture.engine = {{dataArchitecture.engine}}</code>; audit writes to a separate append-only table or external log stream depending on compliance tier.</div>
+  <!-- Note injected if auth.auditLog === "none" && architecturalFraming.scaleTarget === "High": -->
+  <!-- <div class="note">High-tier scale target implies enterprise or compliance environment. Audit logging for auth events (especially login failures, privilege escalations) is typically a compliance requirement. Add it now rather than retrofitting.</div> -->
+  <!-- Note injected if auth.lifecycle.deletion === "hard-delete": -->
+  <!-- <div class="note">Hard-delete user lifecycle with MFA or OAuth connections: revoke all tokens, delete IdP links, then delete the account row in a transaction. Partial deletes leave orphaned OAuth accounts. Verify the lifecycle flow covers all connected providers.</div> -->
+</div>
+
+<!-- Section 8: Downstream Impact -->
+<div class="section">
+  <div class="section-title">8. Downstream impact</div>
+  <div class="cross-check">Auth decisions cascade forward to three downstream phases:
+    <ul>
+      <li><strong>Privacy</strong> — consent flows, right-to-erasure, and data subject requests depend on auth lifecycle (deletion flow) and tenant resolution (which data belongs to whom).</li>
+      <li><strong>Security</strong> — threat model depends on auth strategy, IdPs, MFA posture, and service-to-service auth surface. Security hardening builds on the auth baseline.</li>
+      <li><strong>Runtime Operations</strong> — session store sizing (Redis for cookie-sessions at scale), token refresh rate (impacts API gateway throughput), and audit log volume (impacts storage budget).</li>
+    </ul>
+    Approve or adjust auth before walking those phases — misalignment here will force synthesis re-runs downstream.
+  </div>
+</div>

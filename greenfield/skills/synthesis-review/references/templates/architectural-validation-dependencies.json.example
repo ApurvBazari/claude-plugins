@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "phase": "architecturalValidation",
+  "recordedAt": "2026-05-14T10:00:00Z",
+  "dependencies": [
+    {
+      "path": "architecturalFraming.topology",
+      "value": "monolith",
+      "rationale": "Architectural Validation reads topology from Step 2.5 as the primary framing anchor. All divergence checks compare later phase values against this field. Available at synthesis time (Step 2.5 runs before all other phases)."
+    },
+    {
+      "path": "architecturalFraming.deploymentShape",
+      "value": "single-region",
+      "rationale": "Deployment shape gates CI/CD env-ladder and rollback strategy recommendations. Read here to cross-check against cicdAndDelivery final values."
+    },
+    {
+      "path": "architecturalFraming.scaleTarget",
+      "value": "startup",
+      "rationale": "Scale target cross-checked against cicdAndDelivery release pipeline complexity. A hobby scaleTarget with a separate release pipeline is flagged as over-engineered."
+    },
+    {
+      "path": "dataArchitecture.databaseHost",
+      "value": "managed-rdbms",
+      "rationale": "Data architecture final value. Cross-checked against topology for embedded-DB + microservices contradiction."
+    },
+    {
+      "path": "dataArchitecture.migrationsTool",
+      "value": "orm-native",
+      "rationale": "Migration tool final value. Cross-checked against topology for serverless + orm-native contradiction."
+    },
+    {
+      "path": "dataArchitecture.cache",
+      "value": "redis",
+      "rationale": "Cache final value. Cross-checked against apiIntegration.asyncPattern for queue-without-broker contradiction."
+    },
+    {
+      "path": "apiIntegration.asyncPattern",
+      "value": "queue-and-worker",
+      "rationale": "Async pattern final value. Cross-checked against topology (serverless + queue-and-worker contradict) and dataArchitecture.cache (queue without broker is a gap)."
+    },
+    {
+      "path": "cicdAndDelivery.cicd.envLadder",
+      "value": ["dev", "staging", "prod"],
+      "rationale": "Environment ladder final value. Cross-checked against architecturalFraming.scaleTarget for scale/complexity alignment."
+    },
+    {
+      "path": "cicdAndDelivery.cicd.releasePipeline.separate",
+      "value": false,
+      "rationale": "Separate release pipeline flag. Cross-checked against scaleTarget — hobby + separate pipeline is over-engineered."
+    }
+  ]
+}
