@@ -191,3 +191,55 @@ These often align but are not the same. The Recommend block guides the developer
 
 ### Omitting the fallback
 Every stack-derived default must have an unconditional `Else →` fallback. Never leave a derivation rule that could produce no value — the wizard must always have something to record for Enter.
+
+---
+
+## 8. Auth — Round 3 derivation rules
+
+Full per-Q rules: `question-bank.md § Step 5: Auth`.
+
+**Cross-phase dependencies the rules consume:**
+- `stack.stack.framework` → Auth.Q1 strategy provider preselection (Next → Clerk, Django → built-in, Rails → Devise/built-in, FastAPI/Express/Nest + production → Auth0)
+- `Q3.4.deployTarget` → Auth.Q1 strategy preselection (Vercel → Clerk; AWS+enterprise → Cognito)
+- `architecturalFraming.scaleTarget` → Auth.Q1 strategy + Auth.Q4 MFA enforcement defaults
+- `architecturalFraming.topology` → Auth.Q7 (service-to-service) visibility (microservices only)
+- `dataArchitecture.engine` → Auth.Q5 RLS feasibility (Postgres/MySQL 8+ only)
+- `dataArchitecture.multiTenancy` → Auth.Q6 tenant resolution visibility
+- `dataArchitecture.compliance` → Auth.Q4 MFA locked + Auth.Q11 audit retention locked
+
+## 9. Privacy — Round 3 derivation rules
+
+Full per-Q rules: `question-bank.md § Step 6: Privacy`.
+
+**Cross-phase dependencies:**
+- `auth.strategy='none'` → Privacy.Gate fires + skip-cascade
+- `auth.idps` → Privacy.Q2 (PII inventory) pre-fill (email if email+pw IdP, profile data if Google/GitHub)
+- `dataArchitecture.compliance` → Privacy.Q1 regulations pre-population
+- `apiIntegration.externalServices` → Privacy.Q8 (processors) pre-population
+- `architecturalFraming.scaleTarget='enterprise'` → broader regulatory default ([GDPR, CCPA])
+- `architecturalFraming.deploymentShape` → Privacy.Q10 (dataResidency) regional default
+
+## 10. Security — Round 3 derivation rules
+
+Full per-Q rules: `question-bank.md § Step 7: Security`.
+
+**Cross-phase dependencies:**
+- `dataArchitecture.compliance` non-empty → Sec.Q1 locked to High (overrides user choice)
+- `apiIntegration.externalServices` includes payment providers → Sec.Q1 default Elevated
+- `privacy.piiCategories` non-empty → Sec.Q1 default Elevated, Sec.Q5 perColumnForPII recommended
+- `architecturalFraming.scaleTarget='hobby'` AND `sensitivityTier='standard'` → Sec.Q11/Q12 auto-skip
+- `architecturalFraming.topology='microservices'` → Sec.Q6 mTLS suggested
+- `auth.strategy` → Sec.Q2 secret inventory (hosted providers contribute API keys)
+
+## 11. Runtime Operations — Round 3 derivation rules
+
+Full per-Q rules: `question-bank.md § Step 8: Runtime Operations`.
+
+**Cross-phase dependencies:**
+- `apiIntegration.asyncPattern='none'` → Ops.Q1-Q3 skip-cascade (jobs/retry/scheduling auto-skipped)
+- `apiIntegration.exposesAPI=true` → Ops.Q11 (healthChecks) gating
+- `Q3.4.deployTarget` → Ops.Q1 (jobs platform default), Ops.Q3 (scheduling provider), Ops.Q11 (health check pattern)
+- `security.sensitivityTier='high'` → Ops.Q7 alerting required ≠ none
+- `architecturalFraming.topology` → Ops.Q5 traces visibility (microservices triggers OTel default)
+- `architecturalFraming.scaleTarget ∉ {production-scale, enterprise}` → Ops.Q8 (SLO) auto-skip
+- `architecturalFraming.scaleTarget='hobby'` → Ops.Q12 (runbooks) collapsed, Ops.Q14 (on-call) auto-skipped
