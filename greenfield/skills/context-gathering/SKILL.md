@@ -12,6 +12,37 @@ You are guiding a developer through an interactive wizard to understand what the
 
 Gather all context needed to scaffold a project and generate AI tooling. Every decision for Phase 2 (scaffolding) and Phase 3 (AI tooling) flows from the answers collected here.
 
+## Default Rendering Contract
+
+Every question in `references/question-bank.md` has a `**Default**:` block. The wizard uses this to prefill answers and enable Enter-to-accept. See `references/defaults-derivation.md` for the full format spec and precedence rules.
+
+**How to display a question with a default**:
+
+Derive the default at render time (stack-derived rules are evaluated against current context; see derivation rules in the question's `**Default**:` block). Then append `[default: <value>]` to the question prompt before displaying it. Example:
+
+> What's your service topology?
+>
+> 1. Monolith (single deployable unit)
+> 2. Modular monolith (internal modules, single deploy)
+> 3. Microservices (independent services, independent deploys)
+> 4. Serverless (function-per-endpoint, no persistent server)
+>
+> [default: Monolith]
+
+**Accepting a default**: if the developer presses Enter or replies with an empty string:
+- Record the default value in `context.phases.*` at the appropriate field.
+- Log `context.defaultsAccepted[questionId] = true`.
+- Move to the next question.
+
+**Overriding a default**: if the developer types any non-empty response:
+- Parse and record the typed value in `context.phases.*`.
+- Log `context.defaultsAccepted[questionId] = false`.
+- Move to the next question.
+
+**Open-ended skip** (questions marked `(skip with Enter)` in their Default block): Enter produces `null` or `""` — not the string "skip". Do not add a `defaultsAccepted` entry for these questions.
+
+The `defaultsAccepted` map is written to `greenfield-state.json` as part of the normal context checkpoint and is used by synthesis-review to annotate which values were accepted defaults vs explicit developer choices.
+
 ## Conversation Style
 
 - **Conversational, not interrogative** — This is a dialogue, not a survey. Acknowledge answers, connect them to prior context, and be helpful.
@@ -19,6 +50,7 @@ Gather all context needed to scaffold a project and generate AI tooling. Every d
 - **Recommend, don't just list** — When presenting options, lead with your recommendation and explain why.
 - **Skip intelligently** — Never ask a question whose answer is already clear from prior context.
 - **Research-informed** — After learning the stack, pause for web research before continuing. Use findings to inform subsequent questions and recommendations.
+- **Default-first** — Every question has a smart default. Display it with `[default: X]`; Enter accepts. This keeps the wizard fast for developers who agree with greenfield's opinions and still allows full customization for those who don't.
 
 ## Planner Scope Principle
 
@@ -52,11 +84,12 @@ Maintain a running context object that tracks what you know. See `references/que
   "hasTeam": false,
   "willDeploy": false,
   "hasDatabase": false,
-  "hasAPI": false
+  "hasAPI": false,
+  "defaultsAccepted": {}
 }
 ```
 
-Update this after every answer. Before asking each question, check its condition in the question bank. If the condition is not met, skip silently.
+Update this after every answer. Before asking each question, check its condition in the question bank. If the condition is not met, skip silently. After each answer, update `defaultsAccepted[questionId]` with `true` (Enter accepted default) or `false` (developer typed an override). Questions with `(skip with Enter)` defaults are not tracked in `defaultsAccepted`.
 
 ## Progress Indicator Protocol
 
@@ -676,7 +709,12 @@ After the wizard completes, compile all answers into a structured context object
     "sprints": [],
     "validated": "boolean — whether developer validated the decomposition"
   },
-  "webResearch": {}
+  "webResearch": {},
+  "defaultsAccepted": {
+    "AF.Q1": "boolean — true if developer pressed Enter; false if they typed an override",
+    "P3.Q1": "boolean",
+    "...": "one entry per non-skip-with-Enter question"
+  }
 }
 ```
 
