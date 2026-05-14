@@ -799,6 +799,26 @@
   </div>
 
   <div class="log-entry">
+    <div class="meta">2026-05-14 · ROUND 4 LOCKED · Personas + Domain Modeling + Distributed Risk Capture + 3 wizard-level mode toggles</div>
+    <div class="body">
+      <strong>Scope:</strong> Personas (Step 2.2) + Domain Modeling (Step 2.7) + Distributed risk capture (inline Q_RISK in 10 phases + Risk Reconciliation in Step 15) + 3 wizard-level mode toggles (depth, coupling, domainFormat).
+      <br><br>
+      <strong>6 locked decisions:</strong>
+      <ol>
+        <li><strong>Front-load discovery placement</strong> — Personas (Step 2.2) before architecturalFraming; Domain (Step 2.7) before dataArchitecture; Risk distributed inline at each phase.</li>
+        <li><strong>Tiered depth</strong> — Heavy default (~120 Qs total) / Light opt-in (~65 Qs).</li>
+        <li><strong>Distributed risk capture</strong> — inline Q_RISK in every architectural phase + Risk Reconciliation consolidation in architecturalValidation. No standalone Risk phase.</li>
+        <li><strong>Personas format</strong> — Rich with downstream hooks (auto-loop on persona IDs in auth/privacy/security/runtimeOps).</li>
+        <li><strong>Domain format</strong> — Full DDD default / DDD-lite toggle (drops value objects, domain events, anti-corruption).</li>
+        <li><strong>Coupling</strong> — Auto-loop default (every downstream iterates per persona AND per entity) / Hybrid toggle (only <code>loopMode: always</code> Qs loop; <code>hybrid-only</code> Qs fire static once).</li>
+      </ol>
+      <strong>Target:</strong> <code>greenfield@3.0.0-alpha.5</code> / <code>onboard@2.0.0-alpha.5</code> — first non-hard-cutover schema bump (additive + auto-migrating via <code>/greenfield:pickup</code> shim).
+      <br><br>
+      <strong>Spec:</strong> <code>docs/superpowers/specs/2026-05-14-greenfield-3.0-round4-design.md</code> &middot; <strong>Plan:</strong> <code>docs/superpowers/plans/2026-05-14-greenfield-3.0-round4-implementation.md</code> &middot; <strong>Companion docs:</strong> <code>docs/greenfield-3.0-round4/</code>
+    </div>
+  </div>
+
+  <div class="log-entry">
     <div class="meta">2026-05-14 · ROUND 3 LOCKED · Four new wizard phases + skip cascades + version bump policy</div>
     <div class="body">
       <strong>What changed:</strong> Four new wizard phases inserted between Step 4 and Step 5: <strong>Auth</strong>, <strong>Privacy</strong>, <strong>Security</strong>, <strong>Runtime Operations</strong>. Wizard grows from 11 to 15 steps. ~50 new questions; ~24 new files + ~15 modified.
