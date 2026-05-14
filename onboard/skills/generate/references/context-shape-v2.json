@@ -130,6 +130,36 @@
             "accessAudit":     { "type": "object", "description": "PII access audit log: who/when/what. Mandatory when regulations includes HIPAA." }
           }
         },
+        "security": {
+          "type": "object",
+          "description": "Phase: Security — application security posture and operational controls. Round 3 (alpha.4). 3 required enum-locked fields drive cross-phase contradictions.",
+          "required": ["sensitivityTier", "threatModel", "supplyChain"],
+          "additionalProperties": false,
+          "properties": {
+            "sensitivityTier": {
+              "enum": ["standard", "elevated", "high"],
+              "description": "Sensitivity tier. Locked to 'high' if dataArchitecture.compliance non-empty. 'elevated' for PII/payments. Drives Sec.Q9/Q11/Q12 conditional flow."
+            },
+            "threatModel": {
+              "enum": ["none", "stride-lite", "formal"],
+              "description": "Threat model approach. STRIDE-lite checklist or formal session."
+            },
+            "supplyChain": {
+              "type": "object",
+              "description": "Supply-chain posture: lockfile pinning (bool), signed commits (bool), SBOM generation (bool), provenance attestation (bool)."
+            },
+            "secrets":              { "type": "object", "description": "Secret management: storage backend (.env, platform-managed, Vault/Doppler, cloud-KMS), rotation cadence." },
+            "scanning":             { "type": "object", "description": "Vulnerability scanning: deps (Dependabot/Snyk), SAST (Semgrep/CodeQL), DAST (ZAP), container scan, cadence." },
+            "encryptionAtRest":     { "type": "object", "description": "Encryption at rest: DB-default, per-column for PII, app-managed." },
+            "encryptionInTransit":  { "type": "object", "description": "Encryption in transit: TLS everywhere, mTLS for s2s, HSTS posture." },
+            "headers":              { "type": "object", "description": "Security headers: CORS, CSP, X-Frame-Options defaults." },
+            "inputValidation":      { "type": "object", "description": "Input validation policy: boundaries-only vs everywhere; library choice." },
+            "auditRetention":       { "type": "object", "description": "Audit log retention: window, tamper-evidence (hash chain, write-once storage). Required when sensitivityTier ≠ standard." },
+            "ir":                   { "type": "object", "description": "Incident response: runbook style, notification SLA. Pointer to runtimeOperations.incidentProcess for full detail." },
+            "pentestCadence":       { "enum": ["none", "annual", "quarterly", "continuous"], "description": "Pentest cadence. Auto-skipped for hobby scaleTarget." },
+            "vdp":                  { "enum": ["none", "private", "public"], "description": "Bug bounty / VDP program. Auto-skipped for hobby." }
+          }
+        },
         "frontend":   { "$ref": "#/definitions/deferredPhase" },
         "authSecurity":   { "$ref": "#/definitions/deferredPhase" },
         "workflow":   { "$ref": "#/definitions/deferredPhase" },
@@ -165,7 +195,7 @@
         "type": "array",
         "items": {
           "type": "string",
-          "pattern": "^(vision|personas|domain|architecturalFraming|architecturalValidation|stack|auth|privacy|dataArchitecture|apiIntegration|frontend|authSecurity|workflow|pluginRecommendation|cicdAndDelivery|risk|featureRoadmap|pluginInstall|schemaDraftReview)\\..+$"
+          "pattern": "^(vision|personas|domain|architecturalFraming|architecturalValidation|stack|auth|privacy|security|dataArchitecture|apiIntegration|frontend|authSecurity|workflow|pluginRecommendation|cicdAndDelivery|risk|featureRoadmap|pluginInstall|schemaDraftReview)\\..+$"
         }
       }
     }
