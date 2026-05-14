@@ -1,0 +1,44 @@
+{
+  "meta": { "schemaVersion": "3.0.0-alpha.6" },
+  "mode": { "depth": "heavy", "coupling": "auto-loop", "domainFormat": "ddd-lite" },
+  "phases": {
+    "personas": {
+      "primary": [
+        {"id":"P1","name":"Sara","role":"Engineer"},
+        {"id":"P2","name":"Carl","role":"Auditor"}
+      ]
+    },
+    "domainModel": {
+      "entities": [
+        {"id":"E_user","name":"User","isAggregateRoot":true,"primaryKey":"id","attributes":[{"name":"email","type":"string"}]},
+        {"id":"E_audit","name":"Audit","isAggregateRoot":true,"primaryKey":"id","attributes":[{"name":"action","type":"string"}]}
+      ]
+    },
+    "featureRoadmap": {
+      "horizon": "3-months",
+      "mvpBoundary": "Authenticated user CRUD + audit log only.",
+      "sizingScale": "tshirt",
+      "epics": [{"id":"E1","title":"Identity Core"}],
+      "features": [
+        {"id":"F001","title":"User signup","category":"api","epicId":"E1","personaIds":["P1"],"entityIds":["E_user"],"riskIds":["R-DA-1"],"size":"M","acceptanceCriteria":["Email valid"],"verificationSteps":["POST /signup returns 201"],"sprintAssignment":1},
+        {"id":"F002","title":"User login","category":"api","epicId":"E1","personaIds":["P1"],"entityIds":["E_user"],"riskIds":[],"size":"S","acceptanceCriteria":["JWT issued"],"verificationSteps":["POST /login returns 200 + token"],"sprintAssignment":1},
+        {"id":"F003","title":"Audit log view","category":"ui","epicId":null,"personaIds":["P2"],"entityIds":["E_audit"],"riskIds":[],"size":"L","acceptanceCriteria":["Filterable"],"verificationSteps":["GET /audits returns 200"],"sprintAssignment":1},
+        {"id":"F004","title":"Admin dashboard","category":"ui","epicId":null,"personaIds":[],"entityIds":[],"riskIds":[],"size":"L","acceptanceCriteria":[],"verificationSteps":[],"sprintAssignment":null},
+        {"id":"F005","title":"Observability hooks","category":"ops","epicId":null,"personaIds":[],"entityIds":[],"riskIds":[],"size":"M","acceptanceCriteria":[],"verificationSteps":[],"sprintAssignment":null}
+      ],
+      "sprint1": {
+        "name": "Sprint 1 — Identity Core MVP",
+        "featureIds": ["F001","F002","F003"],
+        "criteria": [
+          {"name":"functional","weight":"required","description":"All sprint features pass acceptance","threshold":"100%"},
+          {"name":"quality","weight":"required","description":"No P1 bugs","threshold":"0 P1"},
+          {"name":"testing","weight":"required","description":"Verification steps automated","threshold":"100% scripted"}
+        ],
+        "completionGate": "ALL required criteria must pass"
+      },
+      "skipped": false,
+      "deferredReason": ""
+    }
+  },
+  "risks": [{"id":"R-DA-1","title":"Schema migration risk","originatingPhase":"dataArchitecture"}]
+}
