@@ -266,3 +266,24 @@ This synthesis is read-only — it does not capture new wizard answers (those ca
 | 8 | Anti-Corruption Layers | "Boundary translations identified?" _(skipped in DDD-lite)_ |
 | 9 | Domain Risks Identified | "Domain risk recorded?" |
 | 10 | Decisions Driven Downstream | _(auto, back-fills)_ |
+
+## featureRoadmap — Section prompts
+
+| Section | Title | Approve/Adjust/Skip prompt |
+|---|---|---|
+| 1 | Horizon + MVP Boundary | "Roadmap horizon, MVP boundary, and sizing scale look right?" |
+| 2 | Epic Tree | "Epics capture the major work streams?" |
+| 3 | Feature Table | "Features + sizes + persona/entity/risk cross-refs accurate?" |
+| 4 | Sprint-1 Callout | "Sprint-1 feature set and shippable outcome match what you want to ship first?" |
+| 5 | Sizing Histogram | "Sizing distribution realistic for the horizon? Any XL-heavy skew to decompose?" |
+| 6 | Cross-Cutting Features | "Platform-level / cross-persona features captured (CI/CD, observability, deployment)?" |
+
+## schemaDraftReview — Section prompts
+
+| Panel | Title | Approve/Adjust/Reject prompt |
+|---|---|---|
+| 1 | DB Schema draft | "DB schema draft accurately reflects domainModel entities and relationships?" |
+| 2 | API Contract draft | "API contract draft matches the apiIntegration decisions and persona-driven endpoints?" |
+| 3 | Event Schemas draft | "Event schemas draft captures domain events and async-pattern messages correctly?" |
+
+Cross-check warnings (referential integrity across the three drafts) are surfaced inline below the panels and do not require a separate Approve prompt — they're informational to the developer during the per-panel walk.

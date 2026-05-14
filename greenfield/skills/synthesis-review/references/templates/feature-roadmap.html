@@ -1,0 +1,291 @@
+<!--
+  Per-phase synthesis template — Feature Roadmap (Phase 2.8).
+  Loaded by synthesis-review/SKILL.md Step 2 and spliced into synthesis-template.html's {{phase_body}}.
+
+  Placeholders use Handlebars-style syntax: {{featureRoadmap.<field>}} resolves from
+  context.phases.featureRoadmap.<field> (phase-rooted — no `phases.` prefix). Cross-checks
+  resolve dependency paths from context.phases.<other-phase>.<path>; if the path is not yet
+  captured (later-round phase), the synthesis-review skill renders "not yet captured" rather
+  than blocking.
+
+  Iteration uses {{#each items}}...{{this.<field>}}...{{/each}}.
+
+  Section anatomy (per references/section-prompts.md):
+    1. Header banner (horizon + MVP boundary)
+    2. Epic tree (epics with grouped features)
+    3. Feature table (id, title, category, size, personaIds, entityIds, riskIds, sprintAssignment)
+    4. Sprint-1 callout block (name, featureIds, criteria, completionGate)
+    5. Sizing histogram (S/M/L/XL counts — CSS-only bars)
+    6. Cross-cutting features (features with empty personaIds[])
+
+  Upstream dependencies:
+    - personas.primary[].id ........... referenced by features[].personaIds[]
+    - domainModel.entities[].id ....... referenced by features[].entityIds[]
+    - risks[].id ...................... referenced by features[].riskIds[]
+
+  This synthesis fires at Step 2.8 — after Domain Modeling (Step 2.7), before Data Architecture (Step 3).
+  Sprint-1 featureIds + completionGate are the load-bearing contract for the post-scaffold
+  feature-list.json and sprint-1 verification gate.
+-->
+
+<style>
+  .section { border: 1px solid #ddd; border-radius: 4px; padding: 1rem; margin-bottom: 1rem; }
+  .section-title { font-weight: bold; font-size: 1.05em; margin-bottom: 0.5rem; }
+  .captured { background: #f5f5f5; padding: 0.5rem; border-radius: 3px; font-family: monospace; white-space: pre; margin: 0.5rem 0; }
+  .cross-check { color: #555; font-size: 0.9em; margin: 0.4rem 0; }
+  .contradiction { background: #fff0f0; border-left: 4px solid #c00; padding: 0.5rem 0.75rem; margin: 0.5rem 0; }
+  .note { background: #fffbea; border-left: 4px solid #cc0; padding: 0.5rem 0.75rem; margin: 0.5rem 0; }
+  .controls { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+  .btn { padding: 0.35rem 0.9rem; border: 1px solid #aaa; border-radius: 3px; cursor: pointer; font-size: 0.9em; }
+  .btn-approve { background: #e8f5e9; }
+  .btn-adjust  { background: #e3f2fd; }
+  .btn-skip    { background: #f5f5f5; }
+  .downstream  { background: #f0f4ff; border: 1px solid #b0c0e8; border-radius: 4px; padding: 0.75rem 1rem; margin-bottom: 1rem; }
+  .stale-status { border-radius: 4px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; font-size: 0.9em; }
+  .stale-status.is-stale { background: #fff3cd; border: 1px solid #ffc107; }
+  .stale-status.is-approved { background: #e8f5e9; border: 1px solid #4caf50; }
+  .stale-status.is-other { background: #f5f5f5; border: 1px solid #ddd; }
+  .header-banner { background: #eef5ff; border: 1px solid #b0c0e8; border-radius: 4px; padding: 0.75rem 1rem; margin-bottom: 1rem; }
+  .header-banner .horizon { font-weight: bold; font-size: 1.1em; }
+  .mvp-boundary { background: #fff8e6; border-left: 4px solid #f0a500; padding: 0.5rem 0.75rem; margin-top: 0.5rem; }
+  .epic-tree { list-style: none; padding-left: 0; }
+  .epic-tree > li { margin-bottom: 0.75rem; padding: 0.5rem 0.75rem; background: #fafafa; border-radius: 3px; }
+  .epic-tree .epic-title { font-weight: bold; font-family: monospace; }
+  .epic-tree ul { list-style: none; padding-left: 1.25rem; margin: 0.35rem 0 0 0; }
+  .epic-tree ul li { font-family: monospace; font-size: 0.9em; padding: 0.1rem 0; }
+  table.feature-table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+  table.feature-table th, table.feature-table td { border: 1px solid #ddd; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+  table.feature-table th { background: #f0f0f0; font-weight: bold; }
+  table.feature-table td.id-col { font-family: monospace; }
+  .chip { display: inline-block; background: #e3f2fd; border: 1px solid #b0c0e8; border-radius: 10px; padding: 0.05rem 0.5rem; margin: 0.1rem 0.15rem 0.1rem 0; font-family: monospace; font-size: 0.85em; }
+  .chip-persona { background: #e8f5e9; border-color: #a8c9a8; }
+  .chip-entity  { background: #f3e5f5; border-color: #c8a8c8; }
+  .chip-risk    { background: #fff0f0; border-color: #e0a8a8; }
+  .sprint-callout { background: #eef9ee; border: 1px solid #a8c9a8; border-radius: 4px; padding: 0.75rem 1rem; }
+  .sprint-callout h4 { margin: 0 0 0.5rem 0; }
+  .sprint-callout table { width: 100%; border-collapse: collapse; font-size: 0.9em; margin-top: 0.5rem; }
+  .sprint-callout table th, .sprint-callout table td { border: 1px solid #c8d8c8; padding: 0.35rem 0.5rem; text-align: left; }
+  .sprint-callout table th { background: #dff0df; }
+  .histogram { display: flex; align-items: flex-end; gap: 1rem; height: 7rem; padding: 0.5rem 0.5rem 0 0.5rem; border-bottom: 1px solid #ccc; }
+  .histogram .bar { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; flex: 1; font-size: 0.85em; }
+  .histogram .bar .fill { width: 60%; background: linear-gradient(to top, #4a90e2, #7eb6f0); border-radius: 3px 3px 0 0; min-height: 4px; }
+  .histogram .bar .label { margin-top: 0.25rem; font-family: monospace; font-weight: bold; }
+  .histogram .bar .count { font-family: monospace; color: #555; }
+  .cross-cutting-list { list-style: disc; padding-left: 1.5rem; }
+  .cross-cutting-list li { font-family: monospace; font-size: 0.9em; padding: 0.1rem 0; }
+  .back-fill-note { color: #888; font-style: italic; font-size: 0.9em; }
+</style>
+
+<!-- Stale status block — rendered by synthesis-review SKILL.md Step 2 before the section walk -->
+<div class="stale-status {{stale_status_class}}">
+  {{stale_block}}
+</div>
+<!-- stale_block rendering rules (applied by synthesis-review Step 2):
+  featureRoadmap depends on: personas (IDs used in features[].personaIds[]),
+                             domainModel (IDs used in features[].entityIds[]),
+                             risks (IDs used in features[].riskIds[]).
+  If phaseStatus.featureRoadmap.status === "stale":
+    stale_status_class = "is-stale"
+    stale_block = "<strong>⚠️ Stale synthesis</strong> — this phase was previously approved but a dependency changed since then.<br>
+    <strong>Reason</strong>: {staleReason}<br>
+    <strong>Last approved</strong>: {approvedAt}<br>
+    <em>Review sections below with the changed dependency in mind.</em>"
+
+  If phaseStatus.featureRoadmap.status === "approved" or "approved-with-noted-divergences":
+    stale_status_class = "is-approved"
+    stale_block = "✅ <strong>Synthesis current</strong> — approved {approvedAt}. No upstream changes detected."
+
+  Otherwise (in-progress / not-yet-walked):
+    stale_status_class = "is-other"
+    stale_block = "Phase status: {status}."
+-->
+
+<section data-phase="featureRoadmap">
+
+  <h2>Captured decisions — Feature Roadmap (Phase 2.8)</h2>
+  <p class="meta">Captured {{captured.at}} — Round 5</p>
+
+  <!-- Section 1: Header banner — horizon + MVP boundary -->
+  <div class="section">
+    <div class="section-title">1. Horizon + MVP Boundary</div>
+    <div class="header-banner">
+      <div class="horizon">Horizon: {{featureRoadmap.horizon}}</div>
+      <div class="mvp-boundary"><strong>MVP boundary</strong>: {{featureRoadmap.mvpBoundary}}</div>
+      <div class="cross-check" style="margin-top:0.5rem;">Sizing scale: <code>{{featureRoadmap.sizingScale}}</code></div>
+    </div>
+    <div class="cross-check">Horizon scopes the roadmap window (e.g., "MVP", "12-week pre-launch", "v1.0 GA"). MVP boundary explicitly names what is in vs. out of the first release — features beyond the boundary live in later sprints but are still inventoried. The sizing scale anchors the histogram in Section 5 and determines which scale values are valid in <code>features[].size</code>.</div>
+    <!-- Contradiction injected if mvpBoundary is missing or empty: -->
+    <!-- <div class="contradiction"><strong>Contradiction:</strong> No MVP boundary defined. Sprint-1 cannot be sized without an explicit MVP cut.</div> -->
+    <div class="controls">
+      <button class="btn btn-approve">Approve</button>
+      <button class="btn btn-adjust">Adjust</button>
+      <button class="btn btn-skip">Skip</button>
+    </div>
+  </div>
+
+  <!-- Section 2: Epic tree -->
+  <div class="section">
+    <div class="section-title">2. Epic Tree</div>
+    <ul class="epic-tree">
+      {{#each featureRoadmap.epics}}
+      <li>
+        <span class="epic-title">[{{this.id}}] {{this.title}}</span>
+        {{#if this.sequenceAfter}}<span class="cross-check"> — sequence after {{this.sequenceAfter}}</span>{{/if}}
+        <ul>
+          {{#each ../featureRoadmap.features}}
+          {{#if this.epicMatches}}
+          <li>[{{this.id}}] {{this.title}} <span class="chip">{{this.category}}</span> <span class="chip">{{this.size}}</span></li>
+          {{/if}}
+          {{/each}}
+        </ul>
+      </li>
+      {{/each}}
+    </ul>
+    <div class="cross-check">Epics group related features. <code>sequenceAfter</code> records dependencies between epics (e.g., epic E2 cannot start before E1 is in flight). The synthesis-review skill walks features under their owning epic — features whose <code>epicId</code> doesn't match any captured epic surface a contradiction.</div>
+    <!-- Contradiction injected if any feature.epicId doesn't match a captured epic: -->
+    <!-- <div class="contradiction"><strong>Contradiction:</strong> Feature {featureId} references epicId {epicId}, which is not captured in featureRoadmap.epics.</div> -->
+    <div class="controls">
+      <button class="btn btn-approve">Approve</button>
+      <button class="btn btn-adjust">Adjust</button>
+      <button class="btn btn-skip">Skip</button>
+    </div>
+  </div>
+
+  <!-- Section 3: Feature table -->
+  <div class="section">
+    <div class="section-title">3. Feature Inventory</div>
+    <table class="feature-table">
+      <thead>
+        <tr>
+          <th>id</th>
+          <th>title</th>
+          <th>category</th>
+          <th>size</th>
+          <th>personaIds</th>
+          <th>entityIds</th>
+          <th>riskIds</th>
+          <th>sprintAssignment</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each featureRoadmap.features}}
+        <tr>
+          <td class="id-col">{{this.id}}</td>
+          <td>{{this.title}}</td>
+          <td>{{this.category}}</td>
+          <td>{{this.size}}</td>
+          <td>{{#each this.personaIds}}<span class="chip chip-persona">{{this}}</span>{{/each}}</td>
+          <td>{{#each this.entityIds}}<span class="chip chip-entity">{{this}}</span>{{/each}}</td>
+          <td>{{#each this.riskIds}}<span class="chip chip-risk">{{this}}</span>{{/each}}</td>
+          <td><span class="chip">{{this.sprintAssignment}}</span></td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+    <div class="cross-check">Each feature carries cross-references into upstream phases: <code>personaIds</code> must resolve in <code>personas.primary[].id</code> ∪ <code>personas.secondary[].id</code>; <code>entityIds</code> must resolve in <code>domainModel.entities[].id</code>; <code>riskIds</code> must resolve in <code>risks[].id</code>. <code>sprintAssignment</code> ties the feature to a sprint number (or <code>backlog</code>) — sprint-1 features are surfaced in Section 4.</div>
+    <!-- Contradiction injected if any *Id reference is unresolved: -->
+    <!-- <div class="contradiction"><strong>Contradiction:</strong> Feature {featureId} references {kind}Id {refId}, not present in upstream phase.</div> -->
+    <div class="controls">
+      <button class="btn btn-approve">Approve</button>
+      <button class="btn btn-adjust">Adjust</button>
+      <button class="btn btn-skip">Skip</button>
+    </div>
+  </div>
+
+  <!-- Section 4: Sprint-1 callout -->
+  <div class="section">
+    <div class="section-title">4. Sprint-1 Definition</div>
+    <div class="sprint-callout">
+      <h4>{{featureRoadmap.sprint1.name}}</h4>
+      <div><strong>Feature IDs in scope:</strong>
+        {{#each featureRoadmap.sprint1.featureIds}}<span class="chip">{{this}}</span>{{/each}}
+      </div>
+      <table>
+        <thead>
+          <tr><th>#</th><th>Criterion</th></tr>
+        </thead>
+        <tbody>
+          {{#each featureRoadmap.sprint1.criteria}}
+          <tr><td>{{this.index}}</td><td>{{this.text}}</td></tr>
+          {{/each}}
+        </tbody>
+      </table>
+      <p style="margin-top:0.5rem;"><strong>Completion gate:</strong> {{featureRoadmap.sprint1.completionGate}}</p>
+    </div>
+    <div class="cross-check">Sprint-1 is the load-bearing contract for the first development cycle. Its <code>featureIds</code> are written into <code>docs/feature-list.json</code> as sprint-1 entries; its <code>criteria</code> become <code>mustPass</code> entries in <code>docs/sprint-contracts/sprint-1.json</code>; its <code>completionGate</code> becomes the explicit ship/no-ship decision boundary for the sprint-verify skill.</div>
+    <!-- Contradiction injected if sprint1.featureIds is empty or references unknown features: -->
+    <!-- <div class="contradiction"><strong>Contradiction:</strong> Sprint-1 has no feature IDs assigned. The first sprint must include at least one feature.</div> -->
+    <div class="controls">
+      <button class="btn btn-approve">Approve</button>
+      <button class="btn btn-adjust">Adjust</button>
+      <button class="btn btn-skip">Skip</button>
+    </div>
+  </div>
+
+  <!-- Section 5: Sizing histogram -->
+  <div class="section">
+    <div class="section-title">5. Sizing Histogram</div>
+    <div class="histogram">
+      <div class="bar">
+        <div class="fill" style="height: {{featureRoadmap.sizingHistogram.S.heightPct}}%"></div>
+        <div class="count">{{featureRoadmap.sizingHistogram.S.count}}</div>
+        <div class="label">S</div>
+      </div>
+      <div class="bar">
+        <div class="fill" style="height: {{featureRoadmap.sizingHistogram.M.heightPct}}%"></div>
+        <div class="count">{{featureRoadmap.sizingHistogram.M.count}}</div>
+        <div class="label">M</div>
+      </div>
+      <div class="bar">
+        <div class="fill" style="height: {{featureRoadmap.sizingHistogram.L.heightPct}}%"></div>
+        <div class="count">{{featureRoadmap.sizingHistogram.L.count}}</div>
+        <div class="label">L</div>
+      </div>
+      <div class="bar">
+        <div class="fill" style="height: {{featureRoadmap.sizingHistogram.XL.heightPct}}%"></div>
+        <div class="count">{{featureRoadmap.sizingHistogram.XL.count}}</div>
+        <div class="label">XL</div>
+      </div>
+    </div>
+    <div class="cross-check">The histogram is computed by the synthesis-review skill before render: it counts each value of <code>features[].size</code> against the <code>sizingScale</code> (S/M/L/XL) and computes <code>heightPct</code> relative to the largest bucket. A heavy XL-skew suggests the scope is too ambitious for the horizon; a heavy S-skew suggests features may need further decomposition.</div>
+    <!-- Note injected if XL count > S count: -->
+    <!-- <div class="note">Sizing skew detected — more XL features than S features. Consider whether the roadmap horizon is realistic, or whether large features should be decomposed before sprint planning.</div> -->
+    <div class="controls">
+      <button class="btn btn-approve">Approve</button>
+      <button class="btn btn-skip">Skip</button>
+    </div>
+  </div>
+
+  <!-- Section 6: Cross-cutting features (empty personaIds[]) -->
+  <div class="section">
+    <div class="section-title">6. Cross-Cutting Features</div>
+    <p class="back-fill-note">Features with no <code>personaIds</code> — these touch every persona or are infrastructure-level. They are listed here so they don't get lost in the persona-keyed sprint walk.</p>
+    <ul class="cross-cutting-list">
+      {{#each featureRoadmap.features}}
+      {{#if this.isCrossCutting}}
+      <li>[{{this.id}}] {{this.title}} <span class="chip">{{this.category}}</span> <span class="chip">{{this.size}}</span> <span class="chip">{{this.sprintAssignment}}</span></li>
+      {{/if}}
+      {{/each}}
+    </ul>
+    <div class="cross-check">Cross-cutting features (empty <code>personaIds[]</code>) typically include observability, logging, deployment plumbing, internal tooling, and platform-level concerns. They must still be sized and sprint-assigned, but they bypass persona-driven prioritization. If this list is empty, the roadmap is fully persona-attributed — flag for confirmation since most non-trivial products have at least one platform-level feature.</div>
+    <!-- Note injected if cross-cutting list is empty: -->
+    <!-- <div class="note">No cross-cutting features captured. Confirm the roadmap intentionally has zero platform-level work, or surface CI/CD, observability, and deployment as features.</div> -->
+    <div class="controls">
+      <button class="btn btn-approve">Approve</button>
+      <button class="btn btn-skip">Skip</button>
+    </div>
+  </div>
+
+  <!-- Downstream traces — back-filled by later synthesis-review runs -->
+  <div class="section">
+    <div class="section-title">Decisions Driven Downstream</div>
+    <p class="back-fill-note">{{#unless downstreamTraces}}This section back-fills after downstream phases complete and run synthesis-review.{{/unless}}</p>
+    <div class="downstream">
+      {{#each downstreamTraces}}
+      <p>→ {{this.phase}}.{{this.path}}: {{this.summary}}</p>
+      {{/each}}
+    </div>
+    <div class="cross-check">Sprint-1 featureIds drive <code>docs/feature-list.json</code>; completionGate drives <code>docs/sprint-contracts/sprint-1.json</code>; persona/entity/risk IDs drive cross-phase traceability for the verification skill.</div>
+  </div>
+
+</section>

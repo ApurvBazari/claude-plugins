@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "phase": "featureRoadmap",
+  "recordedAt": "2026-05-15T00:00:00Z",
+  "dependencies": [
+    {
+      "path": "personas.primary[0].id",
+      "value": "P1",
+      "rationale": "Persona ID referenced by features[].personaIds[] in the auto-loop output."
+    },
+    {
+      "path": "domainModel.entities[0].id",
+      "value": "E_audit",
+      "rationale": "Entity ID referenced by features[].entityIds[]."
+    },
+    {
+      "path": "risks[0].id",
+      "value": "R-DA-1",
+      "rationale": "Risk ID referenced by features[].riskIds[]."
+    }
+  ]
+}

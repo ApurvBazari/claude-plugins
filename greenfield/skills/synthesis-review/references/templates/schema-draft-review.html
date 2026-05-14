@@ -1,0 +1,201 @@
+<!--
+  Per-phase synthesis template — Schema Draft Review (Phase 2.9, Round 5).
+  Loaded by synthesis-review/SKILL.md Step 2 and spliced into synthesis-template.html's {{phase_body}}.
+
+  Placeholders use the R4 phase-rooted Handlebars convention: {{schemaDraftReview.<field>}}
+  resolves from context.phases.schemaDraftReview.<field> (NO `phases.` prefix). Cross-check
+  warnings carry their own ID + level + addressed-flag; the synthesis-review skill renders
+  the open/addressed badge inline.
+
+  Iteration uses {{#each items}}...{{this.<field>}}...{{/each}}.
+
+  Layout: three side-by-side <section class="panel"> blocks — one per artifact
+    (db / api / event). Each panel renders:
+      - skipped sentinel + deferredReason, OR
+      - draft content in a <pre>, source refs collapsed into <details>, lock-state line.
+    Below the panels, a cross-check warnings list shows level, ID, message,
+    addressed/open badge, and optional addressedNote.
+
+  Upstream dependencies (recorded in schema-draft-review-dependencies.json.example):
+    - domainModel.entities[].id ........ rendered into DB schema columns + API path shapes
+    - apiIntegration.endpoints[].path .. rendered into OpenAPI path entries
+    - auth.scopes[].name ............... rendered into OpenAPI security: blocks
+
+  This synthesis fires at Step 2.9 — after Feature Roadmap (Step 2.8), before
+  Data Architecture (Step 3). The three drafts (DB / API / Event) are the
+  first concrete-artifact materialization in the wizard: every later phase
+  reasons about a system whose shape has been pinned here.
+-->
+
+<style>
+  .section { border: 1px solid #ddd; border-radius: 4px; padding: 1rem; margin-bottom: 1rem; }
+  .section-title { font-weight: bold; font-size: 1.05em; margin-bottom: 0.5rem; }
+  .captured { background: #f5f5f5; padding: 0.5rem; border-radius: 3px; font-family: monospace; white-space: pre; margin: 0.5rem 0; }
+  .cross-check { color: #555; font-size: 0.9em; margin: 0.4rem 0; }
+  .contradiction { background: #fff0f0; border-left: 4px solid #c00; padding: 0.5rem 0.75rem; margin: 0.5rem 0; }
+  .note { background: #fffbea; border-left: 4px solid #cc0; padding: 0.5rem 0.75rem; margin: 0.5rem 0; }
+  .controls { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+  .btn { padding: 0.35rem 0.9rem; border: 1px solid #aaa; border-radius: 3px; cursor: pointer; font-size: 0.9em; }
+  .btn-approve { background: #e8f5e9; }
+  .btn-adjust  { background: #e3f2fd; }
+  .btn-skip    { background: #f5f5f5; }
+  .downstream  { background: #f0f4ff; border: 1px solid #b0c0e8; border-radius: 4px; padding: 0.75rem 1rem; margin-bottom: 1rem; }
+  .stale-status { border-radius: 4px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; font-size: 0.9em; }
+  .stale-status.is-stale { background: #fff3cd; border: 1px solid #ffc107; }
+  .stale-status.is-approved { background: #e8f5e9; border: 1px solid #4caf50; }
+  .stale-status.is-other { background: #f5f5f5; border: 1px solid #ddd; }
+  .lock-banner { background: #eef5ff; border: 1px solid #b0c0e8; border-radius: 4px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.95em; }
+  .panels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
+  .panel { border: 1px solid #ddd; border-radius: 4px; padding: 0.75rem; background: #fafafa; }
+  .panel h2 { margin: 0 0 0.5rem 0; font-size: 1.05em; }
+  .panel .lang { color: #555; font-family: monospace; font-size: 0.85em; font-weight: normal; }
+  .panel .draft-content { background: #1e1e1e; color: #f5f5f5; padding: 0.6rem; border-radius: 3px; font-family: monospace; font-size: 0.8em; max-height: 22rem; overflow: auto; white-space: pre; }
+  .panel details { margin-top: 0.5rem; font-size: 0.9em; }
+  .panel summary { cursor: pointer; color: #336; }
+  .panel .lock-state { margin-top: 0.5rem; font-size: 0.9em; color: #555; }
+  .chip { display: inline-block; background: #e3f2fd; border: 1px solid #b0c0e8; border-radius: 10px; padding: 0.05rem 0.5rem; margin: 0.1rem 0.15rem 0.1rem 0; font-family: monospace; font-size: 0.85em; }
+  .chip-open { background: #fff0f0; border-color: #e0a8a8; }
+  .warn-error    { color: #c00; }
+  .warn-warning  { color: #b38600; }
+  .warn-info     { color: #336; }
+  .back-fill-note { color: #888; font-style: italic; font-size: 0.9em; }
+</style>
+
+<!-- Stale status block — rendered by synthesis-review SKILL.md Step 2 before the section walk -->
+<div class="stale-status {{stale_status_class}}">
+  {{stale_block}}
+</div>
+<!-- stale_block rendering rules (applied by synthesis-review Step 2):
+  schemaDraftReview depends on: domainModel (entity IDs rendered into DB + API drafts),
+                                apiIntegration (endpoint paths rendered into OpenAPI),
+                                auth (scope names rendered into OpenAPI security blocks).
+  If phaseStatus.schemaDraftReview.status === "stale":
+    stale_status_class = "is-stale"
+    stale_block = "<strong>⚠️ Stale synthesis</strong> — this phase was previously approved but a dependency changed since then.<br>
+    <strong>Reason</strong>: {staleReason}<br>
+    <strong>Last approved</strong>: {approvedAt}<br>
+    <em>Review sections below with the changed dependency in mind.</em>"
+
+  If phaseStatus.schemaDraftReview.status === "approved" or "approved-with-noted-divergences":
+    stale_status_class = "is-approved"
+    stale_block = "✅ <strong>Synthesis current</strong> — approved {approvedAt}. No upstream changes detected."
+
+  Otherwise (in-progress / not-yet-walked):
+    stale_status_class = "is-other"
+    stale_block = "Phase status: {status}."
+-->
+
+<section data-phase="schemaDraftReview">
+
+  <h2>Captured decisions — Schema Draft Review (Phase 2.9)</h2>
+  <p class="meta">Captured {{captured.at}} — Round 5</p>
+
+  <!-- Lock-state banner — pins the three drafts at a known point in time -->
+  <div class="lock-banner">
+    <strong>Locked at:</strong> {{schemaDraftReview.lockedAt}}
+    &nbsp;|&nbsp; Output strategy: <code>{{schemaDraftReview.outputStrategy}}</code>
+    &nbsp;|&nbsp; Applicable: {{#each schemaDraftReview.applicableArtifacts}}<span class="chip">{{this}}</span>{{/each}}
+  </div>
+
+  <!-- Three-panel layout — DB / API / Event side-by-side -->
+  <div class="panels">
+
+    <section class="panel" data-artifact="db">
+      <h2>DB Schema — <span class="lang">{{schemaDraftReview.languages.db}}</span></h2>
+      {{#if schemaDraftReview.drafts.db.skipped}}
+        <p class="note">Skipped: {{schemaDraftReview.drafts.db.deferredReason}}</p>
+      {{else}}
+        <pre class="draft-content">{{schemaDraftReview.drafts.db.content}}</pre>
+        <details>
+          <summary>Source refs ({{schemaDraftReview.drafts.db.sourceRefs.length}})</summary>
+          <ul>
+            {{#each schemaDraftReview.drafts.db.sourceRefs}}
+            <li><span class="chip">{{this.path}}</span> → <code>{{this.renderedAs}}</code></li>
+            {{/each}}
+          </ul>
+        </details>
+        <div class="lock-state">Approved: <strong>{{schemaDraftReview.drafts.db.approved}}</strong></div>
+      {{/if}}
+      <div class="controls">
+        <button class="btn btn-approve">Approve</button>
+        <button class="btn btn-adjust">Adjust</button>
+        <button class="btn btn-skip">Skip</button>
+      </div>
+    </section>
+
+    <section class="panel" data-artifact="api">
+      <h2>API Contract — <span class="lang">{{schemaDraftReview.languages.api}}</span></h2>
+      {{#if schemaDraftReview.drafts.api.skipped}}
+        <p class="note">Skipped: {{schemaDraftReview.drafts.api.deferredReason}}</p>
+      {{else}}
+        <pre class="draft-content">{{schemaDraftReview.drafts.api.content}}</pre>
+        <details>
+          <summary>Source refs ({{schemaDraftReview.drafts.api.sourceRefs.length}})</summary>
+          <ul>
+            {{#each schemaDraftReview.drafts.api.sourceRefs}}
+            <li><span class="chip">{{this.path}}</span> → <code>{{this.renderedAs}}</code></li>
+            {{/each}}
+          </ul>
+        </details>
+        <div class="lock-state">Approved: <strong>{{schemaDraftReview.drafts.api.approved}}</strong></div>
+      {{/if}}
+      <div class="controls">
+        <button class="btn btn-approve">Approve</button>
+        <button class="btn btn-adjust">Adjust</button>
+        <button class="btn btn-skip">Skip</button>
+      </div>
+    </section>
+
+    <section class="panel" data-artifact="event">
+      <h2>Event Schemas — <span class="lang">{{schemaDraftReview.languages.event}}</span></h2>
+      {{#if schemaDraftReview.drafts.event.skipped}}
+        <p class="note">Skipped: {{schemaDraftReview.drafts.event.deferredReason}}</p>
+      {{else}}
+        <pre class="draft-content">{{schemaDraftReview.drafts.event.content}}</pre>
+        <details>
+          <summary>Source refs ({{schemaDraftReview.drafts.event.sourceRefs.length}})</summary>
+          <ul>
+            {{#each schemaDraftReview.drafts.event.sourceRefs}}
+            <li><span class="chip">{{this.path}}</span> → <code>{{this.renderedAs}}</code></li>
+            {{/each}}
+          </ul>
+        </details>
+        <div class="lock-state">Approved: <strong>{{schemaDraftReview.drafts.event.approved}}</strong></div>
+      {{/if}}
+      <div class="controls">
+        <button class="btn btn-approve">Approve</button>
+        <button class="btn btn-adjust">Adjust</button>
+        <button class="btn btn-skip">Skip</button>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Cross-check warnings — referential integrity across the three drafts -->
+  <section class="cross-check">
+    <h3>Cross-check warnings</h3>
+    <ul>
+      {{#each schemaDraftReview.crossCheckWarnings}}
+      <li class="warn-{{this.level}}">
+        <strong>{{this.level}}</strong> [{{this.id}}] — {{this.message}}
+        {{#if this.addressed}}<span class="chip">addressed</span>{{else}}<span class="chip chip-open">open</span>{{/if}}
+        {{#if this.addressedNote}}<em>{{this.addressedNote}}</em>{{/if}}
+      </li>
+      {{/each}}
+    </ul>
+    <div class="cross-check">Cross-check warnings surface drift between drafts and their upstream sources. Common warnings include: a DB column referenced by an API request shape but not present in the DB draft; an event payload field that does not appear in the DB draft; an OpenAPI <code>security:</code> scope name not captured in <code>auth.scopes[]</code>. Each warning carries an <code>id</code>, a <code>level</code> (error/warning/info), and an <code>addressed</code> flag. Errors block sprint-1 verification until addressed; warnings and info are advisory.</div>
+  </section>
+
+  <!-- Decisions Driven Downstream — back-filled by later synthesis-review runs -->
+  <div class="section">
+    <div class="section-title">Decisions Driven Downstream</div>
+    <p class="back-fill-note">{{#unless downstreamTraces}}This section back-fills after downstream phases complete and run synthesis-review.{{/unless}}</p>
+    <div class="downstream">
+      {{#each downstreamTraces}}
+      <p>→ {{this.phase}}.{{this.path}}: {{this.summary}}</p>
+      {{/each}}
+    </div>
+    <div class="cross-check">DB draft drives <code>dataArchitecture</code> schema decisions and Prisma/Drizzle/Migrations generation. API draft drives <code>apiIntegration</code> endpoint shapes and OpenAPI export. Event draft drives <code>runtimeOperations</code> queue topics and webhook payloads. Each downstream phase records back which schema-draft fields it consumed, building a complete provenance record.</div>
+  </div>
+
+</section>

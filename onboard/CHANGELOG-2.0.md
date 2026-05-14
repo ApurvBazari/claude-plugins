@@ -1,5 +1,19 @@
 # Onboard 2.0 — Migration & Breaking Changes
 
+## 2.0.0-alpha.6 (2026-05-15) — Round 5 schema additions
+
+### Added
+- `context-shape-v2.json`: replaced `phases.featureRoadmap` + `phases.schemaDraftReview` deferred-stub placeholders with full schemas.
+- `definitions.schemaDraft` for the `drafts.{db,api,event}` sub-shape.
+- `generation/SKILL.md`: deterministic `docs/feature-list.json` + `docs/sprint-contracts/sprint-1.json` generation when greenfield's `phases.featureRoadmap` is populated; verbatim schema/contract file writes from `phases.schemaDraftReview.drafts.{db,api,event}.content`.
+- `generation/references/sprint-contracts.md`: clarification that from R5 onward sprint-1 is deterministic; the interactive flow described applies to sprint-2..N.
+
+### Backward compatibility
+- If `featureRoadmap.skipped = true` OR `features[]` empty → onboard falls back to interactive handoff (preserves alpha.5 behavior).
+- If `schemaDraftReview.skipped = true` OR `lockedAt` absent → onboard writes no schema/contract files (preserves alpha.5 behavior).
+
+---
+
 ## 2.0.0-alpha.5 — Round 4 schema extensions
 
 **context-shape-v2.json additions (additive — alpha.4 sessions auto-migrate via greenfield/skills/pickup/SKILL.md § State migration):**

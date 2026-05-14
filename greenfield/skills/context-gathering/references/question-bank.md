@@ -1768,3 +1768,11 @@ Other flags (`required`, `tagSuggestions`, `feedsIntoConsolidation`, etc.) inter
 Then a `**Prompt:**` paragraph, followed by `**Stores to:**`, followed by R3-preserved paragraphs (Downstream effects, Recommend, Default).
 
 *When `willDeploy = false`, the entire Category 5 (CI/CD) except Q5.2 is skipped.
+
+---
+
+## Round 5 reference
+
+Round 5 phases (`featureRoadmap` at Step 16, `schemaDraftReview` at Step 19) reuse existing Q-bank flags from Rounds 2.5–4: `showInLight`, `loopOver`, `loopMode`, `isRiskCapture`. No new flags introduced. See `feature-roadmap.q-bank.md` and `schema-draft-review.q-bank.md` for per-Q specifics.
+
+Step 16 introduces per-persona auto-loop on FR.Q4–Q9 (same mechanic as R4 auth/privacy loops). Step 19 introduces an auto-render mid-step hook (the renderer script populates `drafts.{db,api,event}.content` between SDR.Q2 and SDR.Q3) — this is the only wizard step that runs a script during context gathering.

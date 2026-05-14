@@ -6,7 +6,7 @@ user-invocable: false
 
 # Synthesis Review Skill — Per-Phase Confirmation Gate
 
-You are running the synthesis-review skill, the reusable Phase X.5 confirmation gate that runs after each major wizard phase in the 17-phase greenfield 3.x flow. Round 1 wires this in for Phase 1.8 (cicdAndDelivery). Round 2 wires it in for architecturalFraming, dataArchitecture, apiIntegration, architecturalValidation. Round 3 wires it in for auth, privacy, security, runtimeOperations. Round 4 adds personas (Step 2.2) and domainModel (Step 2.7). Rounds 5–6 will add featureRoadmap, schemaDraftReview, and workflow.
+You are running the synthesis-review skill, the reusable Phase X.5 confirmation gate that runs after each major wizard phase in the 20-phase greenfield 3.x flow. Round 1 wires this in for Phase 1.8 (cicdAndDelivery). Round 2 wires it in for architecturalFraming, dataArchitecture, apiIntegration, architecturalValidation. Round 3 wires it in for auth, privacy, security, runtimeOperations. Round 4 adds personas (Step 2.2) and domainModel (Step 2.7). Round 5 adds featureRoadmap (Step 16) and schemaDraftReview (Step 19). Round 6 will add workflow.
 
 ## Step 0: Stale-check entry-guard
 
@@ -72,6 +72,8 @@ The table below lists the wizard steps this skill renders synthesis for, in the 
 | runtimeOperations | Step 8 | `runtime-operations.html` + `.md` + `runtime-operations-dependencies.json.example` | Round 3 |
 | cicdAndDelivery | Step 11 | `cicd-and-delivery.html` + `.md` + `cicd-and-delivery-dependencies.json.example` | Round 1 |
 | architecturalValidation | Step 15 | `architectural-validation.html` + `.md` + `architectural-validation-dependencies.json.example` | Round 2.5 — final cross-phase sign-off |
+| featureRoadmap | Step 16 | `feature-roadmap.html` + `feature-roadmap.md` + `feature-roadmap-dependencies.json.example` | Round 5 — 6 sections; horizon + MVP boundary, epic tree, feature table, sprint-1 callout, sizing histogram, cross-cutting features |
+| schemaDraftReview | Step 19 | `schema-draft-review.html` + `schema-draft-review.md` + `schema-draft-review-dependencies.json.example` | Round 5 — 3-panel layout (DB / API / Event drafts) plus cross-check warnings; renders auto-synthesized drafts and captures Approve/Adjust/Reject decisions |
 
 If a future round adds a new phase template, append a row here and ensure the corresponding section composition notes land in `references/section-prompts.md`.
 

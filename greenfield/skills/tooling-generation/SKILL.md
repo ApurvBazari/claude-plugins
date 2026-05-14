@@ -471,7 +471,12 @@ In the enriched context passed to `/onboard:generate`, include these R4 addition
                      primary[], secondary[], antiPersonas[] */ },
     "domainModel": { /* full domain model block:
                        contexts[], entities[], valueObjects[], domainEvents[],
-                       crossContextRelationships[], ubiquitousLanguage[], antiCorruption */ }
+                       crossContextRelationships[], ubiquitousLanguage[], antiCorruption */ },
+    "featureRoadmap": { /* R5 — full feature roadmap block from greenfield-state.json:
+                           features[], epics[], sprint1, skipped (optional) */ },
+    "schemaDraftReview": { /* R5 — full schema draft review block:
+                              drafts: { db, api, event }, outputStrategy,
+                              lockedAt (optional), skipped (optional) */ }
   },
   "risks": [ /* full top-level risks[] array — each entry has id, originatingPhase,
                 text, tags[], reconciliation: { status, rationale } */ ],
@@ -491,3 +496,33 @@ Onboard 2.0 alpha.5+ treats `phases.personas`, `phases.domainModel`, `risks`, an
 
 - If `phaseStatus.personas.status === "user-skipped"`, send `phases.personas` as empty object `{}` (NOT absent — explicit empty signals user-skip vs absent-from-state-shape).
 - If `mode` is missing entirely (e.g., legacy alpha.4 state that didn't trigger pickup migration somehow), send `mode` as `null` and onboard uses comprehensive defaults (heavy + auto-loop + full-ddd) for any new artifact generation. Log a warning that the mode block was synthesized.
+
+---
+
+## Round 5 — per-phase explainer
+
+The R5 additions reuse the same `phases.*` pass-through shape established by R4. Onboard 3.0 alpha.6+ reads two new optional phase blocks: `phases.featureRoadmap` and `phases.schemaDraftReview`. Both are absent in alpha.5 state and onboard falls back to its prior behavior when they're missing or marked skipped.
+
+### featureRoadmap (R5)
+
+Forwarded to onboard generation. Onboard reads:
+- `phases.featureRoadmap.features[]` → writes `docs/feature-list.json`
+- `phases.featureRoadmap.epics[]` → preserved alongside features for tooling that groups
+- `phases.featureRoadmap.sprint1` → writes `docs/sprint-contracts/sprint-1.json`
+
+If `phases.featureRoadmap.skipped = true` OR `features[]` is empty, onboard falls back to the existing alpha.5 interactive handoff flow for `feature-list.json` + `sprint-1.json` (preserves backward-compat).
+
+### schemaDraftReview (R5)
+
+Forwarded to onboard generation. Onboard reads `phases.schemaDraftReview.drafts.{db,api,event}.content` (only when `lockedAt` is set AND `drafts.{X}.approved = true` AND `drafts.{X}.skipped != true`) and writes verbatim to canonical paths per `phases.schemaDraftReview.outputStrategy`:
+
+- `outputStrategy = "project-root"`:
+  - db (prisma) → `prisma/schema.prisma`
+  - db (sql-ddl) → `sql/migrations/0001_init.sql`
+  - api (openapi-3.0) → `docs/api/openapi.yaml`
+  - api (graphql-sdl) → `schema.graphql`
+  - event (asyncapi) → `docs/events/event-schemas.yaml`
+  - event (json-schema) → `docs/events/event-schemas.json`
+- `outputStrategy = "docs-drafts"`: all of the above written under `docs/drafts/` for manual placement after generation.
+
+If `phases.schemaDraftReview.skipped = true` OR `lockedAt` is absent, onboard writes nothing for schema/contract files (preserves alpha.5 behavior — no schema/contract artifacts emitted).
