@@ -230,3 +230,11 @@ At the end of the workflow (all phases complete), set `currentPhase = "complete"
 - **Why not auto-resume in `/greenfield:start`?** `/greenfield:start` DOES check for an existing state file and offers resume — this skill is the direct entry point for users who know they want to resume (faster than going through init's guard checks).
 - **Why JSON, not YAML?** The wizard updates state frequently; JSON parse/stringify is universal and fast. YAML adds no value here.
 - **Why per-project state?** Greenfield state is tied to a specific scaffold. If you had global state, you couldn't work on two projects concurrently.
+
+## Key Rules
+
+- **Schema version check is a hard gate** — if `schemaVersion` is missing or not `1`, halt immediately with the "restart with `/greenfield:start`" message. Never attempt to parse or resume an incompatible state file.
+- **Never auto-delete the state file** — if the file is corrupt or malformed, offer recovery paths (show contents, delete manually, restore from git). Only the developer may delete it.
+- **`completedSteps` is the authoritative skip list** — every dispatched skill MUST check `completedSteps` at entry and skip already-completed steps. Never re-ask a question whose answer is already in `context`; if a skill doesn't honor this, apologize and continue rather than re-writing captured state.
+- **Stale phases are surfaced, not auto-resolved** — if any `phaseStatus` entry is `"stale"`, report it in Step 4's summary. Do not reroute the developer away from their intended resume target; the stale entry-guard in `synthesis-review` Step 0 handles re-walk when the phase is actually entered.
+- **Explicit confirmation before dispatch** — always wait for the developer's "yes/continue" in Step 4 before calling any downstream skill. Do not auto-proceed after rendering the resume summary.

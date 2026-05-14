@@ -406,3 +406,11 @@ Every phase has its own failure modes. The table below is the authoritative per-
 - **Never force git operations.** No force-push, no branch deletion without explicit confirmation.
 - **Never call a sub-tool silently when it can fail.** Always wrap in try/handle-error and surface meaningful messages.
 - **Always offer a resume path.** Even on abort, leave `greenfield-state.json` in place so `/greenfield:pickup` works later.
+
+## Key Rules
+
+- **Step 0 resume check is mandatory** — never skip the `greenfield-state.json` check at entry. An in-progress session must be presented to the user before any new work begins; silent restart is not allowed.
+- **All state writes are atomic** — always write to `greenfield-state.json.tmp` then rename. Never write directly to the final path; a killed mid-write leaves the session corrupt and un-resumable.
+- **Feature decomposition is non-skippable** — if the developer says "skip", generate a 3-5 item skeletal list and continue. Downstream phases (`docs/feature-list.json`) depend on this file existing.
+- **Research failure is never silent** — if the `stack-researcher` sub-agent is denied web access (sentinel response), fall back to main-session WebFetch with explicit user-visible per-call prompts. If the user also denies those, set `research.mode = "training-data-only"` and warn explicitly. Never proceed as though research succeeded.
+- **Plugin discovery must complete before tooling generation** — `coveredCapabilities` from Step 3.1 is required by `/onboard:generate` to prevent agent shadowing. Step 3.2 must never be dispatched without the Step 3.1 return value in hand.

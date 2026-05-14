@@ -216,3 +216,11 @@ Compare `webResearch.stackVersion` from metadata against current `package.json` 
 > claude marketplace add knowledge-work-plugins
 > claude plugin install engineering
 > ```
+
+## Key Rules
+
+- **Never write any file** — this skill is fully read-only. All Steps are observation and reporting only.
+- **In-progress session check always runs first** — Step 1 fires before Step 2 (greenfield-meta check). If `greenfield-state.json` exists and `currentPhase !== "complete"`, report the in-progress state and stop; do not also try to report post-scaffold health.
+- **Phase synthesis status comes from `phaseStatus` in `greenfield-state.json`** — when reporting the Phase Synthesis Status table, read the `phaseStatus` map directly. If the field is absent (pre-T9 session), report "not tracked" rather than fabricating status values.
+- **Plugin drift is detected via filesystem probe, not config alone** — compare `installedPlugins` from `greenfield-meta.json` against a live probe of `${CLAUDE_PLUGIN_ROOT}/../<plugin>` for each known plugin. Discrepancies are reported; the check skill never applies drift changes.
+- **`hookStatus` is read from `greenfield-meta.json.generated.toolingFlags.hookStatus`** — use the `planned` / `generated` / `skipped` / `warnings` fields directly for the Plugin Integration Coverage report. Do not recompute hook counts from settings.json; the telemetry object is the authoritative source.
