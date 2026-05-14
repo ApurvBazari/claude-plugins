@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "phase": "schemaDraftReview",
+  "recordedAt": "2026-05-15T00:00:00Z",
+  "dependencies": [
+    {
+      "path": "domainModel.entities[0].id",
+      "value": "E_audit",
+      "rationale": "Entity rendered into DB schema model + API endpoint shape."
+    },
+    {
+      "path": "apiIntegration.endpoints[0].path",
+      "value": "/audits",
+      "rationale": "API endpoint rendered into OpenAPI path."
+    },
+    {
+      "path": "auth.scopes[0].name",
+      "value": "read:audit",
+      "rationale": "Auth scope rendered into security: block."
+    }
+  ]
+}
