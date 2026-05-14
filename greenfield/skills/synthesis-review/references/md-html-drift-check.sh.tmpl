@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# md-html-drift-check.sh — installed in <project>/.git/hooks/pre-commit
+# greenfield:md-html-drift-check
+#
+# Warns when only one of a synthesis .html/.md pair in docs/adr/ was staged
+# in the current commit. Non-blocking; bypass via git commit --no-verify.
+#
+# Installed by synthesis-review/SKILL.md Step 6 (alongside pre-commit-freshness-hook.sh.tmpl).
+# The marker string "greenfield:md-html-drift-check" is checked before re-installation.
+
+set -e
+
+docs_adr="$(git rev-parse --show-toplevel)/docs/adr"
+[ -d "$docs_adr" ] || exit 0
+
+warnings=0
+
+for html in "$docs_adr"/*.html; do
+  [ -f "$html" ] || continue
+  md="${html%.html}.md"
+
+  if [ -f "$md" ]; then
+    html_base="$(basename "$html")"
+    md_base="$(basename "$md")"
+
+    html_staged=0
+    md_staged=0
+
+    if git diff --cached --name-only | grep -qF "$html_base"; then
+      html_staged=1
+    fi
+    if git diff --cached --name-only | grep -qF "$md_base"; then
+      md_staged=1
+    fi
+
+    if [ "$html_staged" -eq 1 ] && [ "$md_staged" -eq 0 ]; then
+      echo "  greenfield/md-html-drift-check: $html_base was staged but $md_base wasn't. Synthesis pair drift." >&2
+      warnings=$((warnings + 1))
+    fi
+
+    if [ "$md_staged" -eq 1 ] && [ "$html_staged" -eq 0 ]; then
+      echo "  greenfield/md-html-drift-check: $md_base was staged but $html_base wasn't. Synthesis pair drift." >&2
+      warnings=$((warnings + 1))
+    fi
+  fi
+done
+
+if [ "$warnings" -gt 0 ]; then
+  {
+    echo ""
+    echo "  Synthesis pairs should be updated together. If this is intentional,"
+    echo "  bypass with: git commit --no-verify"
+    echo ""
+  } >&2
+fi
+
+exit 0

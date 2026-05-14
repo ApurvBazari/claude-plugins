@@ -46,17 +46,22 @@ If any of these are missing, halt with an error pointing the caller at this sect
 
 ## Overview
 
-The skill produces three outputs per phase:
+The skill produces four outputs per phase:
 
-1. `<targetProjectRoot>/docs/adr/<phaseId-kebab>-<short-name>.html` — the synthesis record. Living architecture document.
-2. `<targetProjectRoot>/docs/adr/<phaseId-kebab>-<short-name>-dependencies.json` — cross-phase dependency snapshot. Used by `visualize-graph.sh` and the freshness hook.
-3. Mutations to `context.syntheses[phaseId]` — `{ approvedAt, adjustments[] }` recording the developer's per-section decisions.
+1. `<targetProjectRoot>/docs/adr/<phaseId-kebab>-<short-name>.html` — the synthesis record. Living architecture document (HTML executive summary).
+2. `<targetProjectRoot>/docs/adr/<phaseId-kebab>-<short-name>.md` — markdown companion to the HTML. Written in parallel; independently authored from the same template pair.
+3. `<targetProjectRoot>/docs/adr/<phaseId-kebab>-<short-name>-dependencies.json` — cross-phase dependency snapshot. Used by `visualize-graph.sh` and the freshness hook.
+4. Mutations to `context.syntheses[phaseId]` — `{ approvedAt, adjustments[] }` recording the developer's per-section decisions.
 
-The HTML rendering and decision walk happen across seven Steps below.
+The HTML + markdown rendering and decision walk happen across seven Steps below.
 
 ## Step 1: Load the per-phase template
 
-Locate the per-phase template at `${CLAUDE_PLUGIN_ROOT}/skills/synthesis-review/references/templates/<phaseId-kebab>-<short-name>.html`. For Round 1: `cicd-and-delivery.html`.
+Locate the per-phase template pair at `${CLAUDE_PLUGIN_ROOT}/skills/synthesis-review/references/templates/`:
+- `<phaseId-kebab>-<short-name>.html` — HTML executive summary template
+- `<phaseId-kebab>-<short-name>.md` — markdown companion template
+
+For Round 1: `cicd-and-delivery.html` and `cicd-and-delivery.md`.
 
 If the template file does not exist, halt with an error:
 
@@ -76,7 +81,11 @@ Walk the per-phase template's sections. For each section:
 
 Splice the rendered body into the generic frame's `{{phase_body}}` placeholder. Fill in `{{phase_id}}`, `{{phase_name}}`, `{{captured_at}}` (current ISO timestamp), `{{phase_id_lower}}`, `{{phase_short_name}}`, and `{{git_sha}}` (short SHA of HEAD in `targetProjectRoot`).
 
-Write the result to `<targetProjectRoot>/docs/adr/<phaseId-kebab>-<short-name>.html` via atomic `.tmp` + rename. Create `docs/adr/` if missing.
+Write the HTML result to `<targetProjectRoot>/docs/adr/<phaseId-kebab>-<short-name>.html` via atomic `.tmp` + rename. Create `docs/adr/` if missing.
+
+Then render the markdown companion: walk the `<phaseId-kebab>-<short-name>.md` template in the same pass, substituting the same placeholders (same `{{phase.field}}` syntax, same stale_block, same cross-check values). Write the result to `<targetProjectRoot>/docs/adr/<phaseId-kebab>-<short-name>.md` via atomic `.tmp` + rename.
+
+Both the `.html` and `.md` files must be written before proceeding to Step 3. If a `.md` template does not exist (e.g., a future round-N phase), write only the HTML and log a warning `synthesisMarkdownStatus: "no-md-template"` in the return object — do not block.
 
 Refer to `references/section-prompts.md` for the per-section composition strategy and the Round 1 CI/CD & Delivery section map.
 
@@ -103,13 +112,17 @@ Write to `<targetProjectRoot>/docs/adr/<phaseId-kebab>-<short-name>-dependencies
 
 ## Step 4: Walk the developer through the synthesis
 
-Tell the developer the HTML is ready:
+Tell the developer the synthesis is ready:
 
-> I've written the **{phaseId}** synthesis to `docs/adr/{file}.html`. Opening it in your browser will help:
+> I've written the **{phaseId}** synthesis to:
+> - `docs/adr/{file}.html` — HTML executive summary (open in browser for the styled view)
+> - `docs/adr/{file}.md` — markdown companion (version-controlled details record)
 >
 > `open docs/adr/{file}.html`
 >
 > Walk through each section. For each, you have three options: **Approve** (looks correct), **Adjust** (needs change), or **Skip** (not relevant — give a one-line reason).
+>
+> Any adjustment you make will be reflected in both files.
 
 Iterate through the sections in order. For each section, ask via `AskUserQuestion` with three choices: Approve, Adjust, Skip.
 
@@ -126,7 +139,7 @@ Refer to `references/adjust-dialog-protocol.md` for the full protocol. Summary:
 1. Before invoking adjust-dialog, snapshot the current value for every field in the section being adjusted. Store as `beforeSnapshot = { <fieldPath>: <currentValue>, ... }`.
 2. Invoke `greenfield/skills/adjust-dialog/` via the Skill tool, passing `phaseId`, `sectionId`, the original value, the developer's stated intent, and all current `listedPhases`. The adjust-dialog skill runs a 5-category adversarial walk (Scope, Assumptions, Alternatives, Risks, Dependencies).
 3. If the Skill tool errors (skill unavailable), fall back to the inline 3-question mini-dialog documented in `references/adjust-dialog-protocol.md § Fallback`.
-4. Write the final adjusted answer back into `context.phases[phaseId]`. Record `via: "adjust-dialog" | "inline-fallback"`.
+4. Write the final adjusted answer back into `context.phases[phaseId]`. Record `via: "adjust-dialog" | "inline-fallback"`. After writing context, re-render the affected section in BOTH the `.html` and `.md` output files and overwrite them atomically (`.tmp` + rename). Both files must stay in sync after every adjustment.
 5. **Capture the field-level diff**: compare `beforeSnapshot` against the updated `context.phases[phaseId]` to build a list of changed field paths. For each changed field, write an entry into `context.adjustmentDiffs[phaseId][sectionId]`:
 
    ```jsonc
@@ -145,18 +158,39 @@ The `adjustmentDiffs` structure is used by Step 7 for stale propagation and is a
 
 ## Step 6: First-run freshness hook installation (one-time)
 
-On the FIRST invocation of synthesis-review in a given project (detect by absence of `<targetProjectRoot>/.git/hooks/pre-commit` containing the marker string `# greenfield:synthesis-freshness`):
+On the FIRST invocation of synthesis-review in a given project, install two hook fragments. Detect first-run by checking whether `<targetProjectRoot>/.git/hooks/pre-commit` contains BOTH marker strings.
+
+### 6a: Synthesis freshness hook
+
+Marker: `# greenfield:synthesis-freshness`
+
+If absent:
 
 1. Read the template at `${CLAUDE_PLUGIN_ROOT}/skills/synthesis-review/references/pre-commit-freshness-hook.sh.tmpl`.
 2. Substitute the architectural-file patterns based on `context.phases.stack.stack` (e.g., `src/**/*.ts` for Next.js, `prisma/**/*.prisma` for Prisma schemas). Patterns go into the `{{ARCH_PATTERNS}}` placeholder as a bash-array body.
-3. Install at `<targetProjectRoot>/.git/hooks/pre-commit` (append if the file exists; create with `#!/usr/bin/env bash` shebang if not).
+3. Append to `<targetProjectRoot>/.git/hooks/pre-commit` (create with `#!/usr/bin/env bash` shebang if the file doesn't exist yet).
 4. `chmod +x` the file.
+
+### 6b: MD-HTML drift-check hook
+
+Marker: `# greenfield:md-html-drift-check`
+
+If absent:
+
+1. Read the template at `${CLAUDE_PLUGIN_ROOT}/skills/synthesis-review/references/md-html-drift-check.sh.tmpl`.
+2. Append to `<targetProjectRoot>/.git/hooks/pre-commit` (the file already exists after 6a). No substitution needed — this template has no placeholders.
+
+### After both fragments are installed
 
 Tell the developer:
 
-> Installed a pre-commit hook at `.git/hooks/pre-commit` that warns when code changes without updating `docs/adr/`. The warning is non-blocking — bypass with `git commit --no-verify` if needed.
+> Installed two pre-commit hook fragments at `.git/hooks/pre-commit`:
+> - **synthesis-freshness** — warns when code changes without updating `docs/adr/` synthesis records.
+> - **md-html-drift-check** — warns when only one of a `.html`/`.md` synthesis pair is staged in the same commit.
+>
+> Both warnings are non-blocking — bypass with `git commit --no-verify` if needed.
 
-Skip this Step on subsequent invocations.
+Skip this entire Step on subsequent invocations (both markers present).
 
 ## Step 7: Propagate stale flags, then checkpoint and return
 
