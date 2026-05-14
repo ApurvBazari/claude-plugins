@@ -89,7 +89,7 @@
             },
             "authzModel": {
               "enum": ["flat-roles", "rbac", "abac", "db-rls", "n/a"],
-              "description": "Authorization model. RLS gated by dataArchitecture.databaseEngine support."
+              "description": "Authorization model. RLS gated by dataArchitecture.engine support."
             },
             "enforcementPoint": {
               "type": "array",
@@ -142,7 +142,7 @@
         "type": "array",
         "items": {
           "type": "string",
-          "pattern": "^(vision|personas|domain|architecturalFraming|architecturalValidation|stack|dataArchitecture|apiIntegration|frontend|authSecurity|workflow|pluginRecommendation|cicdAndDelivery|risk|featureRoadmap|pluginInstall|schemaDraftReview)\\..+$"
+          "pattern": "^(vision|personas|domain|architecturalFraming|architecturalValidation|stack|auth|dataArchitecture|apiIntegration|frontend|authSecurity|workflow|pluginRecommendation|cicdAndDelivery|risk|featureRoadmap|pluginInstall|schemaDraftReview)\\..+$"
         }
       }
     }
