@@ -38,10 +38,13 @@ Each answer updates this context. Questions use the context to determine whether
 - **Default**: (skip with Enter — open-ended; no meaningful default for "what do you want to build")
 
 ### Q1.2: "Who is this for? What problem does it solve?"
-- **Type**: Open-ended
-- **Condition**: If Q1.1 is vague or doesn't clarify target users
-- **Updates**: Refines `appType`, informs security level (B2B → higher)
-- **Default**: (skip with Enter — open-ended context question; any placeholder would be misleading)
+
+> **Migrated to Step 2.2 Personas in Round 4.** This free-text user-description Q is superseded by the structured personas capture at Step 2.2 (12 Qs heavy / 4 light). Existing alpha.4 state files with `vision.users[]` populated are preserved verbatim for backward compatibility — see `context-gathering/SKILL.md` Step 1 backward-compat note. New wizard runs use Step 2.2's rich-persona format directly.
+
+- **Legacy field (preserved):** `vision.users[]` — array of free-text user descriptions from alpha.4 sessions. The pickup migration shim (alpha.4 → alpha.5, T21) does NOT auto-restructure these into personas; the wizard surfaces the value at Step 2.2 entry and offers conversion.
+- **Type (legacy, pre-R4):** Open-ended
+- **Condition (legacy, pre-R4):** If Q1.1 is vague or doesn't clarify target users
+- **Default:** (skip — legacy Q; new sessions skip directly to Q1.3 or Step 2)
 
 ---
 

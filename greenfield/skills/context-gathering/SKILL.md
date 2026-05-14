@@ -148,7 +148,14 @@ Emit the progress indicator. Then start with Q1.1: "What do you want to build?"
 Listen carefully. From the answer, infer:
 - `appType` (web-app, api, cli, library, fullstack, mobile-backend)
 - `hasFrontend`, `hasBackend`, `hasAPI`
-- Whether follow-up Q1.2 is needed (if the answer is vague)
+
+**Q1.2 (legacy, Round 4 demoted):** Q1.2 "Who is this for? What problem does it solve?" was demoted to a pointer in Round 4 — the structured Personas capture at Step 2.2 supersedes it. **Do not ask Q1.2 in new wizard runs.** Skip directly from Q1.1 → Step 1.1 mode toggles.
+
+**Backward-compat for alpha.4 sessions:** if `.claude/greenfield-state.json` has `vision.users[]` populated (from a pre-R4 alpha.4 wizard run that the pickup migration shim restored), surface to the user at Step 2.2 entry:
+
+> Migrated from Step 1 of alpha.4 wizard: `{{vision.users|join(', ')}}`. Want to restructure these into the new Personas format?
+
+Default: Yes. If user accepts, use the legacy strings as draft `personas.primary[].name` values; Q2-Q8 of Step 2.2 then enrich each. If declined, preserve `vision.users[]` as-is in state (Q_RISK auto-loop in Step 5+ falls back to top-level users-of-app description rather than per-persona loops).
 
 ### Step 1.1 — Mode toggles
 
