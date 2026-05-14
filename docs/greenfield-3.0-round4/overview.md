@@ -51,6 +51,23 @@ a7d3ef7 feat(greenfield): dependencies-schema R4 — extend phase + path pattern
 a1de704 feat(onboard): context-shape-v2 R4 — mode block, personas, domainModel, riskReconciliation, risks[]
 ```
 
+## Smoke tests
+
+Round 4 ships with two manual smoke-test artifacts under `tests/round-4/`:
+
+- **`auto-loop-fixture.json`** — mock alpha.5 state with `mode.coupling = "auto-loop"`, 2 primary personas (Sara, Carl), 2 entities (Audit aggregate-root + Finding owned). Used to verify auto-loop fires per persona/entity in downstream phases.
+- **`auto-loop-smoke.sh`** — manual test driver. Validates fixture structure (8 automated checks: JSON-parse, schemaVersion, mode, persona count, entity count, aggregate-root flag, upstream phase status, downstream phase status) and documents the manual verification steps the operator runs in a real Claude Code session.
+- **`migration-alpha4-fixture.json`** + **`migration-test.sh`** (T30) — mock alpha.4 state for verifying the `/greenfield:pickup` migration shim deterministically lifts to alpha.5 with safe defaults.
+
+Run the automated portion:
+
+```bash
+bash tests/round-4/auto-loop-smoke.sh
+bash tests/round-4/migration-test.sh
+```
+
+Manual verification steps follow the `[MANUAL VERIFICATION STEPS]` section in each script's output.
+
 ## Files added / modified
 
 **New (greenfield):**
