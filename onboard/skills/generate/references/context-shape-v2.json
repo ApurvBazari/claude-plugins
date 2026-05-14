@@ -325,7 +325,7 @@
         "type": "array",
         "items": {
           "type": "string",
-          "pattern": "^(vision|personas|domain|architecturalFraming|architecturalValidation|stack|auth|privacy|security|runtimeOperations|dataArchitecture|apiIntegration|frontend|authSecurity|workflow|pluginRecommendation|cicdAndDelivery|risk|featureRoadmap|pluginInstall|schemaDraftReview)\\..+$"
+          "pattern": "^(vision|personas|domainModel|architecturalFraming|architecturalValidation|stack|auth|privacy|security|runtimeOperations|dataArchitecture|apiIntegration|frontend|authSecurity|workflow|pluginRecommendation|cicdAndDelivery|risks|featureRoadmap|pluginInstall|schemaDraftReview)\\..+$"
         }
       }
     },
