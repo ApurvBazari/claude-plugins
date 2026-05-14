@@ -340,6 +340,53 @@ If the synthesis-review skill returns `synthesisStatus: "no-template"` (should n
 
 ---
 
+### Step 6 of 15: Privacy
+
+Emit the progress indicator. This step classifies the data and gates regulatory scope. If `auth.strategy = 'none'`, the wizard fires a single-Q gate FIRST. If the gate returns "No data collected", Privacy synthesis is rendered as an n/a stub and Q1-Q11 are skipped.
+
+**Stale entry-guard**: if `completedSteps` already contains `"step-6-privacy"` AND `context.phaseStatus.privacy.status === "stale"`, skip re-asking the wizard questions and proceed directly to the synthesis-review call.
+
+**Skip-cascade gate (only if `auth.strategy === 'none'`):**
+
+Ask the Privacy.Gate question first (from `references/question-bank.md § Step 6: Privacy > Privacy.Gate`):
+
+> Do you collect any user data at all — emails, IPs, behavioral analytics, contact form submissions?
+
+If the answer is "No":
+- Set `context.phases.privacy.synthesisStatus = "n/a"`
+- Set `context.phaseStatus.privacy.status = "skipped"` (NOT "complete" — required so the skip-cascade reversal logic in `pickup` can detect a later un-skip when auth.strategy changes)
+- Skip Q1-Q11 entirely
+- Invoke `Skill(synthesis-review, phaseId: "privacy")` — synthesis-review will render the n/a stub template and confirm with developer
+- Proceed to Step 7
+
+If the answer is "Yes":
+- Set `context.phases.privacy.synthesisStatus = "complete"`
+- Continue to Q1-Q11 below
+
+**If `auth.strategy !== 'none'`**, skip the gate entirely and start at Q1.
+
+Tell the developer (verbatim, after the gate decision):
+
+> Step 6 of 15: Privacy. I'll ask about regulatory scope, PII inventory, consent, retention, deletion, DSAR, and data residency. About 11 questions; some may be skipped based on regulations and data architecture.
+
+Then run the wizard.
+
+Ask each question from `references/question-bank.md § Step 6: Privacy` (Privacy.Q1 through Privacy.Q11, excluding Privacy.Gate which already ran) in order. Honor the conditions. Write each answer to its destination field under `context.phases.privacy`.
+
+**State checkpointing**: after each answered question, write `greenfield-state.json.tmp` and rename atomically. Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-6-privacy"`.
+
+**At end of step**, invoke synthesis-review inline:
+
+```
+Skill(synthesis-review, phaseId: "privacy")
+```
+
+If `synthesisStatus: "n/a"` was set by the gate, synthesis-review uses the stub template; otherwise it renders the full template.
+
+If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen — `privacy.html`/`.md` ship in Round 3 commit `298ed81`), tell the developer and continue to Step 7.
+
+---
+
 ### Step 5 of 11: Remaining Project Details (residual)
 
 This step holds the 13 Category 3 questions that have NOT been re-homed to Data Architecture or API & Integration in Round 2. They stay here as transitional content until Rounds 3–6 re-home them to vision/frontend/authSecurity/workflow. See `references/question-bank.md § Category 3 (residual)` for the full question list.
