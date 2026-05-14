@@ -107,6 +107,29 @@
             "auditLog":         { "type": "object", "description": "Auth audit log: events captured, retention window." }
           }
         },
+        "privacy": {
+          "type": "object",
+          "description": "Phase: Privacy — privacy, consent, and data-rights decisions. Round 3 (alpha.4). Supports synthesisStatus='n/a' stub when auth.strategy='none' AND no-data-collected gate passes.",
+          "required": ["synthesisStatus"],
+          "additionalProperties": false,
+          "properties": {
+            "synthesisStatus": {
+              "enum": ["complete", "n/a"],
+              "description": "'n/a' triggers stub synthesis when no auth + no data collected. All other fields optional when n/a."
+            },
+            "regulations":     { "type": "array", "items": { "type": "string" }, "description": "Regulatory scope (GDPR, CCPA, LGPD, PIPEDA, HIPAA, none). Pre-filled from dataArchitecture.compliance." },
+            "piiCategories":   { "type": "array", "items": { "type": "string" }, "description": "PII categories collected (email, name, address, phone, location, payment, health, biometric, behavioral)." },
+            "lawfulBasis":     { "type": "object", "description": "Lawful basis per PII category (consent, contract, legitimate-interest, vital-interest). Required if GDPR/UK-GDPR in regulations." },
+            "retention":       { "type": "object", "description": "Retention policy: per-category retention windows." },
+            "deletionFlow":    { "type": "string", "description": "Right-to-erasure (hard-delete, soft-delete-and-anonymize, deletion-request-workflow)." },
+            "consentManager":  { "type": "object", "description": "Consent management: banner needed, granular categories, storage mechanism." },
+            "dsar":            { "type": "object", "description": "DSAR / data export flow: format (JSON/CSV), SLA." },
+            "processors":      { "type": "array", "items": { "type": "string" }, "description": "Third-party PII processors. Pre-filled from apiIntegration.externalServices." },
+            "minimization":    { "type": "object", "description": "Data minimization: anonymization in analytics, IP truncation, etc." },
+            "dataResidency":   { "type": "object", "description": "Cross-border transfer: residency requirements, transfer mechanisms (SCC, adequacy)." },
+            "accessAudit":     { "type": "object", "description": "PII access audit log: who/when/what. Mandatory when regulations includes HIPAA." }
+          }
+        },
         "frontend":   { "$ref": "#/definitions/deferredPhase" },
         "authSecurity":   { "$ref": "#/definitions/deferredPhase" },
         "workflow":   { "$ref": "#/definitions/deferredPhase" },
@@ -142,7 +165,7 @@
         "type": "array",
         "items": {
           "type": "string",
-          "pattern": "^(vision|personas|domain|architecturalFraming|architecturalValidation|stack|auth|dataArchitecture|apiIntegration|frontend|authSecurity|workflow|pluginRecommendation|cicdAndDelivery|risk|featureRoadmap|pluginInstall|schemaDraftReview)\\..+$"
+          "pattern": "^(vision|personas|domain|architecturalFraming|architecturalValidation|stack|auth|privacy|dataArchitecture|apiIntegration|frontend|authSecurity|workflow|pluginRecommendation|cicdAndDelivery|risk|featureRoadmap|pluginInstall|schemaDraftReview)\\..+$"
         }
       }
     }
