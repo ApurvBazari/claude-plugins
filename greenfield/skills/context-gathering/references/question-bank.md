@@ -353,18 +353,13 @@ Writes to `context.phases.apiIntegration.*`. See `onboard/skills/generate/refere
   - If `architecturalFraming.scaleTarget: "hobby"` → `"Offset (LIMIT/OFFSET)"` (simplest; fine for small datasets)
   - Else → `"Cursor (timestamp or ID-based)"` (greenfield opinion: cursor pagination is stable under inserts/deletes and scales better than offset)
 
-### P4.Q7: "Async pattern for background work?"
+### P4.Q7: "Does this app have async background work?"
 - **Type**: Choice
-- **Options**: "None — all sync" | "Queue + worker (BullMQ, Celery, Sidekiq)" | "Scheduled cron jobs" | "Event-driven (pub/sub)" | "Serverless functions (Lambda, Cloud Functions)" | "Mixed"
-- **Condition**: `hasBackend`
-- **Updates**: `context.phases.apiIntegration.asyncPattern` (required, enum)
-- **Cross-phase**: Future P7 reads for CI test strategy
-- **Default**: `"None — all sync"`
-  - If `architecturalFraming.topology: "serverless"` → `"Serverless functions (Lambda, Cloud Functions)"`
-  - If `architecturalFraming.topology: "microservices"` → `"Event-driven (pub/sub)"` (greenfield opinion: microservices communicate via events, not direct calls)
-  - If `architecturalFraming.scaleTarget ∈ (production-scale, enterprise)` AND `stack.stack.language: "typescript"` → `"Queue + worker (BullMQ, Celery, Sidekiq)"` (BullMQ for Node.js)
-  - If `architecturalFraming.scaleTarget ∈ (production-scale, enterprise)` AND `stack.stack.language: "python"` → `"Queue + worker (BullMQ, Celery, Sidekiq)"` (Celery for Python)
-  - Else → `"None — all sync"` (greenfield opinion: async patterns add operational complexity; add them when a specific feature requires it)
+- **Options**: "Yes" | "No"
+- **Condition**: `apiIntegration.exposesAPI = true`
+- **Updates**: `apiIntegration.asyncPattern` (set to non-'none' value if Yes, 'none' if No)
+- **Default**: `"Yes"` if `architecturalFraming.scaleTarget ∈ {production-scale, enterprise}` else `"No"`
+- **Note**: Full background job configuration (queue tech, retries, idempotency, scheduling) moved to Step 8 Runtime Operations (Ops.Q1-Q3). This Q is now a single yes/no gate.
 
 ### P4.Q8: "Real-time delivery?"
 - **Type**: Choice
@@ -996,6 +991,225 @@ Writes to `context.phases.apiIntegration.*`. See `onboard/skills/generate/refere
 
 ---
 
+## Step 8: Runtime Operations (14 questions)
+
+> **Round 3 (alpha.4):** Runtime Operations is the last new phase before Cat 3 residual. Ops.Q1-Q3 supersede P4.Q7 detail (which becomes a 1-line pointer); Ops.Q4-Q6 split former Q3.6 (monitoring). Synthesis output: `docs/adr/runtime-operations.html` + `.md`.
+
+### Ops.Q1: "What background job system will you use?"
+- **Type**: Choice
+- **Options**: "Redis / BullMQ" | "Sidekiq (Ruby)" | "Celery (Python)" | "AWS SQS" | "Google Cloud Tasks" | "Inngest" | "Temporal" | "Platform-native (Vercel Cron, Railway Jobs)" | "None"
+- **Condition**: `hasBackend: true` — **AUTO-SKIP if `apiIntegration.asyncPattern = 'none'`; default to `"None"` without asking**
+- **Updates**: `runtimeOperations.jobs`
+- **Downstream**: Ops.Q2 (retry/idempotency) and Ops.Q3 (scheduling) both depend on this answer
+- **Default**: `"None"`
+  - If `apiIntegration.asyncPattern = 'none'` → `"None"` (**auto-skipped — not asked**; no async pattern means no job system needed)
+  - If `stack.stack.language: "typescript"` AND `apiIntegration.asyncPattern ≠ 'none'` → `"Redis / BullMQ"` (greenfield opinion: BullMQ is the TypeScript/Node.js ecosystem standard for reliable queue-backed job processing; Redis is available on all major hosting platforms)
+  - If `stack.stack.language: "python"` AND `apiIntegration.asyncPattern ≠ 'none'` → `"Celery (Python)"` (Celery is the de facto Python task queue; works with Redis or RabbitMQ as broker)
+  - If `stack.stack.language: "ruby"` → `"Sidekiq (Ruby)"` (Sidekiq is the idiomatic Rails background job library; battle-tested and Redis-backed)
+  - If `architecturalFraming.topology: "serverless"` → `"Platform-native (Vercel Cron, Railway Jobs)"` (serverless architectures cannot run persistent workers; platform-native job triggers are the correct model)
+  - If `apiIntegration.asyncPattern: "event-driven"` AND `apiIntegration.externalServices` includes AWS → `"AWS SQS"` (SQS integrates natively with Lambda and ECS for event-driven architectures)
+  - Else → `"None"` (greenfield opinion: add a job system when a specific feature requires async processing — premature job infrastructure adds operational overhead without benefit)
+
+### Ops.Q2: "What retry and idempotency strategy will you apply?"
+- **Type**: Object
+- **Sub-fields**:
+  - `semantics`: `"at-least-once (retries possible; jobs must be idempotent)"` | `"exactly-once (deduplication enforced at queue level)"`
+  - `retryPolicy`: `"exponential backoff (default)"` | `"linear backoff"` | `"fixed interval"` | `"no retries"`
+  - `maxAttempts`: integer (e.g., `3`, `5`, `10`)
+  - `deadLetterQueue`: `boolean` — whether failed-after-max-attempts jobs route to a DLQ
+- **Condition**: `runtimeOperations.jobs ≠ 'None'` — **SKIP if `runtimeOperations.jobs = 'None'`**
+- **Updates**: `runtimeOperations.retryStrategy`
+- **Default**:
+  - If `runtimeOperations.jobs: "Redis / BullMQ"` → `semantics: "at-least-once"`, `retryPolicy: "exponential backoff"`, `maxAttempts: 3`, `deadLetterQueue: true` (greenfield opinion: BullMQ's default exponential backoff is well-tuned; DLQ prevents silent job loss — every failed job should be inspectable)
+  - If `runtimeOperations.jobs: "Celery (Python)"` → `semantics: "at-least-once"`, `retryPolicy: "exponential backoff"`, `maxAttempts: 3`, `deadLetterQueue: true` (Celery's `autoretry_for` + `max_retries` maps cleanly to this; DLQ via dead-letter exchange in RabbitMQ or a separate Redis list)
+  - If `security.sensitivityTier: "high"` → `semantics: "exactly-once"`, `retryPolicy: "exponential backoff"`, `maxAttempts: 5`, `deadLetterQueue: true` (high-sensitivity apps (payments, health) require idempotency keys to prevent duplicate side effects from retries — charge-twice bugs are worse than charge-never)
+  - If `apiIntegration.externalServices` includes payment providers → `semantics: "exactly-once"`, `deadLetterQueue: true` (payment operations MUST be idempotent; at-least-once with payment APIs causes double-charges)
+  - Else → `semantics: "at-least-once"`, `retryPolicy: "exponential backoff"`, `maxAttempts: 3`, `deadLetterQueue: true` (greenfield opinion: at-least-once with exponential backoff is the correct baseline — simpler than exactly-once and sufficient when jobs are designed to be idempotent)
+
+### Ops.Q3: "What scheduled task mechanism will you use?"
+- **Type**: Choice
+- **Options**: "Distributed scheduler (BullMQ repeatable jobs, Celery beat)" | "Platform cron (Vercel Cron, Railway Cron, Heroku Scheduler)" | "OS/container cron (crontab, Kubernetes CronJob)" | "Database-driven scheduler (pg_cron)" | "None"
+- **Condition**: `hasBackend: true`
+- **Updates**: `runtimeOperations.scheduling`
+- **Default**: `"None"`
+  - If `runtimeOperations.jobs: "Redis / BullMQ"` → `"Distributed scheduler (BullMQ repeatable jobs, Celery beat)"` (greenfield opinion: use BullMQ repeatable jobs for scheduled tasks when BullMQ is already in the stack — no additional infrastructure and tasks run with retry semantics)
+  - If `runtimeOperations.jobs: "Celery (Python)"` → `"Distributed scheduler (BullMQ repeatable jobs, Celery beat)"` (Celery Beat is the standard scheduler; integrates with existing Celery worker fleet)
+  - If `architecturalFraming.topology: "serverless"` → `"Platform cron (Vercel Cron, Railway Cron, Heroku Scheduler)"` (platform cron is the only viable option for serverless — no persistent process to host a scheduler)
+  - If `Q3.4.deployTarget ∈ (Kubernetes, self-hosted)` → `"OS/container cron (crontab, Kubernetes CronJob)"` (Kubernetes CronJob is the idiomatic scheduler for container-native deployments)
+  - If `dataArchitecture.engine ∈ (postgres)` AND `runtimeOperations.jobs: "None"` → `"Database-driven scheduler (pg_cron)"` (pg_cron is a zero-infrastructure option for simple scheduled queries or maintenance tasks when no job system is in place)
+  - Else → `"None"` (greenfield opinion: scheduled tasks are a feature-driven addition; add scheduling when a specific recurring task is identified)
+
+### Ops.Q4: "What metrics and uptime monitoring will you use?"
+- **Type**: Choice
+- **Options**: "Prometheus + Grafana (self-hosted)" | "Datadog" | "Grafana Cloud" | "Platform-native (Vercel Analytics, Railway Metrics)" | "None"
+- **Condition**: Always
+- **Updates**: `runtimeOperations.metrics`
+- **Default**: `"None"`
+  - If `architecturalFraming.scaleTarget: "enterprise"` → `"Datadog"` (greenfield opinion: Datadog's unified observability platform is the enterprise standard; deep integrations with AWS, GCP, Azure, Kubernetes)
+  - If `architecturalFraming.scaleTarget: "production-scale"` AND `architecturalFraming.topology: "microservices"` → `"Prometheus + Grafana (self-hosted)"` (Prometheus + Grafana is the open-source standard for microservices metrics; Kubernetes-native with Helm charts)
+  - If `architecturalFraming.scaleTarget ∈ (startup, production-scale)` AND `Q3.4.deployTarget ∈ (Vercel, Railway, Render)` → `"Platform-native (Vercel Analytics, Railway Metrics)"` (greenfield opinion: platform-native metrics are zero-config for managed platforms — no additional infrastructure; graduate to Grafana Cloud when cross-service dashboards are needed)
+  - If `architecturalFraming.scaleTarget ∈ (startup, production-scale)` → `"Grafana Cloud"` (Grafana Cloud's free tier covers most startup workloads; hosted Prometheus + Grafana without self-hosting overhead)
+  - If `architecturalFraming.scaleTarget: "hobby"` → `"None"` (greenfield opinion: hobby apps don't need metrics infrastructure; rely on platform health dashboards)
+  - Else → `"None"` (greenfield opinion: add metrics when you have SLOs to measure against — without targets, dashboards are noise)
+
+### Ops.Q5: "What distributed tracing and error tracking will you use?"
+- **Type**: Object
+- **Sub-fields**:
+  - `tracing`: `"OpenTelemetry + Honeycomb"` | `"OpenTelemetry + Datadog APM"` | `"OpenTelemetry + Tempo (Grafana)"` | `"Sentry Performance"` | `"None"`
+  - `errorTracking`: `"Sentry"` | `"Datadog Error Tracking"` | `"Honeycomb"` | `"None"`
+- **Condition**: (`architecturalFraming.topology: "microservices"`) OR (`architecturalFraming.scaleTarget ∈ (production-scale, enterprise)`) — **AUTO-SKIP for hobby and startup monolith; default both to `"None"` without asking**
+- **Updates**: `runtimeOperations.traces`
+- **Default**:
+  - If `architecturalFraming.topology: "microservices"` AND `architecturalFraming.scaleTarget: "enterprise"` → `tracing: "OpenTelemetry + Datadog APM"`, `errorTracking: "Datadog Error Tracking"` (greenfield opinion: Datadog APM integrates tracing and error tracking in one platform for enterprise microservices; OTel instrumentation keeps you vendor-neutral at the SDK level)
+  - If `architecturalFraming.topology: "microservices"` → `tracing: "OpenTelemetry + Honeycomb"`, `errorTracking: "Sentry"` (greenfield opinion: Honeycomb's query model is purpose-built for distributed trace exploration; Sentry handles error aggregation and alerting separately)
+  - If `architecturalFraming.scaleTarget: "production-scale"` AND `runtimeOperations.metrics: "Grafana Cloud"` → `tracing: "OpenTelemetry + Tempo (Grafana)"`, `errorTracking: "Sentry"` (Tempo integrates with existing Grafana Cloud stack for unified logs + metrics + traces)
+  - If `architecturalFraming.scaleTarget: "production-scale"` → `tracing: "OpenTelemetry + Honeycomb"`, `errorTracking: "Sentry"` (greenfield opinion: Sentry is the community standard for error tracking; OTel + Honeycomb for distributed tracing without Datadog pricing)
+  - If `architecturalFraming.scaleTarget ∈ (hobby, startup)` → `tracing: "None"`, `errorTracking: "None"` (**auto-skipped for hobby/startup monolith — not asked**; distributed tracing infrastructure is overhead that doesn't pay off at this scale)
+  - Else → `tracing: "None"`, `errorTracking: "Sentry"` (greenfield opinion: even without distributed tracing, Sentry's error tracking catches exceptions and provides stack traces — minimum viable error observability)
+
+### Ops.Q6: "What structured logging and log aggregation will you use?"
+- **Type**: Object
+- **Sub-fields**:
+  - `format`: `"structured JSON (Winston, Pino, structlog, zerolog)"` | `"unstructured text"` | `"platform-default"`
+  - `aggregator`: `"Grafana Loki"` | `"Logtail / Better Stack"` | `"Datadog Logs"` | `"AWS CloudWatch Logs"` | `"Platform-native (Vercel Logs, Railway Logs)"` | `"None"`
+  - `retentionDays`: integer (e.g., `7`, `30`, `90`, `365`)
+- **Condition**: Always
+- **Updates**: `runtimeOperations.logs`
+- **Default**:
+  - If `security.sensitivityTier: "high"` → `format: "structured JSON"`, `aggregator: "Datadog Logs"`, `retentionDays: 365` (greenfield opinion: compliance tiers require structured, searchable, long-retention logs; Datadog Logs integrates with Datadog APM for correlated trace-to-log drilling)
+  - If `architecturalFraming.scaleTarget: "enterprise"` → `format: "structured JSON"`, `aggregator: "Datadog Logs"`, `retentionDays: 365` (enterprise ops teams need centralized, structured logs with long retention for incident forensics and compliance audits)
+  - If `architecturalFraming.scaleTarget: "production-scale"` AND `runtimeOperations.metrics: "Grafana Cloud"` → `format: "structured JSON"`, `aggregator: "Grafana Loki"`, `retentionDays: 90` (Loki integrates with Grafana Cloud for unified logs + metrics exploration; structured JSON enables efficient label-based querying)
+  - If `Q3.4.deployTarget ∈ (Vercel, Railway, Render, Fly.io)` → `format: "structured JSON"`, `aggregator: "Platform-native (Vercel Logs, Railway Logs)"`, `retentionDays: 30` (greenfield opinion: platform-native log ingestion is zero-config; structured JSON makes logs grep-able even in the platform UI)
+  - If `Q3.4.deployTarget ∈ (AWS)` → `format: "structured JSON"`, `aggregator: "AWS CloudWatch Logs"`, `retentionDays: 30` (CloudWatch Logs is AWS-native; integrates with Lambda, ECS, and EC2 without additional configuration)
+  - If `architecturalFraming.scaleTarget: "hobby"` → `format: "platform-default"`, `aggregator: "None"`, `retentionDays: 7` (greenfield opinion: hobby apps rely on platform stdout logs; no aggregation needed)
+  - Else → `format: "structured JSON"`, `aggregator: "Logtail / Better Stack"`, `retentionDays: 30` (greenfield opinion: structured JSON + Logtail is the zero-friction default for startups — Logtail's free tier covers most workloads and structured logs are machine-readable from day one)
+
+### Ops.Q7: "What alerting and paging setup will you use?"
+- **Type**: Object
+- **Sub-fields**:
+  - `channel`: `"PagerDuty"` | `"OpsGenie"` | `"Slack webhook"` | `"Discord webhook"` | `"Email (SMTP)"` | `"None"`
+  - `thresholdStrategy`: `"static thresholds (fixed error rate / latency limits)"` | `"anomaly-based (ML-detected spikes)"` | `"SLO burn rate alerts"` | `"none"`
+- **Condition**: Always — **Required to be non-'None' if `security.sensitivityTier = 'high'`**
+- **Updates**: `runtimeOperations.alerting`
+- **Default**:
+  - If `security.sensitivityTier: "high"` → `channel: "PagerDuty"`, `thresholdStrategy: "SLO burn rate alerts"` (greenfield opinion: high-tier apps require a dedicated paging system — Slack/email alerts are missed during off-hours; SLO burn rate alerts reduce noise by only paging when the error budget is actually at risk)
+  - If `architecturalFraming.scaleTarget: "enterprise"` → `channel: "PagerDuty"`, `thresholdStrategy: "SLO burn rate alerts"` (enterprise ops requires professional on-call tooling with escalation policies and audit trails — PagerDuty is the standard)
+  - If `architecturalFraming.scaleTarget: "production-scale"` → `channel: "Slack webhook"`, `thresholdStrategy: "static thresholds (fixed error rate / latency limits)"` (greenfield opinion: Slack webhooks are zero-cost and sufficient for single-team production apps; add PagerDuty when you need formal on-call rotation)
+  - If `architecturalFraming.scaleTarget ∈ (startup)` → `channel: "Slack webhook"`, `thresholdStrategy: "static thresholds (fixed error rate / latency limits)"` (startup teams live in Slack; webhook alerts integrate without additional tooling)
+  - If `architecturalFraming.scaleTarget: "hobby"` → `channel: "None"`, `thresholdStrategy: "none"` (greenfield opinion: hobby apps don't need alerting infrastructure; check dashboards reactively)
+  - Else → `channel: "Slack webhook"`, `thresholdStrategy: "static thresholds (fixed error rate / latency limits)"` (greenfield opinion: Slack webhook alerts are the minimum viable alerting setup — zero cost, easy to configure, and catchable by any team member)
+
+### Ops.Q8: "What SLI/SLO targets and error budget policy will you define?"
+- **Type**: Object
+- **Sub-fields**:
+  - `availabilitySlo`: string (e.g., `"99.9%"`, `"99.5%"`, `"none"`)
+  - `latencyP99Target`: string (e.g., `"200ms"`, `"500ms"`, `"none"`)
+  - `errorBudgetPolicy`: `"freeze deployments when budget exhausted"` | `"alert-only (no freeze)"` | `"none"`
+- **Condition**: `architecturalFraming.scaleTarget ∈ (production-scale, enterprise)` — **AUTO-SKIP when `architecturalFraming.scaleTarget ∉ (production-scale, enterprise)`; default to `availabilitySlo: "none"`, `errorBudgetPolicy: "none"` without asking**
+- **Updates**: `runtimeOperations.slo`
+- **Default**:
+  - If `architecturalFraming.scaleTarget: "enterprise"` → `availabilitySlo: "99.9%"`, `latencyP99Target: "200ms"`, `errorBudgetPolicy: "freeze deployments when budget exhausted"` (enterprise SLAs typically require 99.9% ("three nines") uptime; deploy freeze enforces the contract and prevents the error budget from being drained by CI regressions)
+  - If `architecturalFraming.scaleTarget: "production-scale"` AND `security.sensitivityTier: "high"` → `availabilitySlo: "99.9%"`, `latencyP99Target: "300ms"`, `errorBudgetPolicy: "freeze deployments when budget exhausted"` (high-sensitivity production apps have implied uptime expectations from users — define them explicitly rather than discovering the SLA via an incident)
+  - If `architecturalFraming.scaleTarget: "production-scale"` → `availabilitySlo: "99.5%"`, `latencyP99Target: "500ms"`, `errorBudgetPolicy: "alert-only (no freeze)"` (greenfield opinion: 99.5% is a realistic starting SLO for most production apps — achievable without heroics and meaningful enough to drive incident response)
+  - If `architecturalFraming.scaleTarget ∉ (production-scale, enterprise)` → `availabilitySlo: "none"`, `latencyP99Target: "none"`, `errorBudgetPolicy: "none"` (**auto-skipped — not asked**; SLOs are overhead for hobby and startup apps without formal uptime commitments)
+  - Else → `availabilitySlo: "99.5%"`, `latencyP99Target: "500ms"`, `errorBudgetPolicy: "alert-only (no freeze)"` (greenfield opinion: defining explicit SLOs forces a conversation about acceptable reliability before an incident — start with 99.5% and tighten based on actual customer expectations)
+
+### Ops.Q9: "What feature flag system will you use?"
+- **Type**: Object
+- **Sub-fields**:
+  - `provider`: `"LaunchDarkly"` | `"Unleash (self-hosted)"` | `"PostHog Feature Flags"` | `"Flagsmith"` | `"Config file (env var + code)"` | `"None"`
+  - `strategy`: `"gradual rollout (percentage-based)"` | `"user-targeting (segment rules)"` | `"kill switch only"` | `"none"`
+- **Condition**: Always
+- **Updates**: `runtimeOperations.featureFlags`
+- **Default**: `provider: "None"`, `strategy: "none"`
+  - If `architecturalFraming.scaleTarget: "enterprise"` → `provider: "LaunchDarkly"`, `strategy: "gradual rollout (percentage-based)"` (LaunchDarkly is the enterprise standard for feature management; supports complex targeting rules, audit logs, and enterprise SSO)
+  - If `architecturalFraming.scaleTarget: "production-scale"` AND `apiIntegration.externalServices` includes PostHog → `provider: "PostHog Feature Flags"`, `strategy: "gradual rollout (percentage-based)"` (greenfield opinion: if PostHog is already in the stack for analytics, its feature flags avoid adding a second vendor)
+  - If `architecturalFraming.scaleTarget: "production-scale"` → `provider: "Flagsmith"`, `strategy: "gradual rollout (percentage-based)"` (Flagsmith is open-source with a generous free tier; supports gradual rollouts and segment targeting without enterprise pricing)
+  - If `architecturalFraming.scaleTarget ∈ (startup)` → `provider: "Config file (env var + code)"`, `strategy: "kill switch only"` (greenfield opinion: env var feature flags are the right starting point for startups — zero cost, zero infra, sufficient for kill switches and staged rollouts via re-deploys)
+  - If `architecturalFraming.scaleTarget: "hobby"` → `provider: "None"`, `strategy: "none"` (hobby apps don't need feature flag infrastructure)
+  - Else → `provider: "Config file (env var + code)"`, `strategy: "kill switch only"` (greenfield opinion: start with env var flags; migrate to a real flag service when targeting rules or percentage rollouts are needed)
+
+### Ops.Q10: "How will you handle maintenance mode and graceful degradation?"
+- **Type**: Object
+- **Sub-fields**:
+  - `maintenanceMode`: `"platform toggle (Vercel maintenance mode, etc.)"` | `"upstream flag in DB/KV"` | `"none"`
+  - `degradationStrategy`: `"circuit breaker pattern"` | `"fallback responses (cached/static)"` | `"fail-open with logging"` | `"none"`
+- **Condition**: `isProduction: true` — **SKIP for non-production / local-only projects; default both fields to `"none"`**
+- **Updates**: `runtimeOperations.maintenanceMode`
+- **Default**:
+  - If `architecturalFraming.topology: "microservices"` → `maintenanceMode: "upstream flag in DB/KV"`, `degradationStrategy: "circuit breaker pattern"` (greenfield opinion: microservices MUST implement circuit breakers — a slow upstream service will exhaust thread pools in downstream services without them; Resilience4j, Polly, and Hystrix provide battle-tested implementations)
+  - If `architecturalFraming.scaleTarget: "enterprise"` → `maintenanceMode: "upstream flag in DB/KV"`, `degradationStrategy: "circuit breaker pattern"` (enterprise apps require programmatic maintenance mode that can be toggled without a deploy; circuit breakers protect against cascading failures at scale)
+  - If `Q3.4.deployTarget ∈ (Vercel, Railway, Render)` → `maintenanceMode: "platform toggle (Vercel maintenance mode, etc.)"`, `degradationStrategy: "fallback responses (cached/static)"` (platform-native maintenance mode is the zero-config option; static fallback pages handle the UX gracefully)
+  - If `architecturalFraming.scaleTarget: "production-scale"` → `maintenanceMode: "upstream flag in DB/KV"`, `degradationStrategy: "fallback responses (cached/static)"` (greenfield opinion: DB/KV flag gives you maintenance mode without a deploy; cached fallbacks keep the app usable during partial outages)
+  - If `isProduction: false` → `maintenanceMode: "none"`, `degradationStrategy: "none"` (**skipped for non-production — not asked**; maintenance mode and degradation strategies are production concerns)
+  - Else → `maintenanceMode: "upstream flag in DB/KV"`, `degradationStrategy: "fail-open with logging"` (greenfield opinion: fail-open with logging is the safest default for unknown failure modes — it keeps the app available and surfaces degradation in logs for investigation)
+
+### Ops.Q11: "What health check endpoints will you expose?"
+- **Type**: Object
+- **Sub-fields**:
+  - `liveness`: `boolean` — `/health/live` or equivalent (is the process running?)
+  - `readiness`: `boolean` — `/health/ready` (is the app ready to serve traffic? checks DB, cache, etc.)
+  - `deepHealth`: `boolean` — `/health/deep` (checks all downstream dependencies; not suitable for load balancer probes)
+- **Condition**: `apiIntegration.exposesAPI: true` — **SKIP if `apiIntegration.exposesAPI ≠ true`; default all fields to `false`**
+- **Updates**: `runtimeOperations.healthChecks`
+- **Default**:
+  - If `architecturalFraming.topology: "microservices"` → `liveness: true`, `readiness: true`, `deepHealth: true` (greenfield opinion: Kubernetes requires liveness and readiness probes — without them, Kubernetes can't distinguish a healthy pod from a deadlocked one; deep health checks power dependency monitoring)
+  - If `architecturalFraming.topology ∈ (serverless)` → `liveness: false`, `readiness: false`, `deepHealth: true` (serverless functions don't support liveness/readiness probes; a deep health function can be triggered by uptime monitors)
+  - If `architecturalFraming.scaleTarget ∈ (production-scale, enterprise)` → `liveness: true`, `readiness: true`, `deepHealth: false` (greenfield opinion: liveness + readiness is the minimum production health check suite — needed for load balancer routing and zero-downtime deploys; deep health adds overhead to the load balancer probe path)
+  - If `apiIntegration.exposesAPI: false` → `liveness: false`, `readiness: false`, `deepHealth: false` (**skipped — not asked**; health checks are only relevant for API services)
+  - Else → `liveness: true`, `readiness: false`, `deepHealth: false` (greenfield opinion: at minimum, expose a liveness endpoint — it's one route, costs nothing, and enables basic uptime monitoring from day one)
+
+### Ops.Q12: "How will you store and manage runbooks?"
+- **Type**: Object
+- **Sub-fields**:
+  - `storagePath`: `"docs/runbooks/ (in repo)"` | `"Notion / Confluence (external)"` | `"PagerDuty runbooks"` | `"none"`
+  - `templateStyle`: `"markdown checklist (numbered steps)"` | `"decision-tree (condition → action)"` | `"none"`
+  - `ownership`: `"per-service (team owns)"` | `"central ops team"` | `"none"`
+- **Condition**: `architecturalFraming.scaleTarget ∉ (hobby)` — **AUTO-SKIP for `architecturalFraming.scaleTarget='hobby'`; default all fields to `"none"` without asking**
+- **Updates**: `runtimeOperations.runbooks`
+- **Default**:
+  - If `architecturalFraming.scaleTarget: "hobby"` → `storagePath: "none"`, `templateStyle: "none"`, `ownership: "none"` (**auto-skipped — not asked**; runbooks are overhead for hobby apps)
+  - If `architecturalFraming.scaleTarget: "enterprise"` → `storagePath: "Notion / Confluence (external)"`, `templateStyle: "decision-tree (condition → action)"`, `ownership: "per-service (team owns)"` (enterprise ops teams often have centralized knowledge-base requirements; decision-tree runbooks scale better than checklists for complex multi-step resolutions)
+  - If `runtimeOperations.alerting.channel ∈ (PagerDuty, OpsGenie)` → `storagePath: "PagerDuty runbooks"`, `templateStyle: "markdown checklist (numbered steps)"`, `ownership: "per-service (team owns)"` (greenfield opinion: PagerDuty/OpsGenie runbook links surface directly in incident alerts — on-call engineers see the runbook the moment they get paged, reducing MTTR)
+  - If `architecturalFraming.scaleTarget ∈ (startup, production-scale)` → `storagePath: "docs/runbooks/ (in repo)"`, `templateStyle: "markdown checklist (numbered steps)"`, `ownership: "per-service (team owns)"` (greenfield opinion: in-repo runbooks are version-controlled alongside the code they describe — a runbook that diverges from the codebase is worse than no runbook)
+  - Else → `storagePath: "docs/runbooks/ (in repo)"`, `templateStyle: "markdown checklist (numbered steps)"`, `ownership: "per-service (team owns)"` (greenfield opinion: start with in-repo runbooks — they're immediately available, version-controlled, and editable alongside code changes)
+
+### Ops.Q13: "What incident process will you follow?"
+- **Type**: Object
+- **Sub-fields**:
+  - `severityLevels`: `"3-tier (P1/P2/P3)"` | `"4-tier (SEV0-SEV3)"` | `"simple (critical / non-critical)"` | `"none"`
+  - `escalationChain`: free-text (e.g., `"solo developer — self-escalate"`, `"on-call engineer → tech lead → VP Eng"`)
+  - `postmortemTemplate`: `"blameless postmortem (5-whys, action items)"` | `"lightweight (what happened, fix, prevention)"` | `"none"`
+- **Condition**: Always
+- **Updates**: `runtimeOperations.incidentProcess`
+- **Cross-link**: `security.ir` captures security-specific IR posture (breach notification SLA, GDPR obligations); `runtimeOperations.incidentProcess` covers operational severity and escalation — synthesis ensures these are consistent and non-overlapping
+- **Default**:
+  - If `architecturalFraming.scaleTarget: "enterprise"` → `severityLevels: "4-tier (SEV0-SEV3)"`, `escalationChain: "on-call engineer → tech lead → VP Eng"`, `postmortemTemplate: "blameless postmortem (5-whys, action items)"` (enterprise incidents require a formal severity taxonomy — SEV0/SEV1 determine communication SLAs and executive escalation; blameless postmortems are the industry standard for building a learning culture)
+  - If `architecturalFraming.scaleTarget: "production-scale"` → `severityLevels: "3-tier (P1/P2/P3)"`, `escalationChain: "on-call engineer → tech lead"`, `postmortemTemplate: "blameless postmortem (5-whys, action items)"` (greenfield opinion: 3-tier severity is simpler than 4-tier but still meaningful — P1 (site down), P2 (degraded), P3 (minor) maps directly to paging urgency)
+  - If `security.sensitivityTier: "high"` → `severityLevels: "3-tier (P1/P2/P3)"`, `postmortemTemplate: "blameless postmortem (5-whys, action items)"` (high-sensitivity apps require documented postmortems as compliance artifacts — SOC 2 auditors ask for incident records)
+  - If `architecturalFraming.scaleTarget: "hobby"` → `severityLevels: "none"`, `escalationChain: "solo developer — self-escalate"`, `postmortemTemplate: "none"` (hobby apps don't need formal incident process; investigate and fix)
+  - If `architecturalFraming.scaleTarget: "startup"` → `severityLevels: "simple (critical / non-critical)"`, `escalationChain: "solo developer — self-escalate"`, `postmortemTemplate: "lightweight (what happened, fix, prevention)"` (greenfield opinion: a lightweight postmortem forces the 10-minute retrospective that prevents the same incident from recurring — the most high-ROI ops investment for a solo/startup team)
+  - Else → `severityLevels: "simple (critical / non-critical)"`, `escalationChain: "solo developer — self-escalate"`, `postmortemTemplate: "lightweight (what happened, fix, prevention)"` (greenfield opinion: even a simple two-tier severity + lightweight postmortem provides 80% of the incident management value at 10% of the process overhead)
+
+### Ops.Q14: "What on-call rotation system will you use?"
+- **Type**: Choice
+- **Options**: "PagerDuty" | "OpsGenie" | "Discord bot (manual rotation)" | "None"
+- **Condition**: `architecturalFraming.scaleTarget ∉ (hobby, startup)` — **AUTO-SKIP for `architecturalFraming.scaleTarget ∈ (hobby, startup)`; default to `"None"` without asking**
+- **Updates**: `runtimeOperations.onCall`
+- **Default**: `"None"`
+  - If `architecturalFraming.scaleTarget ∈ (hobby, startup)` → `"None"` (**auto-skipped — not asked**; solo/startup developers don't need formal on-call rotation tooling)
+  - If `architecturalFraming.scaleTarget: "enterprise"` → `"PagerDuty"` (greenfield opinion: PagerDuty is the enterprise standard for on-call rotation — escalation policies, override scheduling, and audit logs are required for formal incident management at enterprise scale)
+  - If `architecturalFraming.scaleTarget: "production-scale"` AND `runtimeOperations.alerting.channel: "PagerDuty"` → `"PagerDuty"` (when PagerDuty is already the alert channel, extend it to on-call rotation — single pane of glass for incidents)
+  - If `architecturalFraming.scaleTarget: "production-scale"` AND `runtimeOperations.alerting.channel: "OpsGenie"` → `"OpsGenie"` (consistent with alerting choice — avoid operating two separate on-call systems)
+  - If `architecturalFraming.scaleTarget: "production-scale"` → `"PagerDuty"` (greenfield opinion: formal on-call tooling prevents alert fatigue and missed pages when team size grows beyond solo — PagerDuty's escalation policies are the right foundation)
+  - Else → `"None"` (greenfield opinion: add on-call rotation infrastructure when the team is large enough to share the pager; premature rotation tooling creates overhead without benefit)
+
+**After Ops.Q14**, invoke synthesis-review inline:
+
+> Invoke `Skill(synthesis-review, phaseId: "runtimeOperations")` — renders `docs/adr/runtime-operations.html` and walks the developer through approve/adjust/skip. This is the last new Round 3 synthesis pass.
+
+---
+
 ## Category 3 (residual): Remaining Project Details
 
 > **Round 2 note (2026-05-13):** Several Cat 3 questions have been moved to Step 3 (Data Architecture) and Step 4 (API & Integration). The 13 questions below stay here as a residual step until later rounds re-home them:
@@ -1043,15 +1257,11 @@ This category becomes wizard Step 5 of 11 in Round 2.
   - If `architecturalFraming.scaleTarget: "enterprise"` → `"AWS"` (greenfield opinion: AWS for enterprise compliance + ecosystem)
   - Else → show research-informed options with no preselection
 
-### Q3.6: "What's your monitoring and observability strategy?"
-- **Type**: Multi-select
-- **Options**: "Logging framework" | "Error tracking (Sentry, etc.)" | "Analytics" | "Uptime monitoring" | "Not needed yet"
-- **Condition**: `isProduction`
-- **Updates**: `monitoring`
-- **Default**: `["Error tracking (Sentry, etc.)", "Logging framework"]`
-  - If `architecturalFraming.scaleTarget: "enterprise"` → `["Logging framework", "Error tracking (Sentry, etc.)", "Analytics", "Uptime monitoring"]`
-  - If `architecturalFraming.scaleTarget: "hobby"` → `["Not needed yet"]`
-  - Else → `["Error tracking (Sentry, etc.)", "Logging framework"]` (greenfield opinion: Sentry + structured logging is the minimum viable observability stack; it catches 80% of production issues)
+### Q3.6: (split across Step 8 in Round 3)
+- "Logging framework" → Step 8 Ops.Q6 (logs)
+- "Error tracking" → Step 8 Ops.Q5 (traces / error tracking)
+- "Analytics" → deferred to Round 6 (frontend / product analytics)
+- "Uptime monitoring" → Step 8 Ops.Q4 (metrics + uptime)
 
 ### Q3.9: (moved to Sec.Q2 in Round 3)
 - Moved to Step 7 (Security) — see `### Sec.Q2`
