@@ -244,3 +244,47 @@ Run these assertions when a Round 4 session is detected (i.e., `greenfield-state
 - [ ] If `domainModel.deferred !== true` AND `phaseStatus.domainModel.status === "approved"`, verify `docs/adr/domain-model.html` exists. If missing, flag "Domain-model synthesis not generated."
 - [ ] If at least one phase has been completed (any `phaseStatus.<id>.status === "approved"`), verify `docs/adr/risks.dependencies.json` exists. The expected risks count is `risks[].length >= number of completed phases that captured a Q_RISK`.
 - [ ] If `mode.coupling === "auto-loop"`, verify at least one downstream synthesis HTML in `docs/adr/` contains `sourceRef` annotations (search for the string `source-ref` or `sourceRef` in any `.html` file). If none found, auto-loop ran but didn't trace provenance — flag "Auto-loop coupling chosen but no sourceRef entries found in synthesis outputs."
+
+---
+
+## Round 5 Checks
+
+Run these assertions when a Round 5 session is detected (i.e., `greenfield-state.json` exists and `context.phases.featureRoadmap` or `context.phases.schemaDraftReview` is present, OR the scaffolded project contains a `docs/sprint-contracts/` directory). Report failures inline in Step 7's summary.
+
+### Check R5-1: featureRoadmap completeness (when not skipped)
+
+**Phase:** featureRoadmap
+**Severity:** advisory (informational; does not block)
+
+If `context.phases.featureRoadmap.skipped != true`:
+- `context.phases.featureRoadmap.horizon` must be set (non-empty string from the enum mvp-only/3-months/6-months/1-year/open-ended)
+- `context.phases.featureRoadmap.features[]` must be non-empty
+- `context.phases.featureRoadmap.sprint1.featureIds[]` must be non-empty
+- `context.phases.featureRoadmap.sprint1.criteria[]` must include at least one entry with `weight = "required"`
+
+If any field is missing, report:
+> featureRoadmap is partially populated. Missing: <field list>. Run `/greenfield:pickup` to revisit Step 16, or skip with a deferredReason.
+
+### Check R5-2: schemaDraftReview lockedAt presence (when not skipped)
+
+**Phase:** schemaDraftReview
+**Severity:** advisory
+
+If `context.phases.schemaDraftReview.skipped != true`:
+- `context.phases.schemaDraftReview.lockedAt` must be set (ISO-8601 timestamp string)
+- For every enabled draft (where `drafts.{db|api|event}.skipped != true`), `drafts.{X}.approved` must be `true`
+
+If any draft is unlocked, report:
+> Schema/contract drafts are unlocked. Missing approval on: <artifact list>. Run `/greenfield:pickup` to revisit Step 19.
+
+### Check R5-3: sprint-1 contract presence (post-R5 projects)
+
+**Phase:** post-generation
+**Severity:** advisory
+
+If `docs/sprint-contracts/` exists in the scaffolded project:
+- `docs/sprint-contracts/sprint-1.json` must exist and parse as valid JSON
+- The file must contain `sprint: 1`, `name`, `features`, `criteria[]`, and `completionGate`
+
+If missing or malformed, report:
+> Sprint-1 contract file missing or invalid. This is expected for pre-R5 scaffolded projects; for post-R5 projects, re-run `/onboard:generate` to regenerate.
