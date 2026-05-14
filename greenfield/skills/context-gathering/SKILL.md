@@ -449,7 +449,7 @@ Tell the developer:
 
 Ask Q3.1, Q3.3, Q3.4, Q3.6, Q3.9, Q3.10, Q3.11, Q3.12, Q3.13, Q3.14, Q3.15, Q3.F1, Q3.F2 in order from `references/question-bank.md § Category 3 (residual)`. Honor existing conditions. No synthesis review for this step (it's residual; full split planned for Rounds 3–6).
 
-State checkpoint: `currentStep: "step-5-residual"`.
+State checkpoint: `currentStep: "step-9-residual"`.
 
 Emit the progress indicator. Work through the residual Category 3 questions adaptively. The question bank specifies conditions for each — only ask what's relevant.
 
@@ -560,7 +560,7 @@ If the developer answers Q5.4 with anything other than `"github-actions"`, captu
 
 #### Stale entry-guard for cicdAndDelivery
 
-Before asking Q5.1 (or the first applicable question): if `completedSteps` already contains `"step-7-cicd"` AND `context.phaseStatus.cicdAndDelivery.status === "stale"`, skip re-asking Q5.1–Q5.17 and proceed directly to the synthesis-review call below. Synthesis-review Step 0 will surface the re-walk prompt.
+Before asking Q5.1 (or the first applicable question): if `completedSteps` already contains `"step-11-cicd"` AND `context.phaseStatus.cicdAndDelivery.status === "stale"`, skip re-asking Q5.1–Q5.17 and proceed directly to the synthesis-review call below. Synthesis-review Step 0 will surface the re-walk prompt.
 
 #### Phase 1.8: synthesis review (after Q5.17, or after Q5.1/Q5.2/Q5.3 if `willDeploy = false`)
 
@@ -570,7 +570,7 @@ Invoke the `synthesis-review` skill via the Skill tool with `phaseId: "cicdAndDe
 2. Renders `<targetProjectRoot>/docs/adr/cicd-and-delivery.html` from the template.
 3. Walks the developer through 8 sections of Approve/Adjust/Skip.
 4. Writes `context.syntheses.cicdAndDelivery = { approvedAt, adjustments[] }`.
-5. Returns control here. Set `currentPhase` back to `phase-1-context-gathering` and `currentStep` to `step-8-feature-decomp`.
+5. Returns control here. Set `currentPhase` back to `phase-1-context-gathering` and `currentStep` to `step-12-feature-decomp`.
 
 If the developer adjusts any cicdAndDelivery field via the Adjust dialog, the updated value is in `context.phases.cicdAndDelivery.cicd.<field>` — the v1 carryover mirrors do NOT update (they preserve the original answer).
 
@@ -866,16 +866,20 @@ Write a checkpoint **after each named Step completes** (not after each individua
 | Step 3 — synthesis-review(dataArchitecture) returns | Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-4-api-integration"`, clear `currentSynthesisPhase`. Add `context.syntheses.dataArchitecture = { approvedAt, adjustments }` |
 | Step 4 — P4.Q1 answered | Set `currentStep: "step-4-api-integration"`, `lastAnsweredQuestionId: "P4.Q1"` |
 | Step 4 — P4.Q10 answered (or last applicable) | Set `currentPhase: "phase-1.8-synthesis-review"`, `currentSynthesisPhase: "apiIntegration"`, add `"step-4-api-integration"` to `completedSteps` |
-| Step 4 — synthesis-review(apiIntegration) returns | Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-5-residual"`, clear `currentSynthesisPhase`. Add `context.syntheses.apiIntegration` |
-| Step 5 — last residual Q answered | Add `"step-5-residual"` to `completedSteps`, set `currentStep: "step-6-workflow"` |
-| Step 6 complete (Workflow Preferences) | Add `"step-6-workflow"`, `currentStep: "step-7-cicd"`, all category-4 context fields |
-| Step 7 — Q5.1–Q5.17 answered | Add `"step-7-cicd"`, set `currentPhase: "phase-1.8-synthesis-review"`, `currentSynthesisPhase: "cicdAndDelivery"`, all CI/CD fields under both top-level (Q5.1–Q5.3) AND `context.phases.cicdAndDelivery.cicd` / `context.phases.cicdAndDelivery._v1_carryover` |
-| Step 7 — synthesis-review(cicdAndDelivery) returns | Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-8-feature-decomp"`, clear `currentSynthesisPhase`. Add `context.syntheses.cicdAndDelivery = { approvedAt, adjustments }` |
-| Step 8 complete (Feature Decomposition) | Add `"step-8-feature-decomp"`, `currentStep: "step-9-confirmation"`, `context.featureDecomposition` |
-| Step 9 complete (Confirmation) | Add `"step-9-confirmation"`, `currentPhase: "phase-1.5-architectural-research"` (if `parkedQuestions.length > 0`) OR `"phase-1-context-gathering"` `currentStep: "step-11-architectural-validation"`, then after Step 11 proceed to `"phase-1.7-grill-spec"` |
-| Step 10 complete (Phase 1.5 Research, conditional) | Add `"step-10-architectural-research"` (only if parked questions were present), `currentStep: "step-11-architectural-validation"` |
-| Step 11 — AV.Q1 answered | Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-11-architectural-validation"`, `lastAnsweredQuestionId: "AV.Q1"` |
-| Step 11 — synthesis-review(architecturalValidation) returns | Add `"step-11-architectural-validation"` to `completedSteps`, set `currentPhase: "phase-1.7-grill-spec"`, `currentStep: "pre-grill"`, clear `currentSynthesisPhase`. Add `context.syntheses.architecturalValidation = { approvedAt, adjustments }` |
+| Step 4 — synthesis-review(apiIntegration) returns | Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-5-auth"`, clear `currentSynthesisPhase`. Add `context.syntheses.apiIntegration` |
+| step-5-auth | step-5-auth → phase-1.8-synthesis-review (currentSynthesisPhase: "auth") → step-6-privacy |
+| step-6-privacy (preceded by Privacy.Gate if auth.strategy='none') | step-6-privacy → phase-1.8-synthesis-review (currentSynthesisPhase: "privacy", uses n/a stub if synthesisStatus='n/a') → step-7-security |
+| step-7-security | step-7-security → phase-1.8-synthesis-review (currentSynthesisPhase: "security") → step-8-runtime-ops |
+| step-8-runtime-ops | step-8-runtime-ops → phase-1.8-synthesis-review (currentSynthesisPhase: "runtimeOperations") → step-9-residual (was step-9-residual) |
+| Step 9 — last residual Q answered | Add `"step-9-residual"` to `completedSteps`, set `currentStep: "step-10-workflow"` |
+| Step 10 complete (Workflow Preferences) | Add `"step-10-workflow"`, `currentStep: "step-11-cicd"`, all category-4 context fields |
+| Step 11 — Q5.1–Q5.17 answered | Add `"step-11-cicd"`, set `currentPhase: "phase-1.8-synthesis-review"`, `currentSynthesisPhase: "cicdAndDelivery"`, all CI/CD fields under both top-level (Q5.1–Q5.3) AND `context.phases.cicdAndDelivery.cicd` / `context.phases.cicdAndDelivery._v1_carryover` |
+| Step 11 — synthesis-review(cicdAndDelivery) returns | Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-12-feature-decomp"`, clear `currentSynthesisPhase`. Add `context.syntheses.cicdAndDelivery = { approvedAt, adjustments }` |
+| Step 12 complete (Feature Decomposition) | Add `"step-12-feature-decomp"`, `currentStep: "step-13-confirmation"`, `context.featureDecomposition` |
+| Step 13 complete (Confirmation) | Add `"step-13-confirmation"`, `currentPhase: "phase-1.5-architectural-research"` (if `parkedQuestions.length > 0`) OR `"phase-1-context-gathering"` `currentStep: "step-15-arch-validation"`, then after Step 15 proceed to `"phase-1.7-grill-spec"` |
+| Step 14 complete (Phase 1.5 Research, conditional) | Add `"step-14-arch-research"` (only if parked questions were present), `currentStep: "step-15-arch-validation"` |
+| Step 15 — AV.Q1 answered | Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-15-arch-validation"`, `lastAnsweredQuestionId: "AV.Q1"` |
+| Step 15 — synthesis-review(architecturalValidation) returns | Add `"step-15-arch-validation"` to `completedSteps`, set `currentPhase: "phase-1.7-grill-spec"`, `currentStep: "pre-grill"`, clear `currentSynthesisPhase`. Add `context.syntheses.architecturalValidation = { approvedAt, adjustments }` |
 
 ### Atomic write
 Always write to `.claude/greenfield-state.json.tmp` first, then `mv` to `.claude/greenfield-state.json`. This avoids corrupted state if the session is killed mid-write. If the tmp file exists from a prior interrupted write, remove it before starting.

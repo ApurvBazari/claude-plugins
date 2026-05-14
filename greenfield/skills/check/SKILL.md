@@ -35,6 +35,10 @@ Before checking completed setup, check for an in-progress session at `.claude/gr
 > | architecturalFraming | [status] | [approvedAt or —] | [staleReason or —] |
 > | dataArchitecture | [status] | [approvedAt or —] | [staleReason or —] |
 > | apiIntegration | [status] | [approvedAt or —] | [staleReason or —] |
+> | auth | [status] | [approvedAt or —] | [staleReason or —] |
+> | privacy | [status] | [approvedAt or —] | [staleReason or —] |
+> | security | [status] | [approvedAt or —] | [staleReason or —] |
+> | runtimeOperations | [status] | [approvedAt or —] | [staleReason or —] |
 > | cicdAndDelivery | [status] | [approvedAt or —] | [staleReason or —] |
 > | architecturalValidation | [status] | [approvedAt or —] | [staleReason or —] |
 >
@@ -152,6 +156,10 @@ Compare `webResearch.stackVersion` from metadata against current `package.json` 
 > | architecturalFraming | [status from phaseStatus or —] | [approvedAt or —] | [staleReason or —] |
 > | dataArchitecture | [status from phaseStatus or —] | [approvedAt or —] | [staleReason or —] |
 > | apiIntegration | [status from phaseStatus or —] | [approvedAt or —] | [staleReason or —] |
+> | auth | [status from phaseStatus or —] | [approvedAt or —] | [staleReason or —] |
+> | privacy | [status from phaseStatus or —] | [approvedAt or —] | [staleReason or —] |
+> | security | [status from phaseStatus or —] | [approvedAt or —] | [staleReason or —] |
+> | runtimeOperations | [status from phaseStatus or —] | [approvedAt or —] | [staleReason or —] |
 > | cicdAndDelivery | [status from phaseStatus or —] | [approvedAt or —] | [staleReason or —] |
 > | architecturalValidation | [status from phaseStatus or —] | [approvedAt or —] | [staleReason or —] |
 >
@@ -167,8 +175,8 @@ Compare `webResearch.stackVersion` from metadata against current `package.json` 
 > | Agents ([N]) | [ok / N missing] |
 > | Hooks | [ok / missing entries] |
 > | CI/CD | [ok / N/A (local project)] |
-> | Synthesis records (`docs/adr/*.html`) | [N found (expected 5: architectural-framing.html, data-architecture.html, api-integration.html, cicd-and-delivery.html, architectural-validation.html) / none / docs/adr/ missing] |
-> | Freshness hook (`.git/hooks/pre-commit` marker `# greenfield:synthesis-freshness`) | [installed / not installed — covers all 5 synthesis HTMLs] |
+> | Synthesis records (`docs/adr/*.html`) | [N found (expected 9: architectural-framing.html, data-architecture.html, api-integration.html, auth.html, privacy.html, security.html, runtime-operations.html, cicd-and-delivery.html, architectural-validation.html) / none / docs/adr/ missing] |
+> | Freshness hook (`.git/hooks/pre-commit` marker `# greenfield:synthesis-freshness`) | [installed / not installed — covers all 9 synthesis HTMLs] |
 >
 > **Pending Drift**: [N entries] or "None"
 > [If drift exists]: Run `/greenfield:evolve` to apply updates.
