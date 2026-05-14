@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "phase": "personas",
+  "recordedAt": "2026-05-15T10:00:00Z",
+  "dependencies": [
+    {
+      "path": "personas.primary[*].id",
+      "value": ["P1", "P2"],
+      "rationale": "Persona IDs referenced by auto-looped downstream phases (auth, privacy, frontend)"
+    },
+    {
+      "path": "personas.primary[*].context.connection",
+      "value": ["spotty", "strong-wifi"],
+      "rationale": "Drives offline-first architecture decision in dataArchitecture + apiIntegration"
+    },
+    {
+      "path": "personas.primary[*].techSophistication",
+      "value": ["Basic", "Power user"],
+      "rationale": "Drives UI complexity decisions in frontend phase (Round 6 consumer)"
+    },
+    {
+      "path": "personas.antiPersonas",
+      "value": ["personas.primary[*].techSophistication"],
+      "rationale": "Excluded from auth, privacy, and frontend scope (string-array of persona names — illustrative only)"
+    }
+  ]
+}
