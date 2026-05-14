@@ -288,3 +288,11 @@ If the scope is per-project, add:
 > **Note:** These hooks only fire when Claude Code is running inside this project directory. Global hooks (if any) still apply alongside project-level hooks.
 
 **Scope migration**: To move notifications from global to per-project (or vice versa), run `/notify:setup` again with the new scope. Then run `/notify:uninstall` against the old scope to clean up the previous configuration.
+
+## Key Rules
+
+- **Verify the notifier binary is on PATH before claiming success** — run `which terminal-notifier` (macOS) or `which notify-send` (Linux) and halt with install instructions if the binary is missing. Never proceed to hook wiring when the notification backend is absent.
+- **`settings.json` is always read before writing** — hooks are merged non-destructively alongside existing entries. Never overwrite the file; preserve all other hooks, rules, and keys verbatim.
+- **Existing config requires explicit user choice before proceeding** — if `notify.sh`, `notify-config.json`, or existing hooks are detected in Step 3, surface the Update / Replace / Cancel menu and wait. Never silently overwrite a previous setup.
+- **`BASE_DIR` must be a fully resolved absolute path** — no `~` or relative segments in any path that gets written to `settings.json` hook commands. Expand at resolution time in Step 2 and carry the expanded form forward through all subsequent steps.
+- **All three hook events are always registered** — Stop, Notification, and SubagentStop hooks must always be written to `settings.json`, regardless of whether the event is `enabled` in `notify-config.json`. The `enabled` flag is a runtime gate read by `notify.sh`, not a generation-time filter.

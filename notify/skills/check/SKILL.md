@@ -115,3 +115,11 @@ echo '{"last_assistant_message":"Health check — notifications working!"}' | $S
 Then run the test for the chosen scope(s).
 
 Report whether it succeeded.
+
+## Key Rules
+
+- **Never write any file** — this skill is fully read-only. All Steps are observation and reporting only; no config or hook files are created or modified.
+- **Scope detection always runs first** — check both `$HOME/.claude/hooks/notify.sh` and `$PWD/.claude/hooks/notify.sh` before running any per-scope checks. If neither is found, report "no installation found" and stop; do not guess at a scope.
+- **Hook format validation is mandatory** — distinguish old static-arg format from the current dynamic format (Step 3). Report an upgrade warning for old format hooks; do not silently accept them as passing.
+- **Test notification is opt-in, not automatic** — only run the test notification when the developer explicitly requests it after seeing the summary. Never send a system notification without user confirmation.
+- **Both-scope test requires explicit scope selection** — when both global and project scopes are active, use `AskUserQuestion` to confirm which scope(s) to test. Never run tests against both scopes without the developer choosing "Both" explicitly.
