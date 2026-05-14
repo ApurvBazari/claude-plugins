@@ -18,7 +18,7 @@ When a developer picks "Adjust" on a synthesis section, invoke `greenfield/skill
 - `adjustmentIntent` — the developer's stated reason for adjusting
 - `listedPhases` — all phase IDs present in `context.phases` (for cross-phase contradiction checks)
 
-The skill returns a final adjusted value plus a summary of the adversarial walk.
+The skill returns a structured result with the final adjusted value, a decision record, a field-level diff, and per-category findings from the adversarial walk. Full return schema in `greenfield/skills/adjust-dialog/references/dialog-protocol.md`.
 
 ## Fallback (adjust-dialog skill unavailable)
 
@@ -55,8 +55,23 @@ After the dialog converges:
    }
    ```
 
-   Valid `decision` values: `"adjusted"` | `"adjusted-then-reverted"` | `"approved"` | `"skipped"`.
+   If the developer accepts a new value but notes a reservation, record:
+
+   ```json
+   {
+     "section": "<section_id>",
+     "decision": "adjusted-with-noted-divergence",
+     "before": "<original>",
+     "after": "<final>",
+     "via": "adjust-dialog",
+     "note": "<developer's stated reservation>"
+   }
+   ```
+
+   Valid `decision` values: `"adjusted"` | `"adjusted-then-reverted"` | `"adjusted-with-noted-divergence"` | `"approved"` | `"skipped"`.
    Valid `via` values: `"adjust-dialog"` | `"inline-fallback"`.
+
+   When `via === "adjust-dialog"`, the full return value from the skill also includes `categoryFindings` (one entry per category) and a `diff: { before, after, field }` object. Store these in the adjustment record if your schema allows it — they are the audit trail. The `diff` object feeds stale-flag propagation (PRE-5).
 
 3. Update the rendered synthesis HTML in-place. The Captured-as block now reflects the adjusted value; a footnote records the original.
 
