@@ -149,7 +149,7 @@ In `onboard/skills/generate/references/context-shape-v2.json`, inside the `"phas
     },
     "authzModel": {
       "enum": ["flat-roles", "rbac", "abac", "db-rls", "n/a"],
-      "description": "Authorization model. RLS gated by dataArchitecture.databaseEngine support."
+      "description": "Authorization model. RLS gated by dataArchitecture.engine support."
     },
     "enforcementPoint": {
       "type": "array",
@@ -343,7 +343,7 @@ In `onboard/skills/generate/references/context-shape-v2.json`, AFTER the `securi
   "required": [],
   "additionalProperties": false,
   "properties": {
-    "jobs":             { "type": "object", "description": "Background job system: provider (Redis/BullMQ, Sidekiq, Celery, SQS, Cloud Tasks, Inngest, Temporal, none). Auto-skipped when apiIntegration.async='no'." },
+    "jobs":             { "type": "object", "description": "Background job system: provider (Redis/BullMQ, Sidekiq, Celery, SQS, Cloud Tasks, Inngest, Temporal, none). Auto-skipped when apiIntegration.asyncPatternPattern='none'." },
     "retryStrategy":    { "type": "object", "description": "Retry / idempotency: at-least-once vs exactly-once, retry policy, dead-letter queue." },
     "scheduling":       { "type": "object", "description": "Scheduled tasks: distributed scheduler or platform cron (Vercel Cron, GH Actions, k8s CronJob)." },
     "metrics":          { "type": "object", "description": "Metrics: Prometheus / DataDog / Grafana Cloud / platform-native / none." },
@@ -482,7 +482,7 @@ Create `greenfield/skills/synthesis-review/references/templates/auth-dependencie
   "phaseId": "auth",
   "version": 1,
   "dependsOn": {
-    "dataArchitecture.databaseEngine": "auth.authzModel (RLS feasibility)",
+    "dataArchitecture.engine": "auth.authzModel (RLS feasibility)",
     "dataArchitecture.multiTenancy":   "auth.tenantResolution",
     "apiIntegration.style":            "auth.enforcementPoint (gateway vs middleware)",
     "architecturalFraming.topology":   "auth.serviceAuth (s2s only for microservices)",
@@ -712,7 +712,7 @@ Section composition:
   "phaseId": "runtimeOperations",
   "version": 1,
   "dependsOn": {
-    "apiIntegration.async":                "runtimeOperations.jobs (skip-cascade gate)",
+    "apiIntegration.asyncPattern":                "runtimeOperations.jobs (skip-cascade gate)",
     "auth.serviceAuth":                     "runtimeOperations.healthChecks (auth for s2s)",
     "security.sensitivityTier":             "runtimeOperations.alerting (required ≠ none if 'high')",
     "architecturalFraming.topology":       "runtimeOperations.scheduling (k8s CronJob vs platform cron)",
@@ -848,7 +848,7 @@ After the existing `apiIntegration` section block, insert (in this order):
 | Section | Source fields | Conditional rules |
 |---|---|---|
 | Executive Summary | jobs, metrics, alerting, featureFlags | always |
-| Background Jobs & Retries | jobs, retryStrategy | hidden if apiIntegration.async='no' |
+| Background Jobs & Retries | jobs, retryStrategy | hidden if apiIntegration.asyncPatternPattern='none' |
 | Scheduled Tasks | scheduling | always |
 | Metrics | metrics | always |
 | Traces | traces | always |
@@ -929,7 +929,7 @@ In `greenfield/skills/context-gathering/references/question-bank.md`, insert a n
 
 Then add Auth.Q2 through Auth.Q12 following the same entry shape. Use the spec § Step 5 — Auth table (`docs/superpowers/specs/2026-05-14-greenfield-3.0-round3-design.md`) for each Q's purpose, options, condition, and updates. Author the default-derivation rules per Q following these patterns:
 
-- **Stack-derived first**: reference `stack.stack.framework`, `architecturalFraming.scaleTarget`, `architecturalFraming.topology`, `dataArchitecture.compliance`, `dataArchitecture.multiTenancy`, `dataArchitecture.databaseEngine`, `apiIntegration.style`, `apiIntegration.externalServices` as available
+- **Stack-derived first**: reference `stack.stack.framework`, `architecturalFraming.scaleTarget`, `architecturalFraming.topology`, `dataArchitecture.compliance`, `dataArchitecture.multiTenancy`, `dataArchitecture.engine`, `apiIntegration.style`, `apiIntegration.externalServices` as available
 - **Greenfield-opinion fallback**: when no stack signal applies, give the user the most defensible "1 in 10 devs will choose differently" option with a one-sentence rationale
 - **N/A handling**: when a phase is conditional (e.g., Auth.Q7 service-to-service auth gated on microservices), mark `**Condition**: architecturalFraming.topology = 'microservices'` and treat default as the "skip" outcome otherwise
 
@@ -1267,7 +1267,7 @@ In `greenfield/skills/context-gathering/references/question-bank.md`, insert a n
 ### Ops.Q1: "What background job system will you use?"
 - **Type**: Choice (research-informed)
 - **Options**: Dynamically generated from stack research; baseline options include "Redis/BullMQ", "Sidekiq (Ruby)", "Celery (Python)", "SQS (AWS)", "Cloud Tasks (GCP)", "Inngest", "Temporal", "Platform-native", "None"
-- **Condition**: `apiIntegration.async != 'no'`
+- **Condition**: `apiIntegration.asyncPattern != 'no'`
 - **Updates**: `runtimeOperations.jobs`
 - **Default**:
   - If `stack.stack.framework='next'` AND `Q3.4.deployTarget='vercel'` → `"Inngest"` (greenfield opinion: Inngest is the Vercel-native choice with zero-infra setup)
@@ -1288,7 +1288,7 @@ In `greenfield/skills/context-gathering/references/question-bank.md`, insert a n
 ### Ops.Q3: "Scheduled tasks — distributed scheduler or platform cron?"
 - **Type**: Choice
 - **Options**: "Distributed (BullMQ delayed, Temporal)" | "Platform cron (Vercel Cron, GH Actions, k8s CronJob)" | "None"
-- **Condition**: `apiIntegration.async ≠ no`
+- **Condition**: `apiIntegration.asyncPattern ≠ no`
 - **Updates**: `runtimeOperations.scheduling`
 - **Default**: by `Q3.4.deployTarget` — Vercel→Vercel Cron, k8s→CronJob, AWS→EventBridge, other→GH Actions cron
 
@@ -1387,7 +1387,7 @@ Find `### P4.Q7:` in the `## Step 4: API & Integration (10 questions)` section. 
 - **Type**: Choice
 - **Options**: "Yes" | "No"
 - **Condition**: `apiIntegration.exposesAPI = true`
-- **Updates**: `apiIntegration.async`
+- **Updates**: `apiIntegration.asyncPattern`
 - **Default**: `"Yes"` if `architecturalFraming.scaleTarget ∈ {production-scale, enterprise}` else `"No"`
 - **Note**: Full background job configuration moved to Step 8 Runtime Operations (Ops.Q1-Q3).
 ```
@@ -1508,7 +1508,7 @@ Summary of cross-phase dependencies the rules consume:
 - `Q3.4.deployTarget` → strategy preselection (Vercel→Clerk; AWS+enterprise→Cognito)
 - `architecturalFraming.scaleTarget` → strategy + MFA defaults
 - `architecturalFraming.topology` → Auth.Q7 (service-to-service) visibility
-- `dataArchitecture.databaseEngine` → Auth.Q5 RLS feasibility
+- `dataArchitecture.engine` → Auth.Q5 RLS feasibility
 - `dataArchitecture.multiTenancy` → Auth.Q6 tenant resolution visibility
 - `dataArchitecture.compliance` → Auth.Q4 MFA locked + Auth.Q11 audit retention locked
 
@@ -1538,7 +1538,7 @@ Summary of cross-phase dependencies:
 Refer to `question-bank.md § Step 8: Runtime Operations` for the full rule set on each Q.
 Summary of cross-phase dependencies:
 
-- `apiIntegration.async='no'` → Ops.Q1-Q3 skip-cascade
+- `apiIntegration.asyncPatternPattern='none'` → Ops.Q1-Q3 skip-cascade
 - `Q3.4.deployTarget` → Ops.Q1 (jobs) + Ops.Q3 (scheduling) + Ops.Q11 (health checks) provider defaults
 - `security.sensitivityTier='high'` → Ops.Q7 (alerting) locked ≠ none
 - `architecturalFraming.scaleTarget ∉ {production-scale, enterprise}` → Ops.Q8 (SLO) skip
@@ -1823,7 +1823,7 @@ After Step 7 Security, insert:
 ```markdown
 ### Step 8 of 15: Runtime Operations
 
-Emit the progress indicator. This step covers background jobs, observability, alerting, feature flags, maintenance mode, health checks, runbooks, incident process, and on-call. About 14 questions; Ops.Q1-Q3 (jobs/retry/scheduling) skip when `apiIntegration.async='no'`. Ops.Q8 (SLO) skips for non-production scale targets.
+Emit the progress indicator. This step covers background jobs, observability, alerting, feature flags, maintenance mode, health checks, runbooks, incident process, and on-call. About 14 questions; Ops.Q1-Q3 (jobs/retry/scheduling) skip when `apiIntegration.asyncPatternPattern='none'`. Ops.Q8 (SLO) skips for non-production scale targets.
 
 **Stale entry-guard**: if `completedSteps` already contains `"step-8-runtime-ops"` AND `context.phaseStatus.runtimeOperations.status === "stale"`, skip re-asking wizard questions and proceed directly to the synthesis-review call.
 
@@ -1859,7 +1859,7 @@ feat(greenfield): insert Step 8 Runtime Operations in context-gathering wizard
 
 Adds Step 8 of 15 entry with stale entry-guard, 14-Q inline wizard run,
 inline synthesis-review invocation for phaseId='runtimeOperations'.
-Skip cascades: Ops.Q1-Q3 hidden when apiIntegration.async='no';
+Skip cascades: Ops.Q1-Q3 hidden when apiIntegration.asyncPatternPattern='none';
 Ops.Q8 (SLO) hidden for non-production scale. Part of greenfield 3.0
 Round 3.
 
@@ -2186,8 +2186,8 @@ When resuming a session, check for the case where a phase was previously skipped
    - If Yes: set `currentStep: "step-6-privacy"`; clear `phaseStatus.privacy.status`; route into Step 6.
    - If No: keep skipped; emit warning that Privacy synthesis remains stub.
 
-2. If `context.phaseStatus.runtimeOperations.status === "skipped"` AND `context.phases.apiIntegration.async === "yes"`:
-   - The skip was triggered by `apiIntegration.async='no'`. The developer has since changed the async flag.
+2. If `context.phaseStatus.runtimeOperations.status === "skipped"` AND `context.phases.apiIntegration.asyncPattern === "yes"`:
+   - The skip was triggered by `apiIntegration.asyncPatternPattern='none'`. The developer has since changed the async flag.
    - Apply the same un-skip prompt for Step 8.
 
 3. If `context.phases.dataArchitecture.compliance` is non-empty AND `context.phaseStatus.security.status === "skipped"`:
@@ -2212,7 +2212,7 @@ feat(greenfield): add skip-cascade reversal invariant to pickup
 
 Detect when a previously skipped Round 3 phase needs to be un-skipped
 because its upstream gate changed. Three cases: auth.strategy ≠ 'none'
-un-skips Privacy; apiIntegration.async = 'yes' un-skips Runtime Ops
+un-skips Privacy; apiIntegration.asyncPatternPattern ≠ 'none' un-skips Runtime Ops
 jobs; compliance non-empty forbids Security skip. Part of greenfield
 3.0 Round 3.
 
@@ -2319,7 +2319,7 @@ Insert at the top of the Discussion Log (just above `ROUND 2.5 LOCKED`):
 
   <p><strong>Migrations:</strong> Q3.3 (auth) → Auth.Q1. Q3.6 (monitoring) split across Ops.Q4/Q5/Q6. Q3.9 (env vars/secrets) → Sec.Q2. Q4.5 (security sensitivity) → Sec.Q1. P4.Q7 (async background work) reduced to a pointer; full detail in Ops.Q1–Q3.</p>
 
-  <p><strong>Skip cascades (new):</strong> <code>auth.strategy='none'</code> → Privacy.Gate fires; <code>scaleTarget='hobby'</code> → Sec.Q11/Q12/Ops.Q8 auto-skip; <code>apiIntegration.async='no'</code> → Ops.Q1–Q3 collapse; <code>compliance</code> non-empty → no skips allowed in Security.</p>
+  <p><strong>Skip cascades (new):</strong> <code>auth.strategy='none'</code> → Privacy.Gate fires; <code>scaleTarget='hobby'</code> → Sec.Q11/Q12/Ops.Q8 auto-skip; <code>apiIntegration.asyncPatternPattern='none'</code> → Ops.Q1–Q3 collapse; <code>compliance</code> non-empty → no skips allowed in Security.</p>
 
   <p><strong>Versions:</strong> <code>greenfield@3.0.0-alpha.4</code> + <code>onboard@2.0.0-alpha.4</code>. Hard cutover during alpha (no migration framework).</p>
 

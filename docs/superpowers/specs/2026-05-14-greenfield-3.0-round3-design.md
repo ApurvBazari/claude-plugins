@@ -28,7 +28,7 @@ Five residual questions migrate from Cat 3 / Cat 4 into the new phases. The wiza
 8. Migration of `Q3.3` (auth), `Q3.6` (monitoring), `Q3.9` (secrets), `Q4.5` (security sensitivity) out of Cat 3/Cat 4 residual; reduction of `P4.Q7` (async bg jobs) to a 1-line pointer
 9. State-machine extensions in `context-gathering/SKILL.md` for 4 new steps
 10. 4 new cross-phase consistency checks in `grill-spec/SKILL.md` (compliance scope, sensitivity tier, alerting requirement, auth+privacy coherence)
-11. 4 new skip-cascade rules driven by `auth.strategy`, `architecturalFraming.scaleTarget`, `apiIntegration.async`, `dataArchitecture.compliance`
+11. 4 new skip-cascade rules driven by `auth.strategy`, `architecturalFraming.scaleTarget`, `apiIntegration.asyncPattern`, `dataArchitecture.compliance`
 12. Wizard step renumbering (11 → 15); update `start/pickup/check` skill SKILL.md files
 13. Architecture diagram updates in `greenfield/CLAUDE.md` and `onboard/CLAUDE.md`
 14. ROUND 3 LOCKED entry in `docs/greenfield-overview.html` Discussion Log
@@ -147,7 +147,7 @@ Stack-derived defaults per Round 2.5 PRE-6 pattern. Heavy depth produces ~50 Qs 
 | Auth.Q2 | **Identity providers**: email+pw, Google, GitHub, Apple, SAML SSO, magic links, passkeys/WebAuthn | `auth.idps[]` | Multi-select; mobile targets add Apple+Google by default |
 | Auth.Q3 | **Session model**: cookie / JWT / hybrid; refresh token strategy | `auth.sessionModel` | Default by framework + topology |
 | Auth.Q4 | **MFA**: required / optional / not yet; TOTP / SMS / passkeys | `auth.mfa` | Tier-locked High if `compliance` non-empty |
-| Auth.Q5 | **Authorization model**: flat roles / RBAC / ABAC / DB-level RLS | `auth.authzModel` | RLS option gated by `dataArchitecture.databaseEngine` |
+| Auth.Q5 | **Authorization model**: flat roles / RBAC / ABAC / DB-level RLS | `auth.authzModel` | RLS option gated by `dataArchitecture.engine` |
 | Auth.Q6 | **Tenant resolution** (conditional `dataArchitecture.multiTenancy ≠ none`): subdomain / path / claim / header | `auth.tenantResolution` | Skipped if not multi-tenant |
 | Auth.Q7 | **Service-to-service auth** (conditional `architecturalFraming.topology = microservices`): API keys / mTLS / signed JWTs | `auth.serviceAuth` | Skipped for monolith |
 | Auth.Q8 | **Account lifecycle**: signup flow, email verification, password reset, account deletion | `auth.lifecycle` | Sub-object Q |
@@ -192,13 +192,13 @@ Skip-cascade: if `auth.strategy = None` AND user confirms "no data collected" vi
 | Sec.Q12 | **Bug bounty / VDP**: public, private, none | `security.vdp` | Auto-skipped for hobby |
 | Sec.Q13 | **Supply-chain posture**: lockfile pinning, signed commits, SBOM generation, provenance attestation | `security.supplyChain` | |
 
-Note: rate limiting is captured in `apiIntegration.rateLimiting` (P4.Q5) — not duplicated here.
+Note: rate limiting is captured in `apiIntegration.rateLimit` (P4.Q5) — not duplicated here.
 
 ### Step 8 — Runtime Operations (14 Qs)
 
 | # | Question | Drives | Notes |
 |---|---|---|---|
-| Ops.Q1 | **Background job system** (supersedes P4.Q7 detail): Redis/BullMQ, Sidekiq, Celery, SQS, Cloud Tasks, Inngest, Temporal, none | `runtimeOperations.jobs` | Skipped if `apiIntegration.async = No` |
+| Ops.Q1 | **Background job system** (supersedes P4.Q7 detail): Redis/BullMQ, Sidekiq, Celery, SQS, Cloud Tasks, Inngest, Temporal, none | `runtimeOperations.jobs` | Skipped if `apiIntegration.asyncPatternPattern = none` |
 | Ops.Q2 | **Retry / idempotency**: at-least-once vs exactly-once, retry policy, dead-letter queue | `runtimeOperations.retryStrategy` | |
 | Ops.Q3 | **Scheduled tasks**: distributed scheduler / platform cron (Vercel Cron, GH Actions, k8s CronJob) | `runtimeOperations.scheduling` | |
 | Ops.Q4 | **Metrics**: Prometheus / DataDog / Grafana Cloud / platform-native / none | `runtimeOperations.metrics` | |
@@ -219,7 +219,7 @@ Introduced in Round 3. All cascades respect the Round 2.5 stale-flag mechanism �
 
 1. **`auth.strategy = "None"`** → wizard prompts single gate Q ("Do you collect *any* user data?"). If No → Privacy collapses to `synthesisStatus: "n/a"` stub. Security still runs but Sec.Q11/Q12 (pentest/VDP) auto-skip.
 2. **`architecturalFraming.scaleTarget = "hobby"`** → Sec.Q11, Sec.Q12 auto-skip. Ops.Q8 (SLO) auto-skips. Runbook detail collapses to minimal template.
-3. **`apiIntegration.async = "No"`** → Ops.Q1-Q3 collapse to "No background work confirmed" with the chance to opt back in.
+3. **`apiIntegration.asyncPattern = "No"`** → Ops.Q1-Q3 collapse to "No background work confirmed" with the chance to opt back in.
 4. **`dataArchitecture.compliance` includes HIPAA/PCI/SOC2** → **no skips allowed** in Security; `sensitivityTier` locked to `High`; Auth.Q11 (audit log) retention pre-set.
 
 ## Cross-phase consistency checks (grill-spec additions)
