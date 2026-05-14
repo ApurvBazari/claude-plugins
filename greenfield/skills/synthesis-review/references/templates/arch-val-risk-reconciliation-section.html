@@ -1,0 +1,97 @@
+<!--
+  Per-phase synthesis FRAGMENT — Risk Reconciliation section.
+  Inserted by synthesis-review/SKILL.md as the new "1." section inside
+  architectural-validation.html. Pre-existing arch-val sections renumber to 2+.
+
+  Expects pre-computed template variables (synthesis-review computes these
+  from context.risks[] + context.phases.architecturalValidation.riskReconciliation):
+    - risks.length                       (total count)
+    - risks.distinctPhaseCount           (number of phases that captured >= 1 risk)
+    - risks.byStatus.mitigated[]         (filtered list)
+    - risks.byStatus.partial[]
+    - risks.byStatus.acceptedExplicit[]
+    - risks.byStatus.openFollowup[]
+    - risks.byStatus.outOfScope[]
+    - risks.byStatus.mitigated.length    (same for partial, etc.)
+    - phases.architecturalValidation.riskReconciliation.topFollowups[]
+       (each item: { riskId, riskText })
+-->
+
+<style>
+  .risk-reconciliation .meta { color: #555; font-size: 0.9em; }
+  .risk-reconciliation h3 { margin-top: 1.2em; }
+  .risk-reconciliation ul { margin: 0.5em 0 0.8em 1.4em; }
+  .risk-reconciliation li code { background: #f5f5f5; padding: 0 0.3em; border-radius: 3px; }
+  .risk-bucket-empty { color: #999; font-style: italic; }
+</style>
+
+<div class="section risk-reconciliation" id="risk-reconciliation">
+  <h2>1. Risk Reconciliation</h2>
+  <p class="meta">{{risks.length}} risks captured across {{risks.distinctPhaseCount}} phases.</p>
+
+  <h3>Mitigated ({{risks.byStatus.mitigated.length}})</h3>
+  {{#if risks.byStatus.mitigated.length}}
+  <ul>
+    {{#each risks.byStatus.mitigated}}
+    <li><code>{{this.originatingPhase}}.Q_RISK</code> &rarr; "{{this.reconciliation.rationale}}"</li>
+    {{/each}}
+  </ul>
+  {{else}}
+  <p class="risk-bucket-empty">(none)</p>
+  {{/if}}
+
+  <h3>Partial ({{risks.byStatus.partial.length}})</h3>
+  {{#if risks.byStatus.partial.length}}
+  <ul>
+    {{#each risks.byStatus.partial}}
+    <li><code>{{this.originatingPhase}}.Q_RISK</code> &rarr; "{{this.reconciliation.rationale}}"</li>
+    {{/each}}
+  </ul>
+  {{else}}
+  <p class="risk-bucket-empty">(none)</p>
+  {{/if}}
+
+  <h3>Accepted-explicit ({{risks.byStatus.acceptedExplicit.length}})</h3>
+  {{#if risks.byStatus.acceptedExplicit.length}}
+  <ul>
+    {{#each risks.byStatus.acceptedExplicit}}
+    <li><code>{{this.originatingPhase}}.Q_RISK</code> &rarr; "{{this.reconciliation.rationale}}"</li>
+    {{/each}}
+  </ul>
+  {{else}}
+  <p class="risk-bucket-empty">(none)</p>
+  {{/if}}
+
+  <h3>Open / Needs follow-up ({{risks.byStatus.openFollowup.length}})</h3>
+  {{#if risks.byStatus.openFollowup.length}}
+  <ul>
+    {{#each risks.byStatus.openFollowup}}
+    <li><code>{{this.originatingPhase}}.Q_RISK</code> &rarr; "{{this.text}}" (recommended follow-up: {{this.reconciliation.rationale}})</li>
+    {{/each}}
+  </ul>
+  {{else}}
+  <p class="risk-bucket-empty">(none)</p>
+  {{/if}}
+
+  <h3>Out-of-scope ({{risks.byStatus.outOfScope.length}})</h3>
+  {{#if risks.byStatus.outOfScope.length}}
+  <ul>
+    {{#each risks.byStatus.outOfScope}}
+    <li><code>{{this.originatingPhase}}.Q_RISK</code> &mdash; "{{this.text}}"</li>
+    {{/each}}
+  </ul>
+  {{else}}
+  <p class="risk-bucket-empty">(none)</p>
+  {{/if}}
+
+  <h3>Top follow-ups (&rarr; <code>feature-list.json</code> risk-followup cards)</h3>
+  {{#if phases.architecturalValidation.riskReconciliation.topFollowups.length}}
+  <ul>
+    {{#each phases.architecturalValidation.riskReconciliation.topFollowups}}
+    <li><code>{{this.riskId}}</code> &mdash; {{this.riskText}}</li>
+    {{/each}}
+  </ul>
+  {{else}}
+  <p class="risk-bucket-empty">(none)</p>
+  {{/if}}
+</div>
