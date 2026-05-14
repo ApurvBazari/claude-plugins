@@ -122,7 +122,7 @@
 {{else if (eq mode.domain "ddd-lite")}}
 *(deferred — DDD-lite mode)*
 {{else}}
-{{#each domainModel.events}}
+{{#each domainModel.domainEvents}}
 - {{this}}
 {{/each}}
 
@@ -180,7 +180,7 @@
 {{else if (eq mode.domain "ddd-lite")}}
 *(deferred — DDD-lite mode)*
 {{else}}
-{{domainModel.antiCorruptionLayers}}
+{{domainModel.antiCorruption}}
 
 **Cross-check**: ACLs prevent external vocabulary from leaking into the domain model. Each ACL identifies an external system and the mapping layer. The apiIntegration phase must implement an adapter or translation layer for each ACL. Missing ACLs when external systems are listed in apiIntegration fire a contradiction in grill-spec.
 

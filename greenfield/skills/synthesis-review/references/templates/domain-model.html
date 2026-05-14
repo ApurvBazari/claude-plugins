@@ -175,7 +175,7 @@ responsibility: {{this.responsibility}}</pre>
   <p class="placeholder">(deferred — DDD-lite mode)</p>
   {{else}}
   <ul>
-    {{#each domainModel.events}}<li>{{this}}</li>{{/each}}
+    {{#each domainModel.domainEvents}}<li>{{this}}</li>{{/each}}
   </ul>
   <div class="cross-check">Domain events (past-tense facts: FindingRecorded, AuditCompleted) drive event-sourcing patterns in the data architecture and async messaging in the API integration phase. Each event captured here is a candidate for a queue topic, webhook payload, or audit-log entry in downstream phases.</div>
   {{/if}}
@@ -236,7 +236,7 @@ responsibility: {{this.responsibility}}</pre>
   {{else if (eq mode.domain "ddd-lite")}}
   <p class="placeholder">(deferred — DDD-lite mode)</p>
   {{else}}
-  <pre class="captured">{{domainModel.antiCorruptionLayers}}</pre>
+  <pre class="captured">{{domainModel.antiCorruption}}</pre>
   <div class="cross-check">ACLs prevent external vocabulary from leaking into the domain model. Each ACL recorded here identifies an external system and the mapping layer (e.g., "legacy CRM uses Lead/Account — map to Customer/Order at boundary"). The apiIntegration phase must implement an adapter or translation layer for each ACL. Missing ACLs when external systems are listed in apiIntegration fire a contradiction in grill-spec.</div>
   {{/if}}
   <div class="controls">
