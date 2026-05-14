@@ -89,6 +89,34 @@ Never silently apply a contradicting change. Always force the developer to resol
 
 If a conflict involves a stack-level choice (framework, language, runtime), and the user picks "Re-research", set `currentPhase: "phase-1.5-architectural-research"` and add the conflict to `parkedQuestions[]` so context-gathering's Step 8 picks it up.
 
+## Round 3 cross-phase consistency checks
+
+After Steps 5–8 complete and before scaffold begins, validate these invariants. If any fail, present the contradiction to the developer and offer Adjust loop. Each check uses the topic-name field paths from the v2 context shape.
+
+### CHECK-R3-1: Compliance scope coverage
+`dataArchitecture.compliance ⊆ privacy.regulations` — every entry in `context.phases.dataArchitecture.compliance` must appear in `context.phases.privacy.regulations`.
+
+> **Violation message:** "Data Architecture declared compliance scope `{missingEntries}`, but Privacy regulations does not include them. Either extend privacy.regulations or remove from dataArchitecture.compliance."
+
+### CHECK-R3-2: Auth required for sensitive compliance
+If `context.phases.dataArchitecture.compliance` contains any of `["HIPAA", "PCI-DSS", "SOC 2"]`, then `context.phases.auth.strategy` MUST NOT be `"none"`.
+
+> **Violation message:** "HIPAA/PCI/SOC2 compliance requires user authentication. The current auth.strategy='none' is incompatible. Choose an auth strategy or remove the compliance scope."
+
+### CHECK-R3-3: Security tier matches compliance
+If `context.phases.dataArchitecture.compliance` is non-empty, then `context.phases.security.sensitivityTier` MUST be `"elevated"` or `"high"`.
+
+> **Violation message:** "Compliance scope `{compliance}` requires sensitivity tier 'elevated' or 'high'. Current tier='standard'."
+
+### CHECK-R3-4: Alerting required for high sensitivity
+If `context.phases.security.sensitivityTier === "high"`, then `context.phases.runtimeOperations.alerting.tool` MUST NOT be `"none"` (or undefined).
+
+> **Violation message:** "High sensitivity tier requires non-trivial alerting (PagerDuty, OpsGenie, or webhook). Current alerting.tool='none'."
+
+---
+
+These 4 checks are evaluated alongside the existing grill-spec pass. They surface as Adjust prompts during the pre-scaffold validation gate.
+
 ## Step 5: Re-confirmation
 
 Present a diff of changed spec fields:
