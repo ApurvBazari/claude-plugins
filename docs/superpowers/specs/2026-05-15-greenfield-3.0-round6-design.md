@@ -72,7 +72,7 @@ Each gate records to `phases.<parent>.concerns.<gateName> = { needed: boolean, v
 
 21. **P7.5 Plugin Recommendation** at Step 21 (split from current single P10) — fires after CI/CD + CI Draft Review so plugin recommendations are informed by infra + testing + observability context. Calls `plugin-discovery` skill in "recommendation mode". Writes `phases.pluginRecommendation = {suggested, selected, rationale}`. Does NOT install.
 22. **P10 Plugin Install** at Step 30 (split half — actual install retained at end) — fires just before scaffold handoff. Reads `phases.pluginRecommendation.selected`, calls `plugin-discovery` skill in "install mode". Writes `phases.pluginInstall = {installed, failed, skipped}`.
-23. **Re-recommendation pass** after Step 24 P5.6 UX — re-invokes plugin-discovery with frontend context; if new suggestions surface (e.g., now that Storybook is in scope), prompts user via single `AskUserQuestion` to add to install set. Records to `phases.pluginRecommendation.frontendAddenda`.
+23. **Re-recommendation pass** after Step 25 i18n/l10n — re-invokes plugin-discovery with frontend + i18n context; if new suggestions surface (Storybook from P5.3, i18n library plugins from Step 25, etc.), prompts user via single `AskUserQuestion` to add to install set. Records to `phases.pluginRecommendation.frontendAddenda`. Placed after Step 25 (the last frontend-context phase) so both P5.3 design-system and P5.6 UX picks AND i18n library picks inform the addendum pass.
 
 #### Renderer refactor + tech debt
 
@@ -115,6 +115,7 @@ Each gate records to `phases.<parent>.concerns.<gateName> = { needed: boolean, v
 41. **`greenfield-walkthrough.html` updates** — promotes all R6 phases from "Planned" status to "Shipped"
 42. **CHANGELOG entries** in both plugins calling out the alpha.6 → alpha.7 schema bump (auto-migrating)
 43. **Version bumps** — `greenfield@3.0.0-alpha.7`, `onboard@2.0.0-alpha.7`, mirrored in `marketplace.json`
+44. **`onboard/skills/generation/SKILL.md` doc fix** — one-line update to § Extended Generation removing the stale "First sprint contract (negotiated or auto-generated)" wording (now superseded by R5's deterministic path); adds a pointer to `phases.featureRoadmap.sprint1`. (Closes R5 adjacent issue #2.)
 
 ### Out of scope (do NOT relitigate — locked elsewhere or deferred to Round 7+)
 
@@ -176,7 +177,13 @@ These came from the 2026-05-15 brainstorm and are not relitigated below.
 30   P10 Plugin Install                                 (NEW R6 — split half of old P10)
 ```
 
-Pain Points (current 9.5), Confirmation (current 13), Phase 1.5 Arch Research (current 14) retain their roles as inline guardrails — folded into synthesis-review rather than counted as top-level steps.
+**Existing sub-step interludes retained but not top-level numbered:**
+
+- **Pain Points** (current Step 9.5) — fires as the closing Q-trio inside the parent phase whose Q-bank ends adjacent to it; remains a self-contained ask, just not bumped to a top-level step number
+- **Confirmation** (current Step 13) — absorbed into the per-phase synthesis-review (added by R3+). Each phase's synthesis review Approve gate replaces the old monolithic confirmation
+- **Phase 1.5 Architectural Research** (current Step 14) — retained as a conditional sub-phase that fires only if parked questions accumulated; runs between Step 25 i18n and Step 26 Feature Decomposition in the new ordering
+
+These three are explicitly preserved (no behavior dropped); they simply don't show up in the 30-step top-level count because they're conditional or absorbed.
 
 **Inline gate placement rationale:**
 
@@ -309,7 +316,7 @@ After Step 24 P5.6 UX completes, wizard re-invokes `plugin-discovery` with front
 |---|---|
 | `phases.pluginDiscovery = { suggested, selected, installed }` | `phases.pluginRecommendation = { suggested, selected, frontendAddenda: [], rationale: "" }` + `phases.pluginInstall = { installed: [], failed: [], skipped: [] }` |
 
-Existing `phases.pluginDiscovery.installed` data copied to `phases.pluginInstall.installed`. `phases.pluginInstall.installed = []` is NOT set if the alpha.6 state had a non-empty installed array — that preserves the install record for resumed sessions.
+For new sessions (no pre-existing `phases.pluginDiscovery`), `phases.pluginInstall.installed` initializes to `[]`. For migrating alpha.6 sessions, the shim copies the existing `phases.pluginDiscovery.installed` array verbatim — preserving the install record for resumed sessions instead of resetting it.
 
 ## Generic migration runner
 
@@ -397,8 +404,13 @@ Generic migration runner orchestrates; the step module handles the data:
 
 1. For each of the 9 new phases (`search`, `caching`, `realtime`, `fileUploads`, `payments`, `frontendArchitecture`, `designSystem`, `uxAccessibilityPerf`, `i18nL10n`):
    - If absent from `phases.*`, insert with `{skipped: true, deferredReason: "Round 6 phase added 2026-05-15; pre-R6 sessions skip"}`
-2. For each of the 6 inline gates (`concerns.transactionalEmail`, `concerns.sms`, `concerns.marketingEmail`, `concerns.pushNotifications`, `concerns.productAnalytics`, `concerns.featureGating`):
-   - Insert into the parent phase as `{needed: null, vendor: null}` (null distinguishes "unanswered" from "no")
+2. For each of the 6 inline gates, write `{needed: null, vendor: null}` to the nested path inside its parent phase (null distinguishes "unanswered" from "no"):
+   - `phases.auth.concerns.transactionalEmail`
+   - `phases.auth.concerns.sms`
+   - `phases.uxAccessibilityPerf.concerns.marketingEmail`
+   - `phases.uxAccessibilityPerf.concerns.pushNotifications`
+   - `phases.uxAccessibilityPerf.concerns.productAnalytics`
+   - `phases.cicdAndDelivery.concerns.featureGating`
 3. Split `phases.pluginDiscovery`:
    - Copy `suggested`/`selected`/`rationale` → `phases.pluginRecommendation`
    - Copy `installed`/`failed`/`skipped` → `phases.pluginInstall` (preserves resume state)
