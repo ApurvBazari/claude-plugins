@@ -73,6 +73,40 @@
         },
         "dataArchitecture":   { "$ref": "#/definitions/dataArchitecture" },
         "apiIntegration":   { "$ref": "#/definitions/apiIntegration" },
+        "auth": {
+          "type": "object",
+          "description": "Phase: Auth — identity and access control decisions. Round 3 (alpha.4). Hybrid strictness: 4 required enum-locked fields drive cross-phase contradictions; remaining fields loose to accommodate provider catalog churn (Clerk, Auth0, Supabase, Firebase, Cognito).",
+          "required": ["strategy", "sessionModel", "authzModel", "enforcementPoint"],
+          "additionalProperties": false,
+          "properties": {
+            "strategy": {
+              "enum": ["none", "hosted", "self-hosted-oss", "built-in"],
+              "description": "Auth strategy. 'hosted' = Clerk/Auth0/Supabase/Firebase/Cognito; 'self-hosted-oss' = Keycloak/Authentik/Ory; 'built-in' = framework session/JWT; 'none' = no auth (Privacy auto-skip gate fires)."
+            },
+            "sessionModel": {
+              "enum": ["cookie", "jwt", "hybrid", "n/a"],
+              "description": "Session container. 'n/a' valid only when strategy='none'."
+            },
+            "authzModel": {
+              "enum": ["flat-roles", "rbac", "abac", "db-rls", "n/a"],
+              "description": "Authorization model. RLS gated by dataArchitecture.databaseEngine support."
+            },
+            "enforcementPoint": {
+              "type": "array",
+              "items": { "enum": ["middleware", "route-guard", "db-rls", "api-gateway"] },
+              "description": "Where authorization checks live. Multi-select."
+            },
+            "provider":         { "type": "string", "description": "Specific provider name (Clerk, Auth0, Supabase Auth, Firebase Auth, Cognito, Keycloak, Authentik, Ory, framework-native). Loose for catalog churn." },
+            "idps":             { "type": "array", "items": { "type": "string" }, "description": "Identity providers selected (email+pw, Google, GitHub, Apple, SAML SSO, magic links, passkeys/WebAuthn)." },
+            "mfa":              { "type": "object", "description": "MFA configuration: required (bool), methods (array: TOTP, SMS, passkeys)." },
+            "tenantResolution": { "type": "string", "description": "Tenant resolution strategy when dataArchitecture.multiTenancy ≠ none (subdomain, path, claim, header). Empty when not multi-tenant." },
+            "serviceAuth":      { "enum": ["api-keys", "mtls", "signed-jwt", "none", "n/a"], "description": "Service-to-service auth. 'n/a' when topology=monolith." },
+            "lifecycle":        { "type": "object", "description": "Account lifecycle: signup flow, email verification, password reset, deletion." },
+            "recovery":         { "type": "string", "description": "Account recovery (email-only, phone, recovery-codes, SSO-mediated)." },
+            "passwordPolicy":   { "type": "object", "description": "Password policy: length, complexity, breach check (HIBP), or passkey-only." },
+            "auditLog":         { "type": "object", "description": "Auth audit log: events captured, retention window." }
+          }
+        },
         "frontend":   { "$ref": "#/definitions/deferredPhase" },
         "authSecurity":   { "$ref": "#/definitions/deferredPhase" },
         "workflow":   { "$ref": "#/definitions/deferredPhase" },
