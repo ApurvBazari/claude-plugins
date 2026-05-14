@@ -21,7 +21,7 @@ This phase captures **rich personas with downstream hooks**. Each persona = name
 
 **Prompt:** "How many primary personas drive critical user flows? (Pick 1–3 unless your product has clearly distinct user types — too many personas dilutes architectural decisions.)"
 
-**Stores to:** `personas.primary[].count` (used to iterate Q2-Q8 N times)
+**Stores to:** `personas.primary[]` (Q1's value sets the loop iteration count for Q2-Q8; not a persisted field — wizard computes count from array length post-loop)
 
 ### Persona.Q2 — Name + role (per primary persona)
 
@@ -82,7 +82,7 @@ This phase captures **rich personas with downstream hooks**. Each persona = name
 
 **Prompt:** "2-3 jobs-to-be-done (one per line)"
 
-**Stores to:** `personas.primary[{iter}].jobs[]` — each entry becomes `{ id: 'J{n}', story: '<text>' }`
+**Stores to:** `personas.primary[{iter}].jobs[]` — each entry becomes `{ "id": "J{n}", "story": "<text>" }`
 
 ### Persona.Q7 — Hard constraints (per primary persona)
 
@@ -98,7 +98,7 @@ This phase captures **rich personas with downstream hooks**. Each persona = name
 
 ### Persona.Q8 — Anti-persona (per primary persona)
 
-- **type:** single-text
+- **type:** short-text
 - **optional:** true
 - **showInLight:** false
 - **isRiskCapture:** false
@@ -108,7 +108,7 @@ This phase captures **rich personas with downstream hooks**. Each persona = name
 
 **Stores to:** `personas.primary[{iter}].antiPersona`
 
-**Design decision recorded:** Persona.Q8 is **single-text optional** (one anti-persona per primary persona), not structured/repeating. Resolves open Q#4 from spec § Open questions. Rationale: simplest viable shape; if multiple anti-personas needed in practice, escalate to a future round.
+**Design decision recorded:** Persona.Q8 is **short-text optional** (one anti-persona per primary persona), not structured/repeating. Resolves open Q#4 from spec § Open questions. Rationale: simplest viable shape; if multiple anti-personas needed in practice, escalate to a future round.
 
 ### Persona.Q9 — Secondary personas?
 
@@ -116,15 +116,20 @@ This phase captures **rich personas with downstream hooks**. Each persona = name
 - **options:** ["yes-lean", "no"]
 - **showInLight:** false   <!-- secondaries skipped in light mode -->
 - **isRiskCapture:** false
-- **loopTrigger:** true (when "yes-lean", Q10/Q11 loop up to 3 times)
+- **loopTrigger:** true   <!-- Q10/Q11 loop per secondary (max 3); fires only when answer = "yes-lean" -->
 
 **Prompt:** "Are there secondary personas worth capturing (lean profile only — name + role + 1-line context)?"
+
+**Stores to:** _(control flow only — answer governs Q10/Q11 loop; not persisted to context shape)_
 
 ### Persona.Q10 — Secondary name + role (per secondary)
 
 - **type:** short-text
 - **showInLight:** false
+- **isRiskCapture:** false
 - **template:** "Secondary persona {iter} of (up to 3) — name + role:"
+
+**Prompt:** "Secondary persona {iter} of (up to 3) — name + role:"
 
 **Stores to:** `personas.secondary[{iter}].name`, `personas.secondary[{iter}].role`
 
@@ -132,9 +137,12 @@ This phase captures **rich personas with downstream hooks**. Each persona = name
 
 - **type:** short-text
 - **showInLight:** false
-**Stores to:** `personas.secondary[{iter}].context`
+- **isRiskCapture:** false
+- **template:** "Secondary persona {iter}: 1-line context"
 
 **Prompt:** "Secondary persona {iter}: 1-line context"
+
+**Stores to:** `personas.secondary[{iter}].context`
 
 ### Persona.Q_RISK — Persona-related risk
 
