@@ -6,13 +6,6 @@
 
 ---
 
-date: {{generatedAt}}
-phase: auth
-status: {{phaseStatus.auth.status}}
-generatedAt: {{generatedAt}}
-
----
-
 ## Stale status
 
 {{stale_block}}

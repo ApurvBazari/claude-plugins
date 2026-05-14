@@ -55,7 +55,8 @@ provider: {{auth.provider}}</pre>
 <!-- Section 2: Identity Providers (IdPs) -->
 <div class="section">
   <div class="section-title">2. Identity Providers (IdPs)</div>
-  <pre class="captured">idps: {{auth.idps}}</pre>
+  <!-- Array field — synthesis-review skill serializes auth.idps as comma-joined values -->
+  <pre class="captured">idps: {{auth.idps | join: ", "}}</pre>
   <div class="cross-check">Each IdP adds an OAuth callback route, a user-creation branch, and account-linking logic. Assumes <code>apiIntegration.style = {{apiIntegration.style}}</code> — GraphQL APIs require additional middleware to expose session context on the server.</div>
   <table>
     <thead>
@@ -112,9 +113,11 @@ tokenRefresh: {{auth.tokenRefresh}}</pre>
 <!-- Section 4: MFA & Account Security -->
 <div class="section">
   <div class="section-title">4. MFA &amp; Account Security</div>
-  <pre class="captured">mfa:            {{auth.mfa}}
-passwordPolicy: {{auth.passwordPolicy}}
-recovery:       {{auth.recovery}}</pre>
+  <pre class="captured">mfa.required:              {{auth.mfa.required}}
+mfa.methods:               {{auth.mfa.methods | join: ", "}}
+passwordPolicy.minLength:  {{auth.passwordPolicy.minLength}}
+passwordPolicy.breachCheck: {{auth.passwordPolicy.breachCheck}}
+recovery:                  {{auth.recovery}}</pre>
   <div class="cross-check">Assumes <code>architecturalFraming.scaleTarget = {{architecturalFraming.scaleTarget}}</code>. MFA is locked to <code>required</code> when scaleTarget is High (enterprise SLA tier). TOTP and hardware key flows need an enrollment UI + backup code store.</div>
   <!-- Note injected if auth.mfa.required === true && auth.recovery === "none": -->
   <!-- <div class="note">MFA enabled without a recovery path — users who lose their second factor will be permanently locked out. Add recovery codes, backup email, or admin override as a minimum.</div> -->
@@ -150,8 +153,12 @@ tenantResolution: {{auth.tenantResolution}}</pre>
 <!-- Section 7: Audit & Lifecycle -->
 <div class="section">
   <div class="section-title">7. Audit &amp; Lifecycle</div>
-  <pre class="captured">auditLog:  {{auth.auditLog}}
-lifecycle: {{auth.lifecycle}}</pre>
+  <pre class="captured">auditLog.events:             {{auth.auditLog.events | join: ", "}}
+auditLog.retention:          {{auth.auditLog.retention}}
+lifecycle.signup:            {{auth.lifecycle.signup}}
+lifecycle.emailVerification: {{auth.lifecycle.emailVerification}}
+lifecycle.passwordReset:     {{auth.lifecycle.passwordReset}}
+lifecycle.accountDeletion:   {{auth.lifecycle.accountDeletion}}</pre>
   <div class="cross-check">Audit log events (login, logout, password change, MFA enroll/unenroll, account delete) must be append-only and tamper-evident. Assumes <code>dataArchitecture.engine = {{dataArchitecture.engine}}</code>; audit writes to a separate append-only table or external log stream depending on compliance tier.</div>
   <!-- Note injected if auth.auditLog === "none" && architecturalFraming.scaleTarget === "High": -->
   <!-- <div class="note">High-tier scale target implies enterprise or compliance environment. Audit logging for auth events (especially login failures, privilege escalations) is typically a compliance requirement. Add it now rather than retrofitting.</div> -->
