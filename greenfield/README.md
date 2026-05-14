@@ -46,9 +46,9 @@ Project health check. If a session is in-flight, reports the state (phase, step,
 
 ### Phase 1 — Context Gathering
 
-An adaptive 10-step wizard. Questions adapt to prior answers — a CLI tool dev answers ~10 questions, a full-stack production team answers ~30. Highlights:
+An adaptive 11-step wizard. Questions adapt to prior answers — a CLI tool dev answers ~10 questions, a full-stack production team answers ~30. Highlights:
 
-- **Step indicator** — every step emits `Step X of 10 — [name]` so long sessions don't silently derail.
+- **Step indicator** — every step emits `Step X of 11 — [name]` so long sessions don't silently derail.
 - **Stack research** — the [`stack-researcher`](./agents/stack-researcher.md) agent uses WebSearch + WebFetch for current versions, official scaffolders, and idiomatic patterns. No pre-built templates.
 - **Deep Research Park** — when a question triggers research that would take more than a few minutes ("which on-device LLM tier for a mobile app?"), the wizard offers three options: **Park it** (placeholder, continue, deep-dive later), **Deep-dive now** (pause), or **Take a default**.
 - **Sub-agent fallback** — if the web-research sub-agent's permission sandbox blocks web tools, falls back to main-session research with user-approved WebFetch calls; degrades to training-data-only mode with an explicit warning.
@@ -93,13 +93,13 @@ A FastAPI scaffold from start to finish:
 ```
 > /greenfield:start
 
-Phase 1: Context Gathering — Step 1 of 10
+Phase 1: Context Gathering — Step 1 of 11
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 What do you want to build?
 
 > A REST API for a task management app with user auth and team workspaces
 
-Step 2 of 10 — Tech Stack
+Step 2 of 11 — Tech Stack
 Researching via web: "FastAPI 2026 best practices project structure" …
 
   Recommended stack:
@@ -113,7 +113,7 @@ Researching via web: "FastAPI 2026 best practices project structure" …
 
 > Looks good
 
-Step 5 of 10 — Remaining Project Details
+Step 5 of 11 — Remaining Project Details
 
 > TDD
 

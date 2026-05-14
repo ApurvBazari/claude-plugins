@@ -72,7 +72,7 @@ User-facing skills (show in `/greenfield:` autocomplete):
 Internal building blocks (`user-invocable: false`):
 
 - `context-gathering/SKILL.md` — Phase 1 adaptive wizard
-- `synthesis-review/SKILL.md` — Phase 1.8 per-phase synthesis review (Round 2 / 2.5: architecturalFraming at Step 2.5, dataArchitecture at Step 3, apiIntegration at Step 4, cicdAndDelivery at Step 7)
+- `synthesis-review/SKILL.md` — Phase 1.8 per-phase synthesis review (Round 2 / 2.5: architecturalFraming at Step 2.5, dataArchitecture at Step 3, apiIntegration at Step 4, cicdAndDelivery at Step 7, architecturalValidation at Step 11)
 - `grill-spec/SKILL.md` — Phase 1.7 pre-scaffold validation gate
 - `scaffolding/SKILL.md` — Phase 2 scaffold execution
 - `plugin-discovery/SKILL.md` — Phase 3a plugin catalog match + install
