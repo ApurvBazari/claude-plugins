@@ -413,6 +413,32 @@ If the synthesis-review skill returns `synthesisStatus: "no-template"` (should n
 
 ---
 
+### Step 8 of 15: Runtime Operations
+
+Emit the progress indicator. This step covers background jobs, observability, alerting, feature flags, maintenance mode, health checks, runbooks, incident process, and on-call. About 14 questions; Ops.Q1-Q3 (jobs/retry/scheduling) skip when `apiIntegration.asyncPattern='none'`. Ops.Q8 (SLO) skips for non-production scale targets. Ops.Q12, Ops.Q14 auto-skip for hobby.
+
+**Stale entry-guard**: if `completedSteps` already contains `"step-8-runtime-ops"` AND `context.phaseStatus.runtimeOperations.status === "stale"`, skip re-asking wizard questions and proceed directly to the synthesis-review call.
+
+Tell the developer (verbatim):
+
+> Step 8 of 15: Runtime Operations. I'll ask about background jobs, observability (metrics/traces/logs), alerting, feature flags, maintenance mode, health checks, runbooks, and incident response. About 14 questions. Some are skipped for hobby projects or no-async-work setups.
+
+Then run the wizard.
+
+Ask each question from `references/question-bank.md § Step 8: Runtime Operations` (Ops.Q1 through Ops.Q14) in order. Honor the conditions. Write each answer to its destination field under `context.phases.runtimeOperations`.
+
+**State checkpointing**: set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-8-runtime-ops"`.
+
+**At end of step**, invoke synthesis-review inline:
+
+```
+Skill(synthesis-review, phaseId: "runtimeOperations")
+```
+
+If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen — `runtime-operations.html`/`.md` ship in Round 3 commit `abcd928`), tell the developer and continue to the residual step (Step 9 after T21 renumbering).
+
+---
+
 ### Step 5 of 11: Remaining Project Details (residual)
 
 This step holds the 13 Category 3 questions that have NOT been re-homed to Data Architecture or API & Integration in Round 2. They stay here as transitional content until Rounds 3–6 re-home them to vision/frontend/authSecurity/workflow. See `references/question-bank.md § Category 3 (residual)` for the full question list.
