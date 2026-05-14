@@ -6,7 +6,7 @@ user-invocable: false
 
 # Synthesis Review Skill — Per-Phase Confirmation Gate
 
-You are running the synthesis-review skill, the reusable Phase X.5 confirmation gate that runs after each major wizard phase in the 15-phase greenfield 3.x flow. Round 1 wires this in only for Phase 1.8 (after the CI/CD step, cicdAndDelivery). Rounds 2–6 will wire it in for dataArchitecture, apiIntegration, authSecurity, workflow, vision/personas/domain, featureRoadmap, and schemaDraftReview.
+You are running the synthesis-review skill, the reusable Phase X.5 confirmation gate that runs after each major wizard phase in the 15-phase greenfield 3.x flow. Round 1 wires this in for Phase 1.8 (cicdAndDelivery). Round 2 wires it in for architecturalFraming, dataArchitecture, apiIntegration, architecturalValidation. Round 3 wires it in for auth, privacy, security, runtimeOperations. Rounds 4–6 will add workflow, vision/personas/domain, featureRoadmap, and schemaDraftReview.
 
 ## Step 0: Stale-check entry-guard
 
