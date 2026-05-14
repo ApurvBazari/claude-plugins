@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "alpha.4",
+  "version": 2,
+  "createdAt": "2026-05-10T14:00:00Z",
+  "updatedAt": "2026-05-12T18:30:00Z",
+  "currentPhase": "phase-1-context-gathering",
+  "currentStep": "step-15-arch-validation",
+  "context": {
+    "appDescription": "A field-audit tool for compliance officers, capturing site findings on-device with later sync.",
+    "appType": "fullstack",
+    "vision": {
+      "users": [
+        "Sara — field auditor visiting remote sites",
+        "Carl — compliance officer reviewing audit trails weekly"
+      ]
+    },
+    "stack": {
+      "language": "typescript",
+      "framework": "next"
+    },
+    "phases": {
+      "architecturalFraming": {
+        "topology": "Monolith",
+        "deploymentShape": "Single-region",
+        "scaleTarget": "Startup",
+        "boundaryNotes": ""
+      },
+      "dataArchitecture": {
+        "engine": "PostgreSQL",
+        "databaseHost": "Managed RDBMS",
+        "orm": "Prisma",
+        "migrationsTool": "ORM-native",
+        "compliance": "None"
+      },
+      "apiIntegration": {
+        "style": "REST",
+        "asyncPattern": "none",
+        "rateLimit": "global"
+      },
+      "auth": {
+        "strategy": "Hosted (Clerk)",
+        "provider": "Clerk"
+      },
+      "privacy": {
+        "synthesisStatus": "complete",
+        "regulatoryFrameworks": ["GDPR (EU / EEA)"]
+      },
+      "security": {
+        "sensitivityTier": "Elevated"
+      },
+      "runtimeOperations": {
+        "jobs": "Redis / BullMQ"
+      },
+      "cicdAndDelivery": {
+        "ciAuditAction": "Create a PR with fixes",
+        "ciProvider": "GitHub Actions"
+      },
+      "architecturalValidation": {
+        "signOff": "pending"
+      }
+    }
+  },
+  "phaseStatus": {
+    "architecturalFraming": { "status": "approved", "approvedAt": "2026-05-11T10:00:00Z", "lastModified": "2026-05-11T10:00:00Z", "staleReason": null },
+    "dataArchitecture": { "status": "approved", "approvedAt": "2026-05-11T11:30:00Z", "lastModified": "2026-05-11T11:30:00Z", "staleReason": null },
+    "apiIntegration": { "status": "approved", "approvedAt": "2026-05-11T13:00:00Z", "lastModified": "2026-05-11T13:00:00Z", "staleReason": null },
+    "auth": { "status": "approved", "approvedAt": "2026-05-11T15:00:00Z", "lastModified": "2026-05-11T15:00:00Z", "staleReason": null },
+    "privacy": { "status": "approved", "approvedAt": "2026-05-11T16:30:00Z", "lastModified": "2026-05-11T16:30:00Z", "staleReason": null },
+    "security": { "status": "approved", "approvedAt": "2026-05-12T09:00:00Z", "lastModified": "2026-05-12T09:00:00Z", "staleReason": null },
+    "runtimeOperations": { "status": "approved", "approvedAt": "2026-05-12T10:30:00Z", "lastModified": "2026-05-12T10:30:00Z", "staleReason": null },
+    "cicdAndDelivery": { "status": "approved", "approvedAt": "2026-05-12T14:00:00Z", "lastModified": "2026-05-12T14:00:00Z", "staleReason": null },
+    "architecturalValidation": { "status": "in-progress", "approvedAt": null, "lastModified": "2026-05-12T17:00:00Z", "staleReason": null }
+  }
+}
