@@ -1,8 +1,9 @@
 ---
 paths:
   - "onboard/**"
-  - "forge/**"
+  - "greenfield/**"
   - "notify/**"
+  - "handoff/**"
 ---
 
 # AskUserQuestion Single-Option Guard
@@ -90,7 +91,7 @@ Only append `None / Skip` when `len(candidates) == 1` AND the caller is a batche
 
 - `onboard/skills/wizard/SKILL.md` — Phase 5.5 ecosystem plugins, Phase 5.6 LSP, Phase 5.7 built-in skills.
 - `onboard/skills/update/SKILL.md` — Phase 4b batched approval (padded-None branch).
-- `forge/skills/context-gathering/SKILL.md` — any dynamically-sized option list (audit on first use).
+- `greenfield/skills/context-gathering/SKILL.md` — any dynamically-sized option list (audit on first use).
 - `notify/skills/*` — any wizard-like step (audit on first use).
 
 When adding a new skill that uses `AskUserQuestion` with dynamic options, reference this rule in a brief § Guard Usage note alongside the call.

@@ -5,7 +5,7 @@ Comprehensive end-to-end testing for the develop → main release covering PRs #
 **Prerequisites:**
 1. Run `./tests/release-gate/run-automated-checks.sh` — all checks must pass (now includes URL convention, lifecycle-setup absence, wizard cap removal checks)
 2. Run `./tests/release-gate/setup-test-repos.sh` — creates 4 scratch repos (test-nextjs, test-python, test-monorepo, test-empty)
-3. For the forge re-run, also wipe and recreate `$TMPDIR/release-gate-tests/test-forge/` — start from an empty directory each time
+3. For the greenfield re-run, also wipe and recreate `$TMPDIR/release-gate-tests/test-greenfield/` — start from an empty directory each time
 
 Test repos are created at `$TMPDIR/release-gate-tests/`.
 
@@ -264,63 +264,63 @@ claude plugin uninstall superpowers
 
 ---
 
-## Phase 5: Forge End-to-End (3-phase post-M6 release-gate sweep)
+## Phase 5: Greenfield End-to-End (3-phase post-M6 release-gate sweep)
 
-**Target:** Fresh directory (forge creates the project from scratch)
+**Target:** Fresh directory (greenfield creates the project from scratch)
 **PRs covered:** #30, #34-#39 headless delegation + 2026-04-16 fixes M4/M5/M6, L3/L4/L5
 
 ```bash
-rm -rf $TMPDIR/release-gate-tests/test-forge
-mkdir $TMPDIR/release-gate-tests/test-forge
-cd $TMPDIR/release-gate-tests/test-forge
+rm -rf $TMPDIR/release-gate-tests/test-greenfield
+mkdir $TMPDIR/release-gate-tests/test-greenfield
+cd $TMPDIR/release-gate-tests/test-greenfield
 claude
-# Run: /forge:init
+# Run: /greenfield:start
 ```
 
-Follow the forge wizard (pick a stack like "Next.js API" or "Express + GraphQL + Prisma").
+Follow the greenfield wizard (pick a stack like "Next.js API" or "Express + GraphQL + Prisma").
 
 ### Pipeline structure (M6 release-gate sweep — 4 phases → 3 phases)
 
-- [ ] **Forge completes 3 phases**: Phase 1 (Context) → Phase 2 (Scaffold) → Phase 3 (AI Tooling). Phase 4 (Lifecycle Setup) is **gone** entirely (M6).
+- [ ] **Greenfield completes 3 phases**: Phase 1 (Context) → Phase 2 (Scaffold) → Phase 3 (AI Tooling). Phase 4 (Lifecycle Setup) is **gone** entirely (M6).
 - [ ] No mention of the `engineering` plugin at any point — not in pipeline summary, not in plugin discovery, not in handoff (M6)
-- [ ] `forge/skills/lifecycle-setup/` directory does not exist on disk in the installed forge plugin (M6)
-- [ ] Forge handoff message says "3 phases" not "4 phases"
+- [ ] `greenfield/skills/lifecycle-setup/` directory does not exist on disk in the installed greenfield plugin (M6)
+- [ ] Greenfield handoff message says "3 phases" not "4 phases"
 
 ### Phase 3 generation (C2 + C3 release-gate sweep — agent dispatch + frontmatter)
 
-- [ ] Phase 3b: Skill tool call to `onboard:generate` resolves AND **dispatches the config-generator agent** via the Agent tool (NOT inline writes from forge's context). C2 contract.
-- [ ] No "AskUserQuestion" prompts fire during the headless generation (forge passes the SUPPRESS-PROMPT-ONLY flags)
+- [ ] Phase 3b: Skill tool call to `onboard:generate` resolves AND **dispatches the config-generator agent** via the Agent tool (NOT inline writes from greenfield's context). C2 contract.
+- [ ] No "AskUserQuestion" prompts fire during the headless generation (greenfield passes the SUPPRESS-PROMPT-ONLY flags)
 - [ ] **All `.claude/agents/*.md` files start with `---` YAML frontmatter** with `name:` and `description:` (C3)
 - [ ] Verify the structured JSON response from onboard:generate:
   ```bash
   # Onboard:generate's Step 5 returns filesWritten + telemetry + auditPassed
-  # Forge logs/captures this into forge-meta.json
-  cat .claude/forge-meta.json | jq '.generated.toolingFlags.hookStatus'
+  # Greenfield logs/captures this into greenfield-meta.json
+  cat .claude/greenfield-meta.json | jq '.generated.toolingFlags.hookStatus'
   ```
 - [ ] `toolingFlags.hookStatus.planned` keys match what onboard expected to generate
 
 ### Stack-researcher fallback (M5 release-gate sweep — sentinel detection)
 
 - [ ] **If web access works**: stack-researcher agent's first action is the actual npm registry lookup for the first detected stack package (zero-overhead probe). Research report returned successfully.
-- [ ] **If web access denied (sub-agent sandbox)**: agent returns the sentinel `STACK_RESEARCH_REQUIRES_MAIN_SESSION`. Forge detects the literal string and re-runs the checklist inline using main-session WebSearch/WebFetch with per-call user approvals (NOT a re-dispatch of the agent). M5 contract.
-- [ ] Shared checklist file exists: `${CLAUDE_PLUGIN_ROOT}/../forge/skills/init/references/stack-research-checklist.md`
+- [ ] **If web access denied (sub-agent sandbox)**: agent returns the sentinel `STACK_RESEARCH_REQUIRES_MAIN_SESSION`. Greenfield detects the literal string and re-runs the checklist inline using main-session WebSearch/WebFetch with per-call user approvals (NOT a re-dispatch of the agent). M5 contract.
+- [ ] Shared checklist file exists: `${CLAUDE_PLUGIN_ROOT}/../greenfield/skills/start/references/stack-research-checklist.md`
 
-### Forge metadata shape (L4 + L5 release-gate sweep)
+### Greenfield metadata shape (L4 + L5 release-gate sweep)
 
-- [ ] Check forge-meta.json shape:
+- [ ] Check greenfield-meta.json shape:
   ```bash
-  cat .claude/forge-meta.json | jq '.generated.toolingFlags | keys'
-  cat .claude/forge-meta.json | jq '.meta.onboardVersion'
+  cat .claude/greenfield-meta.json | jq '.generated.toolingFlags | keys'
+  cat .claude/greenfield-meta.json | jq '.meta.onboardVersion'
   cat .claude/onboard-meta.json | jq '.pluginVersion'
   ```
 - [ ] **L5 — generated.toolingFlags namespace**: contains `tooling`, `cicd`, `harness` AS NESTED KEYS (NOT siblings as `generated.tooling/cicd/harness`)
 - [ ] `toolingFlags` mirrors all 7 status keys: `hookStatus`, `skillStatus`, `agentStatus`, `mcpStatus`, `outputStyleStatus`, `lspStatus`, `builtInSkillsStatus`
-- [ ] **L4 — dynamic onboard version**: `meta.onboardVersion` (forge-side) and `pluginVersion` (onboard-side meta) BOTH match the actual installed onboard version (1.10.0+ post-sweep). NOT a stale literal `1.2.0`.
-- [ ] Forge-meta.json validates against `forge/skills/tooling-generation/references/forge-meta.schema.json`:
+- [ ] **L4 — dynamic onboard version**: `meta.onboardVersion` (greenfield-side) and `pluginVersion` (onboard-side meta) BOTH match the actual installed onboard version (1.10.0+ post-sweep). NOT a stale literal `1.2.0`.
+- [ ] Greenfield-meta.json validates against `greenfield/skills/tooling-generation/references/greenfield-meta.schema.json`:
   ```bash
   # Spot-check by inspecting the schema requirements:
-  jq '.required' forge/skills/tooling-generation/references/forge-meta.schema.json
-  jq '.properties.generated.properties.toolingFlags.required' forge/skills/tooling-generation/references/forge-meta.schema.json
+  jq '.required' greenfield/skills/tooling-generation/references/greenfield-meta.schema.json
+  jq '.properties.generated.properties.toolingFlags.required' greenfield/skills/tooling-generation/references/greenfield-meta.schema.json
   ```
 
 ### Non-interactive package install (M4 release-gate sweep)
@@ -356,10 +356,10 @@ If the chosen stack uses Pothos + Prisma:
 - [ ] All 4 Phase 7 status keys present in `onboard-meta.json` regardless of firing path:
   - `mcpStatus.status` (Path C signal-driven typically `emitted`)
   - `outputStyleStatus.status` (typically `emitted` via Path B Quick Mode default)
-  - `lspStatus.status` (forge passes `disableLSP: true` → typically `skipped` with reason `caller-disabled` for placeholder code)
-  - `builtInSkillsStatus.status` (forge passes `disableBuiltInSkills: true` → typically `skipped` with reason `caller-disabled`)
-- [ ] **`status: "skipped"` with `reason: "caller-disabled"` counts as PASS** — that's the intentional behavior for forge's placeholder-code suppression
-- [ ] Forge handoff message mentions `/onboard:evolve` for LSP + built-in skills after adding source files (PR #38, #39)
+  - `lspStatus.status` (greenfield passes `disableLSP: true` → typically `skipped` with reason `caller-disabled` for placeholder code)
+  - `builtInSkillsStatus.status` (greenfield passes `disableBuiltInSkills: true` → typically `skipped` with reason `caller-disabled`)
+- [ ] **`status: "skipped"` with `reason: "caller-disabled"` counts as PASS** — that's the intentional behavior for greenfield's placeholder-code suppression
+- [ ] Greenfield handoff message mentions `/onboard:evolve` for LSP + built-in skills after adding source files (PR #38, #39)
 
 ### Session sanity
 
@@ -420,7 +420,7 @@ Once all phases pass:
 | Phase 3b (monorepo) | [ ] Pass | |
 | Phase 3c (empty) | [ ] Pass | |
 | Phase 4 (drift) | [ ] Pass | Expect findings-phase4-drift-v2.md — AskUserQuestion approval flow; auto-checked LSP for new-language |
-| Phase 5 (forge) | [ ] Pass | Expect findings-phase5-forge-v2.md — 3 phases (no engineering); 0 fail (was 5 pass / 16 warn / 2 fail pre-sweep) |
+| Phase 5 (greenfield) | [ ] Pass | Expect findings-phase5-forge-v2.md — 3 phases (no engineering); 0 fail (was 5 pass / 16 warn / 2 fail pre-sweep) |
 | Phase 6 (CI/audit) | [ ] Pass | |
 
 **Release-ready:** All phases passed. Safe to merge develop → main.
