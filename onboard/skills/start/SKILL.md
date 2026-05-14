@@ -467,3 +467,11 @@ If ecosystem plugins were set up, add:
 ### Step 4.4: Closing
 
 > Your project is now set up for AI-assisted development with Claude Code. Happy coding!
+
+## Key Rules
+
+- **Never dispatch `config-generator` directly** — always go through `Skill(onboard:generate)`. Direct dispatch bypasses the shared validation contract and the `dispatchedAsAgent` safety net.
+- **Empty-repo guard always runs first** — Phase 0 fires before Phase 1 Analysis, even if the user explicitly says "just analyze". A zero-source-count repo must hit the 3-option menu, not the wizard.
+- **Settings.json is always merge-aware** — never overwrite `.claude/settings.json` outright. Read it first, merge hooks, then write. The file may already contain hooks from other sources.
+- **Notify setup is inform-only when global config is already complete** — the `globalConfigured` detection (config + hook both present) means no project-local offer is made. Never re-setup what is already wired.
+- **Halt and surface on context builder validation failure** — if Phase 2.6 validation fails, refuse to dispatch and show the offending field. Never attempt generation with an incomplete or malformed context object.

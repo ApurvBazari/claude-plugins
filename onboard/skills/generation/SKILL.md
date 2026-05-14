@@ -1657,3 +1657,11 @@ TDD is the standard testing approach for all onboarded projects. These artifacts
 - `references/sprint-contracts.md` — Sprint contract format and negotiation
 - `references/agent-teams-guide.md` — Agent team compositions and quality hooks
 - `references/worktree-workflow.md` — Proactive worktree workflow using Claude Code native tools (EnterWorktree/ExitWorktree)
+
+## Key Rules
+
+- **Headless mode prohibits all interactive prompts** — when `headlessMode: true`, every decision has been pre-made by the caller. Never ask the developer a question, show a confirmation prompt, or wait for input. Treat caller inputs as authoritative.
+- **Version string is always read from `plugin.json`, never hardcoded** — the maintenance header `{VERSION}` must be resolved at generation time from the manifest. A hardcoded literal will become stale without warning.
+- **`settings.json` is always read before writing** — hooks are merged alongside existing entries, never overwriting the file. This is the most common headless-mode conflict source.
+- **Plugin-covered capabilities are never re-generated** — before generating any agent, check `coveredCapabilities`. An agent that shadows an installed plugin must be skipped entirely, not generated with a note.
+- **Standalone TDD artifacts are conditional on `superpowers` absence** — the standalone TDD skill and TDD test-writer agent are only generated when the superpowers plugin is not installed. Never generate both; they conflict.

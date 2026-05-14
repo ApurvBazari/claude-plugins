@@ -161,3 +161,11 @@ Also display a quick reminder of the developer's preferences:
 > - Code style: [strictness]
 > - Security: [sensitivity]
 > - Team size: [size]
+
+## Key Rules
+
+- **Never write to any file** — this skill is fully read-only. All Steps are observation and reporting; no files are created, modified, or deleted.
+- **Halt at Step 1 if `onboard-meta.json` is missing** — do not continue to artifact checks or drift detection without a metadata baseline. The user must run `/onboard:start` first.
+- **Parse error requires explicit user choice** — if `onboard-meta.json` is malformed, surface the two options (re-initialize or metadata-free check) via `AskUserQuestion` and wait. Never silently skip drift detection.
+- **Drift findings are always confirmed before acting** — the check reports drift; it never auto-applies or recommends immediate edits. Direct the user to `/onboard:update` for any changes.
+- **Drift thresholds are concrete, not vague** — use the exact numeric thresholds defined in Step 4 (3+ new deps, >20% test file delta, major version bump, etc.). Do not flag drift on noise below these thresholds.

@@ -596,3 +596,11 @@ Update `.claude/onboard-meta.json`:
 > - [List files that were up-to-date or skipped]
 >
 > Run `/onboard:check` to verify the health of your setup.
+
+## Key Rules
+
+- **Require `onboard-meta.json` before any work** — if the file is missing, halt at Step 1 with a message to run `/onboard:start`. Never run fresh analysis or apply updates without a baseline.
+- **All upgrades require explicit approval** — never apply a detected drift item without the developer selecting it in the Step 6 `AskUserQuestion` call. "Apply later" is a valid answer; "Apply all" still requires the pre-question selection, not a silent auto-apply.
+- **Never overwrite user-customized files without per-item choice** — files with a modified or absent maintenance header are flagged and require a merge/replace/skip decision before any change is made.
+- **User-edits in frontmatter are display-only, never rewritten** — for skill, agent, and output-style frontmatter drift, `userEdit` items are shown for awareness only. Onboard updates the snapshot to accept the edit but never overwrites the hand-edited value.
+- **`greenfield-meta.json` is updated only at the `toolingFlags` subtree** — if the project has a greenfield meta file, update only the five specified `toolingFlags` fields. Never touch `context.*`, `scaffold.*`, or any other subtree; read-modify-write in place.
