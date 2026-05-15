@@ -9,123 +9,53 @@ You are resuming an in-progress Greenfield workflow that was paused mid-flight. 
 
 ---
 
-## State migration: alpha.4 → alpha.5 (Round 4)
+## State migration: invoke `run-migrations.sh`
 
-**MANDATORY.** Runs at the very top of `/greenfield:pickup` (before resume detection, before Step 0 stale-check, before Step 1 / Step 1.5). Non-destructive — all existing R1–R3 state preserved verbatim.
+**MANDATORY.** Runs at the very top of `/greenfield:pickup` (before resume detection, before Step 0 stale-check, before Step 1 / Step 1.5).
 
-### Trigger
+### Detect schemaVersion (legacy + canonical locations)
 
-Read `.claude/greenfield-state.json.schemaVersion`. The values:
+```bash
+SCHEMA_VERSION=$(jq -r '.meta.schemaVersion // .schemaVersion // "unknown"' .claude/greenfield-state.json)
+```
 
-| schemaVersion | Round | Action |
-|---|---|---|
-| (absent) or `1` | R1 / R2 / R2.5 | No migration needed (legacy state pre-dates the schemaVersion field). The shim treats this as alpha.3 — runs the alpha.4 chain first, then alpha.5. |
-| `"alpha.4"` | R3 | Run alpha.4 → alpha.5 migration (below). |
-| `"alpha.5"` | R4+ | Already migrated. Skip. |
-| Any other value | unknown | Halt with error: "Unknown schemaVersion `<value>` in greenfield-state.json. Manual inspection required." |
+| Detected value | Action |
+|---|---|
+| `unknown` or `1` | Pre-R3 legacy state — invoke `run-migrations.sh --from alpha.3 --to alpha.7` |
+| `"alpha.4"`      | R3 state — invoke `--from alpha.4 --to alpha.7` |
+| `"alpha.5"`      | R4 state — invoke `--from alpha.5 --to alpha.7` |
+| `"alpha.6"`      | R5 state — invoke `--from alpha.6 --to alpha.7` |
+| `"alpha.7"`      | Already migrated; skip migration block |
+| Any other value  | Halt with diagnostic — manual inspection required |
 
-### Migration steps (alpha.4 → alpha.5)
+### Migration protocol (dry-run + approval + atomic write)
 
-When schemaVersion is `"alpha.4"`:
+1. Invoke runner with `--dry-run` first; show the JSON diff to the user:
 
-1. **Set safe-default mode flags** — these chose the SAFEST defaults for in-flight sessions, NOT the new-session defaults (which are Heavy + Auto-loop + Full DDD per `feedback_comprehensive_by_default.md`). Safe defaults avoid retroactively expanding completed work:
-   - `mode.depth = "heavy"` — preserve comprehensive posture; existing R3-walked phases were comprehensive.
-   - `mode.coupling = "hybrid"` — SAFER than auto-loop for in-flight sessions; avoids retroactively per-persona-looping completed phases. User can upgrade to auto-loop via Adjust mode.
-   - `mode.domainFormat = "ddd-lite"` — lighter; user can upgrade explicitly when Step 2.7 runs.
-2. **Mark new R4 phases as not-yet-run:**
-   - `phaseStatus.personas = { status: "not-yet-walked", approvedAt: null, lastModified: <now>, staleReason: null }`
-   - `phaseStatus.domainModel = { ... same }`
-3. **Initialize empty R4 collections:**
-   - `context.personas = { primary: [], secondary: [], antiPersonas: [] }`
-   - `context.domainModel = { contexts: [], entities: [], valueObjects: [], domainEvents: [], crossContextRelationships: [], ubiquitousLanguage: [], antiCorruption: "" }`
-   - `context.risks = []`
-   - `context.phases.architecturalValidation.riskReconciliation = { summary: {}, topFollowups: [] }`
-4. **Bump version:** `state.schemaVersion = "alpha.5"`.
-5. **Append audit entry** to `.claude/greenfield-meta.json.audit[]`:
-   ```jsonc
-   {
-     "at": "<iso8601-now>",
-     "action": "schema-migration",
-     "from": "alpha.4",
-     "to": "alpha.5",
-     "details": {
-       "mode-defaults-set": {
-         "depth": "heavy",
-         "coupling": "hybrid",
-         "domainFormat": "ddd-lite"
-       },
-       "new-phases-marked": ["personas", "domainModel"],
-       "initialized-collections": ["context.personas", "context.domainModel", "context.risks", "phases.architecturalValidation.riskReconciliation"]
-     }
-   }
-   ```
-6. **Atomic checkpoint** — write `.claude/greenfield-state.json.tmp` then rename (atomic write).
-7. **Surface notice to developer** via plain text (NOT AskUserQuestion — this is informational, no choice needed):
-
-   ```
-   ─────────────────────────────────────────
-   Round 4 update applied — schema bumped to alpha.5
-   ─────────────────────────────────────────
-   Round 4 adds two new wizard phases:
-     • Step 2.2 — Personas (new in R4)
-     • Step 2.7 — Domain Modeling (new in R4)
-
-   Mode defaults set (safe for mid-session resume):
-     • depth        = heavy
-     • coupling     = hybrid  (lighter than the new-session default of auto-loop)
-     • domainFormat = ddd-lite (lighter than the new-session default of full-ddd)
-
-   You can upgrade any toggle via the wizard's Adjust mode prompt.
-
-   New phases are queued as "not-yet-walked". Resume current step normally,
-   or run Personas + Domain phases retroactively via:
-     /greenfield:pickup → Add R4 phases
-   ─────────────────────────────────────────
+   ```bash
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/run-migrations.sh" \
+     --from "$SCHEMA_VERSION" --to alpha.7 \
+     --state-file .claude/greenfield-state.json --dry-run > /tmp/migration-dry-run.json
    ```
 
-8. **Surface AskUserQuestion** for the immediate-action choice:
+2. Display the diff to the user via the synthesis-review skill (or plain stdout if synthesis-review isn't available). Ask via `AskUserQuestion`:
+   - **Apply migration (Recommended)** — atomic write proceeds
+   - **Inspect first** — surface the dry-run JSON in `.claude/migration-dry-run.json`; halt
+   - **Cancel** — abort pickup
 
-   ```
-   "How do you want to handle the new R4 phases?"
-     • Add now (Recommended) — pause current step, run personas + domain phases.
-        Downstream phases marked stale for post-hoc drift detection.
-     • Defer — resume current step. Personas + domain will surface when user advances
-        past them (or never, if past Step 3 already — they remain optional).
-     • Skip — explicitly mark personas + domain as user-skipped. No back-fill,
-        no drift detection. Mode toggles still apply to remaining phases.
-   ```
+3. On Apply: invoke without `--dry-run`. Runner handles atomic temp + rename internally.
 
-If "Add now": jump to context-gathering Step 2.2. Original currentStep saved to `resumeAfterR4PhasesStep`. After personas + domain complete, jump back.
-
-If "Defer": continue current step. The drift-detection check (§ Persona/entity post-hoc add detection) will surface drift opportunities later.
-
-If "Skip": set `phaseStatus.personas.status = "user-skipped"` and `.domainModel.status = "user-skipped"`. Synthesis-review treats these as `synthesisStatus: "n/a"`. Downstream phases retain their non-looped or hybrid-only behavior.
-
-### Idempotency
-
-The migration MUST be idempotent. After the migration, schemaVersion is `"alpha.5"`. Re-running pickup reads `"alpha.5"` and skips the migration. The audit-log entry is appended once per migration; running pickup on a v2-state machine adds no further audit entries.
+4. Append migration entry to `.claude/greenfield-meta.json.audit[]` (one entry per chain hop applied).
 
 ### Failure modes
 
-- **Concurrent state writes:** if a write fails (e.g., disk full, permission denied), do NOT leave state half-migrated. Roll back by detecting the partial write and removing the `.tmp` file. Surface to user: "State migration interrupted — original alpha.4 state preserved. Fix the underlying issue and re-run /greenfield:pickup." Do NOT auto-retry.
-- **Unknown schemaVersion:** halt with diagnostic, never silently treat as alpha.4.
-- **Missing greenfield-state.json:** not a migration scenario — the file should exist if pickup is being invoked. If absent, defer to the existing pickup logic that handles "no in-flight session." (Step 1 below.)
+- **Runner non-zero exit**: do NOT leave state half-migrated. The runner writes atomically (temp file + rename), so a failed step preserves the original `.claude/greenfield-state.json`. Surface to user: "State migration interrupted — original state preserved at schemaVersion `$SCHEMA_VERSION`. Fix the underlying issue and re-run /greenfield:pickup." Do NOT auto-retry.
+- **Unknown schemaVersion**: halt with diagnostic, never silently treat as a known version.
+- **Missing greenfield-state.json**: not a migration scenario — the file should exist if pickup is being invoked. If absent, defer to the existing pickup logic that handles "no in-flight session." (Step 1 below.)
 
-### Migration: alpha.5 → alpha.6 (Round 5)
+### Idempotency
 
-If `state.meta.schemaVersion` is less than `"3.0.0-alpha.6"`:
-
-1. If `state.phases.featureRoadmap` is absent, inject:
-   ```json
-   { "skipped": true, "deferredReason": "session predates Round 5" }
-   ```
-2. If `state.phases.schemaDraftReview` is absent, inject the same shape.
-3. Set `state.meta.schemaVersion = "3.0.0-alpha.6"`.
-4. Atomic write via `.tmp + rename`.
-5. Surface to user:
-   > Session migrated to alpha.6. Steps 16 (Feature Roadmap) and 19 (Schema Draft Review) are now available via Adjust mode — re-enter them to populate these phases.
-
-The migration is **additive and safe**: existing alpha.5 phase data (personas, domainModel, risks, etc.) is preserved unchanged. Onboard generation falls back to the alpha.5 interactive handoff flow when these phases remain `skipped: true`.
+After successful migration, `schemaVersion` is `"alpha.7"`. Re-running pickup reads `"alpha.7"` and skips the migration block entirely. Each chain hop appends one audit entry per invocation; running pickup on a fully-migrated state machine adds no further audit entries.
 
 ---
 
@@ -150,27 +80,30 @@ Stop.
 
 Before parsing the full state, check the `schemaVersion` field. This early check prevents incompatible state JSON from being loaded.
 
-Read `.claude/greenfield-state.json` and extract the `schemaVersion` field at the root level.
+Detect schemaVersion using the unified jq fallback (accepts both legacy and canonical locations):
 
-**Expected schema version**: `"alpha.5"` (after the migration shim above has run).
+```bash
+SCHEMA_VERSION=$(jq -r '.meta.schemaVersion // .schemaVersion // "unknown"' "$STATE_FILE")
+[[ "$SCHEMA_VERSION" == "alpha.7" ]] || { echo "Halt: schemaVersion is '$SCHEMA_VERSION'; expected 'alpha.7' (R6 + post-migration)" >&2; exit 2; }
+```
 
-The State migration block above will have already converted any `"alpha.4"` (or pre-versioned legacy state) up to `"alpha.5"`. By the time this step runs, the only valid values are `"alpha.5"`, or — for very old R1/R2 sessions where migration ran the alpha.3→alpha.4→alpha.5 chain — also `"alpha.5"`.
+**Expected schema version**: `"alpha.7"` (after `run-migrations.sh` has run as part of the State migration block above).
 
-**If `schemaVersion !== "alpha.5"`**:
+The State migration block above will have already chained any legacy state (`unknown`/`1`/`alpha.4`/`alpha.5`/`alpha.6`) up to `"alpha.7"`. By the time this step runs, the only valid value is `"alpha.7"`.
 
-> ⚠️  This wizard session was saved by a different greenfield version, and the alpha.4→alpha.5 migration shim did not apply.
+**If `SCHEMA_VERSION !== "alpha.7"`**:
+
+> ⚠️  This wizard session was saved by a different greenfield version, and the migration runner did not apply.
 >
-> Detected schemaVersion: [actual value or "missing"] | Expected: "alpha.5"
->
-> The migration shim only handles `"alpha.4"` → `"alpha.5"`. Other unknown values halt here.
->
-> **Restart with `/greenfield:start`**
+> Detected schemaVersion: [actual value or "unknown"] | Expected: "alpha.7"
 >
 > See `greenfield/skills/start/references/state-schema-evolution.md` for the policy.
+>
+> **Restart with `/greenfield:start`** — or re-run `/greenfield:pickup` so the State migration block above can re-attempt the chain.
 
-Stop. Do not proceed to Step 2. The user must start a fresh session.
+Stop. Do not proceed to Step 2. The user must start a fresh session or re-run pickup.
 
-**If `schemaVersion === "alpha.5"`**: proceed to Step 2.
+**If `SCHEMA_VERSION === "alpha.7"`**: proceed to Step 2.
 
 ---
 
@@ -180,7 +113,7 @@ Read `.claude/greenfield-state.json`. Expected schema:
 
 ```json
 {
-  "schemaVersion": "alpha.5",
+  "meta": { "schemaVersion": "alpha.7" },
   "createdAt": "ISO-8601 timestamp",
   "updatedAt": "ISO-8601 timestamp",
   "currentPhase": "phase-1-context-gathering | phase-1.8-synthesis-review | phase-1.5-architectural-research | phase-1.7-grill-spec | phase-2-scaffold | phase-3a-plugin-discovery | phase-3b-tooling-generation | phase-4-lifecycle-setup | complete",
@@ -204,8 +137,14 @@ Read `.claude/greenfield-state.json`. Expected schema:
 }
 ```
 
-Validate:
-- `schemaVersion` field exists and equals `"alpha.5"` (handled by State migration + Step 1.5, but double-check here for safety)
+Validate (re-using the unified detection from Step 1.5):
+
+```bash
+SCHEMA_VERSION=$(jq -r '.meta.schemaVersion // .schemaVersion // "unknown"' "$STATE_FILE")
+[[ "$SCHEMA_VERSION" == "alpha.7" ]] || { echo "Halt: schemaVersion is '$SCHEMA_VERSION'; expected 'alpha.7' (R6 + post-migration)" >&2; exit 2; }
+```
+
+- `schemaVersion` resolves to `"alpha.7"` via the jq `//` fallback (canonical `.meta.schemaVersion` preferred; legacy `.schemaVersion` accepted; otherwise `"unknown"`). Handled by State migration + Step 1.5, but double-check here for safety.
 - `currentPhase` is one of the known phases
 - `context` is a valid object (even if partial)
 
@@ -525,7 +464,11 @@ If `phaseStatus[D].status === "not-yet-walked"`, the phase will fire fresh with 
 
 ## Key Rules
 
-- **Schema version check is a hard gate** — if `schemaVersion` is missing or not `"alpha.5"` after the State migration shim runs, halt immediately with the "restart with `/greenfield:start`" message. Never attempt to parse or resume an incompatible state file. The alpha.4 → alpha.5 migration shim handles the previous version transparently — see § State migration.
+- **Schema version check is a hard gate** — if `schemaVersion` does not resolve to `"alpha.7"` after the State migration block runs, halt immediately with the "restart with `/greenfield:start`" message. Never attempt to parse or resume an incompatible state file. The `run-migrations.sh` runner handles every legacy version transparently — see § State migration: invoke `run-migrations.sh`.
+- **Schema version detection accepts both legacy and canonical locations:**
+  - Canonical (alpha.6+): `state.meta.schemaVersion`
+  - Legacy (alpha.5 and below): `state.schemaVersion`
+  - Detection: `jq -r '.meta.schemaVersion // .schemaVersion // "unknown"'`
 - **Never auto-delete the state file** — if the file is corrupt or malformed, offer recovery paths (show contents, delete manually, restore from git). Only the developer may delete it.
 - **`completedSteps` is the authoritative skip list** — every dispatched skill MUST check `completedSteps` at entry and skip already-completed steps. Never re-ask a question whose answer is already in `context`; if a skill doesn't honor this, apologize and continue rather than re-writing captured state.
 - **Stale phases are surfaced, not auto-resolved** — if any `phaseStatus` entry is `"stale"`, report it in Step 4's summary. Do not reroute the developer away from their intended resume target; the stale entry-guard in `synthesis-review` Step 0 handles re-walk when the phase is actually entered.
