@@ -1,5 +1,57 @@
 # Changelog
 
+## 3.0.0-alpha.7 (2026-05-15) — Round 6
+
+### Added
+- 9 new top-level wizard phases (wizard 20 → 30 steps):
+  - Step 7 — Search (`search`): 11 Qs heavy / 6 light, flat
+  - Step 9 — Caching (`caching`): 12 Qs heavy / 7 light, flat
+  - Step 10 — Real-time (`realtime`): 12 Qs heavy / 6 light, per-persona
+  - Step 13 — File Uploads & CDN (`fileUploads`): 13 Qs heavy / 7 light, per-persona
+  - Step 15 — Payments (`payments`): 14 Qs heavy / 7 light, per-persona
+  - Step 22 — P5 Frontend Architecture (`frontendArchitecture`): 13 Qs heavy / 7 light, per-persona
+  - Step 23 — P5.3 Design System (`designSystem`): 12 Qs heavy / 6 light, flat
+  - Step 24 — P5.6 UX/A11y/Perf (`uxAccessibilityPerf`): 15 Qs heavy / 8 light, per-persona, hosts 3 inline gates
+  - Step 25 — i18n/l10n (`i18nL10n`): 11 Qs heavy / 6 light, flat
+- 6 inline gates recording `{needed, vendor?}` to `phases.<parent>.concerns.<gate>`:
+  - `auth.concerns.transactionalEmail` (vendors: resend / postmark / ses / sendgrid)
+  - `auth.concerns.sms` (vendors: twilio / vonage / messagebird)
+  - `uxAccessibilityPerf.concerns.marketingEmail` (customer-io / loops / resend-audiences / mailchimp)
+  - `uxAccessibilityPerf.concerns.pushNotifications` (fcm / onesignal / pusher-beams)
+  - `uxAccessibilityPerf.concerns.productAnalytics` (posthog / mixpanel / amplitude / plausible)
+  - `cicdAndDelivery.concerns.featureGating` (posthog-flags / launchdarkly / flagsmith / growthbook)
+- Step 20 CI Draft Review with provider-dispatch renderer:
+  - `scripts/render-ci-drafts.sh` (entrypoint)
+  - `scripts/render-ci-gha.sh`, `render-ci-gitlab.sh`, `render-ci-circleci.sh` (vetted)
+  - `scripts/render-ci-llm-fallback.sh` (LLM fallback with banner + CHECK-R6-8 hard ack gate)
+- `scripts/render-common.sh` shared helper library (6 helpers) sourced by all 15 renderer modules
+- 5 deferred R5 schema renderers shipped (closes R5 O-R5-3): `render-db-mongoose.sh`, `render-db-drizzle.sh`, `render-api-trpc.sh`, `render-api-hasura.sh`, `render-event-avro.sh`
+- Generic migration runner `scripts/run-migrations.sh` + 4 step modules under `skills/pickup/migrations/`
+- 9 cross-phase invariants (CHECK-R6-1 through CHECK-R6-9)
+- Plugin split: P7.5 Plugin Recommendation (Step 21, recommendation mode, no install) + P10 Plugin Install (Step 30, install mode); re-recommendation pass after Step 25
+- 10 synthesis template triples: 9 phase templates + ci-draft-review
+- 3 new health-check assertions in `/greenfield:check`
+- Pickup migration shim: alpha.6 → alpha.7 (auto-migrating, additive)
+- Smoke tests: `tests/round-6/phase-smoke.sh` (9 phases + R6 invariants), `tests/round-6/ci-draft-smoke.sh` (4 providers), `tests/round-6/render-common/*.sh` (6 helpers), `tests/round-6/migrations/golden-output.sh` (alpha.3 → alpha.7 chain)
+
+### Changed
+- Wizard step count 20 → 30
+- `pickup/SKILL.md`: inline migration cascade replaced by `run-migrations.sh` invocation; schemaVersion detection now `jq -r '.meta.schemaVersion // .schemaVersion // "unknown"'` (canonical + legacy)
+- All 6 R5 renderer modules refactored to source `render-common.sh` (single revertable commit per R-R6-4 mitigation)
+- `plugin-discovery/SKILL.md`: split into recommendation vs install modes
+- `tooling-generation/SKILL.md`: pass-through additions for 9 new phases + plugin split + `cicdAndDelivery.lockedYaml`
+
+### Migration
+- Auto-migrating via `/greenfield:pickup`. The pickup skill invokes `run-migrations.sh` with `--dry-run` first, shows the JSON diff via `AskUserQuestion`, requires explicit approval, then applies atomically.
+- Sessions predating alpha.7 get `{skipped: true, deferredReason}` defaults on the 9 new phases and `{needed: null, vendor: null}` defaults on the 6 inline gates. Re-enter the relevant Steps via Adjust mode to populate.
+- `phases.pluginDiscovery` is migrated to `phases.pluginRecommendation` + `phases.pluginInstall`; `installed[]` preserved across the split.
+
+### Rollback
+- Single revert commit on develop reverts the R6 PR.
+- The `render-common.sh` refactor (T4) lands as a separately revertable commit; reverting it leaves the R5 renderers using their pre-R6 inline helper logic.
+- alpha.7 sessions calling alpha.6 pickup gracefully drop unknown R6 fields (the legacy pickup ignores unknown top-level phase keys).
+- `--dry-run` mode of the migration runner can be used diagnostically; no auto-downgrade path is shipped (recover via git revert).
+
 ## 3.0.0-alpha.6 (2026-05-15) — Round 5
 
 ### Added

@@ -1,5 +1,23 @@
 # Onboard 2.0 — Migration & Breaking Changes
 
+## 2.0.0-alpha.7 (2026-05-15) — Round 6 schema additions
+
+### Added
+- `context-shape-v2.json`: 9 new phase blocks (`search`, `caching`, `realtime`, `fileUploads`, `payments`, `frontendArchitecture`, `designSystem`, `uxAccessibilityPerf`, `i18nL10n`); replaces the legacy `frontend` $ref stub with the full `frontendArchitecture` block.
+- `inlineGate` definition + 6 `concerns.<gate>` slots inside `auth`, `uxAccessibilityPerf`, and `cicdAndDelivery`.
+- `phases.cicdAndDelivery.lockedYaml: string|null` + `phases.cicdAndDelivery.adjustHistory[]` audit array.
+- `phases.pluginRecommendation` (suggested + selected + rationale + frontendAddenda) + `phases.pluginInstall` (installed + failed + skipped); replaces the legacy `phases.pluginDiscovery`.
+- 9 new generation reference modules under `skills/generation/references/render-<phase>.md` (one per R6 phase).
+- `generation/SKILL.md`: deterministic per-phase rendering for the 9 new phases; verbatim `cicdAndDelivery.lockedYaml` write at scaffold time.
+- `generation/references/sprint-contracts.md`: corrected the stale "First sprint contract (negotiated or auto-generated)" wording (closes R5 follow-up #2).
+
+### Backward compatibility
+- Any new phase with `skipped: true` ⇒ generation module emits nothing (mirrors R5 pattern).
+- If `cicdAndDelivery.lockedYaml == null` ⇒ generation falls back to the existing CI templates path (alpha.6 behavior).
+- Legacy `phases.pluginDiscovery` consumers continue to work for one minor version via the migration shim — onboard reads from `phases.pluginRecommendation` + `phases.pluginInstall` first, falls back to `pluginDiscovery` if both absent.
+
+---
+
 ## 2.0.0-alpha.6 (2026-05-15) — Round 5 schema additions
 
 ### Added
