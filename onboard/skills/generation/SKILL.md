@@ -1784,6 +1784,31 @@ For each `artifact` in `["db", "api", "event"]`:
 - If `drafts.{X}.content` is empty when `approved = true` (shouldn't happen, but possible if state file is hand-edited): log a warning, skip that artifact, do not block the rest of generation.
 - If the resolved path collides with an existing user file: log the collision; do NOT overwrite without confirmation; surface to the developer via the generation report.
 
+### Round 6 phase renderers
+
+| Phase | Render module | Output domain |
+|---|---|---|
+| search | `references/render-search.md` | `lib/search.ts` + FTS migration |
+| caching | `references/render-caching.md` | `lib/cache.ts` + CDN headers |
+| realtime | `references/render-realtime.md` | `lib/realtime.ts` + realtime API route |
+| fileUploads | `references/render-file-uploads.md` | `lib/uploads.ts` + IAM policy |
+| payments | `references/render-payments.md` | `lib/payments/<provider>.ts` + webhook + portal |
+
+**Per-phase dispatch loop.** For each phase in the ordered list `["search", "caching", "realtime", "fileUploads", "payments"]`:
+
+1. Resolve `phase = context.phases[<key>]`. If absent → skip silently (pre-R6 contexts).
+2. If `phase.skipped == true` → skip (no-op, no error).
+3. Apply the module's own secondary skip condition:
+   - `search`: skip if `phase.engine == "none"`.
+   - `caching`: skip if `phase.layers == []`.
+   - `realtime`: skip if `phase.transport == "none"`.
+   - `fileUploads`: skip if `phase.storageBackend == "none"`.
+   - `payments`: skip if `phase.provider == "none"`.
+4. Otherwise → dispatch to the corresponding `references/render-<phase>.md` module, which is fully responsible for resolving output paths, rendering content, and writing files (atomic `.tmp + rename`, parent `mkdir -p`, collision report).
+5. Record per-phase outcome in the generation report (`rendered` / `skipped` / `collided`).
+
+**Backward compatibility.** A context with no `phases.{search,caching,realtime,fileUploads,payments}` keys — or all five marked `skipped: true` — produces zero R6 artifacts. Pre-R6 projects regenerate exactly as before.
+
 ## Reference Files
 
 ### Core (always used)
@@ -1803,6 +1828,13 @@ For each `artifact` in `["db", "api", "event"]`:
 - `references/sprint-contracts.md` — Sprint contract format and negotiation
 - `references/agent-teams-guide.md` — Agent team compositions and quality hooks
 - `references/worktree-workflow.md` — Proactive worktree workflow using Claude Code native tools (EnterWorktree/ExitWorktree)
+
+### Round 6 concern-phase renderers (used when the matching `phases.<key>` is present and not skipped)
+- `references/render-search.md` — `phases.search` → `lib/search.ts` + optional Postgres FTS migration
+- `references/render-caching.md` — `phases.caching` → `lib/cache.ts` + Next.js header/`revalidate` patch
+- `references/render-realtime.md` — `phases.realtime` → `lib/realtime.ts` + realtime API route + reconnect helper
+- `references/render-file-uploads.md` — `phases.fileUploads` → `lib/uploads.ts` + IAM policy + MIME allowlist
+- `references/render-payments.md` — `phases.payments` → `lib/payments/<provider>.ts` + webhook route + customer portal page
 
 ## Key Rules
 
