@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Caching Synthesis</title></head>
+<body>
+  <h1>Caching — CDN provider: {{caching.cdnProvider}}</h1>
+  <h2>Layers</h2>
+  <ul>{{#each caching.layers}}<li>{{this}}</li>{{/each}}</ul>
+  <h2>Invalidation</h2>
+  <ul>
+    <li>Strategy: {{caching.invalidationStrategy}}</li>
+    <li>Stale-while-revalidate: {{caching.staleWhileRevalidate}}</li>
+    <li>Key design: {{caching.keyDesign}}</li>
+  </ul>
+  <h2>Multi-tenant isolation</h2>
+  <p>{{caching.multiTenantIsolation}}</p>
+  <h2>Observability</h2>
+  <ul>
+    <li>Hit rates: {{caching.observability.hitRates}}</li>
+    <li>Alert on drop: {{caching.observability.alertOnDrop}}</li>
+  </ul>
+  <h2>Stampede protection</h2>
+  <p>{{caching.stampedeProtection}}</p>
+  <h2>Risks</h2>
+  <ul>{{#each caching.qRisks}}<li>{{this}}</li>{{/each}}</ul>
+</body>
+</html>

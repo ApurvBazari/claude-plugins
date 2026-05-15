@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "phase": "caching",
+  "recordedAt": "2026-05-15T00:00:00Z",
+  "dependencies": [
+    { "path": "architecturalFraming.frontendFramework", "value": "", "rationale": "Framework-conditional CDN headers (next-image, Vue ssg, etc.)" },
+    { "path": "dataArchitecture.engine", "value": "", "rationale": "DB query cache integration depends on engine (e.g., Postgres pgbouncer cache)" }
+  ]
+}
