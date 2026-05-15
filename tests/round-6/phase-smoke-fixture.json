@@ -1,0 +1,24 @@
+{
+  "meta": { "schemaVersion": "alpha.7" },
+  "phases": {
+    "stack": { "language": "typescript", "nodeVersion": "20" },
+    "architecturalFraming": { "frontendFramework": "next", "topology": "monolith" },
+    "personas": { "primary": [{ "id": "P1", "name": "Casual user" }, { "id": "P2", "name": "Power user" }] },
+    "dataArchitecture": { "engine": "postgres", "entities": [{ "id": "E001", "name": "User" }, { "id": "E002", "name": "Post" }] },
+    "privacy": { "piiFields": [{ "path": "User.email", "encryption": "at-rest" }], "pii": { "financial": true } },
+    "auth": { "strategy": "hosted", "concerns": { "transactionalEmail": { "needed": true, "vendor": "resend" }, "sms": { "needed": false, "vendor": null } } },
+    "search": { "searchType": "fts", "engine": "postgres-fts", "indexScope": ["User", "Post"], "updateStrategy": "realtime", "qRisks": [] },
+    "caching": { "layers": ["cdn", "app"], "cdnProvider": "cloudflare", "invalidationStrategy": "tag-based", "staleWhileRevalidate": true, "qRisks": [] },
+    "realtime": { "transport": "sse", "useCases": ["notifications"], "backend": "redis-pubsub", "loopIterations": 2, "qRisks": [] },
+    "fileUploads": { "storageBackend": "s3", "uploadFlow": "signed-url", "mimeAllowlist": ["image/png", "image/jpeg"], "piiHandling": "encrypted-at-rest", "loopIterations": 2, "qRisks": [] },
+    "payments": { "provider": "stripe", "billingModel": "subscription", "customerPortal": true, "compliance": { "pciScope": "saq-a", "sca": true }, "loopIterations": 2, "qRisks": [] },
+    "frontendArchitecture": { "frameworkConfirmed": "next", "stateManagement": "zustand", "dataFetching": "tanstack-query", "loopIterations": 2, "qRisks": [] },
+    "designSystem": { "componentLibrary": "shadcn", "themingApproach": "css-variables", "iconSystem": "lucide", "storybookAdopted": true, "qRisks": [] },
+    "uxAccessibilityPerf": { "surfacesByPersona": { "P1": ["web-app"], "P2": ["web-app", "admin-dashboard"] }, "a11yTarget": "wcag-aa", "performanceBudgets": { "lcp": 2.5, "inp": 200, "cls": 0.1 }, "concerns": { "marketingEmail": { "needed": true, "vendor": "customer-io" }, "pushNotifications": { "needed": false, "vendor": null }, "productAnalytics": { "needed": true, "vendor": "posthog" } }, "loopIterations": 2, "qRisks": [] },
+    "i18nL10n": { "targetLocales": ["en", "es", "fr"], "translationSource": "ai-assisted", "library": "next-intl", "fileFormat": "json", "rtlSupport": false, "qRisks": [] },
+    "cicdAndDelivery": { "provider": "gha", "cicd": { "stages": ["lint", "typecheck", "test", "build"], "runners": "ubuntu-latest" }, "concerns": { "featureGating": { "needed": true, "vendor": "posthog-flags" } }, "lockedYaml": null, "adjustHistory": [] },
+    "pluginRecommendation": { "suggested": ["vercel:auth", "vercel:ai-sdk"], "selected": ["vercel:auth"], "rationale": "Smoke fixture", "frontendAddenda": [] },
+    "pluginInstall": { "installed": [], "failed": [], "skipped": [] }
+  },
+  "risks": []
+}
