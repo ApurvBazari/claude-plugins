@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://github.com/ApurvBazari/claude-plugins/onboard/skills/generate/references/context-shape-v2.json",
   "title": "Onboard Generate — v2 Context Shape",
-  "description": "Input schema for the onboard:generate skill in onboard 2.x. Hard cutover from v1: v2 callers must emit `version: 2` at the root. v1 input is rejected outright (no migration helper ships in any onboard 2.x release). Rounds 1–3 fully specify architecturalFraming, dataArchitecture (Data Architecture), apiIntegration (API & Integration), auth, privacy, security, runtimeOperations, cicdAndDelivery (CI/CD & Operations), architecturalValidation. Phases vision, personas, domain, frontend, authSecurity, workflow, pluginRecommendation, risk, featureRoadmap, pluginInstall, schemaDraftReview carry `_status: 'deferred-to-round-N'` and become inert pass-through metadata. Greenfield 3.0+ is the canonical caller; direct headless callers must construct v2 contexts directly. Round 4 extension: adds mode toggles, personas/domainModel phases, riskReconciliation in architecturalValidation, and top-level risks[].",
+  "description": "Round 6 schema (alpha.7) — Input schema for the onboard:generate skill in onboard 2.x. Hard cutover from v1: v2 callers must emit `version: 2` at the root. v1 input is rejected outright (no migration helper ships in any onboard 2.x release). Rounds 1–6 fully specify architecturalFraming, dataArchitecture, apiIntegration, auth, privacy, security, runtimeOperations, cicdAndDelivery, architecturalValidation, personas, domainModel, featureRoadmap, schemaDraftReview, plus Round 6 additions: search, caching, realtime, fileUploads, payments, frontendArchitecture, designSystem, uxAccessibilityPerf, i18nL10n, pluginRecommendation (split), pluginInstall (split). Phases authSecurity, workflow carry `_status: 'deferred-to-round-N'`. Greenfield 3.0+ is the canonical caller; direct headless callers must construct v2 contexts directly. Round 6 additions: 9 new phase blocks, 6 inline gate slots (auth.concerns.{transactionalEmail,sms}; cicdAndDelivery.concerns.featureGating; uxAccessibilityPerf.concerns.{marketingEmail,pushNotifications,productAnalytics}), pluginRecommendation/pluginInstall split, cicdAndDelivery.lockedYaml + adjustHistory[] (CI Draft Review Step 20).",
   "type": "object",
   "required": ["version", "source", "projectPath", "callerExtras", "phases"],
   "additionalProperties": false,
@@ -72,7 +72,7 @@
     },
     "phases": {
       "type": "object",
-      "description": "Wizard-captured per-phase data. Rounds 1-2 fully specify dataArchitecture (Data Architecture), apiIntegration (API & Integration), and cicdAndDelivery (CI/CD & Operations); other phase slots are deferred to later rounds (R3-R6) and carry _status only. Phase ids match the 15-phase wizard structure documented in docs/greenfield-overview.html.",
+      "description": "Wizard-captured per-phase data. Rounds 1-6 progressively specify phases. Round 6 grows the wizard to 30 steps with 9 new top-level phase blocks (search, caching, realtime, fileUploads, payments, frontendArchitecture, designSystem, uxAccessibilityPerf, i18nL10n) and 6 inline gate slots inside parent phases. Phase ids match the 30-step wizard structure documented in docs/greenfield-overview.html.",
       "additionalProperties": false,
       "required": ["cicdAndDelivery"],
       "properties": {
@@ -213,7 +213,14 @@
             "lifecycle":        { "type": "object", "description": "Account lifecycle: signup flow, email verification, password reset, deletion." },
             "recovery":         { "type": "string", "description": "Account recovery (email-only, phone, recovery-codes, SSO-mediated)." },
             "passwordPolicy":   { "type": "object", "description": "Password policy: length, complexity, breach check (HIBP), or passkey-only." },
-            "auditLog":         { "type": "object", "description": "Auth audit log: events captured, retention window." }
+            "auditLog":         { "type": "object", "description": "Auth audit log: events captured, retention window." },
+            "concerns": {
+              "type": "object",
+              "properties": {
+                "transactionalEmail": { "$ref": "#/definitions/inlineGate" },
+                "sms":                 { "$ref": "#/definitions/inlineGate" }
+              }
+            }
           }
         },
         "privacy": {
@@ -291,14 +298,196 @@
             "onCall":           { "type": "object", "description": "On-call rotation: tool (PagerDuty schedule, OpsGenie schedule, Discord bot, none)." }
           }
         },
-        "frontend":   { "$ref": "#/definitions/deferredPhase" },
+        "frontendArchitecture": {
+          "type": "object",
+          "description": "Round 6 — P5 Frontend Architecture (Step 22). Per-persona auto-loop in auto-loop mode.",
+          "properties": {
+            "frameworkConfirmed": { "type": "string", "description": "Cross-refs phases.architecturalFraming.frontendFramework — must match (CHECK-R6-4)." },
+            "stateManagement": { "type": "string", "enum": ["builtin-only", "redux", "zustand", "jotai", "mobx", "recoil", "valtio", "none"] },
+            "routingStrategy": { "type": "string", "enum": ["app-router", "pages-router", "react-router", "tanstack-router", "remix", "vue-router", "none"] },
+            "dataFetching": { "type": "string", "enum": ["fetch", "tanstack-query", "swr", "rtk-query", "apollo", "urql", "trpc-client", "none"] },
+            "formHandling": { "type": "string", "enum": ["react-hook-form", "formik", "tanstack-form", "uncontrolled", "none"] },
+            "animationLibrary": { "type": "string", "enum": ["framer-motion", "react-spring", "auto-animate", "css-only", "none"] },
+            "errorBoundaries": { "type": "string", "enum": ["per-route", "per-feature", "global-only", "none"] },
+            "codeSplitting": { "type": "string", "enum": ["route-level", "component-lazy", "manual", "none"] },
+            "bundler": { "type": "string", "enum": ["turbopack", "vite", "webpack", "rspack", "esbuild", "rollup", "parcel", "none"] },
+            "devServer": { "type": "string" },
+            "qRisks": { "type": "array", "items": { "type": "string" } },
+            "skipped": { "type": "boolean", "default": false },
+            "deferredReason": { "type": "string", "default": "" },
+            "loopIterations": { "type": "integer", "default": 0 }
+          }
+        },
+        "search": {
+          "type": "object",
+          "description": "Round 6 — Search phase (Step 7). Flat. References dataArchitecture.entities[] (CHECK-R6-2).",
+          "properties": {
+            "searchType": { "type": "string", "enum": ["fts", "vector", "hybrid", "none"] },
+            "engine": { "type": "string", "enum": ["postgres-fts", "meilisearch", "typesense", "elasticsearch", "opensearch", "pgvector", "pinecone", "weaviate", "none"] },
+            "indexScope": { "type": "array", "items": { "type": "string" } },
+            "updateStrategy": { "type": "string", "enum": ["realtime", "batch", "hybrid"] },
+            "queryPatterns": { "type": "array", "items": { "enum": ["filters", "facets", "autocomplete", "semantic", "ranking", "spelling"] } },
+            "ranking": { "type": "string" },
+            "abTesting": { "type": "boolean", "default": false },
+            "security": { "type": "object", "properties": { "rls": { "type": "boolean" }, "queryAuth": { "type": "boolean" } } },
+            "qRisks": { "type": "array", "items": { "type": "string" } },
+            "skipped": { "type": "boolean", "default": false },
+            "deferredReason": { "type": "string", "default": "" }
+          }
+        },
+        "caching": {
+          "type": "object",
+          "description": "Round 6 — Caching phase (Step 9). Flat.",
+          "properties": {
+            "layers": { "type": "array", "items": { "enum": ["cdn", "edge", "app", "db-query", "browser"] } },
+            "cdnProvider": { "type": "string", "enum": ["cloudflare", "fastly", "vercel-edge", "cloudfront", "akamai", "none"] },
+            "invalidationStrategy": { "type": "string", "enum": ["ttl", "tag-based", "manual", "hybrid"] },
+            "staleWhileRevalidate": { "type": "boolean", "default": false },
+            "keyDesign": { "type": "string" },
+            "multiTenantIsolation": { "type": "boolean", "default": false },
+            "observability": { "type": "object", "properties": { "hitRates": { "type": "boolean" }, "alertOnDrop": { "type": "boolean" } } },
+            "stampedeProtection": { "type": "string", "enum": ["lock", "request-coalescing", "swr", "none"] },
+            "qRisks": { "type": "array", "items": { "type": "string" } },
+            "skipped": { "type": "boolean", "default": false },
+            "deferredReason": { "type": "string", "default": "" }
+          }
+        },
+        "realtime": {
+          "type": "object",
+          "description": "Round 6 — Real-time phase (Step 10). Per-persona auto-loop.",
+          "properties": {
+            "transport": { "type": "string", "enum": ["sse", "websocket", "long-poll", "push", "none"] },
+            "useCases": { "type": "array", "items": { "enum": ["notifications", "presence", "collaboration", "live-data", "chat", "telemetry"] } },
+            "backend": { "type": "string", "enum": ["redis-pubsub", "dedicated-service", "channels", "broker", "none"] },
+            "clientLib": { "type": "string", "enum": ["pusher", "ably", "soketi", "centrifugo", "native", "none"] },
+            "scaling": { "type": "object", "properties": { "stickySessions": { "type": "boolean" }, "horizontal": { "type": "boolean" } } },
+            "reconnectStrategy": { "type": "string", "enum": ["exponential-backoff", "fixed-interval", "manual", "none"] },
+            "messageOrdering": { "type": "string", "enum": ["per-channel", "global", "best-effort"] },
+            "dedup": { "type": "boolean", "default": false },
+            "qRisks": { "type": "array", "items": { "type": "string" } },
+            "skipped": { "type": "boolean", "default": false },
+            "deferredReason": { "type": "string", "default": "" },
+            "loopIterations": { "type": "integer", "default": 0 }
+          }
+        },
+        "fileUploads": {
+          "type": "object",
+          "description": "Round 6 — File Uploads & CDN phase (Step 13). Per-persona auto-loop.",
+          "properties": {
+            "storageBackend": { "type": "string", "enum": ["s3", "r2", "gcs", "azure-blob", "local", "none"] },
+            "uploadFlow": { "type": "string", "enum": ["signed-url", "direct", "server-proxied", "multipart-resumable"] },
+            "cdnProvider": { "type": "string" },
+            "imageTransforms": { "type": "string", "enum": ["imgix", "cloudinary", "native", "none"] },
+            "maxFileSize": { "type": "string" },
+            "mimeAllowlist": { "type": "array", "items": { "type": "string" } },
+            "virusScanning": { "type": "boolean", "default": false },
+            "piiHandling": { "type": "string", "enum": ["encrypted-at-rest", "field-level-encryption", "kms-keys", "none"] },
+            "retentionPolicy": { "type": "string" },
+            "multiTenantIsolation": { "type": "boolean", "default": false },
+            "qRisks": { "type": "array", "items": { "type": "string" } },
+            "skipped": { "type": "boolean", "default": false },
+            "deferredReason": { "type": "string", "default": "" },
+            "loopIterations": { "type": "integer", "default": 0 }
+          }
+        },
+        "payments": {
+          "type": "object",
+          "description": "Round 6 — Payments phase (Step 15). Per-persona auto-loop (customer-facing vs admin).",
+          "properties": {
+            "provider": { "type": "string", "enum": ["stripe", "lemon-squeezy", "paddle", "razorpay", "braintree", "none"] },
+            "billingModel": { "type": "string", "enum": ["one-time", "subscription", "usage-based", "marketplace", "hybrid"] },
+            "customerPortal": { "type": "boolean", "default": false },
+            "taxHandling": { "type": "string", "enum": ["provider-managed", "self-managed", "none"] },
+            "dunning": { "type": "string", "enum": ["provider", "custom", "none"] },
+            "webhookStrategy": { "type": "string", "enum": ["per-event", "fanout", "queue", "none"] },
+            "fraudPrevention": { "type": "string", "enum": ["provider-builtin", "sift", "stripe-radar", "custom", "none"] },
+            "refundFlow": { "type": "string", "enum": ["self-serve", "admin-approval", "manual", "none"] },
+            "currencyLocale": { "type": "array", "items": { "type": "string" } },
+            "compliance": { "type": "object", "properties": { "pciScope": { "type": "string", "enum": ["saq-a", "saq-a-ep", "saq-d", "none"] }, "sca": { "type": "boolean" }, "regulatory": { "type": "array", "items": { "type": "string" } } } },
+            "qRisks": { "type": "array", "items": { "type": "string" } },
+            "skipped": { "type": "boolean", "default": false },
+            "deferredReason": { "type": "string", "default": "" },
+            "loopIterations": { "type": "integer", "default": 0 }
+          }
+        },
+        "designSystem": {
+          "type": "object",
+          "description": "Round 6 — P5.3 Design System phase (Step 23). Flat.",
+          "properties": {
+            "componentLibrary": { "type": "string", "enum": ["shadcn", "mui", "mantine", "chakra", "ant", "headless-ui", "custom", "none"] },
+            "themingApproach": { "type": "string", "enum": ["css-variables", "tokens", "css-in-js", "tailwind-config", "multiple-themes"] },
+            "primitivesStrategy": { "type": "string", "enum": ["radix", "react-aria", "ariakit", "headless-ui", "custom", "none"] },
+            "variantSystem": { "type": "string", "enum": ["cva", "tv", "stitches", "panda-recipes", "none"] },
+            "iconSystem": { "type": "string", "enum": ["lucide", "heroicons", "phosphor", "tabler", "iconify", "custom", "none"] },
+            "typographyScale": { "type": "string" },
+            "colorSystem": { "type": "string" },
+            "spacingTokens": { "type": "string" },
+            "designToolIntegration": { "type": "string", "enum": ["figma", "penpot", "sketch", "none"] },
+            "storybookAdopted": { "type": "boolean", "default": false },
+            "qRisks": { "type": "array", "items": { "type": "string" } },
+            "skipped": { "type": "boolean", "default": false },
+            "deferredReason": { "type": "string", "default": "" }
+          }
+        },
+        "uxAccessibilityPerf": {
+          "type": "object",
+          "description": "Round 6 — P5.6 UX/A11y/Performance phase (Step 24). Per-persona auto-loop. Hosts 3 inline gates (marketing email, push notifications, product analytics).",
+          "properties": {
+            "surfacesByPersona": { "type": "object", "description": "Map of personaId → array of surface names (web-app, mobile-web, native, admin-dashboard)" },
+            "responsivenessStrategy": { "type": "string", "enum": ["mobile-first", "desktop-first", "adaptive", "responsive"] },
+            "breakpointSystem": { "type": "string" },
+            "a11yTarget": { "type": "string", "enum": ["wcag-a", "wcag-aa", "wcag-aaa", "none"] },
+            "keyboardNavigation": { "type": "string", "enum": ["full", "partial", "none"] },
+            "screenReaderTesting": { "type": "string", "enum": ["axe", "manual", "lighthouse", "none"] },
+            "performanceBudgets": { "type": "object", "properties": { "lcp": { "type": "number" }, "inp": { "type": "number" }, "cls": { "type": "number" } } },
+            "imageOptimization": { "type": "string", "enum": ["next-image", "imgix", "cloudinary", "native", "none"] },
+            "fontLoading": { "type": "string", "enum": ["next-font", "font-display-swap", "preload", "none"] },
+            "stateUx": { "type": "object", "properties": { "error": { "type": "string" }, "empty": { "type": "string" }, "loading": { "type": "string" } } },
+            "offlineSupport": { "type": "boolean", "default": false },
+            "concerns": {
+              "type": "object",
+              "properties": {
+                "marketingEmail":     { "$ref": "#/definitions/inlineGate" },
+                "pushNotifications":  { "$ref": "#/definitions/inlineGate" },
+                "productAnalytics":   { "$ref": "#/definitions/inlineGate" }
+              }
+            },
+            "qRisks": { "type": "array", "items": { "type": "string" } },
+            "skipped": { "type": "boolean", "default": false },
+            "deferredReason": { "type": "string", "default": "" },
+            "loopIterations": { "type": "integer", "default": 0 }
+          }
+        },
+        "i18nL10n": {
+          "type": "object",
+          "description": "Round 6 — i18n / l10n phase (Step 25). Flat. Locales array drives translation strategy.",
+          "properties": {
+            "targetLocales": { "type": "array", "items": { "type": "string" } },
+            "translationSource": { "type": "string", "enum": ["manual", "ai-assisted", "hybrid", "none"] },
+            "library": { "type": "string", "enum": ["next-intl", "react-i18next", "formatjs", "lingui", "native-intl", "none"] },
+            "fileFormat": { "type": "string", "enum": ["json", "po", "xliff", "yaml"] },
+            "rtlSupport": { "type": "boolean", "default": false },
+            "dateNumberFormatting": { "type": "string", "enum": ["intl-api", "library-helper", "custom"] },
+            "pluralRules": { "type": "boolean", "default": false },
+            "contentTranslationFlow": { "type": "string" },
+            "delivery": { "type": "string", "enum": ["bundled", "cdn", "lazy"] },
+            "textType": { "type": "string", "enum": ["static", "dynamic", "hybrid"] },
+            "seoHreflang": { "type": "boolean", "default": false },
+            "qRisks": { "type": "array", "items": { "type": "string" } },
+            "skipped": { "type": "boolean", "default": false },
+            "deferredReason": { "type": "string", "default": "" }
+          }
+        },
         "authSecurity":   { "$ref": "#/definitions/deferredPhase" },
         "workflow":   { "$ref": "#/definitions/deferredPhase" },
         "pluginRecommendation": {
           "type": "object",
-          "description": "Plugin recommendation pass (pluginRecommendation in the 15-phase wizard). Greenfield 3.0 Round 1 emits as { pluginRecommendations: [] }; reserved for richer structure in later rounds.",
+          "description": "Round 6 — P7.5 Plugin Recommendation (Step 21). Reads auth/privacy/security/runtimeOperations/cicdAndDelivery/concerns.featureGating. Does NOT install.",
           "properties": {
-            "pluginRecommendations": { "type": "array", "items": { "type": "string" } }
+            "suggested": { "type": "array", "items": { "type": "string" } },
+            "selected":  { "type": "array", "items": { "type": "string" } },
+            "rationale": { "type": "string" },
+            "frontendAddenda": { "type": "array", "items": { "type": "string" }, "description": "Added by re-recommendation pass after Step 25 i18n." }
           }
         },
         "cicdAndDelivery":   { "$ref": "#/definitions/cicdAndDelivery" },
@@ -380,9 +569,11 @@
         },
         "pluginInstall":  {
           "type": "object",
-          "description": "Plugin install confirmation (pluginInstall in the 15-phase wizard). Round 1 emits as { installedPlugins: [] } — mirrors callerExtras for symmetry.",
+          "description": "Round 6 — P10 Plugin Install (Step 30). Reads pluginRecommendation.selected ∪ frontendAddenda; actually runs /plugin marketplace install.",
           "properties": {
-            "installedPlugins": { "type": "array", "items": { "type": "string" } }
+            "installed": { "type": "array", "items": { "type": "string" } },
+            "failed":    { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "reason": { "type": "string" } }, "required": ["id", "reason"] } },
+            "skipped":   { "type": "array", "items": { "type": "string" } }
           }
         },
         "schemaDraftReview": {
@@ -447,7 +638,7 @@
         "type": "array",
         "items": {
           "type": "string",
-          "pattern": "^(vision|personas|domainModel|architecturalFraming|architecturalValidation|stack|auth|privacy|security|runtimeOperations|dataArchitecture|apiIntegration|frontend|authSecurity|workflow|pluginRecommendation|cicdAndDelivery|risks|featureRoadmap|pluginInstall|schemaDraftReview)\\..+$"
+          "pattern": "^(vision|personas|domainModel|architecturalFraming|architecturalValidation|stack|auth|privacy|security|runtimeOperations|dataArchitecture|apiIntegration|search|caching|realtime|fileUploads|payments|frontendArchitecture|designSystem|uxAccessibilityPerf|i18nL10n|authSecurity|workflow|pluginRecommendation|cicdAndDelivery|risks|featureRoadmap|pluginInstall|schemaDraftReview)\\..+$"
         }
       }
     },
@@ -574,6 +765,14 @@
           "pattern": "^deferred-to-round-[1-6?]$",
           "description": "Marker indicating which round will fully specify this phase. Use 'deferred-to-round-?' if uncertain."
         }
+      }
+    },
+    "inlineGate": {
+      "type": "object",
+      "properties": {
+        "needed": { "type": ["boolean", "null"], "description": "null = unanswered; true/false = answered" },
+        "vendor": { "type": ["string", "null"] },
+        "notes":  { "type": "string", "default": "" }
       }
     },
     "schemaDraft": {
@@ -732,6 +931,29 @@
             "autoEvolutionMode": { "enum": ["auto", "log-then-evolve", "notify"] },
             "prReviewTrigger": { "enum": ["auto-every", "comment-mention", "auto-with-skip-label"] }
           }
+        },
+        "concerns": {
+          "type": "object",
+          "properties": {
+            "featureGating": { "$ref": "#/definitions/inlineGate" }
+          }
+        },
+        "lockedYaml": {
+          "type": ["string", "null"],
+          "description": "Round 6 — Locked CI YAML emitted by render-ci-drafts.sh after Step 20 Approve. Onboard writes verbatim at scaffold time."
+        },
+        "adjustHistory": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "at": { "type": "string", "format": "date-time" },
+              "instruction": { "type": "string" },
+              "renderedYaml": { "type": "string" }
+            },
+            "required": ["at", "instruction", "renderedYaml"]
+          },
+          "description": "R-R6-10 mitigation — audit trail of each Adjust call."
         }
       }
     },
