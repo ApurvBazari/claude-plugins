@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>CI Draft Review — {{cicdAndDelivery.draftProvider}}</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.5rem; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 1rem; }
+    .panel { border: 1px solid #ddd; padding: 1rem; border-radius: 4px; }
+    .panel h2 { margin-top: 0; font-size: 1.1rem; }
+    .warn-banner { background: #ffe9a3; border: 1px solid #c9941a; padding: 0.75rem; border-radius: 4px; margin: 1rem 0; }
+    pre { background: #f6f8fa; padding: 0.75rem; overflow-x: auto; font-size: 0.85rem; }
+    .warning { font-size: 0.9rem; padding: 0.5rem; border-radius: 3px; margin: 0.25rem 0; }
+    .warning.error { background: #fee; border-left: 3px solid #d22; }
+    .warning.warn  { background: #fff8e6; border-left: 3px solid #cc8800; }
+    .warning.info  { background: #e8f4fa; border-left: 3px solid #2185d0; }
+  </style>
+</head>
+<body>
+  <h1>CI Draft Review — Step 20</h1>
+
+  {{#if cicdAndDelivery.draftFallback}}
+  <div class="warn-banner">
+    ⚠ <strong>LLM draft — review carefully.</strong>
+    Provider `{{cicdAndDelivery.draftProvider}}` has no vetted renderer module; this YAML was produced by the LLM-fallback path.
+    CHECK-R6-8 requires you to mark warnings as <code>addressed=true</code> before Approve unlocks.
+  </div>
+  {{/if}}
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Panel 1 — Inputs</h2>
+      <p><strong>Provider:</strong> {{cicdAndDelivery.draftProvider}}</p>
+      <p><strong>Stages:</strong> {{cicdAndDelivery.cicd.stages}}</p>
+      <p><strong>Runners:</strong> {{cicdAndDelivery.cicd.runners}}</p>
+      <p><strong>Deploy:</strong> {{cicdAndDelivery.cicd.deploy.environment}}</p>
+      <p><strong>Framework:</strong> {{architecturalFraming.frontendFramework}}</p>
+      <p><strong>Stack:</strong> {{stack.language}}</p>
+    </div>
+
+    <div class="panel">
+      <h2>Panel 2 — Decisions log</h2>
+      <ul>
+        {{#each cicdAndDelivery.adjustHistory}}
+        <li><strong>{{this.at}}</strong>: {{this.instruction}}</li>
+        {{/each}}
+      </ul>
+      <h3>Cross-check warnings</h3>
+      {{#each cicdAndDelivery.draftWarnings}}
+      <div class="warning {{this.level}}">
+        [{{this.level}}] {{this.id}}: {{this.message}}
+        {{#if this.addressed}}<em>(addressed)</em>{{/if}}
+      </div>
+      {{/each}}
+    </div>
+
+    <div class="panel">
+      <h2>Panel 3 — Rendered YAML</h2>
+      <pre>{{cicdAndDelivery.draftYaml}}</pre>
+      <p><em>Rendered at: {{cicdAndDelivery.draftRenderedAt}}</em></p>
+    </div>
+  </div>
+
+  <h2>Approve / Adjust / Reject</h2>
+  <p>Pick one:</p>
+  <ul>
+    <li><strong>Approve:</strong> writes the YAML to <code>cicdAndDelivery.lockedYaml</code>; onboard generates verbatim at scaffold time.</li>
+    <li><strong>Adjust:</strong> describe a correction in natural language; the LLM edits the YAML inline and re-renders Panel 3.</li>
+    <li><strong>Reject:</strong> returns to Step 19 CI/CD to re-answer questions.</li>
+  </ul>
+</body>
+</html>

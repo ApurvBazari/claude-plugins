@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "phase": "cicdAndDelivery",
+  "recordedAt": "2026-05-15T00:00:00Z",
+  "dependencies": [
+    {
+      "path": "stack.language",
+      "value": "typescript",
+      "rationale": "CI stages typecheck/lint depend on language detection"
+    },
+    {
+      "path": "architecturalFraming.frontendFramework",
+      "value": "next",
+      "rationale": "Framework-specific build commands depend on framework choice"
+    },
+    {
+      "path": "cicdAndDelivery.provider",
+      "value": "gha",
+      "rationale": "Provider selection determines renderer dispatch"
+    }
+  ]
+}
