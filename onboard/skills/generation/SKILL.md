@@ -1588,8 +1588,12 @@ When the wizard or headless context includes extended preferences (CI/CD, harnes
 
 ### CI/CD Pipelines (if `willDeploy` and no existing CI/CD detected)
 
+**Pre-flight check (R6):** Before invoking `references/ci-cd-templates.md`, check `phases.cicdAndDelivery.lockedYaml`. If it is a non-empty string, write it verbatim to the provider's primary CI file (e.g., `.github/workflows/ci.yml`) and SKIP the template rendering for that file. Sibling workflows (`tooling-audit.yml`, `pr-review.yml`) still render normally. See § Round 6 — `phases.cicdAndDelivery.lockedYaml` verbatim write for the full resolution flow.
+
+When `phases.cicdAndDelivery.lockedYaml` is `null` or absent, fall through to the standard rendering path below.
+
 Follow `references/ci-cd-templates.md`:
-- `.github/workflows/ci.yml` — application CI (lint, test, build, deploy)
+- `.github/workflows/ci.yml` — application CI (lint, test, build, deploy) — **skipped here when `lockedYaml` is set; written verbatim instead**
 - `.github/workflows/tooling-audit.yml` — structural drift checks + semantic analysis
 - `.github/workflows/pr-review.yml` — AI-powered PR review (claude-code-action)
 - `.github/scripts/audit-tooling.sh` — bundled audit script
@@ -1793,8 +1797,11 @@ For each `artifact` in `["db", "api", "event"]`:
 | realtime | `references/render-realtime.md` | `lib/realtime.ts` + realtime API route |
 | fileUploads | `references/render-file-uploads.md` | `lib/uploads.ts` + IAM policy |
 | payments | `references/render-payments.md` | `lib/payments/<provider>.ts` + webhook + portal |
+| frontendArchitecture | `references/render-frontend-architecture.md` | package.json deps + lib skeletons |
+| designSystem | `references/render-design-system.md` | shadcn init / theme provider / tailwind tokens |
+| uxAccessibilityPerf | `references/render-ux-accessibility-perf.md` | Lighthouse CI + image optimizer + per-gate libs |
 
-**Per-phase dispatch loop.** For each phase in the ordered list `["search", "caching", "realtime", "fileUploads", "payments"]`:
+**Per-phase dispatch loop.** For each phase in the ordered list `["search", "caching", "realtime", "fileUploads", "payments", "frontendArchitecture", "designSystem", "uxAccessibilityPerf"]`:
 
 1. Resolve `phase = context.phases[<key>]`. If absent → skip silently (pre-R6 contexts).
 2. If `phase.skipped == true` → skip (no-op, no error).
@@ -1804,10 +1811,72 @@ For each `artifact` in `["db", "api", "event"]`:
    - `realtime`: skip if `phase.transport == "none"`.
    - `fileUploads`: skip if `phase.storageBackend == "none"`.
    - `payments`: skip if `phase.provider == "none"`.
+   - `frontendArchitecture`: skip if `stateManagement`, `dataFetching`, and `errorBoundaries` are all `"none"`.
+   - `designSystem`: skip if `componentLibrary == "none"` AND `storybookAdopted == false` AND all of `typographyScale`/`colorSystem`/`spacingTokens` are empty.
+   - `uxAccessibilityPerf`: skip if `performanceBudgets`, `imageOptimization`, `fontLoading`, and all `concerns.*.needed` are empty/`"none"`/`false`.
 4. Otherwise → dispatch to the corresponding `references/render-<phase>.md` module, which is fully responsible for resolving output paths, rendering content, and writing files (atomic `.tmp + rename`, parent `mkdir -p`, collision report).
 5. Record per-phase outcome in the generation report (`rendered` / `skipped` / `collided`).
 
-**Backward compatibility.** A context with no `phases.{search,caching,realtime,fileUploads,payments}` keys — or all five marked `skipped: true` — produces zero R6 artifacts. Pre-R6 projects regenerate exactly as before.
+**Backward compatibility.** A context with no `phases.{search,caching,realtime,fileUploads,payments,frontendArchitecture,designSystem,uxAccessibilityPerf}` keys — or all marked `skipped: true` — produces zero R6 artifacts. Pre-R6 projects regenerate exactly as before.
+
+### Round 6 — Plugin Recommendation / Plugin Install split
+
+The legacy single-phase `phases.pluginDiscovery` block is replaced by two phases. Onboard never receives `phases.pluginDiscovery` from greenfield 3.0 alpha.7+ (the pickup migration shim splits in-flight state on read). Treat the legacy key as ignored on input.
+
+| Read context | Source field | Used for |
+|---|---|---|
+| Recommendation metadata (read-only) | `phases.pluginRecommendation.{suggested, selected, rationale, frontendAddenda}` | CLAUDE.md Plugin Integration narrative, agent shadowing intent, rationale-aware skill annotations |
+| Install results (post-install truth) | `phases.pluginInstall.installed` | `callerExtras.installedPlugins` consistency, `coveredCapabilities` derivation, post-install warning surface in `onboard-meta.json` |
+
+**Resolution order** for the effective plugin list (extends § Effective Plugin List Resolution above):
+
+1. If `phases.pluginInstall.installed` is present and non-empty → use it as the **authoritative** post-install plugin list. This wins over `callerExtras.installedPlugins` because Step 30 (`pluginInstall`) reflects on-disk truth after `/plugin marketplace install` ran.
+2. Else fall back to `callerExtras.installedPlugins` (caller-provided headless data — alpha.6-shape contexts and direct headless callers).
+3. Else `detectedPlugins.installedPlugins` (standalone-mode self-probe).
+4. Else empty.
+
+When generating CLAUDE.md Plugin Integration narrative, prefer `phases.pluginRecommendation.rationale` over fabricating rationale text. When `phases.pluginRecommendation.frontendAddenda` is non-empty, surface those entries under a "Frontend-driven additions" sub-bullet so developers see why frontend-phase answers expanded the install set.
+
+**Plugin Install surface for `onboard-meta.json`.** When `phases.pluginInstall.{failed, skipped}` is non-empty, mirror those entries into `onboard-meta.json.pluginInstallStatus` so `/onboard:check` can surface install failures. Do not abort generation on install failures — they're informational by this point in the flow.
+
+**Backward compatibility.** Contexts that carry only `callerExtras.installedPlugins` (no `phases.pluginRecommendation` / `phases.pluginInstall`) regenerate exactly as in alpha.6. The two-phase split is additive — no field is required.
+
+### Round 6 — `phases.cicdAndDelivery.lockedYaml` verbatim write
+
+When the developer approves the CI Draft Review (greenfield Step 20), greenfield writes the rendered YAML to `phases.cicdAndDelivery.lockedYaml`. Onboard treats this string as the authoritative CI workflow: **bypass the standard `references/ci-cd-templates.md` rendering path and write the locked YAML verbatim**.
+
+**Resolution flow before writing `.github/workflows/ci.yml` (or equivalent provider path):**
+
+```
+1. If phases.cicdAndDelivery.lockedYaml != null AND phases.cicdAndDelivery.lockedYaml is a non-empty string:
+     a. Resolve provider path:
+        - github-actions → .github/workflows/ci.yml
+        - gitlab-ci      → .gitlab-ci.yml
+        - circleci       → .circleci/config.yml
+        - none / absent  → default to github-actions
+     b. mkdir -p the parent directory.
+     c. Write phases.cicdAndDelivery.lockedYaml verbatim (byte-for-byte) via atomic `.tmp + rename`.
+     d. Record in generation report: `lockedYaml-verbatim` with path + adjustHistory length.
+     e. SKIP the standard `references/ci-cd-templates.md` rendering path for ci.yml.
+        (Sibling workflows like tooling-audit.yml and pr-review.yml still render normally —
+         lockedYaml covers ONLY the primary application CI file.)
+
+2. Else (lockedYaml is null OR absent):
+     - Fall through to the standard rendering path. The `references/ci-cd-templates.md`
+       templates consume the rest of `phases.cicdAndDelivery` (provider, triggers,
+       requiredPreMergeChecks, coverage, envLadder, secrets, notifications, buildMatrix,
+       caching, timeBudget, releasePipeline) as in alpha.6.
+```
+
+**No merging, no templating.** The locked YAML is the wizard's final answer after every Adjust-dialog turn. Re-rendering it would discard `adjustHistory[]` work. If `lockedYaml` looks malformed (e.g., not parseable YAML), still write it — the developer asked for this content. Surface a soft warning in the generation report; do not abort.
+
+**`adjustHistory[]` is audit-only.** Onboard reads `phases.cicdAndDelivery.adjustHistory` for the generation report (count + last-instruction summary) but does not write it to any file. Downstream tools (`/greenfield:check`, `/onboard:check`) can render the audit trail from `greenfield-state.json` directly.
+
+**Collision handling.** If `.github/workflows/ci.yml` already exists at the target path:
+- If `pluginInstall.installed[]` indicates this is a fresh scaffold → overwrite (expected).
+- If the project is a retrofit (existing repo) → emit `.github/workflows/ci.locked.yml` alongside and surface a merge note rather than clobbering. The developer can rename after review.
+
+**Backward compatibility.** When `phases.cicdAndDelivery.lockedYaml` is `null` or absent, generation behaves exactly as alpha.6 — the standard CI/CD pipeline rendering path (§ CI/CD Pipelines under Extended Generation) runs unchanged.
 
 ## Reference Files
 
@@ -1835,6 +1904,11 @@ For each `artifact` in `["db", "api", "event"]`:
 - `references/render-realtime.md` — `phases.realtime` → `lib/realtime.ts` + realtime API route + reconnect helper
 - `references/render-file-uploads.md` — `phases.fileUploads` → `lib/uploads.ts` + IAM policy + MIME allowlist
 - `references/render-payments.md` — `phases.payments` → `lib/payments/<provider>.ts` + webhook route + customer portal page
+
+### Round 6 frontend-phase renderers (used when the matching `phases.<key>` is present and not skipped)
+- `references/render-frontend-architecture.md` — `phases.frontendArchitecture` → `package.json` deps + `lib/store.ts` + `lib/queries.ts` + `app/error.tsx`
+- `references/render-design-system.md` — `phases.designSystem` → `components.json` (shadcn) / `app/layout.tsx` provider patch (MUI / Mantine) / `tailwind.config.ts` token merge / `.storybook/*` when `storybookAdopted == true`
+- `references/render-ux-accessibility-perf.md` — `phases.uxAccessibilityPerf` → `.github/workflows/lighthouse-ci.yml` (GHA only) + `lighthouse.config.js` + `next.config.ts` image patch + font snippet + 3 inline-gate libs (`lib/email/marketing-<vendor>.ts`, `lib/push/<vendor>.ts`, `lib/analytics/<vendor>.ts`)
 
 ## Key Rules
 
