@@ -44,6 +44,7 @@ while IFS= read -r ART; do
     db:drizzle)        MODULE="render-db-drizzle.sh" ;;
     api:openapi-3.0)   MODULE="render-api-openapi.sh" ;;
     api:graphql-sdl)   MODULE="render-api-graphql.sh" ;;
+    api:trpc)          MODULE="render-api-trpc.sh" ;;
     event:asyncapi)    MODULE="render-event-asyncapi.sh" ;;
     event:json-schema) MODULE="render-event-json-schema.sh" ;;
     *)
