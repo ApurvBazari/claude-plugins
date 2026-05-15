@@ -77,6 +77,31 @@ The table below lists the wizard steps this skill renders synthesis for, in the 
 
 If a future round adds a new phase template, append a row here and ensure the corresponding section composition notes land in `references/section-prompts.md`.
 
+### Round 6 templates (R6 — 9 new phases + CI Draft Review)
+
+| Phase | Template path | Step |
+|---|---|---|
+| search | `templates/search.{html,md}` | 7 |
+| caching | `templates/caching.{html,md}` | 9 |
+| realtime | `templates/realtime.{html,md}` | 10 |
+| fileUploads | `templates/file-uploads.{html,md}` | 13 |
+| payments | `templates/payments.{html,md}` | 15 |
+| frontendArchitecture | `templates/frontend-architecture.{html,md}` | 22 |
+| designSystem | `templates/design-system.{html,md}` | 23 |
+| uxAccessibilityPerf | `templates/ux-accessibility-perf.{html,md}` | 24 |
+| i18nL10n | `templates/i18n-l10n.{html,md}` | 25 |
+| cicdAndDelivery (CI Draft Review) | `templates/ci-draft-review.{html,md}` | 20 |
+
+### CI Draft Review (Step 20) — 3-panel auto-render flow
+
+The CI Draft Review fires after `render-ci-drafts.sh` populates `phases.cicdAndDelivery.draftYaml`. Unlike other synthesis reviews (which render after Q-bank capture only), this review's three panels show:
+
+- Panel 1 — Inputs: stage list, runners, deploy target, framework, stack.
+- Panel 2 — Decisions log: each `adjustHistory[]` entry + cross-check warnings (`draftWarnings[]`) with `addressed` flags.
+- Panel 3 — Rendered YAML: the actual rendered YAML output from the per-provider renderer.
+
+**LLM-fallback gate:** when `draftFallback == true`, Approve is disabled until every warning in `draftWarnings[]` has `addressed = true` (CHECK-R6-8 enforces this hard).
+
 ## sourceRef rendering (Round 4)
 
 When a synthesis HTML section displays an answer that has a `sourceRef` in its dependencies.json sidecar, render the source as a small visual link/badge next to the value. This makes upstream-loop provenance visible — readers can trace why a per-persona auth role decision exists by clicking through to the originating persona in `personas.html`.

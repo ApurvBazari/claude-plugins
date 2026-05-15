@@ -172,7 +172,7 @@ Tell the developer:
 
 ## Phase 1: Context Gathering
 
-Use the `context-gathering` skill to guide the developer through the adaptive wizard. **The wizard has 20 named Steps and must emit a "Step X of 20" progress indicator at every Step boundary** so both Claude and the user can track progress. (Round 4 added Step 2.2 Personas and Step 2.7 Domain Modeling to the previous 15-step flow; Round 5 added Step 16 Feature Roadmap and Step 19 Schema & API Draft Review, bringing the total to 20.)
+Use the `context-gathering` skill to guide the developer through the adaptive wizard. **The wizard has 30 named Steps and must emit a "Step X of 30" progress indicator at every Step boundary** so both Claude and the user can track progress. (Round 4 added Step 2.2 Personas and Step 2.7 Domain Modeling to the previous 15-step flow; Round 5 added Step 16 Feature Roadmap and Step 19 Schema & API Draft Review, bringing it to 20; Round 6 added 9 new phases — search, caching, realtime, fileUploads, payments, frontendArchitecture, designSystem, uxAccessibilityPerf, i18nL10n — plus the CI Draft Review at Step 20, bringing the total to 30.)
 
 ### Step 1.1 — Mode toggles (Round 4 entry gate)
 
