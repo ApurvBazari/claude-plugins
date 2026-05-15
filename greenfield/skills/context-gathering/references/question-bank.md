@@ -1776,3 +1776,22 @@ Then a `**Prompt:**` paragraph, followed by `**Stores to:**`, followed by R3-pre
 Round 5 phases (`featureRoadmap` at Step 16, `schemaDraftReview` at Step 19) reuse existing Q-bank flags from Rounds 2.5–4: `showInLight`, `loopOver`, `loopMode`, `isRiskCapture`. No new flags introduced. See `feature-roadmap.q-bank.md` and `schema-draft-review.q-bank.md` for per-Q specifics.
 
 Step 16 introduces per-persona auto-loop on FR.Q4–Q9 (same mechanic as R4 auth/privacy loops). Step 19 introduces an auto-render mid-step hook (the renderer script populates `drafts.{db,api,event}.content` between SDR.Q2 and SDR.Q3) — this is the only wizard step that runs a script during context gathering.
+
+---
+
+## Round 6 — 9 new phase Q-banks + 6 inline gates
+
+| Phase | Q-bank file | Step | Host (gates only) |
+|---|---|---|---|
+| search | `search.q-bank.md` | 7 | — |
+| caching | `caching.q-bank.md` | 9 | — |
+| realtime | `realtime.q-bank.md` | 10 | — |
+| fileUploads | `file-uploads.q-bank.md` | 13 | — |
+| payments | `payments.q-bank.md` | 15 | — |
+| frontendArchitecture | `frontend-architecture.q-bank.md` | 22 | — |
+| designSystem | `design-system.q-bank.md` | 23 | — |
+| uxAccessibilityPerf | `ux-accessibility-perf.q-bank.md` | 24 | hosts marketingEmail, pushNotifications, productAnalytics |
+| i18nL10n | `i18n-l10n.q-bank.md` | 25 | — |
+| _gate_ transactionalEmail | (in auth.q-bank.md) | 11 | auth |
+| _gate_ sms | (in auth.q-bank.md) | 11 | auth |
+| _gate_ featureGating | (in cicd.q-bank.md) | 19 | cicdAndDelivery |

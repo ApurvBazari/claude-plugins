@@ -361,3 +361,19 @@ This phase gathers auth decisions: strategy, provider, sessions, roles (per pers
 | Auth.Q11 | ✓ | — | Auth audit log — depth, uses default in light |
 | Auth.Q12 | ✓ | — | Auth enforcement point — depth, uses default in light |
 | Auth.Q_RISK | ✓ | ✓ | Always fires |
+
+## Inline gates (R6)
+
+### Gate.TransEmail — Transactional email gate
+- **type:** yes/no, then vendor pick if yes
+- **vendors:** `["resend", "postmark", "ses", "sendgrid"]`
+- **showInLight:** true
+- **Prompt:** "Will the app send transactional emails (password reset, magic links, verification)? If yes, which vendor?"
+- **Stores to:** `phases.auth.concerns.transactionalEmail = {needed, vendor?}`
+
+### Gate.SMS — SMS gate
+- **type:** yes/no, then vendor pick if yes
+- **vendors:** `["twilio", "vonage", "messagebird"]`
+- **showInLight:** true
+- **Prompt:** "Will the app send SMS (2FA, OTP, account alerts)? If yes, which vendor?"
+- **Stores to:** `phases.auth.concerns.sms = {needed, vendor?}`

@@ -401,3 +401,16 @@ This phase covers CI/CD pipeline decisions: drift detection action, auto-evoluti
 | CICD.Q16 | ✓ | — | CI time budget — depth; uses defaults in light |
 | CICD.Q17 | ✓ | — | Release pipeline — depth; uses defaults in light |
 | CICD.Q_RISK | ✓ | ✓ | Always fires |
+
+## Inline gates (R6)
+
+### Gate.FeatureGating — Feature gating gate
+- **type:** yes/no, then vendor pick if yes
+- **vendors:** `["posthog-flags", "launchdarkly", "flagsmith", "growthbook"]`
+- **showInLight:** true
+- **Prompt:** "Will the release pipeline integrate feature flags / gating? If yes, which vendor?"
+- **Stores to:** `phases.cicdAndDelivery.concerns.featureGating = {needed, vendor?}`
+
+## CI Draft Review hook (R6 Step 20)
+
+After this Q-bank completes (Step 19 CI/CD), the wizard fires `${CLAUDE_PLUGIN_ROOT}/scripts/render-ci-drafts.sh` mid-flow. The output populates `phases.cicdAndDelivery.draftYaml` and the wizard advances to Step 20 CI Draft Review (synthesis-review skill renders the 3-panel HTML at `templates/ci-draft-review.html`).
