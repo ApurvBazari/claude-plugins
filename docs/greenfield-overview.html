@@ -798,6 +798,11 @@
     </div>
   </div>
 
+  <details>
+    <summary><strong>2026-05-15 — ROUND 6 LOCKED</strong> (Frontend trio + 6 concern phases + 6 gates + CI Draft Review + render-common refactor + plugin reshuffle)</summary>
+    <p>Round 6 closes the 6-round greenfield 3.0 wizard overhaul. Adds 9 new top-level phases (3-frontend split + 6 concern phases) and 6 inline yes/no+vendor gates. Wizard grows from 20 &rarr; 30 named steps. New Step 20 CI Draft Review auto-renders provider-appropriate YAML (GHA + GitLab + CircleCI + LLM fallback) with 3-panel synthesis review. <code>render-common.sh</code> extracts shared helpers across all 15 renderer modules. Generic migration runner replaces inline cascade in <code>/greenfield:pickup</code>. P10 Plugin Discovery splits into P7.5 Plugin Recommendation (Step 21) + P10 Plugin Install (Step 30). Schema bumps alpha.6 &rarr; alpha.7 (auto-migrating). Bundled <code>feat/greenfield-1.5</code> branch, R3-style subagent dispatch (~57 tasks).</p>
+  </details>
+
   <div class="log-entry">
     <div class="meta">2026-05-15 · ROUND 5 LOCKED · Feature Roadmap + Schema &amp; API Draft Review</div>
     <div class="body">

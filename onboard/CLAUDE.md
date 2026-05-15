@@ -166,6 +166,24 @@ Schema bump alpha.5 → alpha.6 is **purely additive**. Pickup migration shim in
 
 See: `onboard/CHANGELOG-2.0.md` (when released) for the formal alpha.6 entry.
 
+## Round 6 phase renderers (onboard-side)
+
+| Phase | Render module | Outputs |
+|---|---|---|
+| search | `skills/generation/references/render-search.md` | `lib/search.ts` + FTS migration |
+| caching | `skills/generation/references/render-caching.md` | `lib/cache.ts` + CDN headers |
+| realtime | `skills/generation/references/render-realtime.md` | `lib/realtime.ts` + API route |
+| fileUploads | `skills/generation/references/render-file-uploads.md` | `lib/uploads.ts` + IAM policy |
+| payments | `skills/generation/references/render-payments.md` | `lib/payments/<provider>.ts` + webhook + portal |
+| frontendArchitecture | `skills/generation/references/render-frontend-architecture.md` | package.json deps + lib skeletons |
+| designSystem | `skills/generation/references/render-design-system.md` | shadcn/mui/mantine init + tailwind tokens |
+| uxAccessibilityPerf | `skills/generation/references/render-ux-accessibility-perf.md` | Lighthouse CI + image optimizer + per-gate libs |
+| i18nL10n | `skills/generation/references/render-i18n-l10n.md` | `lib/i18n.ts` + messages + routing config |
+
+Plus: `phases.cicdAndDelivery.lockedYaml` when non-null is written verbatim to `.github/workflows/ci.yml` / `.gitlab-ci.yml` / `.circleci/config.yml` per provider.
+
+Plugin split: `phases.pluginRecommendation` + `phases.pluginInstall` replace the legacy `phases.pluginDiscovery`.
+
 ### v2-specific templates (Round 1 — Round 3 complete)
 
 Rounds 1–3 are complete. Round 1 wired CI/CD (P8). Rounds 2 / 2.5 wired architectural synthesis phases (architecturalFraming, dataArchitecture, apiIntegration, architecturalValidation). Round 3 adds auth, privacy, security, runtimeOperations synthesis phases (Steps 5–8 in the greenfield wizard; cicdAndDelivery renumbered to Step 11; architecturalValidation renumbered to Step 15).
