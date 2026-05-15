@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Design System Synthesis</title></head>
+<body>
+  <h1>Design System — Component Library: {{designSystem.componentLibrary}}</h1>
+  <h2>Component library &amp; theming</h2>
+  <ul>
+    <li>Component library: {{designSystem.componentLibrary}}</li>
+    <li>Theming approach: {{designSystem.themingApproach}}</li>
+  </ul>
+  <h2>Primitives, variants &amp; icons</h2>
+  <ul>
+    <li>Primitives strategy: {{designSystem.primitivesStrategy}}</li>
+    <li>Variant system: {{designSystem.variantSystem}}</li>
+    <li>Icon system: {{designSystem.iconSystem}}</li>
+  </ul>
+  <h2>Typography, color &amp; spacing</h2>
+  <ul>
+    <li>Typography scale: {{designSystem.typographyScale}}</li>
+    <li>Color system: {{designSystem.colorSystem}}</li>
+    <li>Spacing tokens: {{designSystem.spacingTokens}}</li>
+  </ul>
+  <h2>Design tool integration &amp; Storybook</h2>
+  <ul>
+    <li>Design tool integration: {{designSystem.designToolIntegration}}</li>
+    <li>Storybook adopted: {{designSystem.storybookAdopted}}</li>
+  </ul>
+  <h2>Risks</h2>
+  <ul>{{#each designSystem.qRisks}}<li>{{this}}</li>{{/each}}</ul>
+</body>
+</html>

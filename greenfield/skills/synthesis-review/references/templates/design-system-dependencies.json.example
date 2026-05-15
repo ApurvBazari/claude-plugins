@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "phase": "designSystem",
+  "recordedAt": "2026-05-15T00:00:00Z",
+  "dependencies": [
+    { "path": "frontendArchitecture.frameworkConfirmed", "value": "", "rationale": "Component library compatibility — shadcn requires React, MUI/Mantine differ on SSR" }
+  ]
+}
