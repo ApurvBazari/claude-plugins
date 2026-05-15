@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Frontend Architecture Synthesis</title></head>
+<body>
+  <h1>Frontend Architecture — Framework: {{frontendArchitecture.frameworkConfirmed}}</h1>
+  <h2>Framework confirmation</h2>
+  <ul>
+    <li>Framework confirmed: {{frontendArchitecture.frameworkConfirmed}}</li>
+  </ul>
+  <h2>State, routing &amp; data fetching</h2>
+  <ul>
+    <li>State management: {{frontendArchitecture.stateManagement}}</li>
+    <li>Routing strategy: {{frontendArchitecture.routingStrategy}}</li>
+    <li>Data fetching: {{frontendArchitecture.dataFetching}}</li>
+  </ul>
+  <h2>Forms, animation &amp; error boundaries</h2>
+  <ul>
+    <li>Form handling: {{frontendArchitecture.formHandling}}</li>
+    <li>Animation library: {{frontendArchitecture.animationLibrary}}</li>
+    <li>Error boundaries: {{frontendArchitecture.errorBoundaries}}</li>
+  </ul>
+  <h2>Build &amp; tooling</h2>
+  <ul>
+    <li>Code splitting: {{frontendArchitecture.codeSplitting}}</li>
+    <li>Bundler: {{frontendArchitecture.bundler}}</li>
+    <li>Dev server: {{frontendArchitecture.devServer}}</li>
+  </ul>
+  <h2>Risks</h2>
+  <ul>{{#each frontendArchitecture.qRisks}}<li>{{this}}</li>{{/each}}</ul>
+</body>
+</html>

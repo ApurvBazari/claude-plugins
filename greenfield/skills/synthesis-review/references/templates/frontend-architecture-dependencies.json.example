@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "phase": "frontendArchitecture",
+  "recordedAt": "2026-05-15T00:00:00Z",
+  "dependencies": [
+    { "path": "architecturalFraming.frontendFramework", "value": "", "rationale": "CHECK-R6-4 — phases.frontendArchitecture.frameworkConfirmed must match" }
+  ]
+}
