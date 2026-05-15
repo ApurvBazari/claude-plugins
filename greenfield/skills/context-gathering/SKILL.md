@@ -85,6 +85,13 @@ Maintain a running context object that tracks what you know. See `references/que
   "willDeploy": false,
   "hasDatabase": false,
   "hasAPI": false,
+  "hasSearch": false,
+  "hasCaching": false,
+  "hasRealtime": false,
+  "hasFileUploads": false,
+  "hasPayments": false,
+  "hasFrontendTrio": false,
+  "hasI18n": false,
   "defaultsAccepted": {}
 }
 ```
@@ -353,6 +360,21 @@ If the developer adjusts any dataArchitecture field via the Adjust dialog, the u
 
 If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen — `data-architecture.html` ships in Round 2), tell the developer and continue to Step 4.
 
+## Step 7: Search
+
+**Wizard progress: Step 7 of 30 — Search**
+
+Reads the data architecture entities. Captures search intent (FTS / vector / hybrid / none) and surfaces query patterns + security posture.
+
+1. Check `phases.dataArchitecture.engine`. If `"none"`, ask the user: "No persistent data engine — Search phase doesn't apply. Skip?" → on Yes, write `phases.search = {skipped: true, deferredReason: "no data engine"}` and advance to Step 8.
+2. Load `${CLAUDE_PLUGIN_ROOT}/skills/context-gathering/references/search.q-bank.md`.
+3. Walk S.Q1 → S.Q11 → S.Q_RISK. Apply `mode.depth` gating via `showInLight`.
+4. After Q-bank completes, invoke `synthesis-review` with `phase: "search"`.
+5. Approve/Adjust/Skip path identical to R5 phases.
+6. Checkpoint state via atomic write.
+
+After Step 7 completes, set `context.hasSearch = (phases.search.skipped !== true)` and proceed to Step 8 (API & Integration).
+
 ### Step 4 of 20: API & Integration
 
 This step is Round 2's second new phase. Captures API surface decisions via P4.Q1–P4.Q10 and closes with an inline Phase 1.8 synthesis-review pass.
@@ -398,6 +420,38 @@ Invoke the `synthesis-review` skill via the Skill tool with `phaseId: "apiIntegr
 
 If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen — `api-integration.html` ships in Round 2), tell the developer and continue to Step 5.
 
+## Step 9: Caching
+
+**Wizard progress: Step 9 of 30 — Caching**
+
+Captures cache topology (in-memory / shared / CDN / multi-tier / none), invalidation strategy, key shape, and risks. Same shape as Step 7 (Search).
+
+1. Load `${CLAUDE_PLUGIN_ROOT}/skills/context-gathering/references/caching.q-bank.md`.
+2. Walk C.Q1 → C.Q12 → C.Q_RISK. Apply `mode.depth` gating via `showInLight`.
+3. After Q-bank completes, invoke `synthesis-review` with `phase: "caching"`.
+4. Approve/Adjust/Skip path identical to R5 phases.
+5. Checkpoint state via atomic write.
+
+After Step 9 completes, set `context.hasCaching = (phases.caching.skipped !== true)` and proceed to Step 10 (Real-time).
+
+## Step 10: Real-time
+
+**Wizard progress: Step 10 of 30 — Real-time**
+
+Captures real-time use cases (presence / live updates / collab / streaming) per primary persona, transport choice (WebSocket / SSE / polling), backpressure, and reconnection strategy.
+
+1. Load `${CLAUDE_PLUGIN_ROOT}/skills/context-gathering/references/realtime.q-bank.md`.
+2. Walk RT.Q1 through the rest of the Q-bank in order, applying `mode.depth` gating via `showInLight`.
+3. **Per-persona auto-loop on RT.Q2** (CHECK-R6-9 enforcement):
+   - Iterate over `personas.primary` capped at `min(personas.length, 4)` iterations.
+   - For each persona iteration, walk RT.Q2 (per-persona-scoped) capturing useCases for that persona into `phases.realtime.useCasesByPersona[personaId][]`.
+   - Flatten union into `phases.realtime.useCases[]` after the loop completes.
+4. Record `phases.realtime.loopIterations` = the count of persona iterations executed (cap-enforced).
+5. After Q-bank completes, invoke `synthesis-review` with `phase: "realtime"`.
+6. Checkpoint state via atomic write.
+
+After Step 10 completes, set `context.hasRealtime = (phases.realtime.skipped !== true)` and proceed to Step 11 (Auth).
+
 ### Step 5 of 20: Auth
 
 Emit the progress indicator. This step gathers identity and access control decisions: strategy, identity providers, session model, MFA, authorization, tenancy, service-to-service auth, lifecycle, recovery, password policy, audit log, enforcement point. About 12 questions; some may be skipped based on `auth.strategy` and earlier framing/data/api answers.
@@ -413,6 +467,19 @@ Then run the wizard.
 Ask each question from `references/question-bank.md § Step 5: Auth` in order (Auth.Q1 through Auth.Q12). Honor the conditions. Write each answer to its destination field under `context.phases.auth`.
 
 **State checkpointing**: after each answered question, write to `greenfield-state.json.tmp` and rename atomically. Set `currentPhase: "phase-1-context-gathering"`, `currentStep: "step-5-auth"`.
+
+#### Inline gates (R6 — fired inline before synthesis-review)
+
+After the Auth Q-bank completes and BEFORE the synthesis-review call, walk `Gate.TransEmail` and `Gate.SMS` from `references/auth.q-bank.md`. Each gate is a single yes/no question followed by an optional vendor-pick if the answer is "Yes".
+
+Use the AskUserQuestion single-option guard pattern (see `.claude/rules/ask-user-question-guard.md`) when the gate's vendor list collapses to one option — degrade to single-select yes/no for the standalone vendor question.
+
+Write the captured gate answers:
+
+- `phases.auth.concerns.transactionalEmail = {needed: <bool>, vendor: <string|null>}`
+- `phases.auth.concerns.sms = {needed: <bool>, vendor: <string|null>}`
+
+These two gate outputs feed P7.5 Plugin Recommendation (Step 21) — plugin-discovery reads `phases.auth.concerns.*` to surface relevant plugin suggestions (e.g., Resend/Postmark for transactional email, Twilio for SMS).
 
 **At end of step**, invoke synthesis-review inline:
 
@@ -473,6 +540,26 @@ If the synthesis-review skill returns `synthesisStatus: "no-template"` (should n
 
 ---
 
+## Step 13: File Uploads & CDN
+
+**Wizard progress: Step 13 of 30 — File Uploads & CDN**
+
+Captures upload surfaces (avatar / attachment / bulk-import / streaming-asset), storage backend (S3-compatible / Vercel Blob / GCS / Azure / R2 / local), CDN strategy, size/MIME guards, and signed-URL flow.
+
+1. Load `${CLAUDE_PLUGIN_ROOT}/skills/context-gathering/references/file-uploads.q-bank.md`.
+2. Walk FU.Q1 through the rest of the Q-bank in order, applying `mode.depth` gating via `showInLight`.
+3. **Per-persona auto-loop on FU.Q11** (CHECK-R6-9 enforcement):
+   - Iterate over `personas.primary` capped at `min(personas.length, 4)` iterations.
+   - For each persona iteration, walk FU.Q11 capturing upload surfaces per persona into `phases.fileUploads.surfacesByPersona[personaId][]`.
+   - Flatten union into `phases.fileUploads.surfaces[]` after the loop completes.
+4. Record `phases.fileUploads.loopIterations` = the count of persona iterations executed (cap-enforced).
+5. After Q-bank completes, invoke `synthesis-review` with `phase: "fileUploads"`.
+6. Checkpoint state via atomic write.
+
+After Step 13 completes, set `context.hasFileUploads = (phases.fileUploads.skipped !== true)` and proceed to Step 14 (Security).
+
+---
+
 ### Step 7 of 20: Security
 
 Emit the progress indicator. This step covers application security posture: sensitivity tier, secret management, vulnerability scanning, threat model, encryption, headers, input validation, audit retention, IR pointer, pentest cadence, VDP, supply chain. About 13 questions; some may be skipped based on `security.sensitivityTier` and `architecturalFraming.scaleTarget`.
@@ -496,6 +583,30 @@ Skill(synthesis-review, phaseId: "security")
 ```
 
 If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen — `security.html`/`.md` ship in Round 3 commit `4288039`), tell the developer and continue to Step 8.
+
+---
+
+## Step 15: Payments
+
+**Wizard progress: Step 15 of 30 — Payments**
+
+Captures payment surfaces (customer-facing checkout vs admin billing console), provider choice (Stripe / Adyen / Paddle / Lemon Squeezy / none), PCI scope, refund workflow, webhook handling, and dispute strategy.
+
+1. Load `${CLAUDE_PLUGIN_ROOT}/skills/context-gathering/references/payments.q-bank.md`.
+2. Walk P.Q1 through the rest of the Q-bank in order, applying `mode.depth` gating via `showInLight`.
+3. **Per-persona auto-loop on P.Q13** (CHECK-R6-9 enforcement):
+   - Iterate over `personas.primary` capped at `min(personas.length, 4)` iterations.
+   - For each persona iteration, walk P.Q13 distinguishing customer-facing vs admin payment surfaces into `phases.payments.surfacesByPersona[personaId][]`.
+   - Flatten union into `phases.payments.surfaces[]` after the loop completes.
+4. Record `phases.payments.loopIterations` = the count of persona iterations executed (cap-enforced).
+5. After Q-bank completes, invoke `synthesis-review` with `phase: "payments"`.
+6. **CHECK-R6-3 enforcement (payments → privacy.pii.financial alignment):** if `phases.payments.provider != "none"`, verify `phases.privacy.pii.financial == true`. If not, surface via AskUserQuestion:
+   > Payments captured but `privacy.pii.financial` is not flagged — payments inevitably touch financial PII. Fix?
+   - On **Yes**: jump back to Step 12 (Privacy) to re-walk the PII inventory; set `currentStep: "step-6-privacy"` and re-enter via `/greenfield:pickup` semantics.
+   - On **No / Acknowledged**: record `phases.payments.privacyOverride = {acknowledgedAt: <ISO timestamp>, reason: "<user-provided>"}` and continue.
+7. Checkpoint state via atomic write.
+
+After Step 15 completes, set `context.hasPayments = (phases.payments.skipped !== true && phases.payments.provider !== "none")` and proceed to Step 16 (Runtime Operations).
 
 ---
 
@@ -648,6 +759,18 @@ If the developer answers Q5.4 with anything other than `"github-actions"`, captu
 
 Before asking Q5.1 (or the first applicable question): if `completedSteps` already contains `"step-11-cicd"` AND `context.phaseStatus.cicdAndDelivery.status === "stale"`, skip re-asking Q5.1–Q5.17 and proceed directly to the synthesis-review call below. Synthesis-review Step 0 will surface the re-walk prompt.
 
+#### Inline gate (R6 — Feature Gating)
+
+After the CI/CD Q-bank walk completes (Q5.1–Q5.17) and BEFORE the synthesis-review call, walk `Gate.FeatureGating` from `references/cicd.q-bank.md`. This is a single yes/no question followed by an optional vendor-pick if the answer is "Yes".
+
+Use the AskUserQuestion single-option guard pattern when the vendor list collapses to one option.
+
+Write the captured gate answer:
+
+- `phases.cicdAndDelivery.concerns.featureGating = {needed: <bool>, vendor: <string|null>}`
+
+This gate output feeds P7.5 Plugin Recommendation (Step 21) — plugin-discovery reads it to surface relevant plugin suggestions (e.g., LaunchDarkly, Flagsmith). The synthesis-review pass below will include the gate decision so it is approved alongside the rest of the CI/CD spec.
+
 #### Phase 1.8: synthesis review (after Q5.17, or after Q5.1/Q5.2/Q5.3 if `willDeploy = false`)
 
 Invoke the `synthesis-review` skill via the Skill tool with `phaseId: "cicdAndDelivery"`. This is Round 1's only synthesis pass. The skill:
@@ -660,7 +783,158 @@ Invoke the `synthesis-review` skill via the Skill tool with `phaseId: "cicdAndDe
 
 If the developer adjusts any cicdAndDelivery field via the Adjust dialog, the updated value is in `context.phases.cicdAndDelivery.cicd.<field>` — the v1 carryover mirrors do NOT update (they preserve the original answer).
 
-If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen in Round 1 since `cicd-and-delivery.html` ships in this commit), tell the developer and continue to Step 12.
+If the synthesis-review skill returns `synthesisStatus: "no-template"` (should not happen in Round 1 since `cicd-and-delivery.html` ships in this commit), tell the developer and continue to Step 20 (CI Draft Review).
+
+## Step 20: CI Draft Review
+
+**Wizard progress: Step 20 of 30 — CI Draft Review**
+
+Auto-renders CI YAML mid-flow; user reviews via 3-panel synthesis HTML; Approve / Adjust / Reject.
+
+**Run condition**: runs immediately after Step 19 (CI/CD & Auto-Evolution) synthesis-review completes. Skipped if `willDeploy = false` (no CI to render — set `phases.cicdAndDelivery.draftSkipped = true` and advance to Step 21).
+
+1. Fire the renderer entrypoint:
+
+   ```bash
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/render-ci-drafts.sh" .claude/greenfield-state.json
+   ```
+
+2. The entrypoint dispatches by `phases.cicdAndDelivery.provider`. After it completes, state contains `phases.cicdAndDelivery.{draftYaml, draftWarnings, draftFallback, draftRenderedAt, draftSourceRefs, draftProvider}`.
+
+3. Invoke `synthesis-review` with `phase: "cicdAndDelivery"`, `template: "ci-draft-review"`. The 3-panel HTML (Inputs / Decisions / Rendered YAML) renders.
+
+4. Ask via `AskUserQuestion`:
+   - **Approve** — copy `draftYaml` to `phases.cicdAndDelivery.lockedYaml`; advance to Step 21. (Write-only-on-Approve invariant: `lockedYaml` is set EXCLUSIVELY in this branch; no other code path may write it.)
+   - **Adjust** — capture natural-language instruction; LLM edits the YAML inline; append `{instruction, beforeYaml, afterYaml, at}` to `phases.cicdAndDelivery.adjustHistory[]`; re-render Panel 3; loop until Approve or Reject.
+   - **Reject** — clear `phases.cicdAndDelivery.lockedYaml = null`; jump back to Step 19 (CI/CD) to re-answer the CI/CD Q-bank via `/greenfield:pickup`-style rewind.
+
+5. **LLM-fallback gate (CHECK-R6-8 enforcement):** if `phases.cicdAndDelivery.draftFallback == true`, do NOT unlock Approve until every warning in `draftWarnings[]` has `addressed = true`. Use AskUserQuestion to walk each warning with "Address" / "Skip" options:
+   - On "Address": prompt for resolution text; set the warning's `addressed = true` and store the resolution note.
+   - On "Skip": leave `addressed = false`; Approve remains blocked until all warnings have `addressed = true`. Surface to user: *"Approve is blocked — N warning(s) still unaddressed."*
+
+6. On Approve: checkpoint atomic write; advance to Step 21 (P7.5 Plugin Recommendation).
+
+## Step 21: P7.5 Plugin Recommendation
+
+**Wizard progress: Step 21 of 30 — Plugin Recommendation**
+
+Reads `phases.{auth, privacy, security, runtimeOperations, cicdAndDelivery, cicdAndDelivery.concerns.featureGating, fileUploads, payments, search, caching, realtime}` and calls the `plugin-discovery` skill in **recommendation mode**.
+
+This step is the FIRST half of the old P10 (now split): Recommendation (here) captures intent; Install (Step 30) executes.
+
+1. Invoke `plugin-discovery` skill via the Skill tool with `mode: "recommendation"`. The skill emits `{suggested: [...], rationale: "..."}`.
+
+2. Ask via `AskUserQuestion` (multi-select; apply single-option guard if `suggested.length == 1` per `.claude/rules/ask-user-question-guard.md`):
+
+   > Which of the suggested plugins do you want to track for install at Step 30?
+
+3. Write:
+
+   ```jsonc
+   phases.pluginRecommendation = {
+     "suggested": [...],
+     "selected": [...],          // user's picks
+     "rationale": "...",
+     "frontendAddenda": []       // populated by the re-recommendation pass after Step 25
+   }
+   ```
+
+4. **Does NOT install** — only records intent. Actual install happens at Step 30 (P10 Plugin Install) AFTER the frontend trio + i18n + re-recommendation pass.
+
+5. Invoke `synthesis-review` with `phase: "pluginRecommendation"`. Checkpoint state.
+
+## Step 22: P5 Frontend Architecture
+
+**Wizard progress: Step 22 of 30 — Frontend Architecture**
+
+Captures frontend architecture decisions per primary persona — rendering strategy (SSR / CSR / SSG / ISR), routing strategy, state management, server/client component boundary, error boundaries, and suspense fallbacks.
+
+**Run condition**: skip silently if `hasFrontend == false`.
+
+1. Load `${CLAUDE_PLUGIN_ROOT}/skills/context-gathering/references/frontend-architecture.q-bank.md`.
+2. Walk FA.Q1 through the rest of the Q-bank in order, applying `mode.depth` gating via `showInLight`.
+3. **Per-persona auto-loop on FA.Q13** (CHECK-R6-9 enforcement):
+   - Iterate over `personas.primary` capped at `min(personas.length, 4)` iterations.
+   - For each persona iteration, walk FA.Q13 capturing surface-specific architecture decisions into `phases.frontendArchitecture.surfacesByPersona[personaId][]`.
+   - Flatten into `phases.frontendArchitecture.surfaces[]` after the loop.
+4. Record `phases.frontendArchitecture.loopIterations` = the count of persona iterations executed.
+5. After Q-bank completes, invoke `synthesis-review` with `phase: "frontendArchitecture"`.
+6. Checkpoint state via atomic write.
+
+## Step 23: P5.3 Design System
+
+**Wizard progress: Step 23 of 30 — Design System**
+
+Captures design system choices — component library / primitive layer (shadcn/ui / Radix / Mantine / Chakra / custom), tokens approach (CSS variables / Tailwind config / Tokens Studio), Storybook (yes/no), and theming/dark-mode strategy. Flat (no per-persona loop).
+
+**Run condition**: skip silently if `hasFrontend == false`.
+
+1. Load `${CLAUDE_PLUGIN_ROOT}/skills/context-gathering/references/design-system.q-bank.md`.
+2. Walk DS.Q1 through the rest of the Q-bank in order. Apply `mode.depth` gating via `showInLight`.
+3. After Q-bank completes, invoke `synthesis-review` with `phase: "designSystem"`.
+4. Checkpoint state via atomic write.
+
+## Step 24: P5.6 UX / Accessibility / Performance
+
+**Wizard progress: Step 24 of 30 — UX / Accessibility / Performance**
+
+Captures UX/A11y/Perf decisions per primary persona — surfaces, accessibility target (WCAG AA / AAA), performance budgets (LCP / TBT / CLS), and consent/notification UX. Includes 3 inline gates (marketing email, push notifications, product analytics) walked BEFORE synthesis-review.
+
+**Run condition**: skip silently if `hasFrontend == false`.
+
+1. Load `${CLAUDE_PLUGIN_ROOT}/skills/context-gathering/references/ux-accessibility-perf.q-bank.md`.
+2. Walk UX.Q1 through the rest of the Q-bank in order, applying `mode.depth` gating via `showInLight`.
+3. **Per-persona auto-loop on UX.Q1** (CHECK-R6-9 enforcement):
+   - Iterate over `personas.primary` capped at `min(personas.length, 4)` iterations.
+   - For each persona, capture per-persona surfaces into `phases.uxAccessibilityPerf.surfacesByPersona[personaId][]`.
+   - Flatten into `phases.uxAccessibilityPerf.surfaces[]` after the loop.
+4. Record `phases.uxAccessibilityPerf.loopIterations` = the count of persona iterations executed.
+
+#### Inline gates (R6 — fired inside Step 24 before synthesis-review)
+
+After the per-persona loop completes and BEFORE the synthesis-review call, walk `Gate.MktEmail`, `Gate.Push`, `Gate.Analytics` from `references/ux-accessibility-perf.q-bank.md`. Each gate is a single yes/no question followed by an optional vendor-pick if the answer is "Yes".
+
+Use the AskUserQuestion single-option guard pattern when a gate's vendor list collapses to one option.
+
+Write:
+
+- `phases.uxAccessibilityPerf.concerns.marketingEmail = {needed: <bool>, vendor: <string|null>}`
+- `phases.uxAccessibilityPerf.concerns.pushNotifications = {needed: <bool>, vendor: <string|null>}`
+- `phases.uxAccessibilityPerf.concerns.productAnalytics = {needed: <bool>, vendor: <string|null>}`
+
+These three gate outputs feed the frontend re-recommendation pass (between Step 25 and Step 26) — plugin-discovery's frontend-context pass reads `phases.uxAccessibilityPerf.concerns.*` to surface additional plugin suggestions (e.g., Mailchimp/Resend marketing, OneSignal push, PostHog/Plausible analytics).
+
+5. After gates complete, invoke `synthesis-review` with `phase: "uxAccessibilityPerf"`.
+6. Checkpoint state via atomic write.
+
+## Step 25: i18n / l10n
+
+**Wizard progress: Step 25 of 30 — i18n / l10n**
+
+Captures internationalization / localization decisions — target locales, framework (next-intl / next-i18next / Lingui / Formatjs / custom), translation workflow (Crowdin / Lokalise / manual JSON), routing strategy (subpath / domain / detect), and RTL support. Flat (no per-persona loop).
+
+**Run condition**: skip silently if `hasFrontend == false` OR if user explicitly defers i18n (sets `phases.i18nLocalization.skipped = true` via the first Q).
+
+1. Load `${CLAUDE_PLUGIN_ROOT}/skills/context-gathering/references/i18n-l10n.q-bank.md`.
+2. Walk I18n.Q1 through the rest of the Q-bank in order. Apply `mode.depth` gating via `showInLight`.
+3. After Q-bank completes, invoke `synthesis-review` with `phase: "i18nLocalization"`.
+4. Checkpoint state via atomic write.
+
+After Step 25 completes, set `context.hasFrontendTrio = (phases.frontendArchitecture.skipped !== true && phases.designSystem.skipped !== true && phases.uxAccessibilityPerf.skipped !== true)` and `context.hasI18n = (phases.i18nLocalization.skipped !== true)`.
+
+### Re-recommendation pass (R-R6-6 mitigation, fires after Step 25)
+
+After i18n completes and BEFORE Step 26 (Feature Decomposition), re-invoke `plugin-discovery` with the freshly captured frontend + i18n context (Storybook from Step 23 Design System, i18n framework from Step 25, push/marketing-email/analytics from Step 24 gates, etc.).
+
+1. Invoke `plugin-discovery` skill with `mode: "recommendation"` again (same shape as Step 21).
+2. Compare the new `suggested[]` against `phases.pluginRecommendation.suggested` from Step 21. Compute the set difference (new entries surfaced by frontend/i18n context that weren't surfaced earlier).
+3. If new entries surface, ask via `AskUserQuestion`:
+
+   > Frontend + i18n context surfaced N additional plugin suggestion(s) — add these to your install set for Step 30?
+
+4. Write the user's picks to `phases.pluginRecommendation.frontendAddenda[]`. Step 30 will install the union of `selected[] ∪ frontendAddenda[]`.
+
+5. If no new entries surface, skip silently (no prompt — the pass is a no-op).
 
 ### Step 12 of 20: Feature Decomposition (Harness Preparation) — REQUIRED
 
@@ -881,7 +1155,36 @@ Then ask SDR.Q11 (output strategy) and SDR.Q12 (Q_RISK trailer).
 After lock:
 1. Invoke `synthesis-review` skill with `phaseId: "schemaDraftReview"`. The skill renders `docs/adr/schema-draft-review.html` from the new template.
 2. Checkpoint state.
-3. Proceed to Step 20 (Handoff).
+3. Proceed to Step 30 (P10 Plugin Install).
+
+## Step 30: P10 Plugin Install
+
+**Wizard progress: Step 30 of 30 — Plugin Install**
+
+Reads `phases.pluginRecommendation.selected ∪ phases.pluginRecommendation.frontendAddenda` and calls the `plugin-discovery` skill in **install mode**. This is the SECOND half of the old P10 (now split): Recommendation (Step 21) captured intent; Install (here) executes.
+
+1. Invoke `plugin-discovery` skill via the Skill tool with `mode: "install"`. The skill runs `/plugin marketplace install <id>` for each entry in the install set (union of `selected[]` and `frontendAddenda[]`).
+
+2. Capture install results:
+
+   ```jsonc
+   phases.pluginInstall = {
+     "installed": [...],
+     "failed":    [{ "id": "...", "reason": "..." }],
+     "skipped":   [...]
+   }
+   ```
+
+3. **Failed-plugin handling**: if `failed[]` is non-empty, ask via `AskUserQuestion`:
+
+   > N plugin(s) failed to install. Scaffold the project anyway with manual-install instructions in CLAUDE.md, or abort?
+
+   - On **Scaffold anyway**: proceed to handoff. Record `failed[]` so onboard's generation pass emits manual-install steps in the project's CLAUDE.md.
+   - On **Abort**: halt with diagnostic (print `failed[]` reasons). Set `currentStep: "step-30-plugin-install-aborted"` so `/greenfield:pickup` can resume after the user resolves install issues.
+
+4. Invoke `synthesis-review` with `phase: "pluginInstall"`. Checkpoint state.
+
+After Step 30 completes, hand off to Phase 2 (Scaffold). Set `currentPhase: "phase-2-scaffold"` and exit the context-gathering skill.
 
 ## Auto-loop mechanic
 
