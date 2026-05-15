@@ -526,3 +526,49 @@ Forwarded to onboard generation. Onboard reads `phases.schemaDraftReview.drafts.
 - `outputStrategy = "docs-drafts"`: all of the above written under `docs/drafts/` for manual placement after generation.
 
 If `phases.schemaDraftReview.skipped = true` OR `lockedAt` is absent, onboard writes nothing for schema/contract files (preserves alpha.5 behavior — no schema/contract artifacts emitted).
+
+---
+
+## Round 6 — new phases, plugin split, and CI/CD lockedYaml
+
+The R6 additions reuse the same `phases.*` pass-through shape established by R4/R5. Onboard 3.0 alpha.7+ reads nine new optional phase blocks, the two-phase plugin split (replacing the deprecated `pluginDiscovery` phase), and two new sub-keys under `phases.cicdAndDelivery`. All blocks are optional — when absent or marked `skipped: true`, onboard falls back to its alpha.6 behavior.
+
+### Nine new phase blocks (pass-through to `/onboard:generate`)
+
+Forwarded verbatim from `greenfield-state.json` to the enriched context. Each block carries a `skipped: true` flag when the wizard step didn't run; onboard treats `skipped` blocks as no-ops.
+
+- `phases.search` — populated when Step 7 runs (`skipped: true` otherwise). Onboard reads search-provider choice (Algolia / Meilisearch / Typesense / Postgres FTS / OpenSearch / none), indexing strategy, and faceting requirements.
+- `phases.caching` — Step 9. Onboard reads cache layers (CDN / edge / app / DB), TTL policy, invalidation strategy, and stampede protection choices.
+- `phases.realtime` — Step 10. Onboard reads realtime transport (WebSocket / SSE / polling / WebRTC / push), fan-out scale, presence/typing requirements, and ordering guarantees.
+- `phases.fileUploads` — Step 13. Onboard reads object store (S3 / R2 / GCS / Blob), max size, virus scanning, signed-URL strategy, and CDN integration.
+- `phases.payments` — Step 15. Onboard reads PSP choice (Stripe / Adyen / Razorpay / Paddle / none), billing model (one-shot / subscription / metered / marketplace), tax/invoicing approach, and reconciliation needs.
+- `phases.frontendArchitecture` — Step 22 (replaces deprecated `phases.frontend`). Onboard reads rendering strategy (SSR / SSG / ISR / CSR / streaming), state management, routing, and data-fetching primitives.
+- `phases.designSystem` — Step 23. Onboard reads component library choice, theming approach, token strategy, and icon/typography decisions.
+- `phases.uxAccessibilityPerf` — Step 24. Onboard reads WCAG conformance target, performance budgets (LCP / INP / CLS), motion sensitivity rules, and keyboard-nav requirements.
+- `phases.i18nL10n` — Step 25. Onboard reads locale set, default locale, translation pipeline (ICU / Lingui / next-intl / none), RTL support, and date/number formatting library.
+
+### Plugin Recommendation + Plugin Install split (R6)
+
+The single `phases.pluginDiscovery` block is replaced by two phases. Send both when present:
+
+- `phases.pluginRecommendation` (R6 split) — `suggested` (catalog matches + web-search picks) + `selected` (user-confirmed) + `rationale` (per-plugin justification) + `frontendAddenda` (any frontend-only plugin layering driven by Step 22-25 answers). Onboard reads this to seed CLAUDE.md Plugin Integration section and to inform agent/skill shadowing.
+- `phases.pluginInstall` (R6 split) — `installed` (successful) + `failed` (with error strings) + `skipped` (with reasons). Onboard reads this to keep `installedPlugins` and `coveredCapabilities` in `callerExtras` consistent with what's actually on disk and to surface install warnings in `onboard-meta.json`.
+
+Pre-R6 state files that still carry a `pluginDiscovery` block trigger a pickup migration shim (see `skills/pickup/SKILL.md`) that splits it into the two new phases before this skill runs. Greenfield never sends `phases.pluginDiscovery` to onboard 3.0 alpha.7+ — onboard ignores that key on the input boundary.
+
+### `phases.cicdAndDelivery` — `lockedYaml` and `adjustHistory`
+
+Two new sub-keys land in the cicdAndDelivery phase block; both are pass-through:
+
+- `phases.cicdAndDelivery.lockedYaml` — when set, onboard writes verbatim to `.github/workflows/ci.yml` (or `.gitlab-ci.yml` / `.circleci/config.yml` depending on `draftProvider`). The string is treated as authoritative — no merging, no templating. Greenfield sets `lockedYaml` after the R6 CI Draft Review gate (see `synthesis-review` Phase 1.8 for `cicdAndDelivery`) when the developer approves the rendered draft.
+- `phases.cicdAndDelivery.adjustHistory` — included in the generation context for audit/observability; onboard ignores at write time. The array preserves every Adjust-dialog turn that led to the final `lockedYaml`, so downstream tooling (`/greenfield:check`, `/onboard:check`) can show provenance.
+
+### Backwards compatibility
+
+Onboard 3.0 alpha.7+ treats all nine new `phases.*` blocks, the two-phase plugin split, and the `cicdAndDelivery.lockedYaml`/`adjustHistory` sub-keys as **optional** — if absent, onboard behaves as alpha.6 (no R6-aware generation; the prior `pluginDiscovery` shape is consumed if present). Greenfield always sends the new shape when greenfield-state.json has been produced or migrated by alpha.7+.
+
+### State machine behavior
+
+- If a Step 7/9/10/13/15/22/23/24/25 status is `user-skipped`, send the corresponding `phases.<name>` as `{ "skipped": true }` (NOT absent — explicit skip signals user-skip vs absent-from-state-shape, so onboard doesn't try to infer defaults).
+- If `phases.cicdAndDelivery.lockedYaml` is unset but the rest of the `cicdAndDelivery` block is present, onboard renders CI YAML from its standard templates as in alpha.6. The `adjustHistory` array, if present, still flows through for audit.
+- Never send both `phases.pluginDiscovery` AND the two new `phases.pluginRecommendation` / `phases.pluginInstall` blocks. The pickup migration shim guarantees exclusivity; if both appear in state due to a manual edit, prefer the two new blocks and log a warning.
