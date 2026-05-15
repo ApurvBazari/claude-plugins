@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "phase": "realtime",
+  "recordedAt": "2026-05-15T00:00:00Z",
+  "dependencies": [
+    { "path": "personas.primary", "value": [], "rationale": "Per-persona use cases — different surfaces have different real-time needs" },
+    { "path": "runtimeOperations.observability", "value": "", "rationale": "Real-time uptime ties into pub-sub backend monitoring" }
+  ]
+}

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Real-time Synthesis</title></head>
+<body>
+  <h1>Real-time — Transport: {{realtime.transport}}</h1>
+  <h2>Use cases (per-persona union)</h2>
+  <ul>{{#each realtime.useCases}}<li>{{this}}</li>{{/each}}</ul>
+  <h2>Backend</h2>
+  <ul>
+    <li>Pub/sub: {{realtime.backend}}</li>
+    <li>Client library: {{realtime.clientLib}}</li>
+  </ul>
+  <h2>Scaling</h2>
+  <ul>
+    <li>Sticky sessions: {{realtime.scaling.stickySessions}}</li>
+    <li>Horizontal scaling: {{realtime.scaling.horizontal}}</li>
+  </ul>
+  <h2>Reconnect &amp; delivery</h2>
+  <ul>
+    <li>Reconnect strategy: {{realtime.reconnectStrategy}}</li>
+    <li>Message ordering: {{realtime.messageOrdering}}</li>
+    <li>Dedup: {{realtime.dedup}}</li>
+  </ul>
+  <h2>Risks</h2>
+  <ul>{{#each realtime.qRisks}}<li>{{this}}</li>{{/each}}</ul>
+</body>
+</html>
