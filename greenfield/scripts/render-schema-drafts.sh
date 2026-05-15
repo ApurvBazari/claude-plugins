@@ -40,6 +40,7 @@ while IFS= read -r ART; do
   case "$ART:$LANG" in
     db:prisma)         MODULE="render-db-prisma.sh" ;;
     db:sql-ddl)        MODULE="render-db-sql-ddl.sh" ;;
+    db:mongoose)       MODULE="render-db-mongoose.sh" ;;
     api:openapi-3.0)   MODULE="render-api-openapi.sh" ;;
     api:graphql-sdl)   MODULE="render-api-graphql.sh" ;;
     event:asyncapi)    MODULE="render-event-asyncapi.sh" ;;
