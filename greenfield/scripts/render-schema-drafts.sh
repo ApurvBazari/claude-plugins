@@ -48,6 +48,7 @@ while IFS= read -r ART; do
     api:hasura)        MODULE="render-api-hasura.sh" ;;
     event:asyncapi)    MODULE="render-event-asyncapi.sh" ;;
     event:json-schema) MODULE="render-event-json-schema.sh" ;;
+    event:avro)        MODULE="render-event-avro.sh" ;;
     *)
       DEFERRED_REASON="language '$LANG' not yet supported in R5"
       echo "render-schema-drafts: $DEFERRED_REASON for artifact '$ART'. Skipping; user must re-answer SDR.Q2 with a supported language or set drafts.$ART.skipped=true." >&2
