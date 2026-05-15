@@ -72,17 +72,17 @@ for step in "${CHAIN[@]}"; do
 done
 
 if [[ "$DRY_RUN" == "true" ]]; then
-  # Emit a JSON diff (paths that changed). Best effort — uses jq to compare.
-  echo "$ORIGINAL" > /tmp/.migration-before.$$
-  echo "$CURRENT"  > /tmp/.migration-after.$$
-  echo "{"
-  echo "  \"from\": \"$FROM\","
-  echo "  \"to\":   \"$TO\","
-  echo "  \"steps\": [$(printf '"%s",' "${CHAIN[@]}" | sed 's/,$//')]"
-  echo ","
-  echo "  \"diff\": $(diff <(echo "$ORIGINAL" | jq -S .) <(echo "$CURRENT" | jq -S .) | jq -Rs . 2>/dev/null || echo '""')"
-  echo "}"
-  rm -f /tmp/.migration-before.$$ /tmp/.migration-after.$$
+  # Compute the diff (diff exits 1 when files differ — not an error here)
+  DIFF_OUT=$(diff <(echo "$ORIGINAL" | jq -S .) <(echo "$CURRENT" | jq -S .) || true)
+  # Build steps JSON array
+  STEPS_JSON=$(printf '%s\n' "${CHAIN[@]}" | jq -R . | jq -s .)
+  # Emit a single well-formed JSON object
+  jq -n \
+    --arg from "$FROM" \
+    --arg to "$TO" \
+    --argjson steps "$STEPS_JSON" \
+    --arg diff "$DIFF_OUT" \
+    '{from: $from, to: $to, steps: $steps, diff: $diff}'
   exit 0
 fi
 
