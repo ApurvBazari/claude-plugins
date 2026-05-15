@@ -45,6 +45,7 @@ while IFS= read -r ART; do
     api:openapi-3.0)   MODULE="render-api-openapi.sh" ;;
     api:graphql-sdl)   MODULE="render-api-graphql.sh" ;;
     api:trpc)          MODULE="render-api-trpc.sh" ;;
+    api:hasura)        MODULE="render-api-hasura.sh" ;;
     event:asyncapi)    MODULE="render-event-asyncapi.sh" ;;
     event:json-schema) MODULE="render-event-json-schema.sh" ;;
     *)
