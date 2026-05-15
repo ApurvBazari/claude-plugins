@@ -8,6 +8,26 @@ user-invocable: false
 
 You are executing Phase 3b of Greenfield: discovering and installing Claude Code plugins that complement the developer's project. This is the one interactive step in Phase 3.
 
+## Invocation mode
+
+This skill operates in two modes determined by the caller:
+
+| Mode | Purpose | Reads | Writes |
+|---|---|---|---|
+| `recommendation` | Suggest plugins; user picks; no install | `phases.{auth, privacy, security, runtimeOperations, cicdAndDelivery, search, caching, realtime, fileUploads, payments, frontendArchitecture, designSystem, uxAccessibilityPerf, i18nL10n}` | `phases.pluginRecommendation.{suggested, selected, rationale}` |
+| `install` | Read picks; actually run `/plugin marketplace install` | `phases.pluginRecommendation.{selected, frontendAddenda}` | `phases.pluginInstall.{installed, failed, skipped}` |
+
+The wizard caller passes mode via the Skill tool input (the conversational caller pattern). When invoking:
+
+```
+plugin-discovery (mode=recommendation)
+plugin-discovery (mode=install)
+```
+
+If mode is omitted, default to `recommendation` (read-only behavior — safest default).
+
+Note: in `recommendation` mode, any `installCommand` fields in `references/plugin-catalog.md` are ignored — recommendation mode only matches capabilities and returns suggestions to the caller. Install commands are consumed exclusively by `install` mode.
+
 ## Purpose
 
 Recommend and install Claude Code plugins based on the developer's tech stack, workflow preferences, and project type. Combine curated catalog matching with optional web search.
@@ -15,6 +35,26 @@ Recommend and install Claude Code plugins based on the developer's tech stack, w
 ## Inputs
 
 You receive the complete Phase 1 context object including: stack, team size, security sensitivity, testing philosophy, and all project details.
+
+### Mode: recommendation
+
+[scan catalog + match capabilities — no install]
+1. Read `references/plugin-catalog.md` + state phases listed above.
+2. Match phases to plugin capabilities (e.g., auth.strategy=hosted + provider=clerk → suggest `vercel:auth` or `clerk:nextjs` plugin).
+3. Compile `{suggested: [...], rationale: "..."}` and return to caller.
+4. Caller writes `phases.pluginRecommendation`.
+
+### Mode: install
+
+[read pluginRecommendation → invoke /plugin marketplace install per entry]
+1. Read `phases.pluginRecommendation.selected ∪ frontendAddenda`.
+2. For each entry, run `/plugin marketplace install <id>`. Capture stdout + exit code.
+3. Build `{installed: [...], failed: [{id, reason}], skipped: [...]}`.
+4. Return to caller; caller writes `phases.pluginInstall`.
+
+---
+
+The remainder of this skill (Steps 1–5 below) is the detailed reference for both modes. `recommendation` mode runs Steps 1–3 and returns suggestions without installing. `install` mode runs Steps 4–5 starting from the caller-provided `pluginRecommendation.selected` list.
 
 ## Step 1: Match Curated Catalog
 
