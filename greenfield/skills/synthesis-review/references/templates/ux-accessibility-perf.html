@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>UX, Accessibility &amp; Performance Synthesis</title></head>
+<body>
+  <h1>UX, Accessibility &amp; Performance — A11y target: {{uxAccessibilityPerf.a11yTarget}}</h1>
+  <h2>Surfaces by persona</h2>
+  <ul>
+    {{#each uxAccessibilityPerf.surfacesByPersona}}<li>{{@key}}: {{this}}</li>{{/each}}
+  </ul>
+  <h2>Responsiveness &amp; breakpoints</h2>
+  <ul>
+    <li>Responsiveness strategy: {{uxAccessibilityPerf.responsivenessStrategy}}</li>
+    <li>Breakpoint system: {{uxAccessibilityPerf.breakpointSystem}}</li>
+  </ul>
+  <h2>Accessibility</h2>
+  <ul>
+    <li>A11y target: {{uxAccessibilityPerf.a11yTarget}}</li>
+    <li>Keyboard navigation: {{uxAccessibilityPerf.keyboardNavigation}}</li>
+    <li>Screen-reader testing: {{uxAccessibilityPerf.screenReaderTesting}}</li>
+  </ul>
+  <h2>Performance budgets</h2>
+  <ul>
+    <li>LCP: {{uxAccessibilityPerf.performanceBudgets.lcp}}</li>
+    <li>INP: {{uxAccessibilityPerf.performanceBudgets.inp}}</li>
+    <li>CLS: {{uxAccessibilityPerf.performanceBudgets.cls}}</li>
+  </ul>
+  <h2>Asset optimization</h2>
+  <ul>
+    <li>Image optimization: {{uxAccessibilityPerf.imageOptimization}}</li>
+    <li>Font loading: {{uxAccessibilityPerf.fontLoading}}</li>
+  </ul>
+  <h2>State UX</h2>
+  <ul>
+    <li>Error state: {{uxAccessibilityPerf.stateUx.error}}</li>
+    <li>Empty state: {{uxAccessibilityPerf.stateUx.empty}}</li>
+    <li>Loading state: {{uxAccessibilityPerf.stateUx.loading}}</li>
+  </ul>
+  <h2>Offline support</h2>
+  <ul>
+    <li>Offline support: {{uxAccessibilityPerf.offlineSupport}}</li>
+  </ul>
+  <h2>Inline gates panel</h2>
+  <ul>
+    <li>Marketing email — needed: {{uxAccessibilityPerf.concerns.marketingEmail.needed}}, vendor: {{uxAccessibilityPerf.concerns.marketingEmail.vendor}}</li>
+    <li>Push notifications — needed: {{uxAccessibilityPerf.concerns.pushNotifications.needed}}, vendor: {{uxAccessibilityPerf.concerns.pushNotifications.vendor}}</li>
+    <li>Product analytics — needed: {{uxAccessibilityPerf.concerns.productAnalytics.needed}}, vendor: {{uxAccessibilityPerf.concerns.productAnalytics.vendor}}</li>
+  </ul>
+  <h2>Risks</h2>
+  <ul>{{#each uxAccessibilityPerf.qRisks}}<li>{{this}}</li>{{/each}}</ul>
+</body>
+</html>

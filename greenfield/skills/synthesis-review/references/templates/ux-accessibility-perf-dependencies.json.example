@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "phase": "uxAccessibilityPerf",
+  "recordedAt": "2026-05-15T00:00:00Z",
+  "dependencies": [
+    { "path": "personas.primary", "value": [], "rationale": "Per-persona surface mapping — CHECK-R6-5 requires every personaId → ≥1 surface" },
+    { "path": "frontendArchitecture.frameworkConfirmed", "value": "", "rationale": "Image optimizer + font loading defaults vary by framework (next-image vs Vue)" }
+  ]
+}
