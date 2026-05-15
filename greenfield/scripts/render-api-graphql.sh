@@ -5,6 +5,11 @@
 # GraphQL SDL string wrapped in a JSON envelope to stdout.
 
 set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=render-common.sh
+source "${SCRIPT_DIR}/render-common.sh"
+
 STATE_FILE="${1:?usage: render-api-graphql.sh <state-file>}"
 
 ENDPOINTS=$(jq '.phases.apiIntegration.endpoints // []' "$STATE_FILE")
@@ -178,8 +183,7 @@ for i in $(seq 0 $((EC - 1))); do
     if [[ "$PII_FIELDS_IN_ENTITY" -gt 0 ]]; then
       WARN_ID="W-API-${i}-pii"
       MSG="Endpoint \`${METHOD} ${PATH_VAL}\` exposes PII fields from \`${ENTITY}\` in response without redaction note"
-      WARNINGS=$(jq --arg id "$WARN_ID" --arg msg "$MSG" \
-        '. + [{id: $id, level: "error", message: $msg}]' <<< "$WARNINGS")
+      WARNINGS=$(_emit_warning "error" "$WARN_ID" "$MSG" "$WARNINGS")
     fi
   fi
 done
@@ -192,8 +196,7 @@ for k in $(seq 0 $((SCOPE_COUNT - 1))); do
   if ! grep -qxF "$SN" "$USED_SCOPES_FILE" 2>/dev/null; then
     WARN_ID="W-API-scope-${k}"
     MSG="Auth scope \`${SN}\` is not used by any endpoint"
-    WARNINGS=$(jq --arg id "$WARN_ID" --arg msg "$MSG" \
-      '. + [{id: $id, level: "warn", message: $msg}]' <<< "$WARNINGS")
+    WARNINGS=$(_emit_warning "warn" "$WARN_ID" "$MSG" "$WARNINGS")
   fi
 done
 
@@ -205,8 +208,7 @@ for k in $(seq 0 $((ENT_COUNT - 1))); do
   if [[ "$HAS_EP" == "0" ]]; then
     WARN_ID="W-API-noep-${k}"
     MSG="Entity \`${EN}\` has no API endpoint — intentional?"
-    WARNINGS=$(jq --arg id "$WARN_ID" --arg msg "$MSG" \
-      '. + [{id: $id, level: "warn", message: $msg}]' <<< "$WARNINGS")
+    WARNINGS=$(_emit_warning "warn" "$WARN_ID" "$MSG" "$WARNINGS")
   fi
 done
 

@@ -5,6 +5,11 @@
 # and emits an AsyncAPI 2.6 YAML doc with one channel per domain event.
 
 set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=render-common.sh
+source "${SCRIPT_DIR}/render-common.sh"
+
 STATE_FILE="${1:?usage: render-event-asyncapi.sh <state-file>}"
 
 EVENTS=$(jq '.phases.domainModel.domainEvents // []' "$STATE_FILE")
@@ -50,13 +55,13 @@ ${PROPS_BLOCK}"
   if [[ "$HAS_PAYLOAD" != "object" ]]; then
     WARN_ID="W-EV-${i}-nopayload"
     MSG="Event \`${EV_NAME}\` has no payload schema in domainModel"
-    WARNINGS=$(jq --arg id "$WARN_ID" --arg msg "$MSG" '. + [{id: $id, level: "warn", message: $msg}]' <<< "$WARNINGS")
+    WARNINGS=$(_emit_warning "warn" "$WARN_ID" "$MSG" "$WARNINGS")
   fi
 
   if [[ "$CONSUMER_COUNT" -eq 0 ]]; then
     WARN_ID="W-EV-${i}-noconsumer"
     MSG="Domain event \`${EV_NAME}\` has no consumer registered"
-    WARNINGS=$(jq --arg id "$WARN_ID" --arg msg "$MSG" '. + [{id: $id, level: "info", message: $msg}]' <<< "$WARNINGS")
+    WARNINGS=$(_emit_warning "info" "$WARN_ID" "$MSG" "$WARNINGS")
   fi
 done
 

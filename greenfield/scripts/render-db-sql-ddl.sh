@@ -7,6 +7,11 @@
 # and PII-without-encryption-hint.
 
 set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=render-common.sh
+source "${SCRIPT_DIR}/render-common.sh"
+
 STATE_FILE="${1:?usage: render-db-sql-ddl.sh <state-file>}"
 
 ENTITIES=$(jq '.phases.domainModel.entities // []' "$STATE_FILE")
@@ -40,7 +45,7 @@ for i in $(seq 0 $((ENTITY_COUNT - 1))); do
   if [[ "$IS_AGGREGATE_ROOT" == "true" && -z "$PK_FIELD" ]]; then
     WARN_ID="W-DB-${i}-pk"
     MSG="Aggregate root \`${NAME}\` has no PK field — cannot generate schema"
-    WARNINGS=$(jq --arg id "$WARN_ID" --arg msg "$MSG" '. + [{id: $id, level: "error", message: $msg}]' <<< "$WARNINGS")
+    WARNINGS=$(_emit_warning "error" "$WARN_ID" "$MSG" "$WARNINGS")
     PK_FIELD="id"
   fi
   [[ -z "$PK_FIELD" ]] && PK_FIELD="id"
@@ -64,15 +69,7 @@ for i in $(seq 0 $((ENTITY_COUNT - 1))); do
     FIELDS_BLOCK="${FIELDS_BLOCK},
   ${AN} ${ST}"
 
-    PII_HIT=$(jq --arg n "${NAME}.${AN}" '[.[] | select(.path == $n)] | length' <<< "$PII")
-    if [[ "$PII_HIT" -gt 0 ]]; then
-      HAS_ENCRYPTION=$(jq -r --arg n "${NAME}.${AN}" '[.[] | select(.path == $n) | .encryption // ""] | first // ""' <<< "$PII")
-      if [[ -z "$HAS_ENCRYPTION" ]]; then
-        WARN_ID="W-DB-${i}-${j}-pii"
-        MSG="Field \`${NAME}.${AN}\` (PII) has no encryption hint — review storage strategy"
-        WARNINGS=$(jq --arg id "$WARN_ID" --arg msg "$MSG" '. + [{id: $id, level: "warn", message: $msg}]' <<< "$WARNINGS")
-      fi
-    fi
+    WARNINGS=$(_check_pii_encryption "${NAME}.${AN}" "$PII" "$WARNINGS")
   done
 
   TABLES="${TABLES}

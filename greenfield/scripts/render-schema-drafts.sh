@@ -13,6 +13,8 @@ set -euo pipefail
 
 STATE_FILE="${1:?usage: render-schema-drafts.sh <state-file>}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=render-common.sh
+source "${SCRIPT_DIR}/render-common.sh"
 
 [[ -f "$STATE_FILE" ]] || { echo "render-schema-drafts: state file not found: $STATE_FILE" >&2; exit 1; }
 command -v jq >/dev/null || { echo "render-schema-drafts: jq is required" >&2; exit 2; }
@@ -82,5 +84,6 @@ done <<< "$ARTIFACTS"
 
 jq --argjson w "$WARNINGS_JSON" '.phases.schemaDraftReview.crossCheckWarnings = $w' "$TMP_OUT" > "${TMP_OUT}.x" && mv "${TMP_OUT}.x" "$TMP_OUT"
 
-mv "$TMP_OUT" "$STATE_FILE"
+_atomic_write "$STATE_FILE" "$(cat "$TMP_OUT")"
+rm -f "$TMP_OUT"
 echo "render-schema-drafts: completed; drafts populated for [$(echo "$ARTIFACTS" | tr '\n' ' ' | sed 's/ *$//')]"
