@@ -1,0 +1,8 @@
+{
+  "phases": {
+    "vision": { "appType": "saas" },
+    "stack": { "language": "typescript" },
+    "auth": { "strategy": "hosted" },
+    "pluginDiscovery": { "installed": ["foo"], "suggested": ["bar"], "selected": ["bar"] }
+  }
+}

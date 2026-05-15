@@ -1,0 +1,177 @@
+{
+  "context": {
+    "domainModel": {
+      "antiCorruption": "",
+      "contexts": [],
+      "crossContextRelationships": [],
+      "domainEvents": [],
+      "entities": [],
+      "ubiquitousLanguage": [],
+      "valueObjects": []
+    },
+    "personas": {
+      "antiPersonas": [],
+      "primary": [],
+      "secondary": []
+    },
+    "phases": {
+      "architecturalValidation": {
+        "riskReconciliation": {
+          "summary": {},
+          "topFollowups": []
+        }
+      }
+    },
+    "risks": []
+  },
+  "meta": {
+    "migrations": [
+      {
+        "at": "2026-05-15T06:15:28Z",
+        "from": "alpha.3",
+        "to": "alpha.4"
+      },
+      {
+        "at": "2026-05-15T06:15:28Z",
+        "from": "alpha.4",
+        "to": "alpha.5"
+      },
+      {
+        "at": "2026-05-15T06:15:28Z",
+        "from": "alpha.5",
+        "to": "alpha.6"
+      },
+      {
+        "at": "2026-05-15T06:15:28Z",
+        "from": "alpha.6",
+        "to": "alpha.7"
+      }
+    ],
+    "schemaVersion": "alpha.7"
+  },
+  "mode": {
+    "coupling": "hybrid",
+    "depth": "heavy",
+    "domainFormat": "ddd-lite"
+  },
+  "phaseStatus": {
+    "domainModel": {
+      "approvedAt": null,
+      "lastModified": "2026-05-15T06:15:28Z",
+      "staleReason": null,
+      "status": "not-yet-walked"
+    },
+    "personas": {
+      "approvedAt": null,
+      "lastModified": "2026-05-15T06:15:28Z",
+      "staleReason": null,
+      "status": "not-yet-walked"
+    }
+  },
+  "phases": {
+    "auth": {
+      "concerns": {
+        "sms": {
+          "needed": null,
+          "vendor": null
+        },
+        "transactionalEmail": {
+          "needed": null,
+          "vendor": null
+        }
+      },
+      "strategy": "hosted"
+    },
+    "caching": {
+      "deferredReason": "Round 6 phase added 2026-05-15; pre-R6 sessions skip",
+      "skipped": true
+    },
+    "cicdAndDelivery": {
+      "adjustHistory": [],
+      "concerns": {
+        "featureGating": {
+          "needed": null,
+          "vendor": null
+        }
+      },
+      "lockedYaml": null
+    },
+    "designSystem": {
+      "deferredReason": "Round 6 phase added 2026-05-15; pre-R6 sessions skip",
+      "skipped": true
+    },
+    "featureRoadmap": {
+      "deferredReason": "Round 5 phase added 2026-05-15; pre-R5 sessions skip",
+      "skipped": true
+    },
+    "fileUploads": {
+      "deferredReason": "Round 6 phase added 2026-05-15; pre-R6 sessions skip",
+      "skipped": true
+    },
+    "frontendArchitecture": {
+      "deferredReason": "Round 6 phase added 2026-05-15; pre-R6 sessions skip",
+      "skipped": true
+    },
+    "i18nL10n": {
+      "deferredReason": "Round 6 phase added 2026-05-15; pre-R6 sessions skip",
+      "skipped": true
+    },
+    "payments": {
+      "deferredReason": "Round 6 phase added 2026-05-15; pre-R6 sessions skip",
+      "skipped": true
+    },
+    "pluginInstall": {
+      "failed": [],
+      "installed": [
+        "foo"
+      ],
+      "skipped": []
+    },
+    "pluginRecommendation": {
+      "frontendAddenda": [],
+      "rationale": "",
+      "selected": [
+        "bar"
+      ],
+      "suggested": [
+        "bar"
+      ]
+    },
+    "realtime": {
+      "deferredReason": "Round 6 phase added 2026-05-15; pre-R6 sessions skip",
+      "skipped": true
+    },
+    "schemaDraftReview": {
+      "deferredReason": "Round 5 phase added 2026-05-15; pre-R5 sessions skip",
+      "skipped": true
+    },
+    "search": {
+      "deferredReason": "Round 6 phase added 2026-05-15; pre-R6 sessions skip",
+      "skipped": true
+    },
+    "stack": {
+      "language": "typescript"
+    },
+    "uxAccessibilityPerf": {
+      "concerns": {
+        "marketingEmail": {
+          "needed": null,
+          "vendor": null
+        },
+        "productAnalytics": {
+          "needed": null,
+          "vendor": null
+        },
+        "pushNotifications": {
+          "needed": null,
+          "vendor": null
+        }
+      },
+      "deferredReason": "Round 6 phase added 2026-05-15; pre-R6 sessions skip",
+      "skipped": true
+    },
+    "vision": {
+      "appType": "saas"
+    }
+  }
+}
