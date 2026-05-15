@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "phase": "i18nL10n",
+  "recordedAt": "2026-05-15T00:00:00Z",
+  "dependencies": [
+    { "path": "frontendArchitecture.frameworkConfirmed", "value": "", "rationale": "Next.js vs Vue → different routing config; library choice (next-intl vs react-i18next) ties to framework" }
+  ]
+}
