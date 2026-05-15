@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "phase": "search",
+  "recordedAt": "2026-05-15T00:00:00Z",
+  "dependencies": [
+    { "path": "dataArchitecture.entities", "value": [], "rationale": "Index scope cross-refs entities; search results respect entity-level RLS" },
+    { "path": "dataArchitecture.engine", "value": "", "rationale": "Engine choice for FTS depends on db engine (Postgres FTS available when engine=postgres)" }
+  ]
+}

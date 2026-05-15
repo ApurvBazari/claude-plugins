@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Search Synthesis</title></head>
+<body>
+  <h1>Search — {{search.searchType}} via {{search.engine}}</h1>
+  <h2>Index scope</h2>
+  <ul>{{#each search.indexScope}}<li>{{this}}</li>{{/each}}</ul>
+  <h2>Update strategy</h2>
+  <p>{{search.updateStrategy}}</p>
+  <h2>Query patterns</h2>
+  <ul>{{#each search.queryPatterns}}<li>{{this}}</li>{{/each}}</ul>
+  <h2>Ranking</h2>
+  <p>{{search.ranking}}</p>
+  <h2>Security</h2>
+  <ul>
+    <li>RLS: {{search.security.rls}}</li>
+    <li>Query auth: {{search.security.queryAuth}}</li>
+  </ul>
+  <h2>Risks</h2>
+  <ul>{{#each search.qRisks}}<li>{{this}}</li>{{/each}}</ul>
+</body>
+</html>
