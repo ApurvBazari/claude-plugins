@@ -13,7 +13,7 @@
     },
     "phase": {
       "type": "string",
-      "pattern": "^(vision|personas|domainModel|stack|architecturalFraming|architecturalValidation|dataArchitecture|apiIntegration|auth|privacy|security|runtimeOperations|frontend|authSecurity|workflow|pluginRecommendation|cicdAndDelivery|risks|featureRoadmap|pluginInstall|schemaDraftReview)$",
+      "pattern": "^(apiIntegration|architecturalFraming|architecturalValidation|auth|authSecurity|caching|cicdAndDelivery|dataArchitecture|designSystem|domainModel|featureRoadmap|fileUploads|frontendArchitecture|i18nL10n|payments|personas|pluginInstall|pluginRecommendation|privacy|realtime|risks|runtimeOperations|schemaDraftReview|search|security|stack|uxAccessibilityPerf|vision|workflow)$",
       "description": "The phase this file describes dependencies for. Uses topic names — e.g., 'cicdAndDelivery', 'dataArchitecture', 'apiIntegration', 'auth', 'privacy', 'security', 'runtimeOperations'."
     },
     "recordedAt": {
@@ -31,7 +31,7 @@
         "properties": {
           "path": {
             "type": "string",
-            "pattern": "^(vision|personas|domainModel|stack|architecturalFraming|architecturalValidation|dataArchitecture|apiIntegration|auth|privacy|security|runtimeOperations|frontend|authSecurity|workflow|pluginRecommendation|cicdAndDelivery|risks|featureRoadmap|pluginInstall|schemaDraftReview)(\\.[\\w\\[\\]\\?='*\\.]+)+$",
+            "pattern": "^(apiIntegration|architecturalFraming|architecturalValidation|auth|authSecurity|caching|cicdAndDelivery|dataArchitecture|designSystem|domainModel|featureRoadmap|fileUploads|frontendArchitecture|i18nL10n|payments|personas|pluginInstall|pluginRecommendation|privacy|realtime|risks|runtimeOperations|schemaDraftReview|search|security|stack|uxAccessibilityPerf|vision|workflow)(\\.[\\w\\[\\]\\?='*\\.]+)+$",
             "description": "Dot-path into the v2 context shape, starting at a topic name. Example: vision.willDeploy or dataArchitecture.databaseHost. Topic name and remaining-path are joined by '.'."
           },
           "value": {
