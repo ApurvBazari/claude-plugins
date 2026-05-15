@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>File Uploads Synthesis</title></head>
+<body>
+  <h1>File Uploads — Storage backend: {{fileUploads.storageBackend}}</h1>
+  <h2>Upload flow</h2>
+  <ul>
+    <li>Upload flow: {{fileUploads.uploadFlow}}</li>
+    <li>CDN provider: {{fileUploads.cdnProvider}}</li>
+  </ul>
+  <h2>Image transforms</h2>
+  <p>{{fileUploads.imageTransforms}}</p>
+  <h2>Limits</h2>
+  <ul>
+    <li>Max file size: {{fileUploads.maxFileSize}}</li>
+    <li>MIME allowlist:
+      <ul>{{#each fileUploads.mimeAllowlist}}<li>{{this}}</li>{{/each}}</ul>
+    </li>
+  </ul>
+  <h2>Security &amp; governance</h2>
+  <ul>
+    <li>Virus scanning: {{fileUploads.virusScanning}}</li>
+    <li>PII handling: {{fileUploads.piiHandling}}</li>
+    <li>Retention policy: {{fileUploads.retentionPolicy}}</li>
+    <li>Multi-tenant isolation: {{fileUploads.multiTenantIsolation}}</li>
+  </ul>
+  <h2>Risks</h2>
+  <ul>{{#each fileUploads.qRisks}}<li>{{this}}</li>{{/each}}</ul>
+</body>
+</html>
