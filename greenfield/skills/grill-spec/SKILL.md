@@ -151,11 +151,30 @@ Run after the Round 4 pass when `context.phases.featureRoadmap` and/or `context.
 
 If any **error** invariant fails, block scaffold. User must either fix the cause (fix Q-bank answer, re-run the affected phase) or explicitly override with `--force` (logged to `greenfield-meta.json.audit[]` with reason). **Warn** invariants surface in the validation report but do not block.
 
+## Round 6 invariants (CHECK-R6-*)
+
+Run after the Round 5 pass when any of `context.phases.{frontendArchitecture, uxAccessibilityPerf, search, caching, realtime, fileUploads, payments, i18nL10n, pluginRecommendation}` are present, or any inline gate (`concerns.<gate>`) is populated. See `references/check-r6-invariants.md` for full predicate definitions, source phases, and fail messages. Walk order: R3 → R4 → R5 → R6 (later rounds depend on earlier-round state being clean).
+
+| ID | Severity | Phase deps |
+|---|---|---|
+| CHECK-R6-1 | error | auth + uxAccessibilityPerf + cicdAndDelivery (inline gate vendors) |
+| CHECK-R6-2 | warn | search + caching + realtime + dataArchitecture |
+| CHECK-R6-3 | error | payments + privacy |
+| CHECK-R6-4 | error | frontendArchitecture + architecturalFraming |
+| CHECK-R6-5 | error | uxAccessibilityPerf + personas |
+| CHECK-R6-6 | warn | i18nL10n + any user-facing phase |
+| CHECK-R6-7 | info | pluginRecommendation + all gates |
+| CHECK-R6-8 | error | cicdAndDelivery (LLM-fallback CI Draft Review) |
+| CHECK-R6-9 | error | any auto-looping phase + personas |
+
+If any **error** invariant fails, block scaffold. User must either fix the cause (fix Q-bank answer, re-run the affected phase) or explicitly override with `--force` (logged to `greenfield-meta.json.audit[]` with reason). **Warn** invariants surface in the validation report but do not block. **Info** invariants surface as suggestions only.
+
 ## References
 
 - **Round 3 invariants:** inlined above (CHECK-R3-1 through CHECK-R3-4) — compliance × privacy × auth × security × runtimeOperations cross-checks.
 - **Round 4 invariants:** `references/check-r4-invariants.md` — CHECK-R4-1 through CHECK-R4-8 covering personas + domainModel + risk reconciliation cross-phase consistency.
 - **Round 5 invariants:** `references/check-r5-invariants.md` — CHECK-R5-1 through CHECK-R5-6 covering featureRoadmap + schemaDraftReview cross-phase consistency.
+- `references/check-r6-invariants.md` — R6 invariants (CHECK-R6-1 through CHECK-R6-9): inline gate vendor coherence, concern-phase entity coverage, payments⇒financial-PII, P5 framework match, P5.6 persona surface coverage, i18n translation strategy, plugin recommendation coverage, LLM-fallback CI gate, auto-loop cap.
 
 ## Step 5: Re-confirmation
 
