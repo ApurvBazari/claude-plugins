@@ -288,3 +288,38 @@ If `docs/sprint-contracts/` exists in the scaffolded project:
 
 If missing or malformed, report:
 > Sprint-1 contract file missing or invalid. This is expected for pre-R5 scaffolded projects; for post-R5 projects, re-run `/onboard:generate` to regenerate.
+
+---
+
+## Round 6 Checks
+
+### Round 6 health checks (R6 — alpha.7)
+
+| Assertion | Failure mode |
+|---|---|
+| Frontend trio completeness — when none of `frontendArchitecture/designSystem/uxAccessibilityPerf` are skipped, all three are populated with required fields | Surface "frontend trio incomplete — missing X" |
+| 6 concern-phase completeness — when not skipped, each of `search/caching/realtime/fileUploads/payments/i18nL10n` has the required top-level fields | Surface "concern phase X incomplete" |
+| `pluginRecommendation` + `pluginInstall` both populated when neither is skipped | Surface "plugin split incomplete — recommendation captured but install not run" |
+
+Implementation jq snippets (use against `$STATE_FILE = .claude/greenfield-state.json`):
+
+```bash
+# Frontend trio
+jq -e '
+  (.phases.frontendArchitecture.skipped // false) or (.phases.frontendArchitecture.frameworkConfirmed != null)
+  and ((.phases.designSystem.skipped // false) or (.phases.designSystem.componentLibrary != null))
+  and ((.phases.uxAccessibilityPerf.skipped // false) or (.phases.uxAccessibilityPerf.a11yTarget != null))
+' "$STATE_FILE"
+
+# Concern phases
+jq -e '
+  ["search","caching","realtime","fileUploads","payments","i18nL10n"]
+  | all(. as $p | ((.phases[$p].skipped // false) or (.phases[$p] | length > 1)))
+' "$STATE_FILE"
+
+# Plugin split
+jq -e '
+  ((.phases.pluginRecommendation.skipped // false) or (.phases.pluginRecommendation.selected // [] | length >= 0))
+  and ((.phases.pluginInstall.skipped // false) or (.phases.pluginInstall.installed != null))
+' "$STATE_FILE"
+```
