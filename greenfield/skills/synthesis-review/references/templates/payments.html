@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Payments Synthesis</title></head>
+<body>
+  <h1>Payments — Provider: {{payments.provider}}</h1>
+  <h2>Billing</h2>
+  <ul>
+    <li>Provider: {{payments.provider}}</li>
+    <li>Billing model: {{payments.billingModel}}</li>
+  </ul>
+  <h2>Customer experience</h2>
+  <ul>
+    <li>Customer portal: {{payments.customerPortal}}</li>
+    <li>Refund flow: {{payments.refundFlow}}</li>
+  </ul>
+  <h2>Operations</h2>
+  <ul>
+    <li>Tax handling: {{payments.taxHandling}}</li>
+    <li>Dunning strategy: {{payments.dunning}}</li>
+    <li>Webhook strategy: {{payments.webhookStrategy}}</li>
+    <li>Fraud prevention: {{payments.fraudPrevention}}</li>
+  </ul>
+  <h2>Compliance</h2>
+  <ul>
+    <li>PCI scope: {{payments.compliance.pciScope}}</li>
+    <li>SCA / 3DS required: {{payments.compliance.sca}}</li>
+    <li>Other regulatory regimes:
+      <ul>{{#each payments.compliance.regulatory}}<li>{{this}}</li>{{/each}}</ul>
+    </li>
+  </ul>
+  <h2>Currencies &amp; locales</h2>
+  <ul>{{#each payments.currencyLocale}}<li>{{this}}</li>{{/each}}</ul>
+  <h2>Risks</h2>
+  <ul>{{#each payments.qRisks}}<li>{{this}}</li>{{/each}}</ul>
+</body>
+</html>

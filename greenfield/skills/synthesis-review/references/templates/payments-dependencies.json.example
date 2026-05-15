@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "phase": "payments",
+  "recordedAt": "2026-05-15T00:00:00Z",
+  "dependencies": [
+    { "path": "personas.primary", "value": [], "rationale": "Customer vs admin payments flow surfaces" },
+    { "path": "privacy.pii.financial", "value": false, "rationale": "CHECK-R6-3 — payments populated must imply privacy.pii.financial=true" },
+    { "path": "security", "value": {}, "rationale": "PCI scope (saq-a/saq-a-ep/saq-d) ties to security model" }
+  ]
+}
