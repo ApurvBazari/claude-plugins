@@ -1800,8 +1800,9 @@ For each `artifact` in `["db", "api", "event"]`:
 | frontendArchitecture | `references/render-frontend-architecture.md` | package.json deps + lib skeletons |
 | designSystem | `references/render-design-system.md` | shadcn init / theme provider / tailwind tokens |
 | uxAccessibilityPerf | `references/render-ux-accessibility-perf.md` | Lighthouse CI + image optimizer + per-gate libs |
+| i18nL10n | `references/render-i18n-l10n.md` | lib/i18n.ts + messages/* + routing config |
 
-**Per-phase dispatch loop.** For each phase in the ordered list `["search", "caching", "realtime", "fileUploads", "payments", "frontendArchitecture", "designSystem", "uxAccessibilityPerf"]`:
+**Per-phase dispatch loop.** For each phase in the ordered list `["search", "caching", "realtime", "fileUploads", "payments", "frontendArchitecture", "designSystem", "uxAccessibilityPerf", "i18nL10n"]`:
 
 1. Resolve `phase = context.phases[<key>]`. If absent → skip silently (pre-R6 contexts).
 2. If `phase.skipped == true` → skip (no-op, no error).
@@ -1814,10 +1815,11 @@ For each `artifact` in `["db", "api", "event"]`:
    - `frontendArchitecture`: skip if `stateManagement`, `dataFetching`, and `errorBoundaries` are all `"none"`.
    - `designSystem`: skip if `componentLibrary == "none"` AND `storybookAdopted == false` AND all of `typographyScale`/`colorSystem`/`spacingTokens` are empty.
    - `uxAccessibilityPerf`: skip if `performanceBudgets`, `imageOptimization`, `fontLoading`, and all `concerns.*.needed` are empty/`"none"`/`false`.
+   - `i18nL10n`: skip if `targetLocales[]` is empty/absent.
 4. Otherwise → dispatch to the corresponding `references/render-<phase>.md` module, which is fully responsible for resolving output paths, rendering content, and writing files (atomic `.tmp + rename`, parent `mkdir -p`, collision report).
 5. Record per-phase outcome in the generation report (`rendered` / `skipped` / `collided`).
 
-**Backward compatibility.** A context with no `phases.{search,caching,realtime,fileUploads,payments,frontendArchitecture,designSystem,uxAccessibilityPerf}` keys — or all marked `skipped: true` — produces zero R6 artifacts. Pre-R6 projects regenerate exactly as before.
+**Backward compatibility.** A context with no `phases.{search,caching,realtime,fileUploads,payments,frontendArchitecture,designSystem,uxAccessibilityPerf,i18nL10n}` keys — or all marked `skipped: true` — produces zero R6 artifacts. Pre-R6 projects regenerate exactly as before.
 
 ### Round 6 — Plugin Recommendation / Plugin Install split
 
@@ -1909,6 +1911,7 @@ When the developer approves the CI Draft Review (greenfield Step 20), greenfield
 - `references/render-frontend-architecture.md` — `phases.frontendArchitecture` → `package.json` deps + `lib/store.ts` + `lib/queries.ts` + `app/error.tsx`
 - `references/render-design-system.md` — `phases.designSystem` → `components.json` (shadcn) / `app/layout.tsx` provider patch (MUI / Mantine) / `tailwind.config.ts` token merge / `.storybook/*` when `storybookAdopted == true`
 - `references/render-ux-accessibility-perf.md` — `phases.uxAccessibilityPerf` → `.github/workflows/lighthouse-ci.yml` (GHA only) + `lighthouse.config.js` + `next.config.ts` image patch + font snippet + 3 inline-gate libs (`lib/email/marketing-<vendor>.ts`, `lib/push/<vendor>.ts`, `lib/analytics/<vendor>.ts`)
+- `references/render-i18n-l10n.md` — `phases.i18nL10n` → `lib/i18n.ts` + `messages/<locale>.json` per locale + `next.config.ts` `i18n` patch + `app/[locale]/layout.tsx` when `delivery == "lazy"`
 
 ## Key Rules
 

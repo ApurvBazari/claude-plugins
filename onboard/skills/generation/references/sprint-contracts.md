@@ -158,7 +158,7 @@ When `/onboard:verify --sprint N` runs:
 
 ### When to Generate
 
-- **First sprint contract**: Generated during Phase 3 of Greenfield (along with feature-list.json). Claude proposes, developer negotiates during the handoff step.
+- First sprint contract is **deterministic from R5 onward**: greenfield writes `docs/sprint-contracts/sprint-1.json` directly from `phases.featureRoadmap.sprint1` (see R5 design § Deterministic outputs). The interactive flow described below applies to **sprint 2 onward** at sprint boundaries.
 - **Subsequent sprints**: Generated at sprint boundary. When Sprint N is complete (all verified), Claude proposes Sprint N+1 contract before work begins.
 
 ### Auto-Proposal Logic
