@@ -1,0 +1,6 @@
+{
+  "phase0": {"appType": "web", "scale": "team", "personas": [{"label": "endUser", "commerceUser": false}], "deploy": "cloud", "teamSize": "2-5"},
+  "synthesisStatus": {"architecturalFraming": "approved"},
+  "parkedPhases": [],
+  "currentPhase": null
+}

@@ -1,0 +1,6 @@
+{
+  "phase0": {"appType": "cli", "scale": "prototype", "personas": [{"label": "developer", "commerceUser": false}], "deploy": "local-only", "teamSize": "solo"},
+  "synthesisStatus": {},
+  "parkedPhases": [],
+  "currentPhase": null
+}
