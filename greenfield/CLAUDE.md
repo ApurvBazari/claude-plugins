@@ -8,7 +8,17 @@ Scaffolds new projects with AI-native, auto-evolving Claude Code tooling. Three-
 /greenfield:start
      │
      ▼
-Phase 1: Context Gathering ──→ context-gathering skill (adaptive wizard)
+Phase 0: Step 0 mini-wizard (6 Qs) → start skill writes phase0.{appType,scale,personas,deploy,teamSize,stackHint}
+     │
+     ▼
+Phase 1: Visual Companion → visual-companion skill
+     │                       ├── resolve-phase-status.sh → greenfield-ui-state.json
+     │                       ├── serve-companion.sh → Python http.server
+     │                       ├── browser POSTs /intent → context-gathering single-phase mode
+     │                       └── falls through to LINEAR if Python missing, port bind fails, or env var off
+     │
+     ▼  (linear fallback only)
+Phase 1 (linear): Context Gathering ──→ context-gathering skill (adaptive wizard)
      │                            ├── Step 1.1: mode toggles (depth / coupling / domainFormat) → gates all downstream Q counts
      │                            ├── Step 2.2: Personas (personas phase — Round 4 insert; 16 Qs heavy / 4 light)
      │                            ├── Step 2.5: Architectural Framing (architecturalFraming)
@@ -91,6 +101,7 @@ User-facing skills (show in `/greenfield:` autocomplete):
 Internal building blocks (`user-invocable: false`):
 
 - `context-gathering/SKILL.md` — Phase 1 adaptive wizard
+- `visual-companion/SKILL.md` — Phase 1 navigator (Round 7 / 3.1.0). Internal building block. Spawns Python http.server, dispatches single-phase context-gathering on browser clicks. Falls through to linear context-gathering on Python missing / port bind failure / GREENFIELD_VISUAL_COMPANION=0.
 - `synthesis-review/SKILL.md` — Phase 1.8 per-phase synthesis review (Round 2 / 2.5 / 3 / 4: personas at Step 2.2, architecturalFraming at Step 2.5, domainModel at Step 2.7, dataArchitecture at Step 3, apiIntegration at Step 4, auth at Step 5, privacy at Step 6, security at Step 7, runtimeOperations at Step 8, cicdAndDelivery at Step 11, architecturalValidation at Step 15)
 - `grill-spec/SKILL.md` — Phase 1.7 pre-scaffold validation gate
 - `scaffolding/SKILL.md` — Phase 2 scaffold execution
@@ -122,6 +133,7 @@ Note: `/greenfield:verify`, `/greenfield:evolve` are now `/onboard:verify`, `/on
 - **Round 6 render-common.sh:** All 15 renderer modules (11 schema + 4 CI) source `scripts/render-common.sh` for shared helpers (`_emit_warning`, `_check_pii_encryption`, `_atomic_write`, `_render_handlebars`, `_emit_dependency`, `_validate_jq_path`). CI lint enforces the source line via `grep -L 'source.*render-common' scripts/render-*.sh`.
 - **Round 6 generic migration runner:** `/greenfield:pickup` invokes `scripts/run-migrations.sh --from <X> --to alpha.7 --state-file <path>` which reads sequential step modules from `skills/pickup/migrations/alpha-N-to-M.sh`. Supports `--dry-run` with JSON diff output. SchemaVersion detection accepts both legacy (`state.schemaVersion`) and canonical (`state.meta.schemaVersion`) locations.
 - **Round 6 plugin split:** P10 Plugin Discovery becomes P7.5 Plugin Recommendation (Step 21 — recommendation mode, no install) + P10 Plugin Install (Step 30 — install mode). Re-recommendation pass after Step 25 i18n captures Storybook/i18n-library plugins surfaced after the original Step 21.
+- Visual companion (Phase 1, 3.1.0+): clickable architecture map drives non-linear phase ordering. Dependency-aware: phases unlock as their `requires:` array becomes APPROVED. State file: `.claude/greenfield-ui-state.json` (derived from greenfield-state.json + phase-graph.json).
 
 ## Platform Coverage
 
