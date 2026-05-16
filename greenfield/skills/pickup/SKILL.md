@@ -292,6 +292,44 @@ Based on `currentPhase`, load the appropriate skill and fast-forward to `current
 | `phase-3b-tooling-generation` | `tooling-generation` skill | Resume at analysis, onboard-call, or greenfield-specific-artifacts |
 | `phase-4-lifecycle-setup` | `lifecycle-setup` skill | Resume at checklist, invocation, or doc-save |
 
+### Phase: visual-companion
+
+Resume the visual companion:
+
+1. Check for stale pid:
+   ```bash
+   if [ -f .claude/greenfield-ui-server.pid ]; then
+     OLD_PID=$(cat .claude/greenfield-ui-server.pid)
+     if ! kill -0 "$OLD_PID" 2>/dev/null; then
+       rm -f .claude/greenfield-ui-server.pid .claude/greenfield-ui-port.txt
+     fi
+   fi
+   ```
+
+2. Re-resolve the status map:
+   ```bash
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-phase-status.sh" \
+     --graph "${CLAUDE_PLUGIN_ROOT}/skills/visual-companion/references/phase-graph.json" \
+     --state .claude/greenfield-state.json \
+     > .claude/greenfield-ui-state.json.tmp
+   mv .claude/greenfield-ui-state.json.tmp .claude/greenfield-ui-state.json
+   ```
+
+3. Invoke the visual-companion skill:
+   ```
+   Skill(greenfield:visual-companion)
+   ```
+
+### Phase: single-phase:\<phase-name\>
+
+A phase was in-progress when the session ended. Resume the phase Q-bank from checkpoint:
+
+```
+Skill(greenfield:context-gathering)  # detects single-phase mode + currentPhase from state
+```
+
+When that phase completes, visual-companion's loop continues from the same state file (re-entered when context-gathering returns).
+
 Pass the full `context` object, `researchFindings`, `parkedQuestions`, and `completedSteps` to the skill so it has full context without re-asking questions.
 
 **Critical contract**: every greenfield skill MUST support entering mid-flow. The skill's flow section must start by checking `completedSteps` (if provided) and skipping already-completed steps. Without this contract, resume is broken.
