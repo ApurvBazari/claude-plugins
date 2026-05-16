@@ -1,0 +1,173 @@
+{
+  "schemaVersion": "1.0",
+  "phases": {
+    "architecturalFraming": {
+      "label": "Architectural Framing",
+      "layer": "foundation",
+      "icon": "AF",
+      "hint": "topology + deployment shape",
+      "requires": [],
+      "hideIf": [],
+      "synthesisDoc": "docs/adr/architectural-framing.html",
+      "requiredForCompletion": true
+    },
+    "domainModel": {
+      "label": "Domain Model",
+      "layer": "data",
+      "icon": "DM",
+      "hint": "entities + aggregates",
+      "requires": ["architecturalFraming"],
+      "hideIf": [{"phase0.appType": "library"}],
+      "synthesisDoc": "docs/adr/domain-model.html"
+    },
+    "dataArchitecture": {
+      "label": "Data Architecture",
+      "layer": "data",
+      "icon": "DA",
+      "hint": "Postgres + migrations",
+      "requires": ["architecturalFraming"],
+      "hideIf": [],
+      "synthesisDoc": "docs/adr/data-architecture.html",
+      "requiredForCompletion": true
+    },
+    "apiIntegration": {
+      "label": "API & Integration",
+      "layer": "application",
+      "icon": "AI",
+      "hint": "REST + OpenAPI",
+      "requires": ["architecturalFraming"],
+      "hideIf": [],
+      "synthesisDoc": "docs/adr/api-integration.html",
+      "requiredForCompletion": true
+    },
+    "auth": {
+      "label": "Auth & Identity",
+      "layer": "foundation",
+      "icon": "AU",
+      "hint": "JWT, RBAC",
+      "requires": ["architecturalFraming"],
+      "hideIf": [{"phase0.appType": "cli"}, {"phase0.appType": "library"}],
+      "synthesisDoc": "docs/adr/auth.html"
+    },
+    "search": {
+      "label": "Search",
+      "layer": "application",
+      "icon": "SE",
+      "hint": "full-text or vector",
+      "requires": ["dataArchitecture"],
+      "hideIf": [],
+      "synthesisDoc": "docs/adr/search.html"
+    },
+    "caching": {
+      "label": "Caching",
+      "layer": "data",
+      "icon": "CA",
+      "hint": "Redis or in-memory",
+      "requires": ["dataArchitecture"],
+      "hideIf": [],
+      "synthesisDoc": "docs/adr/caching.html"
+    },
+    "realtime": {
+      "label": "Realtime",
+      "layer": "application",
+      "icon": "RT",
+      "hint": "WebSocket, SSE",
+      "requires": ["apiIntegration"],
+      "hideIf": [],
+      "synthesisDoc": "docs/adr/realtime.html"
+    },
+    "fileUploads": {
+      "label": "File Uploads & CDN",
+      "layer": "application",
+      "icon": "FU",
+      "hint": "S3 + CDN",
+      "requires": ["dataArchitecture", "auth"],
+      "hideIf": [],
+      "synthesisDoc": "docs/adr/file-uploads.html"
+    },
+    "payments": {
+      "label": "Payments",
+      "layer": "application",
+      "icon": "PA",
+      "hint": "Stripe, billing",
+      "requires": ["auth"],
+      "hideIf": [{"personas.commerceUser": false}],
+      "synthesisDoc": "docs/adr/payments.html"
+    },
+    "privacy": {
+      "label": "Privacy",
+      "layer": "foundation",
+      "icon": "PR",
+      "hint": "GDPR, PII handling",
+      "requires": ["dataArchitecture"],
+      "hideIf": [],
+      "synthesisDoc": "docs/adr/privacy.html",
+      "requiredForCompletion": true
+    },
+    "security": {
+      "label": "Security",
+      "layer": "foundation",
+      "icon": "SC",
+      "hint": "threats, rate-limits",
+      "requires": ["auth", "apiIntegration"],
+      "hideIf": [],
+      "synthesisDoc": "docs/adr/security.html",
+      "requiredForCompletion": true
+    },
+    "runtimeOperations": {
+      "label": "Runtime Ops",
+      "layer": "foundation",
+      "icon": "RO",
+      "hint": "logs, metrics",
+      "requires": ["apiIntegration"],
+      "hideIf": [],
+      "synthesisDoc": "docs/adr/runtime-operations.html"
+    },
+    "cicdAndDelivery": {
+      "label": "CI/CD Delivery",
+      "layer": "foundation",
+      "icon": "CD",
+      "hint": "GitHub Actions, tests",
+      "requires": [],
+      "hideIf": [],
+      "synthesisDoc": "docs/adr/cicd-and-delivery.html",
+      "requiredForCompletion": true
+    },
+    "frontendArchitecture": {
+      "label": "Frontend Architecture",
+      "layer": "presentation",
+      "icon": "FA",
+      "hint": "SPA or SSR",
+      "requires": ["apiIntegration"],
+      "hideIf": [{"phase0.appType": "cli"}, {"phase0.appType": "api"}, {"phase0.appType": "library"}],
+      "synthesisDoc": "docs/adr/frontend-architecture.html"
+    },
+    "designSystem": {
+      "label": "Design System",
+      "layer": "presentation",
+      "icon": "DS",
+      "hint": "tokens + primitives",
+      "requires": ["frontendArchitecture"],
+      "hideIf": [],
+      "synthesisDoc": "docs/adr/design-system.html"
+    },
+    "uxAccessibilityPerf": {
+      "label": "UX / A11y / Perf",
+      "layer": "presentation",
+      "icon": "UX",
+      "hint": "a11y + Web Vitals",
+      "requires": ["frontendArchitecture"],
+      "hideIf": [],
+      "synthesisDoc": "docs/adr/ux-accessibility-perf.html"
+    },
+    "i18nL10n": {
+      "label": "i18n / l10n",
+      "layer": "foundation",
+      "icon": "IL",
+      "hint": "translations",
+      "requires": ["frontendArchitecture"],
+      "hideIf": [{"phase0.scale": "prototype"}],
+      "synthesisDoc": "docs/adr/i18n-l10n.html"
+    }
+  }
+}
