@@ -1,5 +1,27 @@
 # Changelog
 
+## 3.1.0 — 2026-05-16
+
+### Added
+
+- Visual companion for Phase 1 — clickable browser-based architecture map drives phase ordering as a dependency-aware tech tree instead of a linear 30-step wizard. New `visual-companion` skill, tiny Python stdlib HTTP server (`serve-companion.py`), and 18-phase dependency graph (`phase-graph.json`).
+- Step 0 mini-wizard (6 Qs: app type, scale, personas, deploy, team size, stack hint) in `start/SKILL.md` — seeds the map's hideIf pruning and dependency activation.
+- Single-phase entry mode for `context-gathering/SKILL.md` — runs one phase's Q-bank + synthesis-review, then returns control to the visual companion's wait-for-intent loop.
+- Resume support in `pickup/SKILL.md` — respawns the companion's HTTP server (new port if needed), re-resolves the status map, re-enters the loop.
+- `check/SKILL.md` reports visual-companion state — server pid/port liveness, approved/required count, current AVAILABLE phases, in-progress phase.
+- Manual end-to-end smoke checklist (`tests/visual-companion/e2e-manual.md`) — 16-step sign-off script for the 3.1.0 gate.
+
+### Changed
+
+- Phase 1's primary entry point is now `visual-companion`. Legacy linear 30-step wizard remains as the fallback path (triggers automatically when Python 3 is missing or a local port can't be bound).
+- New state files in `.claude/`: `greenfield-ui-state.json` (derived from greenfield-state.json + phase-graph.json), `greenfield-ui-intent.json` (transient click), `greenfield-ui-port.txt`, `greenfield-ui-server.pid`.
+
+### Compatibility
+
+- Backward-compatible: projects scaffolded with 3.0.x are not affected — the new state files are Phase-1-only and don't exist in completed projects.
+- Env var rollback: set `GREENFIELD_VISUAL_COMPANION=0` to force the linear wizard regardless of Python availability.
+- New prerequisite: Python 3 stdlib (no pip install required). Greenfield falls through to the linear wizard if missing — no breakage, just a notice.
+
 ## 3.0.0-alpha.7 (2026-05-15) — Round 6
 
 ### Added
