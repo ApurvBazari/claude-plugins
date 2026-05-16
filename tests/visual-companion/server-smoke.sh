@@ -73,8 +73,14 @@ echo "  ok"
 
 echo "## POST /shutdown stops the server"
 curl -sS -X POST "http://127.0.0.1:$PORT/shutdown" >/dev/null
-sleep 0.3
+# Python's serve_forever() polls every 0.5s by default, so the server can
+# take up to ~0.5s to notice the shutdown_event. Poll up to 3s in 100ms
+# steps to avoid a flaky 0.3s race.
+for _ in $(seq 1 30); do
+  kill -0 "$SERVER_PID" 2>/dev/null || break
+  sleep 0.1
+done
 if kill -0 "$SERVER_PID" 2>/dev/null; then
-  echo "FAIL: server still running after /shutdown"; exit 1
+  echo "FAIL: server still running 3s after /shutdown"; exit 1
 fi
 echo "  ok"
