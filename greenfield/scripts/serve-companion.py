@@ -38,13 +38,22 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/" or self.path == "/index.html":
-            body = (self.assets_dir / "index.html").read_bytes()
+            try:
+                body = (self.assets_dir / "index.html").read_bytes()
+            except FileNotFoundError:
+                self._send(500, b'{"error":"asset not found \xe2\x80\x94 check --assets-dir"}'); return
             self._send(200, body, "text/html; charset=utf-8")
         elif self.path == "/styles.css":
-            body = (self.assets_dir / "styles.css").read_bytes()
+            try:
+                body = (self.assets_dir / "styles.css").read_bytes()
+            except FileNotFoundError:
+                self._send(500, b'{"error":"asset not found \xe2\x80\x94 check --assets-dir"}'); return
             self._send(200, body, "text/css; charset=utf-8")
         elif self.path == "/companion.js":
-            body = (self.assets_dir / "companion.js").read_bytes()
+            try:
+                body = (self.assets_dir / "companion.js").read_bytes()
+            except FileNotFoundError:
+                self._send(500, b'{"error":"asset not found \xe2\x80\x94 check --assets-dir"}'); return
             self._send(200, body, "application/javascript; charset=utf-8")
         elif self.path == "/state.json":
             try:
@@ -85,7 +94,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         self._send(409, b'{"error":"another phase is in progress"}'); return
             except FileNotFoundError:
                 pass
-            tmp = self.intent_path.with_suffix(".json.tmp")
+            tmp = self.intent_path.with_suffix(f".{threading.get_ident()}.json.tmp")
             payload["ts"] = int(time.time())
             tmp.write_text(json.dumps(payload))
             tmp.replace(self.intent_path)
