@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Greenfield Architecture</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="hdr">
+    <h1>Greenfield Architecture</h1>
+    <p class="sub">
+      <span id="project-name">project</span>
+      <span> &middot; </span>
+      <span id="completion-progress">0 / 0</span>
+      <span> required phases approved</span>
+      <button id="refresh-btn" type="button">Refresh</button>
+    </p>
+  </header>
+
+  <main id="map" aria-live="polite">
+    <section class="layer" data-layer="presentation">
+      <h2 class="layer-title">Presentation</h2>
+      <div class="layer-cards"></div>
+    </section>
+    <div class="flow-arrow" aria-hidden="true">DOWN</div>
+
+    <section class="layer" data-layer="application">
+      <h2 class="layer-title">Application</h2>
+      <div class="layer-cards"></div>
+    </section>
+    <div class="flow-arrow" aria-hidden="true">DOWN</div>
+
+    <section class="layer" data-layer="data">
+      <h2 class="layer-title">Data</h2>
+      <div class="layer-cards"></div>
+    </section>
+    <div class="flow-arrow" aria-hidden="true">DOWN</div>
+
+    <section class="layer" data-layer="foundation">
+      <h2 class="layer-title">Foundation</h2>
+      <div class="layer-cards"></div>
+    </section>
+  </main>
+
+  <footer class="legend">
+    <span class="badge approved">APPROVED</span>
+    <span class="badge in-progress">IN_PROGRESS</span>
+    <span class="badge available">AVAILABLE</span>
+    <span class="badge locked">LOCKED</span>
+    <span class="badge parked">PARKED</span>
+    <span class="badge hidden">HIDDEN</span>
+  </footer>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="/companion.js"></script>
+</body>
+</html>
