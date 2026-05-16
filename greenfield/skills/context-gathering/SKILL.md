@@ -8,6 +8,30 @@ user-invocable: false
 
 You are guiding a developer through an interactive wizard to understand what they want to build, their tech stack preferences, workflow, and project requirements. This is Phase 1 of the Greenfield plugin.
 
+## Entry modes
+
+This skill supports two entry modes, set by the caller via `.claude/greenfield-state.json`:
+
+- **linear (default)**: walk Steps 1 to 30 in order. Used by `/greenfield:start` when visual-companion is unavailable.
+- **single-phase**: run only one phase's Q-bank + synthesis-review, then return control. Used by `visual-companion` on every browser click.
+
+Detect mode:
+
+```bash
+MODE=$(jq -r '.contextGatheringMode // "linear"' .claude/greenfield-state.json)
+PHASE=$(jq -r '.currentPhase // ""' .claude/greenfield-state.json)
+```
+
+If `MODE == "single-phase"`:
+
+1. Resolve `PHASE` to its question bank from `references/question-bank.md` (find the H2 matching the phase key, e.g. `## dataArchitecture`).
+2. Run only that phase's Qs.
+3. Run synthesis-review for that phase.
+4. On approve, write `synthesisStatus[$PHASE] = "approved"` to greenfield-state.json. On skip, write `"skipped"`.
+5. Unset `currentPhase` and return.
+
+Do NOT loop into the next phase in single-phase mode — the caller (visual-companion) handles dispatch.
+
 ## Purpose
 
 Gather all context needed to scaffold a project and generate AI tooling. Every decision for Phase 2 (scaffolding) and Phase 3 (AI tooling) flows from the answers collected here.
