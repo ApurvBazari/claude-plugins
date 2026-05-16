@@ -5,8 +5,8 @@ GRAPH=""
 STATE=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --graph) GRAPH="$2"; shift 2 ;;
-    --state) STATE="$2"; shift 2 ;;
+    --graph) [ $# -ge 2 ] || { echo "usage: $0 --graph G --state S" >&2; exit 2; }; GRAPH="$2"; shift 2 ;;
+    --state) [ $# -ge 2 ] || { echo "usage: $0 --graph G --state S" >&2; exit 2; }; STATE="$2"; shift 2 ;;
     *) echo "unknown arg: $1" >&2; exit 2 ;;
   esac
 done
@@ -52,6 +52,12 @@ jq -n \
           (.value.hideIf | map(matches_hide(.; p0; st)) | any)
         ))
       | map(.key);
+  # INVARIANT: single-pass propagation is sufficient because the 18-phase
+  # dependency graph has no chain where a phase is hidden only by transitive
+  # propagation without a direct hideIf match (every transitively-hidden
+  # phase shares a hideIf prefix with at least one of its requires).
+  # If you add a phase whose only requires are transitively-hidden
+  # (not directly-hidden), convert this to a fixed-point loop.
   def compute_hidden(g; p0; st):
       directly_hidden(g; p0; st) as $dh
       | g.phases | to_entries
