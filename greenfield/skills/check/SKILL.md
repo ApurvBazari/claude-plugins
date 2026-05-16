@@ -47,6 +47,39 @@ Before checking completed setup, check for an in-progress session at `.claude/gr
 > **To continue**: run `/greenfield:pickup`
 > **To abandon and start over**: delete `.claude/greenfield-state.json` (irreversible — will lose all gathered context)
 
+### Visual companion sub-state (if Phase 1)
+
+If `.phase == "visual-companion"` (or starts with `"single-phase:"`):
+
+```bash
+PORT=$(cat .claude/greenfield-ui-port.txt 2>/dev/null || echo "")
+PID=$(cat .claude/greenfield-ui-server.pid 2>/dev/null || echo "")
+if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
+  SERVER_LINE="server: localhost:$PORT (PID $PID, running)"
+else
+  SERVER_LINE="server: not running"
+fi
+
+if [ -f .claude/greenfield-ui-state.json ]; then
+  STATE=$(cat .claude/greenfield-ui-state.json)
+  REQ=$(echo "$STATE" | jq -r '.completionPolicy.requiredApproved')
+  CUR=$(echo "$STATE" | jq -r '.completionPolicy.currentApproved')
+  AVAIL=$(echo "$STATE" | jq -r '[.phases | to_entries[] | select(.value.status == "AVAILABLE") | .key] | join(", ")')
+  IN_PROG=$(echo "$STATE" | jq -r '[.phases | to_entries[] | select(.value.status == "IN_PROGRESS") | .key] | first // "none"')
+fi
+```
+
+Print:
+
+```
+greenfield session: visual-companion phase
+  - $CUR / $REQ required phases approved
+  - $SERVER_LINE
+  - currently AVAILABLE: $AVAIL
+  - in-progress: $IN_PROG
+  - resume: /greenfield:pickup
+```
+
 Then stop here — do not try to also report post-scaffold health, because the scaffold may not exist yet.
 
 **If it exists and `currentPhase === "complete"`**: the session finished. Proceed to Step 2 to report the full post-scaffold health.
