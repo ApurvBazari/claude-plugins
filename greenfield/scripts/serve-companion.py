@@ -20,9 +20,9 @@ import time
 class Handler(http.server.BaseHTTPRequestHandler):
     state_path: pathlib.Path
     intent_path: pathlib.Path
-    assets_dir: pathlib.Path
     adr_dir: pathlib.Path
     shutdown_event: threading.Event
+    asset_cache: dict
 
     def log_message(self, fmt, *args):
         # Quiet by default.
@@ -36,25 +36,20 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    STATIC_ASSETS = {
+        "/": ("index.html", "text/html; charset=utf-8"),
+        "/index.html": ("index.html", "text/html; charset=utf-8"),
+        "/styles.css": ("styles.css", "text/css; charset=utf-8"),
+        "/companion.js": ("companion.js", "application/javascript; charset=utf-8"),
+    }
+
     def do_GET(self):
-        if self.path == "/" or self.path == "/index.html":
-            try:
-                body = (self.assets_dir / "index.html").read_bytes()
-            except FileNotFoundError:
+        if self.path in self.STATIC_ASSETS:
+            filename, content_type = self.STATIC_ASSETS[self.path]
+            body = self.asset_cache.get(filename)
+            if body is None:
                 self._send(500, b'{"error":"asset not found \xe2\x80\x94 check --assets-dir"}'); return
-            self._send(200, body, "text/html; charset=utf-8")
-        elif self.path == "/styles.css":
-            try:
-                body = (self.assets_dir / "styles.css").read_bytes()
-            except FileNotFoundError:
-                self._send(500, b'{"error":"asset not found \xe2\x80\x94 check --assets-dir"}'); return
-            self._send(200, body, "text/css; charset=utf-8")
-        elif self.path == "/companion.js":
-            try:
-                body = (self.assets_dir / "companion.js").read_bytes()
-            except FileNotFoundError:
-                self._send(500, b'{"error":"asset not found \xe2\x80\x94 check --assets-dir"}'); return
-            self._send(200, body, "application/javascript; charset=utf-8")
+            self._send(200, body, content_type)
         elif self.path == "/state.json":
             try:
                 body = self.state_path.read_bytes()
@@ -117,10 +112,18 @@ def main():
 
     Handler.state_path = pathlib.Path(args.state).resolve()
     Handler.intent_path = pathlib.Path(args.intent).resolve()
-    Handler.assets_dir = pathlib.Path(args.assets_dir).resolve()
     Handler.adr_dir = pathlib.Path(args.adr_dir).resolve()
     shutdown_event = threading.Event()
     Handler.shutdown_event = shutdown_event
+
+    assets_dir = pathlib.Path(args.assets_dir).resolve()
+    asset_cache = {}
+    for filename in ("index.html", "styles.css", "companion.js"):
+        try:
+            asset_cache[filename] = (assets_dir / filename).read_bytes()
+        except FileNotFoundError:
+            pass
+    Handler.asset_cache = asset_cache
 
     server = None
     for port_str in args.prefer_ports.split(",") + ["0"]:

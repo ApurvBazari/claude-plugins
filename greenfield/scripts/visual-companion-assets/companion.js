@@ -1,6 +1,14 @@
 'use strict';
 
 const REFRESH_MS = 2000;
+const STATUS = {
+  APPROVED: 'APPROVED',
+  IN_PROGRESS: 'IN_PROGRESS',
+  AVAILABLE: 'AVAILABLE',
+  LOCKED: 'LOCKED',
+  PARKED: 'PARKED',
+  HIDDEN: 'HIDDEN',
+};
 let lastRendered = '';
 
 async function fetchState() {
@@ -57,44 +65,49 @@ function renderMap(state) {
   });
 
   for (const [phaseKey, phase] of Object.entries(state.phases)) {
-    if (phase.status === 'HIDDEN') continue;
+    if (phase.status === STATUS.HIDDEN) continue;
     const card = makeCard(phaseKey, phase);
     const slot = document.querySelector('.layer[data-layer="' + phase.layer + '"] .layer-cards');
     if (slot) slot.appendChild(card);
   }
 }
 
-async function onCardClick(phaseKey, phase) {
-  if (phase.status === 'LOCKED') {
-    showToast('Locked. ' + (phase.blockingReason || 'prerequisites not met'));
-    return;
-  }
-  if (phase.status === 'APPROVED') {
-    window.open('/adr/' + phaseToKebab(phaseKey), '_blank');
-    return;
-  }
-  if (phase.status === 'AVAILABLE' || phase.status === 'PARKED') {
-    try {
-      const r = await fetch('/intent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'activate', phase: phaseKey })
-      });
-      if (r.status === 409) {
-        showToast('Another phase is already in progress. Finish it in the CLI first.');
-        return;
-      }
-      if (r.ok) {
-        showToast('Back to the CLI. Claude is waiting to ask about ' + phase.label + '.');
-      } else {
-        showToast('Error: ' + r.status);
-      }
-    } catch (e) {
-      showToast('Network error: ' + e.message);
+async function activatePhase(phaseKey, phase) {
+  try {
+    const r = await fetch('/intent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'activate', phase: phaseKey })
+    });
+    if (r.status === 409) {
+      showToast('Another phase is already in progress. Finish it in the CLI first.');
+      return;
     }
-    return;
+    if (r.ok) {
+      showToast('Back to the CLI. Claude is waiting to ask about ' + phase.label + '.');
+      return;
+    }
+    showToast('Error: ' + r.status);
+  } catch (e) {
+    showToast('Network error: ' + e.message);
   }
-  showToast('This phase is in progress in the CLI.');
+}
+
+async function onCardClick(phaseKey, phase) {
+  switch (phase.status) {
+    case STATUS.LOCKED:
+      showToast('Locked. ' + (phase.blockingReason || 'prerequisites not met'));
+      return;
+    case STATUS.APPROVED:
+      window.open('/adr/' + phaseToKebab(phaseKey), '_blank');
+      return;
+    case STATUS.AVAILABLE:
+    case STATUS.PARKED:
+      await activatePhase(phaseKey, phase);
+      return;
+    default:
+      showToast('This phase is in progress in the CLI.');
+  }
 }
 
 function phaseToKebab(name) {

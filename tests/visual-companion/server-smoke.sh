@@ -14,7 +14,7 @@ cat > "${WORKDIR}/docs/adr/architectural-framing.html" <<EOF
 EOF
 
 [ -f "${CLAUDE_PLUGIN_ROOT}/scripts/visual-companion-assets/index.html" ] \
-  || { echo "FAIL: assets not authored yet (run after Task 9)"; rm -rf "$WORKDIR"; exit 1; }
+  || { echo "FAIL: visual-companion-assets/index.html missing — is CLAUDE_PLUGIN_ROOT set correctly?"; rm -rf "$WORKDIR"; exit 1; }
 
 PORT_FILE="${WORKDIR}/port.txt"
 PID_FILE="${WORKDIR}/pid.txt"
