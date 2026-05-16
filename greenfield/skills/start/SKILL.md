@@ -172,9 +172,48 @@ Tell the developer:
 
 ## Phase 1: Context Gathering
 
+### Step 0: Project shape (CLI mini-wizard, 6 Qs)
+
+Ask the user via AskUserQuestion (all six are single-select; see `ask-user-question-guard.md` rule — dynamic option lists must be guarded against collapsing to fewer than 2 items):
+
+1. **App type** — Web app / Mobile / API / CLI / Library
+2. **Scale** — Prototype / Team / Production
+3. **Personas** — free text, 1-2 lines (record `commerceUser: true/false` based on text or follow-up)
+4. **Deployment target** — Cloud / Self-host / Hybrid / Local-only
+5. **Team size** — Solo / 2-5 / 6-20 / 20+
+6. **Stack hint** — optional free text (e.g. "Next.js + Postgres")
+
+Write answers to `.claude/greenfield-state.json` under `phase0` (atomic write: `.tmp` + `mv`). Checkpoint state with `phase: "phase-0-done"`.
+
+### Step 1: Dispatch to visual companion (or linear fallback)
+
+If `GREENFIELD_VISUAL_COMPANION=0` is set in the environment, skip the visual companion entirely:
+
+```bash
+if [ "${GREENFIELD_VISUAL_COMPANION:-1}" = "0" ]; then
+  echo "Visual companion disabled via GREENFIELD_VISUAL_COMPANION=0. Using linear wizard."
+fi
+```
+
+Otherwise, invoke the `visual-companion` skill via the Skill tool:
+
+```
+Skill(greenfield:visual-companion)
+```
+
+After it returns, read `greenfield-state.json`. If `phase == "context-gathering-linear"` (visual-companion fell through), invoke the legacy linear wizard:
+
+```
+Skill(greenfield:context-gathering)  # full 30-step linear mode
+```
+
+Both paths end with `greenfield-state.json` `phase: "phase-1.7-grill-spec"`. Continue to Phase 1.7.
+
+### Step 2: Linear wizard details (only used if visual companion falls through)
+
 Use the `context-gathering` skill to guide the developer through the adaptive wizard. **The wizard has 30 named Steps and must emit a "Step X of 30" progress indicator at every Step boundary** so both Claude and the user can track progress. (Round 4 added Step 2.2 Personas and Step 2.7 Domain Modeling to the previous 15-step flow; Round 5 added Step 16 Feature Roadmap and Step 19 Schema & API Draft Review, bringing it to 20; Round 6 added 9 new phases — search, caching, realtime, fileUploads, payments, frontendArchitecture, designSystem, uxAccessibilityPerf, i18nL10n — plus the CI Draft Review at Step 20, bringing the total to 30.)
 
-### Step 1.1 — Mode toggles (Round 4 entry gate)
+#### Step 2.1 — Mode toggles (Round 4 entry gate)
 
 Before any Q-bank content, the wizard fires three mode-toggle `AskUserQuestion` calls (defined verbatim in `context-gathering/SKILL.md § Step 1.1 — Mode toggles`):
 
