@@ -46,7 +46,16 @@ Project health check. If a session is in-flight, reports the state (phase, step,
 
 ### Phase 1 — Context Gathering
 
-An adaptive 11-step wizard. Questions adapt to prior answers — a CLI tool dev answers ~10 questions, a full-stack production team answers ~30. Highlights:
+A clickable architecture map in your browser drives Phase 1 as a dependency-aware tech tree:
+
+1. A 6-question CLI mini-wizard (Step 0) seeds the map: app type, scale, personas, deployment, team size, optional stack hint.
+2. The browser opens to a layered architecture diagram showing all 18 wizard phases. Phases unlock as their prerequisites are approved; phases not relevant to your project (e.g. Payments for an internal tool) are hidden up front.
+3. Click any AVAILABLE phase to start it — the CLI runs that phase's Q-bank, and on synthesis-approval the map updates automatically.
+4. Continue until all 6 required phases (Architectural Framing, Data Architecture, API/Integration, Privacy, Security, CI/CD) are APPROVED, then greenfield advances to Phase 1.7 grill-spec.
+
+Fallback: if Python 3 isn't available, a local port can't be bound, or `GREENFIELD_VISUAL_COMPANION=0` is set, greenfield falls through to the linear 30-step wizard with a one-line notice.
+
+Highlights of the linear wizard (still applicable to Phase 1's per-phase Q-banks):
 
 - **Step indicator** — every step emits `Step X of 11 — [name]` so long sessions don't silently derail.
 - **Stack research** — the [`stack-researcher`](./agents/stack-researcher.md) agent uses WebSearch + WebFetch for current versions, official scaffolders, and idiomatic patterns. No pre-built templates.
@@ -206,6 +215,7 @@ If your stack isn't listed, greenfield will still try. Use `scaffoldMode: walkin
 - **git** — repository setup and branching
 - **`gh`** (GitHub CLI) — branch protection and CI/CD setup (optional if you're not using GitHub)
 - Bash ≥ 4 — all greenfield scripts
+- Python 3 (stdlib only, no pip install required) — runs the visual companion HTTP server. If absent, greenfield falls through to the linear 30-step wizard.
 
 ## Internals
 
