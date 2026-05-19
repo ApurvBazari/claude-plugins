@@ -129,6 +129,7 @@ if [[ -n "$saved_at" ]]; then
       ts="$(date +%Y%m%dT%H%M%S)"
       mkdir -p "$CWD/.claude/handoff/archive"
       mv "$HANDOFF_FILE" "$CWD/.claude/handoff/archive/expired-$ts.md" 2>/dev/null || true
+      bash "${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}/scripts/prune-archive.sh" "$CWD" 2>/dev/null || true
       # Emit a single-line note and exit.
       msg="Stale handoff ($days_old days old, threshold $stale_day_threshold) auto-archived to .claude/handoff/archive/expired-$ts.md. Run /handoff:check to inspect or /handoff:save to start fresh."
       if command -v jq >/dev/null 2>&1; then
