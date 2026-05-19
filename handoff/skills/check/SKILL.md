@@ -1,6 +1,6 @@
 ---
 name: check
-description: Read-only inspector for saved handoffs. Reports whether .claude/handoff.md exists, its age, saved-at SHA/branch, progress past the save point (commits/branch changes), snooze status, and current settings. Use when the user asks about handoff state, why a handoff isn't surfacing, or wants a quick sanity check before relying on the resume flow.
+description: Read-only inspector for saved handoffs. Reports whether .claude/handoff/active.md exists, its age, saved-at SHA/branch, progress past the save point (commits/branch changes), snooze status, and current settings. Use when the user asks about handoff state, why a handoff isn't surfacing, or wants a quick sanity check before relying on the resume flow.
 ---
 
 # Check Skill — Handoff Health Check
@@ -9,7 +9,7 @@ You are running a read-only health check for the handoff plugin in the current p
 
 ## Step 1: Check for an active handoff
 
-Look for `.claude/handoff.md`. Two paths:
+Look for `.claude/handoff/active.md`. Two paths:
 
 ### No file present
 
@@ -18,9 +18,9 @@ Report:
 > **No active handoff** in this project.
 >
 > - Save one with `/handoff:save` or by saying "save handoff" / "pick this up later".
-> - Settings file: `<exists | absent>` at `.claude/handoff-settings.md`.
+> - Settings file: `<exists | absent>` at `.claude/handoff/settings.md`.
 
-If `.claude/handoff-settings.md` exists, mention it; otherwise note "no settings file → defaults apply".
+If `.claude/handoff/settings.md` exists, mention it; otherwise note "no settings file → defaults apply".
 
 ### File present
 
@@ -59,15 +59,20 @@ if [[ -n "$deferred_at" ]]; then
     snooze_remaining="snooze expired — will surface at next SessionStart"
   fi
 fi
+
+# Archive stats
+archive_count="$(find .claude/handoff/archive -name '*.md' 2>/dev/null | wc -l | tr -d ' ')"
+retention_value="$(awk '/^archive-retention:/ { print $2; exit }' .claude/handoff/settings.md 2>/dev/null || echo 10)"
+[[ -z "$retention_value" ]] && retention_value=10
 ```
 
-Read `.claude/handoff-settings.md` if it exists; override `snooze_hours` from `deferral-snooze-hours` if set. Also read `stale-commit-threshold` and `stale-day-threshold` for the report.
+Read `.claude/handoff/settings.md` if it exists; override `snooze_hours` from `deferral-snooze-hours` if set. Also read `stale-commit-threshold` and `stale-day-threshold` for the report.
 
 ## Step 3: Report
 
 Present a structured report (markdown table, single block):
 
-> **Handoff status — `.claude/handoff.md` is active**
+> **Handoff status — `.claude/handoff/active.md` is active**
 >
 > | Field | Value |
 > |---|---|
@@ -80,6 +85,8 @@ Present a structured report (markdown table, single block):
 > | Commits past saved-at | `<n>` |
 > | Snooze | `<status>` |
 > | Settings file | `<exists|absent>` |
+> | Archive retention | `<value>` (default 10) |
+> | Archive count | `<n>` files in `.claude/handoff/archive/` |
 >
 > **Will surface at next SessionStart?** `<yes | no — reason>`
 
@@ -95,16 +102,16 @@ The bottom line answers the most useful question. Logic:
 After the table, show the first 12 lines of the directive body so the user can recognize it without re-reading the file:
 
 ```bash
-sed -n '/^---/,/^---/!p' .claude/handoff.md | head -12
+sed -n '/^---/,/^---/!p' .claude/handoff/active.md | head -12
 ```
 
-If the body is longer than 12 lines, append "*(truncated — run `cat .claude/handoff.md` for the full directive)*".
+If the body is longer than 12 lines, append "*(truncated — run `cat .claude/handoff/active.md` for the full directive)*".
 
 ## Step 5: Show settings (if file exists)
 
-If `.claude/handoff-settings.md` exists, display its frontmatter values as a small table:
+If `.claude/handoff/settings.md` exists, display its frontmatter values as a small table:
 
-> **Settings** (`.claude/handoff-settings.md`):
+> **Settings** (`.claude/handoff/settings.md`):
 >
 > | Key | Value |
 > |---|---|
@@ -112,12 +119,13 @@ If `.claude/handoff-settings.md` exists, display its frontmatter values as a sma
 > | stale-day-threshold | `<value>` (default 90) |
 > | deferral-snooze-hours | `<value>` (default 24) |
 > | gitignore-prompt | `<value>` (default ask) |
+> | archive-retention | `<value>` (default 10) |
 
 If absent, end with "No settings file — defaults apply".
 
 ## Key Rules
 
 - **Read-only.** Never modify any file. No state changes from this skill.
-- **Frontmatter is authoritative** — if a field is missing in `.claude/handoff.md`, surface as `unknown`; do not infer.
+- **Frontmatter is authoritative** — if a field is missing in `.claude/handoff/active.md`, surface as `unknown`; do not infer.
 - **Cwd mismatch is informational, not fatal** — surface it but don't refuse to report.
 - **Git failures are graceful** — `commits_past`, `current_branch` may be `unknown`; the report still renders.
