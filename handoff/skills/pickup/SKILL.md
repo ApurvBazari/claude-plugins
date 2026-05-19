@@ -5,11 +5,11 @@ description: Present a saved handoff to the user via AskUserQuestion (Execute / 
 
 # Pickup Skill — Surface and Dispatch a Saved Handoff
 
-You are invoked when a saved handoff exists at `.claude/handoff.md` — either because the SessionStart hook surfaced it in `additionalContext` and the routing instruction sent you here, or because the user typed `/handoff:pickup` explicitly. Present the four-option flow, then dispatch.
+You are invoked when a saved handoff exists at `.claude/handoff/active.md` — either because the SessionStart hook surfaced it in `additionalContext` and the routing instruction sent you here, or because the user typed `/handoff:pickup` explicitly. Present the four-option flow, then dispatch.
 
 ## Guard
 
-Read `.claude/handoff.md` from the project root. If it does not exist:
+Read `.claude/handoff/active.md` from the project root. If it does not exist:
 
 > No saved handoff in this project. Run `/handoff:save` to capture one, or just continue with what you're doing.
 
@@ -17,7 +17,7 @@ Stop and do not proceed.
 
 ## Step 1: Re-read from disk (do not trust the surfaced content)
 
-Even though the SessionStart hook may have emitted the handoff content in `additionalContext`, re-read `.claude/handoff.md` from disk now. The on-disk file is authoritative; the surfaced content is a stale snapshot if the file changed mid-session (rare but possible with concurrent Claude sessions).
+Even though the SessionStart hook may have emitted the handoff content in `additionalContext`, re-read `.claude/handoff/active.md` from disk now. The on-disk file is authoritative; the surfaced content is a stale snapshot if the file changed mid-session (rare but possible with concurrent Claude sessions).
 
 Parse the frontmatter (`saved-at`, `saved-at-sha`, `saved-at-branch`, `saved-from-cwd`, optional `deferred-at`) and capture the body separately.
 
@@ -73,23 +73,33 @@ Ask via AskUserQuestion (single-select, 4 options):
 
 1. **Re-affirm cwd** — if Step 3 was triggered and the user said "Yes, continue", we already verified. Otherwise (cwds matched naturally), skip.
 2. Act on the directive in this session. Treat the directive content as **guidance** for your judgment, not commands to mechanically run. If the directive points to a memory file or plan, read it first. If it lists constraints, respect them. If it lists open questions, surface them to the user before acting on the rest.
-3. After acting (or before, if the user wants to chain follow-ups), archive the handoff: `mv .claude/handoff.md .claude/handoff.consumed-<YYYYMMDDTHHMMSS>.md`.
-4. Confirm to the user: "Handoff archived to `.claude/handoff.consumed-<ts>.md`. Continuing with the directive."
+3. After acting (or before, if the user wants to chain follow-ups), archive the handoff:
+   ```bash
+   mkdir -p .claude/handoff/archive
+   mv .claude/handoff/active.md .claude/handoff/archive/consumed-<YYYYMMDDTHHMMSS>.md
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/prune-archive.sh" "$(pwd)"
+   ```
+4. Confirm to the user: "Handoff archived to `.claude/handoff/archive/consumed-<ts>.md`. Continuing with the directive."
 
 ### Edit
 
-1. Open `.claude/handoff.md` in the user's `$EDITOR` via Bash. If `$EDITOR` is unset, tell the user to edit the file directly and come back when done.
+1. Open `.claude/handoff/active.md` in the user's `$EDITOR` via Bash. If `$EDITOR` is unset, tell the user to edit the file directly and come back when done.
 2. After the editor exits, re-read the file from disk.
 3. Go back to **Step 2** and re-present. The flow repeats until the user picks Execute / Discard / Save for later.
 
 ### Discard
 
-1. Archive: `mv .claude/handoff.md .claude/handoff.discarded-<YYYYMMDDTHHMMSS>.md`.
-2. Confirm: "Handoff discarded (archived to `.claude/handoff.discarded-<ts>.md`)."
+1. Archive:
+   ```bash
+   mkdir -p .claude/handoff/archive
+   mv .claude/handoff/active.md .claude/handoff/archive/discarded-<YYYYMMDDTHHMMSS>.md
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/prune-archive.sh" "$(pwd)"
+   ```
+2. Confirm: "Handoff discarded (archived to `.claude/handoff/archive/discarded-<ts>.md`)."
 
 ### Save for later
 
-1. Update the frontmatter of `.claude/handoff.md`: add or replace the `deferred-at` field with the current UTC iso8601 timestamp. Preserve all other fields and the body.
+1. Update the frontmatter of `.claude/handoff/active.md`: add or replace the `deferred-at` field with the current UTC iso8601 timestamp. Preserve all other fields and the body.
 2. Confirm: "Handoff snoozed. Will re-surface at the next SessionStart after the configured snooze window (default 24h)."
 
 To update frontmatter safely, use a Bash one-liner:
@@ -102,7 +112,7 @@ awk -v ts="$ts" '
   in_fm && /^deferred-at:/ { print "deferred-at: " ts; emitted = 1; next }
   in_fm && fm_count == 1 && /^---[[:space:]]*$/ { if (!emitted) print "deferred-at: " ts; print; next }
   { print }
-' .claude/handoff.md > .claude/handoff.md.tmp && mv .claude/handoff.md.tmp .claude/handoff.md
+' .claude/handoff/active.md > .claude/handoff/active.md.tmp && mv .claude/handoff/active.md.tmp .claude/handoff/active.md
 ```
 
 If `deferred-at` already exists, the awk script replaces it. If absent, append it just before the closing `---`.
