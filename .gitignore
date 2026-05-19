@@ -38,3 +38,4 @@ __pycache__/
 # Local planning docs
 future-plans/
 docs/
+.superpowers/
