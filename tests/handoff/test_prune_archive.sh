@@ -76,7 +76,32 @@ cleanup
 setup_fake_project >/dev/null
 rm -rf "$FIXTURE_ROOT/.claude/handoff/archive"
 bash "$PRUNE" "$FIXTURE_ROOT"
-assert_eq "0" "$?" "missing archive/ dir → exit 0 silently"
+rc=$?
+assert_eq "0" "$rc" "missing archive/ dir → exit 0 silently"
+cleanup
+
+# --- Case 6: cap = null also skips pruning (spec synonym for unlimited) ---
+setup_fake_project >/dev/null
+seed_archive 18
+cat > "$FIXTURE_ROOT/.claude/handoff/settings.md" <<EOF
+---
+archive-retention: null
+---
+EOF
+bash "$PRUNE" "$FIXTURE_ROOT"
+assert_eq "18" "$(count_archive)" "cap 'null' keeps all (spec synonym)"
+cleanup
+
+# --- Case 7: cap = -1 also skips pruning ---
+setup_fake_project >/dev/null
+seed_archive 14
+cat > "$FIXTURE_ROOT/.claude/handoff/settings.md" <<EOF
+---
+archive-retention: -1
+---
+EOF
+bash "$PRUNE" "$FIXTURE_ROOT"
+assert_eq "14" "$(count_archive)" "cap '-1' keeps all (spec synonym)"
 cleanup
 
 summary

@@ -42,7 +42,7 @@ fi
 
 # Special values.
 case "$retention" in
-  unlimited|-1)
+  unlimited|-1|null)
     exit 0
     ;;
   0)

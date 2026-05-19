@@ -62,7 +62,7 @@ fi
 
 # Archive stats
 archive_count="$(find .claude/handoff/archive -name '*.md' 2>/dev/null | wc -l | tr -d ' ')"
-retention_value="$(awk '/^archive-retention:/ { print $2; exit }' .claude/handoff/settings.md 2>/dev/null || echo 10)"
+retention_value="$(awk '/^archive-retention:/ { sub(/^archive-retention:[[:space:]]*/, ""); gsub(/^["'\''"]|["'\''"]$/, ""); print; exit }' .claude/handoff/settings.md 2>/dev/null)"
 [[ -z "$retention_value" ]] && retention_value=10
 ```
 

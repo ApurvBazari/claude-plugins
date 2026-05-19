@@ -102,20 +102,14 @@ Ask via AskUserQuestion (single-select, 4 options):
 1. Update the frontmatter of `.claude/handoff/active.md`: add or replace the `deferred-at` field with the current UTC iso8601 timestamp. Preserve all other fields and the body.
 2. Confirm: "Handoff snoozed. Will re-surface at the next SessionStart after the configured snooze window (default 24h)."
 
-To update frontmatter safely, use a Bash one-liner:
+To update frontmatter safely, call the shared helper:
 
 ```bash
 ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-awk -v ts="$ts" '
-  BEGIN { in_fm = 0; fm_count = 0; emitted = 0 }
-  /^---[[:space:]]*$/ { fm_count++; in_fm = (fm_count == 1); print; next }
-  in_fm && /^deferred-at:/ { print "deferred-at: " ts; emitted = 1; next }
-  in_fm && fm_count == 1 && /^---[[:space:]]*$/ { if (!emitted) print "deferred-at: " ts; print; next }
-  { print }
-' .claude/handoff/active.md > .claude/handoff/active.md.tmp && mv .claude/handoff/active.md.tmp .claude/handoff/active.md
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/merge-fm-key.sh" .claude/handoff/active.md deferred-at "$ts"
 ```
 
-If `deferred-at` already exists, the awk script replaces it. If absent, append it just before the closing `---`.
+If `deferred-at` already exists, the helper replaces its value in place. If absent, it appends the key just before the closing `---`. Sibling keys are preserved.
 
 ## Step 6: Confirm dispatch
 

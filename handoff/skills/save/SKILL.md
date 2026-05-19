@@ -131,25 +131,18 @@ Per-option write to `.claude/handoff/settings.md` (the `archive-retention` key �
 
 "Default 10" and "Don't ask again" produce identical settings — the distinction is purely UX (whether the user inspected the default or just dismissed). No separate flag is written.
 
-To merge a key into existing settings frontmatter without clobbering siblings, use awk:
+To merge a key into existing settings frontmatter without clobbering siblings, call the shared helper:
 
 ```bash
-key=archive-retention
-val=10
-ts=".claude/handoff/settings.md"
-mkdir -p .claude/handoff
-if [[ -f "$ts" ]]; then
-  awk -v k="$key" -v v="$val" '
-    BEGIN { in_fm = 0; fm_count = 0; emitted = 0 }
-    /^---[[:space:]]*$/ { fm_count++; in_fm = (fm_count == 1); print; next }
-    in_fm && $0 ~ "^"k":" { print k ": " v; emitted = 1; next }
-    in_fm && fm_count == 1 && /^---[[:space:]]*$/ { if (!emitted) print k ": " v; print; next }
-    { print }
-  ' "$ts" > "$ts.tmp" && mv "$ts.tmp" "$ts"
-else
-  printf -- '---\n%s: %s\n---\n' "$key" "$val" > "$ts"
-fi
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/merge-fm-key.sh" .claude/handoff/settings.md archive-retention 10
 ```
+
+The helper handles all three cases atomically:
+- File missing → creates `.claude/handoff/settings.md` with `---\narchive-retention: 10\n---`.
+- File present but key absent → appends the key just before the closing `---`, preserving sibling keys.
+- File present with key already there → replaces the value in place.
+
+Substitute the trailing `10` for `5` or `20` per the user's selection.
 
 ## Step 10: Confirm with the user
 

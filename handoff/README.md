@@ -64,7 +64,7 @@ stale-commit-threshold: 3        # commits past saved-at-sha → tag as "progres
 stale-day-threshold: 90          # days past saved-at → silent auto-archive
 deferral-snooze-hours: 24        # hours to suppress re-surface after "Save for later"
 gitignore-prompt: ask            # ask | never
-archive-retention: 10            # cap on archive/ file count (special: 0, "unlimited")
+archive-retention: 10            # cap on archive/ file count (special: 0, "unlimited", -1, null)
 trigger-phrases:                 # additions/overrides for save NL trigger
   - "save handoff"
   - "pick this up later"
