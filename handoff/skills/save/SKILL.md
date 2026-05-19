@@ -5,7 +5,7 @@ description: Save the current session's intent as a handoff file so the next ses
 
 # Save Skill — Capture Session Intent for Handoff
 
-You are auto-invoked when the user signals end-of-session, or invoked explicitly via `/handoff:save`. Capture what the next session needs to pick up, then write it to `.claude/handoff.md`.
+You are auto-invoked when the user signals end-of-session, or invoked explicitly via `/handoff:save`. Capture what the next session needs to pick up, then write it to `.claude/handoff/active.md`.
 
 ## Step 1: Determine invocation mode
 
@@ -20,7 +20,7 @@ If unsure, default to **Confirm mode** — a single AskUserQuestion is always sa
 
 Ask the user via AskUserQuestion (single-select, 3 options):
 
-- **Save now** *(Recommended)* — "I'll draft a directive from the current session and write it to `.claude/handoff.md` immediately."
+- **Save now** *(Recommended)* — "I'll draft a directive from the current session and write it to `.claude/handoff/active.md` immediately."
 - **Edit before saving** — "I'll draft a directive, show it to you, let you edit, then write."
 - **Cancel** — "Don't save. I'll continue the current task."
 
@@ -67,7 +67,7 @@ If git fails (not a repo), use `unknown` for sha and branch. Skip nothing — th
 
 ## Step 6: Check overwrite
 
-If `.claude/handoff.md` already exists, ask via AskUserQuestion (single-select, 3 options):
+If `.claude/handoff/active.md` already exists, ask via AskUserQuestion (single-select, 3 options):
 
 - **Overwrite** *(Recommended)* — replace the existing handoff with the new one.
 - **Append** — keep the old content and add the new directive below it under a `## Previous handoff (saved <old-saved-at>)` heading.
@@ -77,7 +77,7 @@ The existing handoff's `saved-at` is in its frontmatter — read it for the prom
 
 ## Step 7: Write the handoff file
 
-Create `.claude/` if it doesn't exist. Write `.claude/handoff.md` with frontmatter:
+Create `.claude/handoff/` if it doesn't exist (`mkdir -p`). Write `.claude/handoff/active.md` with frontmatter:
 
 ```markdown
 ---
@@ -94,28 +94,70 @@ Do NOT include `deferred-at` — that field is written only by the resume flow.
 
 ## Step 8: Gitignore prompt (first save only)
 
-Read `.claude/handoff-settings.md` if it exists; check the `gitignore-prompt` frontmatter value. If `never`, skip this step.
+Read `.claude/handoff/settings.md` if it exists; check the `gitignore-prompt` frontmatter value. If `never`, skip this step.
 
 Otherwise, check the repo's `.gitignore`:
 
 - If `.gitignore` doesn't exist at all → skip this step (the file isn't in a versioned context).
-- If `.gitignore` already contains a pattern matching `.claude/handoff*.md` or `.claude/handoff.md` → skip.
+- If `.gitignore` already contains the literal line `.claude/handoff/` → skip.
 - Otherwise, ask via AskUserQuestion (single-select, 3 options):
-  - **Add `.claude/handoff*.md` to .gitignore** *(Recommended)* — "I'll append it now and write a settings file so this prompt doesn't repeat."
+  - **Add `.claude/handoff/` to .gitignore** *(Recommended)* — "I'll append it now and write a settings file so this prompt doesn't repeat."
   - **Skip — I'll handle it** — "Don't touch .gitignore. Persist the choice so you don't ask again."
   - **Don't ask again** — "Don't add it, and persist the choice."
 
-On **Add**: append `.claude/handoff*.md` to `.gitignore` on its own line (preceded by a blank line if the file doesn't end in one).
+On **Add**: append `.claude/handoff/` to `.gitignore` on its own line (preceded by a blank line if the file doesn't end in one).
 
-On **Skip** or **Don't ask again**: write `.claude/handoff-settings.md` with `gitignore-prompt: never` in the frontmatter. This is the file's only purpose right now; preserve any other settings if it already exists.
+On **Skip** or **Don't ask again**: write `.claude/handoff/settings.md` with `gitignore-prompt: never` in the frontmatter. Preserve any other settings if it already exists.
 
-## Step 9: Confirm with the user
+## Step 9: Retention prompt (first save only)
+
+Read `.claude/handoff/settings.md` if it exists. If the `archive-retention` key is present, skip this step — the user has already made the choice.
+
+Otherwise, ask via AskUserQuestion (single-select, 4 options):
+
+- **Default 10** *(Recommended)* — "Keep the most recent 10 archived handoffs (consumed + discarded + expired combined)."
+- **5** — "Keep the most recent 5."
+- **20** — "Keep the most recent 20."
+- **Don't ask again** — "Use the default 10 and don't ask again."
+
+Per-option write to `.claude/handoff/settings.md` (the `archive-retention` key — append to existing frontmatter, do not clobber `gitignore-prompt` or other keys):
+
+| Selection | Key written |
+|---|---|
+| Default 10 (Recommended) | `archive-retention: 10` |
+| 5 | `archive-retention: 5` |
+| 20 | `archive-retention: 20` |
+| Don't ask again | `archive-retention: 10` |
+
+"Default 10" and "Don't ask again" produce identical settings — the distinction is purely UX (whether the user inspected the default or just dismissed). No separate flag is written.
+
+To merge a key into existing settings frontmatter without clobbering siblings, use awk:
+
+```bash
+key=archive-retention
+val=10
+ts=".claude/handoff/settings.md"
+mkdir -p .claude/handoff
+if [[ -f "$ts" ]]; then
+  awk -v k="$key" -v v="$val" '
+    BEGIN { in_fm = 0; fm_count = 0; emitted = 0 }
+    /^---[[:space:]]*$/ { fm_count++; in_fm = (fm_count == 1); print; next }
+    in_fm && $0 ~ "^"k":" { print k ": " v; emitted = 1; next }
+    in_fm && fm_count == 1 && /^---[[:space:]]*$/ { if (!emitted) print k ": " v; print; next }
+    { print }
+  ' "$ts" > "$ts.tmp" && mv "$ts.tmp" "$ts"
+else
+  printf -- '---\n%s: %s\n---\n' "$key" "$val" > "$ts"
+fi
+```
+
+## Step 10: Confirm with the user
 
 Tell the user (terse — under three lines):
 
-> Saved to `.claude/handoff.md` (sha `<short-sha>` on `<branch>`). Will surface at next SessionStart in this project.
+> Saved to `.claude/handoff/active.md` (sha `<short-sha>` on `<branch>`). Will surface at next SessionStart in this project.
 
-Mention the gitignore step if it ran ("Added `.claude/handoff*.md` to `.gitignore`."). Don't list the directive content back — they already saw it (or wrote it).
+Mention the gitignore step if it ran ("Added `.claude/handoff/` to `.gitignore`."). Don't list the directive content back — they already saw it (or wrote it).
 
 ## Key Rules
 
@@ -123,6 +165,6 @@ Mention the gitignore step if it ran ("Added `.claude/handoff*.md` to `.gitignor
 - **Directive only, no state.** Don't embed commits / working-tree / task lists — derivable at resume.
 - **Always set all four frontmatter fields** (`saved-at`, `saved-at-sha`, `saved-at-branch`, `saved-from-cwd`). Use `unknown` if computation fails; do not omit.
 - **Single active slot.** If a handoff already exists, prompt before overwriting. Do not silently replace.
-- **Gitignore prompt is once-per-repo.** Persist the user's choice in `.claude/handoff-settings.md` so future saves don't nag.
+- **Gitignore prompt is once-per-repo.** Persist the user's choice in `.claude/handoff/settings.md` so future saves don't nag. The retention prompt is also once-per-repo, suppressed by the presence of the `archive-retention` key.
 - **No `deferred-at` on save.** That field belongs to the resume flow's "Save for later" path.
-- **AskUserQuestion guard** (`.claude/rules/ask-user-question-guard.md`): all three AskUserQuestion calls in this skill have static, fixed-length option lists (3 options each). No dynamic single-option risk.
+- **AskUserQuestion guard** (`.claude/rules/ask-user-question-guard.md`): all four AskUserQuestion calls in this skill have static, fixed-length option lists (3 options each for Steps 2, 6, and 8; 4 options for Step 9). No dynamic single-option risk.
