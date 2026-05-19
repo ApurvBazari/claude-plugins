@@ -127,9 +127,10 @@ if [[ -n "$saved_at" ]]; then
     days_old=$(( (now_epoch - saved_epoch) / 86400 ))
     if [[ "$days_old" -ge "$stale_day_threshold" ]]; then
       ts="$(date +%Y%m%dT%H%M%S)"
-      mv "$HANDOFF_FILE" "$CWD/.claude/handoff.expired-$ts.md" 2>/dev/null || true
+      mkdir -p "$CWD/.claude/handoff/archive"
+      mv "$HANDOFF_FILE" "$CWD/.claude/handoff/archive/expired-$ts.md" 2>/dev/null || true
       # Emit a single-line note and exit.
-      msg="Stale handoff ($days_old days old, threshold $stale_day_threshold) auto-archived to .claude/handoff.expired-$ts.md. Run /handoff:check to inspect or /handoff:save to start fresh."
+      msg="Stale handoff ($days_old days old, threshold $stale_day_threshold) auto-archived to .claude/handoff/archive/expired-$ts.md. Run /handoff:check to inspect or /handoff:save to start fresh."
       if command -v jq >/dev/null 2>&1; then
         jq -n --arg ctx "$msg" '{hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: $ctx}}'
       else
