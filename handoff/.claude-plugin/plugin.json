@@ -1,6 +1,6 @@
 {
   "name": "handoff",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Save and resume session handoffs — capture intent at session end, surface it at the next SessionStart",
   "author": {
     "name": "Apurv Bazari"
