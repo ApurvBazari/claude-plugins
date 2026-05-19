@@ -2,6 +2,7 @@
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$HERE/../.." && pwd)"
 PRUNE="$REPO_ROOT/handoff/scripts/prune-archive.sh"
+# shellcheck source=./lib.sh
 . "$HERE/lib.sh"
 
 trap cleanup EXIT
@@ -10,7 +11,8 @@ trap cleanup EXIT
 seed_archive() {
   local count="$1"
   for i in $(seq 1 "$count"); do
-    local f="$FIXTURE_ROOT/.claude/handoff/archive/consumed-$(printf '%05d' "$i").md"
+    local f
+    f="$FIXTURE_ROOT/.claude/handoff/archive/consumed-$(printf '%05d' "$i").md"
     : > "$f"
     # Force monotonically increasing mtimes — touch with -t YYYYMMDDhhmm.ss
     touch -t "$(date -v+"${i}"M '+%Y%m%d%H%M.%S' 2>/dev/null \

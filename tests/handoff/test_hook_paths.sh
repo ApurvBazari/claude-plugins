@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$HERE/../.." && pwd)"
+# shellcheck source=./lib.sh
 . "$HERE/lib.sh"
 
 trap cleanup EXIT

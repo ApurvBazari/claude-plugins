@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # handoff SessionStart hook
 #
-# Reads .claude/handoff.md from the session cwd, computes progress signals
+# Reads .claude/handoff/active.md from the session cwd, computes progress signals
 # (git activity, age, deferral snooze), and emits additionalContext routing
 # Claude to /handoff:pickup. The directive content is wrapped in
 # <untrusted-source> framing; routing instruction + metadata stay outside.
