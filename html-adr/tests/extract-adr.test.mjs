@@ -98,3 +98,59 @@ test('considered_options gets n/a when fewer than 2 options detected', () => {
   extractAdr({ filePath: '/tmp/x.md' })(t);
   assert.equal(t.data.adr.considered_options, null);
 });
+
+test('decision_outcome from chosen option', () => {
+  const t = tree(
+    h(1, 'X'),
+    h(3, 'Approach A (Recommended)'),
+    p('the chosen path'),
+    h(3, 'Approach B'),
+    p('the other one'),
+  );
+  extractAdr({ filePath: '/tmp/x.md' })(t);
+  assert.match(t.data.adr.decision_outcome.value, /Approach A: the chosen path/);
+});
+
+test('decision_outcome from "Decision" H2', () => {
+  const t = tree(
+    h(1, 'X'),
+    h(2, 'Decision'),
+    p('we will use X'),
+  );
+  extractAdr({ filePath: '/tmp/x.md' })(t);
+  assert.match(t.data.adr.decision_outcome.value, /we will use X/);
+});
+
+test('consequences from sub-grouped lists', () => {
+  const t = tree(
+    h(1, 'X'),
+    h(2, 'Consequences'),
+    h(3, 'Positive'),
+    { type: 'list', children: [
+      { type: 'listItem', children: [{ type: 'paragraph', children: [{ type: 'text', value: 'good thing' }] }] }
+    ]},
+    h(3, 'Negative'),
+    { type: 'list', children: [
+      { type: 'listItem', children: [{ type: 'paragraph', children: [{ type: 'text', value: 'cost' }] }] }
+    ]},
+  );
+  extractAdr({ filePath: '/tmp/x.md' })(t);
+  assert.deepEqual(t.data.adr.consequences.value.positive, ['good thing']);
+  assert.deepEqual(t.data.adr.consequences.value.negative, ['cost']);
+});
+
+test('links collects markdown links', () => {
+  const t = tree(
+    h(1, 'X'),
+    {
+      type: 'paragraph',
+      children: [
+        { type: 'text', value: 'see ' },
+        { type: 'link', url: 'https://example.com', children: [{ type: 'text', value: 'example' }] },
+      ],
+    },
+  );
+  extractAdr({ filePath: '/tmp/x.md' })(t);
+  assert.equal(t.data.adr.links.value.length, 1);
+  assert.equal(t.data.adr.links.value[0].url, 'https://example.com');
+});

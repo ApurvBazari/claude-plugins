@@ -181,9 +181,59 @@ function extractOptions(tree, frontmatter) {
   };
 }
 
+const DECISION_H2_RE = /^(recommendation|decision|chosen approach|outcome|verdict)/i;
+
+function extractOutcome(tree, frontmatter, options) {
+  if (frontmatter?.decision) return { value: frontmatter.decision, confidence: 'high', provenance: 'frontmatter' };
+  if (options?.value) {
+    const chosen = options.value.find(o => o.verdict === 'chosen');
+    if (chosen) return { value: `${chosen.name}: ${chosen.summary}`.trim(), confidence: 'high', provenance: 'chosen option' };
+  }
+  const idx = tree.children.findIndex(n => n.type === 'heading' && n.depth === 2 && DECISION_H2_RE.test(textOf(n)));
+  if (idx >= 0) {
+    const body = nodesBetween(tree, idx, n => n.type === 'heading' && n.depth <= 2);
+    const text = body.filter(n => n.type === 'paragraph').map(textOf).join('\n').trim();
+    if (text) return { value: text, confidence: 'high', provenance: `H2 "${textOf(tree.children[idx])}"` };
+  }
+  return null;
+}
+
+function flatList(node) {
+  if (node?.type !== 'list') return [];
+  return node.children.map(li => textOf(li).trim()).filter(Boolean);
+}
+
+function extractConsequences(tree, frontmatter) {
+  if (frontmatter?.consequences) return { value: frontmatter.consequences, confidence: 'high', provenance: 'frontmatter' };
+  const consH2 = tree.children.findIndex(n => n.type === 'heading' && n.depth === 2 && /^consequences?$/i.test(textOf(n)));
+  if (consH2 < 0) return null;
+  const body = nodesBetween(tree, consH2, n => n.type === 'heading' && n.depth <= 2);
+  let positive = [], negative = [];
+  for (let i = 0; i < body.length; i++) {
+    const n = body[i];
+    if (n.type === 'heading' && /^(positive|pros?|benefits)$/i.test(textOf(n))) positive = flatList(body[i + 1]);
+    if (n.type === 'heading' && /^(negative|cons?|drawbacks|trade-?offs)$/i.test(textOf(n))) negative = flatList(body[i + 1]);
+  }
+  if (!positive.length && !negative.length) return null;
+  return { value: { positive, negative }, confidence: 'high', provenance: 'Consequences H2' };
+}
+
+function collectLinks(node, acc = []) {
+  if (!node) return acc;
+  if (node.type === 'link') acc.push({ url: node.url, text: textOf(node) });
+  if (node.children) node.children.forEach(c => collectLinks(c, acc));
+  return acc;
+}
+
+function extractLinks(tree) {
+  const links = collectLinks(tree, []);
+  return { value: links, confidence: 'high', provenance: `${links.length} markdown links` };
+}
+
 export function extractAdr({ filePath = '', frontmatter = null, gitProvenance = null } = {}) {
   return function transformer(tree) {
     tree.data = tree.data ?? {};
+    const considered_options = extractOptions(tree, frontmatter);
     tree.data.adr = {
       title: extractTitle(tree, filePath),
       date: extractDate(tree, filePath, frontmatter, gitProvenance),
@@ -191,7 +241,10 @@ export function extractAdr({ filePath = '', frontmatter = null, gitProvenance = 
       decision_makers: extractAuthors(frontmatter, gitProvenance),
       context: extractContext(tree),
       decision_drivers: extractDrivers(tree, frontmatter),
-      considered_options: extractOptions(tree, frontmatter),
+      considered_options,
+      decision_outcome: extractOutcome(tree, frontmatter, considered_options),
+      consequences: extractConsequences(tree, frontmatter),
+      links: extractLinks(tree),
     };
   };
 }
