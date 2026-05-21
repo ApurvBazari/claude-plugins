@@ -6,7 +6,7 @@ Save and resume session handoffs. Closest existing plugin in shape is `notify/` 
 
 | Dimension | Choice | Reason |
 |---|---|---|
-| **Storage** | `.claude/handoff.md` (single active slot, in-repo) | Single-source-of-truth, simple, gitignore handles privacy |
+| **Storage** | `.claude/handoff/active.md (single active slot, in-repo, with archive/ subfolder)` | Single-source-of-truth, simple, gitignore handles privacy |
 | **Save trigger** | NL detection → confirm via AskUserQuestion → write | Auto-save with a confirm gate; false positives are zero-cost |
 | **Resume flow** | SessionStart hook surfaces → Claude invokes `/handoff:pickup` → 4-option AskUserQuestion (Execute / Edit / Discard / Save-for-later) | User stays in control; no implicit action on directive |
 | **Content** | Directive prose only — no embedded state (commits, branches, tasks) | State is derivable from git/memory/files at resume time; directive captures intent only |
@@ -37,7 +37,7 @@ The `additionalContext` value contains, in order:
 2. **Metadata (trusted)** — saved-at timestamps, SHA, branch, cwd, progress tags. NOT inside `<untrusted-source>`.
 3. **Directive content (untrusted)** — wrapped in `<untrusted-source description="user-saved handoff directive">…</untrusted-source>`.
 
-Splitting trusted vs untrusted matters: an attacker who lands a malicious `.claude/handoff.md` can only influence directive content, not the routing instruction. The framing ensures Claude treats the directive as data describing user intent, not instructions to run.
+Splitting trusted vs untrusted matters: an attacker who lands a malicious `.claude/handoff/active.md` can only influence directive content, not the routing instruction. The framing ensures Claude treats the directive as data describing user intent, not instructions to run.
 
 ## Stale handling (R4 Option E — git-activity + time backstop)
 
@@ -51,7 +51,7 @@ Hook computes three progress signals:
 
 The first two are *surface tags* (shown to the user via metadata) — they don't change behavior, they just inform the user's choice in the 4-option AskUserQuestion. The third is a hard cap.
 
-Thresholds are overridable in `.claude/handoff-settings.md` frontmatter (`stale-commit-threshold`, `stale-day-threshold`).
+Thresholds are overridable in `.claude/handoff/settings.md` frontmatter (`stale-commit-threshold`, `stale-day-threshold`).
 
 ## Snooze mechanism
 
@@ -67,11 +67,35 @@ Prevents the "I deferred this 10 minutes ago, stop nagging" annoyance without pe
 On the first save in a repo, the save skill:
 
 1. Check if `.gitignore` exists.
-2. If yes, check whether it already matches `.claude/handoff*.md` or `.claude/handoff.md`.
+2. If yes, check whether it already matches `.claude/handoff/`.
 3. If not matched, ask via AskUserQuestion: **Add pattern automatically / Skip (I'll add it) / Don't ask again**.
-4. Persist choice in `.claude/handoff-settings.md` frontmatter (`gitignore-prompt: ask | never`).
+4. Persist choice in `.claude/handoff/settings.md` frontmatter (`gitignore-prompt: ask | never`).
 
 If `.gitignore` doesn't exist at all (rare for an in-repo case), skip the prompt entirely — no risk of accidental commit if there's no repo.
+
+## Archive retention
+
+A single integer cap (`archive-retention`, default 10) limits the total file
+count across `.claude/handoff/archive/`. The cap applies uniformly to
+consumed / discarded / expired archives — they share one budget.
+
+Pruning is performed by `handoff/scripts/prune-archive.sh`, invoked from:
+
+- the SessionStart hook immediately after the stale auto-archive sweep, and
+- the pickup / discard skills immediately after writing any archive file.
+
+Special values:
+
+| Value | Behavior |
+|---|---|
+| `0` | every archive write is followed by removal of all files in `archive/` |
+| `unlimited` (or `-1`) | prune is skipped |
+| any positive integer | newest N files survive (mtime ordering); the rest are deleted |
+
+The retention prompt fires on first save only — its trigger is the absence
+of the `archive-retention` key in `.claude/handoff/settings.md`. The four
+options (Default 10 / 5 / 20 / Don't ask again) all write a definite key;
+"Default 10" and "Don't ask again" produce the same effective value.
 
 ## Cwd guard (R8)
 
@@ -92,7 +116,7 @@ Default whitelist (lowercase, substring match against the most recent user messa
 - "I'll continue next session"
 - "save for later"
 
-The skill auto-invokes when a phrase matches. User can extend / override the list in `.claude/handoff-settings.md` frontmatter (`trigger-phrases`).
+The skill auto-invokes when a phrase matches. User can extend / override the list in `.claude/handoff/settings.md` frontmatter (`trigger-phrases`).
 
 Because the save flow is gated by an AskUserQuestion confirm, the whitelist can be relatively loose without causing harm — false positives are zero-cost.
 
