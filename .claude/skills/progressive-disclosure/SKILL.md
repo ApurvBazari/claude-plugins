@@ -3,11 +3,9 @@ name: progressive-disclosure
 description: Apply progressive-disclosure discipline to a SKILL.md — measure size, identify inert content (prompt templates, schemas, long enumerations, long bash blocks), propose extractions, and rewrite the SKILL.md with reference stubs. Use when editing or creating a SKILL.md, or when an existing SKILL.md exceeds 100 lines.
 user-invocable: true
 ---
-
 # Progressive Disclosure — SKILL.md Slimming
 
 Apply a reusable rubric for deciding what stays inline in a `SKILL.md` versus what gets pushed into `references/` (inert content) or `scripts/` (long bash). Goal: smaller always-loaded context per skill invocation, without losing fidelity.
-
 ## Guard
 
 Target file path MUST match `**/skills/<name>/SKILL.md`. If the target is a `CLAUDE.md`, `README.md`, agent file, or hook script, abort with:
@@ -15,9 +13,7 @@ Target file path MUST match `**/skills/<name>/SKILL.md`. If the target is a `CLA
 > Progressive-disclosure rubric is calibrated for SKILL.md only. Target `<path>` is not a SKILL.md; aborting.
 
 The other file types have different audiences and different criteria.
-
 ## Step 1: Measure the file
-
 Run:
 
 ```bash
