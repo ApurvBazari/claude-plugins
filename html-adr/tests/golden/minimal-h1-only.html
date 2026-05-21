@@ -742,6 +742,46 @@ body {
   font-size: 14px;
 }
 
+/* ===== Overview graph (whole-ADR structural map at top of page) ========== */
+#overview-graph {
+  margin: 32px 0;
+  padding: 28px 32px 32px;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.overview-graph-head {
+  margin-bottom: 18px;
+}
+
+.overview-graph-title {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 600;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 4px 0 6px;
+}
+
+.overview-graph-hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+
+.overview-graph-canvas {
+  width: 100%;
+  min-height: 420px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  position: relative;
+}
+
 /* View toggle — Graph / Pipeline / Raw segmented control */
 .flow-toolbar {
   display: inline-flex;
@@ -9189,68 +9229,117 @@ return Ke}()
       elements: nodes.concat(edges),
       style: [
         { selector: 'node', style: {
-          'label': 'data(label)',
-          'background-color': '#ffffff',
-          'border-width': 1.5,
-          'border-color': '#d4ccbc',
-          'color': '#1a1714',
-          'font-family': 'Inter, sans-serif',
-          'font-size': 11,
-          'font-weight': 500,
-          'text-valign': 'center',
-          'text-halign': 'center',
-          'padding': 10,
-          'width': 'label',
-          'height': 'label',
-          'shape': 'round-rectangle',
-          'transition-property': 'border-color, background-color, border-width',
-          'transition-duration': 150,
+          'label':              'data(label)',
+          'background-color':   '#ffffff',
+          'border-width':       1.5,
+          'border-color':       '#d4ccbc',
+          'color':              '#1a1714',
+          'font-family':        'Inter, sans-serif',
+          'font-size':          11,
+          'font-weight':        500,
+          'text-valign':        'center',
+          'text-halign':        'center',
+          'text-wrap':          'wrap',
+          'text-max-width':     150,
+          'padding':            12,
+          'width':              160,
+          'height':             46,
+          'shape':              'round-rectangle',
         }},
         { selector: 'node[type="adr"]', style: {
-          'background-color': '#1a1714', 'color': '#faf8f3',
-          'border-color': '#1a1714', 'font-weight': 600, 'font-size': 12,
+          'background-color':   '#1a1714',
+          'color':              '#faf8f3',
+          'border-color':       '#1a1714',
+          'font-weight':        600,
+          'font-size':          12,
         }},
         { selector: 'node[type="opt-chosen"]', style: {
-          'background-color': '#e8efe1', 'border-color': '#4a6b3a',
-          'border-width': 2, 'color': '#4a6b3a', 'font-weight': 600,
+          'background-color':   '#e8efe1',
+          'border-color':       '#4a6b3a',
+          'border-width':       2,
+          'color':              '#4a6b3a',
+          'font-weight':        600,
         }},
         { selector: 'node[type="opt"]', style: {
-          'background-color': '#f5f0e3', 'border-color': '#d4ccbc',
-          'color': '#756f66', 'font-style': 'italic',
+          'background-color':   '#f5f0e3',
+          'border-color':       '#d4ccbc',
+          'color':              '#756f66',
+          'font-style':         'italic',
+        }},
+        { selector: 'node[type="sect"]', style: {
+          'background-color':   '#faf8f3',
+          'border-color':       '#d4ccbc',
+          'color':              '#1a1714',
         }},
         { selector: 'node.highlight', style: {
-          'border-color': '#b8651b', 'border-width': 2.5, 'background-color': '#faf2e3',
+          'border-color':       '#b8651b',
+          'border-width':       2.5,
+          'background-color':   '#faf2e3',
         }},
         { selector: 'edge', style: {
-          'width': 1.2, 'line-color': '#d4ccbc',
-          'target-arrow-color': '#d4ccbc', 'target-arrow-shape': 'triangle',
-          'curve-style': 'bezier', 'arrow-scale': 0.9,
+          'width':              1.2,
+          'line-color':         '#d4ccbc',
+          'target-arrow-color': '#d4ccbc',
+          'target-arrow-shape': 'triangle',
+          'curve-style':        'bezier',
+          'arrow-scale':        0.9,
         }},
         { selector: 'edge.highlight', style: {
-          'line-color': '#b8651b', 'target-arrow-color': '#b8651b', 'width': 2,
+          'line-color':         '#b8651b',
+          'target-arrow-color': '#b8651b',
+          'width':              2,
         }},
       ],
-      layout: { name: window.cytoscapeDagre ? 'dagre' : 'breadthfirst', rankDir: 'LR', nodeSep: 28, rankSep: 70, edgeSep: 12 },
+      layout: {
+        name:           'breadthfirst',
+        directed:       true,
+        padding:        24,
+        spacingFactor:  1.5,
+        // Render top-to-bottom by default — root ("Decision") at the top,
+        // options below, then sections.
+      },
       minZoom: 0.5,
       maxZoom: 2.0,
     });
 
-    // Hover: light up the touched node + its neighborhood.
     cy.on('mouseover', 'node', function (e) {
       var n = e.target;
       n.addClass('highlight');
       n.connectedEdges().addClass('highlight');
       n.neighborhood('node').addClass('highlight');
     });
-    cy.on('mouseout', 'node', function () { cy.elements().removeClass('highlight'); });
+    cy.on('mouseout', 'node', function () {
+      cy.elements().removeClass('highlight');
+    });
 
-    // Tap: scroll to the matching section AND open the side panel for it.
+    // Mapping from build-graph's sect-* node IDs to the canonical widget IDs
+    // that widget-builders.mjs emits. Without this, tap navigation to sections
+    // never finds a target because graph node IDs and DOM IDs diverge.
+    var SECTION_TYPE_TO_WIDGET_ID = {
+      AFFECTED_FILES: 'files',
+      DATA_FLOW:      'flow',
+      EDGE_CASES:     'edge',
+      DEPS_RISKS:     'deps',
+      ROLLBACK:       'rollback',
+      TESTING:        'test',
+    };
+
+    function widgetIdForNodeId(nodeId) {
+      if (nodeId === 'adr') return 'adr-header';
+      if (nodeId.indexOf('sect-') === 0) {
+        var type = nodeId.slice(5);
+        if (SECTION_TYPE_TO_WIDGET_ID[type]) return SECTION_TYPE_TO_WIDGET_ID[type];
+        return type.toLowerCase().replace(/_/g, '-');
+      }
+      return nodeId;
+    }
+
     cy.on('tap', 'node', function (e) {
-      var id = e.target.id();
-      var sectionEl = document.getElementById(id);
+      var nodeId = e.target.id();
+      var targetId = widgetIdForNodeId(nodeId);
+      var sectionEl = document.getElementById(targetId);
       if (sectionEl) {
         sectionEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        // If the section has a header that carries section metadata, open it.
         var head = sectionEl.querySelector('[data-item-type="section"]');
         if (head) openItem(head);
       }

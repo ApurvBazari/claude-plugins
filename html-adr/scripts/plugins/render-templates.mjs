@@ -128,6 +128,21 @@ function buildToc(adr, sections) {
   }).join('\n');
 }
 
+function buildOverviewGraphSection(graph) {
+  // Skip when the graph would be near-empty — an ADR with no options or a
+  // spec with no recognized sections degrades cleanly by omitting the slot.
+  if (!graph || !Array.isArray(graph.nodes) || graph.nodes.length < 2) return '';
+  return `
+<section id="overview-graph" aria-labelledby="overview-graph-title">
+  <div class="overview-graph-head">
+    <div class="section-eyebrow">overview · structural map</div>
+    <h2 id="overview-graph-title" class="overview-graph-title">Decision map</h2>
+    <p class="overview-graph-hint">Hover any node to highlight its neighborhood; click a section to jump.</p>
+  </div>
+  <div id="cy" class="overview-graph-canvas"></div>
+</section>`;
+}
+
 export function renderTemplates({ templatesDir, meta = {} }) {
   return {
     renderShell(tree) {
@@ -138,6 +153,8 @@ export function renderTemplates({ templatesDir, meta = {} }) {
       const adrHeader = renderHeader(adr);
       const sectionsHtml = sections.map(s => renderSection(s, templatesDir)).join('\n');
       const toc = buildToc(adr, sections);
+      const graph = tree.data?.graph ?? { nodes: [], edges: [] };
+      const graphSection = buildOverviewGraphSection(graph);
 
       return fill(shell, {
         title: escapeHtml(adr.title?.value ?? 'ADR'),
@@ -151,9 +168,9 @@ export function renderTemplates({ templatesDir, meta = {} }) {
         plugin: escapeHtml(meta.plugin ?? 'adr'),
         adrVersion: escapeHtml(meta.adrVersion ?? '0.1.0'),
         toc,
-        graphSection: '',
+        graphSection,
         sidePanel: loadTemplate(templatesDir, 'side-panel.html'),
-        graphDataJson: JSON.stringify(tree.data?.graph ?? { nodes: [], edges: [] }),
+        graphDataJson: JSON.stringify(graph),
         extractionLogJson: JSON.stringify({}),
       });
     },

@@ -727,6 +727,46 @@ body {
   font-size: 14px;
 }
 
+/* ===== Overview graph (whole-ADR structural map at top of page) ========== */
+#overview-graph {
+  margin: 32px 0;
+  padding: 28px 32px 32px;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.overview-graph-head {
+  margin-bottom: 18px;
+}
+
+.overview-graph-title {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 600;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 4px 0 6px;
+}
+
+.overview-graph-hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+
+.overview-graph-canvas {
+  width: 100%;
+  min-height: 420px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  position: relative;
+}
+
 /* View toggle — Graph / Pipeline / Raw segmented control */
 .flow-toolbar {
   display: inline-flex;
