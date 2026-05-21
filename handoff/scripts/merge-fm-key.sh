@@ -31,7 +31,10 @@ if [[ ! -f "$file" ]]; then
 fi
 
 # File exists → merge.
-tmp="${file}.tmp.$$"
+# Use mktemp for an unpredictable name and trap so an interrupt between
+# awk write and mv does not leave an orphaned temp file behind.
+tmp="$(mktemp "${file}.tmp.XXXXXX")" || exit 1
+trap 'rm -f "$tmp"' EXIT
 awk -v k="$key" -v v="$val" '
   BEGIN { in_fm = 0; fm_count = 0; emitted = 0 }
   /^---[[:space:]]*$/ {
