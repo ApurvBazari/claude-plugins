@@ -101,38 +101,10 @@ option text — and apply the per-option behavior documented there.
 
 ## Step 9: Retention prompt (first save only)
 
-Read `.claude/handoff/settings.md` if it exists. If the `archive-retention` key is present, skip this step — the user has already made the choice.
-
-Otherwise, ask via AskUserQuestion (single-select, 4 options):
-
-- **Default 10** *(Recommended)* — "Keep the most recent 10 archived handoffs (consumed + discarded + expired combined)."
-- **5** — "Keep the most recent 5."
-- **20** — "Keep the most recent 20."
-- **Don't ask again** — "Use the default 10 and don't ask again."
-
-Per-option write to `.claude/handoff/settings.md` (the `archive-retention` key — append to existing frontmatter, do not clobber `gitignore-prompt` or other keys):
-
-| Selection | Key written |
-|---|---|
-| Default 10 (Recommended) | `archive-retention: 10` |
-| 5 | `archive-retention: 5` |
-| 20 | `archive-retention: 20` |
-| Don't ask again | `archive-retention: 10` |
-
-"Default 10" and "Don't ask again" produce identical settings — the distinction is purely UX (whether the user inspected the default or just dismissed). No separate flag is written.
-
-To merge a key into existing settings frontmatter without clobbering siblings, call the shared helper:
-
-```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/merge-fm-key.sh" .claude/handoff/settings.md archive-retention 10
-```
-
-The helper handles all three cases atomically:
-- File missing → creates `.claude/handoff/settings.md` with `---\narchive-retention: 10\n---`.
-- File present but key absent → appends the key just before the closing `---`, preserving sibling keys.
-- File present with key already there → replaces the value in place.
-
-Substitute the trailing `10` for `5` or `20` per the user's selection.
+If the `archive-retention` key is already present in `.claude/handoff/settings.md`,
+skip — the user has already chosen. Otherwise present the prompt at
+`references/prompts/retention.md` — verbatim option text — and write the
+chosen value via `merge-fm-key.sh` as documented there.
 
 ## Step 10: Confirm with the user
 
