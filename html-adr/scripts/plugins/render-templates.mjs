@@ -4,6 +4,7 @@ import {
   buildDataFlow, buildEdgeCases, buildDepsRisks, buildRollback,
   buildTesting, buildGenericProse, buildMermaidBlock,
 } from './widget-builders.mjs';
+import { buildAdrHeader } from './adr-header-builder.mjs';
 // TODO Task 27 dogfood: mermaid auto-detect pass
 
 function escapeHtml(s) {
@@ -53,12 +54,13 @@ function affectedFilesItems(content) {
   });
 }
 
-function affectedFilesList(items) {
-  return items.map(it =>
-    `<li data-item-type="file" data-path="${escapeHtml(it.path)}" data-status="${escapeHtml(it.status)}">` +
-    `<span class="file-icon">▢</span>${escapeHtml(it.path)}` +
-    `<span class="file-status ${escapeHtml(it.status)}">${escapeHtml(it.status)}</span></li>`
-  ).join('\n');
+function affectedFilesList(items, crossMentions = {}) {
+  return items.map(it => {
+    const mentions = crossMentions[it.path] || 0;
+    return `<li data-item-type="file" data-path="${escapeHtml(it.path)}" data-status="${escapeHtml(it.status)}" data-cross-mentions="${mentions}">` +
+      `<span class="file-icon">▢</span>${escapeHtml(it.path)}` +
+      `<span class="file-status ${escapeHtml(it.status)}">${escapeHtml(it.status)}</span></li>`;
+  }).join('\n');
 }
 
 function renderSection(section, dir) {
@@ -85,10 +87,7 @@ function renderSection(section, dir) {
   }
 }
 
-function renderHeader(adr) {
-  // Minimal pass — fill the placeholders. Real impl expands further.
-  return `<header>${escapeHtml(adr.title?.value ?? '')}</header>`;
-}
+function renderHeader(adr) { return buildAdrHeader(adr); }
 
 export function renderTemplates({ templatesDir, meta = {} }) {
   return {

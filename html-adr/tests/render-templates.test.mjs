@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { renderTemplates } from '../scripts/plugins/render-templates.mjs';
 import { buildDataFlow, buildEdgeCases, buildDepsRisks, buildRollback, buildTesting, buildGenericProse, buildMermaidBlock } from '../scripts/plugins/widget-builders.mjs';
+import { buildAdrHeader } from '../scripts/plugins/adr-header-builder.mjs';
 import { readFileSync, mkdirSync, writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -27,7 +28,7 @@ test('substitutes simple placeholders in shell template', async () => {
     },
   };
   const html = renderTemplates({ templatesDir: dir, meta: {} }).renderShell(t);
-  assert.match(html, /<header>My ADR<\/header>/);
+  assert.match(html, /banner-info/);
 });
 
 test('renders AFFECTED_FILES widget with itemCount', async () => {
@@ -116,4 +117,31 @@ test('GENERIC_PROSE builder dumps content as HTML', () => {
 test('MERMAID_BLOCK builder wraps source in <pre class="mermaid">', () => {
   const html = buildMermaidBlock({ source: 'sequenceDiagram\n  A->>B: hi' });
   assert.match(html, /<pre class="mermaid">[\s\S]*A-&gt;&gt;B: hi/);
+});
+
+test('renders decision callout', () => {
+  const adr = {
+    title: { value: 'My ADR', confidence: 'high' },
+    decision_outcome: { value: 'We will do X', confidence: 'high' },
+    decision_drivers: { value: ['a', 'b'], confidence: 'high' },
+    context: { value: 'because reasons', confidence: 'medium' },
+    considered_options: { value: [
+      { name: 'A', summary: 'do A', pros: ['fast'], cons: ['risky'], verdict: 'chosen' },
+      { name: 'B', summary: 'do B', pros: [], cons: [], verdict: 'rejected' },
+    ], confidence: 'high' },
+    consequences: { value: { positive: ['good'], negative: ['bad'] }, confidence: 'high' },
+  };
+  const html = buildAdrHeader(adr);
+  assert.match(html, /My ADR/);
+  assert.match(html, /We will do X/);
+  assert.match(html, /class="driver-chip"[^>]*>a</);
+  assert.match(html, /class="option-card chosen"/);
+  assert.match(html, /class="cons-box positive"[\s\S]*good/);
+});
+
+test('omits ADR header when fewer than 2 options detected', () => {
+  const adr = { title: { value: 'X' }, considered_options: null };
+  const html = buildAdrHeader(adr);
+  assert.match(html, /banner/);
+  assert.match(html, /doesn't contain a multi-option decision/);
 });
