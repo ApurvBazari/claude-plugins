@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{title}}</title>
+<link rel="stylesheet" href="vendored:highlight-github.min.css">
+<style id="adr-styles">{{styles}}</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="top-bar-brand">{{brand}}</div>
+  <div class="top-bar-divider"></div>
+  <div class="top-bar-meta">
+    <span>source: <code>{{sourcePath}}</code></span>
+  </div>
+  <div class="top-bar-id">
+    <span>{{adrId}}</span>
+    <span class="sep">·</span>
+    <span>{{date}}</span>
+    <span class="sep">·</span>
+    <span class="status-pill status-{{status}}">{{status}}</span>
+  </div>
+</div>
+
+<div class="layout">
+  <aside class="toc">
+    <div class="toc-label">On this page</div>
+    <ul class="toc-list">{{toc}}</ul>
+  </aside>
+  <main>
+    {{adrHeader}}
+    {{graphSection}}
+    {{#if sections}}<div class="divider"><hr><span class="divider-label">Supporting detail · implementation spec</span><hr></div>{{/if}}
+    {{sections}}
+    <div class="footer">
+      <span class="footer-id">{{adrId}} · {{plugin}} · {{status}} · {{date}}</span>
+      <span>Rendered by adr v{{adrVersion}} · static</span>
+    </div>
+  </main>
+</div>
+
+{{sidePanel}}
+
+<script id="cytoscape">{{cytoscapeBundle}}</script>
+<script id="cytoscape-dagre">{{cytoscapeDagreBundle}}</script>
+<script id="dagre">{{dagreBundle}}</script>
+<script id="mermaid">{{mermaidBundle}}</script>
+<script id="highlight">{{highlightBundle}}</script>
+<script id="graph-data" type="application/json">{{graphDataJson}}</script>
+<script id="extraction-log" type="application/json">{{extractionLogJson}}</script>
+<script id="adr-runtime">{{runtime}}</script>
+
+</body>
+</html>

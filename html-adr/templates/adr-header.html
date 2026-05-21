@@ -1,0 +1,36 @@
+<section id="adr-header" class="adr-block">
+  <h1 class="adr-title">{{title}}</h1>
+
+  <div class="adr-decision">
+    <div class="adr-decision-label">Decision</div>
+    <div class="adr-decision-text">{{decision}}</div>
+  </div>
+
+  <div class="adr-grid">
+    <div>
+      <div class="adr-field-label">Decision drivers <span class="confidence-dot {{driversConfidence}}"></span></div>
+      <div class="drivers">{{driversChips}}</div>
+    </div>
+    <div>
+      <div class="adr-field-label">Context <span class="confidence-dot {{contextConfidence}}"></span></div>
+      <div class="context-text">{{context}}</div>
+    </div>
+  </div>
+
+  <div class="options-section">
+    <div class="adr-field-label">Considered options <span class="confidence-dot {{optionsConfidence}}"></span></div>
+    <div class="options-grid">{{optionCards}}</div>
+  </div>
+
+  <div class="adr-field-label">Consequences <span class="confidence-dot {{consequencesConfidence}}"></span></div>
+  <div class="consequences">
+    <div class="cons-box positive">
+      <div class="cons-box-label">Positive</div>
+      <ul>{{positiveList}}</ul>
+    </div>
+    <div class="cons-box negative">
+      <div class="cons-box-label">Negative</div>
+      <ul>{{negativeList}}</ul>
+    </div>
+  </div>
+</section>
