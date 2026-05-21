@@ -101,10 +101,10 @@ option text — and apply the per-option behavior documented there.
 
 ## Step 9: Retention prompt (first save only)
 
-If the `archive-retention` key is already present in `.claude/handoff/settings.md`,
-skip — the user has already chosen. Otherwise present the prompt at
-`references/prompts/retention.md` — verbatim option text — and write the
-chosen value via `merge-fm-key.sh` as documented there.
+If `archive-retention` is set in `.claude/handoff/settings.md`, skip. Otherwise
+present the prompt at `references/prompts/retention.md` — verbatim option text —
+and write the user's selection via `merge-fm-key.sh` per the per-option table
+documented there.
 
 ## Step 10: Confirm with the user
 
