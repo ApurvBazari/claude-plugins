@@ -68,7 +68,7 @@ Each option label MUST include the source step name and destination path so the 
 For each approved extraction:
 
 1. `mkdir -p` the destination directory.
-2. Write the extracted content verbatim to the destination file. For bash extractions to `scripts/`, prepend the shebang `#!/usr/bin/env bash` and `set -uo pipefail` (NOT `-e`) per repo convention; make the file executable (`chmod +x`).
+2. Write the extracted content verbatim to the destination file. For bash to `scripts/`, prepend `#!/usr/bin/env bash` and the appropriate `set` line per `.claude/rules/shell-scripts.md` (utility scripts: `-euo pipefail`; scripts with an always-exit-0 contract: `-uo pipefail`). Make executable (`chmod +x`).
 3. Replace the original block in the SKILL.md with the matching stub form from Step 2's rubric table. The stub MUST include either "verbatim" (reference is authoritative; do not paraphrase) or "summary" (reference is descriptive; paraphrase OK). Without this qualifier, a downstream reader cannot tell what is safe to adapt.
 4. For bash extracted to `scripts/`, the SKILL.md invocation MUST use `${CLAUDE_PLUGIN_ROOT}/scripts/<name>.sh` per `.claude/rules/plugin-script-paths.md`. Bare relative forms are silently broken.
 
