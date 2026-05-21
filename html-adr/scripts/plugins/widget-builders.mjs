@@ -20,6 +20,25 @@ function firstList(content, predicate = () => true) {
   return content.find(n => n.type === 'list' && predicate(n)) || null;
 }
 
+// Section-level click trigger for the side panel. Runtime's delegated click
+// listener dispatches on data-item-type — adding it to widget heads makes
+// "click the section card to drill" work end-to-end. The payload mirrors
+// what runtime's buildSection consumes.
+function widgetHead({ id, icon, iconClass, headingText, countLabel }) {
+  const payload = JSON.stringify({
+    title: headingText,
+    eyebrow: `#${id} · section detail`,
+  }).replace(/'/g, '&#39;');
+  const count = countLabel != null
+    ? `<div class="widget-count">${escapeHtml(countLabel)}</div>`
+    : '';
+  return `<div class="widget-head" data-section="${escapeHtml(id)}" data-item-type="section" data-item-payload='${payload}'>
+    <div class="widget-icon ${iconClass}">${icon}</div>
+    <div class="widget-title">${escapeHtml(headingText)}</div>
+    ${count}
+  </div>`;
+}
+
 export function buildDataFlow({ headingText, content }) {
   const steps = flatBullets(firstList(content));
   const pills = steps.map(s => {
@@ -30,10 +49,7 @@ export function buildDataFlow({ headingText, content }) {
   const asciiBlock = ascii ? `<pre class="ascii-block">${escapeHtml(ascii.value || '')}</pre>` : '';
   return `
 <section id="flow" class="widget">
-  <div class="widget-head" data-section="flow">
-    <div class="widget-icon flow">↳</div>
-    <div class="widget-title">${escapeHtml(headingText)}</div>
-  </div>
+  ${widgetHead({ id: 'flow', icon: '↳', iconClass: 'flow', headingText })}
   <div class="widget-body">
     <div class="pipeline">${pills}</div>
     ${asciiBlock}
@@ -64,11 +80,7 @@ export function buildEdgeCases({ headingText, content }) {
   }).join('');
   return `
 <section id="edge" class="widget">
-  <div class="widget-head" data-section="edge">
-    <div class="widget-icon edge">⚠</div>
-    <div class="widget-title">${escapeHtml(headingText)}</div>
-    <div class="widget-count">${cases.length} cases</div>
-  </div>
+  ${widgetHead({ id: 'edge', icon: '⚠', iconClass: 'edge', headingText, countLabel: `${cases.length} cases` })}
   <div class="widget-body">
     <div class="edge-grid">${cards}</div>
   </div>
@@ -100,10 +112,7 @@ export function buildDepsRisks({ headingText, content }) {
   ).join('\n');
   return `
 <section id="deps" class="widget">
-  <div class="widget-head" data-section="deps">
-    <div class="widget-icon deps">⬡</div>
-    <div class="widget-title">${escapeHtml(headingText)}</div>
-  </div>
+  ${widgetHead({ id: 'deps', icon: '⬡', iconClass: 'deps', headingText })}
   <div class="widget-body">
     ${chips.length ? `<div class="section-eyebrow">Vendored / referenced</div><div class="deps-chips">${chipHtml}</div>` : ''}
     ${risks.length ? `<div class="section-eyebrow">Risks</div>${riskHtml}` : ''}
@@ -121,11 +130,7 @@ export function buildRollback({ headingText, content }) {
     </div>`).join('');
   return `
 <section id="rollback" class="widget">
-  <div class="widget-head" data-section="rollback">
-    <div class="widget-icon rollback">↶</div>
-    <div class="widget-title">${escapeHtml(headingText)}</div>
-    <div class="widget-count">${steps.length} steps</div>
-  </div>
+  ${widgetHead({ id: 'rollback', icon: '↶', iconClass: 'rollback', headingText, countLabel: `${steps.length} steps` })}
   <div class="widget-body">
     <div class="rollback-card">${stepHtml}</div>
   </div>
@@ -155,10 +160,7 @@ export function buildTesting({ headingText, content }) {
     </div>`).join('');
   return `
 <section id="test" class="widget">
-  <div class="widget-head" data-section="test">
-    <div class="widget-icon test">✓</div>
-    <div class="widget-title">${escapeHtml(headingText)}</div>
-  </div>
+  ${widgetHead({ id: 'test', icon: '✓', iconClass: 'test', headingText })}
   <div class="widget-body">${catHtml}</div>
 </section>`;
 }
@@ -182,10 +184,7 @@ function nodeToHtml(node) {
 export function buildGenericProse({ id, headingText, content }) {
   return `
 <section id="${escapeHtml(id)}" class="widget">
-  <div class="widget-head" data-section="${escapeHtml(id)}">
-    <div class="widget-icon generic">◇</div>
-    <div class="widget-title">${escapeHtml(headingText)}</div>
-  </div>
+  ${widgetHead({ id, icon: '◇', iconClass: 'generic', headingText })}
   <div class="widget-body">${content.map(nodeToHtml).join('')}</div>
 </section>`;
 }

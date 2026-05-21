@@ -1134,7 +1134,14 @@ body {
 <div class="layout">
   <aside class="toc">
     <div class="toc-label">On this page</div>
-    <ul class="toc-list"></ul>
+    <ul class="toc-list"><li><a href="#adr-header"><span class="toc-num">01</span>Decision</a></li>
+<li><a href="#considered-options"><span class="toc-num">02</span>Considered options</a></li>
+<li><a href="#files"><span class="toc-num">03</span>Affected Files</a></li>
+<li><a href="#flow"><span class="toc-num">04</span>Data Flow</a></li>
+<li><a href="#edge"><span class="toc-num">05</span>Edge Cases</a></li>
+<li><a href="#deps"><span class="toc-num">06</span>Dependencies &amp; Risks</a></li>
+<li><a href="#rollback"><span class="toc-num">07</span>Rollback Path</a></li>
+<li><a href="#test"><span class="toc-num">08</span>Testing</a></li></ul>
   </aside>
   <main>
     
@@ -1194,14 +1201,15 @@ body {
     <div class="divider"><hr><span class="divider-label">Supporting detail · implementation spec</span><hr></div>
     
 <section id="considered-options" class="widget">
-  <div class="widget-head" data-section="considered-options">
+  <div class="widget-head" data-section="considered-options" data-item-type="section" data-item-payload='{"title":"Considered options","eyebrow":"#considered-options · section detail"}'>
     <div class="widget-icon generic">◇</div>
     <div class="widget-title">Considered options</div>
+    
   </div>
   <div class="widget-body">Approach A — fast (Recommended)<p>Use the fast option.</p><p><strong>Pros:</strong></p><ul><li><p>quick</p></li><li><p>simple</p></li></ul><p><strong>Cons:</strong></p><ul><li><p>limited</p></li></ul>Approach B — flexible<p>The flexible option.</p>Approach C — heavy<p>The heavy option.</p></div>
 </section>
 <section id="files" class="widget">
-  <div class="widget-head" data-section="files">
+  <div class="widget-head" data-section="files" data-item-type="section" data-item-payload='{"title":"Affected Files","eyebrow":"#files · section detail"}'>
     <div class="widget-icon files">▤</div>
     <div class="widget-title">Affected Files</div>
     <div class="widget-count">2 files</div>
@@ -1214,9 +1222,10 @@ body {
 
 
 <section id="flow" class="widget">
-  <div class="widget-head" data-section="flow">
+  <div class="widget-head" data-section="flow" data-item-type="section" data-item-payload='{"title":"Data Flow","eyebrow":"#flow · section detail"}'>
     <div class="widget-icon flow">↳</div>
     <div class="widget-title">Data Flow</div>
+    
   </div>
   <div class="widget-body">
     <div class="pipeline"><span class="pipe-step" data-item-type="step" data-step="input">input</span><span class="pipe-arrow">→</span><span class="pipe-step" data-item-type="step" data-step="parse">parse</span><span class="pipe-arrow">→</span><span class="pipe-step" data-item-type="step" data-step="output">output</span></div>
@@ -1225,7 +1234,7 @@ body {
 </section>
 
 <section id="edge" class="widget">
-  <div class="widget-head" data-section="edge">
+  <div class="widget-head" data-section="edge" data-item-type="section" data-item-payload='{"title":"Edge Cases","eyebrow":"#edge · section detail"}'>
     <div class="widget-icon edge">⚠</div>
     <div class="widget-title">Edge Cases</div>
     <div class="widget-count">2 cases</div>
@@ -1244,9 +1253,10 @@ body {
 </section>
 
 <section id="deps" class="widget">
-  <div class="widget-head" data-section="deps">
+  <div class="widget-head" data-section="deps" data-item-type="section" data-item-payload='{"title":"Dependencies & Risks","eyebrow":"#deps · section detail"}'>
     <div class="widget-icon deps">⬡</div>
     <div class="widget-title">Dependencies &amp; Risks</div>
+    
   </div>
   <div class="widget-body">
     <div class="section-eyebrow">Vendored / referenced</div><div class="deps-chips"><span class="dep-chip" data-item-type="dep" data-name="lodash" data-version="4.17.21">lodash@4.17.21</span></div>
@@ -1255,7 +1265,7 @@ body {
 </section>
 
 <section id="rollback" class="widget">
-  <div class="widget-head" data-section="rollback">
+  <div class="widget-head" data-section="rollback" data-item-type="section" data-item-payload='{"title":"Rollback Path","eyebrow":"#rollback · section detail"}'>
     <div class="widget-icon rollback">↶</div>
     <div class="widget-title">Rollback Path</div>
     <div class="widget-count">2 steps</div>
@@ -1274,9 +1284,10 @@ body {
 </section>
 
 <section id="test" class="widget">
-  <div class="widget-head" data-section="test">
+  <div class="widget-head" data-section="test" data-item-type="section" data-item-payload='{"title":"Testing","eyebrow":"#test · section detail"}'>
     <div class="widget-icon test">✓</div>
     <div class="widget-title">Testing</div>
+    
   </div>
   <div class="widget-body">
     <div class="test-cat">
