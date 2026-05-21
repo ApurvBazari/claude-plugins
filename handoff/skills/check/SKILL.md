@@ -28,45 +28,22 @@ Parse the frontmatter and compute progress signals.
 
 ## Step 2: Compute progress signals
 
-Read frontmatter fields: `saved-at`, `saved-at-sha`, `saved-at-branch`, `saved-from-cwd`, optional `deferred-at`.
-
-Compute via Bash:
+Run the helper and source its output:
 
 ```bash
-# Age
-saved_epoch=$(date -d "$saved_at" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$saved_at" +%s 2>/dev/null || echo 0)
-now_epoch=$(date +%s)
-days_old=$(( (now_epoch - saved_epoch) / 86400 ))
-
-# Git progress
-current_branch=$(git branch --show-current 2>/dev/null || echo unknown)
-commits_past=$(git rev-list --count "${saved_at_sha}..HEAD" 2>/dev/null || echo unknown)
-
-# Cwd match
-cwd_match="match"
-[[ "$saved_from_cwd" != "$(pwd)" ]] && cwd_match="mismatch"
-
-# Snooze status (only meaningful if deferred-at present)
-snooze_remaining="not snoozed"
-if [[ -n "$deferred_at" ]]; then
-  deferred_epoch=$(date -d "$deferred_at" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$deferred_at" +%s 2>/dev/null || echo 0)
-  snooze_hours=24  # read from settings if present
-  end_epoch=$((deferred_epoch + snooze_hours * 3600))
-  if [[ "$now_epoch" -lt "$end_epoch" ]]; then
-    remaining=$(( (end_epoch - now_epoch) / 3600 ))
-    snooze_remaining="snoozed (${remaining}h remaining)"
-  else
-    snooze_remaining="snooze expired — will surface at next SessionStart"
-  fi
-fi
-
-# Archive stats
-archive_count="$(find .claude/handoff/archive -name '*.md' 2>/dev/null | wc -l | tr -d ' ')"
-retention_value="$(awk '/^archive-retention:/ { sub(/^archive-retention:[[:space:]]*/, ""); gsub(/^["'\''"]|["'\''"]$/, ""); print; exit }' .claude/handoff/settings.md 2>/dev/null)"
-[[ -z "$retention_value" ]] && retention_value=10
+eval "$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/compute-progress.sh" "$(pwd)")"
+# Exports: days_old, current_branch, commits_past, cwd_match,
+#          snooze_remaining, archive_count, retention_value
 ```
 
-Read `.claude/handoff/settings.md` if it exists; override `snooze_hours` from `deferral-snooze-hours` if set. Also read `stale-commit-threshold` and `stale-day-threshold` for the report.
+The helper handles frontmatter parsing, snooze-hours override from
+`.claude/handoff/settings.md`, archive counting, and cross-platform date
+parsing. It always exits 0 — if a value cannot be computed, it emits
+`unknown`, and the Step 3 report still renders.
+
+Also read `stale-commit-threshold` and `stale-day-threshold` from
+`.claude/handoff/settings.md` for the Step 3 report — the helper does
+not surface these because they are configuration, not computed signals.
 
 ## Step 3: Report
 
