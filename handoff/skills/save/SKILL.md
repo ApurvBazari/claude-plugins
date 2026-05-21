@@ -95,9 +95,9 @@ Do NOT include `deferred-at` — that field is written only by the resume flow.
 ## Step 8: Gitignore prompt (first save only)
 
 Read `.claude/handoff/settings.md` if present. If `gitignore-prompt: never`, skip.
-Otherwise check `.gitignore`; if missing the pattern `.claude/handoff/`, present
-the prompt at `references/prompts/gitignore.md` — verbatim option text — and apply
-the per-option behavior documented there.
+If `.gitignore` doesn't exist, or already contains `.claude/handoff/`, skip.
+Otherwise present the prompt at `references/prompts/gitignore.md` — verbatim
+option text — and apply the per-option behavior documented there.
 
 ## Step 9: Retention prompt (first save only)
 
