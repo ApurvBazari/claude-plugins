@@ -1,5 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import {
+  buildDataFlow, buildEdgeCases, buildDepsRisks, buildRollback,
+  buildTesting, buildGenericProse, buildMermaidBlock,
+} from './widget-builders.mjs';
+// TODO Task 27 dogfood: mermaid auto-detect pass
 
 function escapeHtml(s) {
   return String(s)
@@ -57,29 +62,27 @@ function affectedFilesList(items) {
 }
 
 function renderSection(section, dir) {
-  if (!WIDGET_FOR_TYPE[section.type]) return '';
-  const tpl = loadTemplate(dir, 'widgets/' + WIDGET_FOR_TYPE[section.type]);
-  if (section.type === 'AFFECTED_FILES') {
-    const items = section.items ?? affectedFilesItems(section.content);
-    return fill(tpl, {
-      headingText: escapeHtml(section.headingText),
-      itemCount: `${items.length} files`,
-      items: affectedFilesList(items),
+  switch (section.type) {
+    case 'AFFECTED_FILES': {
+      const items = section.items ?? affectedFilesItems(section.content);
+      const tpl = loadTemplate(dir, 'widgets/affected-files.html');
+      return fill(tpl, {
+        headingText: escapeHtml(section.headingText),
+        itemCount: `${items.length} files`,
+        items: affectedFilesList(items),
+      });
+    }
+    case 'DATA_FLOW': return buildDataFlow(section);
+    case 'EDGE_CASES': return buildEdgeCases(section);
+    case 'DEPS_RISKS': return buildDepsRisks(section);
+    case 'ROLLBACK': return buildRollback(section);
+    case 'TESTING': return buildTesting(section);
+    case 'GENERIC_PROSE': return buildGenericProse({
+      ...section,
+      id: section.headingText.toLowerCase().replace(/\s+/g, '-'),
     });
+    default: return '';
   }
-  // Other widgets: simple prose substitution for now (item builders implemented in subsequent tasks)
-  return fill(tpl, {
-    headingText: escapeHtml(section.headingText),
-    itemCount: '',
-    id: section.type.toLowerCase(),
-    contentHtml: section.content.map(textOf).join('\n').slice(0, 4000),
-    items: '',
-    steps: '',
-    cases: '',
-    categories: '',
-    depChips: '',
-    risks: '',
-  });
 }
 
 function renderHeader(adr) {
