@@ -87,18 +87,25 @@ if [[ -d "$ARCHIVE_DIR" ]]; then
 fi
 
 retention_value="$(fm_get "$SETTINGS_FILE" 'archive-retention')"
-[[ -z "$retention_value" ]] && retention_value=10
+# Enforce the documented contract (positive integer | 0 | -1 | "unlimited").
+# Anything else — including shell metacharacters from a hostile settings.md
+# — collapses to the default of 10.
+case "$retention_value" in
+  unlimited|-1) ;;
+  ''|*[!0-9]*)  retention_value=10 ;;
+  *) ;;
+esac
 
-# Eval-safe by construction: current_branch is git-constrained (no `"` in
-# branch names); numeric fields are integers or the literal `unknown`.
-cat <<EOF
-days_old="$days_old"
-current_branch="$current_branch"
-commits_past="$commits_past"
-cwd_match="$cwd_match"
-snooze_remaining="$snooze_remaining"
-archive_count="$archive_count"
-retention_value="$retention_value"
-EOF
+# Eval-safe output: every value is emitted via `printf '%q'`, which produces
+# a bash-quoted form that survives `eval` without expansion. Combined with
+# the retention_value validation above, no caller-controlled value can run
+# arbitrary commands when the check skill eval's this stdout.
+printf 'days_old=%q\n'         "$days_old"
+printf 'current_branch=%q\n'   "$current_branch"
+printf 'commits_past=%q\n'     "$commits_past"
+printf 'cwd_match=%q\n'        "$cwd_match"
+printf 'snooze_remaining=%q\n' "$snooze_remaining"
+printf 'archive_count=%q\n'    "$archive_count"
+printf 'retention_value=%q\n'  "$retention_value"
 
 exit 0
