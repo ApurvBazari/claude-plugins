@@ -15,6 +15,16 @@ function read(assetsDir, filename) {
   catch (e) { throw new Error(`inline-assets: cannot read ${filename} from ${assetsDir}: ${e.message}`); }
 }
 
+// Any literal </script> sequence inside content that lands in a <script> tag
+// will terminate the tag prematurely — the rest of the body then parses as
+// HTML, producing stray elements and breaking the embedded JS. The HTML spec
+// allows escaping with a backslash before the slash; the JS parser ignores
+// the backslash inside the script body. Case-insensitive because the parser
+// matches </SCRIPT>, </Script>, etc. equivalently.
+function escapeScriptClose(s) {
+  return s.replace(/<\/script/gi, '<\\/script');
+}
+
 export function inlineAssets({ assetsDir, stylesPath = null }) {
   return function transform(html) {
     let out = html;
@@ -32,7 +42,10 @@ export function inlineAssets({ assetsDir, stylesPath = null }) {
     for (const [placeholder, filename] of Object.entries(PLACEHOLDER_TO_FILE)) {
       const token = '{{' + placeholder + '}}';
       if (out.includes(token)) {
-        const body = read(assetsDir, filename);
+        // All entries in PLACEHOLDER_TO_FILE land inside <script> tags in
+        // shell.html — escape </script> so JS comments containing it don't
+        // close the host tag and leak into the page as HTML.
+        const body = escapeScriptClose(read(assetsDir, filename));
         out = out.replace(token, () => body);
       }
     }
