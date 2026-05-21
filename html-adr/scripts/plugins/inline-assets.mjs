@@ -23,15 +23,23 @@ export function inlineAssets({ assetsDir, stylesPath = null }) {
       const body = read(assetsDir, filename);
       return `<style data-vendored="${filename}">${body}</style>`;
     });
-    // 2. replace {{xxxBundle}} placeholders with file contents
+    // 2. replace {{xxxBundle}} placeholders with file contents.
+    //    Use a function callback so special replacement patterns ($&, $`, $', $$, $n)
+    //    inside minified vendored bundles are NOT interpreted by String.replace.
+    //    Minified bundles routinely contain literal $& and $` substrings (regex escapes,
+    //    template strings), and pattern expansion can multiply the output and bleed
+    //    earlier-inlined content into later substitutions.
     for (const [placeholder, filename] of Object.entries(PLACEHOLDER_TO_FILE)) {
-      if (out.includes('{{' + placeholder + '}}')) {
-        out = out.replace('{{' + placeholder + '}}', read(assetsDir, filename));
+      const token = '{{' + placeholder + '}}';
+      if (out.includes(token)) {
+        const body = read(assetsDir, filename);
+        out = out.replace(token, () => body);
       }
     }
-    // 3. styles.css inlined into {{styles}}
+    // 3. styles.css inlined into {{styles}} (same callback safeguard).
     if (stylesPath && out.includes('{{styles}}')) {
-      out = out.replace('{{styles}}', readFileSync(stylesPath, 'utf8'));
+      const css = readFileSync(stylesPath, 'utf8');
+      out = out.replace('{{styles}}', () => css);
     }
     return out;
   };

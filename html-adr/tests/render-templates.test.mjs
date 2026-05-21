@@ -14,6 +14,7 @@ function fakeTemplates() {
   writeFileSync(join(dir, 'adr-header.html'), '<header>{{title}}</header>');
   writeFileSync(join(dir, 'widgets', 'affected-files.html'), '<section>Files: {{itemCount}}</section>');
   writeFileSync(join(dir, 'widgets', 'generic-prose.html'), '<section>Prose: {{headingText}}</section>');
+  writeFileSync(join(dir, 'side-panel.html'), '<aside class="side-panel"></aside>');
   return dir;
 }
 

@@ -19,7 +19,7 @@ function escapeHtml(s) {
 function fill(template, vars) {
   return template
     .replace(/\{\{#if (\w+)\}\}([\s\S]*?)\{\{\/if\}\}/g, (_, key, body) => (vars[key] ? body : ''))
-    .replace(/\{\{(\w+)\}\}/g, (_, key) => (vars[key] != null ? vars[key] : ''));
+    .replace(/\{\{(\w+)\}\}/g, (m, key) => (key in vars ? vars[key] : m));
 }
 
 const WIDGET_FOR_TYPE = {
@@ -112,16 +112,9 @@ export function renderTemplates({ templatesDir, meta = {} }) {
         adrVersion: escapeHtml(meta.adrVersion ?? '0.1.0'),
         toc: '',
         graphSection: '',
-        sidePanel: '',
-        styles: '',
-        cytoscapeBundle: '',
-        cytoscapeDagreBundle: '',
-        dagreBundle: '',
-        mermaidBundle: '',
-        highlightBundle: '',
+        sidePanel: loadTemplate(templatesDir, 'side-panel.html'),
         graphDataJson: JSON.stringify(tree.data?.graph ?? { nodes: [], edges: [] }),
         extractionLogJson: JSON.stringify({}),
-        runtime: '',
       });
     },
   };
