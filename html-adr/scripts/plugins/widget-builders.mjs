@@ -39,20 +39,129 @@ function widgetHead({ id, icon, iconClass, headingText, countLabel }) {
   </div>`;
 }
 
+// Parse an ASCII box-drawing flow diagram into { nodes, edges } suitable for
+// Cytoscape. Heuristic but conservative:
+//   - A "box" is a region delimited by ┌─┐/└─┘ horizontals on its top and
+//     bottom edges, with │…│ content rows between.
+//   - The first non-empty content row is the node label; remaining rows
+//     accumulate into a description shown in the side panel.
+//   - Boxes are connected in document order (top→bottom). Authors can add
+//     explicit edge syntax in v0.2 via a frontmatter `flow:` block; for v0.1
+//     a single linear chain matches every diagram in our reference corpus.
+// Returns null if fewer than 2 boxes are detected — the caller falls back
+// to raw ASCII rendering.
+function parseAsciiFlow(text) {
+  const lines = String(text).split('\n');
+  // Allow tee glyphs (┬ ┴) and double-line equivalents inside the horizontal
+  // run — boxes whose edges have an outgoing/incoming arrow attach point use
+  // these in place of a plain ─ (e.g. `└─┬─┘` for the down-arrow stem). Without
+  // tees in the char class, those boxes silently fail to parse.
+  const TOP = /[┌╔╭┏][─═┬┴]+[┐╗╮┓]/;
+  const BOT = /[└╚╰┗][─═┬┴]+[┘╝╯┛]/;
+  const ROW = /^\s*[│║┃]\s*(.*?)\s*[│║┃]\s*$/;
+
+  const boxes = [];
+  let current = null;
+  for (const line of lines) {
+    if (TOP.test(line)) { current = { content: [] }; continue; }
+    if (BOT.test(line)) {
+      if (current && current.content.length) boxes.push(current);
+      current = null;
+      continue;
+    }
+    if (current) {
+      const m = line.match(ROW);
+      if (m && m[1]) current.content.push(m[1]);
+    }
+  }
+  if (boxes.length < 2) return null;
+  const nodes = boxes.map((b, i) => ({
+    id: 'n' + i,
+    label: b.content[0],
+    description: b.content.slice(1).join('\n'),
+  }));
+  const edges = nodes.slice(0, -1).map((n, i) => ({
+    source: n.id,
+    target: nodes[i + 1].id,
+  }));
+  return { nodes, edges };
+}
+
+function parseListFlow(content) {
+  const list = firstList(content);
+  if (!list || !list.children?.length) return null;
+  const steps = list.children
+    .map(li => textOf(li).trim())
+    .filter(Boolean);
+  if (steps.length < 2) return null;
+  const nodes = steps.map((s, i) => {
+    const [label, ...rest] = s.split('\n');
+    return { id: 'n' + i, label: label.trim(), description: rest.join('\n').trim() };
+  });
+  const edges = nodes.slice(0, -1).map((n, i) => ({
+    source: n.id,
+    target: nodes[i + 1].id,
+  }));
+  return { nodes, edges };
+}
+
+function flowGraphFrom(content) {
+  // ASCII box-drawn diagrams are a strong, intentional signal — prefer them
+  // over a bullet list that happens to live elsewhere in the section (e.g.
+  // "Pipeline invariants:" enumerations that aren't actually a flow).
+  const code = content.find(n => n.type === 'code');
+  if (code) {
+    const fromAscii = parseAsciiFlow(code.value || '');
+    if (fromAscii) return { graph: fromAscii, source: 'ascii', raw: code.value || '' };
+  }
+  const fromList = parseListFlow(content);
+  if (fromList) return { graph: fromList, source: 'list', raw: '' };
+  return { graph: null, source: null, raw: code?.value || '' };
+}
+
 export function buildDataFlow({ headingText, content }) {
-  const steps = flatBullets(firstList(content));
-  const pills = steps.map(s => {
-    const key = escapeHtml(s);
-    return `<span class="pipe-step" data-item-type="step" data-step="${key}">${escapeHtml(s)}</span>`;
-  }).join('<span class="pipe-arrow">→</span>');
-  const ascii = content.find(n => n.type === 'code');
-  const asciiBlock = ascii ? `<pre class="ascii-block">${escapeHtml(ascii.value || '')}</pre>` : '';
-  return `
+  const { graph, source, raw } = flowGraphFrom(content);
+
+  // No detectable structure — emit head + raw ASCII (if any) and stop.
+  if (!graph) {
+    const fallback = raw
+      ? `<pre class="ascii-block">${escapeHtml(raw)}</pre>`
+      : `<div class="empty-state">No flow detected. Add a bullet list of steps or an ASCII box-drawn diagram.</div>`;
+    return `
 <section id="flow" class="widget">
   ${widgetHead({ id: 'flow', icon: '↳', iconClass: 'flow', headingText })}
+  <div class="widget-body">${fallback}</div>
+</section>`;
+  }
+
+  const graphJson = JSON.stringify(graph).replace(/'/g, '&#39;');
+  const pills = graph.nodes.map(n => {
+    const payload = JSON.stringify({
+      title: n.label,
+      role: n.description || '',
+    }).replace(/'/g, '&#39;');
+    return `<span class="pipe-step" data-item-type="step" data-step="${escapeHtml(n.label)}" data-item-payload='${payload}'>${escapeHtml(n.label)}</span>`;
+  }).join('<span class="pipe-arrow">→</span>');
+
+  const rawBlock = source === 'ascii' && raw
+    ? `<pre class="ascii-block flow-raw" hidden>${escapeHtml(raw)}</pre>`
+    : '';
+  const rawToggle = source === 'ascii' && raw
+    ? `<button class="flow-view-btn" data-flow-view="raw" type="button">Raw</button>`
+    : '';
+
+  return `
+<section id="flow" class="widget">
+  ${widgetHead({ id: 'flow', icon: '↳', iconClass: 'flow', headingText, countLabel: `${graph.nodes.length} steps` })}
   <div class="widget-body">
-    <div class="pipeline">${pills}</div>
-    ${asciiBlock}
+    <div class="flow-toolbar" role="tablist" aria-label="Flow view">
+      <button class="flow-view-btn active" data-flow-view="graph" type="button">Graph</button>
+      <button class="flow-view-btn" data-flow-view="pipeline" type="button">Pipeline</button>
+      ${rawToggle}
+    </div>
+    <div class="flow-canvas" data-flow-graph='${graphJson}'></div>
+    <div class="pipeline flow-pipeline" hidden>${pills}</div>
+    ${rawBlock}
   </div>
 </section>`;
 }

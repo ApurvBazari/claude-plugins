@@ -575,6 +575,163 @@
   }
 
   // =========================================================================
+  // 6.5 Per-widget DATA_FLOW Cytoscape canvases
+  // =========================================================================
+
+  function readFlowGraph(canvas) {
+    var raw = canvas.getAttribute('data-flow-graph');
+    if (!raw) return null;
+    try {
+      var data = JSON.parse(raw);
+      if (!data || !Array.isArray(data.nodes) || !Array.isArray(data.edges)) return null;
+      return data;
+    } catch (err) {
+      if (window.console && console.warn) console.warn('[html-adr] flow graph parse failed', err);
+      return null;
+    }
+  }
+
+  function buildFlowInstance(canvas, data) {
+    var elements = data.nodes.map(function (n) {
+      return { data: { id: n.id, label: n.label || '', description: n.description || '' } };
+    }).concat(data.edges.map(function (e) {
+      return { data: { source: e.source, target: e.target } };
+    }));
+
+    // breadthfirst is built into Cytoscape and produces a clean layered
+    // layout for sequential flows — no external dagre dependency required
+    // (vendored cytoscape-dagre + dagre don't auto-wire as window globals).
+    var layout = {
+      name:           'breadthfirst',
+      directed:       true,
+      grid:           true,
+      padding:        20,
+      spacingFactor:  1.4,
+      transform:      function (node, pos) { return { x: pos.y, y: pos.x }; },
+    };
+
+    var cy = cytoscape({
+      container: canvas,
+      elements: elements,
+      autoungrabify: false,
+      userPanningEnabled: true,
+      userZoomingEnabled: true,
+      minZoom: 0.4,
+      maxZoom: 2.5,
+      style: [
+        {
+          selector: 'node',
+          style: {
+            'background-color':  '#faf2e3',
+            'border-color':      '#b8651b',
+            'border-width':      1,
+            'shape':             'round-rectangle',
+            'label':             'data(label)',
+            'color':             '#1a1714',
+            'font-family':       'JetBrains Mono, ui-monospace, monospace',
+            'font-size':         11,
+            'text-wrap':         'wrap',
+            'text-max-width':    160,
+            'text-valign':       'center',
+            'text-halign':       'center',
+            'padding':           12,
+            'width':             170,
+            'height':            44,
+          },
+        },
+        {
+          selector: 'node.hovered',
+          style: {
+            'background-color': '#f5ebd9',
+            'border-color':     '#b8651b',
+            'color':            '#b8651b',
+          },
+        },
+        {
+          selector: 'node.faded',
+          style: { 'opacity': 0.3 },
+        },
+        {
+          selector: 'edge',
+          style: {
+            'width':              1.5,
+            'line-color':         '#d4ccbc',
+            'target-arrow-color': '#b8651b',
+            'target-arrow-shape': 'triangle',
+            'curve-style':        'bezier',
+            'arrow-scale':        0.9,
+          },
+        },
+        {
+          selector: 'edge.highlight',
+          style: {
+            'line-color':         '#b8651b',
+            'target-arrow-color': '#b8651b',
+            'width':              2,
+          },
+        },
+      ],
+      layout: layout,
+    });
+
+    cy.on('mouseover', 'node', function (evt) {
+      var n = evt.target;
+      n.addClass('hovered');
+      cy.nodes().not(n).not(n.neighborhood('node')).addClass('faded');
+      n.connectedEdges().addClass('highlight');
+    });
+    cy.on('mouseout', 'node', function (evt) {
+      evt.target.removeClass('hovered');
+      cy.elements().removeClass('faded').removeClass('highlight');
+    });
+
+    cy.on('tap', 'node', function (evt) {
+      // Synthesize a transient trigger element with the step payload, then
+      // dispatch through the existing openItem path so side-panel behavior is
+      // identical between pill clicks and graph clicks.
+      var n = evt.target;
+      var trigger = document.createElement('span');
+      trigger.setAttribute('data-item-type', 'step');
+      trigger.setAttribute('data-item-payload', JSON.stringify({
+        title: n.data('label'),
+        role:  n.data('description'),
+      }));
+      openItem(trigger);
+    });
+
+    return cy;
+  }
+
+  function initFlowGraphs() {
+    if (typeof window.cytoscape !== 'function') return;
+    var canvases = document.querySelectorAll('.flow-canvas[data-flow-graph]');
+    Array.prototype.forEach.call(canvases, function (canvas) {
+      var data = readFlowGraph(canvas);
+      if (data) buildFlowInstance(canvas, data);
+    });
+  }
+
+  function wireFlowToggles() {
+    document.body.addEventListener('click', function (e) {
+      var btn = e.target.closest && e.target.closest('.flow-view-btn[data-flow-view]');
+      if (!btn) return;
+      var widget = btn.closest('.widget');
+      if (!widget) return;
+      var view = btn.getAttribute('data-flow-view');
+      var siblings = widget.querySelectorAll('.flow-view-btn');
+      Array.prototype.forEach.call(siblings, function (b) {
+        b.classList.toggle('active', b === btn);
+      });
+      var canvas   = widget.querySelector('.flow-canvas');
+      var pipeline = widget.querySelector('.flow-pipeline');
+      var raw      = widget.querySelector('.flow-raw');
+      if (canvas)   canvas.hidden   = view !== 'graph';
+      if (pipeline) pipeline.hidden = view !== 'pipeline';
+      if (raw)      raw.hidden      = view !== 'raw';
+    });
+  }
+
+  // =========================================================================
   // 7. Mermaid
   // =========================================================================
 
@@ -615,7 +772,9 @@
     }
 
     initGraph();
+    initFlowGraphs();
     if (sidePanel && sideBody) wireInteractions();
+    wireFlowToggles();
     initScrollSpy();
     initMermaid();
   });

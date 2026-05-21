@@ -1,6 +1,10 @@
 const CANONICAL = [
   ['AFFECTED_FILES', /^(affected files?|files changed|files affected)$/i],
-  ['DATA_FLOW', /^(data flow|flow|pipeline|how (it|this) works)$/i],
+  // DATA_FLOW: allow optional prefix ("rendering", "request") and trailing
+  // parenthetical content like "(data flow)". The boundary form lets headings
+  // like "Rendering pipeline (data flow)" match — they used to fall through
+  // because of the strict $-anchor.
+  ['DATA_FLOW', /^((rendering|request|response|build|render|processing|execution)\s+)?(data\s+flow|flow|pipeline|how (it|this) works)(\s*\(.*\))?\s*$/i],
   ['EDGE_CASES', /^edge cases?$/i],
   ['DEPS_RISKS', /^(dependencies( & risks)?|risks?|threats?)$/i],
   ['ROLLBACK', /^rollback( path)?$/i],

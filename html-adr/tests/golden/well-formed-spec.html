@@ -742,6 +742,74 @@ body {
   font-size: 14px;
 }
 
+/* View toggle — Graph / Pipeline / Raw segmented control */
+.flow-toolbar {
+  display: inline-flex;
+  gap: 0;
+  padding: 3px;
+  margin-bottom: 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.flow-view-btn {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 5px 14px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--muted);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.flow-view-btn:hover {
+  color: var(--ink);
+}
+
+.flow-view-btn.active {
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Cytoscape host — interactive flow graph for DATA_FLOW widgets */
+.flow-canvas {
+  width: 100%;
+  min-height: 360px;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  position: relative;
+}
+
+.flow-canvas[hidden],
+.flow-pipeline[hidden],
+.flow-raw[hidden] {
+  display: none !important;
+}
+
+/* Raw ASCII fallback / "Raw" toggle view */
+.ascii-block,
+.flow-raw {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  font-size: 11px;
+  line-height: 1.45;
+  padding: 16px 18px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+  color: var(--body);
+  white-space: pre;
+}
+
 
 /* ===== Widget: edge cases ================================================ */
 .edge-grid {
@@ -1225,10 +1293,16 @@ body {
   <div class="widget-head" data-section="flow" data-item-type="section" data-item-payload='{"title":"Data Flow","eyebrow":"#flow · section detail"}'>
     <div class="widget-icon flow">↳</div>
     <div class="widget-title">Data Flow</div>
-    
+    <div class="widget-count">3 steps</div>
   </div>
   <div class="widget-body">
-    <div class="pipeline"><span class="pipe-step" data-item-type="step" data-step="input">input</span><span class="pipe-arrow">→</span><span class="pipe-step" data-item-type="step" data-step="parse">parse</span><span class="pipe-arrow">→</span><span class="pipe-step" data-item-type="step" data-step="output">output</span></div>
+    <div class="flow-toolbar" role="tablist" aria-label="Flow view">
+      <button class="flow-view-btn active" data-flow-view="graph" type="button">Graph</button>
+      <button class="flow-view-btn" data-flow-view="pipeline" type="button">Pipeline</button>
+      
+    </div>
+    <div class="flow-canvas" data-flow-graph='{"nodes":[{"id":"n0","label":"input","description":""},{"id":"n1","label":"parse","description":""},{"id":"n2","label":"output","description":""}],"edges":[{"source":"n0","target":"n1"},{"source":"n1","target":"n2"}]}'></div>
+    <div class="pipeline flow-pipeline" hidden><span class="pipe-step" data-item-type="step" data-step="input" data-item-payload='{"title":"input","role":""}'>input</span><span class="pipe-arrow">→</span><span class="pipe-step" data-item-type="step" data-step="parse" data-item-payload='{"title":"parse","role":""}'>parse</span><span class="pipe-arrow">→</span><span class="pipe-step" data-item-type="step" data-step="output" data-item-payload='{"title":"output","role":""}'>output</span></div>
     
   </div>
 </section>
@@ -9682,6 +9756,163 @@ return Ke}()
   }
 
   // =========================================================================
+  // 6.5 Per-widget DATA_FLOW Cytoscape canvases
+  // =========================================================================
+
+  function readFlowGraph(canvas) {
+    var raw = canvas.getAttribute('data-flow-graph');
+    if (!raw) return null;
+    try {
+      var data = JSON.parse(raw);
+      if (!data || !Array.isArray(data.nodes) || !Array.isArray(data.edges)) return null;
+      return data;
+    } catch (err) {
+      if (window.console && console.warn) console.warn('[html-adr] flow graph parse failed', err);
+      return null;
+    }
+  }
+
+  function buildFlowInstance(canvas, data) {
+    var elements = data.nodes.map(function (n) {
+      return { data: { id: n.id, label: n.label || '', description: n.description || '' } };
+    }).concat(data.edges.map(function (e) {
+      return { data: { source: e.source, target: e.target } };
+    }));
+
+    // breadthfirst is built into Cytoscape and produces a clean layered
+    // layout for sequential flows — no external dagre dependency required
+    // (vendored cytoscape-dagre + dagre don't auto-wire as window globals).
+    var layout = {
+      name:           'breadthfirst',
+      directed:       true,
+      grid:           true,
+      padding:        20,
+      spacingFactor:  1.4,
+      transform:      function (node, pos) { return { x: pos.y, y: pos.x }; },
+    };
+
+    var cy = cytoscape({
+      container: canvas,
+      elements: elements,
+      autoungrabify: false,
+      userPanningEnabled: true,
+      userZoomingEnabled: true,
+      minZoom: 0.4,
+      maxZoom: 2.5,
+      style: [
+        {
+          selector: 'node',
+          style: {
+            'background-color':  '#faf2e3',
+            'border-color':      '#b8651b',
+            'border-width':      1,
+            'shape':             'round-rectangle',
+            'label':             'data(label)',
+            'color':             '#1a1714',
+            'font-family':       'JetBrains Mono, ui-monospace, monospace',
+            'font-size':         11,
+            'text-wrap':         'wrap',
+            'text-max-width':    160,
+            'text-valign':       'center',
+            'text-halign':       'center',
+            'padding':           12,
+            'width':             170,
+            'height':            44,
+          },
+        },
+        {
+          selector: 'node.hovered',
+          style: {
+            'background-color': '#f5ebd9',
+            'border-color':     '#b8651b',
+            'color':            '#b8651b',
+          },
+        },
+        {
+          selector: 'node.faded',
+          style: { 'opacity': 0.3 },
+        },
+        {
+          selector: 'edge',
+          style: {
+            'width':              1.5,
+            'line-color':         '#d4ccbc',
+            'target-arrow-color': '#b8651b',
+            'target-arrow-shape': 'triangle',
+            'curve-style':        'bezier',
+            'arrow-scale':        0.9,
+          },
+        },
+        {
+          selector: 'edge.highlight',
+          style: {
+            'line-color':         '#b8651b',
+            'target-arrow-color': '#b8651b',
+            'width':              2,
+          },
+        },
+      ],
+      layout: layout,
+    });
+
+    cy.on('mouseover', 'node', function (evt) {
+      var n = evt.target;
+      n.addClass('hovered');
+      cy.nodes().not(n).not(n.neighborhood('node')).addClass('faded');
+      n.connectedEdges().addClass('highlight');
+    });
+    cy.on('mouseout', 'node', function (evt) {
+      evt.target.removeClass('hovered');
+      cy.elements().removeClass('faded').removeClass('highlight');
+    });
+
+    cy.on('tap', 'node', function (evt) {
+      // Synthesize a transient trigger element with the step payload, then
+      // dispatch through the existing openItem path so side-panel behavior is
+      // identical between pill clicks and graph clicks.
+      var n = evt.target;
+      var trigger = document.createElement('span');
+      trigger.setAttribute('data-item-type', 'step');
+      trigger.setAttribute('data-item-payload', JSON.stringify({
+        title: n.data('label'),
+        role:  n.data('description'),
+      }));
+      openItem(trigger);
+    });
+
+    return cy;
+  }
+
+  function initFlowGraphs() {
+    if (typeof window.cytoscape !== 'function') return;
+    var canvases = document.querySelectorAll('.flow-canvas[data-flow-graph]');
+    Array.prototype.forEach.call(canvases, function (canvas) {
+      var data = readFlowGraph(canvas);
+      if (data) buildFlowInstance(canvas, data);
+    });
+  }
+
+  function wireFlowToggles() {
+    document.body.addEventListener('click', function (e) {
+      var btn = e.target.closest && e.target.closest('.flow-view-btn[data-flow-view]');
+      if (!btn) return;
+      var widget = btn.closest('.widget');
+      if (!widget) return;
+      var view = btn.getAttribute('data-flow-view');
+      var siblings = widget.querySelectorAll('.flow-view-btn');
+      Array.prototype.forEach.call(siblings, function (b) {
+        b.classList.toggle('active', b === btn);
+      });
+      var canvas   = widget.querySelector('.flow-canvas');
+      var pipeline = widget.querySelector('.flow-pipeline');
+      var raw      = widget.querySelector('.flow-raw');
+      if (canvas)   canvas.hidden   = view !== 'graph';
+      if (pipeline) pipeline.hidden = view !== 'pipeline';
+      if (raw)      raw.hidden      = view !== 'raw';
+    });
+  }
+
+  // =========================================================================
   // 7. Mermaid
   // =========================================================================
 
@@ -9722,7 +9953,9 @@ return Ke}()
     }
 
     initGraph();
+    initFlowGraphs();
     if (sidePanel && sideBody) wireInteractions();
+    wireFlowToggles();
     initScrollSpy();
     initMermaid();
   });

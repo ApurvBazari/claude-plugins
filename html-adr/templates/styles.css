@@ -727,6 +727,74 @@ body {
   font-size: 14px;
 }
 
+/* View toggle — Graph / Pipeline / Raw segmented control */
+.flow-toolbar {
+  display: inline-flex;
+  gap: 0;
+  padding: 3px;
+  margin-bottom: 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.flow-view-btn {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 5px 14px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--muted);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.flow-view-btn:hover {
+  color: var(--ink);
+}
+
+.flow-view-btn.active {
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Cytoscape host — interactive flow graph for DATA_FLOW widgets */
+.flow-canvas {
+  width: 100%;
+  min-height: 360px;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  position: relative;
+}
+
+.flow-canvas[hidden],
+.flow-pipeline[hidden],
+.flow-raw[hidden] {
+  display: none !important;
+}
+
+/* Raw ASCII fallback / "Raw" toggle view */
+.ascii-block,
+.flow-raw {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  font-size: 11px;
+  line-height: 1.45;
+  padding: 16px 18px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+  color: var(--body);
+  white-space: pre;
+}
+
 
 /* ===== Widget: edge cases ================================================ */
 .edge-grid {
