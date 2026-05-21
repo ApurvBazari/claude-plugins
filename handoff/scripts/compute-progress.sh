@@ -89,6 +89,8 @@ fi
 retention_value="$(fm_get "$SETTINGS_FILE" 'archive-retention')"
 [[ -z "$retention_value" ]] && retention_value=10
 
+# Eval-safe by construction: current_branch is git-constrained (no `"` in
+# branch names); numeric fields are integers or the literal `unknown`.
 cat <<EOF
 days_old="$days_old"
 current_branch="$current_branch"
