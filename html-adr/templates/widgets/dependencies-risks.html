@@ -1,0 +1,16 @@
+<section id="deps" class="widget">
+  <div class="widget-head" data-section="deps">
+    <div class="widget-icon deps">⬡</div>
+    <div class="widget-title">{{headingText}}</div>
+  </div>
+  <div class="widget-body">
+    {{#if depChips}}
+    <div class="section-eyebrow">Vendored / referenced</div>
+    <div class="deps-chips">{{depChips}}</div>
+    {{/if}}
+    {{#if risks}}
+    <div class="section-eyebrow">Risks</div>
+    {{risks}}
+    {{/if}}
+  </div>
+</section>
