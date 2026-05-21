@@ -35,7 +35,9 @@ build/
 __pycache__/
 *.pyc
 
-# Local planning docs
+# Local planning docs (root-scoped — plugin-internal docs/ dirs stay tracked,
+# e.g., html-adr/docs/ ships with the plugin)
 future-plans/
-docs/
+/docs/
 .superpowers/
+.claude/handoff/
