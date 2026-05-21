@@ -4,7 +4,7 @@ import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from 'no
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { render } from '../scripts/render-adr.mjs';
+import { render, preflight } from '../scripts/render-adr.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pluginRoot = join(__dirname, '..');
@@ -22,4 +22,16 @@ test('renders a minimal spec to HTML', async () => {
   assert.match(html, /Test ADR/);
   assert.match(html, /foo\.js/);
   rmSync(dir, { recursive: true });
+});
+
+test('preflight passes for a valid plugin root', () => {
+  // Real plugin root has node_modules + assets after setup
+  const result = preflight({ src: 'README.md', pluginRoot: pluginRoot });
+  assert.equal(result.ok, true);
+});
+
+test('preflight fails for non-existent source', () => {
+  const result = preflight({ src: '/nope/missing.md', pluginRoot: pluginRoot });
+  assert.equal(result.ok, false);
+  assert.match(result.error, /source not found/i);
 });

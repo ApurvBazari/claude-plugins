@@ -14,6 +14,17 @@ import { renderTemplates } from './plugins/render-templates.mjs';
 import { inlineAssets } from './plugins/inline-assets.mjs';
 import { getProvenance } from './git-provenance.mjs';
 
+export function preflight({ src, pluginRoot }) {
+  if (!existsSync(src)) return { ok: false, error: `source not found: ${src}` };
+  if (!src.endsWith('.md')) return { ok: false, error: `source must end in .md: ${src}` };
+  if (!existsSync(join(pluginRoot, 'node_modules'))) return { ok: false, error: `node_modules missing; run: npm install --prefix ${pluginRoot}` };
+  for (const a of ['cytoscape-3.30.4.min.js', 'mermaid-11.4.1.min.js', 'runtime.js']) {
+    const ap = join(pluginRoot, 'assets', a);
+    if (!existsSync(ap)) return { ok: false, error: `asset missing: ${ap} (run scripts/update-vendored-assets.sh)` };
+  }
+  return { ok: true };
+}
+
 function parseFrontmatter(tree) {
   const yamlNode = tree.children.find(n => n.type === 'yaml');
   if (!yamlNode) return null;
@@ -91,6 +102,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(2);
   }
   if (!args.out) args.out = args.src.replace(/\.md$/, '.html');
+  const pre = preflight({ src: args.src, pluginRoot });
+  if (!pre.ok) { console.error('✗ ' + pre.error); process.exit(1); }
   if (args.noOverwrite && existsSync(args.out)) {
     console.error(`output exists: ${args.out} (use without --no-overwrite to overwrite)`);
     process.exit(3);
