@@ -28,22 +28,16 @@ Parse the frontmatter and compute progress signals.
 
 ## Step 2: Compute progress signals
 
-Run the helper and source its output:
-
 ```bash
 eval "$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/compute-progress.sh" "$(pwd)")"
 # Exports: days_old, current_branch, commits_past, cwd_match,
 #          snooze_remaining, archive_count, retention_value
 ```
 
-The helper handles frontmatter parsing, snooze-hours override from
-`.claude/handoff/settings.md`, archive counting, and cross-platform date
-parsing. It always exits 0 — if a value cannot be computed, it emits
-`unknown`, and the Step 3 report still renders.
-
-Also read `stale-commit-threshold` and `stale-day-threshold` from
-`.claude/handoff/settings.md` for the Step 3 report — the helper does
-not surface these because they are configuration, not computed signals.
+The helper always exits 0; missing values emit as `unknown`. Also read
+`stale-commit-threshold` and `stale-day-threshold` from
+`.claude/handoff/settings.md` for the Step 3 report (configuration, not
+computed signals).
 
 ## Step 3: Report
 
