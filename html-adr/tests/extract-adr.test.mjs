@@ -35,3 +35,39 @@ test('status from blockquote', () => {
   extractAdr({ filePath: '/tmp/x.md' })(t);
   assert.equal(t.data.adr.status.value, 'accepted');
 });
+
+test('extracts context from H2 "Context"', () => {
+  const t = tree(
+    h(1, 'X'),
+    h(2, 'Context'),
+    p('the why prose'),
+    h(2, 'Decision'),
+    p('the what')
+  );
+  extractAdr({ filePath: '/tmp/x.md' })(t);
+  assert.match(t.data.adr.context.value, /the why prose/);
+  assert.equal(t.data.adr.context.confidence, 'high');
+});
+
+test('extracts context from prose between H1 and first H2 if no Context section', () => {
+  const t = tree(
+    h(1, 'X'),
+    p('implicit context'),
+    h(2, 'Approach A'),
+  );
+  extractAdr({ filePath: '/tmp/x.md' })(t);
+  assert.match(t.data.adr.context.value, /implicit context/);
+  assert.equal(t.data.adr.context.confidence, 'medium');
+});
+
+test('extracts decision_drivers from frontmatter list', () => {
+  const t = tree(h(1, 'X'));
+  extractAdr({ filePath: '/tmp/x.md', frontmatter: { drivers: ['a', 'b'] } })(t);
+  assert.deepEqual(t.data.adr.decision_drivers.value, ['a', 'b']);
+});
+
+test('decision_drivers null when no source matches', () => {
+  const t = tree(h(1, 'X'), p('just prose'));
+  extractAdr({ filePath: '/tmp/x.md' })(t);
+  assert.equal(t.data.adr.decision_drivers, null);
+});

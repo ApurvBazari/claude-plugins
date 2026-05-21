@@ -61,6 +61,55 @@ function extractAuthors(frontmatter, gitProv) {
   return null; // omitted
 }
 
+const CONTEXT_RE = /^(context|background|goal|problem|why)/i;
+
+function indexBy(tree, predicate) {
+  return tree.children.map((n, i) => ({ n, i })).filter(({ n }) => predicate(n));
+}
+
+function nodesBetween(tree, fromIdx, untilPred) {
+  const out = [];
+  for (let i = fromIdx + 1; i < tree.children.length; i++) {
+    if (untilPred(tree.children[i])) break;
+    out.push(tree.children[i]);
+  }
+  return out;
+}
+
+function extractContext(tree) {
+  const ctxH = indexBy(tree, n => n.type === 'heading' && n.depth === 2 && CONTEXT_RE.test(textOf(n)));
+  if (ctxH.length > 0) {
+    const body = nodesBetween(tree, ctxH[0].i, n => n.type === 'heading' && n.depth <= 2);
+    return { value: body.map(textOf).join('\n\n').trim(), confidence: 'high', provenance: `H2 "${textOf(ctxH[0].n)}"` };
+  }
+  // Fallback: prose between H1 and first H2 of any kind
+  const h1Idx = tree.children.findIndex(n => n.type === 'heading' && n.depth === 1);
+  if (h1Idx >= 0) {
+    const body = nodesBetween(tree, h1Idx, n => n.type === 'heading' && n.depth === 2);
+    const text = body.filter(n => n.type === 'paragraph').map(textOf).join('\n\n').trim();
+    if (text) return { value: text, confidence: 'medium', provenance: 'prose between H1 and first H2' };
+  }
+  return null;
+}
+
+const DRIVERS_H3_RE = /^(drivers?|constraints?|requirements?|must.?haves?|forces)/i;
+
+function listItemsAfter(tree, idx) {
+  const list = tree.children[idx + 1];
+  if (!list || list.type !== 'list') return [];
+  return list.children.map(li => textOf(li).trim()).filter(Boolean);
+}
+
+function extractDrivers(tree, frontmatter) {
+  if (frontmatter?.drivers) return { value: frontmatter.drivers, confidence: 'high', provenance: 'frontmatter' };
+  const h3 = tree.children.findIndex(n => n.type === 'heading' && n.depth === 3 && DRIVERS_H3_RE.test(textOf(n)));
+  if (h3 >= 0) {
+    const items = listItemsAfter(tree, h3);
+    if (items.length) return { value: items, confidence: 'high', provenance: `H3 "${textOf(tree.children[h3])}"` };
+  }
+  return null;
+}
+
 export function extractAdr({ filePath = '', frontmatter = null, gitProvenance = null } = {}) {
   return function transformer(tree) {
     tree.data = tree.data ?? {};
@@ -69,6 +118,8 @@ export function extractAdr({ filePath = '', frontmatter = null, gitProvenance = 
       date: extractDate(tree, filePath, frontmatter, gitProvenance),
       status: extractStatus(tree, frontmatter, gitProvenance),
       decision_makers: extractAuthors(frontmatter, gitProvenance),
+      context: extractContext(tree),
+      decision_drivers: extractDrivers(tree, frontmatter),
     };
   };
 }
