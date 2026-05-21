@@ -71,3 +71,30 @@ test('decision_drivers null when no source matches', () => {
   extractAdr({ filePath: '/tmp/x.md' })(t);
   assert.equal(t.data.adr.decision_drivers, null);
 });
+
+test('extracts options from "Approach A/B/C" H3 headings', () => {
+  const t = tree(
+    h(1, 'X'),
+    h(2, 'Considered options'),
+    h(3, 'Approach A — fast'),
+    p('summary A'),
+    { type: 'list', children: [
+      { type: 'listItem', children: [{ type: 'paragraph', children: [{ type: 'text', value: '+ pro a1' }] }] }
+    ]},
+    h(3, 'Approach B — slow (Rejected)'),
+    p('summary B'),
+  );
+  extractAdr({ filePath: '/tmp/x.md' })(t);
+  const opts = t.data.adr.considered_options.value;
+  assert.equal(opts.length, 2);
+  assert.equal(opts[0].name, 'Approach A — fast');
+  assert.equal(opts[0].verdict, null);
+  assert.equal(opts[1].verdict, 'rejected');
+  assert.match(opts[0].summary, /summary A/);
+});
+
+test('considered_options gets n/a when fewer than 2 options detected', () => {
+  const t = tree(h(1, 'X'), h(3, 'Approach A'), p('only one'));
+  extractAdr({ filePath: '/tmp/x.md' })(t);
+  assert.equal(t.data.adr.considered_options, null);
+});

@@ -110,6 +110,77 @@ function extractDrivers(tree, frontmatter) {
   return null;
 }
 
+const OPTION_HEADING_RE = /^(approach|option|alternative)\s*[a-c1-3]\b/i;
+
+function verdictFromHeading(text) {
+  const lower = text.toLowerCase();
+  if (/\((recommended|chosen|picked)\)/.test(lower)) return 'chosen';
+  if (/\((rejected|not chosen)\)/.test(lower)) return 'rejected';
+  return null;
+}
+
+function extractOptionContent(tree, headingIdx) {
+  // collect children until next H2 or sibling-level H3 with matching pattern
+  const heading = tree.children[headingIdx];
+  const out = [];
+  for (let i = headingIdx + 1; i < tree.children.length; i++) {
+    const n = tree.children[i];
+    if (n.type === 'heading' && n.depth <= heading.depth) break;
+    out.push(n);
+  }
+  return out;
+}
+
+function bulletListPros(content, labelRe) {
+  // 1. sub-heading "Pros"/"Cons"
+  for (let i = 0; i < content.length; i++) {
+    if (content[i].type === 'heading' && labelRe.test(textOf(content[i]))) {
+      const next = content[i + 1];
+      if (next?.type === 'list') return next.children.map(li => textOf(li).trim()).filter(Boolean);
+    }
+  }
+  // 2. paragraph with "**Pros:**" / "**Cons:**" lead-in followed by list
+  for (let i = 0; i < content.length; i++) {
+    const n = content[i];
+    if (n.type === 'paragraph' && labelRe.test(textOf(n))) {
+      const next = content[i + 1];
+      if (next?.type === 'list') return next.children.map(li => textOf(li).trim()).filter(Boolean);
+    }
+  }
+  return [];
+}
+
+function extractOptions(tree, frontmatter) {
+  if (frontmatter?.options) {
+    return { value: frontmatter.options, confidence: 'high', provenance: 'frontmatter' };
+  }
+  const optionHeadings = tree.children
+    .map((n, i) => ({ n, i }))
+    .filter(({ n }) => n.type === 'heading' && (n.depth === 2 || n.depth === 3) && OPTION_HEADING_RE.test(textOf(n)));
+
+  if (optionHeadings.length < 2) return null;
+
+  const options = optionHeadings.map(({ n, i }) => {
+    const name = textOf(n).replace(/\s*\(Recommended\)|\s*\(Chosen\)|\s*\(Rejected\)/gi, '').trim();
+    const content = extractOptionContent(tree, i);
+    const firstPara = content.find(c => c.type === 'paragraph');
+    return {
+      name,
+      summary: firstPara ? textOf(firstPara).trim() : '',
+      pros: bulletListPros(content, /^pros?$/i).concat(bulletListPros(content, /\*\*pros:\*\*/i)),
+      cons: bulletListPros(content, /^cons?$/i).concat(bulletListPros(content, /\*\*(cons|trade-?offs):\*\*/i)),
+      verdict: verdictFromHeading(textOf(n)),
+    };
+  });
+
+  const hasProsCons = options.some(o => o.pros.length || o.cons.length);
+  return {
+    value: options,
+    confidence: hasProsCons ? 'medium-high' : 'medium',
+    provenance: `${options.length} option headings matched`,
+  };
+}
+
 export function extractAdr({ filePath = '', frontmatter = null, gitProvenance = null } = {}) {
   return function transformer(tree) {
     tree.data = tree.data ?? {};
@@ -120,6 +191,7 @@ export function extractAdr({ filePath = '', frontmatter = null, gitProvenance = 
       decision_makers: extractAuthors(frontmatter, gitProvenance),
       context: extractContext(tree),
       decision_drivers: extractDrivers(tree, frontmatter),
+      considered_options: extractOptions(tree, frontmatter),
     };
   };
 }
