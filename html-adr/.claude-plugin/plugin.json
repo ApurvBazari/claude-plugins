@@ -1,0 +1,11 @@
+{
+  "name": "html-adr",
+  "version": "0.1.0",
+  "description": "Render markdown design specs as single-file interactive HTML ADRs with auto-extracted decision fields, section widgets, and an overview graph.",
+  "author": {
+    "name": "Apurv Bazari",
+    "email": "apurvbazari@live.com"
+  },
+  "license": "MIT",
+  "keywords": ["adr", "spec", "render", "html", "documentation"]
+}
