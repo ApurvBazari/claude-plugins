@@ -70,6 +70,20 @@
         "workflow-automation"
       ],
       "license": "MIT"
+    },
+    {
+      "name": "html-adr",
+      "source": "./html-adr",
+      "description": "Render markdown design specs as single-file interactive HTML ADRs with auto-extracted decision fields, section widgets, and an overview graph.",
+      "version": "0.1.0",
+      "keywords": [
+        "adr",
+        "spec",
+        "render",
+        "html",
+        "documentation"
+      ],
+      "license": "MIT"
     }
   ]
 }
