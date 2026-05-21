@@ -94,20 +94,10 @@ Do NOT include `deferred-at` — that field is written only by the resume flow.
 
 ## Step 8: Gitignore prompt (first save only)
 
-Read `.claude/handoff/settings.md` if it exists; check the `gitignore-prompt` frontmatter value. If `never`, skip this step.
-
-Otherwise, check the repo's `.gitignore`:
-
-- If `.gitignore` doesn't exist at all → skip this step (the file isn't in a versioned context).
-- If `.gitignore` already contains the literal line `.claude/handoff/` → skip.
-- Otherwise, ask via AskUserQuestion (single-select, 3 options):
-  - **Add `.claude/handoff/` to .gitignore** *(Recommended)* — "I'll append it now and write a settings file so this prompt doesn't repeat."
-  - **Skip — I'll handle it** — "Don't touch .gitignore. Persist the choice so you don't ask again."
-  - **Don't ask again** — "Don't add it, and persist the choice."
-
-On **Add**: append `.claude/handoff/` to `.gitignore` on its own line (preceded by a blank line if the file doesn't end in one).
-
-On **Skip** or **Don't ask again**: write `.claude/handoff/settings.md` with `gitignore-prompt: never` in the frontmatter. Preserve any other settings if it already exists.
+Read `.claude/handoff/settings.md` if present. If `gitignore-prompt: never`, skip.
+Otherwise check `.gitignore`; if missing the pattern `.claude/handoff/`, present
+the prompt at `references/prompts/gitignore.md` — verbatim option text — and apply
+the per-option behavior documented there.
 
 ## Step 9: Retention prompt (first save only)
 
