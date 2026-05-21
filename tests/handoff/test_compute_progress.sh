@@ -27,7 +27,10 @@ EOF
 
 # Run the script and bash-eval its output in a subshell, echoing the
 # resolved retention_value so the parent shell can assert without
-# polluting its own scope.
+# polluting its own scope. retention_value is assigned dynamically by
+# the eval'd script output — that is the exact contract under test, so
+# the SC2154 "referenced but not assigned" warning is a false positive.
+# shellcheck disable=SC2154
 run_eval() {
   ( eval "$(bash "$SCRIPT" "$FIXTURE_ROOT")"; echo "$retention_value" )
 }
