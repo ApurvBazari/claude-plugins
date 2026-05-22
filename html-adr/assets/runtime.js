@@ -786,9 +786,18 @@
 
   function initMermaid() {
     if (typeof window.mermaid === 'undefined' || !window.mermaid.initialize) return;
-    // securityLevel:'loose' lets click bindings + inline styles render — these
-    // diagrams come from the spec author, not arbitrary user input, so the
-    // tradeoff is right for the audience.
+    // SECURITY POLICY: Mermaid securityLevel = 'loose'.
+    // Trade-off:
+    //   - 'sandbox' renders each diagram inside a sandboxed iframe. The iframe
+    //     does NOT inherit page CSS, so our --accent / --ink CSS variables and
+    //     fonts don't reach Mermaid's SVG. We lose theming.
+    //   - 'loose' lets diagrams render inline with full page CSS and supports
+    //     click bindings + inline styles. Authors are trusted (specs are
+    //     hand-written by the dev; not user-input).
+    // Guard: tests/render-templates.test.mjs asserts this literal stays as
+    // 'loose'. Changing it intentionally requires editing that test too,
+    // which forces explicit acknowledgement of the security trade-off in
+    // the diff.
     window.mermaid.initialize({
       startOnLoad: true,
       theme: 'neutral',

@@ -146,3 +146,24 @@ test('omits ADR header when fewer than 2 options detected', () => {
   assert.match(html, /banner/);
   assert.match(html, /doesn't contain a multi-option decision/);
 });
+
+test('rendered HTML contains the locked Mermaid securityLevel: "loose"', async () => {
+  // This test guards a deliberate security policy decision documented in
+  // assets/runtime.js. 'loose' lets click bindings + inline styles render in
+  // Mermaid diagrams (we trust spec authors). 'sandbox' would lose page CSS
+  // inheritance. Do not change without a security audit and a documentation
+  // update; this assertion exists to make the drift visible.
+  const { render } = await import('../scripts/render-adr.mjs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname } = await import('node:path');
+  const dir = mkdtempSync(join(tmpdir(), 'adr-securitylevel-'));
+  const src = join(dir, 'tiny.md');
+  writeFileSync(src, '# Tiny\n\n## Context\n\nMinimal.\n');
+  const out = join(dir, 'tiny.html');
+  const pluginRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+  await render({ src, out, pluginRoot });
+
+  const html = readFileSync(out, 'utf8');
+  assert.match(html, /securityLevel:\s*['"]loose['"]/, 'expected Mermaid securityLevel: "loose" in rendered HTML');
+});
