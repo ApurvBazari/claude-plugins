@@ -5,6 +5,7 @@ import { join, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { render } from '../scripts/render-adr.mjs';
+import { stripMarkers } from '../scripts/plugins/inline-assets.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pluginRoot = join(__dirname, '..');
@@ -12,7 +13,7 @@ const fixturesDir = join(__dirname, 'fixtures');
 const goldenDir = join(__dirname, 'golden');
 
 function normalize(html) {
-  return html
+  return stripMarkers(html)
     .replace(/<script id="extraction-log"[\s\S]*?<\/script>/g, '<script id="extraction-log"></script>')
     .replace(/<script id="graph-data"[\s\S]*?<\/script>/g, '<script id="graph-data"></script>')
     .replace(/\s+\n/g, '\n');

@@ -57,3 +57,23 @@ export function inlineAssets({ assetsDir, stylesPath = null }) {
     return out;
   };
 }
+
+/**
+ * Remove per-bundle marker comment lines from a rendered HTML string.
+ *
+ * Behavior:
+ *   - Matches whole lines starting with `// === bundle: ` (multiline anchor),
+ *     so markers at the start of the string and consecutive marker lines are
+ *     both handled correctly.
+ *   - The marker line itself (including its trailing newline) is removed.
+ *
+ * Used by golden-compare tests to keep goldens byte-stable across vendored-asset
+ * updates: the marker lines carry SHA-256 of the bundle bytes, which changes
+ * every time an asset is bumped. Without this normalization, every asset bump
+ * would fail every golden test for no real-behavior reason.
+ *
+ * No-op when the input contains no marker lines (commit A baseline).
+ */
+export function stripMarkers(html) {
+  return html.replace(/^\/\/ === bundle: [^\n]+\n/gm, '');
+}

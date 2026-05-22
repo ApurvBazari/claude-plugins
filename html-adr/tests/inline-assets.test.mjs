@@ -86,3 +86,50 @@ test('does not interpret String.replace special patterns inside vendored bundles
   assert.ok(out.includes("$'"));
   assert.ok(out.includes('$$'));
 });
+
+test('stripMarkers removes only marker lines, preserves everything else', async () => {
+  const { stripMarkers } = await import('../scripts/plugins/inline-assets.mjs');
+  const input = [
+    '<script id="cytoscape">',
+    '// === bundle: cytoscape-3.30.4.min.js sha256:abc123def456789 ===',
+    'CYTOSCAPE_BODY_KEEP',
+    '</script>',
+    '<script id="mermaid">',
+    '// === bundle: mermaid-11.4.1.min.js sha256:0123456789abcdef ===',
+    'MERMAID_BODY_KEEP',
+    '// not a marker — just a regular comment',
+    '</script>',
+  ].join('\n');
+
+  const out = stripMarkers(input);
+
+  // Marker lines removed.
+  assert.doesNotMatch(out, /=== bundle:/);
+  // Non-marker content intact, including the regular comment.
+  assert.match(out, /CYTOSCAPE_BODY_KEEP/);
+  assert.match(out, /MERMAID_BODY_KEEP/);
+  assert.match(out, /\/\/ not a marker/);
+  // Script tags intact.
+  assert.match(out, /<script id="cytoscape">/);
+  assert.match(out, /<script id="mermaid">/);
+});
+
+test('stripMarkers handles a marker at the start of the input', async () => {
+  const { stripMarkers } = await import('../scripts/plugins/inline-assets.mjs');
+  const input = '// === bundle: foo.js sha256:abc123def4567890 ===\nBODY\n';
+  assert.equal(stripMarkers(input), 'BODY\n');
+});
+
+test('stripMarkers handles consecutive marker lines', async () => {
+  const { stripMarkers } = await import('../scripts/plugins/inline-assets.mjs');
+  const input = [
+    'HEAD',
+    '// === bundle: a.js sha256:aaaaaaaaaaaaaaaa ===',
+    '// === bundle: b.js sha256:bbbbbbbbbbbbbbbb ===',
+    'TAIL',
+    '',
+  ].join('\n');
+  const out = stripMarkers(input);
+  assert.doesNotMatch(out, /=== bundle:/);
+  assert.match(out, /HEAD\nTAIL/);
+});
