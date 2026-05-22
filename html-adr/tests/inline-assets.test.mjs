@@ -133,3 +133,54 @@ test('stripMarkers handles consecutive marker lines', async () => {
   assert.doesNotMatch(out, /=== bundle:/);
   assert.match(out, /HEAD\nTAIL/);
 });
+
+test('emits per-bundle marker with sha256 prefix for every vendored bundle', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'adr-inline-markers-'));
+  writeFileSync(join(dir, 'cytoscape-3.30.4.min.js'), 'CY_BODY');
+  writeFileSync(join(dir, 'cytoscape-dagre-2.5.0.min.js'), 'CYD_BODY');
+  writeFileSync(join(dir, 'dagre-0.8.5.min.js'), 'DAG_BODY');
+  writeFileSync(join(dir, 'mermaid-11.4.1.min.js'), 'ME_BODY');
+  writeFileSync(join(dir, 'highlight-11.10.0.min.js'), 'HL_BODY');
+  writeFileSync(join(dir, 'runtime.js'), 'RT_BODY');
+
+  const html = [
+    '<script>{{cytoscapeBundle}}</script>',
+    '<script>{{cytoscapeDagreBundle}}</script>',
+    '<script>{{dagreBundle}}</script>',
+    '<script>{{mermaidBundle}}</script>',
+    '<script>{{highlightBundle}}</script>',
+    '<script>{{runtime}}</script>',
+  ].join('\n');
+
+  const out = inlineAssets({ assetsDir: dir })(html);
+
+  // Each bundle has exactly one marker referencing its source filename and a 16-hex sha.
+  const markerFor = (file) => new RegExp(`// === bundle: ${file.replace(/\./g, '\\.')} sha256:[0-9a-f]{16} ===`);
+  assert.match(out, markerFor('cytoscape-3.30.4.min.js'));
+  assert.match(out, markerFor('cytoscape-dagre-2.5.0.min.js'));
+  assert.match(out, markerFor('dagre-0.8.5.min.js'));
+  assert.match(out, markerFor('mermaid-11.4.1.min.js'));
+  assert.match(out, markerFor('highlight-11.10.0.min.js'));
+  assert.match(out, markerFor('runtime.js'));
+
+  // Bundle bodies still appear exactly once each.
+  assert.equal((out.match(/CY_BODY/g) || []).length, 1);
+  assert.equal((out.match(/CYD_BODY/g) || []).length, 1);
+  assert.equal((out.match(/DAG_BODY/g) || []).length, 1);
+  assert.equal((out.match(/ME_BODY/g) || []).length, 1);
+  assert.equal((out.match(/HL_BODY/g) || []).length, 1);
+  assert.equal((out.match(/RT_BODY/g) || []).length, 1);
+});
+
+test('marker hash is deterministic across renders (same bytes => same hash)', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'adr-inline-deterministic-'));
+  writeFileSync(join(dir, 'mermaid-11.4.1.min.js'), 'STABLE_BODY_v1');
+  const html = '<script>{{mermaidBundle}}</script>';
+  const out1 = inlineAssets({ assetsDir: dir })(html);
+  const out2 = inlineAssets({ assetsDir: dir })(html);
+
+  // Same input bytes => same hash in the marker.
+  const sha = (s) => (s.match(/sha256:([0-9a-f]{16})/) || [])[1];
+  assert.equal(sha(out1), sha(out2));
+  assert.ok(sha(out1), 'expected a sha256 prefix in marker');
+});
