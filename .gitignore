@@ -2,6 +2,7 @@
 .claude/settings.local.json
 .claude/plans/
 .claude/plugins/
+.claude/skills/test-plugins-locally/
 
 # handoff plugin runtime state (directive may contain session-scoped intent;
 # treat as personal, not shared)
