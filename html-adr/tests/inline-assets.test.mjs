@@ -184,3 +184,34 @@ test('marker hash is deterministic across renders (same bytes => same hash)', ()
   assert.equal(sha(out1), sha(out2));
   assert.ok(sha(out1), 'expected a sha256 prefix in marker');
 });
+
+test('validateScriptBody rejects bundles where <!-- precedes <script', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'adr-inline-tainted-'));
+  // Tainted: comment-open before script-tag — would trigger HTML5
+  // script-data-double-escape and prevent the real </script> from closing
+  // the host tag.
+  writeFileSync(
+    join(dir, 'mermaid-11.4.1.min.js'),
+    'var x = "<!-- something --><script>evil</script>";'
+  );
+  const html = '<script>{{mermaidBundle}}</script>';
+  assert.throws(
+    () => inlineAssets({ assetsDir: dir })(html),
+    /mermaid-11\.4\.1\.min\.js.*<!--.*<script.*script-data-double-escape/s
+  );
+});
+
+test('validateScriptBody accepts <!-- without a following <script (the today-Mermaid case)', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'adr-inline-clean-comment-'));
+  // Mirrors today's real Mermaid bundle: DOMPurify code with "<!-->"
+  // string literals and NO <script string-literals.
+  writeFileSync(
+    join(dir, 'mermaid-11.4.1.min.js'),
+    'var x = "<!-->"; var y = "<!---->"; /* no script tags here */'
+  );
+  const html = '<script>{{mermaidBundle}}</script>';
+  // Should not throw.
+  const out = inlineAssets({ assetsDir: dir })(html);
+  assert.match(out, /<!-->/);
+  assert.match(out, /<!---->/);
+});

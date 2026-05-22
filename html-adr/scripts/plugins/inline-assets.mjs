@@ -27,6 +27,42 @@ function escapeScriptClose(s) {
 }
 
 /**
+ * Reject vendored bundles that would trigger HTML5 script-data-double-escape.
+ *
+ * When the HTML parser's script-data state sees a `<!--`, it enters
+ * "script-data-escaped state". If it then sees `<script` (a tag-name start)
+ * before any `-->`, it enters "script-data-double-escaped state". In that
+ * state, the next `</script>` is treated as text, not as the closing tag.
+ * Effect: the real outer </script> in shell.html no longer closes the host
+ * tag, the bundle "leaks" into HTML context, and downstream parsing breaks
+ * in non-obvious ways.
+ *
+ * Today's Mermaid bundle contains three `<!--` substrings inside DOMPurify
+ * string literals (`"<!-->"`, `"<!---->"`) but no `<script` substrings — so
+ * it's safe. A future vendored update that adds a `<script` literal anywhere
+ * after a `<!--` would silently break. This validator turns that into a
+ * loud render-time error.
+ *
+ * Recovery for a maintainer who hits this: re-vendor the asset with the
+ * offending string literals escaped (e.g. "<\\!--" or "<\\script>"), bump
+ * the on-disk SHA, commit. Or extend the validator with an allowlist if
+ * the pattern is determined to be benign in context.
+ */
+function validateScriptBody(body, filename) {
+  const commentOpen = body.indexOf('<!--');
+  if (commentOpen === -1) return;
+  const trailer = body.slice(commentOpen);
+  if (/<script[\s/>]/i.test(trailer)) {
+    throw new Error(
+      `inline-assets: ${filename} contains '<!--' before '<script' — ` +
+      `would trigger HTML5 script-data-double-escape. Bundle must be ` +
+      `re-vendored with the offending strings escaped, or the inliner ` +
+      `must be extended with an allowlist.`
+    );
+  }
+}
+
+/**
  * Wrap a vendored bundle body with a leading newline + marker comment +
  * trailing newline. Effect on rendered output: every <script id="…">{{X}}</script>
  * occupies multiple lines, so V8 console errors carry meaningful line numbers
@@ -65,7 +101,9 @@ export function inlineAssets({ assetsDir, stylesPath = null }) {
         // All entries in PLACEHOLDER_TO_FILE land inside <script> tags in
         // shell.html — escape </script> so JS comments containing it don't
         // close the host tag and leak into the page as HTML.
-        const body = escapeScriptClose(read(assetsDir, filename));
+        const raw = read(assetsDir, filename);
+        validateScriptBody(raw, filename);
+        const body = escapeScriptClose(raw);
         // Wrap with marker comment for debuggability + provenance.
         // wrapBundle adds leading/trailing newlines, so <script id="X">{{X}}</script>
         // renders as <script id="X">\nMARKER\nBODY\n</script> — each script tag
