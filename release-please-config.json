@@ -19,6 +19,13 @@
       "extra-files": [
         ".claude-plugin/plugin.json"
       ]
+    },
+    "handoff": {
+      "package-name": "handoff",
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        ".claude-plugin/plugin.json"
+      ]
     }
   }
 }
