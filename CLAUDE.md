@@ -1,6 +1,6 @@
 # claude-plugins
 
-Claude Code plugin marketplace by Apurv Bazari. Three plugins — all markdown + shell + JSON, no compiled code.
+Claude Code plugin marketplace by Apurv Bazari. Three plugins — all markdown + shell + JSON, no compiled code. (onboard, notify, handoff.)
 
 ## Repository
 
@@ -18,14 +18,12 @@ Claude Code plugin marketplace by Apurv Bazari. Three plugins — all markdown +
          │      ├── agents/ (codebase-analyzer, config-generator, feature-evaluator)
          │      └── scripts/ (analyze-structure, detect-stack, measure-complexity)
          │
-         ├──→ forge/                     ← project scaffolder with AI-native tooling
-         │      ├── skills/ (init, resume, status, context-gathering, scaffolding,
-         │      │           tooling-generation, plugin-discovery, lifecycle-setup)
-         │      └── agents/ (stack-researcher, scaffold-analyzer)
+         ├──→ notify/                    ← cross-platform system notifications
+         │      ├── skills/ (setup, status, uninstall, wizard)
+         │      └── scripts/ (notify, install-notifier, test-notification)
          │
-         └──→ notify/                    ← cross-platform system notifications
-                ├── skills/ (setup, status, uninstall, wizard)
-                └── scripts/ (notify, install-notifier, test-notification)
+         └──→ handoff/                   ← session handoff continuity
+                └── skills/ (save, status, resume)
 ```
 
 ## Plugin Structure Convention
@@ -55,25 +53,20 @@ Apply the right invocation policy per skill:
 
 | Category | Who invokes | Frontmatter | Examples |
 |---|---|---|---|
-| Destructive / setup | User only (explicit) | `disable-model-invocation: true` | `onboard:init`, `onboard:update`, `forge:init`, `notify:setup`, `notify:uninstall` |
-| Read-only helpers | User + auto | (default) — write a specific `description` | `onboard:status`, `onboard:verify`, `onboard:evolve`, `forge:resume`, `forge:status`, `notify:status` |
-| Programmatic API | Claude only, hidden | `user-invocable: false` | `onboard:generate` (invoked by forge via Skill tool) |
-| Internal building blocks | Claude only, hidden | `user-invocable: false` | `wizard`, `analysis`, `generation`, `context-gathering`, `scaffolding`, `plugin-discovery`, `tooling-generation`, `lifecycle-setup` |
+| Destructive / setup | User only (explicit) | `disable-model-invocation: true` | `onboard:start`, `onboard:update`, `notify:setup`, `notify:uninstall` |
+| Read-only helpers | User + auto | (default) — write a specific `description` | `onboard:check`, `onboard:verify`, `onboard:evolve`, `notify:check` |
+| Programmatic API | Claude only, hidden | `user-invocable: false` | `onboard:generate` |
+| Internal building blocks | Claude only, hidden | `user-invocable: false` | `wizard`, `analysis`, `generation` |
 
 Canonical frontmatter spelling is **hyphenated** (`user-invocable`, `disable-model-invocation`) per the Claude Code docs. Underscore spelling is silently ignored.
 
 ## Naming Conventions
 
 - File names: kebab-case (`codebase-analyzer.md`, `validate-bash.sh`)
-- Plugin directories: lowercase (`onboard`, `forge`, `notify`)
+- Plugin directories: lowercase (`onboard`, `notify`, `handoff`)
 - Manifest names: match directory name
 - Skill references: always in `references/` subdirectory inside the skill
 - Skill `name` frontmatter: lowercase letters, numbers, hyphens only (max 64 chars). If omitted, derives from the directory name.
-
-## Cross-Plugin Integration
-
-- **forge → onboard**: forge delegates all Claude tooling generation to onboard's headless `generate` skill (invoked via Skill tool as `onboard:generate`)
-- **forge → notify**: forge-scaffolded projects can include notify configuration as part of plugin discovery
 
 ## Quality Checks
 
@@ -84,7 +77,7 @@ Canonical frontmatter spelling is **hyphenated** (`user-invocable`, `disable-mod
 
 ## Documentation URL convention
 
-When referencing Claude Code documentation in any plugin file, use the current home `https://code.claude.com/docs/en/*`. The legacy `https://docs.anthropic.com/en/docs/claude-code/*` URLs 301-redirect and waste turns when programmatic WebFetch calls don't follow redirects (release-gate finding A6, 2026-04-16). Full mapping + verification recipe in `docs/url-conventions.md`.
+When referencing Claude Code documentation in any plugin file, use the current home `https://code.claude.com/docs/en/*`. The legacy `https://docs.anthropic.com/en/docs/claude-code/*` URLs 301-redirect and waste turns when programmatic WebFetch calls don't follow redirects (release-gate finding A6, 2026-04-16).
 
 ## Git Discipline
 

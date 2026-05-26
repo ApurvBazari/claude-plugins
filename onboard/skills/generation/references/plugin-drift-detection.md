@@ -10,8 +10,8 @@ Each caller resolves the baseline `previousPlugins` list using the first source 
 
 | Caller | Baseline order |
 |---|---|
-| `update` | 1. `.claude/onboard-meta.json.detectedPlugins.installedPlugins` (always populated by init/generate since v1.2.0, regardless of `pluginSource`) → 2. `.claude/onboard-meta.json.callerExtras.installedPlugins` (legacy pre-v1.2.0 projects) → 3. `.claude/forge-meta.json.generated.toolingFlags.installedPlugins` → 4. empty |
-| `evolve` | 1. `.claude/forge-meta.json.generated.toolingFlags.installedPlugins` → 2. skip step entirely (evolve requires a forge baseline) |
+| `update` | 1. `.claude/onboard-meta.json.detectedPlugins.installedPlugins` (always populated by init/generate since v1.2.0, regardless of `pluginSource`) → 2. `.claude/onboard-meta.json.callerExtras.installedPlugins` (legacy pre-v1.2.0 projects) → 3. empty |
+| `evolve` | 1. `.claude/onboard-meta.json.detectedPlugins.installedPlugins` → 2. skip step entirely (evolve requires a baseline) |
 | `generate` | Falls back to current-state probe only (no baseline diff — it's generating fresh) |
 
 **Empty baseline**: if no baseline source exists, treat `previousPlugins` as `[]`. All currently-probed plugins become additions. Label the report section: "Plugin Integration not tracked before — all detected plugins offered as new additions."
@@ -41,7 +41,7 @@ Every caller produces the same `driftReport` structure:
 ```jsonc
 {
   "driftReport": {
-    "baselineSource": "onboard-meta | forge-meta | caller-extras | none",
+    "baselineSource": "onboard-meta | caller-extras | none",
     "previousPlugins": ["superpowers", "commit-commands"],
     "currentPlugins":  ["superpowers", "commit-commands", "feature-dev"],
     "added":   ["feature-dev"],
@@ -53,7 +53,7 @@ Every caller produces the same `driftReport` structure:
 }
 ```
 
-Derivation rules for `coveredCapabilitiesNext`, `qualityGatesNext`, `phaseSkillsNext` come from `plugin-detection-guide.md` §§ coveredCapabilities Derivation, qualityGates Derivation, phaseSkills Derivation. Read `autonomyLevel` from `onboard-meta.json.wizardAnswers.autonomyLevel` (or `forge-meta.json.context.autonomyLevel` when that file is the baseline).
+Derivation rules for `coveredCapabilitiesNext`, `qualityGatesNext`, `phaseSkillsNext` come from `plugin-detection-guide.md` §§ coveredCapabilities Derivation, qualityGates Derivation, phaseSkills Derivation. Read `autonomyLevel` from `onboard-meta.json.wizardAnswers.autonomyLevel`.
 
 ## Presentation
 
@@ -83,7 +83,7 @@ Hook script templates come from `hooks-guide.md` § Quality-Gate Hook Templates 
 After applying drift changes, update the appropriate metadata file:
 
 - `onboard:update` → write `currentPlugins` to `.claude/onboard-meta.json.detectedPlugins.installedPlugins` (create the field if missing). Also refresh `detectedPlugins.coveredCapabilities`, `detectedPlugins.qualityGates`, `detectedPlugins.phaseSkills`, and `hookStatus`.
-- `onboard:evolve` → write `currentPlugins` to `.claude/forge-meta.json.generated.toolingFlags.installedPlugins` and refresh the other toolingFlags fields per `evolve/SKILL.md` Step 2b.3.
+- `onboard:evolve` → write `currentPlugins` to `.claude/onboard-meta.json.detectedPlugins.installedPlugins` and refresh the other fields per `evolve/SKILL.md` Step 2b.3.
 
 Never fabricate a baseline — if there was none, do not invent one. Persist the new state so the next run has a comparison point.
 

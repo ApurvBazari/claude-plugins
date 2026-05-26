@@ -1,6 +1,6 @@
 ---
 name: generation
-description: Core artifact generator for Claude tooling (CLAUDE.md, rules, skills, agents, hooks). Internal building block invoked by the config-generator agent during /onboard:init and /onboard:generate — not user-invocable.
+description: Core artifact generator for Claude tooling (CLAUDE.md, rules, skills, agents, hooks). Internal building block invoked by the config-generator agent during /onboard:start and /onboard:generate — not user-invocable.
 user-invocable: false
 ---
 
@@ -21,7 +21,7 @@ You receive:
 
 ## Headless Mode Guard
 
-When `headlessMode` is `true` in the input context, this skill is being invoked via `/onboard:generate` from an external caller (e.g., the Forge plugin). In headless mode:
+When `headlessMode` is `true` in the input context, this skill is being invoked via `/onboard:generate` from an external caller. In headless mode:
 
 - **Skip all interactive steps** — Do not ask the developer any questions, present confirmation prompts, or wait for user input. All decisions have already been made by the caller.
 - **Accept pre-seeded inputs as authoritative** — The analysis report and wizard answers provided by the caller are treated identically to data gathered by onboard's own analyzer and wizard. Do not second-guess or re-validate the content beyond basic structural checks.
@@ -102,7 +102,7 @@ Follow `references/claude-md-guide.md` for structure and best practices.
 - **Tone matches autonomy level**: "always-ask" = more guardrails and "check with developer" language; "autonomous" = more empowering and "go ahead" language; "balanced" = mix
 - **Formatter conventions**: Include formatter settings (from Prettier/Black/rustfmt configs) as explicit conventions in Key Conventions section rather than as path-scoped rules
 - **Commands section**: List every discovered build/test/lint/deploy command with brief descriptions
-- **Ecosystem plugins section** (if any were set up): If `ecosystemPlugins` is present in wizard answers, add a brief "Ecosystem Plugins" section noting which plugins are active (e.g., "notify: system notifications on task completion"). Include relevant commands (`/notify:status`).
+- **Ecosystem plugins section** (if any were set up): If `ecosystemPlugins` is present in wizard answers, add a brief "Ecosystem Plugins" section noting which plugins are active (e.g., "notify: system notifications on task completion"). Include relevant commands (`/notify:check`).
 - **Plugin Integration section** (if `effectivePlugins` is non-empty): Generate a dedicated `## Plugin Integration` section that documents the installed Claude Code plugins and how to use them on this specific project. See "Plugin Integration Section Generation" below for the full spec.
 
 #### Plugin Integration Section Generation
@@ -542,7 +542,7 @@ This project uses TDD. Install these plugins for the best workflow:
 - **feature-dev** (official Anthropic plugin) — Structured feature development
   with code-explorer, code-architect, and code-reviewer agents.
 
-After installing, re-run `/onboard:init` to upgrade from standalone TDD
+After installing, re-run `/onboard:start` to upgrade from standalone TDD
 artifacts to the integrated plugin-based workflow.
 ```
 
@@ -745,7 +745,7 @@ Follow `references/lsp-plugin-catalog.md` for the 12-entry language→plugin map
 | **Path SKIP — caller-disabled** | `callerExtras.disableLSP === true` | No script run, no install, no snapshot. Telemetry: `lspStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [] }`. **Telemetry IS still written.** |
 
 **Inputs**:
-- `callerExtras.disableLSP` (optional, headless) — see Path SKIP above; forge passes `true` by default for placeholder code in scaffolds
+- `callerExtras.disableLSP` (optional, headless) — see Path SKIP above; headless callers may pass `true` by default for placeholder code in scaffolds
 - `callerExtras.lspPlugins` (optional, headless) — see Path A above
 - `wizardAnswers.lspPlugins` (optional) — see Path A above
 - Output of `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"` — JSON array sorted by fileCount desc
@@ -765,7 +765,7 @@ Empty array → nothing to recommend. Emit `lspStatus: { planned: [], generated:
 
 **Step 2 — Resolve selected plugins.**
 
-- If `callerExtras.lspPlugins` is a non-null array → use it verbatim as the accepted list (headless path; forge supplies an explicit list or nothing).
+- If `callerExtras.lspPlugins` is a non-null array → use it verbatim as the accepted list (headless path; caller supplies an explicit list or nothing).
 - Else if `wizardAnswers.lspPlugins` exists (from wizard Phase 5.6) → use that as the accepted list.
 - Else → use all detected plugins as the accepted list (autonomous Quick Mode path).
 
@@ -827,13 +827,13 @@ Follow `references/built-in-skills-catalog.md` for the 9-skill catalog, tier cla
 | **Path SKIP — caller-disabled** | `callerExtras.disableBuiltInSkills === true` | No CLAUDE.md subsection, no snapshot. Telemetry: `builtInSkillsStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [] }`. **Telemetry IS still written.** |
 
 **Inputs**:
-- `callerExtras.disableBuiltInSkills` (optional, headless) — see Path SKIP above; forge passes `true` by default for placeholder code in scaffolds
+- `callerExtras.disableBuiltInSkills` (optional, headless) — see Path SKIP above; headless callers may pass `true` by default for placeholder code in scaffolds
 - `callerExtras.builtInSkills` (optional, headless) — see Path A above
 - `wizardAnswers.builtInSkills` (optional) — see Path A above
 
 **Telemetry contract**: `builtInSkillsStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | documented | skipped | declined | failed`) per the Default behavior matrix in `generate/SKILL.md`. **Built-in skills is the primary user of the `"documented"` value** — its "artifact" is a CLAUDE.md subsection rather than a separate file + snapshot, so `"documented"` is semantically more accurate than `"emitted"` when the phase runs. See Phase 7d below for the firing paths.
 
-**Suppression**: Skip entirely when `callerExtras.disableBuiltInSkills: true` (forge default — scaffolded projects have placeholder code so detection signals are premature). When skipped, still emit a `builtInSkillsStatus` entry in meta.json:
+**Suppression**: Skip entirely when `callerExtras.disableBuiltInSkills: true` (scaffolded projects have placeholder code so detection signals are premature). When skipped, still emit a `builtInSkillsStatus` entry in meta.json:
 
 ```json
 {
@@ -955,11 +955,10 @@ When `effectiveQualityGates` is present (from either `callerExtras.qualityGates`
 
 1. Returned from `/onboard:generate` in the result summary (see `onboard/skills/generate/SKILL.md` § Step 5)
 2. Recorded inside `.claude/onboard-meta.json` under the top-level `hookStatus` key
-3. Mirrored by forge into `.claude/forge-meta.json.generated.toolingFlags.hookStatus` (see `forge/skills/tooling-generation/SKILL.md` § Step 4)
 
-This telemetry enables `/forge:status` to report "X/Y hooks wired" and lays the foundation for future adaptive behaviors (e.g. suppress SessionStart reminder after the user dismissed it N times).
+This telemetry enables `/onboard:check` to report "X/Y hooks wired" and lays the foundation for future adaptive behaviors (e.g. suppress SessionStart reminder after the user dismissed it N times).
 
-**Scope boundary** (load-bearing — read this carefully): `hookStatus` tracks **only** hooks derived from `callerExtras.qualityGates`. Pre-existing format/lint hooks (Prettier, ESLint, Black, rustfmt, etc.), forge-internal hooks (like `forge-evolution-check.sh`), and any other non-Plugin-Integration hooks are **out of scope** for this telemetry. They still get written to `.claude/settings.json` via the normal merge path, but they do **not** appear in `hookStatus.planned` or `hookStatus.generated`. This keeps Plugin Integration Coverage reporting clean — `/forge:status` should never show a confusing "wired 2 hooks but planned 0" because format hooks inflated the count.
+**Scope boundary** (load-bearing — read this carefully): `hookStatus` tracks **only** hooks derived from `callerExtras.qualityGates`. Pre-existing format/lint hooks (Prettier, ESLint, Black, rustfmt, etc.), evolution-internal hooks, and any other non-Plugin-Integration hooks are **out of scope** for this telemetry. They still get written to `.claude/settings.json` via the normal merge path, but they do **not** appear in `hookStatus.planned` or `hookStatus.generated`. This keeps Plugin Integration Coverage reporting clean — `/onboard:check` should never show a confusing "wired 2 hooks but planned 0" because format hooks inflated the count.
 
 The mental model: `hookStatus` answers "how well did the Plugin Integration contract land?", not "how many shell hooks does this project have total?".
 
@@ -1033,7 +1032,7 @@ The mental model: `hookStatus` answers "how well did the Plugin Integration cont
 ```
 
 **Counting rules**:
-- `planned[key]` = **integer** — number of entries in `callerExtras.qualityGates.<field>[]` that map to that exact `<Event>[:<Matcher>][:<Type>]` key. Entries sharing an event but differing in type count as separate keys (e.g., `TaskCompleted` and `TaskCompleted:agent` are distinct). **Only counts qualityGates-derived hooks, never format/lint/forge-internal.**
+- `planned[key]` = **integer** — number of entries in `callerExtras.qualityGates.<field>[]` that map to that exact `<Event>[:<Matcher>][:<Type>]` key. Entries sharing an event but differing in type count as separate keys (e.g., `TaskCompleted` and `TaskCompleted:agent` are distinct). **Only counts qualityGates-derived hooks, never format/lint/evolution-internal.**
 - `generated[key]` = **array** of artifact references for hooks actually written to `.claude/settings.json` from the qualityGates spec. Value semantics depend on type (see § Artifact per type under Advanced Event Hooks).
 - `skipped[]` = a record for every entry in `planned` that did NOT produce a corresponding `generated` entry. The `event` field must match a `planned` key verbatim (including type suffix). Reasons include `plugin-not-installed`, `condition-unsatisfied`, `empty-critical-dirs`, plus the 11 type-validation reasons listed in § Hook Type Validation.
 - `warnings[]` = operator-facing messages (not user-facing) about soft issues during generation.
@@ -1638,6 +1637,152 @@ TDD is the standard testing approach for all onboarded projects. These artifacts
 6. **PR template** — Checklist includes "Tests written first (TDD), all pass".
 7. **Plugin recommendations** — If superpowers or feature-dev is missing, add "Recommended Plugins" section to CLAUDE.md with install commands.
 
+## Round 4 — new phase blocks (Personas, Domain Model, Risk Reconciliation, mode, risks)
+
+Onboard 2.0 alpha.5+ accepts a context object with up to 11 phase blocks plus a top-level `risks[]` array and a top-level `mode` block:
+
+- **R1:** `cicdAndDelivery`
+- **R2:** `dataArchitecture`, `apiIntegration`
+- **R2.5:** `architecturalFraming`, `architecturalValidation`
+- **R3:** `auth`, `privacy`, `security`, `runtimeOperations`
+- **R4 (new):** `personas`, `domainModel`
+
+Plus two top-level R4 additions:
+
+- `risks[]` — captured inline at each phase's `Q_RISK` trailer; reconciled at `phases.architecturalValidation.riskReconciliation`.
+- `mode` — three wizard-level toggles: `depth` (heavy/light), `coupling` (auto-loop/hybrid), `domainFormat` (full-ddd/ddd-lite).
+
+All R4 additions are **optional**. If absent, onboard generation behaves identically to alpha.4 — no R4-aware code paths fire.
+
+### Generation behavior when R4 blocks are present
+
+When generating CLAUDE.md, rules, skills, agents, and hooks, layer the following R4-aware behaviors on top of the existing alpha.4 generation:
+
+1. **`phases.personas` present** — incorporate persona IDs into agent generation:
+   - For auth-enriched generation: generate role-specific agents named after personas (e.g., if `personas.primary[0].name = "FieldAuditor"`, the auth-aware agent set may include a `field-auditor-agent.md` for persona-specific workflows).
+   - For frontend-enriched generation (Round 6 consumer): persona names drive UI persona-modeling sections in `docs/personas.md` if not already present.
+   - For the project's `docs/personas.md` (if onboard generates a docs scaffold): copy persona summaries.
+
+2. **`phases.domainModel` present** — incorporate entity IDs into schema-generation hooks:
+   - For dataArchitecture-enriched generation: generate per-entity migration scaffolds in `db/migrations/` (one file per `domainModel.entities[].id` where `isAggregateRoot == true`).
+   - For apiIntegration-enriched generation: pre-populate route maps with one route per aggregate-root entity.
+   - For the freshness hook config: register entity-ID-aware drift detection (if an entity is renamed in `domainModel.entities[].id`, surface a drift queue entry for stale migration files).
+
+3. **`risks[]` non-empty AND at least one `risk.reconciliation.status == "open-followup"`** — prepend a `docs/risks.md` to the generated docs/ directory listing open follow-ups. Format: one heading per risk ID, with originating phase + text + recommended follow-up rationale. Sort by originating phase order (architecturalFraming → cicdAndDelivery).
+
+4. **`mode.coupling == "auto-loop"`** — log a metadata note in the generated CLAUDE.md: *"This project's wizard ran in auto-loop coupling — sourceRef traces in `docs/adr/*.dependencies.json` document per-persona / per-entity decisions."* The note is informational only and surfaces during human review of the generated CLAUDE.md.
+
+5. **`mode.depth == "light"`** — gate aspirational sections in generated CLAUDE.md:
+   - Skip the "Detailed architecture diagrams" section (light projects usually don't have them).
+   - Skip the "Production readiness checklist" section (light = prototype).
+   - Replace with a "Prototype mode" header noting that the project was scaffolded in Light depth and many architectural decisions used defaults.
+
+### Backward compatibility (mandatory)
+
+- If `phases.personas` is **absent**: generate identically to alpha.4 (no persona-aware agents).
+- If `phases.personas` is `{}` (empty object — explicit user-skip signal): same as absent.
+- If `phases.domainModel` is **absent or empty**: generate identically to alpha.4 (no entity-aware schemas/routes).
+- If `risks` is **absent or `[]`**: skip the docs/risks.md generation.
+- If `mode` is **absent**: assume new-session defaults (heavy + auto-loop + full-ddd) and surface a warning in the generation log: *"Mode block missing from context — assuming new-session defaults."*
+- If `mode.coupling` is `"hybrid"` (explicit non-auto-loop): skip the auto-loop sourceRef note. No-op.
+
+No hard errors on absence — generation is **layered, not gated**. Existing alpha.4 generation paths run unchanged; R4 paths layer on top when their input blocks are present.
+
+### State-shape contract for upstream callers
+
+Upstream callers pass the R4 fields alongside the existing R1–R3 fields:
+
+- `phases.personas` is sent verbatim from the caller's context.
+- `phases.domainModel` is sent verbatim from the caller's context.
+- `risks` is sent verbatim from the caller's `risks[]`.
+- `mode` is sent verbatim from the caller's context.
+
+Onboard does not transform these on receipt; it consumes them as-is and applies the layered behaviors above.
+
+## Round 5 — deterministic outputs from featureRoadmap + schemaDraftReview
+
+When the v2 context carries populated R5 phases, onboard generates the feature roadmap artifacts and schema/contract files **deterministically** instead of through interactive prompts. Pre-R5 (alpha.5) contexts continue to use the interactive flow below as fallback.
+
+### Round 5 — feature-list.json + sprint-1.json (deterministic)
+
+**Run condition:** `context.phases.featureRoadmap.skipped != true` AND `context.phases.featureRoadmap.features` is non-empty.
+
+**Step A — write `docs/feature-list.json`:**
+
+Direct field-by-field map from `phases.featureRoadmap`. Build the JSON as:
+
+```json
+{
+  "schemaVersion": 1,
+  "generatedAt": "<ISO8601 generation timestamp>",
+  "features": [
+    {
+      "id": "<features[].id>",
+      "title": "<features[].title>",
+      "category": "<features[].category>",
+      "epicId": "<features[].epicId>",
+      "personaIds": "<features[].personaIds>",
+      "entityIds": "<features[].entityIds>",
+      "riskIds": "<features[].riskIds>",
+      "size": "<features[].size>",
+      "acceptanceCriteria": "<features[].acceptanceCriteria>",
+      "verificationSteps": "<features[].verificationSteps>",
+      "sprintAssignment": "<features[].sprintAssignment>"
+    }
+  ],
+  "epics": "<phases.featureRoadmap.epics>"
+}
+```
+
+mkdir -p `docs/` if absent. Atomic write via `.tmp + rename`.
+
+**Step B — write `docs/sprint-contracts/sprint-1.json`:**
+
+```json
+{
+  "sprint": 1,
+  "name": "<phases.featureRoadmap.sprint1.name>",
+  "negotiatedAt": "<ISO8601 generation timestamp>",
+  "features": "<phases.featureRoadmap.sprint1.featureIds>",
+  "criteria": "<phases.featureRoadmap.sprint1.criteria>",
+  "completionGate": "<phases.featureRoadmap.sprint1.completionGate>"
+}
+```
+
+mkdir -p `docs/sprint-contracts/` if absent. Atomic write.
+
+**Backward compatibility:** If `featureRoadmap.skipped = true` OR `features[]` is empty, fall back to the interactive handoff flow below — onboard prompts the developer for features and sprint-1 contract as it did pre-R5.
+
+**Sprint-2..N contracts:** unchanged from pre-R5. Interactively negotiated at sprint boundaries per `references/sprint-contracts.md`. R5 only changes how sprint-1 is born.
+
+### Round 5 — schema/contract files (deterministic)
+
+**Run condition:** `context.phases.schemaDraftReview.skipped != true` AND `context.phases.schemaDraftReview.lockedAt` is set (non-empty ISO-8601 string).
+
+For each `artifact` in `["db", "api", "event"]`:
+
+1. Skip if `drafts.{artifact}.skipped = true` OR `drafts.{artifact}.approved != true`.
+2. Resolve the output path from `phases.schemaDraftReview.languages.{artifact}` + `outputStrategy`:
+
+| Artifact | Language | outputStrategy=`project-root` | outputStrategy=`docs-drafts` |
+|---|---|---|---|
+| db | prisma | `prisma/schema.prisma` | `docs/drafts/schema.prisma` |
+| db | sql-ddl | `sql/migrations/0001_init.sql` | `docs/drafts/schema.sql` |
+| api | openapi-3.0 | `docs/api/openapi.yaml` | `docs/drafts/openapi.yaml` |
+| api | graphql-sdl | `schema.graphql` | `docs/drafts/schema.graphql` |
+| event | asyncapi | `docs/events/event-schemas.yaml` | `docs/drafts/event-schemas.yaml` |
+| event | json-schema | `docs/events/event-schemas.json` | `docs/drafts/event-schemas.json` |
+
+3. mkdir -p the parent directory if absent.
+4. Write `drafts.{artifact}.content` **verbatim** to the resolved path. No transformation — the wizard's renderer script produced finished content; onboard preserves it byte-for-byte.
+5. Atomic write via `.tmp + rename`.
+
+**Backward compatibility:** If `schemaDraftReview.skipped = true` OR `lockedAt` is absent, onboard writes NO schema/contract files. Pre-R5 projects do not get these artifacts.
+
+**Failure modes:**
+- If `drafts.{X}.content` is empty when `approved = true` (shouldn't happen, but possible if state file is hand-edited): log a warning, skip that artifact, do not block the rest of generation.
+- If the resolved path collides with an existing user file: log the collision; do NOT overwrite without confirmation; surface to the developer via the generation report.
+
 ## Reference Files
 
 ### Core (always used)
@@ -1657,3 +1802,11 @@ TDD is the standard testing approach for all onboarded projects. These artifacts
 - `references/sprint-contracts.md` — Sprint contract format and negotiation
 - `references/agent-teams-guide.md` — Agent team compositions and quality hooks
 - `references/worktree-workflow.md` — Proactive worktree workflow using Claude Code native tools (EnterWorktree/ExitWorktree)
+
+## Key Rules
+
+- **Headless mode prohibits all interactive prompts** — when `headlessMode: true`, every decision has been pre-made by the caller. Never ask the developer a question, show a confirmation prompt, or wait for input. Treat caller inputs as authoritative.
+- **Version string is always read from `plugin.json`, never hardcoded** — the maintenance header `{VERSION}` must be resolved at generation time from the manifest. A hardcoded literal will become stale without warning.
+- **`settings.json` is always read before writing** — hooks are merged alongside existing entries, never overwriting the file. This is the most common headless-mode conflict source.
+- **Plugin-covered capabilities are never re-generated** — before generating any agent, check `coveredCapabilities`. An agent that shadows an installed plugin must be skipped entirely, not generated with a note.
+- **Standalone TDD artifacts are conditional on `superpowers` absence** — the standalone TDD skill and TDD test-writer agent are only generated when the superpowers plugin is not installed. Never generate both; they conflict.

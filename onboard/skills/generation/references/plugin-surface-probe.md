@@ -263,7 +263,7 @@ When hook behavior cannot be resolved from `hooks.json`, fall back to filename-d
 ## Integration points
 
 - `init/SKILL.md § Phase 2.5.2` — primary caller during interactive init
-- `generate/SKILL.md` — fallback when `callerExtras.pluginSurfaces` is absent (forge-path)
+- `generate/SKILL.md` — fallback when `callerExtras.pluginSurfaces` is absent (headless path)
 - `plugin-drift-detection.md § Probe Procedure` — re-runs this procedure when drift is detected to pick up newly-surfaced or surface-changed plugins
 - `claude-md-guide.md § Plugin Integration template` — consumes the `pluginSurfaces` map and applies R1-R6 disambiguation rules
 - `evolve/SKILL.md` — reads `pluginSurfaces` from the meta file during drift evaluation

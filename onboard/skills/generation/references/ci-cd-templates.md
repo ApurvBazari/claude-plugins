@@ -131,7 +131,7 @@ jobs:
         with:
           prompt: |
             Review the tooling drift report and suggest fixes.
-            Read .claude/forge-meta.json for context.
+            Read .claude/onboard-meta.json for context.
             Drift: ${{ needs.structural-checks.outputs.report }}
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}

@@ -1,6 +1,6 @@
 # claude-plugins
 
-> Claude Code plugins for the project lifecycle — `forge` scaffolds new projects, `onboard` keeps AI configs aligned as your code evolves, `notify` closes the loop. Three plugins that work on their own and **compose together**.
+> Claude Code plugins for the project lifecycle — `onboard` keeps AI configs aligned as your code evolves, `notify` closes the loop, and `handoff` carries session intent across context boundaries. Three plugins that work on their own and **compose together**.
 
 Built on top of [Claude Code](https://code.claude.com/docs/en) by Anthropic. Distributed under [MIT](./LICENSE).
 
@@ -10,28 +10,37 @@ Built on top of [Claude Code](https://code.claude.com/docs/en) by Anthropic. Dis
 
 | Plugin | What it does | Reach for it when… |
 |---|---|---|
-| **[forge](./forge/)** | Stack-agnostic greenfield scaffolder — researches your stack via WebSearch, scaffolds the app, then hands off to onboard for Claude tooling. | You're starting a new project from scratch. |
 | **[onboard](./onboard/)** | Lifecycle manager for AI configs — generates initial tooling, then **detects code-vs-config drift** as the project evolves and offers to fix it. | You have an existing repo, OR your AI configs are starting to lag behind the code. |
 | **[notify](./notify/)** | macOS / Linux system notifications when Claude finishes a task. Duration-filtered so short tasks don't spam you. | You leave Claude running long jobs in the background. |
+| **[handoff](./handoff/)** | Save the directive of a wrap-up session, then auto-surface it at the next SessionStart with an Execute / Edit / Discard / Save-for-later prompt. | You end sessions by pasting "continue this work in the new window" prompts into the next session. |
 
 ---
 
 ## Quick Start
 
+You can install from **two marketplaces**, depending on what you need:
+
+### Option A — install from Anthropic's community marketplace (`onboard`, `notify`)
+
+`onboard` and `notify` are mirrored in [`anthropics/claude-plugins-community`](https://github.com/anthropics/claude-plugins-community), Anthropic's reviewed community directory. This route gives you snapshots that have passed Anthropic's automated security scan and have auto-update enabled by default. Discoverable via `/plugin` → **Discover** tab.
+
 ```bash
-# Add the marketplace once
+# Add Anthropic's community marketplace
+claude plugin marketplace add anthropics/claude-plugins-community
+
+# Install
+claude plugin install onboard@claude-community
+claude plugin install notify@claude-community
+```
+
+### Option B — install from `apurvbazari-plugins` (all three plugins, latest commit)
+
+This route always serves the latest commit when you want changes ahead of the community marketplace's nightly snapshot, and is the only route for `handoff`.
+
+```bash
+# Add this marketplace
 claude plugin marketplace add apurvbazari/claude-plugins
 ```
-
-Then install the plugin that matches your situation:
-
-**New project from scratch:**
-
-```bash
-claude plugin install forge@apurvbazari-plugins
-```
-
-> `forge` requires `onboard` for Claude tooling generation — install it as well: `claude plugin install onboard@apurvbazari-plugins`
 
 **Existing project:**
 
@@ -39,10 +48,11 @@ claude plugin install forge@apurvbazari-plugins
 claude plugin install onboard@apurvbazari-plugins
 ```
 
-**Optional add-on for either:**
+**Optional add-ons:**
 
 ```bash
 claude plugin install notify@apurvbazari-plugins
+claude plugin install handoff@apurvbazari-plugins
 ```
 
 ---
@@ -51,25 +61,9 @@ claude plugin install notify@apurvbazari-plugins
 
 Each plugin's README contains a runnable transcript so you can see what a real session looks like before you install:
 
-- **forge** — full 3-phase scaffold of a Python FastAPI project (Context Gathering → Scaffold → AI Tooling delegation to onboard) → [forge/README.md#example](./forge/README.md#example)
-- **onboard** — initial `/onboard:init` on a Next.js 15 project, then `/onboard:evolve` two weeks later detecting drift and proposing updates → [onboard/README.md#example](./onboard/README.md#example)
+- **onboard** — initial `/onboard:start` on a Next.js 15 project, then `/onboard:evolve` two weeks later detecting drift and proposing updates → [onboard/README.md#example](./onboard/README.md#example)
 - **notify** — `/notify:setup` followed by the duration filter suppressing a fast task and delivering a long one → [notify/README.md#example](./notify/README.md#example)
-
-The narrative beat to watch for: forge's Phase 3 calls `Skill(onboard:generate)` rather than reinventing tooling generation. That delegation is the composability story this whole repo is built around.
-
----
-
-## forge
-
-Guided project bootstrapper. Takes you from *"I want to build X"* to a running application with a complete Claude tooling package — in one conversation.
-
-forge is a **thin orchestrator**. The defining design choice: it delegates all Claude tooling generation to `onboard:generate` rather than reimplementing it. That delegation is the composability story this whole repo is built around.
-
-**Stack-agnostic.** forge researches your stack via WebSearch (current versions, official scaffolders, idiomatic patterns) rather than shipping pre-built templates. Whatever framework you name, forge investigates and uses the canonical CLI for it.
-
-**Prerequisites:** the `onboard` plugin (forge calls it for Phase 3 generation).
-
-For the 3-phase walkthrough, full skill reference (`/forge:init`, `/forge:resume`, `/forge:status`), supported stacks, resumability mechanics, and the runnable Example transcript: [forge/README.md →](./forge/README.md)
+- **handoff** — saying "save handoff" mid-conversation, confirming the auto-save, then a fresh session starting with the four-option resume prompt → [handoff/README.md](./handoff/README.md)
 
 ---
 
@@ -84,7 +78,7 @@ The lifecycle manager for AI-assisted development. Generates Claude tooling on d
 
 The drift loop is the differentiated piece. Auto-generating `CLAUDE.md` is commodity in 2026 — Claude Code's `/init`, GitHub Copilot, OpenAI Codex, Cursor, and several web tools all do it. Maintaining those configs as code grows is what onboard does that nothing else does.
 
-For the full skill reference (5 user-facing skills + the headless `/onboard:generate` API forge consumes), the drift detection deep dive, generated artifact catalog, and supported project types: [onboard/README.md →](./onboard/README.md)
+For the full skill reference, the drift detection deep dive, generated artifact catalog, and supported project types: [onboard/README.md →](./onboard/README.md)
 
 ---
 
@@ -106,26 +100,40 @@ For the full skill reference, install scopes, configuration precedence rules, cu
 
 ---
 
+## handoff
+
+Long Claude Code sessions often end with the user pasting a paragraph into the *next* session window to continue the work. That paragraph is reproducible — it's just "the directive of where we left off". `handoff` captures it at end-of-session and surfaces it at the start of the next, with a confirmation gate at both ends.
+
+**Two ends of the loop:**
+
+- **Save** — `/handoff:save` (or auto-invoked on phrases like *"pick this up later"* / *"continue in new session"*). Confirms via `AskUserQuestion` before writing — false-positive triggers are zero-cost.
+- **Resume** — SessionStart hook surfaces a saved handoff, then routes to `/handoff:pickup` which asks: **Execute / Edit / Discard / Save-for-later**. Snooze defers re-surface for 24h; 90-day stale handoffs auto-archive. Git-activity tags ("3 commits past saved-at", "branch changed") inform the user's choice without dictating it.
+
+**Trust model.** Directive content is wrapped in `<untrusted-source>` framing in the hook output — routing and metadata are trusted, the directive itself is data describing user intent. The four-option flow ensures the user confirms before any action. Standard defense-in-depth for a marketplace plugin.
+
+For the full skill reference (`/handoff:save`, `/handoff:pickup`, `/handoff:check`, `/handoff:discard`), the SessionStart hook contract, configuration knobs (`stale-day-threshold`, `deferral-snooze-hours`, `trigger-phrases`), and storage model: [handoff/README.md →](./handoff/README.md)
+
+---
+
 ## How these plugins fit together
 
 These three plugins cover different phases of the lifecycle. They compose with each other, and they pair with companion plugins from the broader Claude Code ecosystem:
 
 ```
-┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
-│  Setup   │ ─→ │ Develop  │ ─→ │  Refine  │ ─→ │   Ship   │ ─→ │ Monitor  │
-│          │    │          │    │          │    │          │    │          │
-│ forge*   │    │feature-  │    │code-     │    │commit-   │    │ notify   │
-│ onboard  │    │dev       │    │simplifier│    │commands  │    │ Native   │
-│ hookify  │    │superpow- │    │          │    │pr-review-│    │ OTEL     │
-│          │    │ers       │    │          │    │toolkit   │    │          │
-└──────────┘    └──────────┘    └──────────┘    └──────────┘    └──────────┘
-      │              │                                │
-      └──────────────┴────────────────────────────────┘
-                  engineering (cross-phase)
-                                            * forge: new projects only
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│    Setup     │ ─→ │   Develop    │ ─→ │   Refine     │ ─→ │    Ship      │ ─→ │   Monitor    │
+│              │    │              │    │              │    │              │    │              │
+│ onboard      │    │ feature-dev  │    │ code-        │    │ commit-      │    │ notify       │
+│ hookify      │    │ superpowers  │    │ simplifier   │    │ commands     │    │ Native OTEL  │
+│              │    │              │    │              │    │ pr-review-   │    │              │
+│              │    │              │    │              │    │ toolkit      │    │              │
+└──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘
+        │                    │                                       │
+        └────────────────────┴───────────────────────────────────────┘
+                          engineering (cross-phase)
 ```
 
-- **Setup** — `onboard` (existing repos) or `forge` (new). Add `hookify` for incremental behavioural rules.
+- **Setup** — `onboard` analyses the codebase and generates Claude tooling. Add `hookify` for incremental behavioural rules.
 - **Develop** — `feature-dev` for the structured 7-phase workflow; `superpowers` for TDD + systematic debugging discipline.
 - **Refine** — `code-simplifier` for post-implementation cleanup; `claude-md-management` for ongoing memory maintenance.
 - **Ship** — `commit-commands` for git/PR workflows; `pr-review-toolkit` and `code-review` for specialist PR review.
@@ -166,6 +174,8 @@ Plugins from the broader Claude Code ecosystem that pair well with this collecti
 
 Built on top of [Claude Code](https://code.claude.com/docs/en) by **Anthropic** — the plugin system, the SKILL.md spec, the `Skill` tool, hook events, and the [`claude-plugins-official`](https://github.com/anthropics/claude-plugins-official) marketplace this collection extends. The [`knowledge-work-plugins`](https://github.com/anthropics/knowledge-work-plugins) marketplace (also Anthropic) ships `engineering` and `product-management`, which appear in our Workflow guide.
 
+`onboard` and `notify` are also mirrored in Anthropic's reviewed community directory, [`anthropics/claude-plugins-community`](https://github.com/anthropics/claude-plugins-community) — see Quick Start above for the install commands.
+
 ### Built-in skills referenced by generated tooling
 
 When `onboard` writes its `Plugin Integration` section, it recommends a curated set of skills that ship as Claude Code built-ins (no plugin install required). Source of truth: [`onboard/skills/generation/references/built-in-skills-catalog.md`](./onboard/skills/generation/references/built-in-skills-catalog.md).
@@ -205,6 +215,7 @@ Community plugins (each linked to its upstream repo in the table above):
 - [Plugins guide](https://code.claude.com/docs/en/plugins)
 - [Plugin marketplaces guide](https://code.claude.com/docs/en/plugin-marketplaces)
 - [`claude-plugins-official`](https://github.com/anthropics/claude-plugins-official) — Anthropic-managed marketplace this collection extends
+- [`claude-plugins-community`](https://github.com/anthropics/claude-plugins-community) — Anthropic's reviewed community directory; mirrors `onboard` + `notify`
 
 ## License
 

@@ -13,14 +13,7 @@
         ".claude-plugin/plugin.json"
       ]
     },
-    "forge": {
-      "package-name": "forge",
-      "changelog-path": "CHANGELOG.md",
-      "extra-files": [
-        ".claude-plugin/plugin.json"
-      ]
-    },
-    "notify": {
+"notify": {
       "package-name": "notify",
       "changelog-path": "CHANGELOG.md",
       "extra-files": [

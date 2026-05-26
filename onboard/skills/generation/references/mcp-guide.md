@@ -118,7 +118,7 @@ Parallel to `hookStatus`. Added to `onboard-meta.json`:
 }
 ```
 
-Headless callers (forge) read `mcpStatus` from the generate-skill return and can surface it in their own handoff output.
+Headless callers read `mcpStatus` from the generate-skill return and can surface it in their own handoff output.
 
 ## Caller Escape Hatch
 
@@ -129,7 +129,7 @@ Headless callers may pass `callerExtras.disableMCP: true` to suppress `.mcp.json
 - Do NOT emit `mcp-setup.md`
 - Do NOT attempt auto-install
 
-Used by forge when the scaffold template already ships an `.mcp.json`.
+Used when the scaffold template already ships an `.mcp.json`.
 
 ## Post-emit Summary
 

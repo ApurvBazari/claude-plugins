@@ -77,9 +77,9 @@ Sort entries within each cell alphabetically. Use the first successful URL from 
 ```markdown
 ## Local Plugin Coverage
 
-| Surface | onboard | forge | notify |
+| Surface | onboard | notify | handoff |
 |---|---|---|---|
-| Hook: <EventName> | Y | - | N |
+| Hook: <EventName> | Y | N | - |
 | ...one row per surface item... |
 ```
 

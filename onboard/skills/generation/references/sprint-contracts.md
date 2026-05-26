@@ -4,6 +4,8 @@ Sprint contracts define the success criteria for a sprint BEFORE work begins. Th
 
 Based on Anthropic's harness design: "Before each sprint, generator and evaluator negotiate a contract defining deliverables and success criteria."
 
+> **From R5 (onboard 2.0.0-alpha.6) onward:** sprint-1 is generated **deterministically** from `phases.featureRoadmap.sprint1` (see `generation/SKILL.md § Round 5 — feature-list.json + sprint-1.json (deterministic)`). The interactive negotiation flow described below applies to **sprint-2..N at sprint boundaries**, not to sprint-1.
+
 ## Contract Format
 
 Stored in `docs/sprint-contracts/sprint-N.json`:
@@ -156,13 +158,13 @@ When `/onboard:verify --sprint N` runs:
 
 ### When to Generate
 
-- **First sprint contract**: Generated during Phase 3 of Forge (along with feature-list.json). Claude proposes, developer negotiates during the handoff step.
+- **First sprint contract**: Generated during Phase 3 of onboard (along with feature-list.json). Claude proposes, developer negotiates during the handoff step.
 - **Subsequent sprints**: Generated at sprint boundary. When Sprint N is complete (all verified), Claude proposes Sprint N+1 contract before work begins.
 
 ### Auto-Proposal Logic
 
 Claude generates proposed criteria based on:
-1. **Project context** from forge-meta.json (testing philosophy, security sensitivity, a11y level, perf targets)
+1. **Project context** from onboard-meta.json (testing philosophy, security sensitivity, a11y level, perf targets)
 2. **Feature categories** in the sprint (auth features → add security criterion)
 3. **Previous sprint** criteria (carry forward what worked, adjust what was too strict/loose)
 

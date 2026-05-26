@@ -1,6 +1,6 @@
 # notify
 
-> Part of [`claude-plugins`](../README.md) — see also [`onboard`](../onboard/) and [`forge`](../forge/) (both can recommend notify during their setup).
+> Part of [`claude-plugins`](../README.md) — see also [`onboard`](../onboard/) and [`handoff`](../handoff/).
 
 Cross-platform system notifications for Claude Code. Get notified when tasks complete or Claude needs your attention. Intentionally minimal — see the root README's [notify section](../README.md#notify) for an honest comparison against richer community alternatives.
 
@@ -27,7 +27,7 @@ Installs the platform backend (`terminal-notifier` via Homebrew on macOS, or `no
 - **Existing global config + new per-project request** — setup reads global as the base and layers your per-project answers as overrides. Doesn't blow away global.
 - **Permission prompts (macOS)** — first notification after `terminal-notifier` install triggers a macOS Notification permission prompt; setup warns about this before sending the test notification.
 
-### `/notify:status`
+### `/notify:check`
 
 Health check. Reports which scopes have notify installed (global / per-project / both), the current event configuration (sounds, durations, enabled flags), the resolved precedence-merged config that the hook will actually use, and sends a test notification to confirm the wiring works end-to-end.
 
@@ -168,7 +168,7 @@ Per event you can configure:
 
 ## Internals
 
-For the hook event model, JSON parsing pattern, script safety rules, and detection logic used by `/onboard:init` to probe whether notify is already configured, see [`notify/CLAUDE.md`](./CLAUDE.md).
+For the hook event model, JSON parsing pattern, script safety rules, and detection logic used by `/onboard:start` to probe whether notify is already configured, see [`notify/CLAUDE.md`](./CLAUDE.md).
 
 ## License
 

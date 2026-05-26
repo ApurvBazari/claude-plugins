@@ -2,7 +2,7 @@
 
 Maps detected project languages to official Claude Code marketplace LSP plugins used by Phase 7c of the generation pipeline and by `detect-lsp-signals.sh`. Each plugin ships its own `lspServers` config inline in its `plugin.json` — onboard does **not** generate any project-level LSP config files.
 
-When `onboard:init` detects files of these extensions, wizard Phase 5.6 presents a checkbox list of the matching plugins. User-selected entries are installed via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugin-name>`.
+When `onboard:start` detects files of these extensions, wizard Phase 5.6 presents a checkbox list of the matching plugins. User-selected entries are installed via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugin-name>`.
 
 See `mcp-guide.md` for the sibling MCP catalog pattern.
 

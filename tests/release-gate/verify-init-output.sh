@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# verify-init-output.sh — Verify /onboard:init generated artifacts
+# verify-init-output.sh — Verify /onboard:start generated artifacts
 # Usage: verify-init-output.sh <REPO_PATH> <PROFILE>
-# Profiles: nextjs | python | monorepo | empty | forge
+# Profiles: nextjs | python | monorepo | empty
 
 REPO="${1:-}"
 PROFILE="${2:-nextjs}"
 
 if [[ -z "$REPO" || ! -d "$REPO" ]]; then
   echo "Usage: verify-init-output.sh <REPO_PATH> <PROFILE>"
-  echo "Profiles: nextjs | python | monorepo | empty | forge"
+  echo "Profiles: nextjs | python | monorepo | empty"
   exit 1
 fi
 
@@ -25,7 +25,7 @@ pass() { PASSED=$((PASSED + 1)); TOTAL=$((TOTAL + 1)); echo "  PASS: $1"; }
 fail() { FAILED=$((FAILED + 1)); TOTAL=$((TOTAL + 1)); echo "  FAIL: $1"; }
 warn() { WARNINGS=$((WARNINGS + 1)); TOTAL=$((TOTAL + 1)); echo "  WARN: $1"; }
 
-echo "## Verify /onboard:init Output"
+echo "## Verify /onboard:start Output"
 echo ""
 echo "Repo: ${REPO}"
 echo "Profile: ${PROFILE}"
@@ -510,8 +510,8 @@ if [[ -f "$META" ]]; then
       fi
     done
   else
-    if [[ "$PROFILE" == "empty" || "$PROFILE" == "forge" ]]; then
-      warn "wizardStatus missing (forge bypasses wizard; empty profile may skip)"
+    if [[ "$PROFILE" == "empty" ]]; then
+      warn "wizardStatus missing (empty profile may skip)"
     else
       fail "telemetry: wizardStatus missing — C4 requires per-run wizard telemetry"
     fi
@@ -519,38 +519,6 @@ if [[ -f "$META" ]]; then
 fi
 echo ""
 
-# ─────────────────────────────────────────────────
-echo "### 13. Forge metadata shape (L5 release-gate sweep — toolingFlags namespace)"
-# ─────────────────────────────────────────────────
-# Only applies to forge-scaffolded projects: forge-meta.json must use
-# generated.toolingFlags.tooling/cicd/harness, NOT the old dot-notation siblings.
-if [[ "$PROFILE" == "forge" ]]; then
-  if [[ -f ".claude/forge-meta.json" ]]; then
-    if jq empty .claude/forge-meta.json 2>/dev/null; then
-      pass "forge-meta.json valid JSON"
-      # Old shape: generated.tooling | generated.cicd | generated.harness as siblings
-      OLD_SIBLINGS=$(jq -r '.generated | keys | map(select(. == "tooling" or . == "cicd" or . == "harness")) | .[]' .claude/forge-meta.json 2>/dev/null || true)
-      if [[ -n "$OLD_SIBLINGS" ]]; then
-        fail "forge-meta.json still uses dot-notation siblings (generated.tooling/cicd/harness) — L5 violation"
-      else
-        pass "forge-meta.json: no generated.tooling/cicd/harness sibling keys"
-      fi
-      # New shape: generated.toolingFlags should hold tooling/cicd/harness
-      for sub in tooling cicd harness; do
-        HAS_SUB=$(jq ".generated.toolingFlags | has(\"${sub}\")" .claude/forge-meta.json 2>/dev/null || echo "false")
-        if [[ "$HAS_SUB" == "true" ]]; then
-          pass "forge-meta.json: generated.toolingFlags.${sub} present"
-        else
-          fail "forge-meta.json: generated.toolingFlags.${sub} missing"
-        fi
-      done
-    else
-      fail "forge-meta.json invalid JSON"
-    fi
-  else
-    fail "forge-meta.json missing for forge profile"
-  fi
-fi
 echo ""
 
 # ─────────────────────────────────────────────────
