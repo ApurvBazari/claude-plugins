@@ -1,6 +1,6 @@
 # onboard
 
-> Part of [`claude-plugins`](../README.md) — see also [`greenfield`](../greenfield/) (uses onboard's headless mode) and [`notify`](../notify/).
+> Part of [`claude-plugins`](../README.md) — see also [`notify`](../notify/) and [`handoff`](../handoff/).
 
 Lifecycle manager for AI configs. Generates Claude tooling on day one, then **detects code-vs-config drift** as the project evolves and offers to fix it.
 
@@ -51,7 +51,7 @@ Quick health check showing last run date, generated artifacts, integrity status,
 
 Headless generation mode for programmatic consumers. Accepts pre-seeded context (analysis data + wizard answers) and emits all Claude tooling artifacts without running the interactive wizard or codebase analysis.
 
-This is what `greenfield` invokes via the `Skill` tool to delegate Phase 3 of its scaffold flow. The contract is intentionally stable so external plugins can rely on it.
+The contract is intentionally stable so external callers can rely on it.
 
 ## Architecture
 
@@ -73,7 +73,7 @@ Phase 2: Wizard ──→ wizard skill (adaptive Q&A, presets)
 Phase 2.5: Plugin Detection ──→ siblings + marketplace probe
      │
      ▼
-Phase 3: Generation ──→ Skill(onboard:generate) [same contract as greenfield]
+Phase 3: Generation ──→ Skill(onboard:generate)
      │                   └── config-generator agent (write)
      ▼
 Phase 4: Handoff ──→ explains generated artifacts, suggests next steps
@@ -89,7 +89,7 @@ Internal architecture and agent contracts: [`onboard/CLAUDE.md`](./CLAUDE.md).
 
 ## Drift detection deep dive
 
-When `/onboard:start` runs in **enriched mode** (default for greenfield-scaffolded projects), it installs auto-evolution hooks that quietly track changes:
+When `/onboard:start` runs in **enriched mode**, it installs auto-evolution hooks that quietly track changes:
 
 - **FileChanged hooks** on `package.json`, `tsconfig.json`, `pyproject.toml`, lockfiles, and structural anchors → log diffs to `.claude/greenfield-drift.json`
 - **SessionStart hook** → summarises pending drift at the start of each Claude Code session

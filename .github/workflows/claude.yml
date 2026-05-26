@@ -32,7 +32,7 @@ jobs:
           track_progress: true
           custom_instructions: |
             This is a Claude Code plugin marketplace repository (markdown + shell + JSON, no compiled code).
-            It contains 4 plugins: onboard (codebase analyzer), greenfield (project scaffolder), notify (system notifications), handoff (session continuity).
+            It contains 3 plugins: onboard (codebase analyzer), notify (system notifications), handoff (session continuity).
 
             Review this PR against the repo conventions in .claude/rules/:
             - plugin-structure.md: plugin directory requirements, self-contained plugins
@@ -44,7 +44,6 @@ jobs:
             Also check:
             - Correctness and potential bugs in shell scripts
             - Security concerns (command injection in scripts, unsafe variable expansion)
-            - Cross-plugin integration consistency (greenfield → onboard)
             - Missing edge cases or error handling
 
   claude-sonnet:

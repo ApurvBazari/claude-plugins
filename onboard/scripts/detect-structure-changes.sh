@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # FileChanged hook: detect structural changes (new directories with source files).
-# Appends change entries to .claude/greenfield-drift.json.
+# Appends change entries to the drift log (.claude/greenfield-drift.json).
 # Called on any file change — checks if the file's directory is a new, uncovered directory.
 
 FILE_PATH="${1:-}"

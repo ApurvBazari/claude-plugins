@@ -6,7 +6,7 @@ Canonical source of truth for detecting installed Claude Code plugins and derivi
 
 A plugin may live in one of two places on disk:
 
-1. **Sibling** to the running plugin — e.g., in a development monorepo like `claude-plugins/` where `onboard/`, `greenfield/`, `notify/` live side-by-side under one parent. Path: `${CLAUDE_PLUGIN_ROOT}/../<plugin-name>/`.
+1. **Sibling** to the running plugin — e.g., in a development monorepo like `claude-plugins/` where `onboard/`, `notify/`, `handoff/` live side-by-side under one parent. Path: `${CLAUDE_PLUGIN_ROOT}/../<plugin-name>/`.
 2. **Marketplace cache** — the standard install location populated by `claude plugin install`. Path: `~/.claude/plugins/cache/<marketplace>/<plugin-name>/<version>/` where `<marketplace>` is typically `claude-plugins-official` and `<version>` is often the literal string `unknown` (not a semver).
 
 Probing only siblings misses marketplace-installed plugins entirely (release-gate finding B8, 2026-04-17 — Standard + Minimal presets detected 2 plugins when 14+ were actually installed). Probe **both** locations:

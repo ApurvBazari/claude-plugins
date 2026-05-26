@@ -3,14 +3,14 @@ set -euo pipefail
 
 # verify-init-output.sh — Verify /onboard:start generated artifacts
 # Usage: verify-init-output.sh <REPO_PATH> <PROFILE>
-# Profiles: nextjs | python | monorepo | empty | greenfield
+# Profiles: nextjs | python | monorepo | empty
 
 REPO="${1:-}"
 PROFILE="${2:-nextjs}"
 
 if [[ -z "$REPO" || ! -d "$REPO" ]]; then
   echo "Usage: verify-init-output.sh <REPO_PATH> <PROFILE>"
-  echo "Profiles: nextjs | python | monorepo | empty | greenfield"
+  echo "Profiles: nextjs | python | monorepo | empty"
   exit 1
 fi
 
@@ -510,8 +510,8 @@ if [[ -f "$META" ]]; then
       fi
     done
   else
-    if [[ "$PROFILE" == "empty" || "$PROFILE" == "greenfield" ]]; then
-      warn "wizardStatus missing (greenfield bypasses wizard; empty profile may skip)"
+    if [[ "$PROFILE" == "empty" ]]; then
+      warn "wizardStatus missing (empty profile may skip)"
     else
       fail "telemetry: wizardStatus missing — C4 requires per-run wizard telemetry"
     fi
@@ -519,38 +519,6 @@ if [[ -f "$META" ]]; then
 fi
 echo ""
 
-# ─────────────────────────────────────────────────
-echo "### 13. Greenfield metadata shape (L5 release-gate sweep — toolingFlags namespace)"
-# ─────────────────────────────────────────────────
-# Only applies to greenfield-scaffolded projects: greenfield-meta.json must use
-# generated.toolingFlags.tooling/cicd/harness, NOT the old dot-notation siblings.
-if [[ "$PROFILE" == "greenfield" ]]; then
-  if [[ -f ".claude/greenfield-meta.json" ]]; then
-    if jq empty .claude/greenfield-meta.json 2>/dev/null; then
-      pass "greenfield-meta.json valid JSON"
-      # Old shape: generated.tooling | generated.cicd | generated.harness as siblings
-      OLD_SIBLINGS=$(jq -r '.generated | keys | map(select(. == "tooling" or . == "cicd" or . == "harness")) | .[]' .claude/greenfield-meta.json 2>/dev/null || true)
-      if [[ -n "$OLD_SIBLINGS" ]]; then
-        fail "greenfield-meta.json still uses dot-notation siblings (generated.tooling/cicd/harness) — L5 violation"
-      else
-        pass "greenfield-meta.json: no generated.tooling/cicd/harness sibling keys"
-      fi
-      # New shape: generated.toolingFlags should hold tooling/cicd/harness
-      for sub in tooling cicd harness; do
-        HAS_SUB=$(jq ".generated.toolingFlags | has(\"${sub}\")" .claude/greenfield-meta.json 2>/dev/null || echo "false")
-        if [[ "$HAS_SUB" == "true" ]]; then
-          pass "greenfield-meta.json: generated.toolingFlags.${sub} present"
-        else
-          fail "greenfield-meta.json: generated.toolingFlags.${sub} missing"
-        fi
-      done
-    else
-      fail "greenfield-meta.json invalid JSON"
-    fi
-  else
-    fail "greenfield-meta.json missing for greenfield profile"
-  fi
-fi
 echo ""
 
 # ─────────────────────────────────────────────────

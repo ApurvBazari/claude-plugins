@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # FileChanged hook: detect configuration file changes.
-# Appends change entries to .claude/greenfield-drift.json.
+# Appends change entries to the drift log (.claude/greenfield-drift.json).
 # Called when tsconfig, eslint, prettier, biome, or ruff configs change.
 
 FILE_PATH="${1:-}"

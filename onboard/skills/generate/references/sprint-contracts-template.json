@@ -96,10 +96,10 @@
       "properties": {
         "generatedAt": { "type": "string", "format": "date-time" },
         "generatedBy": { "type": "string", "description": "onboard plugin identifier + version (e.g., 'onboard@2.0.0-alpha.1')." },
-        "v2ContextSource": { "type": "string", "description": "Caller plugin (typically 'greenfield')." },
+        "v2ContextSource": { "type": "string", "description": "Caller identifier (e.g., 'onboard:start')." },
         "cicdSnapshotAtGeneration": {
           "type": "object",
-          "description": "Snapshot of phases.cicdAndDelivery.cicd at generation time. If cicdAndDelivery changes later (via /greenfield:pickup), this snapshot becomes stale and the sprint contract should be regenerated. Tracked by the freshness hook for /docs/adr/."
+          "description": "Snapshot of phases.cicdAndDelivery.cicd at generation time. If cicdAndDelivery changes later, this snapshot becomes stale and the sprint contract should be regenerated."
         }
       }
     }
@@ -169,7 +169,7 @@
       "metadata": {
         "generatedAt": "2026-05-13T16:30:00Z",
         "generatedBy": "onboard@2.0.0-alpha.1",
-        "v2ContextSource": "greenfield"
+        "v2ContextSource": "onboard:start"
       }
     }
   ]

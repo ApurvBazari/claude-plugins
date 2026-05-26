@@ -1,6 +1,6 @@
 # notify
 
-> Part of [`claude-plugins`](../README.md) — see also [`onboard`](../onboard/) and [`greenfield`](../greenfield/) (both can recommend notify during their setup).
+> Part of [`claude-plugins`](../README.md) — see also [`onboard`](../onboard/) and [`handoff`](../handoff/).
 
 Cross-platform system notifications for Claude Code. Get notified when tasks complete or Claude needs your attention. Intentionally minimal — see the root README's [notify section](../README.md#notify) for an honest comparison against richer community alternatives.
 

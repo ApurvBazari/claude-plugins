@@ -34,7 +34,7 @@ fi
 
 If the flag is absent, **hard-fail immediately**. Do NOT call Write or Edit. Do NOT touch the filesystem. Return the failure message above to the caller.
 
-This is the safety net that prevents silent inline-write degradation when a calling skill bypasses the dispatch contract (the bug observed in the 2026-04-16 release-gate greenfield run).
+This is the safety net that prevents silent inline-write degradation when a calling skill bypasses the dispatch contract (the bug observed in the 2026-04-16 release-gate run).
 
 ### Inputs
 

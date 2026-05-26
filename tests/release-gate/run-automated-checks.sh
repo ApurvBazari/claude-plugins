@@ -55,7 +55,6 @@ for json_file in \
   .claude-plugin/marketplace.json \
   .claude/audit-baseline.json \
   onboard/.claude-plugin/plugin.json \
-  greenfield/.claude-plugin/plugin.json \
   notify/.claude-plugin/plugin.json \
   handoff/.claude-plugin/plugin.json; do
   if [[ ! -f "$json_file" ]]; then
@@ -200,7 +199,7 @@ echo ""
 # ─────────────────────────────────────────────────
 echo "### 8. Version sync check"
 # ─────────────────────────────────────────────────
-for plugin_dir in onboard greenfield notify handoff; do
+for plugin_dir in onboard notify handoff; do
   MANIFEST="${plugin_dir}/.claude-plugin/plugin.json"
   if [[ -f "$MANIFEST" ]]; then
     PLUGIN_VER=$(jq -r '.version' "$MANIFEST")

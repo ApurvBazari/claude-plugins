@@ -45,7 +45,7 @@ Based on the changes, suggest a conventional commit message:
 type(scope): description
 
 - type: feat, fix, refactor, docs, chore
-- scope: plugin name (onboard, greenfield, notify, handoff) or repo-level
+- scope: plugin name (onboard, notify, handoff) or repo-level
 - description: concise "why" in imperative mood
 ```
 

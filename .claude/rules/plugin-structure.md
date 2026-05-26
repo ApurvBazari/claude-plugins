@@ -1,7 +1,6 @@
 ---
 paths:
   - "onboard/**"
-  - "greenfield/**"
   - "notify/**"
   - "handoff/**"
 ---
@@ -31,7 +30,7 @@ Skills are the authoring form for all user-facing entrypoints and internal orche
 
 - No cross-plugin file imports — each plugin must be independently installable
 - Shared patterns should be documented in conventions, not shared via file references
-- If plugin A integrates with plugin B (e.g., greenfield → onboard), check for B's existence at runtime and skip silently if absent
+- If plugin A integrates with plugin B, check for B's existence at runtime and skip silently if absent
 
 ## Adding Components
 

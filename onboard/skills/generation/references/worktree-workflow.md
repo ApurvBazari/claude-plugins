@@ -135,7 +135,7 @@ The **lead resolves all merge conflicts**, not teammates:
 
 ## Worktree Naming Convention
 
-When `docs/feature-list.json` exists (greenfield-scaffolded projects), use feature IDs:
+When `docs/feature-list.json` exists, use feature IDs:
 
 ```
 EnterWorktree(name: "F001-user-dashboard")

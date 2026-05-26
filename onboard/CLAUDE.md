@@ -1,6 +1,6 @@
 # onboard — Internal Conventions
 
-Interactive wizard that analyzes codebases and generates complete Claude tooling infrastructure. Supports both standalone use (`/onboard:start`) and headless mode for programmatic consumers like Greenfield.
+Interactive wizard that analyzes codebases and generates complete Claude tooling infrastructure. Supports both standalone use (`/onboard:start`) and headless mode for programmatic consumers.
 
 ## Phased Architecture
 
@@ -25,9 +25,9 @@ Phase 2.5: Plugin Detection ──→ deep probe (siblings + marketplace cache)
      │                          + plugin-surface-probe (closes G.3)
      ▼
 Phase 2.6: Build Onboard Context ──→ init/references/onboard-context-builder.md
-     │                                (same greenfield-shaped callerExtras greenfield emits)
+     │
      ▼
-Phase 3: Generation ──→ Skill(onboard:generate)  [same contract as greenfield]
+Phase 3: Generation ──→ Skill(onboard:generate)
      │                   └── config-generator agent (write)
      │                       ├── Core: CLAUDE.md, rules, skills, agents, hooks
      │                       ├── Enriched: CI/CD, harness, evolution, teams (if enabled)
@@ -46,7 +46,7 @@ Phase 4: Handoff ──→ explains generated artifacts, suggests next steps
 
 ## Headless Mode (`onboard:generate`) — v2-only as of 2.0.0-alpha.1
 
-External plugins (e.g., Greenfield 3.0+) invoke the `generate` skill via the Skill tool, skipping the wizard and analysis. The skill is `user-invocable: false` so it doesn't clutter the user's slash menu.
+External callers invoke the `generate` skill via the Skill tool, skipping the wizard and analysis. The skill is `user-invocable: false` so it doesn't clutter the user's slash menu.
 
 ```
 generate skill (v2-only, headless)
@@ -76,7 +76,7 @@ The canonical schema lives at `skills/generate/references/context-shape-v2.json`
 ```jsonc
 {
   "version": 2,
-  "source": "greenfield",
+  "source": "onboard:start",
   "projectPath": "/abs/path/to/project",
   "callerExtras": { "installedPlugins": [], "coveredCapabilities": [] },
   "phases": {
@@ -110,7 +110,7 @@ The canonical schema lives at `skills/generate/references/context-shape-v2.json`
 
 ### Hard cutover policy
 
-Onboard 2.x rejects v1 input outright. There is no migration helper. v1 callers (greenfield 2.x, any direct callers built before greenfield 3.0) must stay on onboard 1.10.0 for the lifetime of their session. Documented at length in `CHANGELOG-2.0.md`.
+Onboard 2.x rejects v1 input outright. There is no migration helper. v1 callers must stay on onboard 1.10.0 for the lifetime of their session. Documented at length in `CHANGELOG-2.0.md`.
 
 The rejection contract is enforced at the top of `skills/generate/SKILL.md § Step 0` — never silent, never partial. The error message is parseable by callers for routing.
 
@@ -118,13 +118,13 @@ The rejection contract is enforced at the top of `skills/generate/SKILL.md § St
 
 Three schema additions land in Round 4; all are optional — if absent, generation behaves as alpha.4.
 
-**`phases.personas`** (Step 2.2 in the greenfield wizard)
+**`phases.personas`** (Step 2.2)
 - New discovery phase that captures primary personas (up to 5, each with id/name/role/goal, optional context/jobs/constraints), secondary personas (up to 3), and optional `antiPersonas[]`.
 - Set `skipped: true` + `deferredReason` when the project has no meaningful user differentiation.
 - Drives auto-loop in downstream architectural phases: auth, privacy, security, runtimeOps iterate per persona when `mode.coupling = "auto-loop"`.
 - If absent, generate skips persona-driven loop expansion silently.
 
-**`phases.domainModel`** (Step 2.7 in the greenfield wizard)
+**`phases.domainModel`** (Step 2.7)
 - New discovery phase that captures bounded contexts (`contexts[]`), entities (with `isAggregateRoot` flags and `relationships[]`), value objects, domain events, cross-context relationships, ubiquitous language glossary, and `antiCorruption` (single string).
 - Mode-gated fields: `valueObjects`, `domainEvents`, `antiCorruption` are skipped in `mode.domainFormat = "ddd-lite"` and `mode.depth = "light"`.
 - Drives auto-loop in dataArchitecture, apiIntegration, security when entities are present.
@@ -144,7 +144,7 @@ Three schema additions land in Round 4; all are optional — if absent, generati
 - Risks are reconciled at Step 15 (Risk Reconciliation, front section of architecturalValidation).
 - Post-generation: if any entry has `reconciliation.status == "open-followup"`, generate emits `docs/risks.md` listing those entries as action items.
 
-### Round 5 phase additions (greenfield 3.0.0-alpha.6 → onboard 2.0.0-alpha.6)
+### Round 5 phase additions (onboard 2.0.0-alpha.6)
 
 Two new phase keys land in the v2 context shape (`onboard/skills/generate/references/context-shape-v2.json`):
 
@@ -162,13 +162,13 @@ Two new phase keys land in the v2 context shape (`onboard/skills/generate/refere
 
   Fallback: if `schemaDraftReview.skipped = true` OR `lockedAt` is absent, onboard writes nothing — alpha.5 behavior preserved.
 
-Schema bump alpha.5 → alpha.6 is **purely additive**. Pickup migration shim in `greenfield/skills/pickup/SKILL.md` auto-injects `{skipped: true, deferredReason}` defaults for in-flight alpha.5 sessions.
+Schema bump alpha.5 → alpha.6 is **purely additive**.
 
 See: `onboard/CHANGELOG-2.0.md` (when released) for the formal alpha.6 entry.
 
 ### v2-specific templates (Round 1 — Round 3 complete)
 
-Rounds 1–3 are complete. Round 1 wired CI/CD (P8). Rounds 2 / 2.5 wired architectural synthesis phases (architecturalFraming, dataArchitecture, apiIntegration, architecturalValidation). Round 3 adds auth, privacy, security, runtimeOperations synthesis phases (Steps 5–8 in the greenfield wizard; cicdAndDelivery renumbered to Step 11; architecturalValidation renumbered to Step 15).
+Rounds 1–3 are complete. Round 1 wired CI/CD (P8). Rounds 2 / 2.5 wired architectural synthesis phases (architecturalFraming, dataArchitecture, apiIntegration, architecturalValidation). Round 3 adds auth, privacy, security, runtimeOperations synthesis phases (Steps 5–8; cicdAndDelivery renumbered to Step 11; architecturalValidation renumbered to Step 15).
 
 - `skills/generate/references/cicd-templates/github-actions/*.yml.tmpl` — 4 GHA workflow templates rendered from P8 fields. Round 1 ships GHA only; non-GHA providers in Round 6.
 - `skills/generate/references/sprint-contracts-template.json` — sprint contract structure consuming `phases.P8.cicd.envLadder` for `deploymentTargets`.
@@ -181,7 +181,7 @@ Rounds 1–3 are complete. Round 1 wired CI/CD (P8). Rounds 2 / 2.5 wired archit
 
 ### Future onboard 2.x changes
 
-The v2 root shape (with deferred phase stubs) is stable. Future minor versions (2.1, 2.2, ...) fill in deferred phases as greenfield Rounds 2-6 land, without breaking the root schema. See `CHANGELOG-2.0.md § Future onboard 2.x changes` for the non-binding roadmap.
+The v2 root shape (with deferred phase stubs) is stable. Future minor versions (2.1, 2.2, ...) fill in deferred phases without breaking the root schema. See `CHANGELOG-2.0.md § Future onboard 2.x changes` for the non-binding roadmap.
 
 ## Generation Tiers
 
@@ -214,7 +214,7 @@ User-facing skills (show in `/onboard:` autocomplete):
 
 Internal building blocks (`user-invocable: false` — hidden from menu):
 
-- `generate/SKILL.md` — headless generation API, invoked by greenfield via Skill tool
+- `generate/SKILL.md` — headless generation API, invoked via Skill tool
 - `wizard/SKILL.md` — drives the interactive Q&A (presets: Minimal/Standard/Comprehensive/Custom)
 - `analysis/SKILL.md` — tech stack pattern matching, model recommendations
 - `generation/SKILL.md` — artifact generation logic, core + enriched modes

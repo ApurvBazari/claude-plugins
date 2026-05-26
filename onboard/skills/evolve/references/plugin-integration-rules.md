@@ -99,4 +99,4 @@ Rich narrative voice, not a bulleted list of plugin names. Every subsection shou
 
 See `../../generation/references/plugin-detection-guide.md` for derivation rules, default templates, and autonomyLevel downgrade logic.
 
-**Evolve-specific note**: When deriving `featureStart.criticalDirs` during evolve, preserve existing `criticalDirs` from `greenfield-meta.json` or `onboard-meta.json` — evolve does not re-derive directory roles. Read `autonomyLevel` from `greenfield-meta.json.context.autonomyLevel` or `onboard-meta.json.wizardAnswers.autonomyLevel`.
+**Evolve-specific note**: When deriving `featureStart.criticalDirs` during evolve, preserve existing `criticalDirs` from `onboard-meta.json` — evolve does not re-derive directory roles. Read `autonomyLevel` from `onboard-meta.json.wizardAnswers.autonomyLevel`.

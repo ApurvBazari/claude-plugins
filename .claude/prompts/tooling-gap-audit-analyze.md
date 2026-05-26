@@ -1,6 +1,6 @@
 # Tooling Gap Audit — Analysis Phase
 
-You are running a tooling gap analysis for the `claude-plugins` repository. This repo contains four Claude Code plugins — onboard (codebase analyzer + tooling generator), greenfield (project scaffolder), notify (system notifications), and handoff (session continuity) — all built with markdown, shell scripts, and JSON (no compiled code).
+You are running a tooling gap analysis for the `claude-plugins` repository. This repo contains three Claude Code plugins — onboard (codebase analyzer + tooling generator), notify (system notifications), and handoff (session continuity) — all built with markdown, shell scripts, and JSON (no compiled code).
 
 Your job: compare what Anthropic currently ships in Claude Code against what these plugins actually generate. Produce a structured JSON intermediary that the report phase will render into a human-readable gap report.
 
@@ -20,7 +20,6 @@ Read ALL of the following before any WebFetch. Build a complete picture of what 
 
 **Plugin directories** (read recursively — all SKILL.md, agents/*.md, scripts/*.sh, .claude-plugin/plugin.json, CLAUDE.md, CHANGELOG.md):
 - `onboard/`
-- `greenfield/`
 - `notify/`
 - `handoff/`
 
@@ -115,14 +114,6 @@ Use the Write tool. The JSON must be valid and complete before writing — do no
       "mcpTransports": [],
       "otherSurfaces": []
     },
-    "greenfield": {
-      "hookEvents": [],
-      "hookTypes": [],
-      "skillFrontmatter": [],
-      "agentFrontmatter": [],
-      "mcpTransports": [],
-      "otherSurfaces": []
-    },
     "notify": {
       "hookEvents": [],
       "hookTypes": [],
@@ -157,7 +148,7 @@ Use the Write tool. The JSON must be valid and complete before writing — do no
     {
       "id": "GAP-001",
       "surface": "<category.specific-item>",
-      "affectedPlugin": "<onboard | greenfield | notify | handoff>",
+      "affectedPlugin": "<onboard | notify | handoff>",
       "priority": "P0 | P1 | P2",
       "size": "XS | S | M | L",
       "rationale": "<why this is a gap and what's affected>",

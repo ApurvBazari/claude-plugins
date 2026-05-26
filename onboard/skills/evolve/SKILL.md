@@ -1,6 +1,6 @@
 ---
 name: evolve
-description: Apply accumulated tooling drift to Claude configuration. Use when user says their Claude tooling is out of sync, mentions drift detected by hooks, installed/removed a plugin and wants the Plugin Integration section refreshed, or asks to drain queued greenfield-drift.json updates.
+description: Apply accumulated tooling drift to Claude configuration. Use when user says their Claude tooling is out of sync, mentions drift detected by hooks, installed/removed a plugin and wants the Plugin Integration section refreshed, or asks to drain queued drift-log updates.
 ---
 
 # Evolve Skill — Apply Pending Drift Updates
@@ -28,9 +28,9 @@ If any source has drift, continue.
 
 Plugin drift detection follows the shared procedure in `../generation/references/plugin-drift-detection.md`. Evolve-specific parameters:
 
-- **Baseline source** — `.claude/greenfield-meta.json.generated.toolingFlags.installedPlugins`. If the file is missing or this field is absent, skip Step 0 entirely (evolve requires a greenfield baseline; use `/onboard:update` instead for projects without greenfield-meta).
+- **Baseline source** — `.claude/greenfield-meta.json.generated.toolingFlags.installedPlugins` or `.claude/onboard-meta.json.detectedPlugins.installedPlugins`. If neither file has this field, skip Step 0 entirely (evolve requires a baseline; use `/onboard:update` instead for projects without one).
 - **Probe list** — canonical list in `../generation/references/plugin-detection-guide.md` § Known Plugin Probe List. Also probe any plugin in `previousPlugins` that isn't in the known list (custom/third-party plugins).
-- **autonomyLevel source** — `greenfield-meta.json.context.autonomyLevel`, falling back to `onboard-meta.json.wizardAnswers.autonomyLevel`.
+- **autonomyLevel source** — `onboard-meta.json.wizardAnswers.autonomyLevel`, falling back to `greenfield-meta.json.context.autonomyLevel` if present.
 
 Produce the `driftReport` described in `plugin-drift-detection.md` § Output Schema. If `added` and `removed` are both empty, skip to Step 1.
 
@@ -144,7 +144,7 @@ Run the same drift classification as `../update/SKILL.md` § 4b.4 MCP Drift:
 - `userEdited` / `userRemoved` → no action. Log once.
 - Regenerate `.claude/rules/mcp-setup.md` if any newly-applied server needs auth.
 
-Update `onboard-meta.json.mcpStatus` to reflect additions (Step 2b.3 propagates to greenfield-meta).
+Update `onboard-meta.json.mcpStatus` to reflect additions.
 
 ## Step 2d: Apply Skill Frontmatter Drift
 
@@ -161,7 +161,7 @@ Run the same drift classification as `../update/SKILL.md` § 4b.5 Skill Frontmat
 - **missing-file** → invoke `onboard:generate` with `callerExtras.regenerateOnly: [".claude/skills/<skill>/SKILL.md"]` and `callerExtras.disableSkillTuning: true`. The generator reuses the snapshot's frontmatter values so prior tweaks are preserved.
 - **user-tweaked** / **in-sync** → no action.
 
-Update `onboard-meta.json.skillStatus.frontmatterFields[<skill>]` to reflect the applied state. The Step 2b.3 greenfield-meta mirror path picks up the refreshed `skillStatus` via the read-modify-write pattern (see below).
+Update `onboard-meta.json.skillStatus.frontmatterFields[<skill>]` to reflect the applied state. The Step 2b.3 metadata mirror path picks up the refreshed `skillStatus` via the read-modify-write pattern (see below).
 
 ## Step 2e: Apply Agent Frontmatter Drift
 
@@ -179,7 +179,7 @@ Run the same drift classification as `../update/SKILL.md` § 4b.6 Agent Frontmat
 - **missing-file** → invoke `onboard:generate` with `callerExtras.regenerateOnly: [".claude/agents/<agent>.md"]` and `callerExtras.disableAgentTuning: true`. The generator reuses the snapshot's frontmatter values so prior tweaks are preserved.
 - **user-tweaked** / **in-sync** → no action.
 
-Update `onboard-meta.json.agentStatus.frontmatterFields[<agent>]` to reflect the applied state. The Step 2b.3 greenfield-meta mirror path picks up the refreshed `agentStatus` via the read-modify-write pattern.
+Update `onboard-meta.json.agentStatus.frontmatterFields[<agent>]` to reflect the applied state. The Step 2b.3 metadata mirror path picks up the refreshed `agentStatus` via the read-modify-write pattern.
 
 ## Step 2f: Apply Output Style Drift
 
@@ -198,7 +198,7 @@ Run the same drift classification as `../update/SKILL.md` § 4b.7 Output Style D
 - **missing-file** → invoke `onboard:generate` with `callerExtras.regenerateOnly: [".claude/output-styles/<name>.md"]` and `callerExtras.disableOutputStyleTuning: true`. The generator reuses the snapshot's frontmatter values and the catalog body template so prior tweaks are preserved.
 - **user-tweaked** / **in-sync** → no action.
 
-Update `onboard-meta.json.outputStyleStatus.frontmatterFields[<style>]` to reflect the applied state. Preserve `outputStyleStatus.activationDefault`, `settingsLocalWritten`, and `settingsLocalWarning` — evolve does NOT touch `settings.local.json`. The Step 2b.3 greenfield-meta mirror path picks up the refreshed `outputStyleStatus` via the read-modify-write pattern.
+Update `onboard-meta.json.outputStyleStatus.frontmatterFields[<style>]` to reflect the applied state. Preserve `outputStyleStatus.activationDefault`, `settingsLocalWritten`, and `settingsLocalWarning` — evolve does NOT touch `settings.local.json`. The Step 2b.3 metadata mirror path picks up the refreshed `outputStyleStatus` via the read-modify-write pattern.
 
 ## Step 2g: Apply LSP Plugin Drift
 
@@ -221,7 +221,7 @@ When `.claude/onboard-lsp-snapshot.json` is absent, fire a one-time initial prom
 
 **Headless mode** (when called via `generate` with `callerExtras.lspPlugins` set): evolve delegates to the caller's explicit list — no prompt fires. An empty array means "declined all"; an absent caller value falls through to interactive prompting.
 
-Update `onboard-meta.json.lspStatus` to reflect additions. The Step 2b.3 greenfield-meta mirror path picks up the refreshed `lspStatus` via the read-modify-write pattern.
+Update `onboard-meta.json.lspStatus` to reflect additions. The Step 2b.3 metadata mirror path picks up the refreshed `lspStatus` via the read-modify-write pattern.
 
 ## Step 2h: Apply Built-in Skills Drift
 
@@ -246,7 +246,7 @@ Run the same drift classification as `../update/SKILL.md` § 4b.9 Built-in Skill
 
 **Headless mode** (when called via `generate` with `callerExtras.builtInSkills` set): evolve delegates to the caller's explicit list — no prompt fires. An empty array means "declined all"; an absent caller value falls through to interactive prompting.
 
-Update `onboard-meta.json.builtInSkillsStatus` to reflect additions. The Step 2b.3 greenfield-meta mirror path picks up the refreshed `builtInSkillsStatus` via the read-modify-write pattern.
+Update `onboard-meta.json.builtInSkillsStatus` to reflect additions. The Step 2b.3 metadata mirror path picks up the refreshed `builtInSkillsStatus` via the read-modify-write pattern.
 
 ## Step 3: Show Diff
 

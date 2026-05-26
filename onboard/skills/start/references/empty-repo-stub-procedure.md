@@ -37,7 +37,7 @@ A minimal placeholder CLAUDE.md with every section marked as pending. Clear stat
 
 > **Status**: Stub configuration generated for an empty repository. Re-run `/onboard:start` after scaffolding to produce the full AI tooling setup.
 >
-> **For scaffolding + onboarding in one step**: run `/greenfield:start` instead — it creates a project from a template AND generates the full tooling.
+> **Status**: Stub configuration generated for an empty repository. Add source code, then re-run `/onboard:start` to produce the full AI tooling setup.
 
 ## Project overview
 
@@ -53,12 +53,11 @@ While this project is empty:
 
 - Ask clarifying questions before creating files — don't invent a stack or framework
 - Confirm file locations before writing (the layout is unsettled)
-- Reference `/greenfield:start` if the developer mentions wanting a scaffold
 - Re-run `/onboard:start` after at least one source file exists, so the full analysis + wizard can run
 
 ## Next steps
 
-1. Add source code (or run `/greenfield:start` for guided scaffolding)
+1. Add source code
 2. Re-run `/onboard:start` to produce the full tooling setup
 3. Once tooling is generated, the `## Working notes for Claude` section above will be replaced with the project-specific setup.
 
@@ -121,14 +120,14 @@ Create the `.claude/` directory if absent. Do not add placeholder hooks — they
 
   "nextSteps": [
     "Add source code, then re-run /onboard:start",
-    "Or: /greenfield:start for scaffold + onboard in one step"
+    "Re-run /onboard:start after adding source files"
   ]
 }
 ```
 
 ## Dynamic version resolution
 
-**Do NOT hardcode a literal version string.** Resolve the current onboard version at runtime using the same pattern greenfield's `tooling-generation/SKILL.md § Step 1` uses:
+**Do NOT hardcode a literal version string.** Resolve the current onboard version at runtime:
 
 ```bash
 ONBOARD_VERSION=""
@@ -188,7 +187,7 @@ After all three files land, return to the init skill for the Phase 4 handoff. Pr
 > - `.claude/onboard-meta.json` (canonical schema, stub mode, `pluginVersion: <version>`)
 >
 > **Next steps:**
-> 1. Add source code (or run `/greenfield:start` for guided scaffolding + full tooling in one step)
+> 1. Add source code
 > 2. Re-run `/onboard:start` to produce the full AI tooling setup once source files exist
 
 Do NOT run Phase 4's full education/handoff content — the stub has nothing to educate about. Skip straight to this short message and return control.

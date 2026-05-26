@@ -8,12 +8,12 @@ Patterns for configuring FileChanged and SessionStart hooks that keep AI tooling
 
 ```
 FileChanged hooks (command-type, fast, no AI)
-  ├── detect-dep-changes.sh     → logs to greenfield-drift.json
-  ├── detect-config-changes.sh  → logs to greenfield-drift.json
-  └── detect-structure-changes.sh → logs to greenfield-drift.json
+  ├── detect-dep-changes.sh     → logs to drift log
+  ├── detect-config-changes.sh  → logs to drift log
+  └── detect-structure-changes.sh → logs to drift log
 
 SessionStart hook (prompt-type, AI-powered)
-  └── reads greenfield-drift.json, summarizes changes
+  └── reads drift log, summarizes changes
 ```
 
 ## Settings.json Hook Entries
@@ -57,7 +57,7 @@ SessionStart hook (prompt-type, AI-powered)
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Check if .claude/greenfield-drift.json exists and has entries since the last session. If drift is detected, briefly summarize what changed and suggest the developer run /greenfield:evolve to update tooling. If no drift, say nothing."
+            "prompt": "Check if .claude/greenfield-drift.json exists and has entries since the last session. If drift is detected, briefly summarize what changed and suggest the developer run /onboard:evolve to update tooling. If no drift, say nothing."
           }
         ]
       }
@@ -129,13 +129,13 @@ The `--auto-update` flag tells the script to update CLAUDE.md and rules directly
 
 ## Merging with Existing Hooks
 
-When adding Greenfield hooks to settings.json:
+When adding evolution hooks to settings.json:
 
 1. Read existing `.claude/settings.json`
 2. Parse the `hooks` object
 3. For each event type (FileChanged, SessionStart):
    - If the event type doesn't exist, add it
-   - If it exists, append Greenfield's hook entries to the existing array
+   - If it exists, append the evolution hook entries to the existing array
    - Never replace existing entries (onboard may have format/lint hooks)
 4. Write back the merged settings
 
@@ -144,7 +144,7 @@ Example merge scenario:
 BEFORE (from onboard):
   hooks.PostToolUse = [{ formatter hook }, { linter hook }]
 
-AFTER (greenfield adds):
+AFTER (evolution hooks added):
   hooks.PostToolUse = [{ formatter hook }, { linter hook }]  ← preserved
   hooks.FileChanged = [{ dep hook }, { config hook }, { structure hook }]  ← added
   hooks.SessionStart = [{ drift summary hook }]  ← added

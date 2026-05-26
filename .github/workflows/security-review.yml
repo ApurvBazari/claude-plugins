@@ -35,7 +35,7 @@ jobs:
           track_progress: true
           direct_prompt: |
             Security audit for a Claude Code plugin repo (markdown + shell scripts + JSON manifests — no compiled code, no web frontend, no database).
-            It contains 4 plugins: onboard (codebase analyzer), greenfield (project scaffolder), notify (system notifications), handoff (session continuity).
+            It contains 3 plugins: onboard (codebase analyzer), notify (system notifications), handoff (session continuity).
 
             Focus on what matters for this codebase:
 
@@ -68,7 +68,7 @@ jobs:
           trigger_phrase: "@claude security-review"
           direct_prompt: |
             Security audit for a Claude Code plugin repo (markdown + shell scripts + JSON manifests — no compiled code, no web frontend, no database).
-            It contains 4 plugins: onboard (codebase analyzer), greenfield (project scaffolder), notify (system notifications), handoff (session continuity).
+            It contains 3 plugins: onboard (codebase analyzer), notify (system notifications), handoff (session continuity).
 
             Focus on what matters for this codebase:
 

@@ -1,6 +1,6 @@
 # claude-plugins
 
-> Claude Code plugins for the project lifecycle — `greenfield` scaffolds new projects, `onboard` keeps AI configs aligned as your code evolves, `notify` closes the loop, and `handoff` carries session intent across context boundaries. Four plugins that work on their own and **compose together**.
+> Claude Code plugins for the project lifecycle — `onboard` keeps AI configs aligned as your code evolves, `notify` closes the loop, and `handoff` carries session intent across context boundaries. Three plugins that work on their own and **compose together**.
 
 Built on top of [Claude Code](https://code.claude.com/docs/en) by Anthropic. Distributed under [MIT](./LICENSE).
 
@@ -10,7 +10,6 @@ Built on top of [Claude Code](https://code.claude.com/docs/en) by Anthropic. Dis
 
 | Plugin | What it does | Reach for it when… |
 |---|---|---|
-| **[greenfield](./greenfield/)** | Stack-agnostic greenfield scaffolder — researches your stack via WebSearch, scaffolds the app, then hands off to onboard for Claude tooling. | You're starting a new project from scratch. |
 | **[onboard](./onboard/)** | Lifecycle manager for AI configs — generates initial tooling, then **detects code-vs-config drift** as the project evolves and offers to fix it. | You have an existing repo, OR your AI configs are starting to lag behind the code. |
 | **[notify](./notify/)** | macOS / Linux system notifications when Claude finishes a task. Duration-filtered so short tasks don't spam you. | You leave Claude running long jobs in the background. |
 | **[handoff](./handoff/)** | Save the directive of a wrap-up session, then auto-surface it at the next SessionStart with an Execute / Edit / Discard / Save-for-later prompt. | You end sessions by pasting "continue this work in the new window" prompts into the next session. |
@@ -34,24 +33,14 @@ claude plugin install onboard@claude-community
 claude plugin install notify@claude-community
 ```
 
-`greenfield` is **not yet** on the community marketplace (the original `forge` name was taken; we're republishing under `greenfield` — until that lands, use Option B for it).
-
 ### Option B — install from `apurvbazari-plugins` (all three plugins, latest commit)
 
-This is the only route for `greenfield` today, and the route that always serves the latest commit when you want changes ahead of the community marketplace's nightly snapshot.
+This route always serves the latest commit when you want changes ahead of the community marketplace's nightly snapshot, and is the only route for `handoff`.
 
 ```bash
 # Add this marketplace
 claude plugin marketplace add apurvbazari/claude-plugins
 ```
-
-**New project from scratch:**
-
-```bash
-claude plugin install greenfield@apurvbazari-plugins
-```
-
-> `greenfield` requires `onboard` for Claude tooling generation — install it as well: `claude plugin install onboard@apurvbazari-plugins`
 
 **Existing project:**
 
@@ -59,7 +48,7 @@ claude plugin install greenfield@apurvbazari-plugins
 claude plugin install onboard@apurvbazari-plugins
 ```
 
-**Optional add-ons for either:**
+**Optional add-ons:**
 
 ```bash
 claude plugin install notify@apurvbazari-plugins
@@ -72,26 +61,9 @@ claude plugin install handoff@apurvbazari-plugins
 
 Each plugin's README contains a runnable transcript so you can see what a real session looks like before you install:
 
-- **greenfield** — full 3-phase scaffold of a Python FastAPI project (Context Gathering → Scaffold → AI Tooling delegation to onboard) → [greenfield/README.md#example](./greenfield/README.md#example)
 - **onboard** — initial `/onboard:start` on a Next.js 15 project, then `/onboard:evolve` two weeks later detecting drift and proposing updates → [onboard/README.md#example](./onboard/README.md#example)
 - **notify** — `/notify:setup` followed by the duration filter suppressing a fast task and delivering a long one → [notify/README.md#example](./notify/README.md#example)
 - **handoff** — saying "save handoff" mid-conversation, confirming the auto-save, then a fresh session starting with the four-option resume prompt → [handoff/README.md](./handoff/README.md)
-
-The narrative beat to watch for: greenfield's Phase 3 calls `Skill(onboard:generate)` rather than reinventing tooling generation. That delegation is the composability story this whole repo is built around.
-
----
-
-## greenfield
-
-Guided project bootstrapper. Takes you from *"I want to build X"* to a running application with a complete Claude tooling package — in one conversation.
-
-greenfield is a **thin orchestrator**. The defining design choice: it delegates all Claude tooling generation to `onboard:generate` rather than reimplementing it. That delegation is the composability story this whole repo is built around.
-
-**Stack-agnostic.** greenfield researches your stack via WebSearch (current versions, official scaffolders, idiomatic patterns) rather than shipping pre-built templates. Whatever framework you name, greenfield investigates and uses the canonical CLI for it.
-
-**Prerequisites:** the `onboard` plugin (greenfield calls it for Phase 3 generation).
-
-For the 3-phase walkthrough, full skill reference (`/greenfield:start`, `/greenfield:pickup`, `/greenfield:check`), supported stacks, resumability mechanics, and the runnable Example transcript: [greenfield/README.md →](./greenfield/README.md)
 
 ---
 
@@ -106,7 +78,7 @@ The lifecycle manager for AI-assisted development. Generates Claude tooling on d
 
 The drift loop is the differentiated piece. Auto-generating `CLAUDE.md` is commodity in 2026 — Claude Code's `/init`, GitHub Copilot, OpenAI Codex, Cursor, and several web tools all do it. Maintaining those configs as code grows is what onboard does that nothing else does.
 
-For the full skill reference (5 user-facing skills + the headless `/onboard:generate` API greenfield consumes), the drift detection deep dive, generated artifact catalog, and supported project types: [onboard/README.md →](./onboard/README.md)
+For the full skill reference, the drift detection deep dive, generated artifact catalog, and supported project types: [onboard/README.md →](./onboard/README.md)
 
 ---
 
@@ -151,18 +123,17 @@ These three plugins cover different phases of the lifecycle. They compose with e
 ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
 │    Setup     │ ─→ │   Develop    │ ─→ │   Refine     │ ─→ │    Ship      │ ─→ │   Monitor    │
 │              │    │              │    │              │    │              │    │              │
-│ greenfield*  │    │ feature-dev  │    │ code-        │    │ commit-      │    │ notify       │
-│ onboard      │    │ superpowers  │    │ simplifier   │    │ commands     │    │ Native OTEL  │
-│ hookify      │    │              │    │              │    │ pr-review-   │    │              │
+│ onboard      │    │ feature-dev  │    │ code-        │    │ commit-      │    │ notify       │
+│ hookify      │    │ superpowers  │    │ simplifier   │    │ commands     │    │ Native OTEL  │
+│              │    │              │    │              │    │ pr-review-   │    │              │
 │              │    │              │    │              │    │ toolkit      │    │              │
 └──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘
         │                    │                                       │
         └────────────────────┴───────────────────────────────────────┘
                           engineering (cross-phase)
-                                                  * greenfield: new projects only
 ```
 
-- **Setup** — `onboard` (existing repos) or `greenfield` (new). Add `hookify` for incremental behavioural rules.
+- **Setup** — `onboard` analyses the codebase and generates Claude tooling. Add `hookify` for incremental behavioural rules.
 - **Develop** — `feature-dev` for the structured 7-phase workflow; `superpowers` for TDD + systematic debugging discipline.
 - **Refine** — `code-simplifier` for post-implementation cleanup; `claude-md-management` for ongoing memory maintenance.
 - **Ship** — `commit-commands` for git/PR workflows; `pr-review-toolkit` and `code-review` for specialist PR review.
