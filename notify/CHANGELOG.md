@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0](https://github.com/ApurvBazari/claude-plugins/compare/notify-v1.1.0...notify-v2.0.0) (2026-05-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* mattpocock-skills is no longer distributed via this marketplace. Users with the plugin installed keep it; uninstall is user-side. Future installs must use upstream mattpocock/skills directly.
+
+### Miscellaneous Chores
+
+* remove greenfield plugin + merge develop to main ([#58](https://github.com/ApurvBazari/claude-plugins/issues/58)) ([5d64f0d](https://github.com/ApurvBazari/claude-plugins/commit/5d64f0d359aebfafc83d8bf1ae95cc23cbb1d2f9))
+
 ## [1.1.0](https://github.com/ApurvBazari/claude-plugins/compare/notify-v1.0.2...notify-v1.1.0) (2026-04-19)
 
 
