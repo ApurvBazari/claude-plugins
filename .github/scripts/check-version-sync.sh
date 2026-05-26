@@ -7,10 +7,7 @@
 # itself reports its plugin.json version. Keeping them in lock-step avoids
 # silent version skew during the release cycle.
 #
-# Run in two contexts:
-#   1. validate.yml — on every PR, catches hand-edit drift early
-#   2. release-please.yml — after the sync-marketplace job, confirms the
-#      automated sync actually produced a consistent manifest before commit
+# Run by validate.yml on every PR to catch hand-edit drift early.
 
 set -euo pipefail
 
