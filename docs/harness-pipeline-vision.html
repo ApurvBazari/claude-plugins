@@ -1,0 +1,1874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Harness v2 — SDLC Architecture Vision</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface-2: #1c2333;
+    --border: #30363d;
+    --border-accent: #58a6ff;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --text-dim: #6e7681;
+    --blue: #58a6ff;
+    --green: #3fb950;
+    --amber: #d29922;
+    --red: #f85149;
+    --purple: #bc8cff;
+    --cyan: #79c0ff;
+    --pink: #f778ba;
+    --orange: #ffa657;
+    --teal: #56d4dd;
+    --glow-blue: rgba(88, 166, 255, 0.15);
+    --glow-green: rgba(63, 185, 80, 0.15);
+    --glow-amber: rgba(210, 153, 34, 0.15);
+    --glow-purple: rgba(188, 140, 255, 0.15);
+    --radius: 12px;
+    --radius-sm: 8px;
+    --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── Header ── */
+  .hero {
+    text-align: center;
+    padding: 80px 24px 48px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 800px;
+    background: radial-gradient(circle, rgba(88,166,255,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    background: linear-gradient(135deg, var(--blue), var(--purple), var(--cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 12px;
+  }
+  .hero .version-badge {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 99px;
+    background: rgba(255,166,87,0.12);
+    color: var(--orange);
+    border: 1px solid rgba(255,166,87,0.3);
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+    font-family: var(--mono);
+  }
+  .hero .subtitle {
+    color: var(--text-muted);
+    font-size: 1.15rem;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  /* ── Navigation tabs ── */
+  .nav-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    padding: 0 24px;
+    margin-bottom: 48px;
+    flex-wrap: wrap;
+  }
+  .nav-tab {
+    padding: 10px 20px;
+    border-radius: 99px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .nav-tab:hover { border-color: var(--text-muted); color: var(--text); }
+  .nav-tab.active {
+    background: var(--blue);
+    border-color: var(--blue);
+    color: #fff;
+  }
+
+  /* ── Section container ── */
+  .section { display: none; max-width: 1200px; margin: 0 auto; padding: 0 24px 80px; }
+  .section.active { display: block; }
+  .section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .section-desc {
+    color: var(--text-muted);
+    margin-bottom: 36px;
+    max-width: 720px;
+  }
+
+  /* ══════════════════════════════════════════
+     VIEW 1: PIPELINE FLOW
+     ══════════════════════════════════════════ */
+  .pipeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+  }
+
+  .phase-row {
+    display: grid;
+    grid-template-columns: 64px 1fr 1fr;
+    gap: 0;
+    min-height: 140px;
+    position: relative;
+  }
+
+  /* Vertical connector line */
+  .phase-row:not(:last-child) .phase-number::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: calc(100% - 56px);
+    top: 56px;
+  }
+
+  .phase-number {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 16px;
+    position: relative;
+  }
+  .phase-num-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    z-index: 1;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .phase-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin: 8px 8px 8px 16px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .phase-card:hover {
+    border-color: var(--border-accent);
+    box-shadow: 0 0 24px var(--glow-blue);
+  }
+  .phase-card h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .phase-card .desc {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+  }
+  .phase-card .artifact-label {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+  .artifact-chip {
+    display: inline-block;
+    padding: 2px 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  .gate-card {
+    background: var(--surface-2);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin: 8px 16px 8px 8px;
+  }
+  .gate-card h4 {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+  .gate-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    padding: 4px 0;
+  }
+  .gate-icon {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    flex-shrink: 0;
+  }
+  .gate-hard { background: rgba(248, 81, 73, 0.15); color: var(--red); }
+  .gate-soft { background: rgba(210, 153, 34, 0.15); color: var(--amber); }
+  .gate-auto { background: rgba(63, 185, 80, 0.15); color: var(--green); }
+
+  .provider-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 99px;
+    font-size: 0.75rem;
+    font-family: var(--mono);
+    margin: 2px;
+  }
+  .provider-yours { background: rgba(188, 140, 255, 0.12); color: var(--purple); border: 1px solid rgba(188, 140, 255, 0.25); }
+  .provider-ext { background: rgba(121, 192, 255, 0.1); color: var(--cyan); border: 1px solid rgba(121, 192, 255, 0.2); }
+  .provider-new { background: rgba(63, 185, 80, 0.1); color: var(--green); border: 1px solid rgba(63, 185, 80, 0.2); }
+  .provider-vc { background: rgba(247, 120, 186, 0.1); color: var(--pink); border: 1px solid rgba(247, 120, 186, 0.2); }
+
+  /* Phase-specific accent colors */
+  .phase-research .phase-num-circle { background: rgba(255,166,87,0.15); color: var(--orange); border: 2px solid var(--orange); }
+  .phase-research .phase-number::after { background: linear-gradient(to bottom, var(--orange), var(--blue)); }
+  .phase-spec .phase-num-circle { background: rgba(88,166,255,0.15); color: var(--blue); border: 2px solid var(--blue); }
+  .phase-spec .phase-number::after { background: linear-gradient(to bottom, var(--blue), var(--purple)); }
+  .phase-plan .phase-num-circle { background: rgba(188,140,255,0.15); color: var(--purple); border: 2px solid var(--purple); }
+  .phase-plan .phase-number::after { background: linear-gradient(to bottom, var(--purple), var(--green)); }
+  .phase-build .phase-num-circle { background: rgba(63,185,80,0.15); color: var(--green); border: 2px solid var(--green); }
+  .phase-build .phase-number::after { background: linear-gradient(to bottom, var(--green), var(--amber)); }
+  .phase-verify .phase-num-circle { background: rgba(210,153,34,0.15); color: var(--amber); border: 2px solid var(--amber); }
+  .phase-verify .phase-number::after { background: linear-gradient(to bottom, var(--amber), var(--red)); }
+  .phase-review .phase-num-circle { background: rgba(248,81,73,0.15); color: var(--red); border: 2px solid var(--red); }
+  .phase-review .phase-number::after { background: linear-gradient(to bottom, var(--red), var(--cyan)); }
+  .phase-ship .phase-num-circle { background: rgba(121,192,255,0.15); color: var(--cyan); border: 2px solid var(--cyan); }
+  .phase-ship .phase-number::after { background: linear-gradient(to bottom, var(--cyan), var(--teal)); }
+  .phase-maintain .phase-num-circle { background: rgba(86,212,221,0.15); color: var(--teal); border: 2px solid var(--teal); }
+
+  /* ── Legend ── */
+  .legend {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+    padding: 16px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ══════════════════════════════════════════
+     VIEW 2: COMMANDS
+     ══════════════════════════════════════════ */
+  .commands-intro {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 36px;
+  }
+  .command-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    transition: border-color 0.2s;
+  }
+  .command-card:hover { border-color: var(--border-accent); }
+  .command-name {
+    font-family: var(--mono);
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .command-desc {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  .matrix-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+  table.gate-matrix {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+    min-width: 780px;
+  }
+  .gate-matrix th {
+    padding: 10px 14px;
+    text-align: center;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    letter-spacing: 0.4px;
+  }
+  .gate-matrix th:first-child {
+    text-align: left;
+    padding-left: 20px;
+    color: var(--text);
+  }
+  .gate-matrix td {
+    padding: 9px 14px;
+    text-align: center;
+    border-bottom: 1px solid rgba(48,54,61,0.6);
+    vertical-align: middle;
+  }
+  .gate-matrix td:first-child {
+    text-align: left;
+    padding-left: 20px;
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
+  .gate-matrix tr:last-child td { border-bottom: none; }
+  .gate-matrix tbody tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .m-hard {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 20px;
+    border-radius: 4px;
+    background: rgba(248,81,73,0.15);
+    color: var(--red);
+    font-size: 0.68rem;
+    font-weight: 700;
+  }
+  .m-auto {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 20px;
+    border-radius: 4px;
+    background: rgba(63,185,80,0.12);
+    color: var(--green);
+    font-size: 0.68rem;
+    font-weight: 700;
+  }
+  .m-soft {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 20px;
+    border-radius: 4px;
+    background: rgba(210,153,34,0.12);
+    color: var(--amber);
+    font-size: 0.68rem;
+    font-weight: 700;
+  }
+  .m-skip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 20px;
+    border-radius: 4px;
+    background: rgba(110,118,129,0.08);
+    color: var(--text-dim);
+    font-size: 0.68rem;
+    font-weight: 700;
+  }
+
+  .matrix-legend {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+    font-size: 0.78rem;
+    color: var(--text-muted);
+  }
+  .matrix-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  /* ══════════════════════════════════════════
+     VIEW 3: MICRO-CYCLES & ESCALATION
+     ══════════════════════════════════════════ */
+  .micro-cycle-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    margin-bottom: 32px;
+    max-width: 900px;
+  }
+  .micro-cycle-title {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    margin-bottom: 24px;
+  }
+  .cycle-flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+  .cycle-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .cycle-box {
+    padding: 10px 18px;
+    border-radius: var(--radius-sm);
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .cycle-label {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-align: center;
+    max-width: 90px;
+    line-height: 1.3;
+  }
+  .cycle-arrow {
+    font-size: 1.2rem;
+    color: var(--text-dim);
+    padding: 0 8px;
+    flex-shrink: 0;
+    align-self: flex-start;
+    margin-top: 14px;
+  }
+  .cycle-arrow-label {
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    text-align: center;
+    margin-top: 2px;
+  }
+  .cycle-arrow-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  /* Loop-back arc */
+  .cycle-loop {
+    margin-top: 20px;
+    border-top: 2px dashed rgba(210,153,34,0.4);
+    border-left: 2px dashed rgba(210,153,34,0.4);
+    border-radius: 8px 0 0 0;
+    height: 28px;
+    position: relative;
+  }
+  .cycle-loop-label {
+    position: absolute;
+    top: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.68rem;
+    color: var(--amber);
+    white-space: nowrap;
+  }
+
+  .retry-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 99px;
+    background: rgba(210,153,34,0.12);
+    color: var(--amber);
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 10px;
+    vertical-align: middle;
+  }
+
+  .escalation-table-wrap {
+    margin-bottom: 32px;
+    max-width: 900px;
+  }
+  .escalation-table-wrap h3 {
+    font-size: 1rem;
+    margin-bottom: 14px;
+  }
+  table.esc-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .esc-table th {
+    padding: 10px 18px;
+    text-align: left;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-muted);
+  }
+  .esc-table td {
+    padding: 12px 18px;
+    border-bottom: 1px solid rgba(48,54,61,0.6);
+    vertical-align: top;
+  }
+  .esc-table tr:last-child td { border-bottom: none; }
+  .esc-table tbody tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .sev-minor { color: var(--green); font-weight: 600; }
+  .sev-moderate { color: var(--amber); font-weight: 600; }
+  .sev-major { color: var(--orange); font-weight: 600; }
+  .sev-critical { color: var(--red); font-weight: 600; }
+
+  .cascade-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    max-width: 900px;
+  }
+  .cascade-box h3 { font-size: 1rem; margin-bottom: 14px; }
+  .cascade-flow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .cascade-step {
+    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .cascade-arrow {
+    color: var(--text-dim);
+    font-size: 1rem;
+  }
+
+  /* ══════════════════════════════════════════
+     VIEW 4: DX MODES
+     ══════════════════════════════════════════ */
+  .dx-modes-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 36px;
+  }
+  @media (max-width: 860px) {
+    .dx-modes-grid { grid-template-columns: 1fr; }
+  }
+  .dx-mode-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .dx-mode-card:hover { border-color: var(--border-accent); }
+  .dx-mode-header {
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border);
+  }
+  .dx-mode-header h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .dx-mode-badge {
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .dx-mode-header .mode-desc {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+  .dx-mode-body { padding: 16px 22px; }
+  .dx-trait {
+    display: flex;
+    gap: 8px;
+    font-size: 0.8rem;
+    padding: 5px 0;
+    color: var(--text-muted);
+    border-bottom: 1px solid rgba(48,54,61,0.4);
+  }
+  .dx-trait:last-child { border-bottom: none; }
+  .dx-trait-icon { flex-shrink: 0; }
+
+  .ceremony-wrap {
+    max-width: 600px;
+    margin-bottom: 0;
+  }
+  .ceremony-wrap h3 { font-size: 1rem; margin-bottom: 14px; }
+  table.ceremony-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .ceremony-table th {
+    padding: 10px 18px;
+    text-align: left;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-muted);
+  }
+  .ceremony-table td {
+    padding: 10px 18px;
+    border-bottom: 1px solid rgba(48,54,61,0.6);
+    vertical-align: middle;
+  }
+  .ceremony-table tr:last-child td { border-bottom: none; }
+  .ceremony-table tbody tr:hover td { background: rgba(255,255,255,0.02); }
+  .prompt-bar {
+    display: inline-block;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--blue);
+    opacity: 0.7;
+    vertical-align: middle;
+    margin-left: 8px;
+  }
+  .prompt-count {
+    font-family: var(--mono);
+    font-weight: 700;
+  }
+
+  /* ══════════════════════════════════════════
+     VIEW 5: STATE & WORKTREES
+     ══════════════════════════════════════════ */
+  .state-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    max-width: 820px;
+  }
+  .state-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    position: relative;
+  }
+  .state-card h3 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .state-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .state-json {
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    padding: 16px 20px;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    line-height: 1.8;
+    overflow-x: auto;
+  }
+  .state-json .key { color: var(--cyan); }
+  .state-json .str { color: var(--orange); }
+  .state-json .arr { color: var(--green); }
+  .state-json .num { color: var(--purple); }
+  .state-json .null { color: var(--text-dim); }
+  .state-json .comment { color: var(--text-dim); font-style: italic; }
+
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+  }
+  .flow-arrow .arrow-line {
+    width: 2px;
+    height: 20px;
+    background: var(--border);
+  }
+
+  .worktree-section { margin-top: 48px; }
+  .worktree-section h3 { font-size: 1.1rem; margin-bottom: 16px; }
+  .worktree-board {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .worktree-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .worktree-header {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .worktree-body { padding: 12px 16px; }
+  .worktree-phase {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .worktree-progress {
+    height: 4px;
+    background: var(--surface-2);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .worktree-progress-fill {
+    height: 100%;
+    border-radius: 2px;
+  }
+  .worktree-meta {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+  }
+
+  /* ══════════════════════════════════════════
+     VIEW 6: CONFIG & PROFILES
+     ══════════════════════════════════════════ */
+  .profiles-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  @media (max-width: 900px) {
+    .profiles-container { grid-template-columns: 1fr; }
+    .phase-row { grid-template-columns: 48px 1fr; }
+    .gate-card { grid-column: 2; }
+  }
+  .profile-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .profile-card:hover, .profile-card.selected {
+    border-color: var(--border-accent);
+    box-shadow: 0 0 24px var(--glow-blue);
+  }
+  .profile-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .profile-header h3 { font-size: 1.1rem; }
+  .profile-header .profile-desc {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+  .profile-body { padding: 16px 24px; }
+  .profile-phase {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 0;
+    font-size: 0.82rem;
+  }
+  .profile-phase .phase-name { color: var(--text-muted); }
+  .phase-status {
+    font-size: 0.72rem;
+    padding: 2px 10px;
+    border-radius: 99px;
+    font-weight: 500;
+  }
+  .status-full { background: rgba(63,185,80,0.12); color: var(--green); }
+  .status-light { background: rgba(210,153,34,0.12); color: var(--amber); }
+  .status-skip { background: rgba(110,118,129,0.12); color: var(--text-dim); }
+  .status-auto { background: rgba(88,166,255,0.12); color: var(--blue); }
+
+  .layer-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    max-width: 720px;
+  }
+  .layer {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 20px 24px;
+    position: relative;
+  }
+  .layer:first-child { border-radius: var(--radius) var(--radius) 0 0; }
+  .layer:last-child { border-radius: 0 0 var(--radius) var(--radius); }
+  .layer:not(:first-child) { border-top: none; }
+  .layer h4 { font-size: 0.95rem; margin-bottom: 4px; }
+  .layer p { font-size: 0.8rem; color: var(--text-muted); }
+  .layer-priority {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .priority-high { background: rgba(248,81,73,0.12); color: var(--red); }
+  .priority-mid { background: rgba(210,153,34,0.12); color: var(--amber); }
+  .priority-low { background: rgba(110,118,129,0.12); color: var(--text-dim); }
+
+  .contract-box {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-top: 24px;
+  }
+  .contract-box h3 { margin-bottom: 12px; font-size: 1rem; }
+  .contract-code {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    line-height: 1.7;
+    color: var(--text-muted);
+  }
+  .contract-code .key { color: var(--cyan); }
+  .contract-code .val { color: var(--orange); }
+  .contract-code .comment { color: var(--text-dim); }
+
+  /* ── Animate in ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .section.active .phase-row,
+  .section.active .command-card,
+  .section.active .profile-card,
+  .section.active .state-card,
+  .section.active .dx-mode-card,
+  .section.active .worktree-card {
+    animation: fadeUp 0.35s ease both;
+  }
+  .section.active .phase-row:nth-child(1) { animation-delay: 0.00s; }
+  .section.active .phase-row:nth-child(2) { animation-delay: 0.05s; }
+  .section.active .phase-row:nth-child(3) { animation-delay: 0.10s; }
+  .section.active .phase-row:nth-child(4) { animation-delay: 0.15s; }
+  .section.active .phase-row:nth-child(5) { animation-delay: 0.20s; }
+  .section.active .phase-row:nth-child(6) { animation-delay: 0.25s; }
+  .section.active .phase-row:nth-child(7) { animation-delay: 0.30s; }
+  .section.active .phase-row:nth-child(8) { animation-delay: 0.35s; }
+
+  /* ── Footer ── */
+  .footer {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    border-top: 1px solid var(--border);
+    margin-top: 48px;
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="version-badge">v2.0</div>
+  <h1>Harness Pipeline</h1>
+  <p class="subtitle">An extensible SDLC orchestration layer with 8-phase flow, command-driven gate rigor, micro-cycle recovery, and three DX modes — from idea to production and beyond.</p>
+</div>
+
+<nav class="nav-tabs">
+  <div class="nav-tab active" data-tab="pipeline">Pipeline Flow</div>
+  <div class="nav-tab" data-tab="commands">Commands</div>
+  <div class="nav-tab" data-tab="microcycles">Micro-Cycles &amp; Escalation</div>
+  <div class="nav-tab" data-tab="dxmodes">DX Modes</div>
+  <div class="nav-tab" data-tab="state">State &amp; Worktrees</div>
+  <div class="nav-tab" data-tab="config">Config &amp; Profiles</div>
+</nav>
+
+<!-- ═══════════════════════════════════════
+     VIEW 1: PIPELINE FLOW (8 phases)
+     ═══════════════════════════════════════ -->
+<div class="section active" id="pipeline">
+  <h2 class="section-title">A Feature's Journey — 8 Phases</h2>
+  <p class="section-desc">Each phase produces an artifact and must pass its gate before the next phase begins. Gate rigor varies by command — see the Commands tab for the per-command matrix.</p>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div> Your plugins (onboard, notify, handoff)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--cyan)"></div> External marketplace (superpowers, pr-review-toolkit, etc.)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Harness built-in skills</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--pink)"></div> visual-companion render skills</div>
+    <div class="legend-item"><div class="gate-icon gate-hard" style="width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;font-size:0.7rem;">H</div> Hard gate</div>
+    <div class="legend-item"><div class="gate-icon gate-soft" style="width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;font-size:0.7rem;">S</div> Soft gate</div>
+    <div class="legend-item"><div class="gate-icon gate-auto" style="width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;font-size:0.7rem;">A</div> Auto gate</div>
+  </div>
+
+  <div class="pipeline">
+
+    <!-- Phase R0: RESEARCH -->
+    <div class="phase-row phase-research">
+      <div class="phase-number"><div class="phase-num-circle">R0</div></div>
+      <div class="phase-card">
+        <h3>RESEARCH <span style="font-weight:400;font-size:0.8rem;color:var(--text-dim)">— Web search, current state of art</span></h3>
+        <p class="desc">Survey existing solutions, libraries, patterns, and prior art before committing to a direction. Scoped by command — skipped for patches.</p>
+        <div class="artifact-label">Artifact</div>
+        <div class="artifact-chip">research.md</div>
+        <div>
+          <span class="provider-tag provider-new">harness:web-research</span>
+          <span class="provider-tag provider-ext">superpowers:brainstorming</span>
+        </div>
+      </div>
+      <div class="gate-card">
+        <h4>Gate: Research Complete</h4>
+        <div class="gate-item"><div class="gate-icon gate-auto">A</div> research.md present</div>
+        <div class="gate-item"><div class="gate-icon gate-auto">A</div> At least 2 sources cited</div>
+        <div class="gate-item" style="color:var(--text-dim);font-size:0.8rem;padding-top:8px;">Default: auto — skipped for patch &amp; fix</div>
+      </div>
+    </div>
+
+    <!-- Phase P1: SPEC -->
+    <div class="phase-row phase-spec">
+      <div class="phase-number"><div class="phase-num-circle">P1</div></div>
+      <div class="phase-card">
+        <h3>SPEC <span style="font-weight:400;font-size:0.8rem;color:var(--text-dim)">— What &amp; Why</span></h3>
+        <p class="desc">Define the behavioral contract: acceptance criteria, edge cases, constraints, and non-goals. Hard gate for features — soft or skipped for simpler commands.</p>
+        <div class="artifact-label">Artifact</div>
+        <div class="artifact-chip">spec.md</div>
+        <div>
+          <span class="provider-tag provider-new">harness:spec-writer</span>
+          <span class="provider-tag provider-ext">superpowers:brainstorming</span>
+        </div>
+      </div>
+      <div class="gate-card">
+        <h4>Gate: Spec Approved</h4>
+        <div class="gate-item"><div class="gate-icon gate-hard">H</div> Human approves spec.md (feature)</div>
+        <div class="gate-item"><div class="gate-icon gate-auto">A</div> Acceptance criteria parseable</div>
+        <div class="gate-item"><div class="gate-icon gate-soft">S</div> &ge; 3 edge cases documented</div>
+      </div>
+    </div>
+
+    <!-- Phase P2: PLAN -->
+    <div class="phase-row phase-plan">
+      <div class="phase-number"><div class="phase-num-circle">P2</div></div>
+      <div class="phase-card">
+        <h3>PLAN <span style="font-weight:400;font-size:0.8rem;color:var(--text-dim)">— How &amp; Where</span></h3>
+        <p class="desc">Enumerate affected files, data flow, dependencies, risks, and rollback path. Hard gate for features, security, and integrate commands.</p>
+        <div class="artifact-label">Artifact</div>
+        <div class="artifact-chip">plan.md</div>
+        <div>
+          <span class="provider-tag provider-ext">superpowers:writing-plans</span>
+          <span class="provider-tag provider-ext">feature-dev:feature-dev</span>
+        </div>
+      </div>
+      <div class="gate-card">
+        <h4>Gate: Plan Approved</h4>
+        <div class="gate-item"><div class="gate-icon gate-hard">H</div> Human approves plan.md</div>
+        <div class="gate-item"><div class="gate-icon gate-auto">A</div> All listed files exist or marked [new]</div>
+        <div class="gate-item"><div class="gate-icon gate-soft">S</div> Rollback path documented</div>
+      </div>
+    </div>
+
+    <!-- Phase P3: BUILD -->
+    <div class="phase-row phase-build">
+      <div class="phase-number"><div class="phase-num-circle">P3</div></div>
+      <div class="phase-card">
+        <h3>BUILD <span style="font-weight:400;font-size:0.8rem;color:var(--text-dim)">— TDD + Implement</span></h3>
+        <p class="desc">Red-green-refactor per spec. Write failing tests from acceptance criteria, then implement to pass. Small focused chunks; micro-cycle retries on failure.</p>
+        <div class="artifact-label">Artifact</div>
+        <div class="artifact-chip">passing tests</div>
+        <div>
+          <span class="provider-tag provider-ext">superpowers:test-driven-development</span>
+          <span class="provider-tag provider-ext">superpowers:subagent-driven-development</span>
+          <span class="provider-tag provider-ext">feature-dev:feature-dev</span>
+        </div>
+      </div>
+      <div class="gate-card">
+        <h4>Gate: Build Complete</h4>
+        <div class="gate-item"><div class="gate-icon gate-auto">A</div> All tests pass</div>
+        <div class="gate-item"><div class="gate-icon gate-auto">A</div> Type check passes</div>
+        <div class="gate-item"><div class="gate-icon gate-soft">S</div> Coverage &ge; configured threshold</div>
+      </div>
+    </div>
+
+    <!-- Phase P4: VERIFY -->
+    <div class="phase-row phase-verify">
+      <div class="phase-number"><div class="phase-num-circle">P4</div></div>
+      <div class="phase-card">
+        <h3>VERIFY <span style="font-weight:400;font-size:0.8rem;color:var(--text-dim)">— Mutation, tracing, security</span></h3>
+        <p class="desc">Go beyond "tests pass" — mutation testing, property-based tests, requirements tracing, security scanning. Prove the tests are meaningful.</p>
+        <div class="artifact-label">Artifact</div>
+        <div class="artifact-chip">verify-report.json</div>
+        <div>
+          <span class="provider-tag provider-new">harness:mutation-gate</span>
+          <span class="provider-tag provider-new">harness:requirements-tracer</span>
+          <span class="provider-tag provider-new">harness:security-scan</span>
+          <span class="provider-tag provider-vc">visual-companion:render-adr</span>
+        </div>
+      </div>
+      <div class="gate-card">
+        <h4>Gate: Quality Verified</h4>
+        <div class="gate-item"><div class="gate-icon gate-hard">H</div> Mutation score &ge; threshold (mixed)</div>
+        <div class="gate-item"><div class="gate-icon gate-auto">A</div> All acceptance criteria traced to tests</div>
+        <div class="gate-item"><div class="gate-icon gate-auto">A</div> No critical security findings</div>
+        <div class="gate-item"><div class="gate-icon gate-soft">S</div> Property tests pass (if applicable)</div>
+      </div>
+    </div>
+
+    <!-- Phase P5: REVIEW -->
+    <div class="phase-row phase-review">
+      <div class="phase-number"><div class="phase-num-circle">P5</div></div>
+      <div class="phase-card">
+        <h3>REVIEW <span style="font-weight:400;font-size:0.8rem;color:var(--text-dim)">— Multi-agent + adversarial</span></h3>
+        <p class="desc">Parallel agent review: correctness, style, security, types, silent failures, plus an adversarial blind reviewer with no task context. Human has final say.</p>
+        <div class="artifact-label">Artifact</div>
+        <div class="artifact-chip">review-findings.json</div>
+        <div>
+          <span class="provider-tag provider-ext">pr-review-toolkit:review-pr</span>
+          <span class="provider-tag provider-new">harness:adversarial-reviewer</span>
+          <span class="provider-tag provider-new">harness:requirements-reviewer</span>
+          <span class="provider-tag provider-ext">superpowers:requesting-code-review</span>
+        </div>
+      </div>
+      <div class="gate-card">
+        <h4>Gate: Review Approved</h4>
+        <div class="gate-item"><div class="gate-icon gate-hard">H</div> No critical findings unresolved</div>
+        <div class="gate-item"><div class="gate-icon gate-hard">H</div> Human approval (feature, security, integrate)</div>
+        <div class="gate-item"><div class="gate-icon gate-auto">A</div> All agent checks complete</div>
+      </div>
+    </div>
+
+    <!-- Phase P6: SHIP -->
+    <div class="phase-row phase-ship">
+      <div class="phase-number"><div class="phase-num-circle">P6</div></div>
+      <div class="phase-card">
+        <h3>SHIP <span style="font-weight:400;font-size:0.8rem;color:var(--text-dim)">— Deploy, smoke, changelog</span></h3>
+        <p class="desc">Generate CI pipeline, deploy to target, run post-deploy smoke tests, generate changelog entry. Mostly auto; fully unattended for patch.</p>
+        <div class="artifact-label">Artifact</div>
+        <div class="artifact-chip">deployment + changelog</div>
+        <div>
+          <span class="provider-tag provider-ext">vercel:deploy</span>
+          <span class="provider-tag provider-ext">commit-commands:commit-push-pr</span>
+          <span class="provider-tag provider-new">harness:ci-generator</span>
+          <span class="provider-tag provider-new">harness:changelog</span>
+        </div>
+      </div>
+      <div class="gate-card">
+        <h4>Gate: Ship Verified</h4>
+        <div class="gate-item"><div class="gate-icon gate-auto">A</div> CI pipeline passes</div>
+        <div class="gate-item"><div class="gate-icon gate-auto">A</div> Smoke tests pass in deployed env</div>
+        <div class="gate-item"><div class="gate-icon gate-soft">S</div> Changelog entry generated</div>
+      </div>
+    </div>
+
+    <!-- Phase P7: MAINTAIN -->
+    <div class="phase-row phase-maintain">
+      <div class="phase-number"><div class="phase-num-circle">P7</div></div>
+      <div class="phase-card">
+        <h3>MAINTAIN <span style="font-weight:400;font-size:0.8rem;color:var(--text-dim)">— Drift detection, monitoring</span></h3>
+        <p class="desc">Ongoing health: dependency updates, vulnerability scans, tech-debt tracking, CLAUDE.md evolution, architecture fitness. Soft gates throughout.</p>
+        <div class="artifact-label">Artifact</div>
+        <div class="artifact-chip">ongoing / scheduled</div>
+        <div>
+          <span class="provider-tag provider-yours">onboard:evolve</span>
+          <span class="provider-tag provider-yours">handoff:save</span>
+          <span class="provider-tag provider-new">harness:security-audit</span>
+          <span class="provider-tag provider-new">harness:dep-update</span>
+          <span class="provider-tag provider-ext">claude-md-management:revise-claude-md</span>
+        </div>
+      </div>
+      <div class="gate-card">
+        <h4>Gate: Health Check</h4>
+        <div class="gate-item"><div class="gate-icon gate-soft">S</div> No critical vulnerabilities</div>
+        <div class="gate-item"><div class="gate-icon gate-soft">S</div> CLAUDE.md current</div>
+        <div class="gate-item"><div class="gate-icon gate-soft">S</div> Drift queue drained</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     VIEW 2: COMMANDS (replaces Provider Registry)
+     ═══════════════════════════════════════ -->
+<div class="section" id="commands">
+  <h2 class="section-title">Commands &amp; Gate Rigor</h2>
+  <p class="section-desc">Every harness run is driven by a command. The command determines which phases run and what gate rigor applies at each phase — from zero-friction patch to full-rigor feature.</p>
+
+  <div class="commands-intro">
+    <div class="command-card"><div class="command-name" style="color:var(--blue)">feature</div><div class="command-desc">Full SDLC rigor. Hard gates on spec, plan, verify, review.</div></div>
+    <div class="command-card"><div class="command-name" style="color:var(--green)">fix</div><div class="command-desc">Speed-optimized. Diagnose fast, mostly auto gates.</div></div>
+    <div class="command-card"><div class="command-name" style="color:var(--purple)">refactor</div><div class="command-desc">Behavior-must-not-change. Hard on plan, verify, review.</div></div>
+    <div class="command-card"><div class="command-name" style="color:var(--amber)">spike</div><div class="command-desc">Exploration only. All advisory — all soft gates.</div></div>
+    <div class="command-card"><div class="command-name" style="color:var(--teal)">patch</div><div class="command-desc">Zero friction. All auto, research phase skipped.</div></div>
+    <div class="command-card"><div class="command-name" style="color:var(--orange)">optimize</div><div class="command-desc">Benchmark-focused. Hard gate on verify only.</div></div>
+    <div class="command-card"><div class="command-name" style="color:var(--text-muted)">docs</div><div class="command-desc">Readability-focused. Mostly soft gates throughout.</div></div>
+    <div class="command-card"><div class="command-name" style="color:var(--red)">security</div><div class="command-desc">Audit &amp; remediation. Hard on plan, verify, review.</div></div>
+    <div class="command-card"><div class="command-name" style="color:var(--cyan)">integrate</div><div class="command-desc">API/service wiring. Hard on spec, plan, verify, review.</div></div>
+    <div class="command-card"><div class="command-name" style="color:var(--pink)">structure</div><div class="command-desc">Project reorganization. Hard on plan and verify.</div></div>
+  </div>
+
+  <div class="matrix-wrap">
+    <table class="gate-matrix">
+      <thead>
+        <tr>
+          <th>Command</th>
+          <th>R0 Research</th>
+          <th>P1 Spec</th>
+          <th>P2 Plan</th>
+          <th>P3 Build</th>
+          <th>P4 Verify</th>
+          <th>P5 Review</th>
+          <th>P6 Ship</th>
+          <th>P7 Maintain</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="color:var(--blue)">feature</td>
+          <td><span class="m-auto">A</span></td>
+          <td><span class="m-hard">H</span></td>
+          <td><span class="m-hard">H</span></td>
+          <td><span class="m-auto">A</span></td>
+          <td><span class="m-hard">H</span></td>
+          <td><span class="m-hard">H</span></td>
+          <td><span class="m-auto">A</span></td>
+          <td><span class="m-soft">S</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--green)">fix</td>
+          <td><span class="m-skip">—</span></td>
+          <td><span class="m-skip">—</span></td>
+          <td><span class="m-soft">S</span></td>
+          <td><span class="m-auto">A</span></td>
+          <td><span class="m-auto">A</span></td>
+          <td><span class="m-auto">A</span></td>
+          <td><span class="m-auto">A</span></td>
+          <td><span class="m-skip">—</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--purple)">refactor</td>
+          <td><span class="m-skip">—</span></td>
+          <td><span class="m-soft">S</span></td>
+          <td><span class="m-hard">H</span></td>
+          <td><span class="m-auto">A</span></td>
+          <td><span class="m-hard">H</span></td>
+          <td><span class="m-hard">H</span></td>
+          <td><span class="m-auto">A</span></td>
+          <td><span class="m-skip">—</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--amber)">spike</td>
+          <td><span class="m-soft">S</span></td>
+          <td><span class="m-soft">S</span></td>
+          <td><span class="m-soft">S</span></td>
+          <td><span class="m-soft">S</span></td>
+          <td><span class="m-soft">S</span></td>
+          <td><span class="m-soft">S</span></td>
+          <td><span class="m-skip">—</span></td>
+          <td><span class="m-skip">—</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--teal)">patch</td>
+          <td><span class="m-skip">—</span></td>
+          <td><span class="m-skip">—</span></td>
+          <td><span class="m-skip">—</span></td>
+          <td><span class="m-auto">A</span></td>
+          <td><span class="m-auto">A</span></td>
+          <td><span class="m-skip">—</span></td>
+          <td><span class="m-auto">A</span></td>
+          <td><span class="m-skip">—</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--orange)">optimize</td>
+          <td><span class="m-auto">A</span></td>
+          <td><span class="m-soft">S</span></td>
+          <td><span class="m-soft">S</span></td>
+          <td><span class="m-auto">A</span></td>
+          <td><span class="m-hard">H</span></td>
+          <td><span class="m-soft">S</span></td>
+          <td><span class="m-auto">A</span></td>
+          <td><span class="m-skip">—</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--text-muted)">docs</td>
+          <td><span class="m-soft">S</span></td>
+          <td><span class="m-soft">S</span></td>
+          <td><span class="m-soft">S</span></td>
+          <td><span class="m-auto">A</span></td>
+          <td><span class="m-soft">S</span></td>
+          <td><span class="m-soft">S</span></td>
+          <td><span class="m-auto">A</span></td>
+          <td><span class="m-skip">—</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--red)">security</td>
+          <td><span class="m-auto">A</span></td>
+          <td><span class="m-soft">S</span></td>
+          <td><span class="m-hard">H</span></td>
+          <td><span class="m-auto">A</span></td>
+          <td><span class="m-hard">H</span></td>
+          <td><span class="m-hard">H</span></td>
+          <td><span class="m-auto">A</span></td>
+          <td><span class="m-soft">S</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--cyan)">integrate</td>
+          <td><span class="m-auto">A</span></td>
+          <td><span class="m-hard">H</span></td>
+          <td><span class="m-hard">H</span></td>
+          <td><span class="m-auto">A</span></td>
+          <td><span class="m-hard">H</span></td>
+          <td><span class="m-hard">H</span></td>
+          <td><span class="m-auto">A</span></td>
+          <td><span class="m-soft">S</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--pink)">structure</td>
+          <td><span class="m-soft">S</span></td>
+          <td><span class="m-soft">S</span></td>
+          <td><span class="m-hard">H</span></td>
+          <td><span class="m-auto">A</span></td>
+          <td><span class="m-hard">H</span></td>
+          <td><span class="m-soft">S</span></td>
+          <td><span class="m-auto">A</span></td>
+          <td><span class="m-skip">—</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="matrix-legend">
+      <div class="matrix-legend-item"><span class="m-hard">H</span> Hard — blocks progress, human approval required</div>
+      <div class="matrix-legend-item"><span class="m-auto">A</span> Auto — CI / automated check, no human needed</div>
+      <div class="matrix-legend-item"><span class="m-soft">S</span> Soft — advisory warning, records but doesn't block</div>
+      <div class="matrix-legend-item"><span class="m-skip">—</span> Skip — phase not applicable for this command</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     VIEW 3: MICRO-CYCLES & ESCALATION
+     ═══════════════════════════════════════ -->
+<div class="section" id="microcycles">
+  <h2 class="section-title">Micro-Cycles &amp; Escalation</h2>
+  <p class="section-desc">Every phase runs in a tight retry loop before escalating. When retries are exhausted, the escalation table determines how far back to rewind the pipeline.</p>
+
+  <div class="micro-cycle-diagram">
+    <div class="micro-cycle-title">Phase micro-cycle loop</div>
+    <div class="cycle-flow">
+
+      <div class="cycle-node">
+        <div class="cycle-box" style="background:rgba(88,166,255,0.12);color:var(--blue);border:1px solid rgba(88,166,255,0.3);">ATTEMPT</div>
+        <div class="cycle-label">Execute phase work</div>
+      </div>
+
+      <div class="cycle-arrow-wrap">
+        <div class="cycle-arrow">→</div>
+      </div>
+
+      <div class="cycle-node">
+        <div class="cycle-box" style="background:rgba(210,153,34,0.12);color:var(--amber);border:1px solid rgba(210,153,34,0.3);">CHECK</div>
+        <div class="cycle-label">Run gate checks</div>
+      </div>
+
+      <div class="cycle-arrow-wrap">
+        <div class="cycle-arrow">→</div>
+        <div class="cycle-arrow-label">pass</div>
+      </div>
+
+      <div class="cycle-node">
+        <div class="cycle-box" style="background:rgba(63,185,80,0.12);color:var(--green);border:1px solid rgba(63,185,80,0.3);">ADVANCE</div>
+        <div class="cycle-label">Transition to next phase</div>
+      </div>
+
+      <div style="width:48px;"></div>
+
+      <div class="cycle-node">
+        <div class="cycle-box" style="background:rgba(248,81,73,0.12);color:var(--red);border:1px solid rgba(248,81,73,0.3);">FAIL</div>
+        <div class="cycle-label">Gate not passed</div>
+      </div>
+
+      <div class="cycle-arrow-wrap">
+        <div class="cycle-arrow">→</div>
+      </div>
+
+      <div class="cycle-node">
+        <div class="cycle-box" style="background:rgba(188,140,255,0.12);color:var(--purple);border:1px solid rgba(188,140,255,0.3);">DIAGNOSE</div>
+        <div class="cycle-label">Identify root cause</div>
+      </div>
+
+      <div class="cycle-arrow-wrap">
+        <div class="cycle-arrow">→</div>
+      </div>
+
+      <div class="cycle-node">
+        <div class="cycle-box" style="background:rgba(255,166,87,0.12);color:var(--orange);border:1px solid rgba(255,166,87,0.3);">FIX</div>
+        <div class="cycle-label">Apply targeted fix</div>
+      </div>
+
+    </div>
+
+    <div style="margin-top:20px;padding:14px 18px;background:var(--surface-2);border-radius:var(--radius-sm);display:flex;align-items:center;gap:12px;">
+      <span style="color:var(--amber);font-size:1.2rem;">↺</span>
+      <span style="font-size:0.85rem;color:var(--text-muted);">After FIX, loop back to ATTEMPT. Max <strong style="color:var(--amber);">3 retries</strong> per phase before escalation is triggered.</span>
+    </div>
+  </div>
+
+  <div class="escalation-table-wrap">
+    <h3>Escalation Severity Table <span class="retry-badge">triggered after 3 failed retries</span></h3>
+    <table class="esc-table">
+      <thead>
+        <tr>
+          <th>Severity</th>
+          <th>Examples</th>
+          <th>Action</th>
+          <th>Phases Replayed</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="sev-minor">Minor</span></td>
+          <td style="color:var(--text-muted);font-size:0.8rem;">Lint failures, coverage slightly under threshold, formatting</td>
+          <td style="color:var(--text-muted);font-size:0.8rem;">Stay in current phase, flag for manual review</td>
+          <td style="font-family:var(--mono);font-size:0.78rem;color:var(--text-dim);">none — current phase retried</td>
+        </tr>
+        <tr>
+          <td><span class="sev-moderate">Moderate</span></td>
+          <td style="color:var(--text-muted);font-size:0.8rem;">Test failures, type errors, integration breaks after implementation</td>
+          <td style="color:var(--text-muted);font-size:0.8rem;">Escalate to BUILD phase</td>
+          <td style="font-family:var(--mono);font-size:0.78rem;color:var(--text-dim);">P3 → P4 → P5</td>
+        </tr>
+        <tr>
+          <td><span class="sev-major">Major</span></td>
+          <td style="color:var(--text-muted);font-size:0.8rem;">Architecture conflicts, missed dependencies, wrong abstraction</td>
+          <td style="color:var(--text-muted);font-size:0.8rem;">Escalate to PLAN phase</td>
+          <td style="font-family:var(--mono);font-size:0.78rem;color:var(--text-dim);">P2 → P3 → P4 → P5</td>
+        </tr>
+        <tr>
+          <td><span class="sev-critical">Critical</span></td>
+          <td style="color:var(--text-muted);font-size:0.8rem;">Wrong problem solved, acceptance criteria violated, security vulnerability in design</td>
+          <td style="color:var(--text-muted);font-size:0.8rem;">Escalate to SPEC phase, human review mandatory</td>
+          <td style="font-family:var(--mono);font-size:0.78rem;color:var(--text-dim);">P1 → P2 → P3 → P4 → P5</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cascade-box">
+    <h3>Cascade Rule</h3>
+    <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:18px;">Escalating to an earlier phase doesn't mean starting from scratch — it means re-running from that phase forward through the full gate sequence.</p>
+    <div style="margin-bottom:16px;">
+      <div style="font-size:0.8rem;color:var(--text-dim);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.6px;">Major escalation example (escalate → PLAN):</div>
+      <div class="cascade-flow">
+        <div class="cascade-step" style="background:rgba(188,140,255,0.12);color:var(--purple);">↩ Re-PLAN</div>
+        <div class="cascade-arrow">→</div>
+        <div class="cascade-step" style="background:rgba(63,185,80,0.12);color:var(--green);">Re-BUILD</div>
+        <div class="cascade-arrow">→</div>
+        <div class="cascade-step" style="background:rgba(210,153,34,0.12);color:var(--amber);">Re-VERIFY</div>
+        <div class="cascade-arrow">→</div>
+        <div class="cascade-step" style="background:rgba(248,81,73,0.12);color:var(--red);">Re-REVIEW</div>
+        <div class="cascade-arrow">→</div>
+        <div class="cascade-step" style="background:rgba(121,192,255,0.12);color:var(--cyan);">SHIP</div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:0.8rem;color:var(--text-dim);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.6px;">Critical escalation example (escalate → SPEC):</div>
+      <div class="cascade-flow">
+        <div class="cascade-step" style="background:rgba(88,166,255,0.12);color:var(--blue);">↩ Re-SPEC</div>
+        <div class="cascade-arrow">→</div>
+        <div class="cascade-step" style="background:rgba(188,140,255,0.12);color:var(--purple);">Re-PLAN</div>
+        <div class="cascade-arrow">→</div>
+        <div class="cascade-step" style="background:rgba(63,185,80,0.12);color:var(--green);">Re-BUILD</div>
+        <div class="cascade-arrow">→</div>
+        <div class="cascade-step" style="background:rgba(210,153,34,0.12);color:var(--amber);">Re-VERIFY</div>
+        <div class="cascade-arrow">→</div>
+        <div class="cascade-step" style="background:rgba(248,81,73,0.12);color:var(--red);">Re-REVIEW</div>
+        <div class="cascade-arrow">→</div>
+        <div class="cascade-step" style="background:rgba(121,192,255,0.12);color:var(--cyan);">SHIP</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     VIEW 4: DX MODES
+     ═══════════════════════════════════════ -->
+<div class="section" id="dxmodes">
+  <h2 class="section-title">DX Modes</h2>
+  <p class="section-desc">The harness ships three developer experience modes. Set globally in config, override per-session with a flag, or let the command default determine it.</p>
+
+  <div class="dx-modes-grid">
+
+    <div class="dx-mode-card">
+      <div class="dx-mode-header" style="border-bottom-color:rgba(63,185,80,0.3);">
+        <h3>
+          <span style="font-size:1.2rem;">⚡</span>
+          Flow mode
+          <span class="dx-mode-badge" style="background:rgba(63,185,80,0.12);color:var(--green);">quiet</span>
+        </h3>
+        <div class="mode-desc">Silent, non-interruptive. Only surfaces critical failures that block progress. Everything else runs in the background.</div>
+      </div>
+      <div class="dx-mode-body">
+        <div class="dx-trait"><span class="dx-trait-icon" style="color:var(--green);">✓</span> Background gate checks — no interruption</div>
+        <div class="dx-trait"><span class="dx-trait-icon" style="color:var(--green);">✓</span> Auto-advance on passing gates</div>
+        <div class="dx-trait"><span class="dx-trait-icon" style="color:var(--green);">✓</span> Surfaces only critical hard-gate failures</div>
+        <div class="dx-trait"><span class="dx-trait-icon" style="color:var(--text-dim);">○</span> Soft gate warnings batched at phase end</div>
+        <div class="dx-trait"><span class="dx-trait-icon" style="color:var(--text-dim);">○</span> Best for: patch, fix, docs</div>
+      </div>
+    </div>
+
+    <div class="dx-mode-card" style="border-color:rgba(88,166,255,0.3);">
+      <div class="dx-mode-header" style="border-bottom-color:rgba(88,166,255,0.3);">
+        <h3>
+          <span style="font-size:1.2rem;">🔖</span>
+          Checkpoint mode
+          <span class="dx-mode-badge" style="background:rgba(88,166,255,0.12);color:var(--blue);">default</span>
+        </h3>
+        <div class="mode-desc">One prompt per phase transition. Bold default makes it fast. Optionally drill into details or pause at any point.</div>
+      </div>
+      <div class="dx-mode-body">
+        <div class="dx-trait"><span class="dx-trait-icon" style="color:var(--blue);">✓</span> Single prompt per gate: <code style="font-size:0.75rem;color:var(--cyan);">[Advance] / View details / Hold</code></div>
+        <div class="dx-trait"><span class="dx-trait-icon" style="color:var(--blue);">✓</span> Bold default means Enter = advance</div>
+        <div class="dx-trait"><span class="dx-trait-icon" style="color:var(--blue);">✓</span> All gate results visible in summary</div>
+        <div class="dx-trait"><span class="dx-trait-icon" style="color:var(--text-dim);">○</span> "Hold" pauses pipeline for intervention</div>
+        <div class="dx-trait"><span class="dx-trait-icon" style="color:var(--text-dim);">○</span> Best for: feature, refactor, integrate</div>
+      </div>
+    </div>
+
+    <div class="dx-mode-card">
+      <div class="dx-mode-header" style="border-bottom-color:rgba(188,140,255,0.3);">
+        <h3>
+          <span style="font-size:1.2rem;">🧭</span>
+          Guided mode
+          <span class="dx-mode-badge" style="background:rgba(188,140,255,0.12);color:var(--purple);">verbose</span>
+        </h3>
+        <div class="mode-desc">Active suggestions and step-by-step narration. Claude walks you through each decision point.</div>
+      </div>
+      <div class="dx-mode-body">
+        <div class="dx-trait"><span class="dx-trait-icon" style="color:var(--purple);">✓</span> Explains each phase before starting</div>
+        <div class="dx-trait"><span class="dx-trait-icon" style="color:var(--purple);">✓</span> Suggests next action at every step</div>
+        <div class="dx-trait"><span class="dx-trait-icon" style="color:var(--purple);">✓</span> Full gate detail at each transition</div>
+        <div class="dx-trait"><span class="dx-trait-icon" style="color:var(--text-dim);">○</span> Higher ceremony budget usage</div>
+        <div class="dx-trait"><span class="dx-trait-icon" style="color:var(--text-dim);">○</span> Best for: onboarding, security, complex spikes</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="ceremony-wrap">
+    <h3>Ceremony Budget — Max Prompts per Command</h3>
+    <table class="ceremony-table">
+      <thead>
+        <tr>
+          <th>Command</th>
+          <th>Max Prompts</th>
+          <th>Breakdown</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="font-family:var(--mono);color:var(--teal);">patch</td>
+          <td><span class="prompt-count">0</span></td>
+          <td style="color:var(--text-muted);font-size:0.78rem;">fully unattended</td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--mono);color:var(--green);">fix</td>
+          <td><span class="prompt-count">1</span><div class="prompt-bar" style="width:20px;"></div></td>
+          <td style="color:var(--text-muted);font-size:0.78rem;">ship confirm</td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--mono);color:var(--amber);">spike</td>
+          <td><span class="prompt-count">2</span><div class="prompt-bar" style="width:40px;"></div></td>
+          <td style="color:var(--text-muted);font-size:0.78rem;">scope + findings</td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--mono);color:var(--orange);">optimize</td>
+          <td><span class="prompt-count">2</span><div class="prompt-bar" style="width:40px;"></div></td>
+          <td style="color:var(--text-muted);font-size:0.78rem;">benchmark target + verify</td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--mono);color:var(--text-muted);">docs</td>
+          <td><span class="prompt-count">2</span><div class="prompt-bar" style="width:40px;"></div></td>
+          <td style="color:var(--text-muted);font-size:0.78rem;">scope + review</td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--mono);color:var(--purple);">refactor</td>
+          <td><span class="prompt-count">3</span><div class="prompt-bar" style="width:60px;"></div></td>
+          <td style="color:var(--text-muted);font-size:0.78rem;">plan + verify + review</td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--mono);color:var(--red);">security</td>
+          <td><span class="prompt-count">3</span><div class="prompt-bar" style="width:60px;"></div></td>
+          <td style="color:var(--text-muted);font-size:0.78rem;">plan + verify + review</td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--mono);color:var(--pink);">structure</td>
+          <td><span class="prompt-count">3</span><div class="prompt-bar" style="width:60px;"></div></td>
+          <td style="color:var(--text-muted);font-size:0.78rem;">plan + verify + sign-off</td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--mono);color:var(--cyan);">integrate</td>
+          <td><span class="prompt-count">4</span><div class="prompt-bar" style="width:80px;"></div></td>
+          <td style="color:var(--text-muted);font-size:0.78rem;">spec + plan + verify + review</td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--mono);color:var(--blue);">feature</td>
+          <td><span class="prompt-count">4–5</span><div class="prompt-bar" style="width:100px;"></div></td>
+          <td style="color:var(--text-muted);font-size:0.78rem;">spec + plan + verify + review [+ ship confirm]</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     VIEW 5: STATE & WORKTREES
+     ═══════════════════════════════════════ -->
+<div class="section" id="state">
+  <h2 class="section-title">State &amp; Worktrees</h2>
+  <p class="section-desc">The harness tracks per-feature state across sessions and supports multiple parallel features via git worktrees — each in its own phase.</p>
+
+  <div class="state-flow">
+    <div class="state-card">
+      <h3>
+        <div class="state-icon" style="background:var(--glow-blue);color:var(--blue);">1</div>
+        harness-state.json — v2 schema with new fields
+      </h3>
+      <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:16px;">Lives at <code>.claude/harness-state.json</code>. Updated after every gate transition. v2 adds <code>command</code>, <code>worktree</code>, <code>dx_mode</code>, <code>ceremony_remaining</code>, and <code>retries</code>.</p>
+      <div class="state-json">
+        {<br>
+        &nbsp;&nbsp;<span class="key">"feature"</span>: <span class="str">"sms-parser-hdfc"</span>,<br>
+        &nbsp;&nbsp;<span class="key">"command"</span>: <span class="str">"feature"</span>,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// NEW v2</span><br>
+        &nbsp;&nbsp;<span class="key">"worktree"</span>: <span class="str">"../wallet-feat-sms"</span>,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// NEW v2</span><br>
+        &nbsp;&nbsp;<span class="key">"branch"</span>: <span class="str">"feat/sms-parser-hdfc"</span>,<br>
+        &nbsp;&nbsp;<span class="key">"phase"</span>: <span class="str">"verify"</span>,<br>
+        &nbsp;&nbsp;<span class="key">"dx_mode"</span>: <span class="str">"checkpoint"</span>,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// NEW v2</span><br>
+        &nbsp;&nbsp;<span class="key">"ceremony_remaining"</span>: <span class="num">2</span>,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// NEW v2</span><br>
+        &nbsp;&nbsp;<span class="key">"retries"</span>: <span class="num">0</span>,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// NEW v2: current phase retry count</span><br>
+        &nbsp;&nbsp;<span class="key">"started_at"</span>: <span class="str">"2026-05-25T10:30:00Z"</span>,<br>
+        &nbsp;&nbsp;<span class="key">"last_session"</span>: <span class="str">"2026-05-25T14:22:00Z"</span>,<br><br>
+        &nbsp;&nbsp;<span class="key">"gates_passed"</span>: [<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="arr">{ "phase": "research", "at": "...", "mode": "auto" }</span>,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="arr">{ "phase": "spec",     "at": "...", "mode": "hard" }</span>,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="arr">{ "phase": "plan",     "at": "...", "mode": "hard" }</span>,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="arr">{ "phase": "build",    "at": "...", "mode": "auto" }</span><br>
+        &nbsp;&nbsp;],<br><br>
+        &nbsp;&nbsp;<span class="key">"gates_pending"</span>: [<span class="str">"verify"</span>, <span class="str">"review"</span>, <span class="str">"ship"</span>],<br><br>
+        &nbsp;&nbsp;<span class="key">"artifacts"</span>: {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"research"</span>: <span class="str">"docs/research/sms-parser.md"</span>,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"spec"</span>: <span class="str">"docs/specs/sms-parser-hdfc.md"</span>,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"plan"</span>: <span class="str">"docs/plans/sms-parser-hdfc.md"</span>,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"verify_report"</span>: <span class="null">null</span>&nbsp;<span class="comment">// not yet run</span><br>
+        &nbsp;&nbsp;}<br>
+        }
+      </div>
+    </div>
+
+    <div class="flow-arrow">
+      <div class="arrow-line"></div>
+      SessionStart hook reads state, injects context block
+      <div class="arrow-line"></div>
+    </div>
+
+    <div class="state-card">
+      <h3>
+        <div class="state-icon" style="background:var(--glow-green);color:var(--green);">2</div>
+        Session Bootstrap Message Format
+      </h3>
+      <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:16px;">The SessionStart hook reads state and injects a structured context block. v2 format includes command, DX mode, ceremony budget, and retry count.</p>
+      <div class="state-json">
+        <span class="comment">/* Injected by harness SessionStart hook — v2 format */</span><br><br>
+        <span class="str">[ harness ] Feature: <strong>sms-parser-hdfc</strong> | Command: feature | DX: checkpoint</span><br>
+        <span class="str">[ harness ] Phase: <strong>VERIFY</strong> (retry 0/3) | Ceremony remaining: 2 prompts</span><br>
+        <span class="str">[ harness ] Worktree: ../wallet-feat-sms | Branch: feat/sms-parser-hdfc</span><br><br>
+        <span class="str">Completed: R0:RESEARCH → P1:SPEC (H) → P2:PLAN (H) → P3:BUILD (A)</span><br>
+        <span class="str">Next: run mutation testing (threshold from config) then security scan</span><br><br>
+        <span class="str">Artifacts:</span><br>
+        <span class="str">&nbsp;&nbsp;research → docs/research/sms-parser.md</span><br>
+        <span class="str">&nbsp;&nbsp;spec     → docs/specs/sms-parser-hdfc.md</span><br>
+        <span class="str">&nbsp;&nbsp;plan     → docs/plans/sms-parser-hdfc.md</span><br>
+      </div>
+    </div>
+  </div>
+
+  <div class="worktree-section">
+    <h3>Parallel Worktrees — Multiple Features in Flight</h3>
+    <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:18px;">Each git worktree has its own harness state. Switch between features without losing pipeline position. The dashboard below shows a typical multi-feature setup.</p>
+
+    <div class="worktree-board">
+      <div class="worktree-card">
+        <div class="worktree-header" style="color:var(--blue);">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--blue);display:inline-block;flex-shrink:0;"></span>
+          feat/sms-parser
+        </div>
+        <div class="worktree-body">
+          <div class="worktree-phase">Phase: <strong style="color:var(--amber);">P4 VERIFY</strong></div>
+          <div class="worktree-progress"><div class="worktree-progress-fill" style="width:62%;background:var(--blue);"></div></div>
+          <div class="worktree-meta">Command: feature · DX: checkpoint · ceremony: 2 left</div>
+        </div>
+      </div>
+
+      <div class="worktree-card">
+        <div class="worktree-header" style="color:var(--green);">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;flex-shrink:0;"></span>
+          fix/null-crash
+        </div>
+        <div class="worktree-body">
+          <div class="worktree-phase">Phase: <strong style="color:var(--cyan);">P6 SHIP</strong></div>
+          <div class="worktree-progress"><div class="worktree-progress-fill" style="width:88%;background:var(--green);"></div></div>
+          <div class="worktree-meta">Command: fix · DX: flow · ceremony: 0 left</div>
+        </div>
+      </div>
+
+      <div class="worktree-card">
+        <div class="worktree-header" style="color:var(--purple);">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--purple);display:inline-block;flex-shrink:0;"></span>
+          refactor/parser-core
+        </div>
+        <div class="worktree-body">
+          <div class="worktree-phase">Phase: <strong style="color:var(--green);">P3 BUILD</strong></div>
+          <div class="worktree-progress"><div class="worktree-progress-fill" style="width:40%;background:var(--purple);"></div></div>
+          <div class="worktree-meta">Command: refactor · DX: checkpoint · retry: 1/3</div>
+        </div>
+      </div>
+
+      <div class="worktree-card">
+        <div class="worktree-header" style="color:var(--amber);">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--amber);display:inline-block;flex-shrink:0;"></span>
+          spike/ml-categorize
+        </div>
+        <div class="worktree-body">
+          <div class="worktree-phase">Phase: <strong style="color:var(--blue);">P1 SPEC</strong></div>
+          <div class="worktree-progress"><div class="worktree-progress-fill" style="width:14%;background:var(--amber);"></div></div>
+          <div class="worktree-meta">Command: spike · DX: guided · all advisory</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     VIEW 6: CONFIG & PROFILES
+     ═══════════════════════════════════════ -->
+<div class="section" id="config">
+  <h2 class="section-title">Configuration &amp; Profiles</h2>
+  <p class="section-desc">Three layers of configuration, each overriding the one above. Profiles are presets that ship with the plugin. v2 adds worktrees config, per-phase DX overrides, and render config.</p>
+
+  <h3 style="margin-bottom:16px;font-size:1.1rem;">Profiles</h3>
+  <div class="profiles-container">
+    <div class="profile-card selected">
+      <div class="profile-header">
+        <h3 style="color:var(--amber);">Prototype</h3>
+        <div class="profile-desc">Quick validation, minimal ceremony. For spikes, experiments, throwaway code.</div>
+      </div>
+      <div class="profile-body">
+        <div class="profile-phase"><span class="phase-name">R0. Research</span><span class="phase-status status-skip">skip</span></div>
+        <div class="profile-phase"><span class="phase-name">P1. Spec</span><span class="phase-status status-skip">skip</span></div>
+        <div class="profile-phase"><span class="phase-name">P2. Plan</span><span class="phase-status status-skip">skip</span></div>
+        <div class="profile-phase"><span class="phase-name">P3. Build</span><span class="phase-status status-light">no TDD</span></div>
+        <div class="profile-phase"><span class="phase-name">P4. Verify</span><span class="phase-status status-skip">skip</span></div>
+        <div class="profile-phase"><span class="phase-name">P5. Review</span><span class="phase-status status-skip">skip</span></div>
+        <div class="profile-phase"><span class="phase-name">P6. Ship</span><span class="phase-status status-light">direct</span></div>
+        <div class="profile-phase"><span class="phase-name">P7. Maintain</span><span class="phase-status status-skip">skip</span></div>
+      </div>
+    </div>
+    <div class="profile-card">
+      <div class="profile-header">
+        <h3 style="color:var(--green);">Solo Dev</h3>
+        <div class="profile-desc">Your sweet spot. Full spec+TDD, soft quality gates, checkpoint DX, smoke tests.</div>
+      </div>
+      <div class="profile-body">
+        <div class="profile-phase"><span class="phase-name">R0. Research</span><span class="phase-status status-auto">auto</span></div>
+        <div class="profile-phase"><span class="phase-name">P1. Spec</span><span class="phase-status status-light">light</span></div>
+        <div class="profile-phase"><span class="phase-name">P2. Plan</span><span class="phase-status status-full">full</span></div>
+        <div class="profile-phase"><span class="phase-name">P3. Build</span><span class="phase-status status-full">TDD</span></div>
+        <div class="profile-phase"><span class="phase-name">P4. Verify</span><span class="phase-status status-light">soft gates</span></div>
+        <div class="profile-phase"><span class="phase-name">P5. Review</span><span class="phase-status status-auto">auto only</span></div>
+        <div class="profile-phase"><span class="phase-name">P6. Ship</span><span class="phase-status status-full">+ smoke</span></div>
+        <div class="profile-phase"><span class="phase-name">P7. Maintain</span><span class="phase-status status-skip">skip</span></div>
+      </div>
+    </div>
+    <div class="profile-card">
+      <div class="profile-header">
+        <h3 style="color:var(--red);">Production</h3>
+        <div class="profile-desc">Maximum rigor. Hard gates, mutation testing, multi-agent review, staged rollout.</div>
+      </div>
+      <div class="profile-body">
+        <div class="profile-phase"><span class="phase-name">R0. Research</span><span class="phase-status status-full">required</span></div>
+        <div class="profile-phase"><span class="phase-name">P1. Spec</span><span class="phase-status status-full">full + AC</span></div>
+        <div class="profile-phase"><span class="phase-name">P2. Plan</span><span class="phase-status status-full">+ risk matrix</span></div>
+        <div class="profile-phase"><span class="phase-name">P3. Build</span><span class="phase-status status-full">TDD + pair</span></div>
+        <div class="profile-phase"><span class="phase-name">P4. Verify</span><span class="phase-status status-full">hard, mut&ge;70%</span></div>
+        <div class="profile-phase"><span class="phase-name">P5. Review</span><span class="phase-status status-full">multi-agent + H</span></div>
+        <div class="profile-phase"><span class="phase-name">P6. Ship</span><span class="phase-status status-full">staged + canary</span></div>
+        <div class="profile-phase"><span class="phase-name">P7. Maintain</span><span class="phase-status status-full">full</span></div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-bottom:16px;margin-top:36px;font-size:1.1rem;">Override Stack</h3>
+  <div class="layer-stack">
+    <div class="layer">
+      <span class="layer-priority priority-high">highest</span>
+      <h4>Layer 3: Session Override</h4>
+      <p>One-off flags: <code>--skip-mutation</code>, <code>--gate=soft</code>, <code>--phase=build</code>, <code>--dx=flow</code>. Ephemeral — never persisted to state.</p>
+    </div>
+    <div class="layer">
+      <span class="layer-priority priority-mid">project</span>
+      <h4>Layer 2: Project Config</h4>
+      <p><code>harness.config.json</code> in project root. Overrides profile defaults for this project. Set worktrees directory, DX mode, phase thresholds, render config.</p>
+    </div>
+    <div class="layer">
+      <span class="layer-priority priority-low">default</span>
+      <h4>Layer 1: Profile Preset</h4>
+      <p>Ships with the harness plugin. <code>prototype</code>, <code>solo-dev</code>, or <code>production</code>. Provides sensible defaults that project config can selectively override.</p>
+    </div>
+  </div>
+
+  <div class="contract-box" style="margin-top:32px;max-width:720px;">
+    <h3>Example: harness.config.json (v2)</h3>
+    <div class="contract-code">
+      {<br>
+      &nbsp;&nbsp;<span class="key">"profile"</span>: <span class="val">"solo-dev"</span>,<br>
+      &nbsp;&nbsp;<span class="key">"dx_mode"</span>: <span class="val">"checkpoint"</span>,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// NEW v2</span><br>
+      &nbsp;&nbsp;<span class="key">"worktrees"</span>: {&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// NEW v2</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"root"</span>: <span class="val">"../worktrees"</span>,<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"auto_create"</span>: <span class="val">true</span><br>
+      &nbsp;&nbsp;},<br>
+      &nbsp;&nbsp;<span class="key">"phases"</span>: {<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"verify"</span>: {<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"gate_mode"</span>: <span class="val">"hard"</span>,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// override solo-dev's "soft"</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"mutation_threshold"</span>: <span class="val">60</span>,<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"providers"</span>: [<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="val">"harness:mutation-gate"</span>,<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="val">"harness:security-scan"</span>,<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="val">"my-plugin:custom-lint"</span>&nbsp;<span class="comment">// custom provider</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;]<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+      &nbsp;&nbsp;},<br>
+      &nbsp;&nbsp;<span class="key">"render"</span>: {&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// NEW v2</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"adr"</span>: <span class="val">true</span>,<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"verify_html"</span>: <span class="val">true</span><br>
+      &nbsp;&nbsp;},<br>
+      &nbsp;&nbsp;<span class="key">"deploy_target"</span>: <span class="val">"vercel"</span>,<br>
+      &nbsp;&nbsp;<span class="key">"ci_platform"</span>: <span class="val">"github-actions"</span><br>
+      }<br>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  Harness Pipeline v2 Vision &middot; claude-plugins &middot; 2026-05-25
+</footer>
+
+<script>
+  document.querySelectorAll('.nav-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.tab).classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>

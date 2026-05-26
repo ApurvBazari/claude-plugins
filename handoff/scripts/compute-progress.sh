@@ -33,6 +33,7 @@ fm_get() {
 # Parse ISO 8601 → epoch seconds. Try GNU date first, then BSD date.
 iso_to_epoch() {
   local iso="$1"
+  [[ "$iso" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2} ]] || { echo 0; return; }
   date -d "$iso" +%s 2>/dev/null \
     || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$iso" +%s 2>/dev/null \
     || echo 0
