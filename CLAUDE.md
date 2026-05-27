@@ -86,6 +86,18 @@ When referencing Claude Code documentation in any plugin file, use the current h
 - One logical change per commit — don't mix plugin changes across plugins
 - Scope = plugin name when change is plugin-specific (e.g., `feat(onboard): add verify skill`)
 
+## Branching & Release
+
+Two branches: `develop` (default, integration) and `main` (release).
+
+- Feature branches → PR to `develop` (squash merge)
+- When ready to ship: PR from `develop` → `main` (**merge commit, never squash**)
+- After shipping: merge `main` back into `develop` (merge commit) to keep them in sync
+
+Version bumps are manual — bump `plugin.json` + `marketplace.json` + `CHANGELOG.md` in the feature PR. No release-please or automated version management.
+
+Squash-merging develop→main causes permanent divergence — the two branches lose their shared history and can never cleanly sync again.
+
 ## Adding a New Plugin
 
 1. Create `<plugin>/` directory with `.claude-plugin/plugin.json`, `README.md`, and at least one skill
