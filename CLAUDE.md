@@ -26,7 +26,7 @@ Claude Code plugin marketplace by Apurv Bazari. Four plugins — all markdown + 
          │      └── skills/ (save, status, resume)
          │
          └──→ walkthrough/               ← session → self-contained interactive HTML
-                ├── skills/ (create)
+                ├── skills/ (create, update)
                 └── scripts/ (collect-git-context)
 ```
 

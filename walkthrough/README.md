@@ -10,7 +10,7 @@ Render the current session as a self-contained interactive HTML document with di
 claude plugin install walkthrough@apurvbazari-plugins
 ```
 
-That's it. One skill, no setup step, no configuration file required.
+That's it. No setup step, no configuration file required.
 
 ## Usage
 
@@ -38,6 +38,20 @@ Components adapt to the session. The catalog is a floor, not a ceiling: when con
 ### Dark / light toggle
 
 The document ships in one house style with two themes — a dark theme and a warm-light theme — and an in-document toggle. The choice is yours per-view; nothing about the toggle requires a server or a build step.
+
+## Updating an existing walkthrough
+
+```
+/walkthrough:update [changed-file-paths…]
+```
+
+A walkthrough is a snapshot — but you can refresh one in place as the work evolves. `update` lets you pick an existing document, reconstructs its content, folds in the spec/source files you name as arguments, and overwrites the **same file** with one coherent, up-to-date document in the same house style.
+
+- It **always asks which document** to refresh before writing — nothing is overwritten silently, even when intent-invoked.
+- The files you name as arguments are the new material; the conversation provides framing. There is no automatic git scan — you control exactly what gets pulled in. Run it with no arguments and it asks which files changed.
+- The result is one evolving document at the same path: no new file, no backup, no "updated" banner — it simply becomes its up-to-date self.
+
+`update` is both user- and intent-invokable: the slash form works, and so does *"update the walkthrough"* or *"refresh the session doc with the new spec"*.
 
 ## Where files go
 
