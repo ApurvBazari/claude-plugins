@@ -4,6 +4,10 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 SCRIPT="$HERE/collect-git-context.sh"
 fail(){ echo "FAIL: $1"; exit 1; }
 
+# Clean up temp dirs on any exit (incl. early `fail`); init for set -u safety.
+tmp=""; tmp3=""
+trap 'rm -rf "$tmp" "$tmp3" 2>/dev/null' EXIT
+
 # 1) inside this repo: emits the expected keys
 out="$(bash "$SCRIPT" "$HERE")" || fail "non-zero exit inside repo"
 for key in '"branch"' '"in_repo"' '"changed_files"' '"recent_log"'; do

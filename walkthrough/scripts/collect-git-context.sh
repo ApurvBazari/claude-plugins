@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Read-only git context for walkthrough generation. Emits a small JSON object.
 # Usage: collect-git-context.sh [dir]   (defaults to cwd). Always exits 0.
+# No -e on purpose: this must never abort the skill — on any git failure it
+# degrades to partial/empty JSON rather than failing (see CLAUDE.md § Script safety).
 set -uo pipefail
 
 DIR="${1:-$PWD}"
