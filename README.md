@@ -1,6 +1,6 @@
 # claude-plugins
 
-> Claude Code plugins for the project lifecycle — `onboard` keeps AI configs aligned as your code evolves, `notify` closes the loop, and `handoff` carries session intent across context boundaries. Three plugins that work on their own and **compose together**.
+> Claude Code plugins for the project lifecycle — `onboard` keeps AI configs aligned as your code evolves, `notify` closes the loop, `handoff` carries session intent across context boundaries, and `walkthrough` turns a session into an explorable document. Four plugins that work on their own and **compose together**.
 
 Built on top of [Claude Code](https://code.claude.com/docs/en) by Anthropic. Distributed under [MIT](./LICENSE).
 
@@ -13,6 +13,7 @@ Built on top of [Claude Code](https://code.claude.com/docs/en) by Anthropic. Dis
 | **[onboard](./onboard/)** | Lifecycle manager for AI configs — generates initial tooling, then **detects code-vs-config drift** as the project evolves and offers to fix it. | You have an existing repo, OR your AI configs are starting to lag behind the code. |
 | **[notify](./notify/)** | macOS / Linux system notifications when Claude finishes a task. Duration-filtered so short tasks don't spam you. | You leave Claude running long jobs in the background. |
 | **[handoff](./handoff/)** | Save the directive of a wrap-up session, then auto-surface it at the next SessionStart with an Execute / Edit / Discard / Save-for-later prompt. | You end sessions by pasting "continue this work in the new window" prompts into the next session. |
+| **[walkthrough](./walkthrough/)** | Render the current session as a self-contained interactive HTML document with diagrams and clickable detail. | You want a readable, shareable artifact of a session instead of scrolling back through the transcript. |
 
 ---
 
@@ -33,9 +34,9 @@ claude plugin install onboard@claude-community
 claude plugin install notify@claude-community
 ```
 
-### Option B — install from `apurvbazari-plugins` (all three plugins, latest commit)
+### Option B — install from `apurvbazari-plugins` (all four plugins, latest commit)
 
-This route always serves the latest commit when you want changes ahead of the community marketplace's nightly snapshot, and is the only route for `handoff`.
+This route always serves the latest commit when you want changes ahead of the community marketplace's nightly snapshot, and is the only route for `handoff` and `walkthrough`.
 
 ```bash
 # Add this marketplace
@@ -53,6 +54,7 @@ claude plugin install onboard@apurvbazari-plugins
 ```bash
 claude plugin install notify@apurvbazari-plugins
 claude plugin install handoff@apurvbazari-plugins
+claude plugin install walkthrough@apurvbazari-plugins
 ```
 
 ---
@@ -64,6 +66,7 @@ Each plugin's README contains a runnable transcript so you can see what a real s
 - **onboard** — initial `/onboard:start` on a Next.js 15 project, then `/onboard:evolve` two weeks later detecting drift and proposing updates → [onboard/README.md#example](./onboard/README.md#example)
 - **notify** — `/notify:setup` followed by the duration filter suppressing a fast task and delivering a long one → [notify/README.md#example](./notify/README.md#example)
 - **handoff** — saying "save handoff" mid-conversation, confirming the auto-save, then a fresh session starting with the four-option resume prompt → [handoff/README.md](./handoff/README.md)
+- **walkthrough** — running `/walkthrough:create` after a feature, getting one self-contained HTML file with diagrams, decision records, and a dark/light toggle → [walkthrough/README.md](./walkthrough/README.md)
 
 ---
 
@@ -115,9 +118,26 @@ For the full skill reference (`/handoff:save`, `/handoff:pickup`, `/handoff:chec
 
 ---
 
+## walkthrough
+
+After a long session — a debugging marathon, a feature, an architecture decision — the record of what happened is buried in the transcript. `walkthrough` renders the current session as a self-contained interactive HTML document with diagrams and clickable detail: a synthesized model of the work, not a transcript dump.
+
+**One skill, one artifact:**
+
+- **Generate** — `/walkthrough:create [focus]` (or auto-invoked on phrases like *"visualize this session"* / *"make a session recap"*). The optional `focus` arg scopes the synthesis. Output is one HTML file in `.claude/walkthrough/`, with a gitignore prompt on first run.
+- **Explore** — open the file in any browser: summary, inline-SVG architecture diagrams, decision records, a file-touch list with real `path:line` refs, timeline, and metrics, with expandable detail and an in-document dark / warm-light theme toggle.
+
+**Self-contained.** All CSS, JS, and SVG are inlined; the only external resource is one Google Fonts `@import`. The file renders without the plugin, a server, or a build step — copy it anywhere. It's a snapshot of one session, not a live viewer, and it synthesizes a structured model rather than pasting the message log.
+
+**One house style, open component system.** Every walkthrough shares a fixed design system (tokens only, two themes). The component catalog is a floor, not a ceiling — when content fits no catalog entry, a bespoke component is composed from the same primitives so it still looks native; empty sections are omitted, not stubbed.
+
+For the skill reference, the design-system invariant, the 5-stage render pipeline, and the storage model: [walkthrough/README.md →](./walkthrough/README.md)
+
+---
+
 ## How these plugins fit together
 
-These three plugins cover different phases of the lifecycle. They compose with each other, and they pair with companion plugins from the broader Claude Code ecosystem:
+These four plugins cover different phases of the lifecycle. They compose with each other, and they pair with companion plugins from the broader Claude Code ecosystem:
 
 ```
 ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
@@ -138,6 +158,7 @@ These three plugins cover different phases of the lifecycle. They compose with e
 - **Refine** — `code-simplifier` for post-implementation cleanup; `claude-md-management` for ongoing memory maintenance.
 - **Ship** — `commit-commands` for git/PR workflows; `pr-review-toolkit` and `code-review` for specialist PR review.
 - **Monitor** — `notify` for desktop alerts; native OpenTelemetry (`OTEL_LOGS_EXPORTER=otlp`) for usage analytics.
+- **Cross-phase** — `handoff` carries intent across session boundaries at any phase; `walkthrough` renders a session into a shareable document whenever you want one.
 
 ---
 
