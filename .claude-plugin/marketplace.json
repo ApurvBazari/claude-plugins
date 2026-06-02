@@ -58,7 +58,7 @@
       "name": "walkthrough",
       "source": "./walkthrough",
       "description": "Render the current session as a self-contained interactive HTML document with diagrams and clickable detail",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "keywords": [
         "session-visualization",
         "interactive-html",
