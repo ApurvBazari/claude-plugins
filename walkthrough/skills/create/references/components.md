@@ -250,7 +250,7 @@ document.querySelectorAll('#mode button').forEach(b=>b.addEventListener('click',
 
 ## File tree
 
-**When:** The session created, moved, or touched several files and the directory layout matters. `white-space:pre` preserves the drawn tree; file rows can be clickable. Lifted from `prototype-spec.html`.
+**When:** The session created, moved, or touched several files and the directory layout matters. `white-space:pre` preserves the drawn tree; file rows can be clickable. Self-contained below.
 
 ```html
 <section id="<id>">
@@ -552,7 +552,7 @@ function playStep(){if(_si>=STEPS.length)_si=0;const stage=document.getElementBy
 
 ## Callouts
 
-**When:** A single point needs emphasis — a caveat, a key insight, a non-obvious constraint. Accent left-border panel. Lifted from `prototype-spec.html`.
+**When:** A single point needs emphasis — a caveat, a key insight, a non-obvious constraint. Accent left-border panel. Self-contained below.
 
 ```html
 <div class="callout"><h4><Callout heading></h4><p><The point, in one or two sentences. Inline <code>code</code> allowed.></p></div>
@@ -569,7 +569,7 @@ function playStep(){if(_si>=STEPS.length)_si=0;const stage=document.getElementBy
 
 ## Key–value metadata grid
 
-**When:** Session metadata or any label→value pairs (branch, commit, duration, model, scope). Also covers numbered "edge case" and "open question" rows. Lifted from `prototype-spec.html` (`.edge-grid`/`.edge`, `.oq`).
+**When:** Session metadata or any label→value pairs (branch, commit, duration, model, scope). Also covers numbered "edge case" and "open question" rows. Self-contained below (`.edge-grid`/`.edge`, `.oq`).
 
 ```html
 <section id="<id>">
@@ -656,7 +656,7 @@ function playStep(){if(_si>=STEPS.length)_si=0;const stage=document.getElementBy
 
 ## Legend
 
-**When:** A document uses colour/symbol coding (status colours, category swatches) that needs a key. A compact swatch row — reuses the palette/specimen pattern from `seed.html`/`prototype-spec.html`.
+**When:** A document uses colour/symbol coding (status colours, category swatches) that needs a key. A compact swatch row — reuses the palette pattern from `seed.html`.
 
 ```html
 <div class="legend">
@@ -673,6 +673,6 @@ function playStep(){if(_si>=STEPS.length)_si=0;const stage=document.getElementBy
 .lg i{width:14px;height:14px;border-radius:4px;display:inline-block;}
 ```
 
-**Wiring:** No handler. Place near the component it explains; revealed with its section. The font-specimen variant (`.specimen`/`.spec-card`) from `prototype-spec.html` is a sibling for "fonts used" legends.
+**Wiring:** No handler. Place near the component it explains; revealed with its section.
 
 ## Composing beyond the catalog — see `authoring-guide.md`.

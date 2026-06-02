@@ -117,5 +117,7 @@ Fill each marker below. Leave a marker empty (delete it) only when its content d
 | `{{INTERACTIVITY_JS}}` | The full shared behaviour bundle from `interactivity.md` — theme toggle (`tgl`), detail panel (`openD`/`closeD`), scroll progress, and the IntersectionObserver reveal. |
 | `{{DETAIL_DATA}}` | The `DET` object literal mapping detail ids to `{k,h,b}` records read by `openD`. Include only the ids referenced by the markup; emit an empty `const DET={};` if no detail panel is wired. |
 
+**`details{}` → `DET` transform:** the session model's `details{ "<id>": {body, where, related} }` (see `session-model.md`) compiles into the runtime `DET[id] = { k: <short kicker/label>, h: <heading>, b: <body HTML> }`. Fold `where` into `b` as a `<code>path:line</code>` anchor and append any `related` ids as cross-links; the panel only reads `k`/`h`/`b`.
+
 **Rule:** copy the base CSS in the `<style>` block verbatim from `seed.html` — never invent base
 styles. Component CSS comes from `components.md` and is injected at `{{COMPONENT_CSS}}` only.

@@ -12,7 +12,7 @@ const DET={
  assemble:{k:"Stage 4",h:"Assemble",b:"Fill the house-style scaffold + chosen component snippets + inline JS. Everything self-contained."},
  write:{k:"Stage 5",h:"Write",b:"Save to <code>.claude/walkthrough/</code>, gitignore prompt, offer to open."}
 };
-const wrap=document.body,panel=document.getElementById('panel');
+const panel=document.getElementById('panel');
 function openD(id){const d=DET[id];if(!d)return;pk.textContent=d.k;ph.textContent=d.h;pbd.innerHTML=d.b;panel.classList.add('open');}
 function openCard(el){if(!el)return;pk.textContent=el.dataset.k||'Detail';ph.textContent=el.dataset.t||'';pbd.innerHTML=el.dataset.desc||'';panel.classList.add('open');}
 function closeD(){panel.classList.remove('open');}
