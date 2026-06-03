@@ -3,6 +3,7 @@ paths:
   - "onboard/**"
   - "notify/**"
   - "handoff/**"
+  - "walkthrough/**"
 ---
 
 # Plugin Structure

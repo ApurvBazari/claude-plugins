@@ -3,6 +3,7 @@ paths:
   - "onboard/**"
   - "notify/**"
   - "handoff/**"
+  - "walkthrough/**"
 ---
 
 # Plugin Script Path Convention
@@ -79,7 +80,7 @@ If the variable isn't populated (unusual — only happens if running outside a p
 Repository-level audit — every non-generated script reference in plugin SKILL.md, agent files, or references MUST use one of the two plugin-aware forms above:
 
 ```bash
-grep -rE '`(bash |ls )?\.{0,2}/?scripts/[a-z-]+\.sh' onboard/ notify/ handoff/ \
+grep -rE '`(bash |ls )?\.{0,2}/?scripts/[a-z-]+\.sh' onboard/ notify/ handoff/ walkthrough/ \
   | grep -v 'CLAUDE_PLUGIN_ROOT' \
   | grep -v '\.claude/scripts/'
 # Expect: no output

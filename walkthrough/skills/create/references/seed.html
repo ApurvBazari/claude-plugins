@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>walkthrough — house style</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root{
+  --bg-deep:#08090c; --bg-card:#0f1117; --bg-card-hover:#151821; --bg-elevated:#1a1d28; --bg-inset:#060709;
+  --border:#1e2230; --border-active:#2d3348; --border-strong:#3a4159;
+  --tp:#e8eaf0; --ts:#7d8399; --tm:#4a5068; --tf:#2e3349;
+  --blue:#3b82f6; --green:#22c55e; --amber:#f59e0b; --rose:#f43f5e; --purple:#a78bfa;
+  --accent:#22d3ee; --accent-glow:rgba(34,211,238,.16); --accent-soft:rgba(34,211,238,.08);
+  --blue-soft:rgba(59,130,246,.1); --green-soft:rgba(34,197,94,.1); --amber-soft:rgba(245,158,11,.1); --rose-soft:rgba(244,63,94,.1); --purple-soft:rgba(167,139,250,.1);
+  --mono:'JetBrains Mono',monospace; --serif:'Instrument Serif',serif; --sans:'DM Sans',sans-serif;
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+html[data-theme="light"]{
+  --bg-deep:#faf8f4; --bg-card:#fff; --bg-card-hover:#f5f1ea; --bg-elevated:#fff; --bg-inset:#f5f1ea;
+  --border:#e5dfd6; --border-active:#d8cfc1; --border-strong:#c9c0b3;
+  --tp:#2a2520; --ts:#6b6157; --tm:#9e9486; --tf:#c9c0b3;
+  --blue:#2d5fa0; --green:#2d7a3a; --amber:#b87333; --rose:#b83a3a; --purple:#7a3b8f;
+  --accent:#c05e2b; --accent-glow:rgba(192,94,43,.16); --accent-soft:rgba(192,94,43,.09);
+  --blue-soft:rgba(45,95,160,.1); --green-soft:rgba(45,122,58,.1); --amber-soft:rgba(184,115,51,.1); --rose-soft:rgba(184,58,58,.1); --purple-soft:rgba(122,59,143,.1);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg-deep);color:var(--tp);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .3s,color .3s;}
+body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+/* nav */
+nav{position:fixed;top:0;left:0;right:0;height:54px;z-index:100;backdrop-filter:blur(20px) saturate(180%);background:color-mix(in srgb,var(--bg-deep) 82%,transparent);border-bottom:1px solid var(--border);}
+.nav-in{max-width:1180px;margin:0 auto;height:100%;display:flex;align-items:center;justify-content:space-between;padding:0 1.6rem;}
+.logo{font-family:var(--mono);font-size:.82rem;font-weight:600;letter-spacing:.02em;}
+.logo span{color:var(--accent);}
+.nav-links{display:flex;gap:.3rem;font-family:var(--mono);font-size:.68rem;}
+.nav-links a{color:var(--ts);text-decoration:none;padding:.3rem .55rem;border-radius:6px;transition:.2s;}
+.nav-links a:hover,.nav-links a.on{color:var(--tp);background:var(--accent-soft);}
+.nav-meta{display:flex;align-items:center;gap:.45rem;font-family:var(--mono);font-size:.62rem;color:var(--tm);text-transform:uppercase;letter-spacing:.12em;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2.5s infinite;}
+.theme-btn{cursor:pointer;font-family:var(--mono);font-size:.62rem;color:var(--ts);border:1px solid var(--border);padding:.28rem .6rem;border-radius:6px;background:none;}
+.progress{position:fixed;top:54px;left:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--blue));z-index:101;width:0;box-shadow:0 0 8px var(--accent-glow);}
+main{max-width:1180px;margin:0 auto;padding:0 1.6rem;padding-top:78px;}
+.eyebrow{font-family:var(--mono);font-size:.68rem;color:var(--accent);text-transform:uppercase;letter-spacing:.18em;display:inline-flex;align-items:center;gap:.6rem;margin-bottom:.8rem;}
+.eyebrow::before{content:'';width:26px;height:1px;background:var(--accent);}
+h1{font-family:var(--serif);font-size:clamp(2.4rem,6vw,4rem);font-weight:400;line-height:1.04;letter-spacing:-.025em;margin:.2rem 0;max-width:880px;}
+h1 em,h2 em{font-style:italic;color:var(--accent);}
+h2{font-family:var(--serif);font-size:clamp(1.7rem,3.5vw,2.4rem);font-weight:400;line-height:1.15;margin:.2rem 0 .3rem;}
+.lede{color:var(--ts);font-size:1.08rem;line-height:1.7;max-width:720px;margin:.6rem 0 0;}
+section{padding:4rem 0 2rem;scroll-margin-top:70px;opacity:0;transform:translateY(24px);transition:opacity .7s var(--ease),transform .7s var(--ease);}
+section.vis{opacity:1;transform:none;}
+.sec-label{font-family:var(--mono);font-size:.65rem;color:var(--tm);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.5rem;}
+/* palette strip */
+.palette{display:flex;gap:.6rem;flex-wrap:wrap;margin:1.2rem 0;}
+.sw{font-family:var(--mono);font-size:.6rem;color:var(--tp);padding:.5rem .7rem;border-radius:8px;border:1px solid var(--border);display:flex;align-items:center;gap:.5rem;background:var(--bg-card);}
+.sw i{width:14px;height:14px;border-radius:4px;display:inline-block;}
+/* hero stats */
+.hstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:1.8rem;}
+.hstat{background:var(--bg-card);padding:1.1rem 1.2rem;}
+.hstat .v{font-family:var(--serif);font-size:1.9rem;color:var(--tp);line-height:1;}
+.hstat .v em{font-style:italic;color:var(--accent);}
+.hstat .l{font-family:var(--mono);font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;margin-top:.4rem;}
+/* approach tabs */
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;margin:1.4rem 0;}
+.tab{position:relative;text-align:left;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1rem 1.1rem;cursor:pointer;transition:all .25s var(--ease);}
+.tab:hover{border-color:var(--border-strong);}
+.tab.active{border-color:var(--accent);background:var(--bg-card-hover);box-shadow:0 0 0 1px var(--accent),0 8px 32px -8px var(--accent-glow);}
+.tab .letter{font-family:var(--serif);font-style:italic;font-size:1.5rem;color:var(--accent);}
+.tab .tt{font-weight:600;margin:.2rem 0;}
+.tab .tb{font-size:.8rem;color:var(--ts);}
+.rec{position:absolute;top:-9px;right:12px;font-family:var(--mono);font-size:.58rem;text-transform:uppercase;letter-spacing:.1em;background:var(--accent);color:var(--bg-deep);padding:.2rem .5rem;border-radius:20px;opacity:0;transition:opacity .3s;}
+.tab.chosen .rec{opacity:1;}
+.detail{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.3rem;display:none;}
+.detail.show{display:grid;grid-template-columns:1.3fr 1fr;gap:1.6rem;animation:fadeUp .4s var(--ease);}
+.proscons{display:flex;gap:1.4rem;margin-top:.7rem;font-size:.82rem;}
+.proscons .p b,.proscons .c b{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.1em;display:block;margin-bottom:.3rem;}
+.proscons .p li{color:var(--green);} .proscons .c li{color:var(--rose);}
+.proscons ul{margin:0;padding-left:1rem;}
+.bar{display:grid;grid-template-columns:90px 1fr 28px;gap:.7rem;align-items:center;margin-bottom:.6rem;font-family:var(--mono);font-size:.66rem;}
+.bar .trk{height:9px;background:var(--border);border-radius:5px;overflow:hidden;}
+.bar .fil{height:100%;border-radius:5px;width:0;transition:width .8s var(--ease);}
+/* flow diagram */
+.flow{display:flex;align-items:center;flex-wrap:wrap;gap:.4rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1.2rem 0;}
+.fnode{flex:1;min-width:110px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:.8rem .9rem;font-family:var(--mono);font-size:.7rem;cursor:pointer;transition:all .3s var(--ease);}
+.fnode:hover{border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow);transform:scale(1.03);}
+.fnode .nl{font-size:.55rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;}
+.fnode.accent{border-color:color-mix(in srgb,var(--accent) 40%,transparent);background:linear-gradient(135deg,var(--bg-elevated),var(--accent-soft));}
+.farr{color:var(--border-strong);font-size:1.1rem;}
+/* filter cards */
+.pills{display:flex;gap:.5rem;flex-wrap:wrap;margin:1rem 0;}
+.pill{font-family:var(--mono);font-size:.66rem;padding:.35rem .7rem;border-radius:20px;border:1px solid var(--border);background:var(--bg-card);color:var(--ts);cursor:pointer;display:flex;align-items:center;gap:.4rem;transition:.2s;}
+.pill .s{width:9px;height:9px;border-radius:3px;}
+.pill.on{color:var(--tp);border-color:var(--border-strong);background:var(--bg-card-hover);}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:.8rem;}
+.tcard{background:var(--bg-card);border:1px solid var(--border);border-left-width:3px;border-radius:10px;padding:.9rem 1rem;transition:.25s;cursor:pointer;}
+.tcard:hover{border-color:var(--border-strong);}
+.tcard.hidden{display:none;}
+.tcard .cat{font-family:var(--mono);font-size:.55rem;text-transform:uppercase;letter-spacing:.1em;}
+.tcard .tn{font-weight:600;margin:.25rem 0;font-size:.92rem;}
+.tcard .td{font-size:.8rem;color:var(--ts);}
+/* accordion */
+.acc{border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:1rem;}
+.acc details{border-bottom:1px solid var(--border);}
+.acc details:last-child{border-bottom:none;}
+.acc summary{list-style:none;padding:.85rem 1.1rem;cursor:pointer;display:flex;align-items:center;gap:.7rem;background:var(--bg-card);font-size:.9rem;}
+.acc summary::-webkit-details-marker{display:none;}
+.acc summary .badge{width:18px;height:18px;border-radius:5px;font-size:.7rem;display:flex;align-items:center;justify-content:center;font-family:var(--mono);}
+.acc summary .chev{margin-left:auto;color:var(--tm);transition:transform .2s;}
+.acc details[open] summary .chev{transform:rotate(90deg);}
+.acc .ac-body{padding:.4rem 1.1rem 1rem 2.7rem;font-size:.84rem;color:var(--ts);background:var(--bg-card);}
+.acc .ref{font-family:var(--mono);font-size:.66rem;color:var(--accent);margin-top:.4rem;}
+/* detail panel */
+.panel{position:fixed;top:0;right:0;width:300px;height:100vh;background:var(--bg-card);border-left:1px solid var(--border-active);padding:24px 20px;overflow:auto;transform:translateX(100%);transition:transform .25s var(--ease);box-shadow:-20px 0 50px rgba(0,0,0,.3);z-index:200;}
+.panel.open{transform:none;}
+.panel .x{position:absolute;top:14px;right:16px;color:var(--tm);cursor:pointer;font-size:18px;}
+.panel .pk{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);}
+.panel h3{font-family:var(--serif);font-weight:400;font-size:1.4rem;margin:.2rem 0 .6rem;}
+.panel .pb{font-size:.86rem;color:var(--ts);line-height:1.6;}
+.panel code{font-family:var(--mono);font-size:.72rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
+.note{font-family:var(--mono);font-size:.62rem;color:var(--tm);margin-top:.6rem;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@media(max-width:780px){.tabs{grid-template-columns:1fr}.detail.show{grid-template-columns:1fr}.nav-links{display:none}}
+</style>
+</head>
+<body>
+<nav><div class="nav-in">
+  <div class="logo">◆ walk<span>through</span></div>
+  <div class="nav-links">
+    <a href="#top" class="on">Look</a><a href="#approach">Tabs</a><a href="#flow">Flow</a><a href="#tests">Filter</a><a href="#contract">Accordion</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:.8rem">
+    <div class="nav-meta"><span class="dot"></span> WALKTHROUGH · DEMO</div>
+    <button class="theme-btn" onclick="tgl()">◑ THEME</button>
+  </div>
+</div></nav>
+<div class="progress" id="prog"></div>
+
+<main>
+  <section id="top" class="vis" style="padding-top:2.4rem">
+    <div class="eyebrow">House style · session walkthrough</div>
+    <h1>The session, rendered as an <em>explorable</em> document.</h1>
+    <p class="lede">Same look-and-feel every time — layered near-black surfaces, editorial serif headings with accent emphasis, mono technical detail, and glow-accented interactive components. The <em>structure</em> adapts to what the session contained.</p>
+    <div class="palette">
+      <span class="sw"><i style="background:var(--accent)"></i>accent</span>
+      <span class="sw"><i style="background:var(--blue)"></i>blue</span>
+      <span class="sw"><i style="background:var(--green)"></i>green</span>
+      <span class="sw"><i style="background:var(--amber)"></i>amber</span>
+      <span class="sw"><i style="background:var(--rose)"></i>rose</span>
+      <span class="sw"><i style="background:var(--purple)"></i>purple</span>
+    </div>
+    <div class="hstats">
+      <div class="hstat"><div class="v"><em>5</em></div><div class="l">pipeline stages</div></div>
+      <div class="hstat"><div class="v"><em>15</em></div><div class="l">components</div></div>
+      <div class="hstat"><div class="v">1</div><div class="l">look · 2 themes</div></div>
+      <div class="hstat"><div class="v">0</div><div class="l">runtime deps</div></div>
+    </div>
+  </section>
+
+  <section id="approach">
+    <div class="sec-label">01 — decision component</div>
+    <h2>Tabs + animated <em>tradeoff</em> bars</h2>
+    <p class="lede">For sessions that weighed options. Click a tab — the detail swaps and the bars re-animate.</p>
+    <div class="tabs">
+      <div class="tab active" data-app="a" onclick="setTab('a')"><span class="letter">A</span><div class="tt">Inline generation</div><div class="tb">Claude writes HTML each run</div></div>
+      <div class="tab chosen" data-app="b" onclick="setTab('b')"><span class="rec">Chosen</span><span class="letter">B</span><div class="tt">Reference templates</div><div class="tb">copy-and-fill scaffolds</div></div>
+      <div class="tab" data-app="c" onclick="setTab('c')"><span class="letter">C</span><div class="tt">Shipped JS engine</div><div class="tb">renderer as an asset</div></div>
+    </div>
+    <div class="detail show" data-app="a">
+      <div><h3 style="font-family:var(--serif);font-weight:400;margin:.1rem 0 .4rem">Inline generation</h3><p style="font-size:.86rem;color:var(--ts)">Maximum flexibility, but output drifts run-to-run.</p>
+        <div class="proscons"><div class="p"><b>Pros</b><ul><li>No templates to maintain</li></ul></div><div class="c"><b>Cons</b><ul><li>Inconsistent</li><li>Hard to verify</li></ul></div></div></div>
+      <div class="chart"><div class="bar"><span>Consistency</span><div class="trk"><div class="fil" style="background:var(--rose)" data-w="30"></div></div><span>30</span></div>
+        <div class="bar"><span>Flexibility</span><div class="trk"><div class="fil" style="background:var(--green)" data-w="95"></div></div><span>95</span></div>
+        <div class="bar"><span>Maintainable</span><div class="trk"><div class="fil" style="background:var(--amber)" data-w="55"></div></div><span>55</span></div></div>
+    </div>
+    <div class="detail" data-app="b">
+      <div><h3 style="font-family:var(--serif);font-weight:400;margin:.1rem 0 .4rem">Reference templates</h3><p style="font-size:.86rem;color:var(--ts)">The chosen path: detailed copy-and-fill scaffolds keep the look consistent with no shipped code.</p>
+        <div class="proscons"><div class="p"><b>Pros</b><ul><li>Consistent look</li><li>No compiled code</li><li>Verifiable</li></ul></div><div class="c"><b>Cons</b><ul><li>Larger references</li></ul></div></div></div>
+      <div class="chart"><div class="bar"><span>Consistency</span><div class="trk"><div class="fil" style="background:var(--accent)" data-w="88"></div></div><span>88</span></div>
+        <div class="bar"><span>Flexibility</span><div class="trk"><div class="fil" style="background:var(--green)" data-w="80"></div></div><span>80</span></div>
+        <div class="bar"><span>Maintainable</span><div class="trk"><div class="fil" style="background:var(--accent)" data-w="82"></div></div><span>82</span></div></div>
+    </div>
+    <div class="detail" data-app="c">
+      <div><h3 style="font-family:var(--serif);font-weight:400;margin:.1rem 0 .4rem">Shipped JS engine</h3><p style="font-size:.86rem;color:var(--ts)">Most deterministic, but adds a compiled asset to a markdown-only repo.</p>
+        <div class="proscons"><div class="p"><b>Pros</b><ul><li>Fully deterministic</li></ul></div><div class="c"><b>Cons</b><ul><li>Departs repo norm</li></ul></div></div></div>
+      <div class="chart"><div class="bar"><span>Consistency</span><div class="trk"><div class="fil" style="background:var(--green)" data-w="98"></div></div><span>98</span></div>
+        <div class="bar"><span>Flexibility</span><div class="trk"><div class="fil" style="background:var(--rose)" data-w="40"></div></div><span>40</span></div>
+        <div class="bar"><span>Maintainable</span><div class="trk"><div class="fil" style="background:var(--amber)" data-w="60"></div></div><span>60</span></div></div>
+    </div>
+  </section>
+
+  <section id="flow">
+    <div class="sec-label">02 — architecture / flow component</div>
+    <h2>Animated <em>flow</em> diagram</h2>
+    <p class="lede">For sessions about a pipeline or architecture. Nodes glow on hover; click one for detail.</p>
+    <div class="flow">
+      <div class="fnode" data-d="gather" onclick="openD('gather')"><div class="nl">stage 1</div>Gather</div>
+      <span class="farr">→</span>
+      <div class="fnode accent" data-d="synth" onclick="openD('synth')"><div class="nl">stage 2</div>Synthesize</div>
+      <span class="farr">→</span>
+      <div class="fnode" data-d="select" onclick="openD('select')"><div class="nl">stage 3</div>Select</div>
+      <span class="farr">→</span>
+      <div class="fnode" data-d="assemble" onclick="openD('assemble')"><div class="nl">stage 4</div>Assemble</div>
+      <span class="farr">→</span>
+      <div class="fnode" data-d="write" onclick="openD('write')"><div class="nl">stage 5</div>Write</div>
+    </div>
+  </section>
+
+  <section id="tests">
+    <div class="sec-label">03 — filterable catalog component</div>
+    <h2>Filterable <em>cards</em></h2>
+    <p class="lede">For sessions with many items (files, tests, tools). Toggle a pill to filter.</p>
+    <div class="pills">
+      <div class="pill on" data-f="feature" onclick="tog(this)"><span class="s" style="background:var(--green)"></span>feature</div>
+      <div class="pill on" data-f="fix" onclick="tog(this)"><span class="s" style="background:var(--amber)"></span>fix</div>
+      <div class="pill on" data-f="research" onclick="tog(this)"><span class="s" style="background:var(--purple)"></span>research</div>
+    </div>
+    <div class="cards">
+      <div class="tcard" data-cat="feature" style="border-left-color:var(--green)"><div class="cat" style="color:var(--green)">feature</div><div class="tn">SMS parser</div><div class="td">Added HDFC debit/credit patterns.</div></div>
+      <div class="tcard" data-cat="fix" style="border-left-color:var(--amber)"><div class="cat" style="color:var(--amber)">fix</div><div class="tn">Fail-soft</div><div class="td">Unmatched SMS logged, not dropped.</div></div>
+      <div class="tcard" data-cat="research" style="border-left-color:var(--purple)"><div class="cat" style="color:var(--purple)">research</div><div class="tn">Mermaid vs vanilla</div><div class="td">Compared rendering approaches.</div></div>
+      <div class="tcard" data-cat="feature" style="border-left-color:var(--green)"><div class="cat" style="color:var(--green)">feature</div><div class="tn">TxnExtractor</div><div class="td">Amount, date, merchant fields.</div></div>
+    </div>
+  </section>
+
+  <section id="contract">
+    <div class="sec-label">04 — checklist component</div>
+    <h2>Accordion <em>checklist</em></h2>
+    <p class="lede">For decisions, requirements, or a definition-of-done. Native expand/collapse.</p>
+    <div class="acc">
+      <details open><summary><span class="badge" style="background:var(--green-soft);color:var(--green)">✓</span> Fail-soft on unmatched SMS<span class="chev">›</span></summary>
+        <div class="ac-body">Log + skip rather than throw, so one new bank format can't break the pipeline.<div class="ref">parsers/hdfc.ts:24</div></div></details>
+      <details><summary><span class="badge" style="background:var(--amber-soft);color:var(--amber)">+</span> Pattern-per-format<span class="chev">›</span></summary>
+        <div class="ac-body">One regex per format beats a mega-regex — easier to extend per bank.</div></details>
+      <details><summary><span class="badge" style="background:var(--purple-soft);color:var(--purple)">·</span> Multi-currency (deferred)<span class="chev">›</span></summary>
+        <div class="ac-body">Out of scope this session; revisit when a non-INR bank is added.</div></details>
+    </div>
+    <p class="note">↑ One look-and-feel; the components above are picked per session. Hit ◑ THEME (top-right) to see the same doc in the warm light theme.</p>
+  </section>
+</main>
+
+<aside class="panel" id="panel">
+  <span class="x" onclick="closeD()">✕</span>
+  <div class="pk" id="pk">Detail</div><h3 id="ph">—</h3><div class="pb" id="pbd"></div>
+</aside>
+
+<script>
+const DET={
+ gather:{k:"Stage 1",h:"Gather",b:"Pull the conversation, run git enrichment, read referenced files to verify code locations."},
+ synth:{k:"Stage 2",h:"Synthesize",b:"Build the structured <code>session model</code> before any HTML — title, sections, nodes, decisions, files, timeline."},
+ select:{k:"Stage 3",h:"Select",b:"Pick the components that fit this session from the shared vocabulary. Empty ones are omitted."},
+ assemble:{k:"Stage 4",h:"Assemble",b:"Fill the house-style scaffold + chosen component snippets + inline JS. Everything self-contained."},
+ write:{k:"Stage 5",h:"Write",b:"Save to <code>.claude/walkthrough/</code>, gitignore prompt, offer to open."}
+};
+const panel=document.getElementById('panel');
+function openD(id){const d=DET[id];if(!d)return;pk.textContent=d.k;ph.textContent=d.h;pbd.innerHTML=d.b;panel.classList.add('open');}
+function openCard(el){if(!el)return;pk.textContent=el.dataset.k||'Detail';ph.textContent=el.dataset.t||'';pbd.innerHTML=el.dataset.desc||'';panel.classList.add('open');}
+function closeD(){panel.classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeD();});
+function setTab(app){document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.app===app));
+ document.querySelectorAll('.detail').forEach(d=>{const on=d.dataset.app===app;d.classList.toggle('show',on);if(on)animate(d);});}
+function animate(scope){scope.querySelectorAll('.fil').forEach(f=>{f.style.width='0';requestAnimationFrame(()=>requestAnimationFrame(()=>{f.style.width=f.dataset.w+'%';}));});}
+function tog(el){el.classList.toggle('on');const set=new Set([...document.querySelectorAll('.pill.on')].map(p=>p.dataset.f));
+ document.querySelectorAll('.tcard').forEach(c=>c.classList.toggle('hidden',!set.has(c.dataset.cat)));}
+function tgl(){const h=document.documentElement;const t=h.getAttribute('data-theme')==='dark'?'light':'dark';h.setAttribute('data-theme',t);try{localStorage.setItem('wt-theme',t);}catch(e){}}
+(function(){try{const t=localStorage.getItem('wt-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+// reveal + progress + animate-on-view
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vis');const d=e.target.querySelector('.detail.show');if(d)animate(d);}}),{threshold:.1});
+document.querySelectorAll('section').forEach(s=>io.observe(s));
+addEventListener('scroll',()=>{const sc=scrollY/(document.body.scrollHeight-innerHeight)*100;if(prog)prog.style.width=sc+'%';
+ let cur='';document.querySelectorAll('section[id]').forEach(s=>{if(scrollY>=s.offsetTop-120)cur=s.id;});
+ document.querySelectorAll('.nav-links a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+cur));},{passive:true});
+// initial bar animation for the shown tab
+setTimeout(()=>{const d=document.querySelector('.detail.show');if(d)animate(d);},300);
+</script>
+</body>
+</html>
