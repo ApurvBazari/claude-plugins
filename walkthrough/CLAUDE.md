@@ -1,6 +1,6 @@
 # walkthrough — Internal Conventions
 
-Render the current session as a self-contained interactive HTML document with diagrams and clickable detail. Two skills (`create` renders from scratch, `update` refreshes in place), one output artifact per session, no hooks. Closest existing plugin in shape is `handoff/` (skill + script + optional in-repo settings file), but the heavy lifting lives in the skills' `references/`, which together form the renderer.
+Render the current session as a self-contained interactive HTML document with diagrams and clickable detail. Two skills (`create` renders from scratch, `update` refreshes in place), one output artifact per session, no hooks. Closest existing plugin in shape is `handoff/` (skills + optional in-repo settings file, no scripts), but the heavy lifting lives in the skills' `references/`, which together form the renderer.
 
 ## Locked design dimensions
 
@@ -23,7 +23,7 @@ The `create` skill runs a fixed model-before-markup pipeline. The model is fully
 ┌──────────┐   ┌─────────────┐   ┌──────────┐   ┌────────────┐   ┌─────────┐
 │  gather  │ → │ synthesize  │ → │  select  │ → │  assemble  │ → │  write  │
 │          │   │             │   │          │   │            │   │         │
-│ git ctx  │   │ session     │   │ map model│   │ inline     │   │ to      │
+│ session  │   │ session     │   │ map model│   │ inline     │   │ to      │
 │ + cited  │   │ model       │   │ → comps  │   │ scaffold + │   │ .claude/│
 │ file     │   │ (sections,  │   │ (catalog │   │ tokens +   │   │ walk-   │
 │ reads    │   │ nodes,edges,│   │ floor +  │   │ JS + comps │   │ through/│
@@ -33,7 +33,7 @@ The `create` skill runs a fixed model-before-markup pipeline. The model is fully
    Step 2         Step 3            Step 4          Step 5        Steps 6–8
 ```
 
-1. **gather** — run `collect-git-context.sh` (read-only) for branch / diffstat / changed files / recent log; read any source file you intend to cite so `path:line` refs are real.
+1. **gather** — read any source file you intend to cite so `path:line` refs are real. The session transcript is the source of record; there is no repository scan.
 2. **synthesize** — build the structured session model per `references/session-model.md` (`title`, `summary`, `typeTags`, `sections[]`, `nodes[]`, `edges[]`, `decisions[]`, `files[]`, `timeline[]`, `metrics[]`, `openQuestions[]`, `details{}`) BEFORE any HTML.
 3. **select** — map the model to components via `references/authoring-guide.md` + `references/components.md`; apply "omit empty, never stub"; compose bespoke where no catalog entry fits.
 4. **assemble** — start from `references/page-scaffold.md`; inline the `@import` + both `:root` blocks from `references/design-system.md`, the shared JS from `references/interactivity.md`, and the CSS/HTML for each chosen component plus its detail (`DET`) data.
@@ -55,7 +55,7 @@ The `create` skill runs a fixed model-before-markup pipeline. The model is fully
 
 - **Target picker is the overwrite safety gate.** `update` always confirms which `.claude/walkthrough/*.html` to refresh (yes/no when one exists; a 2–4-option list, plus the tool's built-in "Other", otherwise), even when model-invoked. No silent-overwrite path. Picker option lists are fixed-length per `.claude/rules/ask-user-question-guard.md`.
 - **Reconstruct from HTML.** Part A of `references/reconstruct-and-merge.md` maps rendered anchors back to the `session-model` schema; the trailing `const DET={…}` store is the high-fidelity source for `details{}`. No model island, no sidecar — `create` is untouched.
-- **Named files drive, conversation frames.** The command arguments are the changed spec/source files; no automatic git discovery. No args → `update` asks which files changed. The git helper is reused only for branch context.
+- **Named files drive, conversation frames.** The command arguments are the changed spec/source files; no automatic git discovery. No args → `update` asks which files changed. The nav kicker is session metadata (date · type · scope), not git.
 - **Merge into one coherent doc.** Part B: revise superseded content, merge overlaps, add new, keep `sections[].id` / `details{}` keys stable, then hand to create's renderer.
 - **Overwrite in place, seamless.** Same filename, no new file, no backup, no update chrome. Repeated reconstruct→overwrite cycles can accumulate minor structural drift; the escape hatch is a fresh `create`.
 - **Invocation is a deliberate deviation.** `update` keeps default (user + model) frontmatter even though it overwrites in place — diverging from the repo's "destructive → `disable-model-invocation`" convention (root `CLAUDE.md` § Skill Frontmatter Categories; `.claude/rules/skills-authoring.md` names `update` as a typical lock candidate). The always-on target picker (Step 1) is an unbypassable confirm gate that substitutes for the invocation lock, so model-invocation cannot cause a silent overwrite. Decided during brainstorming (2026-06-02).
@@ -77,25 +77,6 @@ The component catalog in `references/components.md` is a **floor, not a ceiling*
 
 The escape hatch keeps the catalog small without forcing odd sessions into ill-fitting components.
 
-## Script safety
-
-`scripts/collect-git-context.sh` is the only executable. It is a **read-only utility**, not a hook, and it follows the utility-script half of the shell conventions with one deliberate exception for resilience:
-
-- `#!/usr/bin/env bash`
-- `set -uo pipefail` (NOT `-e` — like a hook, it must never abort the skill; it degrades to a minimal JSON object instead)
-- **Always `exit 0`** — outside a repo or on any git failure it prints `{"in_repo": false}` (or a partial object) and exits clean
-- **Read-only** — only `git rev-parse` / `branch` / `status --porcelain` / `diff --stat` / `log --oneline`; never writes, never executes session-derived code
-- JSON-escapes values (backslashes then double quotes) and caps list sizes (`head -50`, `-15`) so output stays bounded
-- POSIX `awk`/`sed`, ShellCheck-clean
-
-The skill invokes it via the in-plugin form per `.claude/rules/plugin-script-paths.md`:
-
-```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/collect-git-context.sh" "$PWD"
-```
-
-`test-collect-git-context.sh` is a colocated smoke test for the helper — not shipped behavior, but kept in `scripts/` so the read-only contract stays covered.
-
 ## Skills
 
 Two user-facing skills (both show in `/walkthrough:` autocomplete; both default frontmatter — user- and model-invocable, no `disable-model-invocation`):
@@ -103,7 +84,7 @@ Two user-facing skills (both show in `/walkthrough:` autocomplete; both default 
 - `create/SKILL.md` — renders the current session from scratch. The six `references/` files are the renderer.
 - `update/SKILL.md` — refreshes an EXISTING walkthrough in place: reconstructs the prior model from the rendered HTML, merges in explicitly-named files, and overwrites the same file. Reuses `create`'s six references unchanged for the render half; its own `references/reconstruct-and-merge.md` covers the reconstruct + merge stages.
 
-No internal building blocks (no `user-invocable: false` skills), no agents, no hooks.
+No internal building blocks (no `user-invocable: false` skills), no agents, no hooks, no scripts.
 
 ## AskUserQuestion usage
 

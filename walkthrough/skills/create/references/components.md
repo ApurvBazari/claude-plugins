@@ -569,7 +569,7 @@ function playStep(){if(_si>=STEPS.length)_si=0;const stage=document.getElementBy
 
 ## Key–value metadata grid
 
-**When:** Session metadata or any label→value pairs (branch, commit, duration, model, scope). Also covers numbered "edge case" and "open question" rows. Self-contained below (`.edge-grid`/`.edge`, `.oq`).
+**When:** Session metadata or any label→value pairs (date, type, scope, model, duration). Also covers numbered "edge case" and "open question" rows. Self-contained below (`.edge-grid`/`.edge`, `.oq`).
 
 ```html
 <section id="<id>">

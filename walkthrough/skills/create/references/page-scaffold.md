@@ -109,7 +109,7 @@ Fill each marker below. Leave a marker empty (delete it) only when its content d
 |------|-----------------|
 | `{{TITLE}}` | The session title, plain text (e.g. `SMS parser — HDFC patterns`). The page `<title>` becomes `{{TITLE}} — walkthrough`. |
 | `{{NAV_LINKS}}` | One `<a href="#id">label</a>` per section, concatenated. Mark the first link `class="on"` (e.g. `<a href="#top" class="on">Look</a><a href="#flow">Flow</a>`). The `id` must match each section's `id`. |
-| `{{KICKER}}` | A short mono status line for the nav, uppercase (e.g. `WALLET · SPRINT 4` or `SESSION · 2026-06-02`). Rendered after the live `.dot`. |
+| `{{KICKER}}` | A short mono status line for the nav, uppercase — session metadata only (date, primary type, focus/scope), never repository state (e.g. `SESSION · 2026-06-02` or `BRAINSTORM · AUTH MODEL`). Rendered after the live `.dot`. |
 | `{{HERO}}` | The hero block: `<div class="eyebrow">…</div>` + `<h1>…</h1>` + `<p class="lede">…</p>`, optionally followed by a `<div class="hstats">…</div>` of headline numbers. Goes inside the always-visible `#top` section. |
 | `{{SECTIONS}}` | One `<section id="…">…</section>` per session-model section after the hero. Each holds a `.sec-label`, an `<h2>`, an optional `.lede`, and the chosen component markup from `components.md`. |
 | `{{COMPONENT_CSS}}` | The CSS blocks for **only** the components actually used, copied verbatim from `components.md`. Omit CSS for unused components. |

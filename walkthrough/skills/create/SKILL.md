@@ -15,14 +15,9 @@ Otherwise cover the whole session. If the session is trivially short, ask via As
 (2 fixed options: "Generate anyway" / "Skip") before proceeding.
 
 ## Step 2: Gather
-Run the git helper and read its JSON:
-
-```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/collect-git-context.sh" "$PWD"
-```
-
-Read any source files you will cite so code locations (`path:line`) are real — never invent a
-line number; if unverified, cite `path` only or omit.
+The session transcript is the source of record — synthesize from the conversation, not from
+repository state. Read any source files you will cite so code locations (`path:line`) are real —
+never invent a line number; if unverified, cite `path` only or omit.
 
 ## Step 3: Synthesize the session model
 Build the structured model per `references/session-model.md` (title, summary, typeTags,
@@ -67,5 +62,5 @@ Do not auto-open; offer.
 - **Model before markup.** Always synthesize the session model (Step 3) before assembling HTML.
 - **Omit empty, never stub.** Render only components with real content.
 - **Real code refs only.** Cite `path:line` only when verified via a file read.
-- **Read-only.** Never execute session-derived code; the git helper is read-only.
+- **Read-only.** Never execute session-derived code; only read files to verify citations.
 - **AskUserQuestion guard.** The thin-session and gitignore prompts use fixed-length option lists per `.claude/rules/ask-user-question-guard.md`.

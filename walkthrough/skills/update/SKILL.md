@@ -43,12 +43,8 @@ The command arguments are the changed spec/source file paths.
 - Read any source file you will cite so `path:line` refs are real — never invent a line number.
 - The current conversation is **framing context** only; the named files are the authoritative new
   material.
-- You MAY run the read-only git helper for fresh branch/commit context (the nav kicker), but NOT to
-  discover what changed:
-
-  ```bash
-  bash "${CLAUDE_PLUGIN_ROOT}/scripts/collect-git-context.sh" "$PWD"
-  ```
+- The nav kicker (`{{KICKER}}`) is session metadata — derive it from the session date, the primary
+  `typeTag`, and the focus/scope. Do not shell out for branch/commit context.
 
 ## Step 4: Merge into one coherent model
 
@@ -67,7 +63,7 @@ never stub". Compose bespoke components per the authoring-guide recipe where no 
 
 Start from `page-scaffold.md`. Inline: the `@import` + both `:root` blocks from `design-system.md`;
 the shared JS from `interactivity.md`; the CSS+HTML for each chosen component from `components.md`;
-the `DET`/detail data. Fill `{{KICKER}}` from the Step 3 branch/commit context (the nav status line).
+the `DET`/detail data. Fill `{{KICKER}}` from session metadata (date · primary type · scope), uppercase per `page-scaffold.md` — the nav status line.
 Keep it self-contained: no `<script src>`, no `<img>`, only the one Google Fonts `@import`. Produce
 **no** update chrome — no "updated" badge, no changelog; the document simply reflects the new
 combined state.
@@ -95,5 +91,5 @@ Do not auto-open; offer.
 - **One coherent doc.** Revise/merge/add into a single narrative; keep ids stable; never staple old + new.
 - **Same look, reused renderer.** Render via create's six references unchanged — tokens only, self-contained, one Google Fonts `@import`.
 - **In place, seamless.** Overwrite the same file; no new file, no backup, no update chrome.
-- **Read-only except the final write.** Never execute session-derived code; the git helper is read-only and used only for branch context.
+- **Read-only except the final write.** Never execute session-derived code; only read the named and cited files.
 - **AskUserQuestion guard.** The target picker uses fixed-length option lists per `.claude/rules/ask-user-question-guard.md`.
