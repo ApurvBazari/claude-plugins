@@ -8,6 +8,10 @@
 .claude/handoff*.md
 .claude/handoff-settings.md
 
+# walkthrough plugin runtime output (generated session docs may contain code
+# snippets, paths, decisions; treat as personal session artifacts, not shared)
+.claude/walkthrough/
+
 # greenfield + onboard runtime state (may persist user-entered free-text from
 # the wizard; treat as potentially sensitive and never commit)
 .claude/greenfield-state.json
