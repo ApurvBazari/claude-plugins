@@ -7,7 +7,8 @@ description: Generate an interactive HTML walkthrough of the current session —
 
 You are invoked via `/walkthrough:create [optional focus]`, or auto-invoked when the user asks
 to visualize/recap the session. Produce ONE self-contained interactive HTML file in the house
-style, then offer to open it. Load the six `references/` files — they are the renderer.
+style, then offer to open it. The renderer is five `references/` files plus the `references/components/`
+catalog (its `index.md` routes to per-group recipe files you read on demand). Load them as the steps direct.
 
 ## Step 1: Scope
 If an argument was given (e.g. `architecture decisions`), scope synthesis to that focus.
@@ -25,14 +26,15 @@ sections[], nodes[], edges[], decisions[], files[], timeline[], metrics[], openQ
 details{}) BEFORE writing any HTML.
 
 ## Step 4: Select components
-Using `references/authoring-guide.md`, map the model to components from
-`references/components.md`. Apply "omit empty, never stub". For content that fits no catalog
-entry, compose a bespoke component per the authoring-guide recipe + looks-native checklist.
+Using `references/authoring-guide.md`, map the model to component names, then look each name up in
+`references/components/index.md` to find its group file. Apply "omit empty, never stub". For content
+that fits no catalog entry, compose a bespoke component per the authoring-guide recipe + looks-native checklist.
 
 ## Step 5: Assemble the HTML
 Start from `references/page-scaffold.md`. Inline: the `@import` + both `:root` blocks from
 `references/design-system.md`; the shared JS from `references/interactivity.md`; the CSS+HTML
-for each chosen component from `references/components.md`; the `DET`/detail data. Keep it
+for each chosen component — read **only** the `references/components/<group>.md` files for the
+components you selected in Step 4 (routed via `components/index.md`); the `DET`/detail data. Keep it
 self-contained: no `<script src>`, no `<img>`, only the one Google Fonts `@import`.
 
 ## Step 6: Output path

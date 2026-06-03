@@ -35,8 +35,8 @@ The `create` skill runs a fixed model-before-markup pipeline. The model is fully
 
 1. **gather** — read any source file you intend to cite so `path:line` refs are real. The session transcript is the source of record; there is no repository scan.
 2. **synthesize** — build the structured session model per `references/session-model.md` (`title`, `summary`, `typeTags`, `sections[]`, `nodes[]`, `edges[]`, `decisions[]`, `files[]`, `timeline[]`, `metrics[]`, `openQuestions[]`, `details{}`) BEFORE any HTML.
-3. **select** — map the model to components via `references/authoring-guide.md` + `references/components.md`; apply "omit empty, never stub"; compose bespoke where no catalog entry fits.
-4. **assemble** — start from `references/page-scaffold.md`; inline the `@import` + both `:root` blocks from `references/design-system.md`, the shared JS from `references/interactivity.md`, and the CSS/HTML for each chosen component plus its detail (`DET`) data.
+3. **select** — map the model to components via `references/authoring-guide.md` + the `references/components/` catalog (look up each chosen component in `components/index.md`); apply "omit empty, never stub"; compose bespoke where no catalog entry fits.
+4. **assemble** — start from `references/page-scaffold.md`; inline the `@import` + both `:root` blocks from `references/design-system.md`, the shared JS from `references/interactivity.md`, and the CSS/HTML for each chosen component (read only the `references/components/<group>.md` files for the components you selected) plus its detail (`DET`) data.
 5. **write** — compute `.claude/walkthrough/<YYYY-MM-DD-HHMM>-<slug>.html` (collision → `-2`, `-3`, …), create the dir if missing, handle the first-run gitignore prompt, then write and offer to open (never auto-open).
 
 ## The update skill — reconstruct, merge, overwrite in place
@@ -69,7 +69,7 @@ These two invariants are non-negotiable — they are what make every walkthrough
 
 ## The open component system
 
-The component catalog in `references/components.md` is a **floor, not a ceiling**.
+The component catalog in `references/components/` (indexed by `components/index.md`) is a **floor, not a ceiling**.
 
 - For content that maps cleanly to a catalog entry, use the catalog entry verbatim (CSS + HTML).
 - For content that fits no catalog entry, **compose a bespoke component** following the recipe in `references/authoring-guide.md`. Bespoke components are built from the same design-system primitives (tokens, type scale, spacing, the shared JS toggle/expand helpers) and must pass the authoring-guide "looks-native" checklist — they should be indistinguishable in style from catalog components.
@@ -81,8 +81,8 @@ The escape hatch keeps the catalog small without forcing odd sessions into ill-f
 
 Two user-facing skills (both show in `/walkthrough:` autocomplete; both default frontmatter — user- and model-invocable, no `disable-model-invocation`):
 
-- `create/SKILL.md` — renders the current session from scratch. The six `references/` files are the renderer.
-- `update/SKILL.md` — refreshes an EXISTING walkthrough in place: reconstructs the prior model from the rendered HTML, merges in explicitly-named files, and overwrites the same file. Reuses `create`'s six references unchanged for the render half; its own `references/reconstruct-and-merge.md` covers the reconstruct + merge stages.
+- `create/SKILL.md` — renders the current session from scratch. The renderer is five `references/` files plus the `references/components/` catalog (`index.md` + per-group recipes loaded on demand).
+- `update/SKILL.md` — refreshes an EXISTING walkthrough in place: reconstructs the prior model from the rendered HTML, merges in explicitly-named files, and overwrites the same file. Reuses `create`'s renderer references unchanged for the render half (five `references/` files + the `components/` catalog); its own `references/reconstruct-and-merge.md` covers the reconstruct + merge stages.
 
 No internal building blocks (no `user-invocable: false` skills), no agents, no hooks, no scripts.
 

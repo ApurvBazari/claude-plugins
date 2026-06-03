@@ -3,7 +3,7 @@
 Once the session model is synthesized, this guide is how you turn it into a page: which catalog
 component each model field calls for, when to render nothing, how to compose a bespoke component
 when the catalog has no fit, and the self-contained rules every document must obey. Components come
-from `components.md`; tokens and signature patterns from `design-system.md`; shared handlers from
+from the `components/` recipes, indexed in `components/index.md`; tokens and signature patterns from `design-system.md`; shared handlers from
 `interactivity.md`; the chrome and slots from `page-scaffold.md`.
 
 ## 1. Model → component mapping

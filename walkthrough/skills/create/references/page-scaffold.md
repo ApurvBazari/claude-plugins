@@ -6,7 +6,7 @@ copies this document verbatim, then injects the chosen components' CSS into `{{C
 their markup into `{{HERO}}`/`{{SECTIONS}}`, and their behaviour into `{{COMPONENT_JS}}` — while
 the shared bundle goes into `{{INTERACTIVITY_JS}}` and the detail lookup into `{{DETAIL_DATA}}`.
 
-It contains **no component CSS or markup** — that lives in `components.md`. The base CSS below is
+It contains **no component CSS or markup** — that lives in the `components/` catalog. The base CSS below is
 lifted verbatim from `seed.html`; never invent base styles.
 
 Slots to fill: `{{TITLE}}`, `{{NAV_LINKS}}`, `{{KICKER}}`, `{{HERO}}`, `{{SECTIONS}}`,
@@ -111,13 +111,13 @@ Fill each marker below. Leave a marker empty (delete it) only when its content d
 | `{{NAV_LINKS}}` | One `<a href="#id">label</a>` per section, concatenated. Mark the first link `class="on"` (e.g. `<a href="#top" class="on">Look</a><a href="#flow">Flow</a>`). The `id` must match each section's `id`. |
 | `{{KICKER}}` | A short mono status line for the nav, uppercase — session metadata only (date, primary type, focus/scope), never repository state (e.g. `SESSION · 2026-06-02` or `BRAINSTORM · AUTH MODEL`). Rendered after the live `.dot`. |
 | `{{HERO}}` | The hero block: `<div class="eyebrow">…</div>` + `<h1>…</h1>` + `<p class="lede">…</p>`, optionally followed by a `<div class="hstats">…</div>` of headline numbers. Goes inside the always-visible `#top` section. |
-| `{{SECTIONS}}` | One `<section id="…">…</section>` per session-model section after the hero. Each holds a `.sec-label`, an `<h2>`, an optional `.lede`, and the chosen component markup from `components.md`. |
-| `{{COMPONENT_CSS}}` | The CSS blocks for **only** the components actually used, copied verbatim from `components.md`. Omit CSS for unused components. |
-| `{{COMPONENT_JS}}` | The component-specific JS handlers for **only** the components used (e.g. `setTab`, `tog`), copied from `components.md`. Omit handlers for unused components. |
+| `{{SECTIONS}}` | One `<section id="…">…</section>` per session-model section after the hero. Each holds a `.sec-label`, an `<h2>`, an optional `.lede`, and the chosen component markup from the `components/` catalog. |
+| `{{COMPONENT_CSS}}` | The CSS blocks for **only** the components actually used, copied verbatim from the `components/<group>.md` recipes. Omit CSS for unused components. |
+| `{{COMPONENT_JS}}` | The component-specific JS handlers for **only** the components used (e.g. `setTab`, `tog`), copied from the `components/<group>.md` recipes. Omit handlers for unused components. |
 | `{{INTERACTIVITY_JS}}` | The full shared behaviour bundle from `interactivity.md` — theme toggle (`tgl`), detail panel (`openD`/`closeD`), scroll progress, and the IntersectionObserver reveal. |
 | `{{DETAIL_DATA}}` | The `DET` object literal mapping detail ids to `{k,h,b}` records read by `openD`. Include only the ids referenced by the markup; emit an empty `const DET={};` if no detail panel is wired. |
 
 **`details{}` → `DET` transform:** the session model's `details{ "<id>": {body, where, related} }` (see `session-model.md`) compiles into the runtime `DET[id] = { k: <short kicker/label>, h: <heading>, b: <body HTML> }`. Fold `where` into `b` as a `<code>path:line</code>` anchor and append any `related` ids as cross-links; the panel only reads `k`/`h`/`b`.
 
 **Rule:** copy the base CSS in the `<style>` block verbatim from `seed.html` — never invent base
-styles. Component CSS comes from `components.md` and is injected at `{{COMPONENT_CSS}}` only.
+styles. Component CSS comes from the `components/` catalog and is injected at `{{COMPONENT_CSS}}` only.

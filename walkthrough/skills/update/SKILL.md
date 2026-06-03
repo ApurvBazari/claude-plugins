@@ -56,13 +56,15 @@ stable. The result is a normal session model (the `session-model.md` schema), no
 ## Step 5: Select components
 
 Read the renderer references from `${CLAUDE_PLUGIN_ROOT}/skills/create/references/`. Using
-`authoring-guide.md`, map the merged model to components from `components.md`. Apply "omit empty,
+`authoring-guide.md`, map the merged model to component names, then resolve each to its group file via
+`components/index.md`. Apply "omit empty,
 never stub". Compose bespoke components per the authoring-guide recipe where no catalog entry fits.
 
 ## Step 6: Assemble the HTML
 
 Start from `page-scaffold.md`. Inline: the `@import` + both `:root` blocks from `design-system.md`;
-the shared JS from `interactivity.md`; the CSS+HTML for each chosen component from `components.md`;
+the shared JS from `interactivity.md`; the CSS+HTML for each chosen component from the relevant
+`components/<group>.md` files (routed via `components/index.md`);
 the `DET`/detail data. Fill `{{KICKER}}` from session metadata (date · primary type · scope), uppercase per `page-scaffold.md` — the nav status line.
 Keep it self-contained: no `<script src>`, no `<img>`, only the one Google Fonts `@import`. Produce
 **no** update chrome — no "updated" badge, no changelog; the document simply reflects the new
@@ -89,7 +91,7 @@ Do not auto-open; offer.
 - **Reconstruct, don't fabricate.** Recover only what the HTML actually contains; the `DET` store is the reliable source for details. Note partial fidelity on degraded input.
 - **Named files drive; conversation frames.** No automatic git discovery of changes. No paths → ask which files changed.
 - **One coherent doc.** Revise/merge/add into a single narrative; keep ids stable; never staple old + new.
-- **Same look, reused renderer.** Render via create's six references unchanged — tokens only, self-contained, one Google Fonts `@import`.
+- **Same look, reused renderer.** Render via create's renderer references unchanged — five `references/` files plus the `components/` catalog (index + on-demand group recipes); tokens only, self-contained, one Google Fonts `@import`.
 - **In place, seamless.** Overwrite the same file; no new file, no backup, no update chrome.
 - **Read-only except the final write.** Never execute session-derived code; only read the named and cited files.
 - **AskUserQuestion guard.** The target picker uses fixed-length option lists per `.claude/rules/ask-user-question-guard.md`.

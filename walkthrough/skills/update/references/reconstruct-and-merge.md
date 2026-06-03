@@ -4,7 +4,7 @@
 HTML. This reference covers the two stages unique to `update` — **reconstruct** the session model
 from that HTML (Part A), then **merge** it with the newly-gathered material into one coherent,
 refreshed model (Part B). Once you have the merged model, hand off to the create renderer
-(`authoring-guide.md` → `components.md` → `page-scaffold.md`) unchanged.
+(`authoring-guide.md` → `components/` (via `components/index.md`) → `page-scaffold.md`) unchanged.
 
 The model shape is defined in `session-model.md`. Use its exact field names — they are load-bearing
 keys for the renderer's mapping table.
@@ -25,7 +25,7 @@ the detail-panel store is embedded verbatim). Reconstruction reads the rendered 
 | `.hstats` → `.hstat` (`.v`, `.l`) | `metrics[]` (`value`, `label`) | hero headline numbers |
 | `<section id="X">` → `.sec-label` + `<h2>` + body | `sections[]` (`id` = the `id` attr, `heading` = `<h2>`, `prose` = section copy) | one entry per non-hero `<section>`; recover only the narrative copy into `prose` — component markup inside the section (diagrams, tabs, trees) is recovered via the other rows, not flattened into `prose` |
 | `<div class="nav-links"><a href="#id">label</a>…` | `sections[].id` order + nav labels | confirms the section spine |
-| Diagram markup (flow / architecture / dependency) | `nodes[]`, `edges[]` | identify by the component's class names in `components.md`; edge direction/labels are re-derived from the rendered arrows/labels (best-effort) |
+| Diagram markup (flow / architecture / dependency) | `nodes[]`, `edges[]` | identify by the component's class names in `components/diagrams.md`; edge direction/labels are re-derived from the rendered arrows/labels (best-effort) |
 | Tabs + tradeoff bars, or accordion `<details>` | `decisions[]` (`title`, `why`, `alternatives`, `tradeoffs[{axis, score}]`) | bar widths carry the score — read `data-w="N"` back into `score`; the tab / `.ac-body` copy is `why` / `alternatives` |
 | File tree / filterable cards | `files[]` (`path`, `change`, `note`) | `change` is encoded by the row's color/badge class |
 | Timeline / stepper | `timeline[]` (`t`, `label`, `ref`) | `ref` is the anchor each entry scrolls to |
