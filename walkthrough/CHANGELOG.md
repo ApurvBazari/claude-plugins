@@ -1,6 +1,11 @@
 # Changelog
 
 ## 0.2.0
+- Restructure the component catalog: the 678-line `components.md` is split into a slim
+  `components/index.md` (a name→recipe routing table, always read) plus five role-grouped recipe
+  files (`diagrams`, `decisions`, `files-timeline`, `metrics`, `layout-prose`). The renderer reads
+  the index always and loads only the group files for components it actually uses. Recipes are
+  byte-identical; rendered output is unchanged.
 - Remove the `collect-git-context.sh` helper and its smoke test — walkthrough is now script-free.
   Walkthroughs synthesize from the session transcript (plus direct file reads for real `path:line`
   citations), not repository state: git context was redundant with the conversation for the plugin's
