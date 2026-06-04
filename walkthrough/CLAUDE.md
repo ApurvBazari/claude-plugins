@@ -85,7 +85,7 @@ The component catalog in `references/components/` (indexed by `components/index.
 The escape hatch keeps the catalog small without forcing odd sessions into ill-fitting components.
 
 First-class catalog additions in v0.4.0:
-- **`components/interactive.md`** — two new components: interactive explorer (expandable node graph) and data-driven step timeline.
+- **`components/interactive.md`** — two new components: interactive explorer (selector-driven diagram + detail pane) and data-driven step timeline.
 - **`.chip` primitive** — five status roles: `ok`, `info`, `warn`, `danger`, `neutral`. Use inline within any component for status badges.
 
 ## Skills
