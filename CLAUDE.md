@@ -13,20 +13,20 @@ Claude Code plugin marketplace by Apurv Bazari. Four plugins — all markdown + 
 .claude-plugin/marketplace.json          ← plugin registry
          │
          ├──→ onboard/                   ← codebase analyzer + tooling generator
-         │      ├── skills/ (init, generate, update, status, verify, evolve,
+         │      ├── skills/ (start, generate, update, check, verify, evolve,
          │      │           wizard, analysis, generation)
          │      ├── agents/ (codebase-analyzer, config-generator, feature-evaluator)
          │      └── scripts/ (analyze-structure, detect-stack, measure-complexity)
          │
          ├──→ notify/                    ← cross-platform system notifications
-         │      ├── skills/ (setup, status, uninstall, wizard)
+         │      ├── skills/ (setup, check, uninstall, wizard)
          │      └── scripts/ (notify, install-notifier, test-notification)
          │
          ├──→ handoff/                   ← session handoff continuity
-         │      └── skills/ (save, status, resume)
+         │      └── skills/ (save, pickup, check, discard)
          │
          └──→ walkthrough/               ← session → self-contained interactive HTML
-                └── skills/ (create, update)
+                └── skills/ (create, update, document)
 ```
 
 ## Plugin Structure Convention
