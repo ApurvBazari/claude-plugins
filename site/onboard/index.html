@@ -1,0 +1,381 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>onboard — claude-plugins</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root{
+  --bg-deep:#08090c; --bg-card:#0f1117; --bg-card-hover:#151821; --bg-elevated:#1a1d28; --bg-inset:#060709;
+  --border:#1e2230; --border-active:#2d3348; --border-strong:#3a4159;
+  --tp:#e8eaf0; --ts:#7d8399; --tm:#4a5068; --tf:#2e3349;
+  --blue:#3b82f6; --green:#22c55e; --amber:#f59e0b; --rose:#f43f5e; --purple:#a78bfa;
+  --accent:#22d3ee; --accent-glow:rgba(34,211,238,.16); --accent-soft:rgba(34,211,238,.08);
+  --blue-soft:rgba(59,130,246,.1); --green-soft:rgba(34,197,94,.1); --amber-soft:rgba(245,158,11,.1); --rose-soft:rgba(244,63,94,.1); --purple-soft:rgba(167,139,250,.1);
+  --mono:'JetBrains Mono',monospace; --serif:'Instrument Serif',serif; --sans:'DM Sans',sans-serif;
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+html[data-theme="light"]{
+  --bg-deep:#faf8f4; --bg-card:#fff; --bg-card-hover:#f5f1ea; --bg-elevated:#fff; --bg-inset:#f5f1ea;
+  --border:#e5dfd6; --border-active:#d8cfc1; --border-strong:#c9c0b3;
+  --tp:#2a2520; --ts:#6b6157; --tm:#9e9486; --tf:#c9c0b3;
+  --blue:#2d5fa0; --green:#2d7a3a; --amber:#b87333; --rose:#b83a3a; --purple:#7a3b8f;
+  --accent:#c05e2b; --accent-glow:rgba(192,94,43,.16); --accent-soft:rgba(192,94,43,.09);
+  --blue-soft:rgba(45,95,160,.1); --green-soft:rgba(45,122,58,.1); --amber-soft:rgba(184,115,51,.1); --rose-soft:rgba(184,58,58,.1); --purple-soft:rgba(122,59,143,.1);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg-deep);color:var(--tp);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .3s,color .3s;}
+body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+/* nav */
+nav{position:fixed;top:0;left:0;right:0;height:54px;z-index:100;backdrop-filter:blur(20px) saturate(180%);background:color-mix(in srgb,var(--bg-deep) 82%,transparent);border-bottom:1px solid var(--border);}
+.nav-in{max-width:1180px;margin:0 auto;height:100%;display:flex;align-items:center;justify-content:space-between;padding:0 1.6rem;}
+.logo{font-family:var(--mono);font-size:.82rem;font-weight:600;letter-spacing:.02em;}
+.logo span{color:var(--accent);}
+.nav-links{display:flex;gap:.3rem;font-family:var(--mono);font-size:.68rem;}
+.nav-links a{color:var(--ts);text-decoration:none;padding:.3rem .55rem;border-radius:6px;transition:.2s;}
+.nav-links a:hover,.nav-links a.on{color:var(--tp);background:var(--accent-soft);}
+.nav-meta{display:flex;align-items:center;gap:.45rem;font-family:var(--mono);font-size:.62rem;color:var(--tm);text-transform:uppercase;letter-spacing:.12em;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2.5s infinite;}
+.theme-btn{cursor:pointer;font-family:var(--mono);font-size:.62rem;color:var(--ts);border:1px solid var(--border);padding:.28rem .6rem;border-radius:6px;background:none;}
+.progress{position:fixed;top:54px;left:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--blue));z-index:101;width:0;box-shadow:0 0 8px var(--accent-glow);}
+main{max-width:1180px;margin:0 auto;padding:0 1.6rem;padding-top:78px;}
+.eyebrow{font-family:var(--mono);font-size:.68rem;color:var(--accent);text-transform:uppercase;letter-spacing:.18em;display:inline-flex;align-items:center;gap:.6rem;margin-bottom:.8rem;}
+.eyebrow::before{content:'';width:26px;height:1px;background:var(--accent);}
+h1{font-family:var(--serif);font-size:clamp(2.4rem,6vw,4rem);font-weight:400;line-height:1.04;letter-spacing:-.025em;margin:.2rem 0;max-width:880px;}
+h1 em,h2 em{font-style:italic;color:var(--accent);}
+h2{font-family:var(--serif);font-size:clamp(1.7rem,3.5vw,2.4rem);font-weight:400;line-height:1.15;margin:.2rem 0 .3rem;}
+.lede{color:var(--ts);font-size:1.08rem;line-height:1.7;max-width:720px;margin:.6rem 0 0;}
+p{color:var(--ts);font-size:.92rem;line-height:1.7;max-width:720px;}
+p code,li code{font-family:var(--mono);font-size:.8rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
+section{padding:4rem 0 2rem;scroll-margin-top:70px;opacity:0;transform:translateY(24px);transition:opacity .7s var(--ease),transform .7s var(--ease);}
+section.vis{opacity:1;transform:none;}
+.sec-label{font-family:var(--mono);font-size:.65rem;color:var(--tm);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.5rem;}
+/* hero stats */
+.hstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:1.8rem;}
+.hstat{background:var(--bg-card);padding:1.1rem 1.2rem;}
+.hstat .v{font-family:var(--serif);font-size:1.9rem;color:var(--tp);line-height:1;}
+.hstat .v em{font-style:italic;color:var(--accent);}
+.hstat .l{font-family:var(--mono);font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;margin-top:.4rem;}
+/* detail panel */
+.panel{position:fixed;top:0;right:0;width:300px;height:100vh;background:var(--bg-card);border-left:1px solid var(--border-active);padding:24px 20px;overflow:auto;transform:translateX(100%);transition:transform .25s var(--ease);box-shadow:-20px 0 50px rgba(0,0,0,.3);z-index:200;}
+.panel.open{transform:none;}
+.panel .x{position:absolute;top:14px;right:16px;color:var(--tm);cursor:pointer;font-size:18px;}
+.panel .pk{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);}
+.panel h3{font-family:var(--serif);font-weight:400;font-size:1.4rem;margin:.2rem 0 .6rem;}
+.panel .pb{font-size:.86rem;color:var(--ts);line-height:1.6;}
+.panel code{font-family:var(--mono);font-size:.72rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@media(max-width:780px){.nav-links{display:none}}
+/* === component CSS (only the selected components) === */
+/* hero chips (typeTags) */
+.chips{display:flex;flex-wrap:wrap;gap:.5rem;margin:1.2rem 0 .2rem;}
+.chip{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ts);background:var(--bg-card);border:1px solid var(--border);padding:.32rem .65rem;border-radius:20px;}
+.chip.accent{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 30%,transparent);background:var(--accent-soft);}
+/* callout */
+.callout{background:var(--accent-soft);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:.9rem 1.2rem;margin:1.1rem 0;}
+.callout h4{font-family:var(--serif);font-weight:400;color:var(--accent);margin:0 0 .3rem;font-size:1.1rem;}
+.callout p{margin:0;font-size:.86rem;color:var(--ts);}
+.callout code{font-family:var(--mono);font-size:.78rem;background:var(--bg-card);color:var(--accent);padding:1px 5px;border-radius:4px;}
+/* annotated code block */
+.codeblock{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:1.1rem 0;}
+.cb-head{display:flex;justify-content:space-between;align-items:center;padding:.5rem .9rem;background:var(--bg-elevated);border-bottom:1px solid var(--border);font-family:var(--mono);font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;}
+.cb-file{color:var(--accent);}
+.cb-lang{color:var(--tm);}
+.cb-body{margin:0;padding:.9rem 1.1rem;font-family:var(--mono);font-size:.78rem;line-height:1.65;color:var(--ts);white-space:pre;overflow-x:auto;}
+.cb-body code{color:var(--tp);}
+/* flow / pipeline diagram */
+.flow{display:flex;align-items:center;flex-wrap:wrap;gap:.4rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1.2rem 0;}
+.fnode{flex:1;min-width:110px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:.8rem .9rem;font-family:var(--mono);font-size:.7rem;cursor:pointer;transition:all .3s var(--ease);}
+.fnode:hover{border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow);transform:scale(1.03);}
+.fnode .nl{font-size:.55rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;}
+.fnode.accent{border-color:color-mix(in srgb,var(--accent) 40%,transparent);background:linear-gradient(135deg,var(--bg-elevated),var(--accent-soft));}
+.farr{color:var(--border-strong);font-size:1.1rem;}
+/* comparison table */
+.compare-table{width:100%;border-collapse:separate;border-spacing:0;font-size:.82rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:1.2rem 0;}
+.compare-table th{font-family:var(--mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);padding:.85rem 1.25rem;text-align:left;background:var(--bg-elevated);border-bottom:1px solid var(--border);font-weight:500;}
+.compare-table td{padding:.75rem 1.25rem;border-bottom:1px solid var(--border);color:var(--ts);vertical-align:top;}
+.compare-table tr:last-child td{border-bottom:none;}
+.compare-table tr:hover td{background:var(--bg-card-hover);}
+.compare-table .label-cell{font-weight:500;color:var(--tp);font-size:.82rem;}
+.badge-yes{display:inline-flex;align-items:center;gap:.3rem;font-family:var(--mono);font-size:.68rem;color:var(--green);background:var(--green-soft);padding:.2rem .55rem;border-radius:4px;}
+.badge-no{display:inline-flex;align-items:center;gap:.3rem;font-family:var(--mono);font-size:.68rem;color:var(--tm);background:var(--bg-inset);padding:.2rem .55rem;border-radius:4px;}
+.badge-upgraded{display:inline-flex;align-items:center;gap:.3rem;font-family:var(--mono);font-size:.68rem;color:var(--accent);background:var(--accent-soft);padding:.2rem .55rem;border-radius:4px;}
+.cell-mono{font-family:var(--mono);font-size:.74rem;color:var(--accent);}
+/* skills reference table — same primitives as compare-table */
+.ref-table{width:100%;border-collapse:separate;border-spacing:0;font-size:.82rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:1.2rem 0;}
+.ref-table th{font-family:var(--mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);padding:.85rem 1.25rem;text-align:left;background:var(--bg-elevated);border-bottom:1px solid var(--border);font-weight:500;}
+.ref-table td{padding:.75rem 1.25rem;border-bottom:1px solid var(--border);color:var(--ts);vertical-align:top;}
+.ref-table tr:last-child td{border-bottom:none;}
+.ref-table tr:hover td{background:var(--bg-card-hover);}
+.ref-table .slash{font-family:var(--mono);font-size:.76rem;color:var(--accent);white-space:nowrap;}
+.ref-table .tag{font-family:var(--mono);font-size:.58rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);border:1px solid var(--border);padding:.12rem .4rem;border-radius:4px;display:inline-block;}
+.ref-table .tag.lock{color:var(--rose);border-color:color-mix(in srgb,var(--rose) 35%,transparent);background:var(--rose-soft);}
+.ref-table .tag.auto{color:var(--green);border-color:color-mix(in srgb,var(--green) 35%,transparent);background:var(--green-soft);}
+.ref-table .tag.hidden-int{color:var(--purple);border-color:color-mix(in srgb,var(--purple) 35%,transparent);background:var(--purple-soft);}
+.ref-table .grp{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);background:var(--accent-soft);}
+/* key–value metadata grid */
+.edge-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:.7rem;margin-top:1rem;}
+.edge{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:.85rem 1rem;}
+.edge .n{font-family:var(--mono);font-size:.62rem;color:var(--accent);}
+.edge .t{font-weight:600;margin:.2rem 0;font-size:.88rem;color:var(--tp);}
+.edge p{font-size:.78rem;margin:0;color:var(--ts);}
+/* legend */
+.legend{display:flex;gap:.6rem;flex-wrap:wrap;margin:1rem 0;}
+.lg{font-family:var(--mono);font-size:.6rem;color:var(--tp);padding:.5rem .7rem;border-radius:8px;border:1px solid var(--border);display:flex;align-items:center;gap:.5rem;background:var(--bg-card);}
+.lg i{width:14px;height:14px;border-radius:4px;display:inline-block;}
+/* footer */
+.foot{border-top:1px solid var(--border);margin-top:3rem;padding:2.2rem 0 4rem;display:flex;flex-wrap:wrap;gap:1.4rem;align-items:center;justify-content:space-between;}
+.foot-links{display:flex;flex-wrap:wrap;gap:.5rem;}
+.foot-links a{font-family:var(--mono);font-size:.7rem;color:var(--ts);text-decoration:none;border:1px solid var(--border);padding:.4rem .8rem;border-radius:8px;background:var(--bg-card);transition:all .2s var(--ease);}
+.foot-links a:hover{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 35%,transparent);background:var(--accent-soft);}
+.foot .meta{font-family:var(--mono);font-size:.62rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;}
+</style></head>
+<body>
+  <nav><div class="nav-in">
+    <div class="logo">◆ claude<span>-plugins</span></div>
+    <div class="nav-links">
+      <a href="#top" class="on">Overview</a>
+      <a href="#what">What it does</a>
+      <a href="#drift">Drift loop</a>
+      <a href="#flow">Architecture</a>
+      <a href="#skills">Skills</a>
+      <a href="#compare">v1 vs v2</a>
+      <a href="#example">Example</a>
+      <a href="#artifacts">Artifacts</a>
+    </div>
+    <div style="display:flex;align-items:center;gap:.8rem">
+      <div class="nav-meta"><span class="dot"></span> PLUGIN · v2.0.0</div>
+      <button class="theme-btn" onclick="tgl()">◑ THEME</button></div>
+  </div></nav>
+  <div class="progress" id="prog"></div>
+  <main>
+    <section id="top" class="vis" style="padding-top:2.4rem">
+      <div class="eyebrow">claude-plugins · onboard</div>
+      <h1>Lifecycle manager for <em>AI configs</em>.</h1>
+      <p class="lede">onboard generates your Claude tooling on day one, then <strong>detects code-vs-config drift</strong> as the project evolves and offers to fix it. Auto-generating <code>CLAUDE.md</code> is commodity in 2026 — keeping it in sync as the code grows is what onboard does that nothing else does.</p>
+      <div class="chips">
+        <span class="chip accent">plugin</span>
+        <span class="chip">onboarding</span>
+        <span class="chip">codebase-analysis</span>
+        <span class="chip">quality-gates</span>
+      </div>
+      <div class="codeblock" style="max-width:560px">
+        <div class="cb-head"><span class="cb-file">install</span><span class="cb-lang">bash</span></div>
+        <pre class="cb-body"><code>claude plugin install onboard@apurvbazari-plugins</code></pre>
+      </div>
+      <div class="hstats">
+        <div class="hstat"><div class="v"><em>5</em></div><div class="l">user skills</div></div>
+        <div class="hstat"><div class="v">3</div><div class="l">agents</div></div>
+        <div class="hstat"><div class="v">4</div><div class="l">generation phases</div></div>
+        <div class="hstat"><div class="v">8+</div><div class="l">project types</div></div>
+        <div class="hstat"><div class="v"><em>v2</em></div><div class="l">context shape</div></div>
+      </div>
+    </section>
+
+    <section id="what">
+      <div class="sec-label">01 — what it does</div>
+      <h2>From day-one setup to <em>continuous</em> upkeep</h2>
+      <p class="lede">A guided <code>/onboard:start</code> analyzes your codebase, asks a short adaptive set of questions, and generates a complete, tailored Claude Code tooling setup — root and subdirectory <code>CLAUDE.md</code>, path-scoped rules, project-specific skills and agents, hooks, output styles, and metadata.</p>
+      <p>That part is table stakes — Claude Code's <code>/init</code>, Copilot, Codex, Cursor, and several web tools all generate a <code>CLAUDE.md</code>. onboard's reason for existing is the second half: the artifacts it writes carry self-maintaining headers and, in enriched mode, auto-evolution hooks that watch your dependency manifests and structure. As the code drifts away from the config, <code>/onboard:evolve</code> reads that accumulated drift and proposes targeted realignments you approve one by one.</p>
+      <div class="callout">
+        <h4>The differentiator</h4>
+        <p>Generation is commodity. <strong>Maintenance is not.</strong> The <code>/onboard:evolve</code> drift-detection loop is the capability no competitor ships — it keeps your AI configs aligned with the code that actually exists, not the code that existed on the day you ran setup.</p>
+      </div>
+    </section>
+
+    <section id="drift">
+      <div class="sec-label">02 — the differentiator</div>
+      <h2>The <em>drift-detection</em> loop</h2>
+      <p class="lede">When <code>/onboard:start</code> runs in enriched mode it installs quiet auto-evolution hooks. They record what changed; <code>/onboard:evolve</code> turns that record into a reviewed set of config updates.</p>
+      <div class="flow" aria-label="Drift detection loop">
+        <div class="fnode" data-d="hook-watch" onclick="openD('hook-watch')" tabindex="0" role="button" aria-label="FileChanged hooks watch manifests"><div class="nl">hooks</div>watch manifests</div>
+        <span class="farr">→</span>
+        <div class="fnode" data-d="drift-log" onclick="openD('drift-log')" tabindex="0" role="button" aria-label="Drift logged to greenfield-drift.json"><div class="nl">log</div>greenfield-drift.json</div>
+        <span class="farr">→</span>
+        <div class="fnode" data-d="session-summary" onclick="openD('session-summary')" tabindex="0" role="button" aria-label="SessionStart summarises pending drift"><div class="nl">session</div>pending-drift summary</div>
+        <span class="farr">→</span>
+        <div class="fnode accent" data-d="evolve" onclick="openD('evolve')" tabindex="0" role="button" aria-label="onboard evolve proposes targeted updates"><div class="nl">/onboard:evolve</div>propose &amp; apply</div>
+        <span class="farr">→</span>
+        <div class="fnode" data-d="resnapshot" onclick="openD('resnapshot')" tabindex="0" role="button" aria-label="Snapshot updates so the next run is incremental"><div class="nl">snapshot</div>re-baseline</div>
+      </div>
+      <p>The categories <code>/onboard:evolve</code> recognises: new languages and dependencies, structural shifts (a new workspace package appearing), config diffs (<code>tsconfig.json</code> paths), and missing or stale hooks and rules. You decide which proposed updates land; the snapshot then updates so the next run is incremental.</p>
+    </section>
+
+    <section id="flow">
+      <div class="sec-label">03 — architecture</div>
+      <h2>The four-phase <em>generation</em> pipeline</h2>
+      <p class="lede"><code>/onboard:start</code> runs a fixed pipeline: an empty-repo guard, a read-only analysis pass, an adaptive wizard, generation through a dedicated agent, then an education handoff. Click a phase for detail.</p>
+      <div class="flow" aria-label="onboard:start four-phase pipeline">
+        <div class="fnode" data-d="phase0" onclick="openD('phase0')" tabindex="0" role="button" aria-label="Phase 0 empty-repo guard"><div class="nl">phase 0</div>empty-repo guard</div>
+        <span class="farr">→</span>
+        <div class="fnode" data-d="phase1" onclick="openD('phase1')" tabindex="0" role="button" aria-label="Phase 1 analysis"><div class="nl">phase 1</div>analysis</div>
+        <span class="farr">→</span>
+        <div class="fnode" data-d="phase2" onclick="openD('phase2')" tabindex="0" role="button" aria-label="Phase 2 wizard"><div class="nl">phase 2</div>wizard</div>
+        <span class="farr">→</span>
+        <div class="fnode accent" data-d="phase3" onclick="openD('phase3')" tabindex="0" role="button" aria-label="Phase 3 generation"><div class="nl">phase 3</div>generation</div>
+        <span class="farr">→</span>
+        <div class="fnode" data-d="phase4" onclick="openD('phase4')" tabindex="0" role="button" aria-label="Phase 4 handoff"><div class="nl">phase 4</div>handoff</div>
+      </div>
+      <p>Three specialised components do the work, each clickable above: the read-only <strong>codebase-analyzer</strong> agent scans structure, dependencies and patterns; the <strong>wizard</strong> skill tailors its questions to what the analyzer found; the <strong>config-generator</strong> agent takes the analysis plus wizard answers and writes every artifact. The analysis report stays in conversation context — it is never written to disk.</p>
+    </section>
+
+    <section id="skills">
+      <div class="sec-label">04 — reference</div>
+      <h2>Skills &amp; <em>agents</em></h2>
+      <p class="lede">Five user-facing skills (all <code>/onboard:&lt;name&gt;</code>). Read-only helpers can auto-invoke; the two destructive setup skills require explicit invocation. One internal API skill is hidden from the menu.</p>
+      <table class="ref-table">
+        <thead><tr><th>Skill</th><th>Invocation</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="slash">/onboard:start</td><td><span class="tag lock">user-only</span></td><td>Main entry point — the 4-phase guided workflow: empty-repo guard, analysis, wizard, generation, handoff.</td></tr>
+          <tr><td class="slash">/onboard:update</td><td><span class="tag lock">user-only</span></td><td>Re-aligns tooling against the latest Claude Code best practices and live docs, preserving your manual customisations.</td></tr>
+          <tr><td class="slash">/onboard:evolve</td><td><span class="tag auto">auto</span></td><td>The drift loop — reads <span class="cell-mono">.claude/greenfield-drift.json</span>, compares the snapshot to current code, proposes targeted updates.</td></tr>
+          <tr><td class="slash">/onboard:check</td><td><span class="tag auto">auto</span></td><td>Quick health check: last run date, generated artifacts, integrity status, and recommendations.</td></tr>
+          <tr><td class="slash">/onboard:verify</td><td><span class="tag auto">auto</span></td><td>Independent feature verification — spawns the feature-evaluator agent in worktree isolation against <span class="cell-mono">docs/feature-list.json</span>.</td></tr>
+          <tr><td class="slash">/onboard:generate</td><td><span class="tag hidden-int">internal API</span></td><td>Headless generation for v2 callers. Consumes the v2 context shape and <strong>rejects v1 input outright</strong>; hidden from the <span class="cell-mono">/</span> menu.</td></tr>
+        </tbody>
+      </table>
+      <table class="ref-table">
+        <thead><tr><th>Agent</th><th>Mode</th><th>Role</th></tr></thead>
+        <tbody>
+          <tr><td class="slash">codebase-analyzer</td><td><span class="tag">read-only</span></td><td>Deep scan of structure, dependencies and patterns; produces the structured analysis report (Phase 1).</td></tr>
+          <tr><td class="slash">config-generator</td><td><span class="tag">write</span></td><td>Takes analysis + wizard answers and writes every tooling artifact (Phase 3 and headless generate).</td></tr>
+          <tr><td class="slash">feature-evaluator</td><td><span class="tag">isolated</span></td><td>Independently verifies features in a git worktree, judging outcomes only — never modifies source.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="compare">
+      <div class="sec-label">05 — v2 cutover</div>
+      <h2>onboard <em>2.0</em>: the hard v1 → v2 cutover</h2>
+      <p class="lede">Version 2.0.0 moves the headless contract to a new <strong>v2 context shape</strong> (<span class="cell-mono">version: 2</span>, <span class="cell-mono">phases.*</span>, <span class="cell-mono">syntheses</span>, <span class="cell-mono">dependencies</span>). The cutover is hard and intentional — there is no migration helper.</p>
+      <table class="compare-table">
+        <thead><tr><th>Behaviour</th><th>onboard 1.10.0 (v1)</th><th>onboard 2.0.0 (v2)</th></tr></thead>
+        <tbody>
+          <tr><td class="label-cell">Headless context shape</td><td><span class="cell-mono">v1 flat context</span></td><td><span class="cell-mono">version: 2 (phases / syntheses)</span></td></tr>
+          <tr><td class="label-cell">v1 input to <span class="cell-mono">generate</span></td><td><span class="badge-yes">✓ accepted</span></td><td><span class="badge-no">— rejected outright</span></td></tr>
+          <tr><td class="label-cell">Migration helper</td><td><span class="badge-no">— n/a</span></td><td><span class="badge-no">— none ships</span></td></tr>
+          <tr><td class="label-cell">Where v1 callers stay</td><td class="cell-mono">onboard@1.10.0</td><td class="cell-mono">pin to 1.10.0</td></tr>
+          <tr><td class="label-cell">CI/CD &amp; sprint-contract rendering</td><td><span class="badge-no">— external</span></td><td><span class="badge-upgraded">↑ rendered from cicdAndDelivery</span></td></tr>
+          <tr><td class="label-cell">Root v2 schema stability</td><td><span class="badge-no">—</span></td><td><span class="badge-yes">✓ stable (minors fill deferred phases)</span></td></tr>
+        </tbody>
+      </table>
+      <div class="callout">
+        <h4>Why a clean break</h4>
+        <p>The <code>generate</code> skill detects the version at <span class="cell-mono">Step 0</span> and refuses v1 input — never silent, never partial, with a machine-parseable error so callers can route. v1 callers must stay on <code>onboard@1.10.0</code> for the life of their session.</p>
+      </div>
+    </section>
+
+    <section id="example">
+      <div class="sec-label">06 — example</div>
+      <h2>A run, then <em>drift</em> two weeks later</h2>
+      <p class="lede"><code>/onboard:start</code> on an existing Next.js 15 project, then <code>/onboard:evolve</code> after the team adds Playwright and extracts a workspace package.</p>
+      <div class="codeblock">
+        <div class="cb-head"><span class="cb-file">/onboard:start → /onboard:evolve</span><span class="cb-lang">transcript</span></div>
+        <pre class="cb-body"><code>&gt; /onboard:start
+
+Phase 1: Analysis
+  Languages    TypeScript (94%), CSS (6%)
+  Framework    Next.js 15 (App Router)
+  Testing      Vitest + React Testing Library
+  CI/CD        GitHub Actions (1 workflow)
+  Size         48 files, 3,200 LOC
+
+Phase 3: Generation
+  Generated 12 artifacts:
+    CLAUDE.md                          142 lines
+    .claude/rules/testing.md           TDD workflow
+    .claude/skills/run-tests/SKILL.md  test runner
+    .claude/settings.json              format + lint hooks
+    + 8 more files
+  Snapshot saved to .claude/onboard-meta.json
+
+# ── two weeks later — team added Playwright + packages/shared ──
+
+&gt; /onboard:evolve
+
+Drift detected:
+  + new dependency     @playwright/test in apps/web
+  + structural change  packages/shared workspace appeared
+  ~ tsconfig changes   paths added for @repo/shared
+
+Proposed updates:
+  • Add rule        testing/e2e-conventions.md (Playwright)
+  • Update CLAUDE.md → mark monorepo, document boundaries
+  • Add hook        PostToolUse on apps/web/**/*.tsx
+
+Apply all? [Y/n]  &gt; Y
+
+Snapshot updated. AI configs realigned to current code.</code></pre>
+      </div>
+      <div class="legend" aria-label="Drift marker legend">
+        <span class="lg"><i style="background:var(--green)"></i>+ added (new dep / language area)</span>
+        <span class="lg"><i style="background:var(--amber)"></i>~ changed (config diff)</span>
+        <span class="lg"><i style="background:var(--accent)"></i>• proposed update</span>
+      </div>
+    </section>
+
+    <section id="artifacts">
+      <div class="sec-label">07 — output</div>
+      <h2>What it <em>generates</em></h2>
+      <p class="lede">Core artifacts are always emitted. Enriched artifacts land when the wizard or a headless flag enables them — including the auto-evolution hooks that power the drift loop.</p>
+      <div class="sec-label" style="margin-top:1.4rem">core — always</div>
+      <div class="edge-grid">
+        <div class="edge"><div class="n">CLAUDE.md</div><div class="t">Root + subdirectory</div><p>Project overview, stack, commands, conventions, and context-specific guidance for major directories.</p></div>
+        <div class="edge"><div class="n">.claude/rules/*.md</div><div class="t">Path-scoped rules</div><p>Testing, APIs, components, security — scoped to the directories they govern.</p></div>
+        <div class="edge"><div class="n">.claude/skills + agents</div><div class="t">Project tooling</div><p>Stack-specific skills and specialised agents — plugin-aware, skipping anything an installed plugin already covers.</p></div>
+        <div class="edge"><div class="n">.claude/settings.json</div><div class="t">Hook entries</div><p>Auto-format and lint checks tailored to your tooling, plus a PR template and commit conventions.</p></div>
+        <div class="edge"><div class="n">output-styles + meta</div><div class="t">Style + manifest</div><p>A project-scoped output style tuned to your archetype, and <span class="cell-mono">.claude/onboard-meta.json</span> as the generation manifest.</p></div>
+      </div>
+      <div class="sec-label" style="margin-top:1.8rem">enriched — when enabled</div>
+      <div class="edge-grid">
+        <div class="edge"><div class="n">CI/CD pipelines</div><div class="t">GitHub Actions</div><p>ci, tooling-audit, and pr-review workflows rendered from the cicdAndDelivery synthesis.</p></div>
+        <div class="edge"><div class="n">auto-evolution hooks</div><div class="t">FileChanged + SessionStart</div><p>Plus drift-detection scripts — the machinery that feeds <span class="cell-mono">/onboard:evolve</span>.</p></div>
+        <div class="edge"><div class="n">harness artifacts</div><div class="t">progress + guide</div><p><span class="cell-mono">docs/progress.md</span> and <span class="cell-mono">docs/HARNESS-GUIDE.md</span> for cross-session tracking.</p></div>
+        <div class="edge"><div class="n">sprint contracts</div><div class="t">docs/sprint-contracts/</div><p>JSON exit criteria, plus agent-team support (quality hooks, env vars).</p></div>
+      </div>
+      <p style="margin-top:1.4rem">Every generated file carries a self-maintaining header (version + date) that prompts Claude to notify you when the configuration drifts from actual code patterns. Supported stacks: Node.js / TypeScript, Python, Go, Rust, Java / Kotlin, Ruby, monorepos (npm / yarn / pnpm workspaces, Turborepo, Nx, Lerna), and mixed-language projects.</p>
+    </section>
+
+    <div class="foot">
+      <div class="foot-links">
+        <a href="../">← marketplace</a>
+        <a href="https://github.com/ApurvBazari/claude-plugins/tree/main/onboard">source on GitHub</a>
+      </div>
+      <div class="meta">onboard · v2.0.0 · MIT · by Apurv Bazari</div>
+    </div>
+  </main>
+  <aside class="panel" id="panel"><span class="x" onclick="closeD()">✕</span>
+    <div class="pk" id="pk">Detail</div><h3 id="ph">—</h3><div class="pb" id="pbd"></div></aside>
+  <script>
+const DET={
+ 'hook-watch':{k:"Drift loop",h:"Watch manifests",b:"Enriched mode installs <code>FileChanged</code> hooks on <code>package.json</code>, <code>tsconfig.json</code>, <code>pyproject.toml</code>, lockfiles, and structural anchors — quietly tracking changes as you work."},
+ 'drift-log':{k:"Drift loop",h:"greenfield-drift.json",b:"Each tracked change is appended to <code>.claude/greenfield-drift.json</code>. This is the drift log the evolve skill drains — the durable record of code-vs-config divergence."},
+ 'session-summary':{k:"Drift loop",h:"Pending-drift summary",b:"A <code>SessionStart</code> hook summarises pending drift at the start of each Claude Code session, so divergence surfaces before it accumulates silently."},
+ evolve:{k:"Drift loop",h:"/onboard:evolve",b:"Reads the drift log, compares against the original snapshot, categorises changes (new dependencies, structural shifts, config diffs, missing hooks), and proposes targeted updates. You approve each one. Auto-invocable. Related: <code>resnapshot</code>."},
+ resnapshot:{k:"Drift loop",h:"Re-baseline",b:"After applying approved updates, the snapshot is refreshed so the next <code>/onboard:evolve</code> run is incremental — only newly-introduced drift is surfaced."},
+ phase0:{k:"Phase 0",h:"Empty-repo guard",b:"If the repo has no source files, onboard offers a 3-option menu — abort, write a placeholder, or lay down a canonical stub — before any analysis runs."},
+ phase1:{k:"Phase 1",h:"Analysis",b:"The read-only <code>codebase-analyzer</code> agent scans languages, frameworks, testing, CI/CD, and structure via <code>analyze-structure.sh</code>, <code>detect-stack.sh</code>, and <code>measure-complexity.sh</code>. The report stays in context — never written to disk."},
+ phase2:{k:"Phase 2",h:"Wizard",b:"An adaptive Q&amp;A about project context, workflow, and pain points, tailored to what the analyzer found. Presets: Minimal / Standard / Comprehensive / Custom. A plugin-detection pass (siblings + marketplace probe) follows."},
+ phase3:{k:"Phase 3",h:"Generation",b:"<code>Skill(onboard:generate)</code> dispatches the <code>config-generator</code> agent, which writes Core artifacts always and Enriched artifacts when enabled — CLAUDE.md, rules, skills, agents, hooks, and more. Related: <code>phase1</code>, <code>phase2</code>."},
+ phase4:{k:"Phase 4",h:"Handoff",b:"Explains what was generated and how to use it, then suggests next steps — open a file, ask Claude to create a component, or run <code>/onboard:check</code> anytime."}
+};
+const panel=document.getElementById('panel');
+function openD(id){const d=DET[id];if(!d)return;pk.textContent=d.k;ph.textContent=d.h;pbd.innerHTML=d.b;panel.classList.add('open');}
+function openCard(el){if(!el)return;pk.textContent=el.dataset.k||'Detail';ph.textContent=el.dataset.t||'';pbd.innerHTML=el.dataset.desc||'';panel.classList.add('open');}
+function closeD(){panel.classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeD();});
+function setTab(app){document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.app===app));
+ document.querySelectorAll('.detail').forEach(d=>{const on=d.dataset.app===app;d.classList.toggle('show',on);if(on)animate(d);});}
+function animate(scope){scope.querySelectorAll('.fil').forEach(f=>{f.style.width='0';requestAnimationFrame(()=>requestAnimationFrame(()=>{f.style.width=f.dataset.w+'%';}));});}
+function tog(el){el.classList.toggle('on');const set=new Set([...document.querySelectorAll('.pill.on')].map(p=>p.dataset.f));
+ document.querySelectorAll('.tcard').forEach(c=>c.classList.toggle('hidden',!set.has(c.dataset.cat)));}
+function tgl(){const h=document.documentElement;const t=h.getAttribute('data-theme')==='dark'?'light':'dark';h.setAttribute('data-theme',t);try{localStorage.setItem('wt-theme',t);}catch(e){}}
+(function(){try{const t=localStorage.getItem('wt-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vis');const d=e.target.querySelector('.detail.show');if(d)animate(d);}}),{threshold:.1});
+document.querySelectorAll('section').forEach(s=>io.observe(s));
+addEventListener('scroll',()=>{const sc=scrollY/(document.body.scrollHeight-innerHeight)*100;if(prog)prog.style.width=sc+'%';
+ let cur='';document.querySelectorAll('section[id]').forEach(s=>{if(scrollY>=s.offsetTop-120)cur=s.id;});
+ document.querySelectorAll('.nav-links a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+cur));},{passive:true});
+document.querySelectorAll('.fnode[role="button"]').forEach(n=>n.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();n.click();}}));
+setTimeout(()=>{const d=document.querySelector('.detail.show');if(d)animate(d);},300);
+  </script>
+</body></html>
