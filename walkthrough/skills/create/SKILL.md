@@ -25,6 +25,10 @@ Build the structured model per `references/session-model.md` (title, summary, ty
 sections[], nodes[], edges[], decisions[], files[], timeline[], metrics[], openQuestions[],
 details{}) BEFORE writing any HTML.
 
+## Step 3.5: Coverage critic
+Run `references/completeness.md` Part 1 against the session before selecting components. Fold omitted
+salient items into the model; note intentional omissions for the coverage note.
+
 ## Step 4: Select components
 Using `references/authoring-guide.md`, map the model to component names, then look each name up in
 `references/components/index.md` to find its group file. Apply "omit empty, never stub". For content
@@ -63,6 +67,9 @@ open "<path>"        # macOS;  xdg-open on Linux
 
 Do not auto-open; offer.
 
+Include the `completeness.md` Part 2 coverage note (included / intentionally omitted) in the message,
+above the open offer. It is a passive summary, not an `AskUserQuestion`.
+
 ## Key Rules
 - **One look-and-feel.** Tokens only — never raw hex. Reproduce the signature patterns from `design-system.md`.
 - **Self-contained.** All CSS/JS/SVG inline; only the Google Fonts `@import` is external. No CDN scripts/libs.
@@ -72,3 +79,4 @@ Do not auto-open; offer.
 - **Read-only.** Never execute session-derived code; only read files to verify citations.
 - **AskUserQuestion guard.** The thin-session and gitignore prompts use fixed-length option lists per `.claude/rules/ask-user-question-guard.md`.
 - **Self-check before write.** Run `self-check.md` on the assembled HTML; never write a document that fails it.
+- **Completeness gate.** Run the coverage critic after synthesis and surface the coverage note at the offer step.

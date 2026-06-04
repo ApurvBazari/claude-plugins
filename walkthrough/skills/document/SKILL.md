@@ -27,6 +27,10 @@ source files. Cite `path:line` only when verified by a real read.
 Build the structured model per `references/subject-model.md` (title, tagline, summary, typeTags,
 install, sections[], nodes[], edges[], reference[], examples[], links[], details{}) BEFORE any HTML.
 
+## Step 3.5: Coverage critic
+Run `../create/references/completeness.md` Part 1 against the subject before selecting components.
+Fold omitted salient items in; note intentional omissions for the coverage note.
+
 ## Step 4: Select components
 Using `../create/references/authoring-guide.md`, map the model to component names, then look each up
 in `../create/references/components/index.md` for its group file. Apply "omit empty, never stub".
@@ -64,6 +68,9 @@ output is a published/derived artifact, not private session content.)
 Tell the user the path (under three lines). Offer `open "<path>"` (macOS; `xdg-open` on Linux).
 Do not auto-open.
 
+Include the `completeness.md` Part 2 coverage note (included / intentionally omitted) in the message,
+above the open offer. It is a passive summary, not an `AskUserQuestion`.
+
 ## Key Rules
 - **One look-and-feel.** Tokens only — never raw hex. Reproduce `design-system.md` patterns.
 - **Self-contained.** All CSS/JS/SVG inline; only the Google Fonts `@import` is external.
@@ -74,3 +81,4 @@ Do not auto-open.
 - **Real code refs only.** Cite `path:line` only when verified via a file read.
 - **Read-only.** Never execute subject code; only read files.
 - **Self-check before write.** Run `self-check.md` on the assembled HTML; never write a document that fails it.
+- **Completeness gate.** Run the coverage critic after synthesis and surface the coverage note at the offer step.

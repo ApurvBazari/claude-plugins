@@ -53,6 +53,10 @@ session model following `references/reconstruct-and-merge.md` Part B — revise 
 merge overlaps, add genuinely new material, and keep existing `sections[].id` / `details{}` keys
 stable. The result is a normal session model (the `session-model.md` schema), nothing special.
 
+## Step 4.5: Coverage critic
+Run `${CLAUDE_PLUGIN_ROOT}/skills/create/references/completeness.md` Part 1 against the merged model
+before selecting components. Fold omitted salient items in; note intentional omissions for the coverage note.
+
 ## Step 5: Select components
 
 Read the renderer references from `${CLAUDE_PLUGIN_ROOT}/skills/create/references/`. Using
@@ -91,6 +95,9 @@ open "<TARGET>"        # macOS;  xdg-open on Linux
 
 Do not auto-open; offer.
 
+Include the `completeness.md` Part 2 coverage note (included / intentionally omitted) in the message,
+above the open offer. It is a passive summary, not an `AskUserQuestion`.
+
 ## Key Rules
 - **Confirm before overwrite.** Step 1 always resolves the target through a user confirmation, even when model-invoked. There is no silent-overwrite path.
 - **Reconstruct, don't fabricate.** Recover only what the HTML actually contains; the `DET` store is the reliable source for details. Note partial fidelity on degraded input.
@@ -101,3 +108,4 @@ Do not auto-open; offer.
 - **Read-only except the final write.** Never execute session-derived code; only read the named and cited files.
 - **AskUserQuestion guard.** The target picker uses fixed-length option lists per `.claude/rules/ask-user-question-guard.md`.
 - **Self-check before write.** Run `self-check.md` on the assembled HTML; never write a document that fails it.
+- **Completeness gate.** Run the coverage critic after synthesis and surface the coverage note at the offer step.
