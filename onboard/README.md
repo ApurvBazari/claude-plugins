@@ -14,7 +14,7 @@ claude plugin install onboard@apurvbazari-plugins
 
 ## Skills
 
-All skills are invoked with the `/onboard:<name>` slash syntax. Read-only helpers (`status`, `verify`, `evolve`) can also be auto-invoked by Claude when relevant. Destructive skills (`init`, `update`) require explicit invocation.
+All skills are invoked with the `/onboard:<name>` slash syntax. Read-only helpers (`check`, `verify`, `evolve`) can also be auto-invoked by Claude when relevant. Destructive skills (`start`, `update`) require explicit invocation.
 
 ### `/onboard:evolve` — the drift detection loop
 
@@ -49,9 +49,9 @@ Quick health check showing last run date, generated artifacts, integrity status,
 
 ### `/onboard:generate` *(internal API — `user-invocable: false`, hidden from `/` menu)*
 
-Headless generation mode for programmatic consumers. Accepts pre-seeded context (analysis data + wizard answers) and emits all Claude tooling artifacts without running the interactive wizard or codebase analysis.
+Headless generation mode for programmatic consumers. Consumes the **v2 context shape** (`version: 2`, per `skills/generate/references/context-shape-v2.json`) and **rejects v1 input outright** — v1 callers must stay on onboard 1.10.0. Emits all Claude tooling artifacts without running the interactive wizard or codebase analysis.
 
-The contract is intentionally stable so external callers can rely on it.
+The v2 context contract is intentionally stable so external callers can rely on it.
 
 ## Architecture
 
@@ -150,7 +150,7 @@ Generated 12 artifacts:
   .claude/settings.json              Prettier on Write, ESLint on Edit
   + 4 more files
 
-  Snapshot saved to .claude/onboard-snapshot.json
+  Snapshot saved to .claude/onboard-meta.json
 
 Phase 4: Handoff
 ━━━━━━━━━━━━━━━━

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0
+- Add `/walkthrough:document` — render any **subject** (a plugin, the marketplace, or any path) as a
+  self-contained interactive HTML document in the same house style. Reuses `create`'s visual layer
+  (design-system, interactivity, page-scaffold, components) unchanged and brings a generic
+  `subject-model` plus plugin/marketplace adapters. README + manifest are the canonical source.
+  Powers the repo's GitHub Pages site.
+
 ## 0.2.0
 - Restructure the component catalog: the 678-line `components.md` is split into a slim
   `components/index.md` (a name→recipe routing table, always read) plus five role-grouped recipe

@@ -1,6 +1,8 @@
 # walkthrough — Internal Conventions
 
-Render the current session as a self-contained interactive HTML document with diagrams and clickable detail. Two skills (`create` renders from scratch, `update` refreshes in place), one output artifact per session, no hooks. Closest existing plugin in shape is `handoff/` (skills + optional in-repo settings file, no scripts), but the heavy lifting lives in the skills' `references/`, which together form the renderer.
+Render an explorable, self-contained interactive HTML document — from one of **two input modes**: a *session* (`create` renders from scratch, `update` refreshes in place) or a *subject* (`document` renders a plugin, the marketplace, or any path). Three skills, one shared visual layer, one output artifact per run, no hooks. Closest existing plugin in shape is `handoff/` (skills + optional in-repo settings file, no scripts), but the heavy lifting lives in the skills' `references/`, which together form the renderer.
+
+The visual layer (`create/references/`: `design-system.md`, `interactivity.md`, `page-scaffold.md`, `authoring-guide.md`, `components/`) is shared across all three skills. `update` and `document` reuse it unchanged and bring only what differs: `update` adds `reconstruct-and-merge.md`; `document` swaps the model — its own `subject-model.md` + `gather-subject.md` + `adapters/` replace `create`'s session model.
 
 ## Locked design dimensions
 
@@ -79,10 +81,11 @@ The escape hatch keeps the catalog small without forcing odd sessions into ill-f
 
 ## Skills
 
-Two user-facing skills (both show in `/walkthrough:` autocomplete; both default frontmatter — user- and model-invocable, no `disable-model-invocation`):
+Three user-facing skills (all show in `/walkthrough:` autocomplete; all default frontmatter — user- and model-invocable, no `disable-model-invocation`):
 
 - `create/SKILL.md` — renders the current session from scratch. The renderer is five `references/` files plus the `references/components/` catalog (`index.md` + per-group recipes loaded on demand).
 - `update/SKILL.md` — refreshes an EXISTING walkthrough in place: reconstructs the prior model from the rendered HTML, merges in explicitly-named files, and overwrites the same file. Reuses `create`'s renderer references unchanged for the render half (five `references/` files + the `components/` catalog); its own `references/reconstruct-and-merge.md` covers the reconstruct + merge stages.
+- `document/SKILL.md` — renders a *subject* (a plugin, the marketplace, or any path) instead of a session. Reuses `create`'s visual-layer references unchanged; brings its own `references/subject-model.md`, `references/gather-subject.md`, and `references/adapters/` (plugin + marketplace). README + manifest are canonical; the output path is an argument (the docs site passes `site/<plugin>/index.html`). No gitignore prompt — output is a published/derived artifact, not private session content.
 
 No internal building blocks (no `user-invocable: false` skills), no agents, no hooks, no scripts.
 
