@@ -4,6 +4,8 @@
 
 Built on top of [Claude Code](https://code.claude.com/docs/en) by Anthropic. Distributed under [MIT](./LICENSE).
 
+**Docs site:** [apurvbazari.github.io/claude-plugins](https://apurvbazari.github.io/claude-plugins/) — a landing page plus one page per plugin (generated from these READMEs by [`walkthrough`](./walkthrough/)).
+
 ---
 
 ## Plugins at a glance
@@ -232,6 +234,7 @@ Community plugins (each linked to its upstream repo in the table above):
 
 ## Links
 
+- [Documentation site](https://apurvbazari.github.io/claude-plugins/) — landing + a page per plugin
 - [Claude Code documentation](https://code.claude.com/docs/en)
 - [Plugins guide](https://code.claude.com/docs/en/plugins)
 - [Plugin marketplaces guide](https://code.claude.com/docs/en/plugin-marketplaces)
