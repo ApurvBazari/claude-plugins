@@ -40,6 +40,12 @@ Start from `../create/references/page-scaffold.md`. Inline: the `@import` + both
 Self-contained: no `<script src>`, no `<link rel=stylesheet>`, no `<img>` — only the one Google
 Fonts `@import`. Internal links MUST be relative (`./onboard/`, `../`) — never root-absolute.
 
+**Rebrand the scaffold chrome.** The page-scaffold ships session-doc branding (the `◆ walk·through`
+nav logo and a `— walkthrough` `<title>` suffix). Replace it with the subject's identity: set
+`<title>` to `<subject title> — <site/collection name>` (for a plugin in this repo,
+`<name> — claude-plugins`) and the nav logo to the site/collection wordmark (here
+`◆ claude-plugins`). Never leave the literal `walkthrough` session branding on a subject page.
+
 ## Step 6: Output path
 If a second argument (output path) is given, write there. Otherwise default to
 `.claude/walkthrough/<YYYY-MM-DD-HHMM>-<slug>.html` (`slug` = kebab of the title; collisions → `-2`,
