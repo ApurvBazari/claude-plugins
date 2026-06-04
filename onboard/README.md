@@ -4,7 +4,7 @@
 
 Lifecycle manager for AI configs. Generates Claude tooling on day one, then **detects code-vs-config drift** as the project evolves and offers to fix it.
 
-Auto-generating `CLAUDE.md` is commodity in 2026 — Claude Code's `/init`, GitHub Copilot, OpenAI Codex, Cursor, and several web tools all do it. Maintaining those configs as your code grows is what onboard does that nothing else does.
+Generating `CLAUDE.md` is well-covered in 2026 — Claude Code's `/init`, GitHub Copilot, OpenAI Codex, Cursor, and several web tools all do it. onboard's focus is the step after: keeping those configs aligned as your code grows.
 
 ## Install
 
@@ -18,11 +18,11 @@ All skills are invoked with the `/onboard:<name>` slash syntax. Read-only helper
 
 ### `/onboard:evolve` — the drift detection loop
 
-The capability no competitor ships. Reads `.claude/greenfield-drift.json` (populated by auto-evolution hooks `onboard:start` writes during initial setup), compares the snapshot against current code state, and proposes targeted updates: new languages added, new dependencies, structural changes, missing hooks, stale rules.
+The drift loop. Reads `.claude/greenfield-drift.json` (populated by auto-evolution hooks `onboard:start` writes during initial setup), compares the snapshot against current code state, and proposes targeted updates: new languages added, new dependencies, structural changes, missing hooks, stale rules.
 
 You decide which proposed updates to apply. Snapshot then updates so the next `/onboard:evolve` run is incremental.
 
-This is the lifecycle differentiator — see [Drift detection deep dive](#drift-detection-deep-dive) below.
+This is the heart of the lifecycle loop — see [Drift detection deep dive](#drift-detection-deep-dive) below.
 
 ### `/onboard:start` *(destructive — user-invoked only)*
 

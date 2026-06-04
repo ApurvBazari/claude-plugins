@@ -151,7 +151,7 @@ section.vis{opacity:1;transform:none;}
     <section id="top" class="vis" style="padding-top:2.4rem">
       <div class="eyebrow">claude-plugins · onboard</div>
       <h1>Lifecycle manager for <em>AI configs</em>.</h1>
-      <p class="lede">onboard generates your Claude tooling on day one, then <strong>detects code-vs-config drift</strong> as the project evolves and offers to fix it. Auto-generating <code>CLAUDE.md</code> is commodity in 2026 — keeping it in sync as the code grows is what onboard does that nothing else does.</p>
+      <p class="lede">onboard generates your Claude tooling on day one, then <strong>detects code-vs-config drift</strong> as the project evolves and offers to fix it. Generating <code>CLAUDE.md</code> is well-covered in 2026 — onboard's focus is keeping it in sync as the code grows.</p>
       <div class="chips">
         <span class="chip accent">plugin</span>
         <span class="chip">onboarding</span>
@@ -175,15 +175,15 @@ section.vis{opacity:1;transform:none;}
       <div class="sec-label">01 — what it does</div>
       <h2>From day-one setup to <em>continuous</em> upkeep</h2>
       <p class="lede">A guided <code>/onboard:start</code> analyzes your codebase, asks a short adaptive set of questions, and generates a complete, tailored Claude Code tooling setup — root and subdirectory <code>CLAUDE.md</code>, path-scoped rules, project-specific skills and agents, hooks, output styles, and metadata.</p>
-      <p>That part is table stakes — Claude Code's <code>/init</code>, Copilot, Codex, Cursor, and several web tools all generate a <code>CLAUDE.md</code>. onboard's reason for existing is the second half: the artifacts it writes carry self-maintaining headers and, in enriched mode, auto-evolution hooks that watch your dependency manifests and structure. As the code drifts away from the config, <code>/onboard:evolve</code> reads that accumulated drift and proposes targeted realignments you approve one by one.</p>
+      <p>That part is well-covered — Claude Code's <code>/init</code>, Copilot, Codex, Cursor, and several web tools all generate a <code>CLAUDE.md</code>. onboard's focus is the second half: the artifacts it writes carry self-maintaining headers and, in enriched mode, auto-evolution hooks that watch your dependency manifests and structure. As the code drifts away from the config, <code>/onboard:evolve</code> reads that accumulated drift and proposes targeted realignments you approve one by one.</p>
       <div class="callout">
-        <h4>The differentiator</h4>
-        <p>Generation is commodity. <strong>Maintenance is not.</strong> The <code>/onboard:evolve</code> drift-detection loop is the capability no competitor ships — it keeps your AI configs aligned with the code that actually exists, not the code that existed on the day you ran setup.</p>
+        <h4>The focus</h4>
+        <p>Generation is well-covered. <strong>Maintenance is the harder half.</strong> The <code>/onboard:evolve</code> drift-detection loop keeps your AI configs aligned with the code that actually exists, not the code that existed on the day you ran setup.</p>
       </div>
     </section>
 
     <section id="drift">
-      <div class="sec-label">02 — the differentiator</div>
+      <div class="sec-label">02 — the drift loop</div>
       <h2>The <em>drift-detection</em> loop</h2>
       <p class="lede">When <code>/onboard:start</code> runs in enriched mode it installs quiet auto-evolution hooks. They record what changed; <code>/onboard:evolve</code> turns that record into a reviewed set of config updates.</p>
       <div class="flow" aria-label="Drift detection loop">

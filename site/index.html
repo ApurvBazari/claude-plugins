@@ -122,7 +122,6 @@ section.vis{opacity:1;transform:none;}
     <div class="nav-links">
       <a href="#top" class="on">Overview</a>
       <a href="#plugins">Plugins</a>
-      <a href="#fit">How they fit</a>
       <a href="#install">Install</a>
     </div>
     <div style="display:flex;align-items:center;gap:.8rem">
@@ -148,7 +147,6 @@ section.vis{opacity:1;transform:none;}
       <div class="hstats">
         <div class="hstat"><div class="v"><em>4</em></div><div class="l">plugins</div></div>
         <div class="hstat"><div class="v">2</div><div class="l">install routes</div></div>
-        <div class="hstat"><div class="v">5</div><div class="l">lifecycle phases</div></div>
         <div class="hstat"><div class="v"><em>MIT</em></div><div class="l">licensed</div></div>
       </div>
     </section>
@@ -202,33 +200,8 @@ section.vis{opacity:1;transform:none;}
       </div>
     </section>
 
-    <section id="fit">
-      <div class="sec-label">02 — composition</div>
-      <h2>How they <em>fit together</em></h2>
-      <p class="lede">The four plugins cover different phases of the lifecycle. They compose with each other and pair with companion plugins from the broader Claude Code ecosystem. Click a phase for what plays there.</p>
-      <div class="flow" aria-label="Project lifecycle: setup → develop → refine → ship → monitor">
-        <div class="fnode" data-d="setup" onclick="openD('setup')" tabindex="0" role="button" aria-label="Setup phase — onboard"><div class="nl">phase 1</div>setup</div>
-        <span class="farr">→</span>
-        <div class="fnode" data-d="develop" onclick="openD('develop')" tabindex="0" role="button" aria-label="Develop phase"><div class="nl">phase 2</div>develop</div>
-        <span class="farr">→</span>
-        <div class="fnode" data-d="refine" onclick="openD('refine')" tabindex="0" role="button" aria-label="Refine phase"><div class="nl">phase 3</div>refine</div>
-        <span class="farr">→</span>
-        <div class="fnode" data-d="ship" onclick="openD('ship')" tabindex="0" role="button" aria-label="Ship phase"><div class="nl">phase 4</div>ship</div>
-        <span class="farr">→</span>
-        <div class="fnode accent" data-d="monitor" onclick="openD('monitor')" tabindex="0" role="button" aria-label="Monitor phase — notify"><div class="nl">phase 5</div>monitor</div>
-      </div>
-      <div class="edge-grid">
-        <div class="edge"><div class="n">setup → monitor</div><div class="t">onboard + notify</div><p>onboard analyses the codebase and generates Claude tooling at the start; notify fires a desktop alert when Claude finishes a long job at the end.</p></div>
-        <div class="edge"><div class="n">cross-phase</div><div class="t">handoff + walkthrough</div><p>handoff carries intent across session boundaries at any phase; walkthrough renders a session into a shareable document whenever you want one.</p></div>
-      </div>
-      <div class="callout">
-        <h4>Companion plugins</h4>
-        <p>The collection pairs with ecosystem plugins — <code>feature-dev</code> and <code>superpowers</code> for the develop phase, <code>code-simplifier</code> for refine, <code>commit-commands</code> and <code>pr-review-toolkit</code> for ship, <code>hookify</code> for incremental rules. Each card's page links onward to its README for the full picture.</p>
-      </div>
-    </section>
-
     <section id="install">
-      <div class="sec-label">03 — getting started</div>
+      <div class="sec-label">02 — getting started</div>
       <h2>Two <em>install routes</em></h2>
       <p class="lede">Install from Anthropic's reviewed community directory, or add this marketplace directly for the latest commit and all four plugins.</p>
 
@@ -265,15 +238,7 @@ claude plugin install walkthrough@apurvbazari-plugins</code></pre>
   <aside class="panel" id="panel"><span class="x" onclick="closeD()">✕</span>
     <div class="pk" id="pk">Detail</div><h3 id="ph">—</h3><div class="pb" id="pbd"></div></aside>
   <script>
-const DET={
- setup:{k:"Phase 1",h:"Setup",b:"<code>onboard</code> analyses the codebase and generates Claude tooling — CLAUDE.md, path-scoped rules, project skills/agents, and hooks. Pair with <code>hookify</code> for incremental behavioural rules."},
- develop:{k:"Phase 2",h:"Develop",b:"Companion plugins carry this phase: <code>feature-dev</code> for the structured 7-phase workflow, <code>superpowers</code> for TDD and systematic-debugging discipline."},
- refine:{k:"Phase 3",h:"Refine",b:"<code>code-simplifier</code> for post-implementation cleanup, <code>claude-md-management</code> for ongoing memory maintenance."},
- ship:{k:"Phase 4",h:"Ship",b:"<code>commit-commands</code> for git/PR workflows; <code>pr-review-toolkit</code> and <code>code-review</code> for specialist PR review."},
- monitor:{k:"Phase 5",h:"Monitor",b:"<code>notify</code> for desktop alerts when Claude finishes a long job; native OpenTelemetry (<code>OTEL_LOGS_EXPORTER=otlp</code>) for usage analytics. <code>handoff</code> and <code>walkthrough</code> span every phase."}
-};
 const panel=document.getElementById('panel');
-function openD(id){const d=DET[id];if(!d)return;pk.textContent=d.k;ph.textContent=d.h;pbd.innerHTML=d.b;panel.classList.add('open');}
 function openCard(el){if(!el)return;pk.textContent=el.dataset.k||'Detail';ph.textContent=el.dataset.t||'';pbd.innerHTML=el.dataset.desc||'';panel.classList.add('open');}
 function closeD(){panel.classList.remove('open');}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeD();});

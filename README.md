@@ -81,7 +81,7 @@ The lifecycle manager for AI-assisted development. Generates Claude tooling on d
 - **Initial generation** — analyse the codebase, run an adaptive wizard, then emit a full Claude tooling package: `CLAUDE.md` files, path-scoped rules, project-specific skills/agents, hook entries, plugin integration recommendations, and an `.mcp.json` wired to relevant servers.
 - **Drift detection (`/onboard:evolve`)** — snapshot the project state at init time, then compare against current state on demand and surface what's out of date: new languages added, new dependencies, structural changes, missing hooks. Propose updates and apply on approval.
 
-The drift loop is the differentiated piece. Auto-generating `CLAUDE.md` is commodity in 2026 — Claude Code's `/init`, GitHub Copilot, OpenAI Codex, Cursor, and several web tools all do it. Maintaining those configs as code grows is what onboard does that nothing else does.
+The drift loop is onboard's focus. Generating `CLAUDE.md` is well-covered in 2026 — Claude Code's `/init`, GitHub Copilot, OpenAI Codex, Cursor, and several web tools all do it. onboard's emphasis is the step after: keeping those configs aligned as the code grows.
 
 For the full skill reference, the drift detection deep dive, generated artifact catalog, and supported project types: [onboard/README.md →](./onboard/README.md)
 
@@ -91,7 +91,7 @@ For the full skill reference, the drift detection deep dive, generated artifact 
 
 Cross-platform system notifications for Claude Code. macOS via `terminal-notifier`, Linux via `notify-send`. Notifications carry a contextual subtitle (`repo / branch`) and the actual content of Claude's last message — not generic text.
 
-**Genuine differentiator: duration filtering.** `minDurationSeconds` per event suppresses notifications for fast responses, so notify only fires when Claude has actually been working for a while. None of the comparable plugins ship this.
+**Duration filtering.** `minDurationSeconds` per event suppresses notifications for fast responses, so notify only fires when Claude has actually been working for a while.
 
 **Honest framing.** notify is intentionally minimal — `terminal-notifier` / `notify-send`, a Stop-hook wrapper, duration filtering, `repo/branch` subtitle. If you need Windows support, webhook fanout (Slack / Discord / Telegram), or typed event categories, the community has richer alternatives:
 
@@ -134,33 +134,6 @@ After a long session — a debugging marathon, a feature, an architecture decisi
 **One house style, open component system.** Every walkthrough shares a fixed design system (tokens only, two themes). The component catalog is a floor, not a ceiling — when content fits no catalog entry, a bespoke component is composed from the same primitives so it still looks native; empty sections are omitted, not stubbed.
 
 For the skill reference, the design-system invariant, the 5-stage render pipeline, and the storage model: [walkthrough/README.md →](./walkthrough/README.md)
-
----
-
-## How these plugins fit together
-
-These four plugins cover different phases of the lifecycle. They compose with each other, and they pair with companion plugins from the broader Claude Code ecosystem:
-
-```
-┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-│    Setup     │ ─→ │   Develop    │ ─→ │   Refine     │ ─→ │    Ship      │ ─→ │   Monitor    │
-│              │    │              │    │              │    │              │    │              │
-│ onboard      │    │ feature-dev  │    │ code-        │    │ commit-      │    │ notify       │
-│ hookify      │    │ superpowers  │    │ simplifier   │    │ commands     │    │ Native OTEL  │
-│              │    │              │    │              │    │ pr-review-   │    │              │
-│              │    │              │    │              │    │ toolkit      │    │              │
-└──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘
-        │                    │                                       │
-        └────────────────────┴───────────────────────────────────────┘
-                          engineering (cross-phase)
-```
-
-- **Setup** — `onboard` analyses the codebase and generates Claude tooling. Add `hookify` for incremental behavioural rules.
-- **Develop** — `feature-dev` for the structured 7-phase workflow; `superpowers` for TDD + systematic debugging discipline.
-- **Refine** — `code-simplifier` for post-implementation cleanup; `claude-md-management` for ongoing memory maintenance.
-- **Ship** — `commit-commands` for git/PR workflows; `pr-review-toolkit` and `code-review` for specialist PR review.
-- **Monitor** — `notify` for desktop alerts; native OpenTelemetry (`OTEL_LOGS_EXPORTER=otlp`) for usage analytics.
-- **Cross-phase** — `handoff` carries intent across session boundaries at any phase; `walkthrough` renders a session into a shareable document whenever you want one.
 
 ---
 
