@@ -59,3 +59,18 @@ body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;o
 ```
 
 **Rule:** components reference ONLY these tokens — never raw hex. That is what keeps one look across both themes.
+
+## Chip primitive (status roles)
+
+`.chip` is the canonical small status/label token. A leading dot uses `currentColor`. Five semantic
+roles map onto the palette:
+
+| Class | Role | Foreground | Fill |
+|-------|------|-----------|------|
+| `.chip.ok` | success | `--green` | `--green-soft` |
+| `.chip.info` | info | `--blue` | `--blue-soft` |
+| `.chip.warn` | warning | `--amber` | `--amber-soft` |
+| `.chip.danger` | danger | `--rose` | `--rose-soft` |
+| `.chip.neutral` | neutral | `--ts` | `--bg-elevated` |
+
+Use `.chip` for source / tier / status / gate labels. Tokens only — never raw hex.
