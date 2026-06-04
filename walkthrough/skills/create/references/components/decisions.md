@@ -6,7 +6,7 @@
 
 ```html
 <section id="<id>">
-  <div class="sec-label"><NN — decision></div>
+  <div class="sec-label"><decision></div>
   <h2>Tabs + animated <em>tradeoff</em> bars</h2>
   <div class="tabs">
     <div class="tab active" data-app="a" onclick="setTab('a')"><span class="letter">A</span><div class="tt"><Option A></div><div class="tb"><one-liner></div></div>
@@ -58,7 +58,7 @@
 
 ```html
 <section id="<id>">
-  <div class="sec-label"><NN — checklist></div>
+  <div class="sec-label"><checklist></div>
   <h2>Decision <em>checklist</em></h2>
   <div class="acc">
     <details open><summary><span class="badge" style="background:var(--green-soft);color:var(--green)">✓</span> <Decision/requirement><span class="chev">›</span></summary>
@@ -92,7 +92,7 @@
 
 ```html
 <section id="<id>">
-  <div class="sec-label"><NN — diff></div>
+  <div class="sec-label"><diff></div>
   <h2>Before <em>/</em> after</h2>
   <div class="diff-grid">
     <div class="diff-pane"><div class="diff-header before">before · <file></div><pre class="diff-body"><old code></pre></div>
@@ -119,7 +119,7 @@
 
 ```html
 <section id="<id>">
-  <div class="sec-label"><NN — comparison></div>
+  <div class="sec-label"><comparison></div>
   <h2>Side-by-side <em>comparison</em></h2>
   <table class="compare-table">
     <thead><tr><th><criterion></th><th><Option A></th><th><Option B></th></tr></thead>

@@ -39,7 +39,7 @@ h1 em,h2 em{font-style:italic;color:var(--accent);}
 
 ```html
 <section id="<id>">
-  <div class="sec-label"><NN — section kicker></div>
+  <div class="sec-label"><section kicker></div>
   <h2><Section heading with an <em>accent</em>.></h2>
   <p class="lede"><Lead sentence.></p>
   <p><Body paragraph. Inline <code>code</code> and <strong>emphasis</strong> are fine.></p>
@@ -49,7 +49,8 @@ h1 em,h2 em{font-style:italic;color:var(--accent);}
 ```css
 section{padding:4rem 0 2rem;scroll-margin-top:70px;opacity:0;transform:translateY(24px);transition:opacity .7s var(--ease),transform .7s var(--ease);}
 section.vis{opacity:1;transform:none;}
-.sec-label{font-family:var(--mono);font-size:.65rem;color:var(--tm);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.5rem;}
+.sec-label{counter-increment:sec;font-family:var(--mono);font-size:.65rem;color:var(--tm);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.5rem;}
+.sec-label::before{content:counter(sec,decimal-leading-zero) " \2014 ";}
 h2{font-family:var(--serif);font-size:clamp(1.7rem,3.5vw,2.4rem);font-weight:400;line-height:1.15;margin:.2rem 0 .3rem;}
 p{font-size:.92rem;color:var(--ts);max-width:720px;}
 p code{font-family:var(--mono);font-size:.8rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
@@ -80,7 +81,7 @@ p code{font-family:var(--mono);font-size:.8rem;background:var(--accent-soft);col
 
 ```html
 <section id="<id>">
-  <div class="sec-label"><NN — metadata></div>
+  <div class="sec-label"><metadata></div>
   <h2>Session <em>facts</em></h2>
   <div class="edge-grid">
     <div class="edge"><div class="n"><label></div><div class="t"><value></div><p><note></p></div>

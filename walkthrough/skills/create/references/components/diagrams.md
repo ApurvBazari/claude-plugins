@@ -6,7 +6,7 @@
 
 ```html
 <section id="<id>">
-  <div class="sec-label"><NN — flow></div>
+  <div class="sec-label"><flow></div>
   <h2>Animated <em>flow</em> diagram</h2>
   <div class="flow">
     <div class="fnode" data-d="<id1>" onclick="openD('<id1>')"><div class="nl"><stage 1></div><Label></div>
@@ -35,7 +35,7 @@
 
 ```html
 <section id="<id>">
-  <div class="sec-label"><NN — architecture></div>
+  <div class="sec-label"><architecture></div>
   <h2>Component <em>map</em></h2>
   <div class="archmap">
     <div class="flow-node accent" data-d="<id1>" onclick="openD('<id1>')"><span class="node-label"><layer></span><Component A></div>
@@ -66,7 +66,7 @@
 
 ```html
 <section id="<id>">
-  <div class="sec-label"><NN — dependencies></div>
+  <div class="sec-label"><dependencies></div>
   <h2>Dependency <em>graph</em></h2>
   <div class="depgraph">
     <svg viewBox="0 0 600 220" role="img" aria-label="<dependency graph description>">
@@ -99,7 +99,7 @@
 
 ```html
 <section id="<id>">
-  <div class="sec-label"><NN — modes></div>
+  <div class="sec-label"><modes></div>
   <h2>Request <em>lifecycle</em></h2>
   <div class="mode-toggle" id="mode">
     <button class="active" data-mode="m1"><Mode 1></button>
@@ -141,7 +141,7 @@ document.querySelectorAll('#mode button').forEach(b=>b.addEventListener('click',
 
 ```html
 <section id="<id>">
-  <div class="sec-label"><NN — concept map></div>
+  <div class="sec-label"><concept map></div>
   <h2>The <em>shape</em> of it</h2>
   <div class="mindmap">
     <svg viewBox="0 0 600 320" role="img" aria-label="<concept map description>">
