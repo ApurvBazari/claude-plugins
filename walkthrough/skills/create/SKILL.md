@@ -42,9 +42,19 @@ components you selected in Step 4 (routed via `components/index.md`); the `DET`/
 self-contained: no `<script src>`, no `<img>`, only the one Google Fonts `@import`.
 Generate `{{NAV_LINKS}}` deterministically from `sections[]` (one `<a href="#id">` per section, id reused from the section; first link `class="on"`) — do not hand-write or hand-match ids.
 
-## Step 6: Output path
-Compute `.claude/walkthrough/<YYYY-MM-DD-HHMM>-<slug>.html` (`slug` = kebab of the title). If it
-exists, append `-2`, `-3`, … Create `.claude/walkthrough/` if missing.
+## Step 6: Output path (proliferation guard)
+Compute `slug` = kebab of the title. List `.claude/walkthrough/*.html` and strip the
+`<YYYY-MM-DD-HHMM>-` prefix from each to get existing slugs.
+
+- **No slug match** -> use `.claude/walkthrough/<YYYY-MM-DD-HHMM>-<slug>.html` (collision on the exact
+  name -> append `-2`, `-3`, ...). Create `.claude/walkthrough/` if missing.
+- **Slug matches an existing file** -> do NOT silently version. Ask via `AskUserQuestion`
+  (single-select, fixed 3 options per `.claude/rules/ask-user-question-guard.md`):
+  - **Update in place** -> stop `create` and hand off to `/walkthrough:update` on the matched file.
+  - **New versioned file** -> proceed with the timestamped `-2`/`-3` name (today's behavior).
+  - **Overwrite** -> write to the matched file's path.
+
+This is honored even when model-invoked -- there is no silent-proliferation path.
 
 ## Step 7: Gitignore prompt (first run only)
 If `.claude/walkthrough/` is not already gitignored and `.gitignore` exists, ask via
@@ -77,6 +87,6 @@ above the open offer. It is a passive summary, not an `AskUserQuestion`.
 - **Omit empty, never stub.** Render only components with real content.
 - **Real code refs only.** Cite `path:line` only when verified via a file read.
 - **Read-only.** Never execute session-derived code; only read files to verify citations.
-- **AskUserQuestion guard.** The thin-session and gitignore prompts use fixed-length option lists per `.claude/rules/ask-user-question-guard.md`.
+- **AskUserQuestion guard.** The thin-session (2), gitignore (3), and proliferation-guard (3, conditional) prompts use fixed-length option lists per `.claude/rules/ask-user-question-guard.md`.
 - **Self-check before write.** Run `self-check.md` on the assembled HTML; never write a document that fails it.
 - **Completeness gate.** Run the coverage critic after synthesis and surface the coverage note at the offer step.
