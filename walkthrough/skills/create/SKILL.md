@@ -1,6 +1,6 @@
 ---
 name: create
-description: Generate an interactive HTML walkthrough of the current session — a self-contained, explorable document (prose + diagrams + clickable detail) in a fixed house style. Use when the user asks to "visualize this session", "create a walkthrough", "walk me through what we did", "make a session recap/document", or runs /walkthrough:create. Writes to .claude/walkthrough/.
+description: Generate an interactive HTML walkthrough of the current session — a self-contained, explorable document (prose + diagrams + clickable detail) in a fixed house style. Use when the user asks to "visualize this session", "create a walkthrough", "walk me through it", "walk me through this/that", "walk me through what we did", "make a session recap/document", or runs /walkthrough:create. Writes to .claude/walkthrough/.
 ---
 
 # Create — Render the Session as an Interactive Document
