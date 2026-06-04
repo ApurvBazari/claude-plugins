@@ -31,6 +31,12 @@ the detail-panel store is embedded verbatim). Reconstruction reads the rendered 
 | Timeline / stepper | `timeline[]` (`t`, `label`, `ref`) | `ref` is the anchor each entry scrolls to |
 | Trailing `const DET={…}` in the `<script>` | `details{}` | **highest-fidelity source** — see below |
 
+### Reconstruction notes
+
+- **Section kicker.** Read each `.sec-label` as the section label. A pre-0.4.0 document bakes the
+  number into the text (`01 — flow`); strip a leading `NN[ —-]` so the CSS counter does not
+  double-number after re-render. Store only the label.
+
 ### The `DET` store is the reliable path for `details{}`
 
 The detail-panel data is embedded verbatim as a `const DET={ "<id>": { k, h, b } }` object literal at
