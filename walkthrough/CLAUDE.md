@@ -2,14 +2,14 @@
 
 Render an explorable, self-contained interactive HTML document — from one of **two input modes**: a *session* (`create` renders from scratch, `update` refreshes in place) or a *subject* (`document` renders a plugin, the marketplace, or any path). Three skills, one shared visual layer, one output artifact per run, no hooks. Closest existing plugin in shape is `handoff/` (skills + optional in-repo settings file, no scripts), but the heavy lifting lives in the skills' `references/`, which together form the renderer.
 
-The visual layer (`create/references/`: `design-system.md`, `interactivity.md`, `page-scaffold.md`, `authoring-guide.md`, `components/`) is shared across all three skills. `update` and `document` reuse it unchanged and bring only what differs: `update` adds `reconstruct-and-merge.md`; `document` swaps the model — its own `subject-model.md` + `gather-subject.md` + `adapters/` replace `create`'s session model.
+The visual layer (`create/references/`: `design-system.md`, `interactivity.md`, `page-scaffold.md`, `authoring-guide.md`, `components/`, `self-check.md`, `completeness.md`) is shared across all three skills. `update` and `document` reuse it unchanged and bring only what differs: `update` adds `reconstruct-and-merge.md`; `document` swaps the model — its own `subject-model.md` + `gather-subject.md` + `adapters/` replace `create`'s session model.
 
 ## Locked design dimensions
 
 | Dimension | Choice | Reason |
 |---|---|---|
 | **Name / slash** | `walkthrough` → `/walkthrough:create [focus]` | One verb; the optional arg scopes synthesis to a focus |
-| **Trigger** | User-invocable AND model-invocable (default frontmatter) | On-demand artifact; also auto-fires on "visualize this session" / "session recap" intent |
+| **Trigger** | User-invocable AND model-invocable (default frontmatter) | On-demand artifact; also auto-fires on "visualize this session" / "session recap" / "walk me through it" intent |
 | **Output** | ONE self-contained interactive HTML file | Portable, archivable, openable anywhere with no plugin, server, or build step |
 | **Design system** | ONE house style, tokens only | Consistent look across every walkthrough; no per-run theming drift |
 | **Themes** | Dark + warm-light, in-document toggle | Two `:root` blocks; viewer picks per-view, no rebuild |
@@ -68,6 +68,11 @@ These two invariants are non-negotiable — they are what make every walkthrough
 
 - **Tokens only.** Reproduce the signature patterns from `references/design-system.md`. Never emit a raw hex value, raw font name, or raw spacing literal — go through the CSS custom properties. Both the dark and warm-light themes are expressed as `:root` token blocks; the toggle swaps token sets, not stylesheets.
 - **Self-contained.** All CSS, JS, and SVG are inlined into the single HTML file. The **only** permitted external resource is the Google Fonts `@import` at the top of the style block. No `<script src>`, no `<link rel=stylesheet>`, no `<img>`, no CDN libraries. The file must render with no network beyond that one font fetch.
+- **Section kickers are auto-numbered.** A CSS counter on `.sec-label` increments automatically — authors write only the label text, never a hard-coded number.
+
+## Pre-write gates
+
+Two model-performed gates run before write, shared by all three skills: `self-check.md` (structure — self-contained, tokens, ASCII CSS, nav↔id, DET keys) and `completeness.md` (coverage — the salient-item critic after synthesis + the coverage note at the offer step).
 
 ## The open component system
 
@@ -78,6 +83,10 @@ The component catalog in `references/components/` (indexed by `components/index.
 - "Omit empty, never stub": a component is rendered only when the model has real content for it. No placeholder cards, no "N/A" rows.
 
 The escape hatch keeps the catalog small without forcing odd sessions into ill-fitting components.
+
+First-class catalog additions in v0.4.0:
+- **`components/interactive.md`** — two new components: interactive explorer (expandable node graph) and data-driven step timeline.
+- **`.chip` primitive** — five status roles: `ok`, `info`, `warn`, `danger`, `neutral`. Use inline within any component for status badges.
 
 ## Skills
 
@@ -91,4 +100,4 @@ No internal building blocks (no `user-invocable: false` skills), no agents, no h
 
 ## AskUserQuestion usage
 
-`create` makes two fixed-length `AskUserQuestion` calls — the thin-session prompt (2 options) and the first-run gitignore prompt (3 options). `update` adds the target picker, whose options are built **dynamically** from the `.claude/walkthrough/` listing — kept fixed-length per the guard: a yes/no confirm when a single doc exists, and a 2–4-option list (plus the tool's built-in "Other") otherwise. Because the list is dynamic, the guard's single-option case is handled by the yes/no form. Both skills reference `.claude/rules/ask-user-question-guard.md` per the convention for any skill that uses the tool.
+`create` makes up to three `AskUserQuestion` calls: the thin-session prompt (2 options), the first-run gitignore prompt (3 options), and — conditionally — a proliferation-guard prompt (3 options) triggered when a same-subject slug already exists in `.claude/walkthrough/`. `update` adds the target picker, whose options are built **dynamically** from the `.claude/walkthrough/` listing — kept fixed-length per the guard: a yes/no confirm when a single doc exists, and a 2–4-option list (plus the tool's built-in "Other") otherwise. Because the list is dynamic, the guard's single-option case is handled by the yes/no form. Both skills reference `.claude/rules/ask-user-question-guard.md` per the convention for any skill that uses the tool.
