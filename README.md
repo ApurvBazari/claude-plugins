@@ -237,6 +237,7 @@ Community plugins (each linked to its upstream repo in the table above):
 - [Plugin marketplaces guide](https://code.claude.com/docs/en/plugin-marketplaces)
 - [`claude-plugins-official`](https://github.com/anthropics/claude-plugins-official) — Anthropic-managed marketplace this collection extends
 - [`claude-plugins-community`](https://github.com/anthropics/claude-plugins-community) — Anthropic's reviewed community directory; mirrors `onboard` + `notify`
+- [Contributing guide](./CONTRIBUTING.md) — how to add a plugin, branching/release flow, versioning, validation
 
 ## License
 
