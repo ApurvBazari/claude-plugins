@@ -53,6 +53,9 @@ If a second argument (output path) is given, write there. Otherwise default to
 `-3`, …). For the site convention, the caller passes `site/<plugin>/index.html` (or
 `site/index.html` for the marketplace). Create parent directories if missing.
 
+## Step 6.5: Self-check (structure)
+Run `../create/references/self-check.md` against the assembled HTML; fix and re-check before writing.
+
 ## Step 7: Write the file
 Write the assembled HTML to the Step 6 path. (No gitignore prompt — unlike `create`, `document`
 output is a published/derived artifact, not private session content.)
@@ -70,3 +73,4 @@ Do not auto-open.
 - **Relative links only.** Internal cross-links use `./` or `../`, never `/…` (Pages base path).
 - **Real code refs only.** Cite `path:line` only when verified via a file read.
 - **Read-only.** Never execute subject code; only read files.
+- **Self-check before write.** Run `self-check.md` on the assembled HTML; never write a document that fails it.

@@ -47,10 +47,14 @@ If `.claude/walkthrough/` is not already gitignored and `.gitignore` exists, ask
 AskUserQuestion (fixed 3 options: "Add pattern" / "Skip" / "Don't ask again"); persist the
 choice in `.claude/walkthrough/settings.md`. (See `.claude/rules/ask-user-question-guard.md`.)
 
-## Step 8: Write the file
+## Step 8: Self-check (structure)
+Before writing, run `references/self-check.md` against the assembled HTML. Fix any failure and
+re-check. Do not write a document that fails the self-check.
+
+## Step 9: Write the file
 Write the assembled HTML to the path from Step 6.
 
-## Step 9: Offer to open
+## Step 10: Offer to open
 Tell the user the path (under three lines). Offer to open it:
 
 ```bash
@@ -67,3 +71,4 @@ Do not auto-open; offer.
 - **Real code refs only.** Cite `path:line` only when verified via a file read.
 - **Read-only.** Never execute session-derived code; only read files to verify citations.
 - **AskUserQuestion guard.** The thin-session and gitignore prompts use fixed-length option lists per `.claude/rules/ask-user-question-guard.md`.
+- **Self-check before write.** Run `self-check.md` on the assembled HTML; never write a document that fails it.

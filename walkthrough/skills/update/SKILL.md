@@ -71,6 +71,10 @@ Keep it self-contained: no `<script src>`, no `<img>`, only the one Google Fonts
 combined state.
 Generate `{{NAV_LINKS}}` deterministically from `sections[]` (one `<a href="#id">` per section, id reused from the section; first link `class="on"`) — do not hand-write or hand-match ids.
 
+## Step 6.5: Self-check (structure)
+Run `${CLAUDE_PLUGIN_ROOT}/skills/create/references/self-check.md` against the assembled HTML; fix
+and re-check before overwriting.
+
 ## Step 7: Write in place
 
 Overwrite `TARGET` with the assembled HTML. Keep the same filename — do not write a new timestamped
@@ -96,3 +100,4 @@ Do not auto-open; offer.
 - **In place, seamless.** Overwrite the same file; no new file, no backup, no update chrome.
 - **Read-only except the final write.** Never execute session-derived code; only read the named and cited files.
 - **AskUserQuestion guard.** The target picker uses fixed-length option lists per `.claude/rules/ask-user-question-guard.md`.
+- **Self-check before write.** Run `self-check.md` on the assembled HTML; never write a document that fails it.
