@@ -22,6 +22,10 @@ Run it whenever you want a readable artifact of the session — after a debuggin
 
 `create` is both user- and intent-invokable: typing the slash form works, and so does asking *"visualize this session"*, *"walk me through what we did"*, or *"make a session recap"*.
 
+### How it works
+
+`create` runs a fixed five-stage pipeline: **gather** cited source files → **synthesize** a structured session model (sections, diagram nodes, decisions, files, timeline) → **select** components → **assemble** the page scaffold with inlined CSS/JS/SVG → **write** the file. The full model is built before a single HTML tag is written — rendering never starts from the raw transcript.
+
 ### What it produces
 
 One HTML file. Open it in any browser and you get a composed document — not a transcript dump:
