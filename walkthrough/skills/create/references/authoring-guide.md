@@ -19,6 +19,8 @@ one component; pick the row that matches the field's *shape*.
 | `metrics[]` | stat cards / animated bar chart |
 | `timeline[]` | timeline; stepper if a replayable sequence |
 | `typeTags` includes `research` | concept map + callouts |
+| `nodes[]`/`edges[]` with switchable views | interactive explorer (one selector → diagram + detail) |
+| `timeline[]` of phased parallel/sequential steps | data-driven step timeline |
 | always | hero, prose sections, detail panel, theme toggle (chrome from page-scaffold) |
 
 Notes on the choices:

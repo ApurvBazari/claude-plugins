@@ -31,5 +31,7 @@ read **only** the group files for the components you actually select. Paths are 
 | Annotated code block | A code snippet shown verbatim with a filename header | `layout-prose.md` |
 | Concept / mind map | A central idea branching into sub-concepts | `diagrams.md` |
 | Legend | A key explaining diagram symbols / colors | `layout-prose.md` |
+| Interactive explorer | A selector driving a live diagram + detail pane from one data model | `interactive.md` |
+| Data-driven step timeline | Phases of parallel/sequential steps with source pills + micro-cycles | `interactive.md` |
 
 ## Composing beyond the catalog — see `authoring-guide.md`.
