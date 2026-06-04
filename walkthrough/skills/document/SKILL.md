@@ -39,6 +39,7 @@ Start from `../create/references/page-scaffold.md`. Inline: the `@import` + both
 (read only the `components/<group>.md` files for components you selected); the `DET`/detail data.
 Self-contained: no `<script src>`, no `<link rel=stylesheet>`, no `<img>` — only the one Google
 Fonts `@import`. Internal links MUST be relative (`./onboard/`, `../`) — never root-absolute.
+Generate `{{NAV_LINKS}}` deterministically from `sections[]` (one `<a href="#id">` per section, id reused from the section; first link `class="on"`) — do not hand-write or hand-match ids.
 
 **Rebrand the scaffold chrome.** The page-scaffold ships session-doc branding (the `◆ walk·through`
 nav logo and a `— walkthrough` `<title>` suffix). Replace it with the subject's identity: set

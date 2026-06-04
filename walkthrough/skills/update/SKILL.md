@@ -69,6 +69,7 @@ the `DET`/detail data. Fill `{{KICKER}}` from session metadata (date · primary 
 Keep it self-contained: no `<script src>`, no `<img>`, only the one Google Fonts `@import`. Produce
 **no** update chrome — no "updated" badge, no changelog; the document simply reflects the new
 combined state.
+Generate `{{NAV_LINKS}}` deterministically from `sections[]` (one `<a href="#id">` per section, id reused from the section; first link `class="on"`) — do not hand-write or hand-match ids.
 
 ## Step 7: Write in place
 

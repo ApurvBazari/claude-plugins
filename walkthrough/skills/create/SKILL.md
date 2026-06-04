@@ -36,6 +36,7 @@ Start from `references/page-scaffold.md`. Inline: the `@import` + both `:root` b
 for each chosen component — read **only** the `references/components/<group>.md` files for the
 components you selected in Step 4 (routed via `components/index.md`); the `DET`/detail data. Keep it
 self-contained: no `<script src>`, no `<img>`, only the one Google Fonts `@import`.
+Generate `{{NAV_LINKS}}` deterministically from `sections[]` (one `<a href="#id">` per section, id reused from the section; first link `class="on"`) — do not hand-write or hand-match ids.
 
 ## Step 6: Output path
 Compute `.claude/walkthrough/<YYYY-MM-DD-HHMM>-<slug>.html` (`slug` = kebab of the title). If it
