@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.4.0 — 2026-06-05
+
+### Visual layer
+- Auto-number section kickers via a CSS counter on `.sec-label` — authors write only the label text; the rendered `01 —`, `02 —`, etc. are generated automatically.
+- New `.chip` primitive with five semantic status roles (`ok`, `info`, `warn`, `danger`, `neutral`) for inline status badges inside any component.
+
+### Navigation
+- Deterministic nav-link generation from the synthesized section list — nav entries are derived directly from `sections[]`, eliminating hand-rolled duplication.
+
+### Component catalog
+- New catalog group `components/interactive.md` with two entries: an interactive explorer (selector-driven diagram + detail pane) and a data-driven step timeline.
+
+### Pre-write gates (shared by all three skills)
+- Shared structural self-check (`self-check.md`): verifies self-containment, token usage, ASCII-only CSS, nav↔id alignment, and DET key integrity before write.
+- Shared completeness gate (`completeness.md`): a salient-item coverage critic runs after synthesis; a passive coverage note appears in the offer step.
+
+### `create` skill
+- Proliferation guard: when a same-subject/slug file already exists in `.claude/walkthrough/`, `create` now prompts with three options (update-in-place / new versioned file / overwrite) instead of silently appending `-2` / `-3` to the filename.
+- New intent trigger: "walk me through it" (and "walk me through this/that") now triggers `create` alongside the existing "visualize this session" / "session recap" patterns.
+
+### `update` skill
+- Reconstruct stage strips a legacy `NN —` hard-coded kicker prefix when rebuilding section labels, ensuring compatibility with the new CSS counter.
+
 ## 0.3.0
 - Add `/walkthrough:document` — render any **subject** (a plugin, the marketplace, or any path) as a
   self-contained interactive HTML document in the same house style. Reuses `create`'s visual layer

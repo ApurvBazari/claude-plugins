@@ -53,14 +53,18 @@ session model following `references/reconstruct-and-merge.md` Part B — revise 
 merge overlaps, add genuinely new material, and keep existing `sections[].id` / `details{}` keys
 stable. The result is a normal session model (the `session-model.md` schema), nothing special.
 
-## Step 5: Select components
+## Step 5: Coverage critic
+Run `${CLAUDE_PLUGIN_ROOT}/skills/create/references/completeness.md` Part 1 against the merged model
+before selecting components. Fold omitted salient items in; note intentional omissions for the coverage note.
+
+## Step 6: Select components
 
 Read the renderer references from `${CLAUDE_PLUGIN_ROOT}/skills/create/references/`. Using
 `authoring-guide.md`, map the merged model to component names, then resolve each to its group file via
 `components/index.md`. Apply "omit empty,
 never stub". Compose bespoke components per the authoring-guide recipe where no catalog entry fits.
 
-## Step 6: Assemble the HTML
+## Step 7: Assemble the HTML
 
 Start from `page-scaffold.md`. Inline: the `@import` + both `:root` blocks from `design-system.md`;
 the shared JS from `interactivity.md`; the CSS+HTML for each chosen component from the relevant
@@ -69,14 +73,19 @@ the `DET`/detail data. Fill `{{KICKER}}` from session metadata (date · primary 
 Keep it self-contained: no `<script src>`, no `<img>`, only the one Google Fonts `@import`. Produce
 **no** update chrome — no "updated" badge, no changelog; the document simply reflects the new
 combined state.
+Generate `{{NAV_LINKS}}` deterministically from `sections[]` (one `<a href="#id">` per section, id reused from the section; first link `class="on"`) — do not hand-write or hand-match ids.
 
-## Step 7: Write in place
+## Step 8: Self-check (structure)
+Run `${CLAUDE_PLUGIN_ROOT}/skills/create/references/self-check.md` against the assembled HTML; fix
+and re-check before overwriting.
+
+## Step 9: Write in place
 
 Overwrite `TARGET` with the assembled HTML. Keep the same filename — do not write a new timestamped
 file, do not create a backup. (`.claude/walkthrough/` already exists and is gitignored from the first
 `create` run, so no gitignore prompt is needed; honor the persisted gitignore choice in any existing `.claude/walkthrough/settings.md` and do not re-prompt.)
 
-## Step 8: Offer to open
+## Step 10: Offer to open
 
 Tell the user the path (under three lines). Offer to open it:
 
@@ -85,6 +94,9 @@ open "<TARGET>"        # macOS;  xdg-open on Linux
 ```
 
 Do not auto-open; offer.
+
+Include the `completeness.md` Part 2 coverage note (included / intentionally omitted) in the message,
+above the open offer. It is a passive summary, not an `AskUserQuestion`.
 
 ## Key Rules
 - **Confirm before overwrite.** Step 1 always resolves the target through a user confirmation, even when model-invoked. There is no silent-overwrite path.
@@ -95,3 +107,5 @@ Do not auto-open; offer.
 - **In place, seamless.** Overwrite the same file; no new file, no backup, no update chrome.
 - **Read-only except the final write.** Never execute session-derived code; only read the named and cited files.
 - **AskUserQuestion guard.** The target picker uses fixed-length option lists per `.claude/rules/ask-user-question-guard.md`.
+- **Self-check before write.** Run `self-check.md` on the assembled HTML; never write a document that fails it.
+- **Completeness gate.** Run the coverage critic after synthesis and surface the coverage note at the offer step.
