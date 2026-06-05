@@ -1,0 +1,354 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>walkthrough — claude-plugins</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root{
+  --bg-deep:#08090c; --bg-card:#0f1117; --bg-card-hover:#151821; --bg-elevated:#1a1d28; --bg-inset:#060709;
+  --border:#1e2230; --border-active:#2d3348; --border-strong:#3a4159;
+  --tp:#e8eaf0; --ts:#7d8399; --tm:#4a5068; --tf:#2e3349;
+  --blue:#3b82f6; --green:#22c55e; --amber:#f59e0b; --rose:#f43f5e; --purple:#a78bfa;
+  --accent:#22d3ee; --accent-glow:rgba(34,211,238,.16); --accent-soft:rgba(34,211,238,.08);
+  --blue-soft:rgba(59,130,246,.1); --green-soft:rgba(34,197,94,.1); --amber-soft:rgba(245,158,11,.1); --rose-soft:rgba(244,63,94,.1); --purple-soft:rgba(167,139,250,.1);
+  --mono:'JetBrains Mono',monospace; --serif:'Instrument Serif',serif; --sans:'DM Sans',sans-serif;
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+html[data-theme="light"]{
+  --bg-deep:#faf8f4; --bg-card:#fff; --bg-card-hover:#f5f1ea; --bg-elevated:#fff; --bg-inset:#f5f1ea;
+  --border:#e5dfd6; --border-active:#d8cfc1; --border-strong:#c9c0b3;
+  --tp:#2a2520; --ts:#6b6157; --tm:#9e9486; --tf:#c9c0b3;
+  --blue:#2d5fa0; --green:#2d7a3a; --amber:#b87333; --rose:#b83a3a; --purple:#7a3b8f;
+  --accent:#c05e2b; --accent-glow:rgba(192,94,43,.16); --accent-soft:rgba(192,94,43,.09);
+  --blue-soft:rgba(45,95,160,.1); --green-soft:rgba(45,122,58,.1); --amber-soft:rgba(184,115,51,.1); --rose-soft:rgba(184,58,58,.1); --purple-soft:rgba(122,59,143,.1);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg-deep);color:var(--tp);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .3s,color .3s;}
+body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+/* nav */
+nav{position:fixed;top:0;left:0;right:0;height:54px;z-index:100;backdrop-filter:blur(20px) saturate(180%);background:color-mix(in srgb,var(--bg-deep) 82%,transparent);border-bottom:1px solid var(--border);}
+.nav-in{max-width:1180px;margin:0 auto;height:100%;display:flex;align-items:center;justify-content:space-between;padding:0 1.6rem;}
+.logo{font-family:var(--mono);font-size:.82rem;font-weight:600;letter-spacing:.02em;}
+.logo span{color:var(--accent);}
+.nav-links{display:flex;gap:.3rem;font-family:var(--mono);font-size:.68rem;}
+.nav-links a{color:var(--ts);text-decoration:none;padding:.3rem .55rem;border-radius:6px;transition:.2s;}
+.nav-links a:hover,.nav-links a.on{color:var(--tp);background:var(--accent-soft);}
+.nav-meta{display:flex;align-items:center;gap:.45rem;font-family:var(--mono);font-size:.62rem;color:var(--tm);text-transform:uppercase;letter-spacing:.12em;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2.5s infinite;}
+.theme-btn{cursor:pointer;font-family:var(--mono);font-size:.62rem;color:var(--ts);border:1px solid var(--border);padding:.28rem .6rem;border-radius:6px;background:none;}
+.progress{position:fixed;top:54px;left:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--blue));z-index:101;width:0;box-shadow:0 0 8px var(--accent-glow);}
+main{max-width:1180px;margin:0 auto;padding:0 1.6rem;padding-top:78px;}
+.eyebrow{font-family:var(--mono);font-size:.68rem;color:var(--accent);text-transform:uppercase;letter-spacing:.18em;display:inline-flex;align-items:center;gap:.6rem;margin-bottom:.8rem;}
+.eyebrow::before{content:'';width:26px;height:1px;background:var(--accent);}
+h1{font-family:var(--serif);font-size:clamp(2.4rem,6vw,4rem);font-weight:400;line-height:1.04;letter-spacing:-.025em;margin:.2rem 0;max-width:880px;}
+h1 em,h2 em{font-style:italic;color:var(--accent);}
+h2{font-family:var(--serif);font-size:clamp(1.7rem,3.5vw,2.4rem);font-weight:400;line-height:1.15;margin:.2rem 0 .3rem;}
+.lede{color:var(--ts);font-size:1.08rem;line-height:1.7;max-width:720px;margin:.6rem 0 0;}
+p{color:var(--ts);font-size:.92rem;line-height:1.7;max-width:720px;}
+p code,li code{font-family:var(--mono);font-size:.8rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
+section{padding:4rem 0 2rem;scroll-margin-top:70px;opacity:0;transform:translateY(24px);transition:opacity .7s var(--ease),transform .7s var(--ease);}
+section.vis{opacity:1;transform:none;}
+.sec-label{font-family:var(--mono);font-size:.65rem;color:var(--tm);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.5rem;}
+/* hero stats */
+.hstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:1.8rem;}
+.hstat{background:var(--bg-card);padding:1.1rem 1.2rem;}
+.hstat .v{font-family:var(--serif);font-size:1.9rem;color:var(--tp);line-height:1;}
+.hstat .v em{font-style:italic;color:var(--accent);}
+.hstat .l{font-family:var(--mono);font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;margin-top:.4rem;}
+/* detail panel */
+.panel{position:fixed;top:0;right:0;width:300px;height:100vh;background:var(--bg-card);border-left:1px solid var(--border-active);padding:24px 20px;overflow:auto;transform:translateX(100%);transition:transform .25s var(--ease);box-shadow:-20px 0 50px rgba(0,0,0,.3);z-index:200;}
+.panel.open{transform:none;}
+.panel .x{position:absolute;top:14px;right:16px;color:var(--tm);cursor:pointer;font-size:18px;}
+.panel .pk{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);}
+.panel h3{font-family:var(--serif);font-weight:400;font-size:1.4rem;margin:.2rem 0 .6rem;}
+.panel .pb{font-size:.86rem;color:var(--ts);line-height:1.6;}
+.panel code{font-family:var(--mono);font-size:.72rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@media(max-width:780px){.nav-links{display:none}}
+/* === component CSS (only the selected components) === */
+/* hero chips (typeTags) */
+.chips{display:flex;flex-wrap:wrap;gap:.5rem;margin:1.2rem 0 .2rem;}
+.chip{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ts);background:var(--bg-card);border:1px solid var(--border);padding:.32rem .65rem;border-radius:20px;}
+.chip.accent{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 30%,transparent);background:var(--accent-soft);}
+/* callout */
+.callout{background:var(--accent-soft);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:.9rem 1.2rem;margin:1.1rem 0;}
+.callout h4{font-family:var(--serif);font-weight:400;color:var(--accent);margin:0 0 .3rem;font-size:1.1rem;}
+.callout p{margin:0;font-size:.86rem;color:var(--ts);}
+.callout code{font-family:var(--mono);font-size:.78rem;background:var(--bg-card);color:var(--accent);padding:1px 5px;border-radius:4px;}
+/* annotated code block */
+.codeblock{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:1.1rem 0;}
+.cb-head{display:flex;justify-content:space-between;align-items:center;padding:.5rem .9rem;background:var(--bg-elevated);border-bottom:1px solid var(--border);font-family:var(--mono);font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;}
+.cb-file{color:var(--accent);}
+.cb-lang{color:var(--tm);}
+.cb-body{margin:0;padding:.9rem 1.1rem;font-family:var(--mono);font-size:.78rem;line-height:1.65;color:var(--ts);white-space:pre;overflow-x:auto;}
+.cb-body code{color:var(--tp);}
+/* flow / pipeline diagram */
+.flow{display:flex;align-items:center;flex-wrap:wrap;gap:.4rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1.2rem 0;}
+.fnode{flex:1;min-width:110px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:.8rem .9rem;font-family:var(--mono);font-size:.7rem;cursor:pointer;transition:all .3s var(--ease);}
+.fnode:hover{border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow);transform:scale(1.03);}
+.fnode .nl{font-size:.55rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;}
+.fnode.accent{border-color:color-mix(in srgb,var(--accent) 40%,transparent);background:linear-gradient(135deg,var(--bg-elevated),var(--accent-soft));}
+.farr{color:var(--border-strong);font-size:1.1rem;}
+/* converge diagram — two input lanes merging into the shared visual layer */
+.converge{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1.2rem 0;display:flex;align-items:center;gap:.9rem;flex-wrap:wrap;}
+.conv-lanes{display:flex;flex-direction:column;gap:.7rem;flex:1;min-width:200px;}
+.conv-lane{background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:.8rem .95rem;cursor:pointer;transition:all .3s var(--ease);}
+.conv-lane:hover{border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow);}
+.conv-lane .nl{font-size:.55rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);}
+.conv-lane .lt{font-family:var(--mono);font-size:.74rem;color:var(--tp);margin-top:.15rem;}
+.conv-lane .ld{font-size:.72rem;color:var(--ts);margin-top:.2rem;line-height:1.5;}
+.conv-merge{color:var(--border-strong);font-size:1.4rem;}
+.conv-core{flex:1;min-width:150px;background:linear-gradient(135deg,var(--bg-elevated),var(--accent-soft));border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);border-radius:10px;padding:1rem;cursor:pointer;transition:all .3s var(--ease);}
+.conv-core:hover{box-shadow:0 0 24px var(--accent-glow);transform:scale(1.02);}
+.conv-core .nl{font-size:.55rem;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);}
+.conv-core .ct{font-family:var(--serif);font-size:1.15rem;color:var(--tp);margin-top:.2rem;line-height:1.2;}
+.conv-out{flex:0 0 auto;text-align:center;}
+.conv-out .nl{font-size:.55rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);margin-bottom:.3rem;}
+.conv-artifact{font-family:var(--mono);font-size:.7rem;color:var(--accent);background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);padding:.55rem .7rem;border-radius:8px;}
+/* skills reference table — same primitives as compare-table */
+.ref-table{width:100%;border-collapse:separate;border-spacing:0;font-size:.82rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:1.2rem 0;}
+.ref-table th{font-family:var(--mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);padding:.85rem 1.25rem;text-align:left;background:var(--bg-elevated);border-bottom:1px solid var(--border);font-weight:500;}
+.ref-table td{padding:.75rem 1.25rem;border-bottom:1px solid var(--border);color:var(--ts);vertical-align:top;}
+.ref-table tr:last-child td{border-bottom:none;}
+.ref-table tr:hover td{background:var(--bg-card-hover);}
+.ref-table .slash{font-family:var(--mono);font-size:.76rem;color:var(--accent);white-space:nowrap;}
+.ref-table .tag{font-family:var(--mono);font-size:.58rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);border:1px solid var(--border);padding:.12rem .4rem;border-radius:4px;display:inline-block;}
+.ref-table .tag.auto{color:var(--green);border-color:color-mix(in srgb,var(--green) 35%,transparent);background:var(--green-soft);}
+.ref-table .cell-mode{font-family:var(--mono);font-size:.7rem;color:var(--ts);white-space:nowrap;}
+.cell-mono{font-family:var(--mono);font-size:.74rem;color:var(--accent);}
+/* key–value metadata grid */
+.edge-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:.7rem;margin-top:1rem;}
+.edge{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:.85rem 1rem;}
+.edge .n{font-family:var(--mono);font-size:.62rem;color:var(--accent);}
+.edge .t{font-weight:600;margin:.2rem 0;font-size:.88rem;color:var(--tp);}
+.edge p{font-size:.78rem;margin:0;color:var(--ts);}
+/* legend */
+.legend{display:flex;gap:.6rem;flex-wrap:wrap;margin:1rem 0;}
+.lg{font-family:var(--mono);font-size:.6rem;color:var(--tp);padding:.5rem .7rem;border-radius:8px;border:1px solid var(--border);display:flex;align-items:center;gap:.5rem;background:var(--bg-card);}
+.lg i{width:14px;height:14px;border-radius:4px;display:inline-block;}
+/* footer */
+.foot{border-top:1px solid var(--border);margin-top:3rem;padding:2.2rem 0 4rem;display:flex;flex-wrap:wrap;gap:1.4rem;align-items:center;justify-content:space-between;}
+.foot-links{display:flex;flex-wrap:wrap;gap:.5rem;}
+.foot-links a{font-family:var(--mono);font-size:.7rem;color:var(--ts);text-decoration:none;border:1px solid var(--border);padding:.4rem .8rem;border-radius:8px;background:var(--bg-card);transition:all .2s var(--ease);}
+.foot-links a:hover{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 35%,transparent);background:var(--accent-soft);}
+.foot .meta{font-family:var(--mono);font-size:.62rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;}
+</style></head>
+<body>
+  <nav><div class="nav-in">
+    <div class="logo">◆ claude<span>-plugins</span></div>
+    <div class="nav-links">
+      <a href="#top" class="on">Overview</a>
+      <a href="#what">What it does</a>
+      <a href="#modes">Two inputs</a>
+      <a href="#pipeline">Pipeline</a>
+      <a href="#skills">Skills</a>
+      <a href="#contained">Self-contained</a>
+      <a href="#example">Example</a>
+      <a href="#isnt">Is / isn't</a>
+    </div>
+    <div style="display:flex;align-items:center;gap:.8rem">
+      <div class="nav-meta"><span class="dot"></span> PLUGIN · v0.3.0</div>
+      <button class="theme-btn" onclick="tgl()">◑ THEME</button></div>
+  </div></nav>
+  <div class="progress" id="prog"></div>
+  <main>
+    <section id="top" class="vis" style="padding-top:2.4rem">
+      <div class="eyebrow">claude-plugins · walkthrough</div>
+      <h1>Render a session — or any subject — as <em>explorable HTML</em>.</h1>
+      <p class="lede">walkthrough turns "what did we just do" into a self-contained interactive page — prose, architecture diagrams, decision records, and a file/timeline view — instead of a scroll back through the transcript. It works from <strong>two kinds of input</strong>: a <em>session</em> or a <em>subject</em>. Both render to the same house style.</p>
+      <div class="chips">
+        <span class="chip accent">interactive-html</span>
+        <span class="chip">session-visualization</span>
+        <span class="chip">documentation</span>
+        <span class="chip">diagrams</span>
+      </div>
+      <div class="codeblock" style="max-width:560px">
+        <div class="cb-head"><span class="cb-file">install</span><span class="cb-lang">bash</span></div>
+        <pre class="cb-body"><code>claude plugin install walkthrough@apurvbazari-plugins</code></pre>
+      </div>
+      <div class="hstats">
+        <div class="hstat"><div class="v"><em>3</em></div><div class="l">user skills</div></div>
+        <div class="hstat"><div class="v">2</div><div class="l">input modes</div></div>
+        <div class="hstat"><div class="v">5</div><div class="l">pipeline stages</div></div>
+        <div class="hstat"><div class="v">2</div><div class="l">themes, 1 toggle</div></div>
+        <div class="hstat"><div class="v"><em>1</em></div><div class="l">HTML file out</div></div>
+      </div>
+    </section>
+
+    <section id="what">
+      <div class="sec-label">01 — what it does</div>
+      <h2>A composed document, <em>not</em> a transcript dump</h2>
+      <p class="lede">Open the file in any browser and you get a synthesized document — a summary and type tags, architecture and flow diagrams as inline SVG, decision records (what was chosen, what was rejected, why), a file-touch list with real <code>path:line</code> references, and a timeline where the work has one.</p>
+      <p>Detail is clickable: expand a node or a decision to see the supporting context. Components adapt to the content — the catalog is a floor, not a ceiling. When something fits no off-the-shelf component, a bespoke one is composed from the same design-system primitives so it still looks native, and empty sections are omitted rather than stubbed.</p>
+      <div class="callout">
+        <h4>No setup, no config</h4>
+        <p>Install and run. There is no setup step and no configuration file required — <code>/walkthrough:create [focus]</code> produces a readable artifact of the session whenever you want one: after a debugging marathon, at the end of a feature, before a handoff, or to share with someone who wasn't in the room.</p>
+      </div>
+    </section>
+
+    <section id="modes">
+      <div class="sec-label">02 — the core idea</div>
+      <h2>Two inputs, <em>one</em> visual layer</h2>
+      <p class="lede">Everything walkthrough renders comes from one of two input modes. A <strong>session</strong> drives <code>create</code> and <code>update</code>; a <strong>subject</strong> drives <code>document</code>. The two lanes converge on the same shared renderer and emit one portable HTML file. Click a lane for detail.</p>
+      <div class="converge" aria-label="Two input modes converging on the shared visual layer">
+        <div class="conv-lanes">
+          <div class="conv-lane" data-d="mode-session" onclick="openD('mode-session')" tabindex="0" role="button" aria-label="Session input mode — create and update">
+            <div class="nl">input · session</div>
+            <div class="lt">create · update</div>
+            <div class="ld">The current conversation — synthesized into a session model (sections, nodes, decisions, files, timeline).</div>
+          </div>
+          <div class="conv-lane" data-d="mode-subject" onclick="openD('mode-subject')" tabindex="0" role="button" aria-label="Subject input mode — document">
+            <div class="nl">input · subject</div>
+            <div class="lt">document</div>
+            <div class="ld">A plugin, the marketplace, or any path — README + manifest are canonical, synthesized into a subject model.</div>
+          </div>
+        </div>
+        <span class="conv-merge">→</span>
+        <div class="conv-core" data-d="visual-layer" onclick="openD('visual-layer')" tabindex="0" role="button" aria-label="Shared visual layer">
+          <div class="nl">shared visual layer</div>
+          <div class="ct">design system · components · scaffold · JS</div>
+        </div>
+        <span class="conv-merge">→</span>
+        <div class="conv-out">
+          <div class="nl">artifact</div>
+          <div class="conv-artifact">one .html file</div>
+        </div>
+      </div>
+      <p>The visual layer is reused <strong>verbatim</strong> across all three skills — one house style, two themes, an open component system, everything inlined. Only the <em>model</em> and the <em>gathering</em> differ: <code>document</code> swaps in its own <code>subject-model</code> and <code>gather-subject</code> where <code>create</code> uses the session model. That shared layer is why a session recap and a plugin docs page are recognizably the same artifact.</p>
+    </section>
+
+    <section id="pipeline">
+      <div class="sec-label">03 — architecture</div>
+      <h2>The five-stage <em>model-before-markup</em> pipeline</h2>
+      <p class="lede"><code>create</code> runs a fixed pipeline — the full structured model is built before a single HTML tag is written. Rendering never starts from the raw transcript. Click a stage for detail.</p>
+      <div class="flow" aria-label="walkthrough five-stage pipeline">
+        <div class="fnode" data-d="gather" onclick="openD('gather')" tabindex="0" role="button" aria-label="Stage 1 gather"><div class="nl">stage 1</div>gather</div>
+        <span class="farr">→</span>
+        <div class="fnode" data-d="synthesize" onclick="openD('synthesize')" tabindex="0" role="button" aria-label="Stage 2 synthesize"><div class="nl">stage 2</div>synthesize</div>
+        <span class="farr">→</span>
+        <div class="fnode" data-d="select" onclick="openD('select')" tabindex="0" role="button" aria-label="Stage 3 select"><div class="nl">stage 3</div>select</div>
+        <span class="farr">→</span>
+        <div class="fnode accent" data-d="assemble" onclick="openD('assemble')" tabindex="0" role="button" aria-label="Stage 4 assemble"><div class="nl">stage 4</div>assemble</div>
+        <span class="farr">→</span>
+        <div class="fnode" data-d="write" onclick="openD('write')" tabindex="0" role="button" aria-label="Stage 5 write"><div class="nl">stage 5</div>write</div>
+      </div>
+      <p><code>document</code> reuses these stages with a substituted model: gather reads the subject's own files (README + manifest canonical), synthesize builds the subject model, and select → assemble → write are the shared renderer. <code>update</code> adds two stages in front — <em>reconstruct</em> the prior model from the rendered HTML and <em>merge</em> in explicitly-named files — then overwrites the same file in place.</p>
+    </section>
+
+    <section id="skills">
+      <div class="sec-label">04 — reference</div>
+      <h2>Three skills, one <em>shared</em> renderer</h2>
+      <p class="lede">All three are <code>/walkthrough:&lt;name&gt;</code>, all default frontmatter — user- <em>and</em> intent-invocable. Typing the slash form works; so does asking in plain language. There are no hidden building blocks, no agents, no hooks, no scripts.</p>
+      <table class="ref-table">
+        <thead><tr><th>Skill</th><th>Input</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="slash">/walkthrough:create</td><td class="cell-mode">session <span class="tag auto">auto</span></td><td>Renders the current session from scratch through the five-stage pipeline. The optional <span class="cell-mono">[focus]</span> argument scopes the synthesis. Also fires on "visualize this session" / "session recap" intent.</td></tr>
+          <tr><td class="slash">/walkthrough:update</td><td class="cell-mode">session <span class="tag auto">auto</span></td><td>Refreshes an existing walkthrough in place — reconstructs the prior model from the rendered HTML, folds in the spec/source files you name, and overwrites the <strong>same file</strong>. Always asks which document first.</td></tr>
+          <tr><td class="slash">/walkthrough:document</td><td class="cell-mode">subject <span class="tag auto">auto</span></td><td>Renders a subject — a plugin, the marketplace, or any path — instead of a session. README + manifest are canonical. This is what builds every page under <span class="cell-mono">site/</span>, including this one.</td></tr>
+        </tbody>
+      </table>
+      <div class="callout">
+        <h4>The tool that documents itself</h4>
+        <p>Every page under <code>site/</code> — the marketplace landing plus one per plugin — is generated by <code>/walkthrough:document</code>, never hand-written. This page is a rendering of walkthrough's own README + manifest. Change the README, regenerate the page.</p>
+      </div>
+    </section>
+
+    <section id="contained">
+      <div class="sec-label">05 — the core promise</div>
+      <h2>Self-contained, <em>tokens only</em></h2>
+      <p class="lede">Two invariants make every walkthrough recognizably the same artifact and portable anywhere. They are non-negotiable.</p>
+      <div class="edge-grid">
+        <div class="edge"><div class="n">self-contained</div><div class="t">Everything inlined</div><p>All CSS, JS, and SVG live in the single HTML file. The <strong>only</strong> external resource is one Google Fonts <span class="cell-mono">@import</span> — no <span class="cell-mono">&lt;script src&gt;</span>, no <span class="cell-mono">&lt;link rel=stylesheet&gt;</span>, no <span class="cell-mono">&lt;img&gt;</span>, no CDN.</p></div>
+        <div class="edge"><div class="n">tokens only</div><div class="t">One house style</div><p>Never a raw hex, font, or spacing literal — everything goes through CSS custom properties. Both themes are <span class="cell-mono">:root</span> token blocks; the toggle swaps token sets, not stylesheets.</p></div>
+        <div class="edge"><div class="n">two themes</div><div class="t">Dark + warm-light</div><p>One in-document toggle, viewer's choice per-view. Nothing about it requires a server or a build step.</p></div>
+        <div class="edge"><div class="n">open components</div><div class="t">Floor, not ceiling</div><p>Catalog entries used verbatim where they fit; bespoke components composed from the same primitives where they don't — passing a looks-native checklist.</p></div>
+      </div>
+      <p style="margin-top:1.4rem">The result renders with no network beyond that one font fetch — copy the file anywhere, email it, drop it in a wiki, and it works without the plugin, without a server, and without a connection. Walkthroughs are written to <code>.claude/walkthrough/&lt;YYYY-MM-DD-HHMM&gt;-&lt;slug&gt;.html</code>; on first run <code>create</code> offers to add that directory to <code>.gitignore</code>, since a session artifact can contain code and prose you exchanged.</p>
+    </section>
+
+    <section id="example">
+      <div class="sec-label">06 — example</div>
+      <h2>Create, then <em>refresh</em> in place</h2>
+      <p class="lede"><code>/walkthrough:create architecture decisions</code> scopes a session recap to the decisions you made; <code>/walkthrough:update</code> later folds in a new spec and overwrites the same file.</p>
+      <div class="codeblock">
+        <div class="cb-head"><span class="cb-file">/walkthrough:create → /walkthrough:update</span><span class="cb-lang">transcript</span></div>
+        <pre class="cb-body"><code>&gt; /walkthrough:create architecture decisions
+
+gather      read cited source files (path:line refs are real)
+synthesize  session model — sections, nodes, edges, decisions, files
+select      map model → components (omit empty, never stub)
+assemble    inline scaffold + tokens + JS + SVG + detail data
+write       .claude/walkthrough/2026-06-04-1430-architecture.html
+
+→ one self-contained HTML file. Open it in any browser.
+
+# ── later, after the spec lands ──
+
+&gt; /walkthrough:update specs/v2-pipeline.md
+
+Which document to refresh?
+  • 2026-06-04-1430-architecture.html   (only match)
+  → yes
+
+reconstruct  rebuild prior model from rendered HTML (const DET)
+merge        revise superseded content, fold in v2-pipeline.md
+write        overwrite the SAME file — no new file, no backup
+
+→ same path, now its up-to-date self.</code></pre>
+      </div>
+      <div class="legend" aria-label="Pipeline stage legend">
+        <span class="lg"><i style="background:var(--accent)"></i>shared renderer stage</span>
+        <span class="lg"><i style="background:var(--green)"></i>session input (create / update)</span>
+        <span class="lg"><i style="background:var(--blue)"></i>subject input (document)</span>
+      </div>
+    </section>
+
+    <section id="isnt">
+      <div class="sec-label">07 — boundaries</div>
+      <h2>What it <em>is</em> — and isn't</h2>
+      <p class="lede">A walkthrough is a snapshot, not a live view. Knowing the boundary keeps expectations honest.</p>
+      <div class="edge-grid">
+        <div class="edge"><div class="n">it is</div><div class="t">A single self-contained file</div><p>One HTML file with everything inlined. Renders without the plugin, without a server, and without a network beyond the font fetch.</p></div>
+        <div class="edge"><div class="n">it is</div><div class="t">A synthesized model</div><p>Sections, diagram nodes, decisions, and files — rendered as a composed document, not pasted from the message log.</p></div>
+        <div class="edge"><div class="n">it isn't</div><div class="t">A live viewer</div><p>It's a snapshot of one session at the moment you ran it — not a dashboard that updates. Re-run <code>update</code> to evolve it in place.</p></div>
+        <div class="edge"><div class="n">it isn't</div><div class="t">A raw transcript dumper</div><p>It builds a structured model first and renders <em>that</em>, rather than dumping the verbatim conversation.</p></div>
+      </div>
+    </section>
+
+    <div class="foot">
+      <div class="foot-links">
+        <a href="../">← marketplace</a>
+        <a href="https://github.com/ApurvBazari/claude-plugins/tree/main/walkthrough">source on GitHub</a>
+      </div>
+      <div class="meta">walkthrough · v0.3.0 · MIT · by Apurv Bazari</div>
+    </div>
+  </main>
+  <aside class="panel" id="panel"><span class="x" onclick="closeD()">✕</span>
+    <div class="pk" id="pk">Detail</div><h3 id="ph">—</h3><div class="pb" id="pbd"></div></aside>
+  <script>
+const DET={
+ 'mode-session':{k:"Input mode",h:"Session",b:"The current conversation is the source of record — there is no repository scan. <code>create</code> renders it from scratch; <code>update</code> refreshes an existing document by reconstructing its model from the rendered HTML, then merging in named files. Both produce the session model: sections, nodes, edges, decisions, files, timeline."},
+ 'mode-subject':{k:"Input mode",h:"Subject",b:"A plugin, the whole marketplace, or any path. <code>document</code> reads the subject's own files — <code>README</code> + manifest are canonical, plus the <code>skills/</code> surface — and synthesizes the subject model. The page is a rendering of those sources, not a separately-maintained doc."},
+ 'visual-layer':{k:"Shared",h:"Visual layer",b:"Reused verbatim across all three skills: the design system (tokens + both <code>:root</code> theme blocks), the interactivity JS (theme toggle, detail panel), the page scaffold, and the open component catalog. Only the model and the gathering differ between session and subject."},
+ gather:{k:"Stage 1",h:"gather",b:"Read any source file you intend to cite so <code>path:line</code> refs are real. For a session, the transcript is the source of record — no repo scan. For a subject, gather reads the README + manifest (canonical) and the skills surface."},
+ synthesize:{k:"Stage 2",h:"synthesize",b:"Build the structured model BEFORE any HTML — for a session: <code>title</code>, <code>summary</code>, <code>typeTags</code>, <code>sections</code>, <code>nodes</code>, <code>edges</code>, <code>decisions</code>, <code>files</code>, <code>timeline</code>, <code>metrics</code>, <code>details</code>. The model is fully synthesized before a single tag is written."},
+ select:{k:"Stage 3",h:"select",b:"Map the model to components via the authoring guide and the catalog. Apply “omit empty, never stub” — a component renders only when the model has real content. Where no catalog entry fits, compose a bespoke component from the same primitives."},
+ assemble:{k:"Stage 4",h:"assemble",b:"Start from the page scaffold; inline the Google Fonts <code>@import</code> + both <code>:root</code> blocks, the shared JS, and the CSS/HTML for each chosen component plus its detail (<code>DET</code>) data. Read only the component group files for components you actually selected."},
+ write:{k:"Stage 5",h:"write",b:"Compute <code>.claude/walkthrough/&lt;YYYY-MM-DD-HHMM&gt;-&lt;slug&gt;.html</code> (collision → <code>-2</code>, <code>-3</code>, …), create the dir if missing, handle the first-run gitignore prompt, then write and offer to open — never auto-open. For the docs site, <code>document</code> writes to the path given (e.g. <code>site/&lt;plugin&gt;/index.html</code>)."}
+};
+const panel=document.getElementById('panel');
+function openD(id){const d=DET[id];if(!d)return;pk.textContent=d.k;ph.textContent=d.h;pbd.innerHTML=d.b;panel.classList.add('open');}
+function openCard(el){if(!el)return;pk.textContent=el.dataset.k||'Detail';ph.textContent=el.dataset.t||'';pbd.innerHTML=el.dataset.desc||'';panel.classList.add('open');}
+function closeD(){panel.classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeD();});
+function animate(scope){scope.querySelectorAll('.fil').forEach(f=>{f.style.width='0';requestAnimationFrame(()=>requestAnimationFrame(()=>{f.style.width=f.dataset.w+'%';}));});}
+function tgl(){const h=document.documentElement;const t=h.getAttribute('data-theme')==='dark'?'light':'dark';h.setAttribute('data-theme',t);try{localStorage.setItem('wt-theme',t);}catch(e){}}
+(function(){try{const t=localStorage.getItem('wt-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vis');const d=e.target.querySelector('.detail.show');if(d)animate(d);}}),{threshold:.1});
+document.querySelectorAll('section').forEach(s=>io.observe(s));
+addEventListener('scroll',()=>{const sc=scrollY/(document.body.scrollHeight-innerHeight)*100;if(prog)prog.style.width=sc+'%';
+ let cur='';document.querySelectorAll('section[id]').forEach(s=>{if(scrollY>=s.offsetTop-120)cur=s.id;});
+ document.querySelectorAll('.nav-links a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+cur));},{passive:true});
+document.querySelectorAll('[role="button"]').forEach(n=>n.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();n.click();}}));
+  </script>
+</body></html>

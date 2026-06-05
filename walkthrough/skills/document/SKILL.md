@@ -1,0 +1,84 @@
+---
+name: document
+description: Render any SUBJECT (a plugin, library, subsystem, or the marketplace) as a self-contained interactive HTML document in the walkthrough house style. Use when the user asks to "document this plugin", "make a docs page for <subject>", "generate the plugin landing page", or runs /walkthrough:document <subject>. Reads README + manifest as canonical source. Writes to the path given, default .claude/walkthrough/.
+---
+
+# Document — Render a Subject as an Interactive Document
+
+You are invoked via `/walkthrough:document <subject> [output-path]`. Produce ONE self-contained
+interactive HTML file in the house style from a *subject* (not the session), then offer to open it.
+The visual layer is reused verbatim from the `create` skill; only the model and gathering differ.
+
+Renderer files (reuse UNCHANGED, via relative path from this skill):
+`../create/references/design-system.md`, `../create/references/interactivity.md`,
+`../create/references/page-scaffold.md`, `../create/references/authoring-guide.md`,
+`../create/references/components/` (catalog; `index.md` routes to group files).
+
+## Step 1: Identify the subject
+`<subject>` is the first argument — a plugin directory, the word `marketplace` (or repo root), or
+any path/description. Route to the right adapter per `references/gather-subject.md`.
+
+## Step 2: Gather (README + manifest are canonical)
+Follow `references/gather-subject.md` and the matched adapter
+(`references/adapters/plugin.md` or `references/adapters/marketplace.md`). Read the canonical
+source files. Cite `path:line` only when verified by a real read.
+
+## Step 3: Synthesize the subject model
+Build the structured model per `references/subject-model.md` (title, tagline, summary, typeTags,
+install, sections[], nodes[], edges[], reference[], examples[], links[], details{}) BEFORE any HTML.
+
+## Step 4: Coverage critic
+Run `../create/references/completeness.md` Part 1 against the subject before selecting components.
+Fold omitted salient items in; note intentional omissions for the coverage note.
+
+## Step 5: Select components
+Using `../create/references/authoring-guide.md`, map the model to component names, then look each up
+in `../create/references/components/index.md` for its group file. Apply "omit empty, never stub".
+For the marketplace card grid (and anything else with no catalog entry), compose a bespoke component
+per the authoring-guide recipe + looks-native checklist.
+
+## Step 6: Assemble the HTML
+Start from `../create/references/page-scaffold.md`. Inline: the `@import` + both `:root` blocks from
+`design-system.md`; the shared JS from `interactivity.md`; the CSS+HTML for each chosen component
+(read only the `components/<group>.md` files for components you selected); the `DET`/detail data.
+Self-contained: no `<script src>`, no `<link rel=stylesheet>`, no `<img>` — only the one Google
+Fonts `@import`. Internal links MUST be relative (`./onboard/`, `../`) — never root-absolute.
+Generate `{{NAV_LINKS}}` deterministically from `sections[]` (one `<a href="#id">` per section, id reused from the section; first link `class="on"`) — do not hand-write or hand-match ids.
+
+**Rebrand the scaffold chrome.** The page-scaffold ships session-doc branding (the `◆ walk·through`
+nav logo and a `— walkthrough` `<title>` suffix). Replace it with the subject's identity: set
+`<title>` to `<subject title> — <site/collection name>` (for a plugin in this repo,
+`<name> — claude-plugins`) and the nav logo to the site/collection wordmark (here
+`◆ claude-plugins`). Never leave the literal `walkthrough` session branding on a subject page.
+
+## Step 7: Output path
+If a second argument (output path) is given, write there. Otherwise default to
+`.claude/walkthrough/<YYYY-MM-DD-HHMM>-<slug>.html` (`slug` = kebab of the title; collisions → `-2`,
+`-3`, …). For the site convention, the caller passes `site/<plugin>/index.html` (or
+`site/index.html` for the marketplace). Create parent directories if missing.
+
+## Step 8: Self-check (structure)
+Run `../create/references/self-check.md` against the assembled HTML; fix and re-check before writing.
+
+## Step 9: Write the file
+Write the assembled HTML to the Step 7 path. (No gitignore prompt — unlike `create`, `document`
+output is a published/derived artifact, not private session content.)
+
+## Step 10: Offer to open
+Tell the user the path (under three lines). Offer `open "<path>"` (macOS; `xdg-open` on Linux).
+Do not auto-open.
+
+Include the `completeness.md` Part 2 coverage note (included / intentionally omitted) in the message,
+above the open offer. It is a passive summary, not an `AskUserQuestion`.
+
+## Key Rules
+- **One look-and-feel.** Tokens only — never raw hex. Reproduce `design-system.md` patterns.
+- **Self-contained.** All CSS/JS/SVG inline; only the Google Fonts `@import` is external.
+- **README is canonical.** Never invent content not grounded in the subject's source files.
+- **Model before markup.** Synthesize the subject model (Step 3) before assembling HTML.
+- **Omit empty, never stub.** Render only components with real content.
+- **Relative links only.** Internal cross-links use `./` or `../`, never `/…` (Pages base path).
+- **Real code refs only.** Cite `path:line` only when verified via a file read.
+- **Read-only.** Never execute subject code; only read files.
+- **Self-check before write.** Run `self-check.md` on the assembled HTML; never write a document that fails it.
+- **Completeness gate.** Run the coverage critic after synthesis and surface the coverage note at the offer step.

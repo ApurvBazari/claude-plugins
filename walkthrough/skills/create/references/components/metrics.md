@@ -6,7 +6,7 @@
 
 ```html
 <section id="<id>">
-  <div class="sec-label"><NN — metrics></div>
+  <div class="sec-label"><metrics></div>
   <h2>By the <em>numbers</em></h2>
   <div class="stat-grid">
     <div class="stat-card added"><div class="stat-label"><label></div><div class="stat-value"><N></div><div class="stat-sub"><context></div></div>
@@ -38,7 +38,7 @@
 
 ```html
 <section id="<id>">
-  <div class="sec-label"><NN — sizes></div>
+  <div class="sec-label"><sizes></div>
   <h2>Relative <em>sizes</em></h2>
   <div class="size-chart" id="sizeChart">
     <div class="size-header"><span><item></span><span><magnitude></span><span><value></span></div>

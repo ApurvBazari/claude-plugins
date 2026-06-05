@@ -48,6 +48,10 @@ html[data-theme="light"]{
 - **Grain overlay:** `body::after` with the inline data-URI fractal-noise SVG at `opacity:.025` (paste the exact rule from seed.html below).
 - **Frosted nav:** fixed, `backdrop-filter:blur(20px) saturate(180%)`; 2px scroll-progress bar below it.
 - **Motion:** transitions use `var(--ease)`; reveals via IntersectionObserver; width animations use the double-`requestAnimationFrame` reset-then-grow pattern.
+- **Section kicker (auto-numbered):** `.sec-label` carries `counter-increment:sec` (reset on `main`);
+  `.sec-label::before` prints `counter(sec,decimal-leading-zero) " \2014 "`. Authors write only the
+  label text — never a hand-typed number. The hero has no `.sec-label`, so numbering starts at the
+  first real section.
 
 ```css
 /* grain overlay — copy the exact body::after rule from seed.html */
@@ -55,3 +59,18 @@ body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;o
 ```
 
 **Rule:** components reference ONLY these tokens — never raw hex. That is what keeps one look across both themes.
+
+## Chip primitive (status roles)
+
+`.chip` is the canonical small status/label token. A leading dot uses `currentColor`. Five semantic
+roles map onto the palette:
+
+| Class | Role | Foreground | Fill |
+|-------|------|-----------|------|
+| `.chip.ok` | success | `--green` | `--green-soft` |
+| `.chip.info` | info | `--blue` | `--blue-soft` |
+| `.chip.warn` | warning | `--amber` | `--amber-soft` |
+| `.chip.danger` | danger | `--rose` | `--rose-soft` |
+| `.chip.neutral` | neutral | `--ts` | `--bg-elevated` |
+
+Use `.chip` for source / tier / status / gate labels. Tokens only — never raw hex.

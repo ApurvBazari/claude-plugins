@@ -2,10 +2,12 @@
 .claude/settings.local.json
 .claude/plans/
 .claude/plugins/
+.claude/worktrees/
 
 # handoff plugin runtime state (directive may contain session-scoped intent;
 # treat as personal, not shared)
 .claude/handoff*.md
+.claude/handoff/
 .claude/handoff-settings.md
 
 # walkthrough plugin runtime output (generated session docs may contain code

@@ -19,6 +19,8 @@ one component; pick the row that matches the field's *shape*.
 | `metrics[]` | stat cards / animated bar chart |
 | `timeline[]` | timeline; stepper if a replayable sequence |
 | `typeTags` includes `research` | concept map + callouts |
+| `nodes[]`/`edges[]` with switchable views | interactive explorer (one selector → diagram + detail) |
+| `timeline[]` of phased parallel/sequential steps | data-driven step timeline |
 | always | hero, prose sections, detail panel, theme toggle (chrome from page-scaffold) |
 
 Notes on the choices:
@@ -73,6 +75,9 @@ existing interaction conventions — do not invent a parallel design language.
   `--mono` for eyebrows, labels, pills, code, and trees.
 - **Motion + rhythm** — every transition uses `var(--ease)`; follow the spacing rhythm of the catalog
   (≈`12px`/`10px` radii, `~1rem`–`1.5rem` padding, `.6rem`–`.8rem` gaps).
+- **Chips** — for source/tier/status/gate labels use the `.chip` primitive with a status role
+  (`ok`/`info`/`warn`/`danger`/`neutral`). The existing `.pill`, `.nw`/`.ed`, and `.tcard .cat`
+  are the pre-chip "chip family" and stay as-is; new components use `.chip`.
 
 **Reuse interaction conventions** (wire to the shared handlers in `interactivity.md`, never to new ones):
 

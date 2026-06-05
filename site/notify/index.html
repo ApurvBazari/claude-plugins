@@ -1,0 +1,349 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>notify — claude-plugins</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root{
+  --bg-deep:#08090c; --bg-card:#0f1117; --bg-card-hover:#151821; --bg-elevated:#1a1d28; --bg-inset:#060709;
+  --border:#1e2230; --border-active:#2d3348; --border-strong:#3a4159;
+  --tp:#e8eaf0; --ts:#7d8399; --tm:#4a5068; --tf:#2e3349;
+  --blue:#3b82f6; --green:#22c55e; --amber:#f59e0b; --rose:#f43f5e; --purple:#a78bfa;
+  --accent:#22d3ee; --accent-glow:rgba(34,211,238,.16); --accent-soft:rgba(34,211,238,.08);
+  --blue-soft:rgba(59,130,246,.1); --green-soft:rgba(34,197,94,.1); --amber-soft:rgba(245,158,11,.1); --rose-soft:rgba(244,63,94,.1); --purple-soft:rgba(167,139,250,.1);
+  --mono:'JetBrains Mono',monospace; --serif:'Instrument Serif',serif; --sans:'DM Sans',sans-serif;
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+html[data-theme="light"]{
+  --bg-deep:#faf8f4; --bg-card:#fff; --bg-card-hover:#f5f1ea; --bg-elevated:#fff; --bg-inset:#f5f1ea;
+  --border:#e5dfd6; --border-active:#d8cfc1; --border-strong:#c9c0b3;
+  --tp:#2a2520; --ts:#6b6157; --tm:#9e9486; --tf:#c9c0b3;
+  --blue:#2d5fa0; --green:#2d7a3a; --amber:#b87333; --rose:#b83a3a; --purple:#7a3b8f;
+  --accent:#c05e2b; --accent-glow:rgba(192,94,43,.16); --accent-soft:rgba(192,94,43,.09);
+  --blue-soft:rgba(45,95,160,.1); --green-soft:rgba(45,122,58,.1); --amber-soft:rgba(184,115,51,.1); --rose-soft:rgba(184,58,58,.1); --purple-soft:rgba(122,59,143,.1);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg-deep);color:var(--tp);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .3s,color .3s;}
+body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+/* nav */
+nav{position:fixed;top:0;left:0;right:0;height:54px;z-index:100;backdrop-filter:blur(20px) saturate(180%);background:color-mix(in srgb,var(--bg-deep) 82%,transparent);border-bottom:1px solid var(--border);}
+.nav-in{max-width:1180px;margin:0 auto;height:100%;display:flex;align-items:center;justify-content:space-between;padding:0 1.6rem;}
+.logo{font-family:var(--mono);font-size:.82rem;font-weight:600;letter-spacing:.02em;}
+.logo span{color:var(--accent);}
+.nav-links{display:flex;gap:.3rem;font-family:var(--mono);font-size:.68rem;}
+.nav-links a{color:var(--ts);text-decoration:none;padding:.3rem .55rem;border-radius:6px;transition:.2s;}
+.nav-links a:hover,.nav-links a.on{color:var(--tp);background:var(--accent-soft);}
+.nav-meta{display:flex;align-items:center;gap:.45rem;font-family:var(--mono);font-size:.62rem;color:var(--tm);text-transform:uppercase;letter-spacing:.12em;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2.5s infinite;}
+.theme-btn{cursor:pointer;font-family:var(--mono);font-size:.62rem;color:var(--ts);border:1px solid var(--border);padding:.28rem .6rem;border-radius:6px;background:none;}
+.progress{position:fixed;top:54px;left:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--blue));z-index:101;width:0;box-shadow:0 0 8px var(--accent-glow);}
+main{max-width:1180px;margin:0 auto;padding:0 1.6rem;padding-top:78px;}
+.eyebrow{font-family:var(--mono);font-size:.68rem;color:var(--accent);text-transform:uppercase;letter-spacing:.18em;display:inline-flex;align-items:center;gap:.6rem;margin-bottom:.8rem;}
+.eyebrow::before{content:'';width:26px;height:1px;background:var(--accent);}
+h1{font-family:var(--serif);font-size:clamp(2.4rem,6vw,4rem);font-weight:400;line-height:1.04;letter-spacing:-.025em;margin:.2rem 0;max-width:880px;}
+h1 em,h2 em{font-style:italic;color:var(--accent);}
+h2{font-family:var(--serif);font-size:clamp(1.7rem,3.5vw,2.4rem);font-weight:400;line-height:1.15;margin:.2rem 0 .3rem;}
+.lede{color:var(--ts);font-size:1.08rem;line-height:1.7;max-width:720px;margin:.6rem 0 0;}
+p{color:var(--ts);font-size:.92rem;line-height:1.7;max-width:720px;}
+p code,li code{font-family:var(--mono);font-size:.8rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
+section{padding:4rem 0 2rem;scroll-margin-top:70px;opacity:0;transform:translateY(24px);transition:opacity .7s var(--ease),transform .7s var(--ease);}
+section.vis{opacity:1;transform:none;}
+.sec-label{font-family:var(--mono);font-size:.65rem;color:var(--tm);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.5rem;}
+/* hero stats */
+.hstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:1.8rem;}
+.hstat{background:var(--bg-card);padding:1.1rem 1.2rem;}
+.hstat .v{font-family:var(--serif);font-size:1.9rem;color:var(--tp);line-height:1;}
+.hstat .v em{font-style:italic;color:var(--accent);}
+.hstat .l{font-family:var(--mono);font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;margin-top:.4rem;}
+/* detail panel */
+.panel{position:fixed;top:0;right:0;width:300px;height:100vh;background:var(--bg-card);border-left:1px solid var(--border-active);padding:24px 20px;overflow:auto;transform:translateX(100%);transition:transform .25s var(--ease);box-shadow:-20px 0 50px rgba(0,0,0,.3);z-index:200;}
+.panel.open{transform:none;}
+.panel .x{position:absolute;top:14px;right:16px;color:var(--tm);cursor:pointer;font-size:18px;}
+.panel .pk{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);}
+.panel h3{font-family:var(--serif);font-weight:400;font-size:1.4rem;margin:.2rem 0 .6rem;}
+.panel .pb{font-size:.86rem;color:var(--ts);line-height:1.6;}
+.panel code{font-family:var(--mono);font-size:.72rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@media(max-width:780px){.nav-links{display:none}}
+/* === component CSS (only the selected components) === */
+/* hero chips (typeTags) */
+.chips{display:flex;flex-wrap:wrap;gap:.5rem;margin:1.2rem 0 .2rem;}
+.chip{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ts);background:var(--bg-card);border:1px solid var(--border);padding:.32rem .65rem;border-radius:20px;}
+.chip.accent{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 30%,transparent);background:var(--accent-soft);}
+/* callout */
+.callout{background:var(--accent-soft);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:.9rem 1.2rem;margin:1.1rem 0;}
+.callout h4{font-family:var(--serif);font-weight:400;color:var(--accent);margin:0 0 .3rem;font-size:1.1rem;}
+.callout p{margin:0;font-size:.86rem;color:var(--ts);}
+.callout code{font-family:var(--mono);font-size:.78rem;background:var(--bg-card);color:var(--accent);padding:1px 5px;border-radius:4px;}
+/* annotated code block */
+.codeblock{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:1.1rem 0;}
+.cb-head{display:flex;justify-content:space-between;align-items:center;padding:.5rem .9rem;background:var(--bg-elevated);border-bottom:1px solid var(--border);font-family:var(--mono);font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;}
+.cb-file{color:var(--accent);}
+.cb-lang{color:var(--tm);}
+.cb-body{margin:0;padding:.9rem 1.1rem;font-family:var(--mono);font-size:.78rem;line-height:1.65;color:var(--ts);white-space:pre;overflow-x:auto;}
+.cb-body code{color:var(--tp);}
+/* flow / pipeline diagram */
+.flow{display:flex;align-items:center;flex-wrap:wrap;gap:.4rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1.2rem 0;}
+.fnode{flex:1;min-width:110px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:.8rem .9rem;font-family:var(--mono);font-size:.7rem;cursor:pointer;transition:all .3s var(--ease);}
+.fnode:hover{border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow);transform:scale(1.03);}
+.fnode .nl{font-size:.55rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;}
+.fnode.accent{border-color:color-mix(in srgb,var(--accent) 40%,transparent);background:linear-gradient(135deg,var(--bg-elevated),var(--accent-soft));}
+.farr{color:var(--border-strong);font-size:1.1rem;}
+/* comparison table */
+.compare-table{width:100%;border-collapse:separate;border-spacing:0;font-size:.82rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:1.2rem 0;}
+.compare-table th{font-family:var(--mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);padding:.85rem 1.25rem;text-align:left;background:var(--bg-elevated);border-bottom:1px solid var(--border);font-weight:500;}
+.compare-table td{padding:.75rem 1.25rem;border-bottom:1px solid var(--border);color:var(--ts);vertical-align:top;}
+.compare-table tr:last-child td{border-bottom:none;}
+.compare-table tr:hover td{background:var(--bg-card-hover);}
+.compare-table .label-cell{font-weight:500;color:var(--tp);font-size:.82rem;}
+.badge-yes{display:inline-flex;align-items:center;gap:.3rem;font-family:var(--mono);font-size:.68rem;color:var(--green);background:var(--green-soft);padding:.2rem .55rem;border-radius:4px;}
+.badge-no{display:inline-flex;align-items:center;gap:.3rem;font-family:var(--mono);font-size:.68rem;color:var(--tm);background:var(--bg-inset);padding:.2rem .55rem;border-radius:4px;}
+.cell-mono{font-family:var(--mono);font-size:.74rem;color:var(--accent);}
+/* skills reference table — same primitives as compare-table */
+.ref-table{width:100%;border-collapse:separate;border-spacing:0;font-size:.82rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:1.2rem 0;}
+.ref-table th{font-family:var(--mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);padding:.85rem 1.25rem;text-align:left;background:var(--bg-elevated);border-bottom:1px solid var(--border);font-weight:500;}
+.ref-table td{padding:.75rem 1.25rem;border-bottom:1px solid var(--border);color:var(--ts);vertical-align:top;}
+.ref-table tr:last-child td{border-bottom:none;}
+.ref-table tr:hover td{background:var(--bg-card-hover);}
+.ref-table .slash{font-family:var(--mono);font-size:.76rem;color:var(--accent);white-space:nowrap;}
+.ref-table .tag{font-family:var(--mono);font-size:.58rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);border:1px solid var(--border);padding:.12rem .4rem;border-radius:4px;display:inline-block;}
+.ref-table .tag.lock{color:var(--rose);border-color:color-mix(in srgb,var(--rose) 35%,transparent);background:var(--rose-soft);}
+.ref-table .tag.auto{color:var(--green);border-color:color-mix(in srgb,var(--green) 35%,transparent);background:var(--green-soft);}
+.ref-table .tag.hidden-int{color:var(--purple);border-color:color-mix(in srgb,var(--purple) 35%,transparent);background:var(--purple-soft);}
+.ref-table .grp{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);background:var(--accent-soft);}
+/* key–value metadata grid */
+.edge-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:.7rem;margin-top:1rem;}
+.edge{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:.85rem 1rem;}
+.edge .n{font-family:var(--mono);font-size:.62rem;color:var(--accent);}
+.edge .t{font-weight:600;margin:.2rem 0;font-size:.88rem;color:var(--tp);}
+.edge p{font-size:.78rem;margin:0;color:var(--ts);}
+/* footer */
+.foot{border-top:1px solid var(--border);margin-top:3rem;padding:2.2rem 0 4rem;display:flex;flex-wrap:wrap;gap:1.4rem;align-items:center;justify-content:space-between;}
+.foot-links{display:flex;flex-wrap:wrap;gap:.5rem;}
+.foot-links a{font-family:var(--mono);font-size:.7rem;color:var(--ts);text-decoration:none;border:1px solid var(--border);padding:.4rem .8rem;border-radius:8px;background:var(--bg-card);transition:all .2s var(--ease);}
+.foot-links a:hover{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 35%,transparent);background:var(--accent-soft);}
+.foot .meta{font-family:var(--mono);font-size:.62rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;}
+</style></head>
+<body>
+  <nav><div class="nav-in">
+    <div class="logo">◆ claude<span>-plugins</span></div>
+    <div class="nav-links">
+      <a href="#top" class="on">Overview</a>
+      <a href="#what">What it does</a>
+      <a href="#filter">Duration filter</a>
+      <a href="#flow">How it fires</a>
+      <a href="#skills">Skills</a>
+      <a href="#events">Events</a>
+      <a href="#platforms">Platforms</a>
+      <a href="#example">Example</a>
+    </div>
+    <div style="display:flex;align-items:center;gap:.8rem">
+      <div class="nav-meta"><span class="dot"></span> PLUGIN · v2.0.0</div>
+      <button class="theme-btn" onclick="tgl()">◑ THEME</button></div>
+  </div></nav>
+  <div class="progress" id="prog"></div>
+  <main>
+    <section id="top" class="vis" style="padding-top:2.4rem">
+      <div class="eyebrow">claude-plugins · notify</div>
+      <h1>Desktop notifications, <em>only when it matters</em>.</h1>
+      <p class="lede">notify fires a macOS or Linux system notification when Claude Code finishes a task — carrying a <strong>repo / branch</strong> subtitle and Claude's actual last message. A per-event <strong>duration filter</strong> suppresses fast responses, so it only interrupts you when Claude has genuinely been working.</p>
+      <div class="chips">
+        <span class="chip accent">plugin</span>
+        <span class="chip">notifications</span>
+        <span class="chip">hooks</span>
+        <span class="chip">macos · linux</span>
+      </div>
+      <div class="codeblock" style="max-width:560px">
+        <div class="cb-head"><span class="cb-file">install</span><span class="cb-lang">bash</span></div>
+        <pre class="cb-body"><code>claude plugin install notify@apurvbazari-plugins</code></pre>
+      </div>
+      <p style="margin-top:.6rem;font-size:.84rem">Then run <code>/notify:setup</code> to install the platform backend and wire the hooks.</p>
+      <div class="hstats">
+        <div class="hstat"><div class="v"><em>3</em></div><div class="l">user skills</div></div>
+        <div class="hstat"><div class="v">3</div><div class="l">hook events</div></div>
+        <div class="hstat"><div class="v">2</div><div class="l">platforms</div></div>
+        <div class="hstat"><div class="v">2</div><div class="l">install scopes</div></div>
+        <div class="hstat"><div class="v"><em>0</em></div><div class="l">CDN deps</div></div>
+      </div>
+    </section>
+
+    <section id="what">
+      <div class="sec-label">01 — what it does</div>
+      <h2>A <em>Stop-hook</em> wrapper around your system notifier</h2>
+      <p class="lede"><code>/notify:setup</code> detects your platform, installs the backend if needed (<code>terminal-notifier</code> via Homebrew on macOS, or <code>notify-send</code> from <code>libnotify</code> on Linux), detects your editor for click-to-focus, asks whether to install globally or per-project, and wires the hooks.</p>
+      <p>When Claude stops, the hook runs <code>notify.sh</code>, which reads your per-event config, extracts Claude's <strong>actual last message</strong> (not generic static text), builds a contextual <code>repo / branch</code> subtitle from git, and posts the notification. The script always exits <code>0</code> — a missing backend or a failed notification never blocks Claude.</p>
+      <div class="callout">
+        <h4>Intentionally minimal</h4>
+        <p>notify does one thing well: native desktop alerts, duration-filtered, with project context. For richer feature sets, the root README compares it honestly against community alternatives.</p>
+      </div>
+    </section>
+
+    <section id="filter">
+      <div class="sec-label">02 — the duration filter</div>
+      <h2>The <em>duration filter</em></h2>
+      <p class="lede">Each event carries a <code>minDurationSeconds</code> threshold. If the elapsed time since last activity is below it, the notification is <strong>silently skipped</strong> — so a 4-second typo fix never interrupts you, but a 12-minute refactor does.</p>
+      <div class="flow" aria-label="Duration filter outcomes">
+        <div class="fnode" data-d="elapsed" onclick="openD('elapsed')" tabindex="0" role="button" aria-label="Elapsed time tracked in a temp file"><div class="nl">track</div>elapsed vs threshold</div>
+        <span class="farr">→</span>
+        <div class="fnode" data-d="under" onclick="openD('under')" tabindex="0" role="button" aria-label="Under threshold suppressed"><div class="nl">under</div>silently skipped</div>
+        <span class="farr">→</span>
+        <div class="fnode accent" data-d="over" onclick="openD('over')" tabindex="0" role="button" aria-label="Over threshold delivered"><div class="nl">over</div>delivered</div>
+      </div>
+      <p>The wrapper tracks last activity in a temp file (<code>$TMPDIR/claude-notify-session-start</code>). The filter applies to <code>stop</code> and <code>subagentStop</code> — set <code>30</code> on <code>stop</code> for substantive-work-only alerts. Leave <code>0</code> on <code>notification</code> so attention prompts always fire.</p>
+    </section>
+
+    <section id="flow">
+      <div class="sec-label">03 — how it fires</div>
+      <h2>From Claude stopping to a <em>system alert</em></h2>
+      <p class="lede">A fixed pipeline runs on every hook event. Click a stage for detail.</p>
+      <div class="flow" aria-label="Notification firing pipeline">
+        <div class="fnode" data-d="stop" onclick="openD('stop')" tabindex="0" role="button" aria-label="Claude stops"><div class="nl">trigger</div>Claude stops</div>
+        <span class="farr">→</span>
+        <div class="fnode" data-d="hook" onclick="openD('hook')" tabindex="0" role="button" aria-label="Stop hook runs notify.sh"><div class="nl">hook</div>notify.sh</div>
+        <span class="farr">→</span>
+        <div class="fnode accent" data-d="filter" onclick="openD('filter')" tabindex="0" role="button" aria-label="Duration filter checks elapsed time"><div class="nl">filter</div>duration check</div>
+        <span class="farr">→</span>
+        <div class="fnode" data-d="message" onclick="openD('message')" tabindex="0" role="button" aria-label="Build message and subtitle"><div class="nl">build</div>message + subtitle</div>
+        <span class="farr">→</span>
+        <div class="fnode" data-d="post" onclick="openD('post')" tabindex="0" role="button" aria-label="Post the system notification"><div class="nl">post</div>system alert</div>
+      </div>
+      <p>The backend is chosen by platform: <code>terminal-notifier</code> on macOS (title, subtitle, message, sound, click-to-activate), or <code>notify-send</code> on Linux (app-name, urgency, message). JSON from stdin is parsed with a <code>jq</code>-first / <code>python3</code>-fallback helper, so neither tool is a hard dependency.</p>
+    </section>
+
+    <section id="skills">
+      <div class="sec-label">04 — reference</div>
+      <h2>Skills &amp; the <em>setup wizard</em></h2>
+      <p class="lede">Three user-facing skills (all <code>/notify:&lt;name&gt;</code>). <code>check</code> is auto-invocable; the two destructive skills require explicit invocation. One internal wizard is hidden from the menu.</p>
+      <table class="ref-table">
+        <thead><tr><th>Skill</th><th>Invocation</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="slash">/notify:setup</td><td><span class="tag lock">user-only</span></td><td>Detects platform, installs the backend, detects your editor + bundle ID for click-to-focus, asks global vs per-project, wires the hooks, and sends a test notification.</td></tr>
+          <tr><td class="slash">/notify:check</td><td><span class="tag auto">auto</span></td><td>Health check — reports which scopes are installed, the event configuration, the precedence-merged config the hook will actually use, and sends a test notification to confirm the wiring end-to-end.</td></tr>
+          <tr><td class="slash">/notify:uninstall</td><td><span class="tag lock">user-only</span></td><td>Surgically removes notify-owned hooks from <span class="cell-mono">settings.json</span>, deletes <span class="cell-mono">notify-config.json</span>, and offers to uninstall the backend if nothing else depends on it. Leaves unrelated hooks untouched.</td></tr>
+          <tr><td class="slash">/notify:wizard</td><td><span class="tag hidden-int">internal</span></td><td>The preference Q&amp;A — sounds, durations, per-event toggles, matcher regex. Invoked by <span class="cell-mono">setup</span>; hidden from the <span class="cell-mono">/</span> menu.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="events">
+      <div class="sec-label">05 — event model</div>
+      <h2>Three <em>events</em>, each independently configurable</h2>
+      <p class="lede">Notification content is extracted from Claude's real last message. Each event has its own enabled flag, sound, and duration threshold.</p>
+      <table class="ref-table">
+        <thead><tr><th>Event</th><th>When</th><th>Default</th></tr></thead>
+        <tbody>
+          <tr><td class="slash">stop</td><td>Claude finishes a response</td><td>Enabled · <span class="cell-mono">Hero</span> sound · <span class="cell-mono">minDurationSeconds: 30</span></td></tr>
+          <tr><td class="slash">notification</td><td>Claude needs your attention</td><td>Enabled · <span class="cell-mono">Glass</span> sound · <span class="cell-mono">minDurationSeconds: 0</span></td></tr>
+          <tr><td class="slash">subagentStop</td><td>A subagent finishes work</td><td>Disabled (too noisy by default)</td></tr>
+        </tbody>
+      </table>
+      <div class="sec-label" style="margin-top:1.4rem">per-event knobs — edit notify-config.json, takes effect immediately</div>
+      <div class="edge-grid">
+        <div class="edge"><div class="n">enabled</div><div class="t">Toggle</div><p>Turn any event on or off without re-running setup.</p></div>
+        <div class="edge"><div class="n">sound</div><div class="t">Alert sound</div><p>Hero, Glass, Ping, Purr, Pop, Submarine and more on macOS; urgency level on Linux.</p></div>
+        <div class="edge"><div class="n">minDurationSeconds</div><div class="t">Duration filter</div><p>Suppress this event below the elapsed-time threshold. The substantive-work knob.</p></div>
+        <div class="edge"><div class="n">activate</div><div class="t">Click-to-focus</div><p>App to bring forward on click (VS Code, Cursor, iTerm2, …) via bundle ID — macOS only.</p></div>
+        <div class="edge"><div class="n">message</div><div class="t">Fallback text</div><p>Shown when contextual content can't be extracted from Claude's response.</p></div>
+        <div class="edge"><div class="n">scope precedence</div><div class="t">Global + per-project</div><p>Project-local inherits all global keys and overrides only what it sets. Both scopes coexist.</p></div>
+      </div>
+    </section>
+
+    <section id="platforms">
+      <div class="sec-label">06 — platform support</div>
+      <h2>Cross-platform: <em>macOS</em> and <em>Linux</em></h2>
+      <p class="lede">Same hook, two backends. The duration filter and the <code>repo / branch</code> subtitle work everywhere; sounds and click-to-focus are richer on macOS.</p>
+      <table class="compare-table">
+        <thead><tr><th>Capability</th><th>macOS</th><th>Linux</th></tr></thead>
+        <tbody>
+          <tr><td class="label-cell">Backend</td><td class="cell-mono">terminal-notifier</td><td class="cell-mono">notify-send (libnotify)</td></tr>
+          <tr><td class="label-cell">Sound</td><td>14 system sounds</td><td>Urgency levels only</td></tr>
+          <tr><td class="label-cell">Click-to-focus</td><td><span class="badge-yes">✓ via bundle ID</span></td><td><span class="badge-no">— not supported</span></td></tr>
+          <tr><td class="label-cell">Duration filter</td><td><span class="badge-yes">✓</span></td><td><span class="badge-yes">✓</span></td></tr>
+          <tr><td class="label-cell">repo / branch subtitle</td><td><span class="badge-yes">✓</span></td><td><span class="badge-yes">✓</span></td></tr>
+          <tr><td class="label-cell">JSON parsing</td><td class="cell-mono">jq → python3 fallback</td><td class="cell-mono">jq → python3 fallback</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="example">
+      <div class="sec-label">07 — example</div>
+      <h2>One run, then the filter at <em>work</em></h2>
+      <p class="lede"><code>/notify:setup</code> on macOS, then a Stop hook firing in two scenarios — one suppressed by the duration filter, one delivered.</p>
+      <div class="codeblock">
+        <div class="cb-head"><span class="cb-file">/notify:setup → Stop hook ×2</span><span class="cb-lang">transcript</span></div>
+        <pre class="cb-body"><code>&gt; /notify:setup
+
+Detecting platform … macOS
+Checking for terminal-notifier … installing via Homebrew
+Editor detected: VS Code (com.microsoft.VSCode)
+
+Where should notifications be installed?
+  (a) Global — fire in every Claude Code session
+  (b) This project only
+
+&gt; a
+
+Configuring three events:
+  stop          enabled   sound: Hero    minDurationSeconds: 30
+  notification  enabled   sound: Glass   minDurationSeconds: 0
+  subagentStop  disabled  (too noisy by default)
+
+Writing notify-config.json to ~/.claude/
+Adding hooks to ~/.claude/settings.json (Stop, Notification)
+Sending test notification … ✓
+
+# ── short task: "fix typo in README" ────────
+[Stop hook fires]
+[notify.sh: elapsed 4s &lt; 30s threshold → silently skip]
+(no notification — duration filter suppressed)
+
+# ── long task: 12-minute refactor ───────────
+[Stop hook fires]
+[notify.sh: elapsed 743s ≥ 30s → notify]
+
+  ┌──────────────────────────────────────┐
+  │ Claude Code                          │
+  │ feedback-saas / feat/onboarding-flow │
+  │ Refactored auth middleware …         │
+  └──────────────────────────────────────┘
+
+  Sound: Hero · Click brings VS Code to front</code></pre>
+      </div>
+    </section>
+
+    <div class="foot">
+      <div class="foot-links">
+        <a href="../">← marketplace</a>
+        <a href="https://github.com/ApurvBazari/claude-plugins/tree/main/notify">source on GitHub</a>
+      </div>
+      <div class="meta">notify · v2.0.0 · MIT · by Apurv Bazari</div>
+    </div>
+  </main>
+  <aside class="panel" id="panel"><span class="x" onclick="closeD()">✕</span>
+    <div class="pk" id="pk">Detail</div><h3 id="ph">—</h3><div class="pb" id="pbd"></div></aside>
+  <script>
+const DET={
+ elapsed:{k:"Duration filter",h:"Elapsed vs threshold",b:"On every event, <code>notify.sh</code> records the current time in a temp file (<code>$TMPDIR/claude-notify-session-start</code>). On the next <code>stop</code>/<code>subagentStop</code>, it compares elapsed seconds against the event's <code>minDurationSeconds</code>."},
+ under:{k:"Duration filter",h:"Under threshold",b:"If elapsed time is below <code>minDurationSeconds</code>, the script returns early with <code>exit 0</code> — no notification, no sound. Fast turns never interrupt you."},
+ over:{k:"Duration filter",h:"Over threshold",b:"At or above the threshold, firing continues: the message and <code>repo / branch</code> subtitle are built and the notification is posted. Set <code>30</code> on <code>stop</code> for substantive-work-only alerts."},
+ stop:{k:"Pipeline",h:"Claude stops",b:"A Stop (or Notification / SubagentStop) hook event fires. The hook command runs <code>notify.sh</code> with the event name and pipes Claude's context as stdin JSON. Related: <code>hook</code>."},
+ hook:{k:"Pipeline",h:"notify.sh",b:"The wrapper allowlists the event, reads per-event config from <code>notify-config.json</code> (falling back to built-in defaults), and exits silently if the event is disabled. It always ends with <code>exit 0</code> so it can never block Claude. Related: <code>filter</code>."},
+ filter:{k:"Pipeline",h:"Duration check",b:"For <code>stop</code>/<code>subagentStop</code>, elapsed time is compared against <code>minDurationSeconds</code>; below threshold the script skips. The activity timestamp is then refreshed via an atomic temp-file write + rename. Related: <code>over</code>, <code>message</code>."},
+ message:{k:"Pipeline",h:"Message + subtitle",b:"The contextual message is extracted from stdin (<code>.last_assistant_message</code> for stop, <code>.message</code> for notification), sanitized (newlines → spaces) and truncated to 80 chars. The subtitle is <code>basename(repo) / branch</code> from <code>git</code>, falling back to the current directory name. Related: <code>post</code>."},
+ post:{k:"Pipeline",h:"System alert",b:"On macOS, <code>terminal-notifier</code> posts title, subtitle, message, sound, and a click-to-activate target. On Linux, <code>notify-send</code> posts app-name, urgency (mapped from the sound), and message. A missing backend fails silently."}
+};
+const panel=document.getElementById('panel');
+function openD(id){const d=DET[id];if(!d)return;pk.textContent=d.k;ph.textContent=d.h;pbd.innerHTML=d.b;panel.classList.add('open');}
+function openCard(el){if(!el)return;pk.textContent=el.dataset.k||'Detail';ph.textContent=el.dataset.t||'';pbd.innerHTML=el.dataset.desc||'';panel.classList.add('open');}
+function closeD(){panel.classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeD();});
+function tgl(){const h=document.documentElement;const t=h.getAttribute('data-theme')==='dark'?'light':'dark';h.setAttribute('data-theme',t);try{localStorage.setItem('wt-theme',t);}catch(e){}}
+(function(){try{const t=localStorage.getItem('wt-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vis');}}),{threshold:.1});
+document.querySelectorAll('section').forEach(s=>io.observe(s));
+addEventListener('scroll',()=>{const sc=scrollY/(document.body.scrollHeight-innerHeight)*100;if(prog)prog.style.width=sc+'%';
+ let cur='';document.querySelectorAll('section[id]').forEach(s=>{if(scrollY>=s.offsetTop-120)cur=s.id;});
+ document.querySelectorAll('.nav-links a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+cur));},{passive:true});
+document.querySelectorAll('.fnode[role="button"]').forEach(n=>n.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();n.click();}}));
+  </script>
+</body></html>

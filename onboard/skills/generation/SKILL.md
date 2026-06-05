@@ -1610,7 +1610,7 @@ Follow `references/evolution-hooks-guide.md`:
 - FileChanged hooks for drift detection
 - SessionStart hook for drift summary
 - Copy detection scripts to `.claude/scripts/`
-- Initialize `.claude/drift.json`
+- Initialize `.claude/greenfield-drift.json`
 
 ### Sprint Contracts (if `enableSprintContracts`)
 

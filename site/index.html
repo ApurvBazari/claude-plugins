@@ -1,0 +1,254 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>claude-plugins — Claude Code plugins</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root{
+  --bg-deep:#08090c; --bg-card:#0f1117; --bg-card-hover:#151821; --bg-elevated:#1a1d28; --bg-inset:#060709;
+  --border:#1e2230; --border-active:#2d3348; --border-strong:#3a4159;
+  --tp:#e8eaf0; --ts:#7d8399; --tm:#4a5068; --tf:#2e3349;
+  --blue:#3b82f6; --green:#22c55e; --amber:#f59e0b; --rose:#f43f5e; --purple:#a78bfa;
+  --accent:#22d3ee; --accent-glow:rgba(34,211,238,.16); --accent-soft:rgba(34,211,238,.08);
+  --blue-soft:rgba(59,130,246,.1); --green-soft:rgba(34,197,94,.1); --amber-soft:rgba(245,158,11,.1); --rose-soft:rgba(244,63,94,.1); --purple-soft:rgba(167,139,250,.1);
+  --mono:'JetBrains Mono',monospace; --serif:'Instrument Serif',serif; --sans:'DM Sans',sans-serif;
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+html[data-theme="light"]{
+  --bg-deep:#faf8f4; --bg-card:#fff; --bg-card-hover:#f5f1ea; --bg-elevated:#fff; --bg-inset:#f5f1ea;
+  --border:#e5dfd6; --border-active:#d8cfc1; --border-strong:#c9c0b3;
+  --tp:#2a2520; --ts:#6b6157; --tm:#9e9486; --tf:#c9c0b3;
+  --blue:#2d5fa0; --green:#2d7a3a; --amber:#b87333; --rose:#b83a3a; --purple:#7a3b8f;
+  --accent:#c05e2b; --accent-glow:rgba(192,94,43,.16); --accent-soft:rgba(192,94,43,.09);
+  --blue-soft:rgba(45,95,160,.1); --green-soft:rgba(45,122,58,.1); --amber-soft:rgba(184,115,51,.1); --rose-soft:rgba(184,58,58,.1); --purple-soft:rgba(122,59,143,.1);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg-deep);color:var(--tp);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .3s,color .3s;}
+body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+/* nav */
+nav{position:fixed;top:0;left:0;right:0;height:54px;z-index:100;backdrop-filter:blur(20px) saturate(180%);background:color-mix(in srgb,var(--bg-deep) 82%,transparent);border-bottom:1px solid var(--border);}
+.nav-in{max-width:1180px;margin:0 auto;height:100%;display:flex;align-items:center;justify-content:space-between;padding:0 1.6rem;}
+.logo{font-family:var(--mono);font-size:.82rem;font-weight:600;letter-spacing:.02em;}
+.logo span{color:var(--accent);}
+.nav-links{display:flex;gap:.3rem;font-family:var(--mono);font-size:.68rem;}
+.nav-links a{color:var(--ts);text-decoration:none;padding:.3rem .55rem;border-radius:6px;transition:.2s;}
+.nav-links a:hover,.nav-links a.on{color:var(--tp);background:var(--accent-soft);}
+.nav-meta{display:flex;align-items:center;gap:.45rem;font-family:var(--mono);font-size:.62rem;color:var(--tm);text-transform:uppercase;letter-spacing:.12em;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2.5s infinite;}
+.theme-btn{cursor:pointer;font-family:var(--mono);font-size:.62rem;color:var(--ts);border:1px solid var(--border);padding:.28rem .6rem;border-radius:6px;background:none;}
+.progress{position:fixed;top:54px;left:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--blue));z-index:101;width:0;box-shadow:0 0 8px var(--accent-glow);}
+main{max-width:1180px;margin:0 auto;padding:0 1.6rem;padding-top:78px;}
+.eyebrow{font-family:var(--mono);font-size:.68rem;color:var(--accent);text-transform:uppercase;letter-spacing:.18em;display:inline-flex;align-items:center;gap:.6rem;margin-bottom:.8rem;}
+.eyebrow::before{content:'';width:26px;height:1px;background:var(--accent);}
+h1{font-family:var(--serif);font-size:clamp(2.4rem,6vw,4rem);font-weight:400;line-height:1.04;letter-spacing:-.025em;margin:.2rem 0;max-width:880px;}
+h1 em,h2 em{font-style:italic;color:var(--accent);}
+h2{font-family:var(--serif);font-size:clamp(1.7rem,3.5vw,2.4rem);font-weight:400;line-height:1.15;margin:.2rem 0 .3rem;}
+.lede{color:var(--ts);font-size:1.08rem;line-height:1.7;max-width:720px;margin:.6rem 0 0;}
+p{color:var(--ts);font-size:.92rem;line-height:1.7;max-width:720px;}
+p code,li code{font-family:var(--mono);font-size:.8rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
+section{padding:4rem 0 2rem;scroll-margin-top:70px;opacity:0;transform:translateY(24px);transition:opacity .7s var(--ease),transform .7s var(--ease);}
+section.vis{opacity:1;transform:none;}
+.sec-label{font-family:var(--mono);font-size:.65rem;color:var(--tm);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.5rem;}
+/* hero stats */
+.hstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:1.8rem;}
+.hstat{background:var(--bg-card);padding:1.1rem 1.2rem;}
+.hstat .v{font-family:var(--serif);font-size:1.9rem;color:var(--tp);line-height:1;}
+.hstat .v em{font-style:italic;color:var(--accent);}
+.hstat .l{font-family:var(--mono);font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;margin-top:.4rem;}
+/* detail panel */
+.panel{position:fixed;top:0;right:0;width:300px;height:100vh;background:var(--bg-card);border-left:1px solid var(--border-active);padding:24px 20px;overflow:auto;transform:translateX(100%);transition:transform .25s var(--ease);box-shadow:-20px 0 50px rgba(0,0,0,.3);z-index:200;}
+.panel.open{transform:none;}
+.panel .x{position:absolute;top:14px;right:16px;color:var(--tm);cursor:pointer;font-size:18px;}
+.panel .pk{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);}
+.panel h3{font-family:var(--serif);font-weight:400;font-size:1.4rem;margin:.2rem 0 .6rem;}
+.panel .pb{font-size:.86rem;color:var(--ts);line-height:1.6;}
+.panel code{font-family:var(--mono);font-size:.72rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@media(max-width:780px){.nav-links{display:none}}
+/* === component CSS (only the selected components) === */
+/* hero chips (typeTags) */
+.chips{display:flex;flex-wrap:wrap;gap:.5rem;margin:1.2rem 0 .2rem;}
+.chip{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ts);background:var(--bg-card);border:1px solid var(--border);padding:.32rem .65rem;border-radius:20px;}
+.chip.accent{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 30%,transparent);background:var(--accent-soft);}
+/* annotated code block */
+.codeblock{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:1.1rem 0;}
+.cb-head{display:flex;justify-content:space-between;align-items:center;padding:.5rem .9rem;background:var(--bg-elevated);border-bottom:1px solid var(--border);font-family:var(--mono);font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;}
+.cb-file{color:var(--accent);}
+.cb-lang{color:var(--tm);}
+.cb-body{margin:0;padding:.9rem 1.1rem;font-family:var(--mono);font-size:.78rem;line-height:1.65;color:var(--ts);white-space:pre;overflow-x:auto;}
+.cb-body code{color:var(--tp);}
+/* callout */
+.callout{background:var(--accent-soft);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:.9rem 1.2rem;margin:1.1rem 0;}
+.callout h4{font-family:var(--serif);font-weight:400;color:var(--accent);margin:0 0 .3rem;font-size:1.1rem;}
+.callout p{margin:0;font-size:.86rem;color:var(--ts);}
+.callout code{font-family:var(--mono);font-size:.78rem;background:var(--bg-card);color:var(--accent);padding:1px 5px;border-radius:4px;}
+/* bespoke: plugin-card grid (composed from design-system primitives) */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:1rem;margin:1.4rem 0 .4rem;}
+.pcard{position:relative;display:flex;flex-direction:column;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.3rem 1.4rem 1.2rem;text-decoration:none;color:inherit;transition:border-color .3s var(--ease),box-shadow .3s var(--ease),transform .3s var(--ease),background .3s var(--ease);}
+.pcard:hover,.pcard:focus-visible{border-color:var(--accent);background:var(--bg-card-hover);box-shadow:0 0 0 1px var(--accent),0 8px 32px -8px var(--accent-glow);transform:translateY(-2px);outline:none;}
+.pcard-top{display:flex;align-items:baseline;justify-content:space-between;gap:.8rem;}
+.pcard h3{font-family:var(--serif);font-weight:400;font-size:1.5rem;line-height:1;margin:0;color:var(--tp);}
+.pcard .ver{font-family:var(--mono);font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;}
+.pcard .pdesc{font-size:.86rem;color:var(--ts);line-height:1.6;margin:.6rem 0 0;}
+.pcard .pkeys{display:flex;flex-wrap:wrap;gap:.4rem;margin:.9rem 0 0;}
+.pcard .pkey{font-family:var(--mono);font-size:.56rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ts);background:var(--bg-inset);border:1px solid var(--border);padding:.22rem .5rem;border-radius:5px;}
+.pcard .pgo{display:inline-flex;align-items:center;gap:.4rem;font-family:var(--mono);font-size:.64rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;margin:1rem 0 0;padding-top:.9rem;border-top:1px solid var(--border);transition:color .25s var(--ease);}
+.pcard .pgo .arr{transition:transform .25s var(--ease);}
+.pcard:hover .pgo,.pcard:focus-visible .pgo{color:var(--accent);}
+.pcard:hover .pgo .arr,.pcard:focus-visible .pgo .arr{transform:translateX(4px);}
+/* flow / pipeline diagram */
+.flow{display:flex;align-items:center;flex-wrap:wrap;gap:.4rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1.2rem 0;}
+.fnode{flex:1;min-width:110px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:.8rem .9rem;font-family:var(--mono);font-size:.7rem;cursor:pointer;transition:all .3s var(--ease);}
+.fnode:hover{border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow);transform:scale(1.03);}
+.fnode .nl{font-size:.55rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;}
+.fnode.accent{border-color:color-mix(in srgb,var(--accent) 40%,transparent);background:linear-gradient(135deg,var(--bg-elevated),var(--accent-soft));}
+.farr{color:var(--border-strong);font-size:1.1rem;}
+/* key–value metadata grid */
+.edge-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:.7rem;margin-top:1rem;}
+.edge{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:.85rem 1rem;}
+.edge .n{font-family:var(--mono);font-size:.62rem;color:var(--accent);}
+.edge .t{font-weight:600;margin:.2rem 0;font-size:.88rem;color:var(--tp);}
+.edge p{font-size:.78rem;margin:0;color:var(--ts);}
+/* footer */
+.foot{border-top:1px solid var(--border);margin-top:3rem;padding:2.2rem 0 4rem;display:flex;flex-wrap:wrap;gap:1.4rem;align-items:center;justify-content:space-between;}
+.foot-links{display:flex;flex-wrap:wrap;gap:.5rem;}
+.foot-links a{font-family:var(--mono);font-size:.7rem;color:var(--ts);text-decoration:none;border:1px solid var(--border);padding:.4rem .8rem;border-radius:8px;background:var(--bg-card);transition:all .2s var(--ease);}
+.foot-links a:hover{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 35%,transparent);background:var(--accent-soft);}
+.foot .meta{font-family:var(--mono);font-size:.62rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;}
+</style></head>
+<body>
+  <nav><div class="nav-in">
+    <div class="logo">◆ claude<span>-plugins</span></div>
+    <div class="nav-links">
+      <a href="#top" class="on">Overview</a>
+      <a href="#plugins">Plugins</a>
+      <a href="#install">Install</a>
+    </div>
+    <div style="display:flex;align-items:center;gap:.8rem">
+      <div class="nav-meta"><span class="dot"></span> MARKETPLACE · 4 PLUGINS</div>
+      <button class="theme-btn" onclick="tgl()">◑ THEME</button></div>
+  </div></nav>
+  <div class="progress" id="prog"></div>
+  <main>
+    <section id="top" class="vis" style="padding-top:2.4rem">
+      <div class="eyebrow">claude-plugins · marketplace</div>
+      <h1>Four plugins for the <em>project lifecycle</em>.</h1>
+      <p class="lede"><code>onboard</code> keeps AI configs aligned as your code evolves, <code>notify</code> closes the loop, <code>handoff</code> carries session intent across context boundaries, and <code>walkthrough</code> turns a session into an explorable document. Four plugins that work on their own and <strong>compose together</strong>.</p>
+      <div class="chips">
+        <span class="chip accent">marketplace</span>
+        <span class="chip">claude-code</span>
+        <span class="chip">plugins</span>
+        <span class="chip">MIT</span>
+      </div>
+      <div class="codeblock" style="max-width:620px">
+        <div class="cb-head"><span class="cb-file">add this marketplace</span><span class="cb-lang">bash</span></div>
+        <pre class="cb-body"><code>claude plugin marketplace add apurvbazari/claude-plugins</code></pre>
+      </div>
+      <div class="hstats">
+        <div class="hstat"><div class="v"><em>4</em></div><div class="l">plugins</div></div>
+        <div class="hstat"><div class="v">2</div><div class="l">install routes</div></div>
+        <div class="hstat"><div class="v"><em>MIT</em></div><div class="l">licensed</div></div>
+      </div>
+    </section>
+
+    <section id="plugins">
+      <div class="sec-label">01 — the collection</div>
+      <h2>Plugins at a <em>glance</em></h2>
+      <p class="lede">Each plugin stands on its own. Pick one card to open its page — full skill reference, architecture, and a runnable example.</p>
+      <div class="pgrid" aria-label="Plugin card grid">
+
+        <a class="pcard" href="./onboard/" aria-label="onboard — open plugin page">
+          <div class="pcard-top"><h3>onboard</h3><span class="ver">v2.0.0</span></div>
+          <p class="pdesc">Analyze codebases and generate tailored Claude tooling — v2 context shape; rejects v1 input (use onboard@1.10.0 for v1).</p>
+          <div class="pkeys">
+            <span class="pkey">onboarding</span><span class="pkey">setup</span><span class="pkey">wizard</span>
+            <span class="pkey">claude-md</span><span class="pkey">codebase-analysis</span><span class="pkey">quality-gates</span>
+          </div>
+          <span class="pgo">open page <span class="arr">→</span></span>
+        </a>
+
+        <a class="pcard" href="./notify/" aria-label="notify — open plugin page">
+          <div class="pcard-top"><h3>notify</h3><span class="ver">v2.0.0</span></div>
+          <p class="pdesc">Cross-platform system notifications for Claude Code — macOS and Linux with duration filtering.</p>
+          <div class="pkeys">
+            <span class="pkey">notifications</span><span class="pkey">macos</span><span class="pkey">linux</span>
+            <span class="pkey">hooks</span><span class="pkey">terminal-notifier</span><span class="pkey">notify-send</span>
+          </div>
+          <span class="pgo">open page <span class="arr">→</span></span>
+        </a>
+
+        <a class="pcard" href="./handoff/" aria-label="handoff — open plugin page">
+          <div class="pcard-top"><h3>handoff</h3><span class="ver">v0.2.0</span></div>
+          <p class="pdesc">Save and resume session handoffs — capture intent at session end, surface it at the next SessionStart.</p>
+          <div class="pkeys">
+            <span class="pkey">handoff</span><span class="pkey">session-continuity</span><span class="pkey">context-transfer</span>
+            <span class="pkey">session-start-hook</span><span class="pkey">workflow-automation</span>
+          </div>
+          <span class="pgo">open page <span class="arr">→</span></span>
+        </a>
+
+        <a class="pcard" href="./walkthrough/" aria-label="walkthrough — open plugin page">
+          <div class="pcard-top"><h3>walkthrough</h3><span class="ver">v0.3.0</span></div>
+          <p class="pdesc">Render a session or any subject (plugin, marketplace, path) as a self-contained interactive HTML document.</p>
+          <div class="pkeys">
+            <span class="pkey">session-visualization</span><span class="pkey">interactive-html</span><span class="pkey">documentation</span>
+            <span class="pkey">diagrams</span><span class="pkey">walkthrough</span><span class="pkey">session-recap</span>
+          </div>
+          <span class="pgo">open page <span class="arr">→</span></span>
+        </a>
+
+      </div>
+    </section>
+
+    <section id="install">
+      <div class="sec-label">02 — getting started</div>
+      <h2>Two <em>install routes</em></h2>
+      <p class="lede">Install from Anthropic's reviewed community directory, or add this marketplace directly for the latest commit and all four plugins.</p>
+
+      <p style="margin-top:1.4rem"><strong>Route A — Anthropic's community marketplace</strong> (<code>onboard</code>, <code>notify</code>). Snapshots that passed Anthropic's automated security scan, with auto-update on by default. Discoverable via <code>/plugin → Discover</code>.</p>
+      <div class="codeblock">
+        <div class="cb-head"><span class="cb-file">community marketplace</span><span class="cb-lang">bash</span></div>
+        <pre class="cb-body"><code>claude plugin marketplace add anthropics/claude-plugins-community
+claude plugin install onboard@claude-community
+claude plugin install notify@claude-community</code></pre>
+      </div>
+
+      <p style="margin-top:1.6rem"><strong>Route B — this marketplace</strong> (all four plugins, latest commit). The only route for <code>handoff</code> and <code>walkthrough</code>, and the way to get changes ahead of the nightly community snapshot.</p>
+      <div class="codeblock">
+        <div class="cb-head"><span class="cb-file">apurvbazari-plugins</span><span class="cb-lang">bash</span></div>
+        <pre class="cb-body"><code>claude plugin marketplace add apurvbazari/claude-plugins
+claude plugin install onboard@apurvbazari-plugins
+claude plugin install notify@apurvbazari-plugins
+claude plugin install handoff@apurvbazari-plugins
+claude plugin install walkthrough@apurvbazari-plugins</code></pre>
+      </div>
+      <p style="margin-top:1.4rem">Built on top of <a href="https://code.claude.com/docs/en" style="color:var(--accent);text-decoration:none">Claude Code</a> by Anthropic. Distributed under MIT.</p>
+    </section>
+
+    <div class="foot">
+      <div class="foot-links">
+        <a href="https://github.com/ApurvBazari/claude-plugins">repository</a>
+        <a href="https://code.claude.com/docs/en">Claude Code docs</a>
+        <a href="https://code.claude.com/docs/en/plugin-marketplaces">marketplaces guide</a>
+        <a href="https://github.com/anthropics/claude-plugins-community">community marketplace</a>
+      </div>
+      <div class="meta">claude-plugins · 4 plugins · MIT · by Apurv Bazari</div>
+    </div>
+  </main>
+  <aside class="panel" id="panel"><span class="x" onclick="closeD()">✕</span>
+    <div class="pk" id="pk">Detail</div><h3 id="ph">—</h3><div class="pb" id="pbd"></div></aside>
+  <script>
+const panel=document.getElementById('panel');
+function openCard(el){if(!el)return;pk.textContent=el.dataset.k||'Detail';ph.textContent=el.dataset.t||'';pbd.innerHTML=el.dataset.desc||'';panel.classList.add('open');}
+function closeD(){panel.classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeD();});
+function tgl(){const h=document.documentElement;const t=h.getAttribute('data-theme')==='dark'?'light':'dark';h.setAttribute('data-theme',t);try{localStorage.setItem('wt-theme',t);}catch(e){}}
+(function(){try{const t=localStorage.getItem('wt-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vis');}}),{threshold:.1});
+document.querySelectorAll('section').forEach(s=>io.observe(s));
+addEventListener('scroll',()=>{const sc=scrollY/(document.body.scrollHeight-innerHeight)*100;if(prog)prog.style.width=sc+'%';
+ let cur='';document.querySelectorAll('section[id]').forEach(s=>{if(scrollY>=s.offsetTop-120)cur=s.id;});
+ document.querySelectorAll('.nav-links a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+cur));},{passive:true});
+document.querySelectorAll('.fnode[role="button"]').forEach(n=>n.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();n.click();}}));
+  </script>
+</body></html>

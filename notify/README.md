@@ -14,7 +14,7 @@ Then run `/notify:setup` to install the platform backend (`terminal-notifier` on
 
 ## Skills
 
-All skills are invoked with the `/notify:<name>` slash syntax. `status` is auto-invocable; `setup` and `uninstall` require explicit invocation.
+All skills are invoked with the `/notify:<name>` slash syntax. `check` is auto-invocable; `setup` and `uninstall` require explicit invocation.
 
 ### `/notify:setup` *(destructive — user-invoked only)*
 

@@ -6,7 +6,7 @@
 
 ```html
 <section id="<id>">
-  <div class="sec-label"><NN — files></div>
+  <div class="sec-label"><files></div>
   <h2>File <em>tree</em></h2>
   <div class="tree"><span class="dir"><root>/</span>            <span class="nw"><N new></span>
 ├── <span class="fl" data-d="<id1>" onclick="openD('<id1>')"><file-a></span> <span class="nw">new</span>
@@ -33,7 +33,7 @@
 
 ```html
 <section id="<id>">
-  <div class="sec-label"><NN — catalog></div>
+  <div class="sec-label"><catalog></div>
   <h2>Filterable <em>cards</em></h2>
   <div class="pills">
     <div class="pill on" data-f="<catA>" onclick="tog(this)"><span class="s" style="background:var(--green)"></span><catA></div>
@@ -68,7 +68,7 @@
 
 ```html
 <section id="<id>">
-  <div class="sec-label"><NN — timeline></div>
+  <div class="sec-label"><timeline></div>
   <h2>How it <em>unfolded</em></h2>
   <div class="timeline">
     <div class="timeline-item"><div class="timeline-version"><label></div><div class="timeline-date"><when></div><div class="timeline-desc"><what happened></div></div>
@@ -97,7 +97,7 @@
 
 ```html
 <section id="<id>">
-  <div class="sec-label"><NN — playback></div>
+  <div class="sec-label"><playback></div>
   <h2>Step <em>through</em> it</h2>
   <div class="player">
     <div class="player-stage" id="playerStage"><!-- step content rendered/revealed here --></div>
