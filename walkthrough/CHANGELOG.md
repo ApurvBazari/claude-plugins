@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0 — 2026-06-05
+- First stable release. Commits to a stable skill set (`create` / `update` / `document`), house style, and component-authoring API; breaking changes from here bump the major version.
+- Consolidates the previously unreleased 0.3.0 and 0.4.0 cycles (the `document` skill, interactive explorer + data-timeline components, the `.chip` primitive, CSS-counter section kickers, and the shared self-check + completeness pre-write gates) into the first marketplace-stable version. See the 0.3.0 / 0.4.0 entries below for details.
+
 ## 0.4.0 — 2026-06-05
 
 ### Visual layer

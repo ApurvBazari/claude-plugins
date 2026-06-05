@@ -44,7 +44,7 @@
       "name": "handoff",
       "source": "./handoff",
       "description": "Save and resume session handoffs — capture intent at session end, surface it at the next SessionStart",
-      "version": "0.2.0",
+      "version": "1.0.0",
       "keywords": [
         "handoff",
         "session-continuity",
@@ -58,7 +58,7 @@
       "name": "walkthrough",
       "source": "./walkthrough",
       "description": "Render a session or any subject (plugin, marketplace, path) as a self-contained interactive HTML document",
-      "version": "0.4.0",
+      "version": "1.0.0",
       "keywords": [
         "session-visualization",
         "interactive-html",
