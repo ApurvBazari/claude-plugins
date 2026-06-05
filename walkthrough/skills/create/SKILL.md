@@ -25,24 +25,24 @@ Build the structured model per `references/session-model.md` (title, summary, ty
 sections[], nodes[], edges[], decisions[], files[], timeline[], metrics[], openQuestions[],
 details{}) BEFORE writing any HTML.
 
-## Step 3.5: Coverage critic
+## Step 4: Coverage critic
 Run `references/completeness.md` Part 1 against the session before selecting components. Fold omitted
 salient items into the model; note intentional omissions for the coverage note.
 
-## Step 4: Select components
+## Step 5: Select components
 Using `references/authoring-guide.md`, map the model to component names, then look each name up in
 `references/components/index.md` to find its group file. Apply "omit empty, never stub". For content
 that fits no catalog entry, compose a bespoke component per the authoring-guide recipe + looks-native checklist.
 
-## Step 5: Assemble the HTML
+## Step 6: Assemble the HTML
 Start from `references/page-scaffold.md`. Inline: the `@import` + both `:root` blocks from
 `references/design-system.md`; the shared JS from `references/interactivity.md`; the CSS+HTML
 for each chosen component — read **only** the `references/components/<group>.md` files for the
-components you selected in Step 4 (routed via `components/index.md`); the `DET`/detail data. Keep it
+components you selected in Step 5 (routed via `components/index.md`); the `DET`/detail data. Keep it
 self-contained: no `<script src>`, no `<img>`, only the one Google Fonts `@import`.
 Generate `{{NAV_LINKS}}` deterministically from `sections[]` (one `<a href="#id">` per section, id reused from the section; first link `class="on"`) — do not hand-write or hand-match ids.
 
-## Step 6: Output path (proliferation guard)
+## Step 7: Output path (proliferation guard)
 Compute `slug` = kebab of the title. List `.claude/walkthrough/*.html` and strip the
 `<YYYY-MM-DD-HHMM>-` prefix from each to get existing slugs.
 
@@ -56,19 +56,19 @@ Compute `slug` = kebab of the title. List `.claude/walkthrough/*.html` and strip
 
 This is honored even when model-invoked -- there is no silent-proliferation path.
 
-## Step 7: Gitignore prompt (first run only)
+## Step 8: Gitignore prompt (first run only)
 If `.claude/walkthrough/` is not already gitignored and `.gitignore` exists, ask via
 AskUserQuestion (fixed 3 options: "Add pattern" / "Skip" / "Don't ask again"); persist the
 choice in `.claude/walkthrough/settings.md`. (See `.claude/rules/ask-user-question-guard.md`.)
 
-## Step 8: Self-check (structure)
+## Step 9: Self-check (structure)
 Before writing, run `references/self-check.md` against the assembled HTML. Fix any failure and
 re-check. Do not write a document that fails the self-check.
 
-## Step 9: Write the file
-Write the assembled HTML to the path from Step 6.
+## Step 10: Write the file
+Write the assembled HTML to the path from Step 7.
 
-## Step 10: Offer to open
+## Step 11: Offer to open
 Tell the user the path (under three lines). Offer to open it:
 
 ```bash

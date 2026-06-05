@@ -53,18 +53,18 @@ session model following `references/reconstruct-and-merge.md` Part B — revise 
 merge overlaps, add genuinely new material, and keep existing `sections[].id` / `details{}` keys
 stable. The result is a normal session model (the `session-model.md` schema), nothing special.
 
-## Step 4.5: Coverage critic
+## Step 5: Coverage critic
 Run `${CLAUDE_PLUGIN_ROOT}/skills/create/references/completeness.md` Part 1 against the merged model
 before selecting components. Fold omitted salient items in; note intentional omissions for the coverage note.
 
-## Step 5: Select components
+## Step 6: Select components
 
 Read the renderer references from `${CLAUDE_PLUGIN_ROOT}/skills/create/references/`. Using
 `authoring-guide.md`, map the merged model to component names, then resolve each to its group file via
 `components/index.md`. Apply "omit empty,
 never stub". Compose bespoke components per the authoring-guide recipe where no catalog entry fits.
 
-## Step 6: Assemble the HTML
+## Step 7: Assemble the HTML
 
 Start from `page-scaffold.md`. Inline: the `@import` + both `:root` blocks from `design-system.md`;
 the shared JS from `interactivity.md`; the CSS+HTML for each chosen component from the relevant
@@ -75,17 +75,17 @@ Keep it self-contained: no `<script src>`, no `<img>`, only the one Google Fonts
 combined state.
 Generate `{{NAV_LINKS}}` deterministically from `sections[]` (one `<a href="#id">` per section, id reused from the section; first link `class="on"`) — do not hand-write or hand-match ids.
 
-## Step 6.5: Self-check (structure)
+## Step 8: Self-check (structure)
 Run `${CLAUDE_PLUGIN_ROOT}/skills/create/references/self-check.md` against the assembled HTML; fix
 and re-check before overwriting.
 
-## Step 7: Write in place
+## Step 9: Write in place
 
 Overwrite `TARGET` with the assembled HTML. Keep the same filename — do not write a new timestamped
 file, do not create a backup. (`.claude/walkthrough/` already exists and is gitignored from the first
 `create` run, so no gitignore prompt is needed; honor the persisted gitignore choice in any existing `.claude/walkthrough/settings.md` and do not re-prompt.)
 
-## Step 8: Offer to open
+## Step 10: Offer to open
 
 Tell the user the path (under three lines). Offer to open it:
 

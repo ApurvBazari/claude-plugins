@@ -27,17 +27,17 @@ source files. Cite `path:line` only when verified by a real read.
 Build the structured model per `references/subject-model.md` (title, tagline, summary, typeTags,
 install, sections[], nodes[], edges[], reference[], examples[], links[], details{}) BEFORE any HTML.
 
-## Step 3.5: Coverage critic
+## Step 4: Coverage critic
 Run `../create/references/completeness.md` Part 1 against the subject before selecting components.
 Fold omitted salient items in; note intentional omissions for the coverage note.
 
-## Step 4: Select components
+## Step 5: Select components
 Using `../create/references/authoring-guide.md`, map the model to component names, then look each up
 in `../create/references/components/index.md` for its group file. Apply "omit empty, never stub".
 For the marketplace card grid (and anything else with no catalog entry), compose a bespoke component
 per the authoring-guide recipe + looks-native checklist.
 
-## Step 5: Assemble the HTML
+## Step 6: Assemble the HTML
 Start from `../create/references/page-scaffold.md`. Inline: the `@import` + both `:root` blocks from
 `design-system.md`; the shared JS from `interactivity.md`; the CSS+HTML for each chosen component
 (read only the `components/<group>.md` files for components you selected); the `DET`/detail data.
@@ -51,20 +51,20 @@ nav logo and a `— walkthrough` `<title>` suffix). Replace it with the subject'
 `<name> — claude-plugins`) and the nav logo to the site/collection wordmark (here
 `◆ claude-plugins`). Never leave the literal `walkthrough` session branding on a subject page.
 
-## Step 6: Output path
+## Step 7: Output path
 If a second argument (output path) is given, write there. Otherwise default to
 `.claude/walkthrough/<YYYY-MM-DD-HHMM>-<slug>.html` (`slug` = kebab of the title; collisions → `-2`,
 `-3`, …). For the site convention, the caller passes `site/<plugin>/index.html` (or
 `site/index.html` for the marketplace). Create parent directories if missing.
 
-## Step 6.5: Self-check (structure)
+## Step 8: Self-check (structure)
 Run `../create/references/self-check.md` against the assembled HTML; fix and re-check before writing.
 
-## Step 7: Write the file
-Write the assembled HTML to the Step 6 path. (No gitignore prompt — unlike `create`, `document`
+## Step 9: Write the file
+Write the assembled HTML to the Step 7 path. (No gitignore prompt — unlike `create`, `document`
 output is a published/derived artifact, not private session content.)
 
-## Step 8: Offer to open
+## Step 10: Offer to open
 Tell the user the path (under three lines). Offer `open "<path>"` (macOS; `xdg-open` on Linux).
 Do not auto-open.
 

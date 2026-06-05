@@ -32,7 +32,7 @@ The `create` skill runs a fixed model-before-markup pipeline. The model is fully
 │          │   │ decisions,  │   │ bespoke  │   │ + detail   │   │ + git-  │
 │          │   │ files, …)   │   │ escape)  │   │ data)      │   │ ignore  │
 └──────────┘   └─────────────┘   └──────────┘   └────────────┘   └─────────┘
-   Step 2         Step 3            Step 4          Step 5        Steps 6–8
+   Step 2        Steps 3–4         Step 5          Step 6        Steps 7–11
 ```
 
 1. **gather** — read any source file you intend to cite so `path:line` refs are real. The session transcript is the source of record; there is no repository scan.
