@@ -147,7 +147,7 @@ section.vis{opacity:1;transform:none;}
       <a href="#isnt">Is / isn't</a>
     </div>
     <div style="display:flex;align-items:center;gap:.8rem">
-      <div class="nav-meta"><span class="dot"></span> PLUGIN · v0.3.0</div>
+      <div class="nav-meta"><span class="dot"></span> PLUGIN · v1.0.0</div>
       <button class="theme-btn" onclick="tgl()">◑ THEME</button></div>
   </div></nav>
   <div class="progress" id="prog"></div>
@@ -179,7 +179,8 @@ section.vis{opacity:1;transform:none;}
       <div class="sec-label">01 — what it does</div>
       <h2>A composed document, <em>not</em> a transcript dump</h2>
       <p class="lede">Open the file in any browser and you get a synthesized document — a summary and type tags, architecture and flow diagrams as inline SVG, decision records (what was chosen, what was rejected, why), a file-touch list with real <code>path:line</code> references, and a timeline where the work has one.</p>
-      <p>Detail is clickable: expand a node or a decision to see the supporting context. Components adapt to the content — the catalog is a floor, not a ceiling. When something fits no off-the-shelf component, a bespoke one is composed from the same design-system primitives so it still looks native, and empty sections are omitted rather than stubbed.</p>
+      <p>For richer surfaces there are two interactive components: an <strong>interactive explorer</strong> — a selector that drives a live diagram region and a detail pane from one shared data model, for navigating relationships in a multi-component architecture rather than reading a static diagram — and a <strong>data-driven step timeline</strong> — phases of parallel and sequential steps with source pills and micro-cycles, for sessions that cover a pipeline, workflow, or multi-phase build.</p>
+      <p>Detail is clickable: expand a node or a decision to see the supporting context. Components adapt to the content — the catalog is a floor, not a ceiling. When something fits no off-the-shelf component, a bespoke one is composed from the same design-system primitives so it still looks native, and empty sections are omitted rather than stubbed. After writing the file, <code>create</code> surfaces a short <strong>coverage summary</strong> — what made it into the document and what was intentionally omitted — so you can spot anything left out before you close the session.</p>
       <div class="callout">
         <h4>No setup, no config</h4>
         <p>Install and run. There is no setup step and no configuration file required — <code>/walkthrough:create [focus]</code> produces a readable artifact of the session whenever you want one: after a debugging marathon, at the end of a feature, before a handoff, or to share with someone who wasn't in the room.</p>
@@ -233,6 +234,10 @@ section.vis{opacity:1;transform:none;}
         <div class="fnode" data-d="write" onclick="openD('write')" tabindex="0" role="button" aria-label="Stage 5 write"><div class="nl">stage 5</div>write</div>
       </div>
       <p><code>document</code> reuses these stages with a substituted model: gather reads the subject's own files (README + manifest canonical), synthesize builds the subject model, and select → assemble → write are the shared renderer. <code>update</code> adds two stages in front — <em>reconstruct</em> the prior model from the rendered HTML and <em>merge</em> in explicitly-named files — then overwrites the same file in place.</p>
+      <div class="callout">
+        <h4>Two pre-write gates, shared by all three skills</h4>
+        <p>Before <code>write</code>, the renderer runs a <strong>coverage critic</strong> — re-scanning the source so every salient item is either in the model or deliberately out of scope — and a <strong>structure self-check</strong> on the assembled HTML. The same gates back the <strong>coverage summary</strong> surfaced after every <code>create</code>, <code>update</code>, and <code>document</code> run.</p>
+      </div>
     </section>
 
     <section id="skills">
@@ -242,7 +247,7 @@ section.vis{opacity:1;transform:none;}
       <table class="ref-table">
         <thead><tr><th>Skill</th><th>Input</th><th>What it does</th></tr></thead>
         <tbody>
-          <tr><td class="slash">/walkthrough:create</td><td class="cell-mode">session <span class="tag auto">auto</span></td><td>Renders the current session from scratch through the five-stage pipeline. The optional <span class="cell-mono">[focus]</span> argument scopes the synthesis. Also fires on "visualize this session" / "session recap" intent.</td></tr>
+          <tr><td class="slash">/walkthrough:create</td><td class="cell-mode">session <span class="tag auto">auto</span></td><td>Renders the current session from scratch through the five-stage pipeline. The optional <span class="cell-mono">[focus]</span> argument scopes the synthesis. Also fires on plain-language intent — "visualize this session", "walk me through what we did", "walk me through it" (or "this" / "that"), or "make a session recap".</td></tr>
           <tr><td class="slash">/walkthrough:update</td><td class="cell-mode">session <span class="tag auto">auto</span></td><td>Refreshes an existing walkthrough in place — reconstructs the prior model from the rendered HTML, folds in the spec/source files you name, and overwrites the <strong>same file</strong>. Always asks which document first.</td></tr>
           <tr><td class="slash">/walkthrough:document</td><td class="cell-mode">subject <span class="tag auto">auto</span></td><td>Renders a subject — a plugin, the marketplace, or any path — instead of a session. README + manifest are canonical. This is what builds every page under <span class="cell-mono">site/</span>, including this one.</td></tr>
         </tbody>
@@ -261,9 +266,9 @@ section.vis{opacity:1;transform:none;}
         <div class="edge"><div class="n">self-contained</div><div class="t">Everything inlined</div><p>All CSS, JS, and SVG live in the single HTML file. The <strong>only</strong> external resource is one Google Fonts <span class="cell-mono">@import</span> — no <span class="cell-mono">&lt;script src&gt;</span>, no <span class="cell-mono">&lt;link rel=stylesheet&gt;</span>, no <span class="cell-mono">&lt;img&gt;</span>, no CDN.</p></div>
         <div class="edge"><div class="n">tokens only</div><div class="t">One house style</div><p>Never a raw hex, font, or spacing literal — everything goes through CSS custom properties. Both themes are <span class="cell-mono">:root</span> token blocks; the toggle swaps token sets, not stylesheets.</p></div>
         <div class="edge"><div class="n">two themes</div><div class="t">Dark + warm-light</div><p>One in-document toggle, viewer's choice per-view. Nothing about it requires a server or a build step.</p></div>
-        <div class="edge"><div class="n">open components</div><div class="t">Floor, not ceiling</div><p>Catalog entries used verbatim where they fit; bespoke components composed from the same primitives where they don't — passing a looks-native checklist.</p></div>
+        <div class="edge"><div class="n">open components</div><div class="t">Floor, not ceiling</div><p>Catalog entries used verbatim where they fit; bespoke components composed from the same primitives where they don't — passing a looks-native checklist. A <span class="cell-mono">.chip</span> primitive (five status roles: <span class="cell-mono">ok</span>, <span class="cell-mono">info</span>, <span class="cell-mono">warn</span>, <span class="cell-mono">danger</span>, <span class="cell-mono">neutral</span>) drops a status badge inline in any component.</p></div>
       </div>
-      <p style="margin-top:1.4rem">The result renders with no network beyond that one font fetch — copy the file anywhere, email it, drop it in a wiki, and it works without the plugin, without a server, and without a connection. Walkthroughs are written to <code>.claude/walkthrough/&lt;YYYY-MM-DD-HHMM&gt;-&lt;slug&gt;.html</code>; on first run <code>create</code> offers to add that directory to <code>.gitignore</code>, since a session artifact can contain code and prose you exchanged.</p>
+      <p style="margin-top:1.4rem">The result renders with no network beyond that one font fetch — copy the file anywhere, email it, drop it in a wiki, and it works without the plugin, without a server, and without a connection. Walkthroughs are written to <code>.claude/walkthrough/&lt;YYYY-MM-DD-HHMM&gt;-&lt;slug&gt;.html</code>; on first run <code>create</code> offers to add that directory to <code>.gitignore</code>, since a session artifact can contain code and prose you exchanged. When a walkthrough on the same subject already exists, a <strong>proliferation guard</strong> kicks in — <code>create</code> asks whether to update it in place, write a new versioned file, or overwrite, rather than silently piling up <code>-2</code>/<code>-3</code> copies.</p>
     </section>
 
     <section id="example">
@@ -320,7 +325,7 @@ write        overwrite the SAME file — no new file, no backup
         <a href="../">← marketplace</a>
         <a href="https://github.com/ApurvBazari/claude-plugins/tree/main/walkthrough">source on GitHub</a>
       </div>
-      <div class="meta">walkthrough · v0.3.0 · MIT · by Apurv Bazari</div>
+      <div class="meta">walkthrough · v1.0.0 · MIT · by Apurv Bazari</div>
     </div>
   </main>
   <aside class="panel" id="panel"><span class="x" onclick="closeD()">✕</span>
@@ -334,7 +339,7 @@ const DET={
  synthesize:{k:"Stage 2",h:"synthesize",b:"Build the structured model BEFORE any HTML — for a session: <code>title</code>, <code>summary</code>, <code>typeTags</code>, <code>sections</code>, <code>nodes</code>, <code>edges</code>, <code>decisions</code>, <code>files</code>, <code>timeline</code>, <code>metrics</code>, <code>details</code>. The model is fully synthesized before a single tag is written."},
  select:{k:"Stage 3",h:"select",b:"Map the model to components via the authoring guide and the catalog. Apply “omit empty, never stub” — a component renders only when the model has real content. Where no catalog entry fits, compose a bespoke component from the same primitives."},
  assemble:{k:"Stage 4",h:"assemble",b:"Start from the page scaffold; inline the Google Fonts <code>@import</code> + both <code>:root</code> blocks, the shared JS, and the CSS/HTML for each chosen component plus its detail (<code>DET</code>) data. Read only the component group files for components you actually selected."},
- write:{k:"Stage 5",h:"write",b:"Compute <code>.claude/walkthrough/&lt;YYYY-MM-DD-HHMM&gt;-&lt;slug&gt;.html</code> (collision → <code>-2</code>, <code>-3</code>, …), create the dir if missing, handle the first-run gitignore prompt, then write and offer to open — never auto-open. For the docs site, <code>document</code> writes to the path given (e.g. <code>site/&lt;plugin&gt;/index.html</code>)."}
+ write:{k:"Stage 5",h:"write",b:"Compute <code>.claude/walkthrough/&lt;YYYY-MM-DD-HHMM&gt;-&lt;slug&gt;.html</code>, create the dir if missing, handle the first-run gitignore prompt, then write and offer to open — never auto-open. A same-subject slug triggers the proliferation guard (update in place / new versioned file / overwrite) instead of a silent <code>-2</code>/<code>-3</code> suffix. For the docs site, <code>document</code> writes to the path given (e.g. <code>site/&lt;plugin&gt;/index.html</code>)."}
 };
 const panel=document.getElementById('panel');
 function openD(id){const d=DET[id];if(!d)return;pk.textContent=d.k;ph.textContent=d.h;pbd.innerHTML=d.b;panel.classList.add('open');}
