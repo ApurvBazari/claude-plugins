@@ -88,6 +88,8 @@ section.vis{opacity:1;transform:none;}
 .fnode:hover{border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow);transform:scale(1.03);}
 .fnode .nl{font-size:.55rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;}
 .fnode.accent{border-color:color-mix(in srgb,var(--accent) 40%,transparent);background:linear-gradient(135deg,var(--bg-elevated),var(--accent-soft));}
+.fnode.gate{border-style:dashed;border-color:var(--border-strong);background:var(--bg-card);}
+.fnode.gate .nl{color:var(--accent);}
 .farr{color:var(--border-strong);font-size:1.1rem;}
 /* converge diagram — two input lanes merging into the shared visual layer */
 .converge{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1.2rem 0;display:flex;align-items:center;gap:.9rem;flex-wrap:wrap;}
@@ -220,24 +222,24 @@ section.vis{opacity:1;transform:none;}
 
     <section id="pipeline">
       <div class="sec-label">03 — architecture</div>
-      <h2>The five-stage <em>model-before-markup</em> pipeline</h2>
-      <p class="lede"><code>create</code> runs a fixed pipeline — the full structured model is built before a single HTML tag is written. Rendering never starts from the raw transcript. Click a stage for detail.</p>
-      <div class="flow" aria-label="walkthrough five-stage pipeline">
+      <h2>The <em>model-before-markup</em> pipeline</h2>
+      <p class="lede">Every skill runs a fixed pipeline: the full structured model is built before a single HTML tag is written, and two quality gates bracket the render. <strong>This page was produced by <code>/walkthrough:document</code> running exactly this flow</strong> over the plugin's README and manifest. Click any step for detail.</p>
+      <div class="flow" aria-label="walkthrough pipeline — five stages bracketed by two gates">
         <div class="fnode" data-d="gather" onclick="openD('gather')" tabindex="0" role="button" aria-label="Stage 1 gather"><div class="nl">stage 1</div>gather</div>
         <span class="farr">→</span>
         <div class="fnode" data-d="synthesize" onclick="openD('synthesize')" tabindex="0" role="button" aria-label="Stage 2 synthesize"><div class="nl">stage 2</div>synthesize</div>
+        <span class="farr">→</span>
+        <div class="fnode gate" data-d="coverage" onclick="openD('coverage')" tabindex="0" role="button" aria-label="Gate coverage critic"><div class="nl">gate</div>coverage critic</div>
         <span class="farr">→</span>
         <div class="fnode" data-d="select" onclick="openD('select')" tabindex="0" role="button" aria-label="Stage 3 select"><div class="nl">stage 3</div>select</div>
         <span class="farr">→</span>
         <div class="fnode accent" data-d="assemble" onclick="openD('assemble')" tabindex="0" role="button" aria-label="Stage 4 assemble"><div class="nl">stage 4</div>assemble</div>
         <span class="farr">→</span>
+        <div class="fnode gate" data-d="selfcheck" onclick="openD('selfcheck')" tabindex="0" role="button" aria-label="Gate self-check"><div class="nl">gate</div>self-check</div>
+        <span class="farr">→</span>
         <div class="fnode" data-d="write" onclick="openD('write')" tabindex="0" role="button" aria-label="Stage 5 write"><div class="nl">stage 5</div>write</div>
       </div>
-      <p><code>document</code> reuses these stages with a substituted model: gather reads the subject's own files (README + manifest canonical), synthesize builds the subject model, and select → assemble → write are the shared renderer. <code>update</code> adds two stages in front — <em>reconstruct</em> the prior model from the rendered HTML and <em>merge</em> in explicitly-named files — then overwrites the same file in place.</p>
-      <div class="callout">
-        <h4>Two pre-write gates, shared by all three skills</h4>
-        <p>Before <code>write</code>, the renderer runs a <strong>coverage critic</strong> — re-scanning the source so every salient item is either in the model or deliberately out of scope — and a <strong>structure self-check</strong> on the assembled HTML. The same gates back the <strong>coverage summary</strong> surfaced after every <code>create</code>, <code>update</code>, and <code>document</code> run.</p>
-      </div>
+      <p>The diagram is exactly what <code>/walkthrough:document</code> runs to build a page — gather reads the subject's README + manifest, synthesize builds the subject model, and the two gates and the renderer are shared. <code>create</code> runs the same flow over a session instead of a subject; <code>update</code> adds two stages in front — <em>reconstruct</em> the prior model from the rendered HTML and <em>merge</em> in explicitly-named files — before re-entering it. The gates also back the <strong>coverage summary</strong> surfaced after every run.</p>
     </section>
 
     <section id="skills">
@@ -337,8 +339,10 @@ const DET={
  'visual-layer':{k:"Shared",h:"Visual layer",b:"Reused verbatim across all three skills: the design system (tokens + both <code>:root</code> theme blocks), the interactivity JS (theme toggle, detail panel), the page scaffold, and the open component catalog. Only the model and the gathering differ between session and subject."},
  gather:{k:"Stage 1",h:"gather",b:"Read any source file you intend to cite so <code>path:line</code> refs are real. For a session, the transcript is the source of record — no repo scan. For a subject, gather reads the README + manifest (canonical) and the skills surface."},
  synthesize:{k:"Stage 2",h:"synthesize",b:"Build the structured model BEFORE any HTML — for a session: <code>title</code>, <code>summary</code>, <code>typeTags</code>, <code>sections</code>, <code>nodes</code>, <code>edges</code>, <code>decisions</code>, <code>files</code>, <code>timeline</code>, <code>metrics</code>, <code>details</code>. The model is fully synthesized before a single tag is written."},
+ coverage:{k:"Gate",h:"coverage critic",b:"After the model is synthesized, a salient-item coverage critic re-scans the source (for a subject, the README + manifest) so every important item is either in the model or deliberately out of scope. Omitted items are folded back in; intentional omissions feed the coverage note surfaced after the run. Shared by all three skills."},
  select:{k:"Stage 3",h:"select",b:"Map the model to components via the authoring guide and the catalog. Apply “omit empty, never stub” — a component renders only when the model has real content. Where no catalog entry fits, compose a bespoke component from the same primitives."},
  assemble:{k:"Stage 4",h:"assemble",b:"Start from the page scaffold; inline the Google Fonts <code>@import</code> + both <code>:root</code> blocks, the shared JS, and the CSS/HTML for each chosen component plus its detail (<code>DET</code>) data. Read only the component group files for components you actually selected."},
+ selfcheck:{k:"Gate",h:"self-check",b:"Before the file is written, a structural self-check runs on the assembled HTML — verifying self-containment, token-only CSS, ASCII-only styles, nav-to-section-id alignment, and detail-store key integrity. Failures are fixed and re-checked before write. Shared by all three skills."},
  write:{k:"Stage 5",h:"write",b:"Compute <code>.claude/walkthrough/&lt;YYYY-MM-DD-HHMM&gt;-&lt;slug&gt;.html</code>, create the dir if missing, handle the first-run gitignore prompt, then write and offer to open — never auto-open. A same-subject slug triggers the proliferation guard (update in place / new versioned file / overwrite) instead of a silent <code>-2</code>/<code>-3</code> suffix. For the docs site, <code>document</code> writes to the path given (e.g. <code>site/&lt;plugin&gt;/index.html</code>)."}
 };
 const panel=document.getElementById('panel');
