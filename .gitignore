@@ -2,6 +2,13 @@
 # (Note: .claude-plugin/ is a different directory and stays tracked.)
 .claude/
 
+# Explicit onboard state-file entries required by the CI guard
+# (.github/scripts/check-state-gitignore.sh) — these persist wizard answers
+# that may contain user-entered secrets. Redundant with .claude/ above but
+# the guard greps for these exact lines.
+.claude/onboard-snapshot.json
+.claude/onboard-meta.json
+
 # OS
 .DS_Store
 Thumbs.db
