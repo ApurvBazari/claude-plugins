@@ -1,27 +1,6 @@
-# Claude local settings (personal, not shared)
-.claude/settings.local.json
-.claude/plans/
-.claude/plugins/
-.claude/worktrees/
-
-# handoff plugin runtime state (directive may contain session-scoped intent;
-# treat as personal, not shared)
-.claude/handoff*.md
-.claude/handoff/
-.claude/handoff-settings.md
-
-# walkthrough plugin runtime output (generated session docs may contain code
-# snippets, paths, decisions; treat as personal session artifacts, not shared)
-.claude/walkthrough/
-
-# greenfield + onboard runtime state (may persist user-entered free-text from
-# the wizard; treat as potentially sensitive and never commit)
-.claude/greenfield-state.json
-.claude/greenfield-state.json.tmp
-.claude/greenfield-drift.json
-.claude/greenfield-meta.json
-.claude/onboard-snapshot.json
-.claude/onboard-meta.json
+# Claude config & tooling — treated as personal/local, not shared.
+# (Note: .claude-plugin/ is a different directory and stays tracked.)
+.claude/
 
 # OS
 .DS_Store
