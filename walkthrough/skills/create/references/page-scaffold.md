@@ -89,6 +89,14 @@ section.vis{opacity:1;transform:none;}
 .sf-points li{font-size:.84rem;color:var(--ts);margin:.25rem 0;}
 .sf-related{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.6rem;}
 .sf-related .chip{cursor:pointer;border:none;}
+dialog.sheet{max-width:min(900px,92vw);width:100%;max-height:86vh;border:1px solid var(--border-active);border-radius:14px;background:var(--bg-card);color:var(--tp);padding:0;overflow:hidden;box-shadow:0 30px 80px -20px rgba(0,0,0,.5);}
+dialog.sheet::backdrop{background:color-mix(in srgb,var(--bg-deep) 70%,transparent);backdrop-filter:blur(6px) saturate(140%);}
+dialog.sheet>.x{position:absolute;top:12px;right:14px;color:var(--tm);cursor:pointer;font-size:18px;background:none;border:none;z-index:1;}
+dialog.sheet .sf-body{padding:26px 24px;overflow:auto;flex:1;min-height:0;}
+dialog.sheet .sf-kicker{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);}
+dialog.sheet[open]{display:flex;flex-direction:column;animation:sheetIn .26s var(--ease);}
+@keyframes sheetIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){dialog.sheet[open]{animation:none;}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 @media(max-width:780px){.nav-links{display:none}}
