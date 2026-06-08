@@ -63,14 +63,27 @@ exact keys `authoring-guide.md` keys its mapping table off of — do not rename 
   // openQuestions[] → callout(s) at the tail of the doc (honest unknowns / follow-ups).
   "openQuestions": [ "..." ],         // → callouts
 
-  // details{} → the detail-panel content store. Keyed by node/card id; openD('<id>')
-  // pulls {body, where, related} into the side panel. `where` is a path:line anchor;
-  // `related` cross-links to other detail ids. Emit only ids actually wired to openD.
-  "details": {                        // → detail panel (openD / closeD); becomes DET in {{DETAIL_DATA}}
-    "<id>": { "body": "...", "where": "path:line", "related": ["<id>"] }
+  // details{} → the detail-surface content store. Keyed by node/card id; openSurface('<id>')
+  // routes to the pane (light) or a sheet (rich). Fields are structured (not a blob):
+  //   kicker, heading        short label + title (was k/h)
+  //   summary                one-paragraph plain recap
+  //   where[]                path:line anchors → chips/links
+  //   code[]                 optional {file,lang,snippet} annotated blocks
+  //   points[]               optional structured bullets
+  //   related[]              cross-links → chips that call openSurface
+  //   surface                OPTIONAL override "pane"|"sheet" (else inferred, see authoring-guide.md § 3)
+  //   components[]           sheet-only: catalog component refs to host (e.g. "flow:inner")
+  "details": {
+    "<id>": {
+      "kicker": "...", "heading": "...", "summary": "...",
+      "where": ["path:line"], "code": [{ "file": "...", "lang": "...", "snippet": "..." }],
+      "points": ["..."], "related": ["<id>"], "surface": "pane", "components": []
+    }
   }
 }
 ```
+
+A detail with `components`, `code`, or a long `summary`+`points` is inferred `sheet`; otherwise it is inferred `pane`. An explicit `surface` field overrides the inference in either direction. See `authoring-guide.md` § 3 for the full inference rule. Depth-cap and acyclic-graph rules for nested surfaces are added in a later phase (Phase ③ / the "Nesting" subsection) and are not part of this schema.
 
 ## Part B — Worked example: "Adding the HDFC SMS parser"
 
@@ -181,23 +194,27 @@ structured `Txn` records, with a fail-soft strategy and one-pattern-per-format d
 
   "details": {
     "matcher": {
-      "body": "RegexMatcher holds the compiled HDFC pattern with named groups (amount, merchant, date, direction). `test()` returns the capture map on a hit or null on a miss — the null is what powers fail-soft downstream.",
-      "where": "parsers/hdfc.ts:24",
+      "kicker": "Component", "heading": "RegexMatcher",
+      "summary": "Holds the compiled HDFC pattern with named groups; test() returns the capture map on a hit or null on a miss — the null powers fail-soft downstream.",
+      "where": ["parsers/hdfc.ts:24"],
       "related": ["extractor", "failsoft"]
     },
     "extractor": {
-      "body": "TxnExtractor maps the raw capture map onto a typed Txn: parses the amount to a number, trims the merchant, converts the DD/MM/YY date to ISO, and derives direction from the debit/credit keyword.",
-      "where": "parsers/hdfc.ts:58",
+      "kicker": "Component", "heading": "TxnExtractor",
+      "summary": "Maps the raw capture map onto a typed Txn: parses amount, trims merchant, converts DD/MM/YY to ISO, derives direction.",
+      "where": ["parsers/hdfc.ts:58"],
       "related": ["matcher", "txn"]
     },
     "txn": {
-      "body": "The normalized Txn record { amount, merchant, date, direction } returned to the importer. On a matcher miss this is null, which the importer skips.",
-      "where": "parsers/types.ts:7",
+      "kicker": "Type", "heading": "Txn record",
+      "summary": "The normalized { amount, merchant, date, direction } returned to the importer. On a matcher miss this is null, which the importer skips.",
+      "where": ["parsers/types.ts:7"],
       "related": ["extractor", "failsoft"]
     },
     "failsoft": {
-      "body": "The fail-soft contract: a no-match returns null rather than throwing, so one unknown SMS format never aborts the batch. Misses are counted into the import metrics for visibility.",
-      "where": "parsers/hdfc.ts:24",
+      "kicker": "Decision", "heading": "Fail soft on unrecognized SMS",
+      "summary": "A no-match returns null rather than throwing, so one unknown SMS format never aborts the batch. Misses are counted into import metrics for visibility.",
+      "where": ["parsers/hdfc.ts:24"],
       "related": ["matcher", "txn"]
     }
   }
