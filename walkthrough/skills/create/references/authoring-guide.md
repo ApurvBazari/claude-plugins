@@ -14,7 +14,9 @@ one component; pick the row that matches the field's *shape*.
 | session-model field present | render |
 |---|---|
 | `decisions[]` with tradeoffs | tabs + bars; else accordion |
-| `nodes[]` + `edges[]` | flow / architecture / dependency diagram |
+| `nodes[]` + `edges[]` (acyclic, single-actor) | flow / architecture / dependency diagram |
+| `nodes[]` + `edges[]` with cycles / back-edges / guard labels | state / transition diagram |
+| `nodes[]` + `edges[]` as timed messages between actors | sequence / swimlane diagram |
 | `files[]` | file tree (+ filterable cards if many) |
 | `metrics[]` | stat cards / animated bar chart |
 | `timeline[]` | timeline; stepper if a replayable sequence |
@@ -28,9 +30,22 @@ Notes on the choices:
 - **`decisions[]`** — use **Tabs + tradeoff bars** when each decision weighed options against scored
   axes (the bars need `data-w` magnitudes; tabs swap via `setTab`). With no scores, fall back to the
   **Accordion checklist**: one `<details>` per decision with a verdict badge and rationale in `.ac-body`.
-- **`nodes[]` + `edges[]`** — choose by topology: a linear staged pipeline → **Flow diagram**; a
-  non-linear system of services/layers → **Architecture map**; module/package import relationships →
-  **Dependency graph** (inline SVG). All three open node detail via `openSurface`.
+- **`nodes[]` + `edges[]`** — **run the diagram-fidelity check first, then pick the form.** The catalog
+  flow / architecture / dependency diagrams are **acyclic, single-actor, box/linear with unlabelled
+  arrows** — they physically cannot draw a back-edge, a self-loop, a guard condition on an edge,
+  time-ordering across actors, or 2-D positioning. So before accepting one, look at the graph's shape:
+    - **cycles / back-edges / self-loops, or guard/condition labels on edges** (a retry loop, a protocol
+      FSM, a connection lifecycle) → **State / transition diagram** (`diagrams.md`), NOT an architecture
+      map. An architecture map here is a *plausible-but-wrong* fit — it renders the states as a linear
+      box row and silently drops the cycle and the guards. This is the single most common misfit.
+    - **an ordered exchange of messages between two or more actors over time** (a handshake, an auth
+      flow, a request trace) → **Sequence / swimlane diagram** (`diagrams.md`), NOT a flow diagram (a flow
+      loses the lanes and the back-and-forth).
+    - **otherwise, by topology:** a linear staged pipeline → **Flow diagram**; a non-linear system of
+      services/layers → **Architecture map**; module/package import relationships → **Dependency graph**.
+    - **any shape the catalog still cannot draw faithfully** (2-D positioning, a quadrant, a Gantt) →
+      **compose a bespoke diagram** per § 4 rather than force-fitting the nearest box-and-arrow entry.
+  All of these open node detail via `openSurface`.
 - **`files[]`** — a handful → **File tree** (`white-space:pre`, clickable `.fl` rows). Many files
   that group into categories → add **Filterable cards + pills** so the reader can narrow by `data-cat`.
 - **`metrics[]`** — a few headline numbers → **Stat / metric cards**. Many comparable magnitudes →

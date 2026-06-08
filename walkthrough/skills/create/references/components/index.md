@@ -17,6 +17,8 @@ read **only** the group files for the components you actually select. Paths are 
 | Architecture map | Non-linear services / layers | `diagrams.md` |
 | Dependency graph | Module / package imports | `diagrams.md` |
 | Morphing-mode diagram | One structure shown in multiple modes | `diagrams.md` |
+| State / transition diagram | States with guarded or cyclic transitions (back-edges, retry loops, self-loops) | `diagrams.md` |
+| Sequence / swimlane diagram | Time-ordered messages exchanged between multiple actors | `diagrams.md` |
 | File tree | A handful of changed files | `files-timeline.md` |
 | Filterable cards + pills | Many discrete items grouped by category | `files-timeline.md` |
 | Stat / metric cards | A few headline numbers | `metrics.md` |

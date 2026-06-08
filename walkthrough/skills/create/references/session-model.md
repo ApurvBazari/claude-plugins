@@ -28,13 +28,16 @@ exact keys `authoring-guide.md` keys its mapping table off of — do not rename 
     { "id": "goal", "heading": "...", "prose": "...", "components": ["tabs"] }
   ],
 
-  // nodes[] + edges[] together drive a diagram. Topology picks which one:
-  //   linear staged pipeline      → flow diagram
-  //   non-linear services/layers  → architecture map
-  //   module/package imports      → dependency graph (inline SVG)
+  // nodes[] + edges[] together drive a diagram. The graph's SHAPE picks which one — run the
+  // diagram-fidelity check in authoring-guide.md § 1 before defaulting to a box-and-arrow form:
+  //   linear staged pipeline            → flow diagram
+  //   non-linear services/layers        → architecture map
+  //   module/package imports            → dependency graph (inline SVG)
+  //   cyclic / guarded transitions      → state / transition diagram (nodes kind:"state"; set edge.guard)
+  //   timed messages between actors     → sequence / swimlane diagram (nodes kind:"actor"; set edge.seq)
   // `kind` hints intent; nodes with a matching details[] entry are clickable (openSurface).
-  "nodes": [ { "id": "...", "label": "...", "kind": "component|step|concept" } ], // → diagram nodes
-  "edges": [ { "from": "<id>", "to": "<id>", "label": "" } ],                     // → diagram edges
+  "nodes": [ { "id": "...", "label": "...", "kind": "component|step|concept|state|actor" } ], // → diagram nodes
+  "edges": [ { "from": "<id>", "to": "<id>", "label": "", "guard": "", "seq": 0 } ], // guard → state-edge condition; seq → sequence order
 
   // decisions[] → Tabs + tradeoff bars WHEN tradeoffs[] carry scored axes (bars use data-w);
   // with no scores, fall back to the Accordion checklist (one <details> per decision).
