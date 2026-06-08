@@ -32,7 +32,7 @@ exact keys `authoring-guide.md` keys its mapping table off of — do not rename 
   //   linear staged pipeline      → flow diagram
   //   non-linear services/layers  → architecture map
   //   module/package imports      → dependency graph (inline SVG)
-  // `kind` hints intent; nodes with a matching details[] entry are clickable (openD).
+  // `kind` hints intent; nodes with a matching details[] entry are clickable (openSurface).
   "nodes": [ { "id": "...", "label": "...", "kind": "component|step|concept" } ], // → diagram nodes
   "edges": [ { "from": "<id>", "to": "<id>", "label": "" } ],                     // → diagram edges
 
@@ -83,7 +83,9 @@ exact keys `authoring-guide.md` keys its mapping table off of — do not rename 
 }
 ```
 
-A detail with `components`, `code`, or a long `summary`+`points` is inferred `sheet`; otherwise it is inferred `pane`. An explicit `surface` field overrides the inference in either direction. See `authoring-guide.md` § 3 for the full inference rule. Depth-cap and acyclic-graph rules for nested surfaces are added in a later phase (Phase ③ / the "Nesting" subsection) and are not part of this schema.
+A detail with `components`, `code`, or a long `summary`+`points` is inferred `sheet`; otherwise it is inferred `pane`. An explicit `surface` field overrides the inference in either direction. See `authoring-guide.md` § 3 for the full inference rule. Nesting depth and acyclicity rules for nested surfaces are spelled out in the **Nesting** note below.
+
+**Nesting.** A sheet's hosted `components[]` may contain nodes that reference other `details{}` ids via `openSurface`, so one detail can open another. Two hard limits keep this bounded: the reference graph must be **acyclic** — a detail must never transitively open itself (an `A → B → A` chain is a build failure) — and the open depth is capped at **3** (a 4th nested open replaces the topmost surface rather than deepening). Author chains deeper than 3 are flattened at synthesis time. The self-check enforces both the acyclic and depth-≤-3 rules.
 
 ## Part B — Worked example: "Adding the HDFC SMS parser"
 
