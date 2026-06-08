@@ -36,9 +36,11 @@ model (`authoring-guide.md` § 1), so reused components render them with no chan
   // links[] → external links rendered in a key–value grid or footer (repo, docs, marketplace).
   "links": [ { "label": "Source", "href": "https://github.com/ApurvBazari/claude-plugins/tree/main/walkthrough" } ],
 
-  // details{} → detail-panel store, keyed by node/reference id; openD('<id>') pulls {body, where, related}.
-  // Same contract as session-model. `where` is a path:line anchor when a real source location exists.
-  "details": { "<id>": { "body": "...", "where": "path:line", "related": ["<id>"] } }
+  // details{} → detail-surface store, keyed by node/reference id; openSurface('<id>') routes to a pane
+  // (light) or a sheet (rich). Same structured contract as session-model: {kicker, heading, summary,
+  // where[], code[]?, points[]?, related[]?, surface?, components[]} — see create's session-model.md +
+  // authoring-guide.md § 3. `where[]` holds path:line anchors when real source locations exist.
+  "details": { "<id>": { "kicker": "...", "heading": "...", "summary": "...", "where": ["path:line"], "related": ["<id>"] } }
 }
 ```
 
@@ -94,7 +96,7 @@ A complete, realistic model — no placeholders.
   ],
 
   "details": {
-    "filter": { "body": "minDurationSeconds is read per event; the wrapper compares the hook's elapsed time and returns early (exit 0) below threshold, so fast turns never notify.", "where": "notify/scripts/notify.sh", "related": ["hook"] }
+    "filter": { "kicker": "Filter", "heading": "Duration filter", "summary": "minDurationSeconds is read per event; the wrapper compares the hook's elapsed time and returns early (exit 0) below threshold, so fast turns never notify.", "where": ["notify/scripts/notify.sh"], "related": ["hook"] }
   }
 }
 ```
