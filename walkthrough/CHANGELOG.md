@@ -11,6 +11,12 @@
 - Back-compat: `openD`/`openCard` remain as aliases; `update` reconstructs the structured store and upgrades pre-feature documents (flat `DET`, no `SURF`) on re-render.
 - Lands entirely in the shared `create/references/` visual layer, so `create`, `update`, and `document` all inherit it.
 
+### Representation fidelity + completeness gates
+- New first-class catalog diagrams — **state / transition** (cyclic + guarded transitions) and **sequence / swimlane** (timed multi-actor messages) — so the two most common "no catalog entry fits" cases no longer depend on the bespoke escape hatch firing.
+- Diagram-fidelity gate in `select`: a `nodes[]`+`edges[]` graph with cycles / back-edges / self-loops / guard labels routes to a state diagram, and an ordered multi-actor message exchange to a sequence diagram, instead of being force-fit into a flow / architecture map (which silently drops the cycle, guards, and lanes). Backed by a new self-check row.
+- Completeness critic now derives the salient-item checklist from the source *before* comparing it to the model (so dropped detail can't be reclassified as "intentionally omitted" by the same pass), checks detail **depth** not just presence, and treats every in-session `path:line` as non-droppable — enforced by a new self-check row that no in-session code anchor is silently dropped.
+- `update` reconstructs the two new diagram types; all changes land in the shared visual layer, so `create`, `update`, and `document` inherit them.
+
 ## 1.0.0 — 2026-06-05
 - First stable release. Commits to a stable skill set (`create` / `update` / `document`), house style, and component-authoring API; breaking changes from here bump the major version.
 - Consolidates the previously unreleased 0.3.0 and 0.4.0 cycles (the `document` skill, interactive explorer + data-timeline components, the `.chip` primitive, CSS-counter section kickers, and the shared self-check + completeness pre-write gates) into the first marketplace-stable version. See the 0.3.0 / 0.4.0 entries below for details.
