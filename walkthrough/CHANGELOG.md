@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.1.0 — 2026-06-08
+
+### Detail surfaces
+- Replaced the unstructured detail-panel blob (`DET{k,h,b}`) with a structured detail schema — `{kicker, heading, summary, where[], code[], points[], related[], surface?, components[]}` — rendered by a shared `renderSurface`.
+- Added a centered native `<dialog>` **sheet** surface (~900px, token `::backdrop`, internal scroll) for rich details that host full catalog components, alongside the existing lightweight glance **pane**.
+- Hybrid routing via `openSurface` + a `SURF` kind map: an explicit `surface` override wins, else the kind is inferred from content (hosted components, a code block, or long text → sheet).
+- Capped-depth (3) nesting through the browser top layer: sheets and a reusable right-edge `paneDialog` stack via `showModal()` (free focus-trap, top-down Escape, `::backdrop`), with replace-topmost beyond the cap and an acyclic reference-graph requirement.
+- Per-surface id-suffixing keeps hosted-component ids globally unique; new self-check gates enforce routing, sheet presence, id-uniqueness, acyclicity, and depth ≤ 3.
+- Back-compat: `openD`/`openCard` remain as aliases; `update` reconstructs the structured store and upgrades pre-feature documents (flat `DET`, no `SURF`) on re-render.
+- Lands entirely in the shared `create/references/` visual layer, so `create`, `update`, and `document` all inherit it.
+
 ## 1.0.0 — 2026-06-05
 - First stable release. Commits to a stable skill set (`create` / `update` / `document`), house style, and component-authoring API; breaking changes from here bump the major version.
 - Consolidates the previously unreleased 0.3.0 and 0.4.0 cycles (the `document` skill, interactive explorer + data-timeline components, the `.chip` primitive, CSS-counter section kickers, and the shared self-check + completeness pre-write gates) into the first marketplace-stable version. See the 0.3.0 / 0.4.0 entries below for details.
