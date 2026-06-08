@@ -10,7 +10,7 @@ It contains **no component CSS or markup** — that lives in the `components/` c
 lifted verbatim from `seed.html`; never invent base styles.
 
 Slots to fill: `{{TITLE}}`, `{{NAV_LINKS}}`, `{{KICKER}}`, `{{HERO}}`, `{{SECTIONS}}`,
-`{{COMPONENT_CSS}}`, `{{INTERACTIVITY_JS}}`, `{{COMPONENT_JS}}`, `{{DETAIL_DATA}}`.
+`{{COMPONENT_CSS}}`, `{{INTERACTIVITY_JS}}`, `{{COMPONENT_JS}}`, `{{DETAIL_DATA}}`, `{{SHEETS}}`, `{{SURFACE_MAP}}`.
 
 ```html
 <!DOCTYPE html><html lang="en" data-theme="dark"><head>
@@ -117,7 +117,8 @@ section.vis{opacity:1;transform:none;}
   <aside class="panel" id="panel"><span class="x" onclick="closeD()">✕</span>
     <div class="pk" id="panelKicker">Detail</div>
     <div class="pb" id="panelBody"></div></aside>
-  <script>{{INTERACTIVITY_JS}}{{COMPONENT_JS}}{{DETAIL_DATA}}</script>
+  <div id="sheets">{{SHEETS}}</div>
+  <script>{{INTERACTIVITY_JS}}{{COMPONENT_JS}}{{DETAIL_DATA}}{{SURFACE_MAP}}</script>
 </body></html>
 ```
 
@@ -136,8 +137,24 @@ Fill each marker below. Leave a marker empty (delete it) only when its content d
 | `{{COMPONENT_JS}}` | The component-specific JS handlers for **only** the components used (e.g. `setTab`, `tog`), copied from the `components/<group>.md` recipes. Omit handlers for unused components. |
 | `{{INTERACTIVITY_JS}}` | The full shared behaviour bundle from `interactivity.md` — theme toggle (`tgl`), detail surfaces (`renderSurface` + `openSurface`/`openPane`, with `openD`/`openCard` aliases and `closeD`), scroll progress, and the IntersectionObserver reveal. |
 | `{{DETAIL_DATA}}` | The `DET` object literal mapping detail ids to structured `{k,h,summary,where,code,points,related}` records read by `renderSurface`. Include only the ids referenced by the markup; emit an empty `const DET={};` if no detail panel is wired. |
+| `{{SHEETS}}` | Pre-rendered sheet dialogs — one `<dialog class="sheet" id="sheet-<id>">` per **sheet-kind** detail (see the Sheet pattern below), placed in the `#sheets` container. Delete the marker when no detail routes to a sheet. |
+| `{{SURFACE_MAP}}` | The `const SURF={ "<id>": "pane" \| "sheet", … }` map — every `openSurface` target's kind, read by the router to decide pane vs sheet. Emit `const SURF={};` when no sheets are wired. |
 
 **`details{}` → `DET` transform:** the session model's structured `details{ "<id>": {kicker, heading, summary, where[], code[], points[], related[], surface?, components[]} }` (see `session-model.md`) compiles into the runtime `DET[id] = { k: <kicker>, h: <heading>, summary, where, code, points, related }`. Fields stay structured — arrays are preserved, not folded into a blob — and `renderSurface` builds the DOM from them (`where` → loc chips, `code` → annotated blocks, `points` → bullets, `related` → chips that call `openSurface`). `k` = kicker, `h` = heading. Emit only the ids actually wired.
+
+**Sheet pattern (`{{SHEETS}}`):** the assembler pre-renders one `<dialog>` per sheet-kind detail into the `#sheets` container (the pane builds its DOM at click time via `renderSurface`; the sheet's is static). It reuses the same `sf-*` content vocabulary as the pane so the two surfaces read the same, with surface-appropriate sizing — the sheet heading is an `<h2 class="sf-h">` (it picks up the larger serif `h2` scale, since `.sf-h` itself is pane-scoped), while the pane uses the compact `<h3 class="sf-h">`. The content lives in a `.sf-body` scroll container and the close `✕` is a direct child of the dialog. The sheet's surface-specific CSS — `dialog.sheet`, `::backdrop`, `dialog.sheet>.x` (which absolutely-positions the close button to float above the scroll), and `dialog.sheet .sf-kicker` — lands in Task 8 (next task); until then the listed `sf-*` classes are markers only.
+
+```html
+<dialog class="sheet" id="sheet-<id>">
+  <button class="x" onclick="this.closest('dialog').close()">✕</button>
+  <div class="sf-body">
+    <div class="sf-kicker"><kicker></div>
+    <h2 class="sf-h"><heading></h2>
+    <p class="sf-summary"><summary></p>
+    <!-- where chips, code blocks, hosted components (id-suffixed), points, related chips -->
+  </div>
+</dialog>
+```
 
 **Rule:** copy the base CSS in the `<style>` block verbatim from `seed.html` — never invent base
 styles. Component CSS comes from the `components/` catalog and is injected at `{{COMPONENT_CSS}}` only.
