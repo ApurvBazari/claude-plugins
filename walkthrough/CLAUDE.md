@@ -88,6 +88,28 @@ First-class catalog additions in v0.4.0:
 - **`components/interactive.md`** — two new components: interactive explorer (selector-driven diagram + detail pane) and data-driven step timeline.
 - **`.chip` primitive** — five status roles: `ok`, `info`, `warn`, `danger`, `neutral`. Use inline within any component for status badges.
 
+First-class additions in v1.1.0:
+- **Detail surfaces** (see § Detail surfaces) — the click-to-open detail is now a structured schema rendered into two shells, a glance **pane** and a centered native `<dialog>` **sheet**, routed by `openSurface` with capped-depth (3) nesting via the browser top layer.
+
+## Detail surfaces
+
+Clicking an interactive node, card, or cross-link chip opens its detail through **one router**, `openSurface(id)`, which routes to one of two shells rendered from a single structured schema:
+
+- **pane** — the lightweight right glance panel (`.panel`, `z-index:200`), for light details.
+- **sheet** — a centered native `<dialog class="sheet">` (~900px, token `::backdrop`, internal scroll), for rich details that host full catalog components.
+
+**One structured schema.** A detail is `{kicker, heading, summary, where[], code[], points[], related[], surface?, components[]}` — replacing the old `{k,h,b}` innerHTML blob. The shared `renderSurface(d,host)` builds the pane DOM from those fields on click; a sheet is **pre-rendered** into the `{{SHEETS}}` slot with the same `sf-*` markup. "Omit empty per sub-field."
+
+**Hybrid routing.** At assemble time each detail gets a kind: an explicit `surface` override wins, else it is inferred — `components`, a `code[]` block, or a `summary`+`points` over ~320 chars → `sheet`, otherwise `pane`. A `const SURF={id:'pane'|'sheet'}` map (the `{{SURFACE_MAP}}` slot) drives the runtime router.
+
+**Native `<dialog>` nesting, capped.** Sheets open via `showModal()`, so the browser **top layer** gives stacking, focus-trap, top-down Escape, and a stylable `::backdrop` with no library. A pane reached from *inside* a sheet can't use the non-modal `.panel` (it would render behind the modal), so it renders via `renderSurface` into a shared right-edge `<dialog class="sheet pane-dialog" id="paneDialog">`. The shared `_capPush(el)` caps depth at **3** (replace-topmost beyond) and carries an `el.open` no-op guard so a bidirectional `related[]` chip (A↔B) can't double-push the stack. The `openSurface` reference graph must be acyclic.
+
+**Id-uniqueness.** A catalog component hosted in a sheet suffixes its internal ids with the surface id (`xpTabs` → `xpTabs-rich`) so global ids stay unique; the self-check enforces it.
+
+**Back-compat.** `openD`/`openCard` remain as thin aliases of `openSurface`/the pane opener, so hand-authored or pre-feature docs keep working. `update` reconstructs the structured `DET` + `SURF` + sheet dialogs, and detects the old flat `DET{k,h,b}` (no `SURF`) to upgrade a pre-feature doc to the structured schema on re-render.
+
+The whole system lives in the shared `create/references/` visual layer (`session-model.md`, `page-scaffold.md`, `interactivity.md`, `authoring-guide.md` § 3, `design-system.md`, `self-check.md`, `components/`), so `create`, `update`, and `document` all inherit it — `document` gains rich sheets on the live docs site for free.
+
 ## Skills
 
 Three user-facing skills (all show in `/walkthrough:` autocomplete; all default frontmatter — user- and model-invocable, no `disable-model-invocation`):
