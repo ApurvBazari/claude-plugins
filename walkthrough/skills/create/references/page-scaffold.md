@@ -97,6 +97,7 @@ dialog.sheet .sf-kicker{font-family:var(--mono);font-size:.6rem;text-transform:u
 dialog.sheet[open]{display:flex;flex-direction:column;animation:sheetIn .26s var(--ease);}
 @keyframes sheetIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){dialog.sheet[open]{animation:none;}}
+dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;height:100vh;max-height:100vh;border-radius:0;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 @media(max-width:780px){.nav-links{display:none}}
@@ -126,6 +127,7 @@ dialog.sheet[open]{display:flex;flex-direction:column;animation:sheetIn .26s var
     <div class="pk" id="panelKicker">Detail</div>
     <div class="pb" id="panelBody"></div></aside>
   <div id="sheets">{{SHEETS}}</div>
+  <dialog class="sheet pane-dialog" id="paneDialog"><button class="x" onclick="this.closest('dialog').close()">✕</button><div class="sf-body" id="paneDialogBody"></div></dialog>
   <script>{{INTERACTIVITY_JS}}{{COMPONENT_JS}}{{DETAIL_DATA}}{{SURFACE_MAP}}</script>
 </body></html>
 ```

@@ -2,7 +2,7 @@
 
 This is the shared JS bundle, always inlined into the scaffold's `{{INTERACTIVITY_JS}}` slot. All handlers are guarded so missing elements never throw; all state is namespaced inside this one `<script>`. Unused handlers (e.g. `setTab` when there are no tabs) are harmless no-ops.
 
-### Detail surfaces — `renderSurface` builds the structured DOM; `openSurface` routes via `SURF` to the pane (`openPane`) or a native `<dialog>` sheet (`openSheet`, stacked in the top layer); `openCard` opens from a card's `data-id`; `openD` is a deprecated alias; native Escape closes the topmost sheet, the manual handler closes the pane only when no sheet is open; backdrop-click closes a sheet
+### Detail surfaces — `renderSurface` builds the structured DOM; `openSurface` routes via `SURF` to the pane (`openPane`) or a native `<dialog>` (sheet, or the shared `paneDialog` for a pane opened inside a sheet), stacked in the top layer via the shared `_capPush`; `openCard` opens from a card's `data-id`; `openD` is a deprecated alias; native Escape closes the topmost dialog, the manual handler closes the pane only when no dialog is open; backdrop-click closes a dialog
 
 ```js
 // renderSurface — build a structured detail DOM from a DET record into `host`
@@ -19,14 +19,14 @@ const panel=document.getElementById('panel');
 function openPane(id){const d=DET[id];if(!d)return;
  const k=document.getElementById('panelKicker');if(k)k.textContent=d.k||'Detail';
  renderSurface(d,document.getElementById('panelBody'));panel.classList.add('open');}
-// Phase ② router: pane vs sheet via SURF, with native-<dialog> sheet stacking (top layer = free focus-trap/Esc/backdrop)
+// Phase ③ router: pane vs sheet via SURF; sheets and nested panes stack as native <dialog>s in the top layer, capped at MAX_DEPTH (replace-topmost)
 const _stack=[]; const MAX_DEPTH=3;
-function openSheet(id){const el=document.getElementById('sheet-'+id);if(!el||el.open)return;
- if(_stack.length>=MAX_DEPTH){const top=_stack.pop();if(top)top.close();}
- el.showModal();_stack.push(el);}
+function _capPush(el){if(!el||el.open)return;if(_stack.length>=MAX_DEPTH){const t=_stack.pop();if(t)t.close();}el.showModal();_stack.push(el);}
 function openSurface(id){const k=(typeof SURF!=='undefined'&&SURF[id])||'pane';
- if(k==='sheet'){openSheet(id);return;}
- if(_stack.length){openSheet('__pane__'+id);} // nested light detail → stacked dialog (Phase ③ paneDialog)
+ if(k==='sheet'){const el=document.getElementById('sheet-'+id);_capPush(el);return;}
+ if(_stack.length){const pd=document.getElementById('paneDialog'),d=DET[id],b=document.getElementById('paneDialogBody');
+  // nested pane → shared paneDialog: render kicker + body, then stack it. Re-opening swaps content in place (no new depth level; _capPush no-ops on el.open).
+  renderSurface(d,b);if(d&&d.k)b.insertAdjacentHTML('afterbegin',`<div class="sf-kicker">${d.k}</div>`);_capPush(pd);}
  else openPane(id);}
 // dialog housekeeping: pop on close, close on backdrop click
 document.querySelectorAll('dialog.sheet').forEach(dlg=>{
@@ -38,7 +38,7 @@ function closeD(){panel.classList.remove('open');}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!_stack.length)closeD();});
 ```
 
-Sheets rely on the native top layer: `showModal()` stacks each sheet above the last, traps focus in the topmost, and Escape closes them top-down — no hand-rolled focus/stack manager. `_stack` only mirrors that order so the depth cap (`MAX_DEPTH`) and the pane's Escape-guard can reason about it; `MAX_DEPTH=3` triggers replace-topmost (close the top sheet, open the new one at the same depth) — fully wired with the nested-pane `paneDialog` in Phase ③. `::backdrop` click closes the sheet it dims (`e.target===dlg`); inner clicks never close it. Re-opening an already-open sheet is a no-op (`el.open` guard) so a bidirectional `related[]` chip (A↔B) can't double-push `_stack` and strand a phantom entry.
+Sheets and nested panes rely on the native top layer: `showModal()` stacks each above the last, traps focus in the topmost, and Escape closes them top-down — no hand-rolled focus/stack manager. A pane detail opened from *inside* a sheet can't use the non-modal `.panel` (it would render behind the modal), so it renders via `renderSurface` into the shared `paneDialog` — a narrow right-edge `<dialog class="sheet pane-dialog">` that also stacks in the top layer. `_stack` mirrors the open order; the shared `_capPush` enforces the depth cap (`MAX_DEPTH=3` → replace-topmost: close the top, open the new at the same depth) and the `el.open` no-op guard, so re-opening the same sheet/paneDialog — or a bidirectional `related[]` chip (A↔B) — can't double-push `_stack` and strand a phantom entry. `::backdrop` click closes the dialog it dims (`e.target===dlg`); inner clicks never close it.
 
 ### Tabs — swap the shown detail and re-grow its tradeoff bars (double-rAF reset-then-grow)
 
