@@ -18,5 +18,9 @@ every test to where the rule applies. If any fails, fix the HTML and re-run.
 | 11 | `SURF` covers every `openSurface` target | Every id wired to `openSurface('<id>')` (nodes, cards, `related` chips) has a `SURF[id]` (`'pane'` or `'sheet'`); unclassified targets default to `'pane'`. |
 | 12 | Sheet + backdrop CSS is tokens-only | `dialog.sheet` and `dialog.sheet::backdrop` use `var(--...)` / `color-mix` only; the one allowed literal is the `rgba(0,0,0,...)` shadow (matches the existing `.panel`). No raw `#hex` in sheet/backdrop rules. |
 | 13 | Component ids are unique across all surfaces | A catalog component hosted inside a sheet has its internal ids surface-suffixed (`xpTabs` -> `xpTabs-rich` inside `sheet-rich`); no element `id` appears in two surfaces. |
+| 14 | The `openSurface` reference graph is acyclic | Following each detail's `related[]` + hosted-component `openSurface` targets never returns to that detail -- an `A -> B -> A` chain fails the build. |
+| 15 | Authored nesting depth is <= 3 | The longest chain of nested `openSurface` opens (sheet -> sheet/pane -> ...) is at most 3; deeper authored chains are flattened at synthesis time (runtime also caps at `MAX_DEPTH=3` via replace-topmost). |
+| 16 | `paneDialog` is present when a pane is reachable from a sheet | If any sheet can open a pane-kind detail (a `related[]` or hosted node targeting a `SURF[id]==='pane'` id), the scaffold has the `<dialog class="sheet pane-dialog" id="paneDialog">` + `#paneDialogBody`. |
+| 17 | `function openSurface` is defined exactly once | The inlined JS has a single `openSurface` definition (no leftover Phase 2 duplicate); the sheet path lives inside it and `openSheet` is folded into the shared `_capPush`. |
 
 Failure on any row -> revise the assembled HTML (or the model, then re-assemble) and re-run before write.
