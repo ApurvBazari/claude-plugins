@@ -77,9 +77,28 @@ which renders that detail's structured content. One shared renderer (`renderSurf
 a detail with just `summary` + `where` renders only those two. Never stub an empty heading, an empty
 code block, or a "None" row. This is the per-field form of §2's "omit empty, never stub."
 
-**Pane vs sheet.** Light details render in the right glance **pane**; rich details open a centered
-**sheet**. The routing rule — an explicit `surface` override versus an inferred kind — is added in
-Phase ② and documented in this section then. For Phase ①, every detail renders in the pane.
+**Pane vs sheet (kind inference).** Each detail's surface is computed at assemble time:
+
+```
+kind = detail.surface ?? ((detail.components?.length || detail.code?.length
+        || (len(summary) + sum(len(points))) > 320) ? 'sheet' : 'pane')
+```
+
+An explicit `surface` (`"pane"` | `"sheet"`) always wins. Otherwise a detail infers **sheet** when it
+hosts `components`, carries a `code[]` block, or its `summary`+`points` text exceeds ~320 characters
+(with no `points`, that is just the summary length; too long for the narrow 300px glance pane); everything
+else stays a **pane**. Assemble then walks each detail:
+
+- **pane-kind** → add the structured record to `DET[id]` (built by `renderSurface` on click) and set `SURF[id]='pane'`.
+- **sheet-kind** → pre-render a `<dialog class="sheet" id="sheet-<id>">` into `{{SHEETS}}` (the structured header
+  reuses the same `sf-*` markup, and each `components[]` ref is hosted inside the dialog), and set `SURF[id]='sheet'`.
+
+`SURF[id]` defaults to `'pane'` for any `openSurface` target not otherwise classified.
+
+**Id-suffix when hosting a component in a sheet.** A catalog component placed inside a sheet would
+collide on its global ids if the same component also appears at top level (two `#xpTabs`, two `#mode`).
+Suffix every hosted component's internal ids with the surface id — `xpTabs` → `xpTabs-rich` inside
+`sheet-rich` — so ids stay globally unique. The Phase ② self-check gates verify id-uniqueness across all surfaces.
 
 **Wiring.** Give a clickable node `onclick="openSurface('<id>')"` and add a matching structured
 `details{}` entry (`{kicker, heading, summary, where[], …}`) that compiles to `DET[id]`. A clickable
