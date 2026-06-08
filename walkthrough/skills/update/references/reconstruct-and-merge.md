@@ -30,6 +30,8 @@ the detail-panel store is embedded verbatim). Reconstruction reads the rendered 
 | File tree / filterable cards | `files[]` (`path`, `change`, `note`) | `change` is encoded by the row's color/badge class |
 | Timeline / stepper | `timeline[]` (`t`, `label`, `ref`) | `ref` is the anchor each entry scrolls to |
 | Trailing `const DET={…}` in the `<script>` | `details{}` | **highest-fidelity source** — see below |
+| Trailing `const SURF={…}` in the `<script>` | `details{}[id].surface` | the `{{SURFACE_MAP}}` slot — maps each id to `'pane'`/`'sheet'`; recovers the surface kind |
+| Pre-rendered `<dialog class="sheet" id="sheet-<id>">` blocks | `details{}` (sheet-kind) | the `{{SHEETS}}` slot — structured `sf-*` header + hosted components recover the rich detail; see below |
 
 ### Reconstruction notes
 
@@ -37,17 +39,36 @@ the detail-panel store is embedded verbatim). Reconstruction reads the rendered 
   number into the text (`01 — flow`); strip a leading `NN[ —-]` so the CSS counter does not
   double-number after re-render. Store only the label.
 
-### The `DET` store is the reliable path for `details{}`
+### The `DET` store + `SURF` map + sheet dialogs are the reliable path for `details{}`
 
-The detail-panel data is embedded verbatim as a `const DET={ "<id>": { k, h, b } }` object literal at
-the end of the page `<script>` (the `{{DETAIL_DATA}}` slot). Parse it directly rather than
-re-deriving panel content from prose. Reverse the `details → DET` transform documented in
-`page-scaffold.md`:
+The detail data is embedded verbatim in the page `<script>` and body. Parse it directly rather than
+re-deriving from prose. Reverse the `details → DET/SURF/{{SHEETS}}` transform documented in
+`page-scaffold.md` + `authoring-guide.md` § 3:
 
-- `k` → the panel kicker (maps loosely to the detail's label/kind)
-- `h` → the detail heading
-- `b` → the body HTML; the `<code>path:line</code>` anchor inside it is the model's `where`, and any
-  trailing cross-links are `related` ids.
+- **`const SURF={ "<id>": "pane"|"sheet" }`** (the `{{SURFACE_MAP}}` slot) — read first; it tells you
+  which shell each id used, and re-creates the model's `surface` field.
+- **Pane-kind** (`SURF[id]!=='sheet'`) — read `DET[id]` from the structured
+  `const DET={ "<id>": {k,h,summary,where,code,points,related} }` literal (the `{{DETAIL_DATA}}` slot):
+  `kicker`=`k`, `heading`=`h`, and `summary`/`where[]`/`code[]`/`points[]`/`related[]` map back to the
+  same-named fields verbatim (arrays stay arrays).
+- **Sheet-kind** (`SURF[id]==='sheet'`) — the detail is NOT in `DET`; read its pre-rendered
+  `<dialog class="sheet" id="sheet-<id>">`: `sf-kicker`→`kicker`, `sf-h`→`heading`, `sf-summary`→`summary`,
+  `sf-where`(`sf-loc` chips)→`where[]`, `sf-code`→`code[]`, `sf-points`→`points[]`, `sf-related`→`related[]`,
+  and recover the hosted catalog components into `components[]` (strip the per-surface id-suffix, e.g.
+  `xpTabs-rich` → `xpTabs`). Set `surface:'sheet'`.
+- **Nesting** — a hosted component's nodes wired `onclick="openSurface('<id>')"` re-create the
+  cross-detail references; preserve them so the refreshed model keeps the same nesting (still bounded
+  acyclic + depth ≤ 3 per `session-model.md`).
+
+### Back-compat: a pre-feature doc (flat `DET`, no `SURF`)
+
+A walkthrough rendered BEFORE detail surfaces has the OLD flat `const DET={ "<id>": {k,h,b} }`, no
+`SURF`, and no sheet dialogs. Detect this shape — `DET` records carry a `b` field and there is no
+`const SURF=` — and reconstruct EVERY detail as **pane-kind**: `kicker`=`k`, `heading`=`h`, and lift the
+`b` body HTML into `summary` (pull the `<code>path:line</code>` anchor out into `where[]` and trailing
+cross-links into `related[]`, as the old transform did). No sheets; every `surface` defaults to pane. So
+`update` on a pre-feature walkthrough still works — it transparently upgrades the flat details into the
+structured schema on re-render.
 
 ### What is re-derived, not recovered (accept it)
 
