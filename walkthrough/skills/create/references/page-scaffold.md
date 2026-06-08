@@ -104,7 +104,8 @@ section.vis{opacity:1;transform:none;}
     {{SECTIONS}}
   </main>
   <aside class="panel" id="panel"><span class="x" onclick="closeD()">✕</span>
-    <div class="pk" id="pk">Detail</div><h3 id="ph">—</h3><div class="pb" id="pbd"></div></aside>
+    <div class="pk" id="panelKicker">Detail</div>
+    <div class="pb" id="panelBody"></div></aside>
   <script>{{INTERACTIVITY_JS}}{{COMPONENT_JS}}{{DETAIL_DATA}}</script>
 </body></html>
 ```
@@ -122,10 +123,10 @@ Fill each marker below. Leave a marker empty (delete it) only when its content d
 | `{{SECTIONS}}` | One `<section id="…">…</section>` per session-model section after the hero. Each holds a `.sec-label`, an `<h2>`, an optional `.lede`, and the chosen component markup from the `components/` catalog. |
 | `{{COMPONENT_CSS}}` | The CSS blocks for **only** the components actually used, copied verbatim from the `components/<group>.md` recipes. Omit CSS for unused components. |
 | `{{COMPONENT_JS}}` | The component-specific JS handlers for **only** the components used (e.g. `setTab`, `tog`), copied from the `components/<group>.md` recipes. Omit handlers for unused components. |
-| `{{INTERACTIVITY_JS}}` | The full shared behaviour bundle from `interactivity.md` — theme toggle (`tgl`), detail panel (`openD`/`closeD`), scroll progress, and the IntersectionObserver reveal. |
-| `{{DETAIL_DATA}}` | The `DET` object literal mapping detail ids to `{k,h,b}` records read by `openD`. Include only the ids referenced by the markup; emit an empty `const DET={};` if no detail panel is wired. |
+| `{{INTERACTIVITY_JS}}` | The full shared behaviour bundle from `interactivity.md` — theme toggle (`tgl`), detail surfaces (`renderSurface` + `openSurface`/`openPane`, with `openD`/`openCard` aliases and `closeD`), scroll progress, and the IntersectionObserver reveal. |
+| `{{DETAIL_DATA}}` | The `DET` object literal mapping detail ids to structured `{k,h,summary,where,code,points,related}` records read by `renderSurface`. Include only the ids referenced by the markup; emit an empty `const DET={};` if no detail panel is wired. |
 
-**`details{}` → `DET` transform:** the session model's `details{ "<id>": {body, where, related} }` (see `session-model.md`) compiles into the runtime `DET[id] = { k: <short kicker/label>, h: <heading>, b: <body HTML> }`. Fold `where` into `b` as a `<code>path:line</code>` anchor and append any `related` ids as cross-links; the panel only reads `k`/`h`/`b`.
+**`details{}` → `DET` transform:** the session model's structured `details{ "<id>": {kicker, heading, summary, where[], code[], points[], related[], surface?, components[]} }` (see `session-model.md`) compiles into the runtime `DET[id] = { k: <kicker>, h: <heading>, summary, where, code, points, related }`. Fields stay structured — arrays are preserved, not folded into a blob — and `renderSurface` builds the DOM from them (`where` → loc chips, `code` → annotated blocks, `points` → bullets, `related` → chips that call `openSurface`). `k` = kicker, `h` = heading. Emit only the ids actually wired.
 
 **Rule:** copy the base CSS in the `<style>` block verbatim from `seed.html` — never invent base
 styles. Component CSS comes from the `components/` catalog and is injected at `{{COMPONENT_CSS}}` only.

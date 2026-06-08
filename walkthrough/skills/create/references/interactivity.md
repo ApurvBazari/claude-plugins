@@ -2,19 +2,27 @@
 
 This is the shared JS bundle, always inlined into the scaffold's `{{INTERACTIVITY_JS}}` slot. All handlers are guarded so missing elements never throw; all state is namespaced inside this one `<script>`. Unused handlers (e.g. `setTab` when there are no tabs) are harmless no-ops.
 
-### Detail panel — open/close the side panel from flow nodes (`openD` reads the `DET` object) or cards (`openCard` reads `data-t`/`data-desc`), with Escape-to-close
+### Detail panel — `renderSurface` builds a structured detail into the pane; `openSurface` routes (pane-only in Phase ①), `openPane` opens it, `openCard` opens from a card's `data-id`, `openD` is a deprecated alias, Escape closes
 
 ```js
-const DET={
- gather:{k:"Stage 1",h:"Gather",b:"Pull the conversation, run git enrichment, read referenced files to verify code locations."},
- synth:{k:"Stage 2",h:"Synthesize",b:"Build the structured <code>session model</code> before any HTML — title, sections, nodes, decisions, files, timeline."},
- select:{k:"Stage 3",h:"Select",b:"Pick the components that fit this session from the shared vocabulary. Empty ones are omitted."},
- assemble:{k:"Stage 4",h:"Assemble",b:"Fill the house-style scaffold + chosen component snippets + inline JS. Everything self-contained."},
- write:{k:"Stage 5",h:"Write",b:"Save to <code>.claude/walkthrough/</code>, gitignore prompt, offer to open."}
-};
+// renderSurface — build a structured detail DOM from a DET record into `host`
+function renderSurface(d,host){if(!d||!host)return;let h='';
+ if(d.h)h+=`<h3 class="sf-h">${d.h}</h3>`;
+ if(d.summary)h+=`<p class="sf-summary">${d.summary}</p>`;
+ if(d.where&&d.where.length)h+=`<div class="sf-where">${d.where.map(w=>`<code class="sf-loc">${w}</code>`).join('')}</div>`;
+ if(d.code&&d.code.length)h+=d.code.map(c=>`<figure class="sf-code"><figcaption>${c.file||''}</figcaption><pre><code>${c.snippet||''}</code></pre></figure>`).join('');
+ if(d.points&&d.points.length)h+=`<ul class="sf-points">${d.points.map(p=>`<li>${p}</li>`).join('')}</ul>`;
+ if(d.components)h+=d.components;
+ if(d.related&&d.related.length)h+=`<div class="sf-related">${d.related.map(r=>`<button class="chip neutral" onclick="openSurface('${r}')">${r}</button>`).join('')}</div>`;
+ host.innerHTML=h;}
 const panel=document.getElementById('panel');
-function openD(id){const d=DET[id];if(!d)return;pk.textContent=d.k;ph.textContent=d.h;pbd.innerHTML=d.b;panel.classList.add('open');}
-function openCard(el){if(!el)return;pk.textContent=el.dataset.k||'Detail';ph.textContent=el.dataset.t||'';pbd.innerHTML=el.dataset.desc||'';panel.classList.add('open');}
+function openPane(id){const d=DET[id];if(!d)return;
+ const k=document.getElementById('panelKicker');if(k)k.textContent=d.k||'Detail';
+ renderSurface(d,document.getElementById('panelBody'));panel.classList.add('open');}
+// Phase ① router: pane only (sheet branch added in Phase ②)
+function openSurface(id){openPane(id);}
+function openCard(el){if(!el)return;openPane(el.dataset.id||'');}
+function openD(id){openSurface(id);} // deprecated alias
 function closeD(){panel.classList.remove('open');}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeD();});
 ```
