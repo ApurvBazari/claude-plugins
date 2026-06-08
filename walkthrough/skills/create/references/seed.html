@@ -211,17 +211,17 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
   <section id="flow">
     <div class="sec-label">02 — architecture / flow component</div>
     <h2>Animated <em>flow</em> diagram</h2>
-    <p class="lede">For sessions about a pipeline or architecture. Nodes glow on hover; click one for detail.</p>
+    <p class="lede">For sessions about a pipeline or architecture. Nodes glow on hover; click one for a detail <strong>pane</strong> — or the rich <em>Synthesize</em> node for a full <strong>sheet</strong> that itself nests further detail.</p>
     <div class="flow">
-      <div class="fnode" data-d="gather" onclick="openD('gather')"><div class="nl">stage 1</div>Gather</div>
+      <div class="fnode" data-d="gather" onclick="openSurface('gather')"><div class="nl">stage 1</div>Gather</div>
       <span class="farr">→</span>
-      <div class="fnode accent" data-d="synth" onclick="openD('synth')"><div class="nl">stage 2</div>Synthesize</div>
+      <div class="fnode accent" data-d="synth" onclick="openSurface('synth')"><div class="nl">stage 2</div>Synthesize</div>
       <span class="farr">→</span>
-      <div class="fnode" data-d="select" onclick="openD('select')"><div class="nl">stage 3</div>Select</div>
+      <div class="fnode" data-d="select" onclick="openSurface('select')"><div class="nl">stage 3</div>Select</div>
       <span class="farr">→</span>
-      <div class="fnode" data-d="assemble" onclick="openD('assemble')"><div class="nl">stage 4</div>Assemble</div>
+      <div class="fnode" data-d="assemble" onclick="openSurface('assemble')"><div class="nl">stage 4</div>Assemble</div>
       <span class="farr">→</span>
-      <div class="fnode" data-d="write" onclick="openD('write')"><div class="nl">stage 5</div>Write</div>
+      <div class="fnode" data-d="write" onclick="openSurface('write')"><div class="nl">stage 5</div>Write</div>
     </div>
   </section>
 
@@ -260,22 +260,64 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
 
 <aside class="panel" id="panel">
   <span class="x" onclick="closeD()">✕</span>
-  <div class="pk" id="pk">Detail</div><h3 id="ph">—</h3><div class="pb" id="pbd"></div>
+  <div class="pk" id="panelKicker">Detail</div>
+  <div class="pb" id="panelBody"></div>
 </aside>
+<div id="sheets">
+  <dialog class="sheet" id="sheet-synth">
+    <button class="x" onclick="this.closest('dialog').close()">✕</button>
+    <div class="sf-body">
+      <div class="sf-kicker">Stage 2 · rich detail</div>
+      <h2 class="sf-h">Synthesize the structured session model</h2>
+      <p class="sf-summary">The richest stage opens as a <strong>sheet</strong> rather than the glance pane, because it hosts a diagram and a code block. Click a node below — a pane detail opens stacked above this sheet.</p>
+      <div class="flow">
+        <div class="fnode" data-d="model-build" onclick="openSurface('select')"><div class="nl">build</div>model</div>
+        <span class="farr">→</span>
+        <div class="fnode accent" data-d="model-render" onclick="openSurface('write')"><div class="nl">then</div>render</div>
+      </div>
+      <figure class="sf-code"><figcaption>session-model.md</figcaption><pre><code>{ title, summary, sections[], nodes[], details{} }</code></pre></figure>
+      <div class="sf-related"><button class="chip neutral" onclick="openSurface('write')">write</button></div>
+    </div>
+  </dialog>
+</div>
+<dialog class="sheet pane-dialog" id="paneDialog"><button class="x" onclick="this.closest('dialog').close()">✕</button><div class="sf-body" id="paneDialogBody"></div></dialog>
 
 <script>
 const DET={
- gather:{k:"Stage 1",h:"Gather",b:"Pull the conversation, run git enrichment, read referenced files to verify code locations."},
- synth:{k:"Stage 2",h:"Synthesize",b:"Build the structured <code>session model</code> before any HTML — title, sections, nodes, decisions, files, timeline."},
- select:{k:"Stage 3",h:"Select",b:"Pick the components that fit this session from the shared vocabulary. Empty ones are omitted."},
- assemble:{k:"Stage 4",h:"Assemble",b:"Fill the house-style scaffold + chosen component snippets + inline JS. Everything self-contained."},
- write:{k:"Stage 5",h:"Write",b:"Save to <code>.claude/walkthrough/</code>, gitignore prompt, offer to open."}
+ gather:{k:"Stage 1",h:"Gather",summary:"Pull the conversation, run git enrichment, and read referenced files so every path:line is real.",where:["create/SKILL.md:2"],related:["synth"]},
+ select:{k:"Stage 3",h:"Select",summary:"Map the synthesized model to components from the shared vocabulary; omit empty, never stub.",where:["authoring-guide.md:9"],related:["assemble"]},
+ assemble:{k:"Stage 4",h:"Assemble",summary:"Fill the house-style scaffold with the chosen component snippets, inline JS, and the DET/SURF/sheet data. Everything self-contained.",where:["page-scaffold.md:15"],related:["write"]},
+ write:{k:"Stage 5",h:"Write",summary:"Save to .claude/walkthrough/, handle the gitignore prompt, and offer to open — never auto-open.",where:["create/SKILL.md:30"]}
 };
+// synth is sheet-kind (rich) → pre-rendered <dialog id="sheet-synth">, not in DET
+const SURF={gather:'pane',synth:'sheet',select:'pane',assemble:'pane',write:'pane'};
+function renderSurface(d,host){if(!d||!host)return;let h='';
+ if(d.h)h+=`<h3 class="sf-h">${d.h}</h3>`;
+ if(d.summary)h+=`<p class="sf-summary">${d.summary}</p>`;
+ if(d.where&&d.where.length)h+=`<div class="sf-where">${d.where.map(w=>`<code class="sf-loc">${w}</code>`).join('')}</div>`;
+ if(d.code&&d.code.length)h+=d.code.map(c=>`<figure class="sf-code"><figcaption>${c.file||''}</figcaption><pre><code>${c.snippet||''}</code></pre></figure>`).join('');
+ if(d.points&&d.points.length)h+=`<ul class="sf-points">${d.points.map(p=>`<li>${p}</li>`).join('')}</ul>`;
+ if(d.components)h+=d.components;
+ if(d.related&&d.related.length)h+=`<div class="sf-related">${d.related.map(r=>`<button class="chip neutral" onclick="openSurface('${r}')">${r}</button>`).join('')}</div>`;
+ host.innerHTML=h;}
 const panel=document.getElementById('panel');
-function openD(id){const d=DET[id];if(!d)return;pk.textContent=d.k;ph.textContent=d.h;pbd.innerHTML=d.b;panel.classList.add('open');}
-function openCard(el){if(!el)return;pk.textContent=el.dataset.k||'Detail';ph.textContent=el.dataset.t||'';pbd.innerHTML=el.dataset.desc||'';panel.classList.add('open');}
+function openPane(id){const d=DET[id];if(!d)return;
+ const k=document.getElementById('panelKicker');if(k)k.textContent=d.k||'Detail';
+ renderSurface(d,document.getElementById('panelBody'));panel.classList.add('open');}
+const _stack=[]; const MAX_DEPTH=3;
+function _capPush(el){if(!el||el.open)return;if(_stack.length>=MAX_DEPTH){const t=_stack.pop();if(t)t.close();}el.showModal();_stack.push(el);}
+function openSurface(id){const k=(typeof SURF!=='undefined'&&SURF[id])||'pane';
+ if(k==='sheet'){const el=document.getElementById('sheet-'+id);_capPush(el);return;}
+ if(_stack.length){const pd=document.getElementById('paneDialog'),d=DET[id],b=document.getElementById('paneDialogBody');
+  renderSurface(d,b);if(d&&d.k)b.insertAdjacentHTML('afterbegin',`<div class="sf-kicker">${d.k}</div>`);_capPush(pd);}
+ else openPane(id);}
+document.querySelectorAll('dialog.sheet').forEach(dlg=>{
+ dlg.addEventListener('close',()=>{const i=_stack.indexOf(dlg);if(i>-1)_stack.splice(i,1);});
+ dlg.addEventListener('click',e=>{if(e.target===dlg)dlg.close();});});
+function openCard(el){if(!el)return;openPane(el.dataset.id||'');}
+function openD(id){openSurface(id);} // deprecated alias
 function closeD(){panel.classList.remove('open');}
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeD();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!_stack.length)closeD();});
 function setTab(app){document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.app===app));
  document.querySelectorAll('.detail').forEach(d=>{const on=d.dataset.app===app;d.classList.toggle('show',on);if(on)animate(d);});}
 function animate(scope){scope.querySelectorAll('.fil').forEach(f=>{f.style.width='0';requestAnimationFrame(()=>requestAnimationFrame(()=>{f.style.width=f.dataset.w+'%';}));});}
