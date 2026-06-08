@@ -41,6 +41,8 @@ region AND a detail pane from one data model. Generalizes the morphing-mode diag
 **Wiring:** Component-unique -- append this `{{COMPONENT_JS}}` (fill `VIEWS`; diagram/detail values are
 token-styled HTML, e.g. `.chip` labels and arrows). The init line renders the first view on load.
 
+**Hostable in a sheet:** can be embedded in a detail sheet via a detail's `components[]`; suffix its internal ids with the surface id (e.g. `-rich`) so global ids stay unique (authoring-guide § 3).
+
 ```js
 // {{COMPONENT_JS}} -- interactive explorer
 const VIEWS={
@@ -59,7 +61,7 @@ setView('v1');
 
 **When:** A staged execution model -- phases run in sequence, each holding steps that run PARALLEL or
 SEQUENTIAL, with per-step source pills and optional micro-cycles. Static-rendered from the model (no
-runtime JS); steps may be made clickable via the shared `openD` (add a `DET` key + `data-d`/`onclick`).
+runtime JS); steps may be made clickable via the shared `openSurface` (add a `DET` key + `data-d`/`onclick`).
 Source pills and the kind tag use the `.chip` primitive.
 
 ```html
@@ -99,4 +101,4 @@ Source pills and the kind tag use the `.chip` primitive.
 ```
 
 **Wiring:** No required handler (static). Revealed by the IntersectionObserver. To open step detail,
-add `data-d="<id>"` + `onclick="openD('<id>')"` to a `.dt-step` and a matching `DET` key.
+add `data-d="<id>"` + `onclick="openSurface('<id>')"` to a `.dt-step` and a matching `DET` key.

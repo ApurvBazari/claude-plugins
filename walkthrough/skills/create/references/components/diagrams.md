@@ -9,11 +9,11 @@
   <div class="sec-label"><flow></div>
   <h2>Animated <em>flow</em> diagram</h2>
   <div class="flow">
-    <div class="fnode" data-d="<id1>" onclick="openD('<id1>')"><div class="nl"><stage 1></div><Label></div>
+    <div class="fnode" data-d="<id1>" onclick="openSurface('<id1>')"><div class="nl"><stage 1></div><Label></div>
     <span class="farr">→</span>
-    <div class="fnode accent" data-d="<id2>" onclick="openD('<id2>')"><div class="nl"><stage 2></div><Label></div>
+    <div class="fnode accent" data-d="<id2>" onclick="openSurface('<id2>')"><div class="nl"><stage 2></div><Label></div>
     <span class="farr">→</span>
-    <div class="fnode" data-d="<id3>" onclick="openD('<id3>')"><div class="nl"><stage 3></div><Label></div>
+    <div class="fnode" data-d="<id3>" onclick="openSurface('<id3>')"><div class="nl"><stage 3></div><Label></div>
   </div>
 </section>
 ```
@@ -27,7 +27,9 @@
 .farr{color:var(--border-strong);font-size:1.1rem;}
 ```
 
-**Wiring:** click → `openD('<id>')` (reads the `DET` object in `interactivity.md` — add a matching `DET` key per node with `{k,h,b}`). Escape closes the panel.
+**Wiring:** click → `openSurface('<id>')` (reads the structured `DET` store in `interactivity.md` — add a matching `details{}` entry per node, compiled to `DET[id]` = `{k,h,summary,where,…}`). Escape closes the pane; a rich node can route to a sheet instead (kind inference, authoring-guide § 3).
+
+**Hostable in a sheet:** can be embedded in a detail sheet via a detail's `components[]`; suffix its internal ids with the surface id (e.g. `-rich`) so global ids stay unique (authoring-guide § 3).
 
 ## Architecture map
 
@@ -38,11 +40,11 @@
   <div class="sec-label"><architecture></div>
   <h2>Component <em>map</em></h2>
   <div class="archmap">
-    <div class="flow-node accent" data-d="<id1>" onclick="openD('<id1>')"><span class="node-label"><layer></span><Component A></div>
+    <div class="flow-node accent" data-d="<id1>" onclick="openSurface('<id1>')"><span class="node-label"><layer></span><Component A></div>
     <span class="flow-arrow">→</span>
-    <div class="flow-node green" data-d="<id2>" onclick="openD('<id2>')"><span class="node-label"><layer></span><Component B></div>
+    <div class="flow-node green" data-d="<id2>" onclick="openSurface('<id2>')"><span class="node-label"><layer></span><Component B></div>
     <span class="flow-arrow">→</span>
-    <div class="flow-node amber" data-d="<id3>" onclick="openD('<id3>')"><span class="node-label"><layer></span><Component C></div>
+    <div class="flow-node amber" data-d="<id3>" onclick="openSurface('<id3>')"><span class="node-label"><layer></span><Component C></div>
   </div>
 </section>
 ```
@@ -58,7 +60,9 @@
 .flow-arrow{color:var(--tm);font-size:1.2rem;padding:0 .75rem;opacity:.4;flex-shrink:0;}
 ```
 
-**Wiring:** click → `openD('<id>')` (add `DET` keys per node). Reveal via the IntersectionObserver.
+**Wiring:** click → `openSurface('<id>')` (add `DET` keys per node). Reveal via the IntersectionObserver.
+
+**Hostable in a sheet:** can be embedded in a detail sheet via a detail's `components[]`; suffix its internal ids with the surface id (e.g. `-rich`) so global ids stay unique (authoring-guide § 3).
 
 ## Dependency graph
 
