@@ -39,7 +39,7 @@ One HTML file. Open it in any browser and you get a composed document — not a 
 - a timeline and metrics where the session has them
 - an **interactive explorer** — a selector that drives a live diagram region and a detail pane from one shared data model, useful for multi-component architectures where you want to navigate relationships rather than read a static diagram
 - a **data-driven step timeline** — phases of parallel and sequential steps with source pills and micro-cycles, useful when the session covers a pipeline, workflow, or multi-phase build
-- clickable detail — expand a node or a decision to see the supporting context
+- **rich detail surfaces** — click a node, card, or cross-link and its detail opens in a structured glance **pane**, or a centered **sheet** for richer content (a hosted diagram, code) that can itself open further detail, nested
 
 Components adapt to the session. The catalog is a floor, not a ceiling: when content fits no off-the-shelf component, a bespoke one is composed from the same design-system primitives so it still looks native. Empty sections are omitted rather than stubbed.
 
