@@ -2,7 +2,7 @@
 
 This is the shared JS bundle, always inlined into the scaffold's `{{INTERACTIVITY_JS}}` slot. All handlers are guarded so missing elements never throw; all state is namespaced inside this one `<script>`. Unused handlers (e.g. `setTab` when there are no tabs) are harmless no-ops.
 
-### Detail panel — `renderSurface` builds a structured detail into the pane; `openSurface` routes (pane-only in Phase ①), `openPane` opens it, `openCard` opens from a card's `data-id`, `openD` is a deprecated alias, Escape closes
+### Detail surfaces — `renderSurface` builds the structured DOM; `openSurface` routes via `SURF` to the pane (`openPane`) or a native `<dialog>` sheet (`openSheet`, stacked in the top layer); `openCard` opens from a card's `data-id`; `openD` is a deprecated alias; native Escape closes the topmost sheet, the manual handler closes the pane only when no sheet is open; backdrop-click closes a sheet
 
 ```js
 // renderSurface — build a structured detail DOM from a DET record into `host`
@@ -19,13 +19,26 @@ const panel=document.getElementById('panel');
 function openPane(id){const d=DET[id];if(!d)return;
  const k=document.getElementById('panelKicker');if(k)k.textContent=d.k||'Detail';
  renderSurface(d,document.getElementById('panelBody'));panel.classList.add('open');}
-// Phase ① router: pane only (sheet branch added in Phase ②)
-function openSurface(id){openPane(id);}
+// Phase ② router: pane vs sheet via SURF, with native-<dialog> sheet stacking (top layer = free focus-trap/Esc/backdrop)
+const _stack=[]; const MAX_DEPTH=3;
+function openSheet(id){const el=document.getElementById('sheet-'+id);if(!el||el.open)return;
+ if(_stack.length>=MAX_DEPTH){const top=_stack.pop();if(top)top.close();}
+ el.showModal();_stack.push(el);}
+function openSurface(id){const k=(typeof SURF!=='undefined'&&SURF[id])||'pane';
+ if(k==='sheet'){openSheet(id);return;}
+ if(_stack.length){openSheet('__pane__'+id);} // nested light detail → stacked dialog (Phase ③ paneDialog)
+ else openPane(id);}
+// dialog housekeeping: pop on close, close on backdrop click
+document.querySelectorAll('dialog.sheet').forEach(dlg=>{
+ dlg.addEventListener('close',()=>{const i=_stack.indexOf(dlg);if(i>-1)_stack.splice(i,1);});
+ dlg.addEventListener('click',e=>{if(e.target===dlg)dlg.close();});});
 function openCard(el){if(!el)return;openPane(el.dataset.id||'');}
 function openD(id){openSurface(id);} // deprecated alias
 function closeD(){panel.classList.remove('open');}
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeD();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!_stack.length)closeD();});
 ```
+
+Sheets rely on the native top layer: `showModal()` stacks each sheet above the last, traps focus in the topmost, and Escape closes them top-down — no hand-rolled focus/stack manager. `_stack` only mirrors that order so the depth cap (`MAX_DEPTH`) and the pane's Escape-guard can reason about it; `MAX_DEPTH=3` triggers replace-topmost (close the top sheet, open the new one at the same depth) — fully wired with the nested-pane `paneDialog` in Phase ③. `::backdrop` click closes the sheet it dims (`e.target===dlg`); inner clicks never close it. Re-opening an already-open sheet is a no-op (`el.open` guard) so a bidirectional `related[]` chip (A↔B) can't double-push `_stack` and strand a phantom entry.
 
 ### Tabs — swap the shown detail and re-grow its tradeoff bars (double-rAF reset-then-grow)
 
