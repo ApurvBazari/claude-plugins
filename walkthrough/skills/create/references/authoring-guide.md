@@ -21,7 +21,7 @@ one component; pick the row that matches the field's *shape*.
 | `typeTags` includes `research` | concept map + callouts |
 | `nodes[]`/`edges[]` with switchable views | interactive explorer (one selector → diagram + detail) |
 | `timeline[]` of phased parallel/sequential steps | data-driven step timeline |
-| always | hero, prose sections, detail panel, theme toggle (chrome from page-scaffold) |
+| always | hero, prose sections, detail surfaces, theme toggle (chrome from page-scaffold) |
 
 Notes on the choices:
 
@@ -30,7 +30,7 @@ Notes on the choices:
   **Accordion checklist**: one `<details>` per decision with a verdict badge and rationale in `.ac-body`.
 - **`nodes[]` + `edges[]`** — choose by topology: a linear staged pipeline → **Flow diagram**; a
   non-linear system of services/layers → **Architecture map**; module/package import relationships →
-  **Dependency graph** (inline SVG). All three open node detail via `openD`.
+  **Dependency graph** (inline SVG). All three open node detail via `openSurface`.
 - **`files[]`** — a handful → **File tree** (`white-space:pre`, clickable `.fl` rows). Many files
   that group into categories → add **Filterable cards + pills** so the reader can narrow by `data-cat`.
 - **`metrics[]`** — a few headline numbers → **Stat / metric cards**. Many comparable magnitudes →
@@ -40,8 +40,9 @@ Notes on the choices:
 - **`typeTags` includes `research`** — the session explored a topic rather than changing code → lead
   with a **Concept / mind map** and punctuate with **Callouts** for the key insights.
 - **always** — the **Hero + stat grid** opens, **Prose sections** carry the narrative, the **detail
-  panel** (`openD`/`openCard` open it, `closeD` and Escape close it) and **theme toggle** (`tgl`) are
-  part of the page-scaffold chrome and are always present.
+  surfaces** (`openSurface` routes a node to the glance pane or a sheet, `openCard` opens a card's
+  detail, `closeD` and Escape close the pane) and **theme toggle** (`tgl`) are part of the
+  page-scaffold chrome and are always present. See §3.
 
 ## 2. Omit empty, never stub
 
@@ -57,7 +58,35 @@ just the hero + a summary prose section + one component — that is a complete, 
   `const DET={};` when nothing wires a detail panel). Unused shared handlers are harmless no-ops, so
   the shared `{{INTERACTIVITY_JS}}` bundle always ships whole.
 
-## 3. Compose a new component (the escape hatch)
+## 3. Detail surfaces
+
+A node or card with a matching `details{}` entry is clickable; clicking calls `openSurface('<id>')`,
+which renders that detail's structured content. One shared renderer (`renderSurface` in
+`interactivity.md`) builds the DOM from the detail's sub-fields, in this fixed order:
+
+1. **kicker** → the pane eyebrow (`.pk`), set by `openPane` (outside `renderSurface`'s body).
+2. **heading** → `<h3 class="sf-h">`.
+3. **summary** → `<p class="sf-summary">` — the one-paragraph plain recap.
+4. **where[]** → a row of `<code class="sf-loc">` location chips.
+5. **code[]** → annotated `<figure class="sf-code">` blocks (figcaption = file).
+6. **points[]** → a `<ul class="sf-points">` of key bullets.
+7. **components[]** → sheet-only hosted catalog components (Phase ②); ignored in the pane.
+8. **related[]** → a row of `.chip` buttons, each calling `openSurface` on a sibling detail id.
+
+**Omit empty per sub-field.** Each `sf-*` element is emitted ONLY when its field has real content —
+a detail with just `summary` + `where` renders only those two. Never stub an empty heading, an empty
+code block, or a "None" row. This is the per-field form of §2's "omit empty, never stub."
+
+**Pane vs sheet.** Light details render in the right glance **pane**; rich details open a centered
+**sheet**. The routing rule — an explicit `surface` override versus an inferred kind — is added in
+Phase ② and documented in this section then. For Phase ①, every detail renders in the pane.
+
+**Wiring.** Give a clickable node `onclick="openSurface('<id>')"` and add a matching structured
+`details{}` entry (`{kicker, heading, summary, where[], …}`) that compiles to `DET[id]`. A clickable
+card carries `data-id="<id>"` + `onclick="openCard(this)"`, where `<id>` is its `details{}` key — the
+card's content comes from the structured detail, not inline `data-*` text.
+
+## 4. Compose a new component (the escape hatch)
 
 When the session has content that no catalog entry fits, build a bespoke component. The bar: it must
 look like it shipped with the catalog. Build it ONLY from design-system primitives and reuse the
@@ -81,8 +110,9 @@ existing interaction conventions — do not invent a parallel design language.
 
 **Reuse interaction conventions** (wire to the shared handlers in `interactivity.md`, never to new ones):
 
-- **Detail panel** — open it from a node with `data-d="<id>"` + `onclick="openD('<id>')"` (add a
-  matching `DET` key `{k,h,b}`), or from a card with `data-t`/`data-desc` + `onclick="openCard(this)"`.
+- **Detail surfaces** — open one from a node with `onclick="openSurface('<id>')"` (add a matching
+  structured `details{}` entry — `{kicker, heading, summary, where[], …}` — that compiles to `DET[id]`),
+  or from a card with `data-id="<id>"` + `onclick="openCard(this)"` pointing at that same entry. See §3.
 - **Scroll reveal** — give the section/element `class="vis"`-eligible markup so the shared
   IntersectionObserver adds `.vis`; the hero starts pre-set with `class="vis"`.
 - **Animated widths** — use the double-`requestAnimationFrame` reset-then-grow pattern; reuse the
@@ -98,11 +128,11 @@ existing interaction conventions — do not invent a parallel design language.
       `box-shadow:0 0 0 1px var(--accent),0 8px 32px -8px var(--accent-glow)`.
 - [ ] Keyboard-reachable and labelled — interactive nodes are focusable (button/`tabindex`) and carry
       an `aria-label`; SVG roots use `role="img"` + `aria-label`.
-- [ ] Self-contained — all CSS/JS/SVG inline, no external assets (see §4).
+- [ ] Self-contained — all CSS/JS/SVG inline, no external assets (see §5).
 - [ ] JS namespaced and guarded — guard every element lookup, add no new globals beyond a clearly
       scoped `{{COMPONENT_JS}}` block; missing elements must never throw.
 
-## 4. Self-contained rules
+## 5. Self-contained rules
 
 Every walkthrough is a single `.html` file that works offline by double-click. Therefore:
 
@@ -111,5 +141,5 @@ Every walkthrough is a single `.html` file that works offline by double-click. T
 - No `<script src>` and no external stylesheet `<link>`.
 - No `<img>` — use **inline SVG** for every graphic, icon, and diagram (this is why the dependency
   graph, mind map, and mode diagram are hand-laid SVG).
-- No `alert`, `confirm`, or `prompt` — surface detail through the side panel (`openD`/`openCard`),
+- No `alert`, `confirm`, or `prompt` — surface detail through the detail surfaces (`openSurface`/`openCard`),
   never a modal dialog.
