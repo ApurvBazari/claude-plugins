@@ -1,0 +1,277 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Review — sample — walkthrough</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root{
+  --bg-deep:#08090c; --bg-card:#0f1117; --bg-card-hover:#151821; --bg-elevated:#1a1d28; --bg-inset:#060709;
+  --border:#1e2230; --border-active:#2d3348; --border-strong:#3a4159;
+  --tp:#e8eaf0; --ts:#7d8399; --tm:#4a5068; --tf:#2e3349;
+  --blue:#3b82f6; --green:#22c55e; --amber:#f59e0b; --rose:#f43f5e; --purple:#a78bfa;
+  --accent:#22d3ee; --accent-glow:rgba(34,211,238,.16); --accent-soft:rgba(34,211,238,.08);
+  --blue-soft:rgba(59,130,246,.1); --green-soft:rgba(34,197,94,.1); --amber-soft:rgba(245,158,11,.1); --rose-soft:rgba(244,63,94,.1); --purple-soft:rgba(167,139,250,.1);
+  --mono:'JetBrains Mono',monospace; --serif:'Instrument Serif',serif; --sans:'DM Sans',sans-serif;
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+html[data-theme="light"]{
+  --bg-deep:#faf8f4; --bg-card:#fff; --bg-card-hover:#f5f1ea; --bg-elevated:#fff; --bg-inset:#f5f1ea;
+  --border:#e5dfd6; --border-active:#d8cfc1; --border-strong:#c9c0b3;
+  --tp:#2a2520; --ts:#6b6157; --tm:#9e9486; --tf:#c9c0b3;
+  --blue:#2d5fa0; --green:#2d7a3a; --amber:#b87333; --rose:#b83a3a; --purple:#7a3b8f;
+  --accent:#c05e2b; --accent-glow:rgba(192,94,43,.16); --accent-soft:rgba(192,94,43,.09);
+  --blue-soft:rgba(45,95,160,.1); --green-soft:rgba(45,122,58,.1); --amber-soft:rgba(184,115,51,.1); --rose-soft:rgba(184,58,58,.1); --purple-soft:rgba(122,59,143,.1);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg-deep);color:var(--tp);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .3s,color .3s;}
+body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+/* nav */
+nav{position:fixed;top:0;left:0;right:0;height:54px;z-index:100;backdrop-filter:blur(20px) saturate(180%);background:color-mix(in srgb,var(--bg-deep) 82%,transparent);border-bottom:1px solid var(--border);}
+.nav-in{max-width:1180px;margin:0 auto;height:100%;display:flex;align-items:center;justify-content:space-between;padding:0 1.6rem;}
+.logo{font-family:var(--mono);font-size:.82rem;font-weight:600;letter-spacing:.02em;}
+.logo span{color:var(--accent);}
+.nav-links{display:flex;gap:.3rem;font-family:var(--mono);font-size:.68rem;}
+.nav-links a{color:var(--ts);text-decoration:none;padding:.3rem .55rem;border-radius:6px;transition:.2s;}
+.nav-links a:hover,.nav-links a.on{color:var(--tp);background:var(--accent-soft);}
+.nav-meta{display:flex;align-items:center;gap:.45rem;font-family:var(--mono);font-size:.62rem;color:var(--tm);text-transform:uppercase;letter-spacing:.12em;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2.5s infinite;}
+.theme-btn{cursor:pointer;font-family:var(--mono);font-size:.62rem;color:var(--ts);border:1px solid var(--border);padding:.28rem .6rem;border-radius:6px;background:none;}
+.progress{position:fixed;top:54px;left:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--blue));z-index:101;width:0;box-shadow:0 0 8px var(--accent-glow);}
+main{max-width:1180px;margin:0 auto;padding:0 1.6rem;padding-top:78px;counter-reset:sec;}
+.eyebrow{font-family:var(--mono);font-size:.68rem;color:var(--accent);text-transform:uppercase;letter-spacing:.18em;display:inline-flex;align-items:center;gap:.6rem;margin-bottom:.8rem;}
+.eyebrow::before{content:'';width:26px;height:1px;background:var(--accent);}
+h1{font-family:var(--serif);font-size:clamp(2.4rem,6vw,4rem);font-weight:400;line-height:1.04;letter-spacing:-.025em;margin:.2rem 0;max-width:880px;}
+h1 em,h2 em{font-style:italic;color:var(--accent);}
+h2{font-family:var(--serif);font-size:clamp(1.7rem,3.5vw,2.4rem);font-weight:400;line-height:1.15;margin:.2rem 0 .3rem;}
+.lede{color:var(--ts);font-size:1.08rem;line-height:1.7;max-width:720px;margin:.6rem 0 0;}
+p{color:var(--ts);font-size:.92rem;line-height:1.7;max-width:720px;}
+p code,li code{font-family:var(--mono);font-size:.8rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
+section{padding:4rem 0 2rem;scroll-margin-top:70px;opacity:0;transform:translateY(24px);transition:opacity .7s var(--ease),transform .7s var(--ease);}
+section.vis{opacity:1;transform:none;}
+.sec-label{counter-increment:sec;font-family:var(--mono);font-size:.65rem;color:var(--tm);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.5rem;}
+.sec-label::before{content:counter(sec,decimal-leading-zero) " \2014 ";}
+/* hero stats */
+.hstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:1.8rem;}
+.hstat{background:var(--bg-card);padding:1.1rem 1.2rem;}
+.hstat .v{font-family:var(--serif);font-size:1.9rem;color:var(--tp);line-height:1;}
+.hstat .v em{font-style:italic;color:var(--accent);}
+.hstat .l{font-family:var(--mono);font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;margin-top:.4rem;}
+/* detail panel */
+.panel{position:fixed;top:0;right:0;width:300px;height:100vh;background:var(--bg-card);border-left:1px solid var(--border-active);padding:24px 20px;overflow:auto;transform:translateX(100%);transition:transform .25s var(--ease);box-shadow:-20px 0 50px rgba(0,0,0,.3);z-index:200;}
+.panel.open{transform:none;}
+.panel .x{position:absolute;top:14px;right:16px;color:var(--tm);cursor:pointer;font-size:18px;}
+.panel .pk{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);}
+.panel h3{font-family:var(--serif);font-weight:400;font-size:1.4rem;margin:.2rem 0 .6rem;}
+.panel .pb{font-size:.86rem;color:var(--ts);line-height:1.6;}
+.panel code{font-family:var(--mono);font-size:.72rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
+.panel .sf-h{font-family:var(--serif);font-weight:400;font-size:1.4rem;margin:.2rem 0 .5rem;}
+.sf-summary{font-size:.86rem;color:var(--ts);line-height:1.6;margin:0 0 .8rem;}
+.sf-where{display:flex;flex-wrap:wrap;gap:.35rem;margin:.2rem 0 .8rem;}
+.sf-loc{font-family:var(--mono);font-size:.7rem;background:var(--accent-soft);color:var(--accent);padding:1px 6px;border-radius:4px;}
+.sf-code{margin:.2rem 0 .8rem;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.sf-code figcaption{font-family:var(--mono);font-size:.6rem;color:var(--tm);background:var(--bg-inset);padding:.3rem .6rem;}
+.sf-code pre{margin:0;padding:.6rem;overflow:auto;font-family:var(--mono);font-size:.72rem;color:var(--tp);}
+.sf-points{margin:.2rem 0 .8rem;padding-left:1.1rem;}
+.sf-points li{font-size:.84rem;color:var(--ts);margin:.25rem 0;}
+.sf-related{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.6rem;}
+.sf-related .chip{cursor:pointer;border:none;}
+dialog.sheet{max-width:min(900px,92vw);width:100%;max-height:86vh;border:1px solid var(--border-active);border-radius:14px;background:var(--bg-card);color:var(--tp);padding:0;overflow:hidden;box-shadow:0 30px 80px -20px rgba(0,0,0,.5);}
+dialog.sheet::backdrop{background:color-mix(in srgb,var(--bg-deep) 70%,transparent);backdrop-filter:blur(6px) saturate(140%);}
+dialog.sheet>.x{position:absolute;top:12px;right:14px;color:var(--tm);cursor:pointer;font-size:18px;background:none;border:none;z-index:1;}
+dialog.sheet .sf-body{padding:26px 24px;overflow:auto;flex:1;min-height:0;}
+dialog.sheet .sf-kicker{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);}
+dialog.sheet[open]{display:flex;flex-direction:column;animation:sheetIn .26s var(--ease);}
+@keyframes sheetIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){dialog.sheet[open]{animation:none;}}
+dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;height:100vh;max-height:100vh;border-radius:0;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@media(max-width:780px){.nav-links{display:none}}
+.chip{display:inline-flex;align-items:center;gap:.35rem;font-family:var(--mono);font-size:.6rem;font-weight:500;text-transform:uppercase;letter-spacing:.06em;padding:.2rem .55rem;border-radius:20px;border:1px solid var(--border);background:var(--bg-card);color:var(--ts);}
+.chip::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;}
+.chip.ok{color:var(--green);background:var(--green-soft);border-color:color-mix(in srgb,var(--green) 30%,transparent);}
+.chip.info{color:var(--blue);background:var(--blue-soft);border-color:color-mix(in srgb,var(--blue) 30%,transparent);}
+.chip.warn{color:var(--amber);background:var(--amber-soft);border-color:color-mix(in srgb,var(--amber) 30%,transparent);}
+.chip.danger{color:var(--rose);background:var(--rose-soft);border-color:color-mix(in srgb,var(--rose) 30%,transparent);}
+.chip.neutral{color:var(--ts);background:var(--bg-elevated);border-color:var(--border);}
+/* component CSS: annotated diff (components/review.md) */
+.diff{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:1.2rem 0;font-family:var(--mono);font-size:.72rem;}
+.diff-file{display:flex;align-items:center;gap:.6rem;padding:.6rem 1rem;background:var(--bg-elevated);border-bottom:1px solid var(--border);}
+.diff-path{color:var(--tp);}
+.diff-hunk{padding:.4rem 0;}
+.dl{display:flex;align-items:center;gap:.6rem;padding:.05rem 1rem;position:relative;}
+.dl .ln{color:var(--tm);min-width:2.5rem;text-align:right;user-select:none;}
+.dl .tx{color:var(--ts);white-space:pre;overflow-x:auto;}
+.dl.add{background:var(--green-soft);} .dl.add .tx{color:var(--tp);}
+.dl.del{background:var(--rose-soft);} .dl.del .tx{color:var(--tp);}
+.dl .pin{margin-left:auto;width:16px;height:16px;border:none;border-radius:50%;background:var(--accent);color:var(--bg-deep);font-size:.6rem;line-height:1;cursor:pointer;flex-shrink:0;transition:transform .2s var(--ease);}
+.dl .pin:hover{transform:scale(1.2);}
+/* component CSS: filterable cards + pills (components/files-timeline.md - reused by findings-list) */
+.pills{display:flex;gap:.5rem;flex-wrap:wrap;margin:1rem 0;}
+.pill{font-family:var(--mono);font-size:.66rem;padding:.35rem .7rem;border-radius:20px;border:1px solid var(--border);background:var(--bg-card);color:var(--ts);cursor:pointer;display:flex;align-items:center;gap:.4rem;transition:.2s;}
+.pill .s{width:9px;height:9px;border-radius:3px;}
+.pill.on{color:var(--tp);border-color:var(--border-strong);background:var(--bg-card-hover);}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:.8rem;}
+.tcard{background:var(--bg-card);border:1px solid var(--border);border-left-width:3px;border-radius:10px;padding:.9rem 1rem;transition:.25s;cursor:pointer;}
+.tcard:hover{border-color:var(--border-strong);}
+.tcard.hidden{display:none;}
+.tcard .cat{font-family:var(--mono);font-size:.55rem;text-transform:uppercase;letter-spacing:.1em;}
+.tcard .tn{font-weight:600;margin:.25rem 0;font-size:.92rem;}
+.tcard .td{font-size:.8rem;color:var(--ts);}
+/* component CSS: file tree + risk coloring (components/files-timeline.md) */
+.tree{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.3rem;font-family:var(--mono);font-size:.72rem;line-height:1.75;color:var(--ts);white-space:pre;overflow-x:auto;margin-top:1rem;}
+.tree .dir{color:var(--accent);}
+.tree .fl{color:var(--blue);cursor:pointer;}
+.tree .fl:hover{color:var(--tp);}
+.tree .nw{color:var(--green);font-size:.58rem;}
+.tree .ed{color:var(--amber);font-size:.58rem;}
+.tree .rk-auth{color:var(--rose);}
+.tree .rk-data{color:var(--amber);}
+.tree .rk-money{color:var(--purple);}
+.tree .rk-migration{color:var(--blue);}
+.tree .rk-concurrency{color:var(--accent);}
+.tree .rk-public-api{color:var(--green);}
+.risk-legend{display:flex;flex-wrap:wrap;gap:.6rem;margin:1rem 0 .2rem;font-family:var(--mono);font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;}
+.risk-legend .rk-auth{color:var(--rose);}
+/* component CSS: adherence panel (components/review.md) */
+.adh{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1.2rem 0;}
+@media(max-width:640px){.adh{grid-template-columns:1fr;}}
+.adh-col{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1rem 1.2rem;}
+.adh-h{font-family:var(--mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.12em;color:var(--ts);margin-bottom:.8rem;display:flex;justify-content:space-between;align-items:center;}
+.adh-score{color:var(--accent);letter-spacing:0;}
+.adh-row{display:flex;align-items:flex-start;gap:.6rem;padding:.4rem 0;font-size:.84rem;color:var(--tp);border-top:1px solid var(--border);}
+.adh-row:first-of-type{border-top:none;}
+</style></head>
+<body>
+  <nav><div class="nav-in">
+    <div class="logo">◆ walk<span>through</span></div>
+    <div class="nav-links"><a href="#diff-sec" class="on">diff</a><a href="#findings-sec">findings</a><a href="#adherence-sec">adherence</a><a href="#files-sec">files</a></div>
+    <div style="display:flex;align-items:center;gap:.8rem">
+      <div class="nav-meta"><span class="dot"></span> REVIEW · 2026-06-09</div>
+      <button class="theme-btn" onclick="tgl()">◑ THEME</button></div>
+  </div></nav>
+  <div class="progress" id="prog"></div>
+  <main>
+    <section id="top" class="vis">
+      <div class="eyebrow">Lens · code review</div>
+      <h1>Review — <em>sample</em></h1>
+      <p class="lede">A single-file change to the login handler, reviewed against its spec and plan. One high-severity bug surfaced in the credential check; the verdict is to <em>fix before merge</em>.</p>
+      <div style="margin-top:1.4rem;display:flex;flex-wrap:wrap;gap:.5rem;align-items:center">
+        <span class="chip warn">verdict: fix</span>
+        <span class="chip danger">1 high finding</span>
+        <span class="chip neutral">1 file · auth</span>
+      </div>
+    </section>
+    <section id="diff-sec">
+      <div class="sec-label">diff</div>
+      <h2>The <em>change</em>, annotated</h2>
+      <p class="lede">The modified credential comparison in <code>src/auth/login.ts</code>. The pinned line carries the high-severity finding — click the pin for the full detail.</p>
+      <div class="diff">
+        <div class="diff-file"><span class="diff-path">src/auth/login.ts</span><span class="chip warn">risk: auth</span></div>
+        <div class="diff-hunk">
+          <div class="dl ctx"><span class="ln">40</span><span class="tx"> export function login(user, pass) {</span></div>
+          <div class="dl ctx"><span class="ln">41</span><span class="tx">   const record = users.get(user);</span></div>
+          <div class="dl del"><span class="ln">42</span><span class="tx">-  if (record &amp;&amp; record.hash === hash(pass)) {</span></div>
+          <div class="dl add"><span class="ln">42</span><span class="tx">+  if (record &amp;&amp; record.hash == pass) {</span><button class="pin" onclick="openSurface('F1')" aria-label="finding F1">●</button></div>
+          <div class="dl ctx"><span class="ln">43</span><span class="tx">     return issueSession(record);</span></div>
+        </div>
+      </div>
+    </section>
+    <section id="findings-sec">
+      <div class="sec-label">findings</div>
+      <h2>What the review <em>found</em></h2>
+      <p class="lede">One finding, severity-ranked. Toggle the category pill to filter; click a card for the full claim, evidence, and suggested fix.</p>
+      <div class="pills">
+        <div class="pill on" data-f="bug" onclick="tog(this)"><span class="s" style="background:var(--rose)"></span>bug</div>
+      </div>
+      <div class="cards">
+        <div class="tcard" data-cat="bug" style="border-left-color:var(--rose)" onclick="openSurface('F1')">
+          <div class="cat"><span class="chip danger">high</span> bug</div>
+          <div class="tn">F1 — Password compared with == allowing type coercion</div>
+          <div class="td">src/auth/login.ts:42</div>
+        </div>
+      </div>
+    </section>
+    <section id="adherence-sec">
+      <div class="sec-label">adherence</div>
+      <h2>Did it build <em>what was asked</em>?</h2>
+      <p class="lede">Spec items and plan steps checked against the change.</p>
+      <div class="adh">
+        <div class="adh-col">
+          <div class="adh-h">Spec items <span class="adh-score">1 / 2 met</span></div>
+          <div class="adh-row"><span class="chip ok">met</span><span>Validate credentials</span></div>
+          <div class="adh-row"><span class="chip danger">missing</span><span>Rate-limit attempts</span></div>
+        </div>
+        <div class="adh-col">
+          <div class="adh-h">Plan steps</div>
+          <div class="adh-row"><span class="chip ok">followed</span><span>Add login handler</span></div>
+        </div>
+      </div>
+    </section>
+    <section id="files-sec">
+      <div class="sec-label">files</div>
+      <h2>File <em>touched</em></h2>
+      <p class="lede">One file changed, carrying auth risk.</p>
+      <div class="risk-legend"><span class="rk-auth">● auth</span></div>
+      <div class="tree"><span class="dir">src/auth/</span>
+└── <span class="fl rk-auth" onclick="openSurface('F1')">login.ts</span> <span class="ed">modified</span> <span class="chip warn">risk: auth</span></div>
+    </section>
+  </main>
+  <aside class="panel" id="panel"><span class="x" onclick="closeD()">✕</span>
+    <div class="pk" id="panelKicker">Detail</div>
+    <div class="pb" id="panelBody"></div></aside>
+  <div id="sheets"><dialog class="sheet" id="sheet-F1">
+  <button class="x" onclick="this.closest('dialog').close()">✕</button>
+  <div class="sf-body">
+    <div class="sf-kicker">high · bug</div>
+    <h2 class="sf-h">Password compared with == allowing type coercion</h2>
+    <p class="sf-summary">Use a constant-time strict comparison; == permits type juggling.</p>
+    <div class="sf-where"><code class="sf-loc">src/auth/login.ts:42</code></div>
+    <ul class="sf-points"><li>Fix: Use timingSafeEqual on Buffers</li><li>Status: verified</li></ul>
+  </div>
+</dialog></div>
+  <dialog class="sheet pane-dialog" id="paneDialog"><button class="x" onclick="this.closest('dialog').close()">✕</button><div class="sf-body" id="paneDialogBody"></div></dialog>
+  <script>// renderSurface — build a structured detail DOM from a DET record into `host`
+function renderSurface(d,host){if(!d||!host)return;let h='';
+ if(d.h)h+=`<h3 class="sf-h">${d.h}</h3>`;
+ if(d.summary)h+=`<p class="sf-summary">${d.summary}</p>`;
+ if(d.where&&d.where.length)h+=`<div class="sf-where">${d.where.map(w=>`<code class="sf-loc">${w}</code>`).join('')}</div>`;
+ if(d.code&&d.code.length)h+=d.code.map(c=>`<figure class="sf-code"><figcaption>${c.file||''}</figcaption><pre><code>${c.snippet||''}</code></pre></figure>`).join('');
+ if(d.points&&d.points.length)h+=`<ul class="sf-points">${d.points.map(p=>`<li>${p}</li>`).join('')}</ul>`;
+ if(d.components)h+=d.components;
+ if(d.related&&d.related.length)h+=`<div class="sf-related">${d.related.map(r=>`<button class="chip neutral" onclick="openSurface('${r}')">${r}</button>`).join('')}</div>`;
+ host.innerHTML=h;}
+const panel=document.getElementById('panel');
+function openPane(id){const d=DET[id];if(!d)return;
+ const k=document.getElementById('panelKicker');if(k)k.textContent=d.k||'Detail';
+ renderSurface(d,document.getElementById('panelBody'));panel.classList.add('open');}
+// Phase ③ router: pane vs sheet via SURF; sheets and nested panes stack as native <dialog>s in the top layer, capped at MAX_DEPTH (replace-topmost)
+const _stack=[]; const MAX_DEPTH=3;
+function _capPush(el){if(!el||el.open)return;if(_stack.length>=MAX_DEPTH){const t=_stack.pop();if(t)t.close();}el.showModal();_stack.push(el);}
+function openSurface(id){const k=(typeof SURF!=='undefined'&&SURF[id])||'pane';
+ if(k==='sheet'){const el=document.getElementById('sheet-'+id);_capPush(el);return;}
+ if(_stack.length){const pd=document.getElementById('paneDialog'),d=DET[id],b=document.getElementById('paneDialogBody');
+  // nested pane → shared paneDialog: render kicker + body, then stack it. Re-opening swaps content in place (no new depth level; _capPush no-ops on el.open).
+  renderSurface(d,b);if(d&&d.k)b.insertAdjacentHTML('afterbegin',`<div class="sf-kicker">${d.k}</div>`);_capPush(pd);}
+ else openPane(id);}
+// dialog housekeeping: pop on close, close on backdrop click
+document.querySelectorAll('dialog.sheet').forEach(dlg=>{
+ dlg.addEventListener('close',()=>{const i=_stack.indexOf(dlg);if(i>-1)_stack.splice(i,1);});
+ dlg.addEventListener('click',e=>{if(e.target===dlg)dlg.close();});});
+function openCard(el){if(!el)return;openPane(el.dataset.id||'');}
+function openD(id){openSurface(id);} // deprecated alias
+function closeD(){panel.classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!_stack.length)closeD();});
+// Filter pills — toggle a pill, rebuild the active `data-f` set, hide non-matching cards
+function tog(el){el.classList.toggle('on');const set=new Set([...document.querySelectorAll('.pill.on')].map(p=>p.dataset.f));
+ document.querySelectorAll('.tcard').forEach(c=>c.classList.toggle('hidden',!set.has(c.dataset.cat)));}
+// Theme toggle — flip dark/light and persist the choice in `localStorage`, restored on load
+function tgl(){const h=document.documentElement;const t=h.getAttribute('data-theme')==='dark'?'light':'dark';h.setAttribute('data-theme',t);try{localStorage.setItem('wt-theme',t);}catch(e){}}
+(function(){try{const t=localStorage.getItem('wt-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+// reveal + progress + animate-on-view
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vis');const d=e.target.querySelector('.detail.show');if(d)animate(d);}}),{threshold:.1});
+document.querySelectorAll('section').forEach(s=>io.observe(s));
+addEventListener('scroll',()=>{const sc=scrollY/(document.body.scrollHeight-innerHeight)*100;if(prog)prog.style.width=sc+'%';
+ let cur='';document.querySelectorAll('section[id]').forEach(s=>{if(scrollY>=s.offsetTop-120)cur=s.id;});
+ document.querySelectorAll('.nav-links a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+cur));},{passive:true});
+const DET={"F1":{k:"high · bug",h:"Password compared with == allowing type coercion",summary:"Use a constant-time strict comparison; == permits type juggling.",where:["src/auth/login.ts:42"],points:["Fix: Use timingSafeEqual on Buffers","Status: verified"]}};const SURF={"F1":"sheet"};</script>
+</body></html>
