@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$comment": "superset of vicario review-findings; version 1",
+  "title": "lens review-findings",
+  "type": "object",
+  "required": ["findings", "recommendedEscalation", "degraded"],
+  "properties": {
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "severity", "dimension", "verified"],
+        "properties": {
+          "id": {"type": "string"},
+          "title": {"type": "string"},
+          "severity": {"type": "string", "enum": ["critical", "high", "medium", "low"]},
+          "dimension": {
+            "type": "string",
+            "enum": [
+              "requirements",
+              "correctness",
+              "security",
+              "types",
+              "silent-failure",
+              "simplify",
+              "test",
+              "risk",
+              "comment"
+            ]
+          },
+          "verified": {"type": "boolean"},
+          "file": {"type": "string"},
+          "line": {"type": "number"},
+          "votes": {
+            "type": "object",
+            "properties": {
+              "total": {"type": "number"},
+              "couldNotRefute": {"type": "number"},
+              "refuted": {"type": "number"}
+            }
+          },
+          "voteDegraded": {"type": "boolean", "$comment": "carried for vicario parity; lens v1 does not set it"},
+          "claim": {"type": "string"},
+          "detail": {"type": "string"},
+          "suggestedFix": {"type": "string"},
+          "source": {"type": "string"},
+          "label": {"type": "string"},
+          "tags": {
+            "type": "array",
+            "items": {"type": "string"}
+          }
+        }
+      }
+    },
+    "recommendedEscalation": {"type": "string", "enum": ["minor", "moderate", "major", "critical"]},
+    "degraded": {"type": "boolean"},
+    "summary": {"type": "string"}
+  }
+}
