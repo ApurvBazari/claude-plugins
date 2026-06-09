@@ -1,0 +1,9 @@
+{
+  "name": "lens",
+  "version": "1.0.0",
+  "description": "Intent-grounded review companion — reviews the current session's diff against its spec and plan, adversarially verifies findings, and renders an interactive review document.",
+  "author": { "name": "Apurv Bazari" },
+  "repository": "https://github.com/ApurvBazari/claude-plugins",
+  "license": "MIT",
+  "keywords": ["code-review", "pr-review", "intent-grounded", "adversarial-verification", "interactive-html"]
+}
