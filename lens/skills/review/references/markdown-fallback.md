@@ -1,6 +1,6 @@
 # Markdown fallback — the render path when walkthrough is NOT installed
 
-lens's happy path is `walkthrough:render` (interactive HTML). When the **walkthrough plugin is not
+lens's happy path is `walkthrough:render` (interactive HTML). When the **walkthrough is not
 installed**, lens renders the **same review-model** to a self-contained markdown report instead — same
 content (verdict, adherence, findings, risk, hunks), plainer form. This fallback is what keeps lens
 independently installable: walkthrough is an enhancer, never a dependency.
@@ -16,10 +16,10 @@ extension. On a name collision, suffix `-2`, `-3`, … (mirror walkthrough's col
 Render the reconciled review-model as this document, in order:
 
 ### 1. Degrade notice (top line)
-A one-line notice stating the doc was rendered as markdown **because the walkthrough plugin is not
+A one-line notice stating the doc was rendered as markdown **because the walkthrough is not
 installed** — e.g.:
 
-> _Rendered as markdown because the walkthrough plugin is not installed — install it for the interactive HTML review._
+> _Rendered as markdown because the walkthrough is not installed — install it for the interactive HTML review._
 
 ### 2. Verdict header
 A header carrying the derived verdict (`Verdict: ship | fix | block`) and the iteration delta when this is
