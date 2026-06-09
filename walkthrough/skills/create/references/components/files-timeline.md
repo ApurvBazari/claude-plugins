@@ -23,7 +23,18 @@
 .tree .fl:hover{color:var(--tp);}
 .tree .nw{color:var(--green);font-size:.58rem;}
 .tree .ed{color:var(--amber);font-size:.58rem;}
+.tree .rk-auth{color:var(--rose);}
+.tree .rk-data{color:var(--amber);}
+.tree .rk-money{color:var(--purple);}
+.tree .rk-migration{color:var(--blue);}
+.tree .rk-concurrency{color:var(--accent);}
+.tree .rk-public-api{color:var(--green);}
 ```
+
+**Risk coloring (review docs only).** When a file carries `risk`, append a risk class to its `.fl`
+span (`rk-auth`, `rk-data`, `rk-money`, `rk-migration`, `rk-concurrency`, `rk-public-api`) and add a
+trailing `<span class="chip warn">risk: auth</span>`-style chip. `risk:"none"` adds no class/chip.
+Render a one-row legend above the tree mapping each risk to its color. Tokens only.
 
 **Wiring:** click on a `.fl` → `openSurface('<id>')` (add a `DET` key per clickable file). Non-clickable files use a plain `.fl` with no handler.
 
