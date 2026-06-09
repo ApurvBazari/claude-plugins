@@ -74,3 +74,4 @@ You will receive: the **plan** (an ordered list of steps that were agreed) and t
 5. **Category goes in `label`** (`plan-deviation`), never a separate field; `dimension` is always `requirements`.
 6. **Every plan step appears in `planSteps[]`** — including the `followed` ones — even though only deviations get findings.
 7. **Read-only** — emit findings; never edit, stage, or commit.
+8. **No plan, no findings** — if no plan file exists for this change (the intent record has a spec but no plan), return an empty `planSteps: []` and no findings — do not invent deviations. Plan adherence only applies when a plan was authored.

@@ -53,7 +53,9 @@ items (full coverage); in the headless/contract-only path only the gaps appear (
 Group findings under `## Critical` / `## High` / `## Medium` / `## Low` headings (highest first). Each
 finding shows its location, claim, suggestedFix, the **verification status** (`verified` |
 `unverified-flagged`), and the **fixed/open/new** iteration label (`fixed` | `still-open` | `new` |
-`possibly-resolved — verify`).
+`possibly-resolved — verify`). Refuted findings (dropped by the verifier) are NOT listed in the findings
+sections — optionally note the count in the verdict header or summary line (e.g. "1 candidate refuted and
+dropped"), matching the HTML render which only narrates them, never lists them.
 
 ```markdown
 ## High
