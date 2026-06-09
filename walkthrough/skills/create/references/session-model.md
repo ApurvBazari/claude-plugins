@@ -53,7 +53,7 @@ exact keys `authoring-guide.md` keys its mapping table off of — do not rename 
 
   // files[] → file tree; a handful renders a plain tree, many that group by category
   // add filterable cards + pills (narrow by data-cat). `change` colors the row.
-  "files": [ { "path": "...", "change": "added|modified|deleted", "note": "..." } ], // → file tree / cards
+  "files": [ { "path": "...", "change": "added|modified|deleted", "risk": "auth|data|money|migration|concurrency|public-api|none", "note": "..." } ], // → file tree / cards
 
   // timeline[] → Timeline (read top-to-bottom) OR Stepper/playback (a replayable sequence).
   // `ref` links a timeline entry back to a section id for scroll-to.
@@ -82,7 +82,24 @@ exact keys `authoring-guide.md` keys its mapping table off of — do not rename 
       "where": ["path:line"], "code": [{ "file": "...", "lang": "...", "snippet": "..." }],
       "points": ["..."], "related": ["<id>"], "surface": "pane", "components": []
     }
-  }
+  },
+
+  // --- review fields (optional; populated only by lens via walkthrough:render) ---
+  // Omit-empty governs all of these: a normal session walkthrough never sets them.
+  "verdict": "ship|fix|block",        // → hero chip (ship=ok, fix=warn, block=danger)
+  "adherence": {                      // → adherence-panel (components/review.md)
+    "specItems": [ { "label": "...", "state": "met|partial|missing" } ],
+    "planSteps": [ { "label": "...", "state": "followed|deviated" } ]
+  },
+  "findings": [                       // → findings-list + diff pins; each id also a DET sheet
+    { "id": "F1", "severity": "critical|high|medium|low|info",
+      "category": "spec-gap|plan-deviation|bug|silent-failure|security|risk|test-gap|quality",
+      "location": "path:line", "claim": "...", "detail": "...",
+      "suggestedFix": "...", "status": "verified|unverified-flagged" }
+  ],
+  "diffHunks": [                      // → annotated-diff (components/review.md)
+    { "path": "...", "lines": [ { "k": "ctx|add|del", "n": 0, "text": "...", "finding": "F1" } ] }
+  ]
 }
 ```
 
@@ -230,3 +247,11 @@ structured `Txn` records, with a fail-soft strategy and one-pattern-per-format d
 
 This model is synthesized in-memory before any HTML and drives component selection (see
 `authoring-guide.md`). It is NOT written to disk in v1.
+
+## Review fields (lens)
+
+The review fields (`verdict`, `adherence`, `findings`, `diffHunks`, `files[].risk`) are optional and
+populated **only** by the `lens` plugin, which assembles the model in context and hands it to
+`walkthrough:render`. `create`/`document`/`update` never set them; omit-empty keeps them inert. Each
+`findings[]` id maps to a `DET` sheet entry (`SURF[id]='sheet'`), and both its findings-list card and
+its annotated-diff pin call `openSurface('<id>')`.
