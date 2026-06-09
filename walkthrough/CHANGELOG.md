@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.0 — 2026-06-09
+- feat: internal `render` skill (render a supplied model → HTML; reused by the lens plugin)
+- feat: `components/review.md` — annotated-diff, findings-list, adherence-panel
+- feat: optional review fields on session-model (`verdict`, `adherence`, `findings`, `diffHunks`) + `files[].risk` coloring
+
 ## 1.1.0 — 2026-06-08
 
 ### Detail surfaces
