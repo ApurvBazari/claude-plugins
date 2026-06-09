@@ -68,6 +68,20 @@
         "session-recap"
       ],
       "license": "MIT"
+    },
+    {
+      "name": "lens",
+      "source": "./lens",
+      "description": "Intent-grounded review companion — reviews the current session's diff against its spec and plan, adversarially verifies findings, and renders an interactive review document.",
+      "version": "1.0.0",
+      "keywords": [
+        "code-review",
+        "pr-review",
+        "intent-grounded",
+        "adversarial-verification",
+        "interactive-html"
+      ],
+      "license": "MIT"
     }
   ]
 }
