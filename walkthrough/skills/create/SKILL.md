@@ -33,6 +33,10 @@ salient items into the model; note intentional omissions for the coverage note.
 Using `references/authoring-guide.md`, map the model to component names, then look each name up in
 `references/components/index.md` to find its group file. Apply "omit empty, never stub". For content
 that fits no catalog entry, compose a bespoke component per the authoring-guide recipe + looks-native checklist.
+Before accepting a catalog **diagram**, run the authoring-guide § 1 diagram-fidelity check: cyclic /
+guarded `nodes[]`+`edges[]` → state / transition diagram; timed messages between actors → sequence /
+swimlane diagram; a shape the catalog still cannot draw faithfully → compose a bespoke diagram. Never
+force-fit a state machine or a message trace into a flow / architecture map.
 
 ## Step 6: Assemble the HTML
 Start from `references/page-scaffold.md`. Inline: the `@import` + both `:root` blocks from

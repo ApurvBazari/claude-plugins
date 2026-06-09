@@ -10,7 +10,7 @@ It contains **no component CSS or markup** — that lives in the `components/` c
 lifted verbatim from `seed.html`; never invent base styles.
 
 Slots to fill: `{{TITLE}}`, `{{NAV_LINKS}}`, `{{KICKER}}`, `{{HERO}}`, `{{SECTIONS}}`,
-`{{COMPONENT_CSS}}`, `{{INTERACTIVITY_JS}}`, `{{COMPONENT_JS}}`, `{{DETAIL_DATA}}`.
+`{{COMPONENT_CSS}}`, `{{INTERACTIVITY_JS}}`, `{{COMPONENT_JS}}`, `{{DETAIL_DATA}}`, `{{SHEETS}}`, `{{SURFACE_MAP}}`.
 
 ```html
 <!DOCTYPE html><html lang="en" data-theme="dark"><head>
@@ -78,6 +78,26 @@ section.vis{opacity:1;transform:none;}
 .panel h3{font-family:var(--serif);font-weight:400;font-size:1.4rem;margin:.2rem 0 .6rem;}
 .panel .pb{font-size:.86rem;color:var(--ts);line-height:1.6;}
 .panel code{font-family:var(--mono);font-size:.72rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
+.panel .sf-h{font-family:var(--serif);font-weight:400;font-size:1.4rem;margin:.2rem 0 .5rem;}
+.sf-summary{font-size:.86rem;color:var(--ts);line-height:1.6;margin:0 0 .8rem;}
+.sf-where{display:flex;flex-wrap:wrap;gap:.35rem;margin:.2rem 0 .8rem;}
+.sf-loc{font-family:var(--mono);font-size:.7rem;background:var(--accent-soft);color:var(--accent);padding:1px 6px;border-radius:4px;}
+.sf-code{margin:.2rem 0 .8rem;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.sf-code figcaption{font-family:var(--mono);font-size:.6rem;color:var(--tm);background:var(--bg-inset);padding:.3rem .6rem;}
+.sf-code pre{margin:0;padding:.6rem;overflow:auto;font-family:var(--mono);font-size:.72rem;color:var(--tp);}
+.sf-points{margin:.2rem 0 .8rem;padding-left:1.1rem;}
+.sf-points li{font-size:.84rem;color:var(--ts);margin:.25rem 0;}
+.sf-related{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.6rem;}
+.sf-related .chip{cursor:pointer;border:none;}
+dialog.sheet{max-width:min(900px,92vw);width:100%;max-height:86vh;border:1px solid var(--border-active);border-radius:14px;background:var(--bg-card);color:var(--tp);padding:0;overflow:hidden;box-shadow:0 30px 80px -20px rgba(0,0,0,.5);}
+dialog.sheet::backdrop{background:color-mix(in srgb,var(--bg-deep) 70%,transparent);backdrop-filter:blur(6px) saturate(140%);}
+dialog.sheet>.x{position:absolute;top:12px;right:14px;color:var(--tm);cursor:pointer;font-size:18px;background:none;border:none;z-index:1;}
+dialog.sheet .sf-body{padding:26px 24px;overflow:auto;flex:1;min-height:0;}
+dialog.sheet .sf-kicker{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);}
+dialog.sheet[open]{display:flex;flex-direction:column;animation:sheetIn .26s var(--ease);}
+@keyframes sheetIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){dialog.sheet[open]{animation:none;}}
+dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;height:100vh;max-height:100vh;border-radius:0;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 @media(max-width:780px){.nav-links{display:none}}
@@ -104,8 +124,11 @@ section.vis{opacity:1;transform:none;}
     {{SECTIONS}}
   </main>
   <aside class="panel" id="panel"><span class="x" onclick="closeD()">✕</span>
-    <div class="pk" id="pk">Detail</div><h3 id="ph">—</h3><div class="pb" id="pbd"></div></aside>
-  <script>{{INTERACTIVITY_JS}}{{COMPONENT_JS}}{{DETAIL_DATA}}</script>
+    <div class="pk" id="panelKicker">Detail</div>
+    <div class="pb" id="panelBody"></div></aside>
+  <div id="sheets">{{SHEETS}}</div>
+  <dialog class="sheet pane-dialog" id="paneDialog"><button class="x" onclick="this.closest('dialog').close()">✕</button><div class="sf-body" id="paneDialogBody"></div></dialog>
+  <script>{{INTERACTIVITY_JS}}{{COMPONENT_JS}}{{DETAIL_DATA}}{{SURFACE_MAP}}</script>
 </body></html>
 ```
 
@@ -122,10 +145,28 @@ Fill each marker below. Leave a marker empty (delete it) only when its content d
 | `{{SECTIONS}}` | One `<section id="…">…</section>` per session-model section after the hero. Each holds a `.sec-label`, an `<h2>`, an optional `.lede`, and the chosen component markup from the `components/` catalog. |
 | `{{COMPONENT_CSS}}` | The CSS blocks for **only** the components actually used, copied verbatim from the `components/<group>.md` recipes. Omit CSS for unused components. |
 | `{{COMPONENT_JS}}` | The component-specific JS handlers for **only** the components used (e.g. `setTab`, `tog`), copied from the `components/<group>.md` recipes. Omit handlers for unused components. |
-| `{{INTERACTIVITY_JS}}` | The full shared behaviour bundle from `interactivity.md` — theme toggle (`tgl`), detail panel (`openD`/`closeD`), scroll progress, and the IntersectionObserver reveal. |
-| `{{DETAIL_DATA}}` | The `DET` object literal mapping detail ids to `{k,h,b}` records read by `openD`. Include only the ids referenced by the markup; emit an empty `const DET={};` if no detail panel is wired. |
+| `{{INTERACTIVITY_JS}}` | The full shared behaviour bundle from `interactivity.md` — theme toggle (`tgl`), detail surfaces (`renderSurface` + `openSurface`/`openPane`, with `openD`/`openCard` aliases and `closeD`), scroll progress, and the IntersectionObserver reveal. |
+| `{{DETAIL_DATA}}` | The `DET` object literal mapping detail ids to structured `{k,h,summary,where,code,points,related}` records read by `renderSurface`. Include only the ids referenced by the markup; emit an empty `const DET={};` if no detail panel is wired. |
+| `{{SHEETS}}` | Pre-rendered sheet dialogs — one `<dialog class="sheet" id="sheet-<id>">` per **sheet-kind** detail (see the Sheet pattern below), placed in the `#sheets` container. Delete the marker when no detail routes to a sheet. |
+| `{{SURFACE_MAP}}` | The `const SURF={ "<id>": "pane" \| "sheet", … }` map — every `openSurface` target's kind, read by the router to decide pane vs sheet. Emit `const SURF={};` when no sheets are wired. |
 
-**`details{}` → `DET` transform:** the session model's `details{ "<id>": {body, where, related} }` (see `session-model.md`) compiles into the runtime `DET[id] = { k: <short kicker/label>, h: <heading>, b: <body HTML> }`. Fold `where` into `b` as a `<code>path:line</code>` anchor and append any `related` ids as cross-links; the panel only reads `k`/`h`/`b`.
+**`details{}` → `DET` transform:** the session model's structured `details{ "<id>": {kicker, heading, summary, where[], code[], points[], related[], surface?, components[]} }` (see `session-model.md`) compiles into the runtime `DET[id] = { k: <kicker>, h: <heading>, summary, where, code, points, related }`. Fields stay structured — arrays are preserved, not folded into a blob — and `renderSurface` builds the DOM from them (`where` → loc chips, `code` → annotated blocks, `points` → bullets, `related` → chips that call `openSurface`). `k` = kicker, `h` = heading. Emit only the ids actually wired.
+
+**`details{}` → `SURF` + `{{SHEETS}}` transform:** compute each detail's kind (explicit `surface`, else inferred — see `authoring-guide.md` § 3). Pane-kind ids go to `DET` (above) with `SURF[id]='pane'`; sheet-kind ids are pre-rendered as `<dialog id="sheet-<id>">` blocks in `{{SHEETS}}` (header via the same `sf-*` markup, hosting each `components[]` ref with surface-suffixed internal ids) with `SURF[id]='sheet'`. `{{SURFACE_MAP}}` emits the whole `const SURF={ … }`; default any unclassified `openSurface` target to `'pane'`.
+
+**Sheet pattern (`{{SHEETS}}`):** the assembler pre-renders one `<dialog>` per sheet-kind detail into the `#sheets` container (the pane builds its DOM at click time via `renderSurface`; the sheet's is static). It reuses the same `sf-*` content vocabulary as the pane so the two surfaces read the same, with surface-appropriate sizing — the sheet heading is an `<h2 class="sf-h">` (it picks up the larger serif `h2` scale, since `.sf-h` itself is pane-scoped), while the pane uses the compact `<h3 class="sf-h">`. The content lives in a `.sf-body` scroll container and the close `✕` is a direct child of the dialog. The sheet's surface-specific CSS — `dialog.sheet`, `::backdrop`, `dialog.sheet>.x` (which absolutely-positions the close button to float above the scroll), and `dialog.sheet .sf-kicker` — is part of the base CSS lifted verbatim from `seed.html`.
+
+```html
+<dialog class="sheet" id="sheet-<id>">
+  <button class="x" onclick="this.closest('dialog').close()">✕</button>
+  <div class="sf-body">
+    <div class="sf-kicker"><kicker></div>
+    <h2 class="sf-h"><heading></h2>
+    <p class="sf-summary"><summary></p>
+    <!-- where chips, code blocks, hosted components (id-suffixed), points, related chips -->
+  </div>
+</dialog>
+```
 
 **Rule:** copy the base CSS in the `<style>` block verbatim from `seed.html` — never invent base
 styles. Component CSS comes from the `components/` catalog and is injected at `{{COMPONENT_CSS}}` only.

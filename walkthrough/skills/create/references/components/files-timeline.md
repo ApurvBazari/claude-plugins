@@ -9,9 +9,9 @@
   <div class="sec-label"><files></div>
   <h2>File <em>tree</em></h2>
   <div class="tree"><span class="dir"><root>/</span>            <span class="nw"><N new></span>
-├── <span class="fl" data-d="<id1>" onclick="openD('<id1>')"><file-a></span> <span class="nw">new</span>
+├── <span class="fl" data-d="<id1>" onclick="openSurface('<id1>')"><file-a></span> <span class="nw">new</span>
 ├── <span class="dir"><subdir>/</span>
-│   └── <span class="fl" data-d="<id2>" onclick="openD('<id2>')"><file-b></span> <span class="ed">edited</span>
+│   └── <span class="fl" data-d="<id2>" onclick="openSurface('<id2>')"><file-b></span> <span class="ed">edited</span>
 └── <span class="fl"><file-c></span></div>
 </section>
 ```
@@ -25,7 +25,7 @@
 .tree .ed{color:var(--amber);font-size:.58rem;}
 ```
 
-**Wiring:** click on a `.fl` → `openD('<id>')` (add a `DET` key per clickable file). Non-clickable files use a plain `.fl` with no handler.
+**Wiring:** click on a `.fl` → `openSurface('<id>')` (add a `DET` key per clickable file). Non-clickable files use a plain `.fl` with no handler.
 
 ## Filterable cards + pills
 
@@ -60,7 +60,7 @@
 .tcard .td{font-size:.8rem;color:var(--ts);}
 ```
 
-**Wiring:** pills → `tog(this)` (rebuilds the active `data-f` set and hides `.tcard`s whose `data-cat` isn't active). For a card detail panel, add `data-t`/`data-desc` and `onclick="openCard(this)"`.
+**Wiring:** pills → `tog(this)` (rebuilds the active `data-f` set and hides `.tcard`s whose `data-cat` isn't active). For a card detail surface, add `data-id="<id>"` + `onclick="openCard(this)"` and a matching `details{}`/`DET` entry — the card's content comes from the structured detail, not inline `data-*` text.
 
 ## Timeline
 
