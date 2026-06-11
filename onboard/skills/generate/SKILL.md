@@ -1,6 +1,6 @@
 ---
 name: generate
-description: Headless Claude tooling generation for v2 callers. Consumes a v2 context per references/context-shape-v2.json (version 2, phases.*, syntheses, dependencies). REJECTS v1 input outright — v1 callers must stay on onboard 1.10.0. Renders GHA workflow templates + sprint contracts from cicdAndDelivery before dispatching config-generator. Not user-invocable.
+description: Use when a programmatic v2 caller needs headless Claude-tooling generation (no wizard/analysis) — invoked via the Skill tool by /onboard:start Phase 3 or external v2 callers. Requires a v2 context; not user-invocable.
 user-invocable: false
 ---
 

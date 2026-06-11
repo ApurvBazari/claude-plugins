@@ -1,6 +1,6 @@
 ---
 name: start
-description: Full interactive onboarding wizard — analyzes the codebase, gathers developer preferences through adaptive Q&A, then generates a complete tailored Claude Code tooling setup (CLAUDE.md, rules, skills, agents, hooks, metadata). Use only when the user explicitly invokes /onboard:start.
+description: Use ONLY when the user explicitly runs /onboard:start. The full interactive onboarding wizard that sets up tailored Claude Code tooling for a project. Never auto-invoke.
 disable-model-invocation: true
 ---
 

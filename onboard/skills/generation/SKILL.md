@@ -1,6 +1,6 @@
 ---
 name: generation
-description: Core artifact generator for Claude tooling (CLAUDE.md, rules, skills, agents, hooks). Internal building block invoked by the config-generator agent during /onboard:start and /onboard:generate — not user-invocable.
+description: Invoked by the config-generator agent during /onboard:start and /onboard:generate to produce the Claude tooling artifacts. Internal building block; not user-invocable.
 user-invocable: false
 ---
 
