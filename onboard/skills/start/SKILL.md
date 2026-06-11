@@ -242,7 +242,7 @@ Run the builder's validation step before proceeding to Step 3. If validation fai
 
 ### Step 3.1: Model resolution (no separate prompt)
 
-The model has already been chosen by this point — either explicitly through the wizard's Phase 5.2 (Custom preset), or implicitly via the preset default (Minimal/Standard/Comprehensive use `claude-opus-4-7[1m]` per `wizard/references/workflow-presets.md` § Per-preset exchange targets).
+The model has already been chosen by this point — either explicitly through the wizard's Phase 5.2 (Custom preset), or implicitly via the preset default (Minimal/Standard/Comprehensive use `claude-opus-4-7[1m]` per `../wizard/references/workflow-presets.md` § Per-preset exchange targets).
 
 **Do NOT** ask "Which model would you like to use?" here. That used to be a separate post-summary question in earlier versions of start/SKILL.md and the wizard's Phase 5.2 also asked the same thing — the duplicate prompt was findings A4 in the 2026-04-16 release-gate test.
 
@@ -255,7 +255,7 @@ chosenModel = wizardAnswers.skillTuning?.defaultModel
             ?? "claude-opus-4-7[1m]"
 ```
 
-The preset-default fallback is documented in `wizard/references/workflow-presets.md`. The final fallback (`claude-opus-4-7[1m]`) covers any path where the wizard answers don't include a model (e.g., a future bug or a Quick Mode bail-out before Phase 5.2).
+The preset-default fallback is documented in `../wizard/references/workflow-presets.md`. The final fallback (`claude-opus-4-7[1m]`) covers any path where the wizard answers don't include a model (e.g., a future bug or a Quick Mode bail-out before Phase 5.2).
 
 The wizard's Phase 6 summary already shows the chosen model — the developer has already seen and confirmed it. If they wanted to change it, they would have done so in the summary tweak step (or by editing `.claude/settings.json` after init).
 

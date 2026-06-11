@@ -216,7 +216,7 @@ Record the full selection as:
 }
 ```
 
-The generation skill reads `wizardAnswers.skillTuning` and refines the archetype defaults in `generation/references/skills-guide.md` § Frontmatter Emission Rules. Per-skill user tweaks happen in the generation-time confirmation step, not here.
+The generation skill reads `wizardAnswers.skillTuning` and refines the archetype defaults in `../generation/references/skills-guide.md` § Frontmatter Emission Rules. Per-skill user tweaks happen in the generation-time confirmation step, not here.
 
 **Quick Mode behavior**: 5.2 is skipped entirely in Quick Mode — `skillTuning` defaults to `{ mode: "defaults" }` and inference runs with archetype defaults only. The generation-time confirmation step still fires with default answer "Accept all" so Quick Mode remains frictionless.
 
@@ -249,7 +249,7 @@ Record the full selection as:
 }
 ```
 
-The generation skill reads `wizardAnswers.agentTuning` and refines the archetype defaults in `generation/references/agents-guide.md` § Frontmatter Emission Rules. Per-agent user tweaks happen in the generation-time confirmation step, not here.
+The generation skill reads `wizardAnswers.agentTuning` and refines the archetype defaults in `../generation/references/agents-guide.md` § Frontmatter Emission Rules. Per-agent user tweaks happen in the generation-time confirmation step, not here.
 
 **Quick Mode behavior**: 5.3 is skipped entirely in Quick Mode — `agentTuning` defaults to `{ mode: "defaults" }` and inference runs with archetype defaults only. The generation-time confirmation step still fires with default answer "Accept all" so Quick Mode remains frictionless.
 
@@ -280,7 +280,7 @@ Record the full selection as:
 
 **Exchange notes**: Phase 5.4 is one gate (yes/no) + optionally one two-question `AskUserQuestion` call. With the no-cap adaptive sizing rule, Phase 5.4 always runs when its entry condition fires; the Custom-preset escape hatch (Phase 5.0) is the bail-out path if the developer wants to take Quick Mode defaults from this point.
 
-The generation skill reads `wizardAnswers.outputStyleTuning` and refines the archetype output in `generation/references/output-styles-guide.md` § Archetype inference and § settings.local.json merge rules. Per-style developer tweaks happen in the generation-time batched confirmation step, not here.
+The generation skill reads `wizardAnswers.outputStyleTuning` and refines the archetype output in `../generation/references/output-styles-guide.md` § Archetype inference and § settings.local.json merge rules. Per-style developer tweaks happen in the generation-time batched confirmation step, not here.
 
 **Quick Mode behavior**: 5.4 is skipped entirely in Quick Mode — `outputStyleTuning` defaults to `{ mode: "defaults" }` and inference runs with archetype defaults only. The generation-time batched confirmation still fires with default answer "Accept" so Quick Mode remains frictionless.
 
@@ -315,7 +315,7 @@ Otherwise, issue **one `AskUserQuestion` multiSelect** presenting each detected 
 > - `rust-analyzer-lsp` (312 rust files) **[checked]**
 > - `pyright-lsp` (8 python files) **[unchecked]**
 
-Describe each option: plugin name, detected language label, file count, and a one-line capability description (e.g., "Adds typescript-language-server via Claude Code LSP"). Refer to `generation/references/lsp-plugin-catalog.md` for the copy.
+Describe each option: plugin name, detected language label, file count, and a one-line capability description (e.g., "Adds typescript-language-server via Claude Code LSP"). Refer to `../generation/references/lsp-plugin-catalog.md` for the copy.
 
 Record the user's selection verbatim as `wizardAnswers.lspPlugins` (a string array of accepted plugin names). An empty array means "detected candidates but developer declined all of them" — distinct from "no detection" (absent field in headless mode).
 
@@ -329,7 +329,7 @@ Record the user's selection verbatim as `wizardAnswers.lspPlugins` (a string arr
 
 ### Phase 5.7: Built-in Skills (When Candidates Exist) — combined with Phase 5.6
 
-Run detection against the codebase analysis report to identify which built-in Claude Code skills are relevant. Core skills (`/loop`, `/simplify`, `/debug`, `/pr-summary`) are always candidates. Extra skills (`/schedule`, `/claude-api`, `/explain-code`, `/codebase-visualizer`, `/batch`) are candidates only when their detection signal fires. Refer to `generation/references/built-in-skills-catalog.md` for the full tier/signal mapping.
+Run detection against the codebase analysis report to identify which built-in Claude Code skills are relevant. Core skills (`/loop`, `/simplify`, `/debug`, `/pr-summary`) are always candidates. Extra skills (`/schedule`, `/claude-api`, `/explain-code`, `/codebase-visualizer`, `/batch`) are candidates only when their detection signal fires. Refer to `../generation/references/built-in-skills-catalog.md` for the full tier/signal mapping.
 
 If no extra skills fire AND the project has no special characteristics, the candidate list is the 4 core skills. This still produces a non-empty list — skip this phase only when `callerExtras.disableBuiltInSkills: true` is set (headless suppression).
 
@@ -465,7 +465,7 @@ Quick mode inference can refine preset defaults. If a developer chose Quick setu
 
 ## Output
 
-**Canonical shape invariant** — every preset path (Minimal / Standard / Comprehensive / Custom / Quick Mode / stub) emits **the same** top-level `wizardAnswers` structure. Missing fields MUST be populated with defaults per § Skip Behavior; never leave a field `undefined` or emit a preset-specific subset. The 2026-04-17 release-gate found three distinct preset-subset shapes in the wild (findings B2 / B11 / B5 / B6) — all caused by presets skipping field emission. The canonical full shape below is the reference; downstream consumers (`onboard:generate` validator, `start/references/onboard-context-builder.md`, `tests/release-gate/verify-init-output.sh`) assume this shape uniformly.
+**Canonical shape invariant** — every preset path (Minimal / Standard / Comprehensive / Custom / Quick Mode / stub) emits **the same** top-level `wizardAnswers` structure. Missing fields MUST be populated with defaults per § Skip Behavior; never leave a field `undefined` or emit a preset-specific subset. The 2026-04-17 release-gate found three distinct preset-subset shapes in the wild (findings B2 / B11 / B5 / B6) — all caused by presets skipping field emission. The canonical full shape below is the reference; downstream consumers (`onboard:generate` validator, `../start/references/onboard-context-builder.md`, `tests/release-gate/verify-init-output.sh`) assume this shape uniformly.
 
 After the wizard completes, compile all answers into the following structured JSON format:
 
@@ -547,10 +547,10 @@ The `advancedHookEvents` field is an array of event names the developer explicit
 
 The `advancedHookTypes` / `advancedHookTypeExtras` / `allowHttpHooks` fields come from Phase 5.1.1 (execution type per event). `advancedHookTypes` only contains entries for judgment-capable events the developer explicitly picked a non-default type for; events defaulting to `command` are omitted. `advancedHookTypeExtras` carries the auxiliary field (`agentRef` / `httpUrl` / `promptRef` / `promptInline`) required by the chosen type. `allowHttpHooks` is `true` only when the developer confirmed the HTTP data-leaves-machine prompt for at least one event. See `generation/SKILL.md` § Advanced Event Hooks § Per-event defaults and § Hook Type Validation for how these are consumed.
 
-The `lspPlugins` field is the developer-accepted list of marketplace LSP plugins from Phase 5.6. An empty array means "detected candidates but developer declined all"; an absent field means "Quick Mode / headless path — full detected list is the implicit accept". `generation/SKILL.md` § LSP Plugin Recommendations consumes this alongside `callerExtras.lspPlugins` and `callerExtras.disableLSP`. See `generation/references/lsp-plugin-catalog.md` for the plugin→language mapping.
+The `lspPlugins` field is the developer-accepted list of marketplace LSP plugins from Phase 5.6. An empty array means "detected candidates but developer declined all"; an absent field means "Quick Mode / headless path — full detected list is the implicit accept". `generation/SKILL.md` § LSP Plugin Recommendations consumes this alongside `callerExtras.lspPlugins` and `callerExtras.disableLSP`. See `../generation/references/lsp-plugin-catalog.md` for the plugin→language mapping.
 
-The `builtInSkills` field is the developer-accepted list of built-in Claude Code skills from Phase 5.7. An empty array means "candidates existed but developer declined all"; an absent field means "Quick Mode / headless path — full candidate list (core + fired extras) is the implicit accept". `generation/SKILL.md` § Built-in Claude Code Skills — Phase 7d consumes this alongside `callerExtras.builtInSkills` and `callerExtras.disableBuiltInSkills`. See `generation/references/built-in-skills-catalog.md` for the skill tiers and detection signals.
+The `builtInSkills` field is the developer-accepted list of built-in Claude Code skills from Phase 5.7. An empty array means "candidates existed but developer declined all"; an absent field means "Quick Mode / headless path — full candidate list (core + fired extras) is the implicit accept". `generation/SKILL.md` § Built-in Claude Code Skills — Phase 7d consumes this alongside `callerExtras.builtInSkills` and `callerExtras.disableBuiltInSkills`. See `../generation/references/built-in-skills-catalog.md` for the skill tiers and detection signals.
 
 The `skillTuning` field comes from Phase 5.2. `mode: "defaults"` (or the field being absent entirely) means "archetype inference only — no project-level override". `mode: "tuned"` carries the three project-level settings: `defaultModel` (model tier hint for generated skills), `defaultEffort` (thinking budget hint), `preApprovalPosture` (how aggressively the `allowed-tools` field is populated). These three settings refine the archetype output in `generation/SKILL.md` § Skills § Frontmatter emission. Per-skill overrides happen in the generation-time batched confirmation step, not here.
 
-The `outputStyleTuning` field comes from Phase 5.4. `mode: "defaults"` (or the field being absent entirely) means "archetype inference only — the generation skill picks the top-priority archetype match and emits with catalog defaults". `mode: "tuned"` carries two project-level settings: `archetypeOverride` (`inherit` keeps inference; a named archetype forces that one regardless of firing conditions; `skip-emit` prevents emission entirely) and `activationDefault` (`none` emits the file without touching settings; `write-to-settings` merges `"outputStyle": "<name>"` into `.claude/settings.local.json` following the 4-case merge safety rules in `generation/references/output-styles-guide.md` § settings.local.json merge rules). Per-style developer tweaks happen in the generation-time batched confirmation step, not here.
+The `outputStyleTuning` field comes from Phase 5.4. `mode: "defaults"` (or the field being absent entirely) means "archetype inference only — the generation skill picks the top-priority archetype match and emits with catalog defaults". `mode: "tuned"` carries two project-level settings: `archetypeOverride` (`inherit` keeps inference; a named archetype forces that one regardless of firing conditions; `skip-emit` prevents emission entirely) and `activationDefault` (`none` emits the file without touching settings; `write-to-settings` merges `"outputStyle": "<name>"` into `.claude/settings.local.json` following the 4-case merge safety rules in `../generation/references/output-styles-guide.md` § settings.local.json merge rules). Per-style developer tweaks happen in the generation-time batched confirmation step, not here.

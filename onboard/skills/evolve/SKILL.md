@@ -103,7 +103,7 @@ Read the root CLAUDE.md. Find the `<!-- onboard:plugin-integration:start -->` an
 
 Read the existing `autonomyLevel` from `greenfield-meta.json.context.autonomyLevel` (or fall back to `onboard-meta.json.wizardAnswers.autonomyLevel`).
 
-**For added plugins**: Derive new `qualityGates` and `phaseSkills` entries per `references/plugin-integration-rules.md` § qualityGates Derivation. Generate new hook scripts following the hook conventions from `generation/references/hooks-guide.md` § Quality-Gate Hook Templates. Add corresponding entries to `.claude/settings.json` (merge-aware — read first, never overwrite existing non-plugin-integration hooks).
+**For added plugins**: Derive new `qualityGates` and `phaseSkills` entries per `references/plugin-integration-rules.md` § qualityGates Derivation. Generate new hook scripts following the hook conventions from `../generation/references/hooks-guide.md` § Quality-Gate Hook Templates. Add corresponding entries to `.claude/settings.json` (merge-aware — read first, never overwrite existing non-plugin-integration hooks).
 
 **For removed plugins**: Identify hook scripts that reference removed plugins. Match by script basename against `greenfield-meta.json.generated.toolingFlags.hookStatus.generated` entries. Delete the hook script files. Remove corresponding entries from `.claude/settings.json`. If a `qualityGates` or `phaseSkills` entry references a removed plugin, drop it.
 
@@ -228,7 +228,7 @@ Update `onboard-meta.json.lspStatus` to reflect additions. The Step 2b.3 metadat
 Run the same drift classification as `../update/SKILL.md` § 4b.9 Built-in Skills Drift:
 
 1. Read `.claude/onboard-builtin-skills-snapshot.json` (`{ recommended, accepted }`). Missing file → `recommended: [], accepted: []` (pre-1.9.0 project).
-2. Re-run detection against the current codebase: check each extra skill's detection signal per `generation/references/built-in-skills-catalog.md`. Core skills are always candidates.
+2. Re-run detection against the current codebase: check each extra skill's detection signal per `../generation/references/built-in-skills-catalog.md`. Core skills are always candidates.
 3. Classify each candidate: `newSkill`, `newlyRelevant`, `staleCandidate`, `in-sync`.
 
 **Auto-apply rules** (evolve's "drain drift without asking" philosophy — bounded by explicit-consent floor for new built-in skill additions):
