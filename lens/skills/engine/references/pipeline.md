@@ -102,8 +102,11 @@ The **engine** aggregates the vote(s) into `votes{total,couldNotRefute,refuted}`
 - `refuted:true` → finding **dropped** from the surviving set.
 
 `votes.total` = the number of skeptics run for that finding. v1 runs a single verifier vote per finding,
-so `total` is `1` and `couldNotRefute`/`refuted` are `1`/`0` (kept) or `0`/`1` (refuted). The aggregation
-shape is forward-compatible with multi-skeptic voting.
+so `total` is `1` and `couldNotRefute`/`refuted` are `1`/`0` (kept) or `0`/`1` (refuted).
+**v1 resolution is unanimous-drop** (any `refuted:true` drops the finding). The `votes{}` *shape* matches
+vicario's, but the multi-skeptic *resolution rule* is NOT yet wired: vicario keeps a finding unless a strict
+majority refuted (`refuted <= total/2`), whereas lens v1 drops on a single refute.
+Wiring multi-skeptic voting (and vicario's majority rule) is deferred.
 
 ## 6. Severity ranking + escalation (RANK)
 
