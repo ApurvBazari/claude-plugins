@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$comment": "superset of vicario review-findings; version 1",
+  "$comment": "version 1. FIELD-additive superset of vicario review-findings: extra optional fields are ignored by vicario's validator. The dimension enum is the canonical 9-value SHARED contract (vicario's six + lens's test/risk/comment); vicario adopts the same enum so all dimensions validate both ways — no mapping layer. Until the vicario repo widens its enum to match (tracked), only the 6 shared dimensions round-trip to an un-updated vicario; coordinate enum changes across both repos.",
   "title": "lens review-findings",
   "type": "object",
   "required": ["findings", "recommendedEscalation", "degraded"],

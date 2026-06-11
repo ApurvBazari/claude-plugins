@@ -67,14 +67,14 @@ Read-only is **enforced at the finder boundary**: every finder and adapter emits
 
 ## The `review-findings` schema (the contract)
 
-The engine emits, and the renderer consumes, a single canonical contract — `lens/schemas/review-findings.schema.json` (built in a later task). It is a versioned **superset of vicario's `review-findings.schema.json`**: lens's extra fields are additive/optional, so vicario's validator ignores them and the two stay aligned.
+The engine emits, and the renderer consumes, a single canonical contract — `lens/schemas/review-findings.schema.json` (built in a later task). It is a versioned **field-additive superset of vicario's `review-findings.schema.json`**: lens's extra *fields* are additive/optional, so vicario's validator ignores them. **The `dimension` enum is the canonical 9-value shared contract** — vicario's six (`requirements|correctness|security|types|silent-failure|simplify`) plus lens's `test`/`risk`/`comment`. The target is a single shared enum that vicario adopts, so that every dimension will validate in both directions and no mapping layer is needed. **Until vicario widens its own enum to match (a tracked vicario-repo task), a lens finding tagged `test`/`risk`/`comment` will not validate against an un-updated vicario** — so the enum is co-owned and changes are coordinated across both repos.
 
 - **Top-level:** `findings[]`, `recommendedEscalation` (`minor|moderate|major|critical`), `degraded` (bool), `summary` (optional).
 - **Per finding — required:** `id`, `title`, `severity` (`critical|high|medium|low` — exactly vicario's enum; **no `info`**, which is a render-only chip role), `dimension`, `verified` (bool).
 - **Per finding — optional:** `file`, `line`, `votes{total,couldNotRefute,refuted}`, and additive `claim`, `detail`, `suggestedFix`, `source`, `label`, `tags[]`.
 - **`dimension` enum:** vicario's six (`requirements|correctness|security|types|silent-failure|simplify`) **plus** lens additions `test`, `risk`, `comment`.
 
-Keeping lens a superset (additive-only) is the alignment invariant — never rename or repurpose a vicario field; only add optional ones.
+The alignment invariant is **field-additive only**: never rename, re-type, or repurpose a vicario field; only add optional ones. The `dimension` enum is **co-owned** — its nine values are the shared contract both repos honor; add a new dimension only by updating both schemas in lockstep (never silently in one).
 
 ## The 3-tier finder registry
 
