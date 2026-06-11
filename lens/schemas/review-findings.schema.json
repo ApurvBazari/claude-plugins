@@ -30,13 +30,13 @@
           },
           "verified": {"type": "boolean"},
           "file": {"type": "string"},
-          "line": {"type": "number"},
+          "line": {"type": "integer"},
           "votes": {
             "type": "object",
             "properties": {
-              "total": {"type": "number"},
-              "couldNotRefute": {"type": "number"},
-              "refuted": {"type": "number"}
+              "total": {"type": "integer"},
+              "couldNotRefute": {"type": "integer"},
+              "refuted": {"type": "integer"}
             }
           },
           "voteDegraded": {"type": "boolean", "$comment": "carried for vicario parity; lens v1 does not set it"},
