@@ -2,6 +2,8 @@
 name: verifier
 description: Adversarial skeptic for the lens VERIFY stage — takes ONE candidate finding and tries to refute it against the real source, defaulting to refuted for unproven bug/correctness/security/test claims and kept for spec/plan judgment. Owns the verified flip. Read-only.
 color: red
+tools: Read, Grep, Glob, Bash
+model: opus
 ---
 
 # Adversarial Verifier — Finding Refutation Agent

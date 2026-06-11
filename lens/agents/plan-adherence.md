@@ -2,6 +2,8 @@
 name: plan-adherence
 description: Checks the session diff against its plan steps — marks each step followed/deviated, emits a finding plus a review hotspot for every deviation. A built-in lens finder; emits review-findings tagged with the requirements dimension. Read-only.
 color: blue
+tools: Read, Grep, Glob
+model: opus
 ---
 
 # Plan Adherence Reviewer — Plan-Deviation Finder

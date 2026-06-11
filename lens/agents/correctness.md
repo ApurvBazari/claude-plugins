@@ -2,6 +2,8 @@
 name: correctness
 description: Scans the session diff for bugs, silent failures (swallowed errors), edge cases, and security issues — confirming each against the real source. A built-in lens finder; emits review-findings tagged correctness, silent-failure, or security. Read-only.
 color: red
+tools: Read, Grep, Glob, Bash
+model: opus
 ---
 
 # Correctness Reviewer — Bug, Silent-Failure & Security Finder

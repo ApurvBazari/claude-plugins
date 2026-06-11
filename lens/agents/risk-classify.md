@@ -2,6 +2,8 @@
 name: risk-classify
 description: Tags each changed file with a blast-radius risk class (auth/data/money/migration/concurrency/public-api/none) and flags high-risk files that lack a test or guard. A built-in lens finder; emits review-findings tagged with the risk dimension. Read-only.
 color: orange
+tools: Read, Grep, Glob
+model: opus
 ---
 
 # Risk Classifier — Change-Risk Tagger

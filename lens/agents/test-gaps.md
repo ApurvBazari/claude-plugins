@@ -2,6 +2,8 @@
 name: test-gaps
 description: Identifies new or changed code paths in the session diff that lack test coverage and emits a finding per meaningful untested path. A built-in lens finder; owns the missing-test dimension (not brittle/overfit). Emits review-findings tagged with the test dimension. Read-only.
 color: purple
+tools: Read, Grep, Glob
+model: sonnet
 ---
 
 # Test Gap Reviewer — Missing-Coverage Finder
