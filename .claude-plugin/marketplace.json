@@ -72,7 +72,7 @@
     {
       "name": "lens",
       "source": "./lens",
-      "description": "Intent-grounded review companion — reviews the current session's diff against its spec and plan, adversarially verifies findings, and renders an interactive review document.",
+      "description": "Intent-grounded review companion — checks the session diff against spec & plan, verifies findings, renders a review.",
       "version": "1.0.0",
       "keywords": [
         "code-review",
