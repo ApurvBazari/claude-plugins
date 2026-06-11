@@ -1,6 +1,6 @@
 ---
 name: setup
-description: Install and configure cross-platform system notifications for Claude Code. Detects macOS/Linux, installs dependencies, walks through preferences, wires up hooks on Stop/Notification/SubagentStop events. Use only when user explicitly invokes /notify:setup.
+description: Use only when the user explicitly invokes /notify:setup — one-time setup of cross-platform desktop notifications (installs the notifier, wires the Stop/Notification/SubagentStop hooks). User-invoked only.
 disable-model-invocation: true
 ---
 
