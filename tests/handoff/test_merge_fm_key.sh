@@ -2,7 +2,7 @@
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$HERE/../.." && pwd)"
 MERGE="$REPO_ROOT/handoff/scripts/merge-fm-key.sh"
-# shellcheck source=./lib.sh
+# shellcheck disable=SC1091
 . "$HERE/lib.sh"
 
 trap cleanup EXIT

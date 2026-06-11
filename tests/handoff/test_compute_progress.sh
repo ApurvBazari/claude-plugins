@@ -10,7 +10,7 @@
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$HERE/../.." && pwd)"
 SCRIPT="$REPO_ROOT/handoff/scripts/compute-progress.sh"
-# shellcheck source=./lib.sh
+# shellcheck disable=SC1091
 . "$HERE/lib.sh"
 
 trap cleanup EXIT
