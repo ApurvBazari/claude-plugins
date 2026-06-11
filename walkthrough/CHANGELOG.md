@@ -4,6 +4,7 @@
 - feat: internal `render` skill (render a supplied model → HTML; reused by the lens plugin)
 - feat: `components/review.md` — annotated-diff, findings-list, adherence-panel
 - feat: optional review fields on session-model (`verdict`, `adherence`, `findings`, `diffHunks`) + `files[].risk` coloring
+- fix: repoint render's session-model.md reference to ../create/references (broken cross-skill path).
 
 ## 1.1.0 — 2026-06-08
 
