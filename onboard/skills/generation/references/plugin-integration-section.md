@@ -67,35 +67,6 @@ The 2026-04-17 release-gate finding G.3 was a fabricated `/security-guidance:sec
 
 **When `effectivePlugins` is empty**: Skip this section entirely. Do not generate a stub or placeholder.
 
-### Subdirectory CLAUDE.md Files
-
-Follow `references/claude-md-guide.md` for content guidance.
-
-- **Create when all three criteria are met**: (1) directory contains a meaningful share of source files, (2) has distinct conventions not covered by root, (3) represents an architectural boundary
-- **File share thresholds scaled by project size and profile**:
-
-  | Project size | Minimal profile | Standard profile | Comprehensive profile |
-  |---|---|---|---|
-  | Small (<100 files) | >40% | >20% | >10% |
-  | Medium (100-500 files) | >20% | >10% | >5% |
-  | Large (>500 files) | >10% | >5% | >2.5% |
-
-  Standard profile uses the base thresholds. Comprehensive profile halves them (more subdirectory CLAUDE.md files for deeper coverage). Minimal profile doubles them (fewer candidates). When profile is "custom", use the standard thresholds unless the developer explicitly requests more or fewer coverage.
-- **Monorepo packages are automatic candidates** — each package is an architectural boundary by definition
-- **Recognized architecture pattern layers are automatic candidates** — same treatment as monorepo packages. When the analysis report identifies an architecture pattern (e.g., "Clean Architecture" in the Project Structure or Architecture sections), or when directory names match known patterns, those layer directories qualify by architectural role regardless of file-share thresholds. Known patterns:
-  - **Clean Architecture**: `data/`, `domain/`, `presentation/`, `service/`, `di/` (or `injection/`)
-  - **MVVM/MVC/MVP**: `model/` (or `models/`), `view/` (or `views/`), `viewmodel/` (or `viewmodels/`), `controller/` (or `controllers/`), `presenter/` (or `presenters/`)
-  - **Hexagonal**: `ports/`, `adapters/`, `core/`
-  - **Feature-based**: each feature module directory (identified by analysis report's module boundaries)
-  - **Backend layered**: `controllers/`, `services/`, `repositories/`, `middleware/`
-
-  Pattern matching is case-insensitive and works at any nesting depth (e.g., `app/src/main/java/com/example/data/` matches the `data/` pattern). If the analysis report explicitly identifies the architecture pattern, use that to determine which directories are layer candidates. If the report does not name the pattern, fall back to directory name matching against the patterns above. When both architecture patterns and file-share thresholds identify the same directory, it is just one candidate (no duplicates).
-- **Typical candidates**: `src/components/`, `src/api/`, `src/lib/`, `app/`, `tests/`, `scripts/`, per-package in monorepos
-- **Architecture-pattern candidates**: `data/`, `domain/`, `presentation/`, `service/`, `di/`, `model/`, `view/`, `viewmodel/`, `controller/`, `ports/`, `adapters/`, `core/`, `repositories/`, `middleware/` (when detected as part of a recognized architecture pattern)
-- **Always confirm** candidate directories with the developer before creating subdirectory CLAUDE.md files
-- **Content**: Conventions specific to that directory, patterns to follow, common mistakes to avoid
-- **Keep short** — 30-80 lines each
-
 #### Per-Directory Skill Annotations (Plugin-Aware)
 
 When `effectivePlugins.length > 0`, extend each generated subdirectory CLAUDE.md with a `## Skill recommendations` block that maps the directory's role to installed-plugin skills. The block is additive — it supplements the directory's conventions, it does not replace them.
