@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.1 — 2026-06-11
+- refactor: split generation/SKILL.md (1812→<500 lines) and update/SKILL.md (604→<500) into references.
+- fix: repoint stale init/ references to start/ (reference-integrity); ## Step headings in start.
+- fix: SK-04 descriptions (start, generate, generation, analysis); config-generator Output Format; least-privilege tools/model frontmatter on all three agents.
+- docs: document install-plugins.sh's deliberate never-fail exception.
+
 ## [2.0.0](https://github.com/ApurvBazari/claude-plugins/compare/onboard-v1.10.0...onboard-v2.0.0) (2026-05-26)
 
 
