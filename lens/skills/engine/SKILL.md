@@ -24,6 +24,8 @@ the **adapter tier** (the 5 read-only adapters, when installed) + the **project 
 registered in `.claude/lens/settings.md`). Read-only ENFORCED at the boundary.
 Tag every candidate with its `dimension` per the producer->dimension map.
 
+If any dispatched finder/adapter returns null, errors, or yields no parseable output, record the failed producer and set `degraded:true` (a partial review is not a complete one). Name the missing dimension(s) in `summary`.
+
 ## Step 4: Verify + dedup + rank
 Dedup by (file, line, title). Send each survivor to the `verifier` agent (refute-by-default for bug
 claims; keep `requirements` gaps; verify-error -> `verified:false` flagged, never dropped). Aggregate
@@ -37,4 +39,4 @@ Return the schema-valid `review-findings` JSON. No file write, no prompt.
 - **Data only.** Return JSON; never write a file or prompt — the caller owns I/O and any gate.
 - **Schema-valid.** Output must validate against `review-findings.schema.json` (the vicario contract).
 - **Read-only adapters.** Enforce findings-only at the adapter boundary; skip absent providers silently.
-- **Nothing dropped silently.** Verify-errors surface as `verified:false`; on a huge diff, risk-prioritize and set `degraded:true` with coverage in `summary`.
+- **Nothing dropped silently.** Verify-errors surface as `verified:false`. Set `degraded:true` whenever coverage is partial — a finder/adapter returned null or errored, intent was reconstructed, or a huge diff was truncated — and name the gap in `summary`.
