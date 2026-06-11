@@ -1,6 +1,6 @@
 ---
 name: engine
-description: Internal data-only review engine — scope a diff, build an intent record from spec+plan, run parallel finders + the read-only adapter registry, dedup, adversarially verify, severity-rank, and RETURN review-findings JSON. Writes nothing, never prompts. Invoked by lens:review and (later) consumable by vicario. Not user-invocable.
+description: Internal data-only review core invoked BY lens:review (and later consumable by vicario) to produce a review-findings JSON object from the session diff. Not user-invocable; returns data, writes nothing, never prompts.
 user-invocable: false
 ---
 
