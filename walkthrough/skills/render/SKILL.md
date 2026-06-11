@@ -8,7 +8,7 @@ user-invocable: false
 
 You are invoked by a caller (e.g. the `lens` plugin) that has **already synthesized a model in
 context**. Skip gather + synthesize; run only select → assemble → self-check → write. The model
-conforms to `references/session-model.md` (review fields allowed). Read `references/render-contract.md`.
+conforms to `../create/references/session-model.md` (review fields allowed). Read `references/render-contract.md`.
 
 ## Step 1: Locate the model + output path
 The caller passes (a) a structured model in context and (b) an output path argument. If NO model is
