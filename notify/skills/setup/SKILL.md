@@ -34,12 +34,12 @@ Run `uname -s` to detect the platform.
 **macOS (Darwin):**
 Run `which terminal-notifier` via Bash.
 - If installed: `terminal-notifier is installed. Good to go.`
-- If missing: offer to install via `scripts/install-notifier.sh`. If Homebrew is also missing, show install instructions and stop.
+- If missing: offer to install via `${CLAUDE_PLUGIN_ROOT}/scripts/install-notifier.sh`. If Homebrew is also missing, show install instructions and stop.
 
 **Linux:**
 Run `which notify-send` via Bash.
 - If installed: `notify-send is available. Good to go.`
-- If missing: show installation instructions from `scripts/install-notifier.sh` output (distro-specific `apt`/`dnf`/`pacman` commands) and stop.
+- If missing: show installation instructions from `${CLAUDE_PLUGIN_ROOT}/scripts/install-notifier.sh` output (distro-specific `apt`/`dnf`/`pacman` commands) and stop.
 
 Note: On Linux, sounds are not supported (mapped to urgency levels) and click-to-focus (`activate`) is not available. Inform the developer of these differences.
 
