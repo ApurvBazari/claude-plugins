@@ -12,7 +12,7 @@
 #
 # Exit 0 on success, 2 on missing args.
 
-set -uo pipefail
+set -euo pipefail
 
 if [[ $# -lt 3 ]]; then
   echo "usage: $(basename "$0") <file> <key> <value>" >&2
