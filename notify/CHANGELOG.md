@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.1 — 2026-06-11
+- fix: use ${CLAUDE_PLUGIN_ROOT} for the install-notifier.sh path (exit-127 guard); SK-04 setup/uninstall descriptions.
+- fix: hook-standard `set -uo pipefail` on notify.sh; remove dead exit-code check in test-notification.sh.
+
 ## [2.0.0](https://github.com/ApurvBazari/claude-plugins/compare/notify-v1.1.0...notify-v2.0.0) (2026-05-26)
 
 
