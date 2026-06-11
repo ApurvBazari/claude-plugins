@@ -244,7 +244,7 @@ Run the builder's validation step before proceeding to Phase 3. If validation fa
 
 The model has already been chosen by this point — either explicitly through the wizard's Phase 5.2 (Custom preset), or implicitly via the preset default (Minimal/Standard/Comprehensive use `claude-opus-4-7[1m]` per `wizard/references/workflow-presets.md` § Per-preset exchange targets).
 
-**Do NOT** ask "Which model would you like to use?" here. That used to be a separate post-summary question in earlier versions of init/SKILL.md and the wizard's Phase 5.2 also asked the same thing — the duplicate prompt was findings A4 in the 2026-04-16 release-gate test.
+**Do NOT** ask "Which model would you like to use?" here. That used to be a separate post-summary question in earlier versions of start/SKILL.md and the wizard's Phase 5.2 also asked the same thing — the duplicate prompt was findings A4 in the 2026-04-16 release-gate test.
 
 Resolve the model from the wizard answers as follows:
 

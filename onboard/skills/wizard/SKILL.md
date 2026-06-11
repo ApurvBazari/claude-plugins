@@ -1,6 +1,6 @@
 ---
 name: wizard
-description: Adaptive Q&A flow for gathering developer preferences during /onboard:start. Internal building block invoked by the init skill — not user-invocable.
+description: Adaptive Q&A flow for gathering developer preferences during /onboard:start. Internal building block invoked by the start skill — not user-invocable.
 user-invocable: false
 ---
 
@@ -177,7 +177,7 @@ For every event where the developer picked a non-shell type, gather the auxiliar
 >
 > Confirm: set `allowHttpHooks: true` for this project? (yes/no)
 
-If the developer declines, drop the `External URL` selection(s) and record as inference fallback for that event. If accepted, set `wizardAnswers.allowHttpHooks = true` (which the init command then maps to `callerExtras.allowHttpHooks` for the generator).
+If the developer declines, drop the `External URL` selection(s) and record as inference fallback for that event. If accepted, set `wizardAnswers.allowHttpHooks = true` (which /onboard:start then maps to `callerExtras.allowHttpHooks` for the generator).
 
 **Recording the answers**:
 
@@ -299,7 +299,7 @@ Present each plugin with:
 - `[installed]` or `[not installed]` marker based on the probe result
 - For `[not installed]`, a note: "Selecting this will prompt you to install it in Phase 3.5."
 
-The developer can select any plugin regardless of install status. Phase 3.5 (`Resolve Requested Ecosystem Plugins` in the init command) handles the inline install for anything selected but missing — the wizard never hides options just because they aren't installed yet.
+The developer can select any plugin regardless of install status. Phase 3.5 (`Resolve Requested Ecosystem Plugins` in /onboard:start) handles the inline install for anything selected but missing — the wizard never hides options just because they aren't installed yet.
 
 **Single-option guard** (per `.claude/rules/ask-user-question-guard.md`): the ecosystem roster today offers one plugin (`notify`). When the candidate list has only 1 entry, convert the multiSelect to a single-select yes/no ("Configure notify?") rather than padding with a synthetic "None" — the ecosystem step is a standalone question, not part of a batched approval, so yes/no is the better UX. Release-gate finding B3 (2026-04-17) reproduced the schema violation here on first try.
 
@@ -370,7 +370,7 @@ Where `<source>` is one of:
 - `preset default` — derived from `wizardAnswers.selectedPreset` per `references/workflow-presets.md` § Per-preset exchange targets (Minimal/Standard/Comprehensive default to `claude-opus-4-7[1m]`)
 - `fallback default` — wizardAnswers.model resolution fell through to the global fallback (`claude-opus-4-7[1m]`) because no preset/Phase 5.2 answer is present
 
-If the developer wants to change the model, they tweak it from the summary edit step rather than via a separate post-summary prompt — init/SKILL.md Step 3.1 no longer asks "Which model would you like to use?" (the duplicate prompt was findings A4 in the 2026-04-16 release-gate test).
+If the developer wants to change the model, they tweak it from the summary edit step rather than via a separate post-summary prompt — start/SKILL.md Step 3.1 no longer asks "Which model would you like to use?" (the duplicate prompt was findings A4 in the 2026-04-16 release-gate test).
 
 ## Key Rules
 
@@ -465,7 +465,7 @@ Quick mode inference can refine preset defaults. If a developer chose Quick setu
 
 ## Output
 
-**Canonical shape invariant** — every preset path (Minimal / Standard / Comprehensive / Custom / Quick Mode / stub) emits **the same** top-level `wizardAnswers` structure. Missing fields MUST be populated with defaults per § Skip Behavior; never leave a field `undefined` or emit a preset-specific subset. The 2026-04-17 release-gate found three distinct preset-subset shapes in the wild (findings B2 / B11 / B5 / B6) — all caused by presets skipping field emission. The canonical full shape below is the reference; downstream consumers (`onboard:generate` validator, `init/references/onboard-context-builder.md`, `tests/release-gate/verify-init-output.sh`) assume this shape uniformly.
+**Canonical shape invariant** — every preset path (Minimal / Standard / Comprehensive / Custom / Quick Mode / stub) emits **the same** top-level `wizardAnswers` structure. Missing fields MUST be populated with defaults per § Skip Behavior; never leave a field `undefined` or emit a preset-specific subset. The 2026-04-17 release-gate found three distinct preset-subset shapes in the wild (findings B2 / B11 / B5 / B6) — all caused by presets skipping field emission. The canonical full shape below is the reference; downstream consumers (`onboard:generate` validator, `start/references/onboard-context-builder.md`, `tests/release-gate/verify-init-output.sh`) assume this shape uniformly.
 
 After the wizard completes, compile all answers into the following structured JSON format:
 
