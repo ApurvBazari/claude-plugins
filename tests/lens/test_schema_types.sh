@@ -20,5 +20,15 @@ expected={"requirements","correctness","security","types","silent-failure","simp
 dims=props["dimension"]["enum"]
 assert len(dims)==len(expected) and set(dims)==expected, \
     f"dimension enum must be exactly the 9 canonical shared values, got {dims}"
-print("PASS: schema integer-type parity + 9-value dimension enum")
+# convergence fields — optional + field-additive (must NOT enter required); iteration stays render-only.
+top=s["properties"]
+assert top["severityTrend"]["type"]=="string", "severityTrend must be a string"
+assert set(top["severityTrend"]["enum"])=={"improving","same","regressed"}, \
+    f"severityTrend enum must be improving/same/regressed, got {top['severityTrend']['enum']}"
+assert top["delta"]["type"]=="object", "delta must be an object"
+for k in ("fixed","new","stillOpen"):
+    assert top["delta"]["properties"][k]["type"]=="integer", f"delta.{k} must be integer"
+for k in ("delta","severityTrend"):
+    assert k not in s.get("required",[]), f"{k} must stay optional (field-additive superset)"
+print("PASS: schema integer-type parity + 9-value dimension enum + convergence fields")
 PY
