@@ -79,9 +79,8 @@ is visible, not just disappeared.
 ### 6. The change, annotated (diff hunks)
 
 Render `diffHunks[]` as plain fenced diffs — **only the finding-bearing hunks plus minimal surrounding
-context**, never the whole patch (mirror the HTML annotated-diff scope + the huge-diff cap). Where the HTML
-would place a pin, append an inline marker `← F<id>` on that line so the reader can tie a line to its
-finding:
+context**, never the whole patch (the same finding-scoped subset the HTML annotated-diff shows). Where the HTML
+would place a pin, append an inline marker `← F<id>` on the line **whose `diffHunks[].lines[].finding` is set** — the same line the HTML annotated-diff pins — so placement is model-driven, not a judgment call.
 
 ````markdown
 ```diff
