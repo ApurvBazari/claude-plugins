@@ -27,4 +27,9 @@ grep -qE 'F2:' "$F" || fail "finding F2 (password ==, high) not listed"
 # Risk table — one row per changed file (markdown-fallback § 5).
 grep -qE '^## Risk' "$F" || fail "missing '## Risk' table"
 
+# D1 — full parity: the fallback carries the narrative spine + a diff-hunks section, not just findings.
+grep -qiE '^## Decisions' "$F" || fail "no Decisions narrative section (D1 parity)"
+grep -qiE '^## The change, annotated' "$F" || fail "no diff-hunks section (D1 parity)"
+grep -qE '← *F[0-9]' "$F" || fail "diff hunks lack inline finding markers (← F<n>)"
+
 echo "PASS: lens fallback report"

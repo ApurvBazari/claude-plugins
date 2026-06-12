@@ -33,7 +33,14 @@ a re-review (e.g. `2 fixed · 1 new · 3 still-open`).
 <one-paragraph summary of what was reviewed>
 ```
 
-### 3. Adherence
+### 3. Narrative
+
+Render the model's narrative spine as prose so the markdown carries the same story as the HTML: each
+`sections[]` entry as `### <section title>` + its prose; `decisions[]` under a `## Decisions` heading
+(`**<title>** — <why>`, list alternatives/tradeoffs); `timeline[]` as a `## Timeline` ordered list
+(`<t> — <label>`). Omit any of these that the model doesn't carry (omit-empty).
+
+### 4. Adherence
 A table of spec items + plan steps with their states. In the in-session path this includes met/followed
 items (full coverage); in the headless/contract-only path only the gaps appear (note the limitation — see
 `review-model-assembly.md` § adherence).
@@ -69,7 +76,25 @@ dropped"), matching the HTML render which only narrates them, never lists them.
 A `fixed` finding still appears (struck or under a `Fixed since last review` note) so the iteration delta
 is visible, not just disappeared.
 
-### 5. Risk table
+### 5. The change, annotated (diff hunks)
+
+Render `diffHunks[]` as plain fenced diffs — **only the finding-bearing hunks plus minimal surrounding
+context**, never the whole patch (mirror the HTML annotated-diff scope + the huge-diff cap). Where the HTML
+would place a pin, append an inline marker `← F<id>` on that line so the reader can tie a line to its
+finding:
+
+````markdown
+```diff
+  function render(model) {
+-   if (!model) return;
++   if (!model) throw new Error("no model");   ← F2
+  }
+```
+````
+
+Omit this section if `diffHunks[]` is absent.
+
+### 6. Risk table
 One row per changed file with its risk class (from risk-classify `files[]`). Omit if `files[]` is absent
 (headless path).
 
@@ -83,6 +108,5 @@ One row per changed file with its risk class (from risk-classify `files[]`). Omi
 ```
 
 ## Parity with the HTML
-Same content as the interactive document — narrative, adherence, findings, risk, (and the diff hunks if
-included) — just a plainer, self-contained markdown form. No HTML, no JS, no diagrams; everything renders
-in a plain markdown viewer.
+Same content as the interactive document — narrative, adherence, findings, the annotated diff hunks, and
+risk — just a plainer, self-contained markdown form. No HTML, no JS, no diagrams.
