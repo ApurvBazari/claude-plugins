@@ -107,7 +107,11 @@ fi
 NOW_EPOCH="$(date +%s 2>/dev/null || echo 0)"
 
 if [[ "$EVENT" = "stop" ]] || [[ "$EVENT" = "subagentStop" ]]; then
-  if [[ "$MIN_DURATION" -gt 0 ]] && [[ -f "$TIMESTAMP_FILE" ]]; then
+  # Guard MIN_DURATION numeric BEFORE the arithmetic test: under `set -u`, a non-numeric value
+  # (e.g. a malformed minDurationSeconds in config) is evaluated as a variable name in the
+  # arithmetic `-gt` context, hits the unbound-variable trap, and aborts the hook — silently
+  # dropping the notification. Mirror the START_EPOCH numeric guard below.
+  if [[ "$MIN_DURATION" =~ ^[0-9]+$ ]] && [[ "$MIN_DURATION" -gt 0 ]] && [[ -f "$TIMESTAMP_FILE" ]]; then
     START_EPOCH="$(cat "$TIMESTAMP_FILE" 2>/dev/null || echo 0)"
     if [[ "$START_EPOCH" =~ ^[0-9]+$ ]] && [[ "$NOW_EPOCH" =~ ^[0-9]+$ ]]; then
       ELAPSED=$((NOW_EPOCH - START_EPOCH))
