@@ -17,7 +17,8 @@ select → assemble → self-check → write using `../create/references/` uncha
 - `adherence` → adherence-panel. `files[].risk` → risk coloring. `verdict` → hero chip.
 - `findings[].iteration` (`fixed|still-open|new|possibly-resolved`; omit on a first review) → a second
   `.chip` on each findings-list card (`data-iter`; role fixed=ok, still-open/possibly-resolved=warn,
-  new=info). `iterationDelta` → the findings-section delta subhead. Sheet `points` stay `["Fix: …",
+  new=info; static semantic hook; no JS reads data-iter — role set from the map at assemble time).
+  `iterationDelta` → the findings-section delta subhead. Sheet `points` stay `["Fix: …",
   "Status: …"]` — iteration is the chip, not a point.
 
 ## Output

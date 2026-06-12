@@ -71,7 +71,8 @@ The delta subhead needs one rule (tokens only):
 
 The iteration chip reuses the shared `.chip` primitive with `data-iter` carrying the literal label
 (`fixed`/`still-open`/`new`/`possibly-resolved`); roles: `fixed`=ok, `still-open`/`possibly-resolved`=warn,
-`new`=info. Omit the chip and the subhead entirely on a first review.
+`new`=info (a static semantic hook — no JS reads it; the chip role is set from the map at assemble time).
+Omit the chip and the subhead entirely on a first review.
 
 **Wiring:** pills → `tog(this)`; card → `openSurface('<finding-id>')`. Severity chip role per the `severity → chip role` map.
 
