@@ -15,6 +15,10 @@ select → assemble → self-check → write using `../create/references/` uncha
    points:["Fix: <suggestedFix>", "Status: <status>"], surface:"sheet"}`.
 - `diffHunks[]` → annotated-diff; pins call `openSurface('<finding-id>')`.
 - `adherence` → adherence-panel. `files[].risk` → risk coloring. `verdict` → hero chip.
+- `findings[].iteration` (`fixed|still-open|new|possibly-resolved`; omit on a first review) → a second
+  `.chip` on each findings-list card (`data-iter`; role fixed=ok, still-open/possibly-resolved=warn,
+  new=info). `iterationDelta` → the findings-section delta subhead. Sheet `points` stay `["Fix: …",
+  "Status: …"]` — iteration is the chip, not a point.
 
 ## Output
 Return the written path. On empty context (no model) → redirect to `/walkthrough:create`, do not synthesize.

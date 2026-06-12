@@ -66,12 +66,15 @@ Carry onto each entry:
   (verify errored mid-way, kept and flagged). This is the session-model `status` enum — distinct from the verifier's
   own per-vote `status` (that status only reports whether verification *ran cleanly* vs *errored*;
   refuted findings are dropped before assembly, so only these two values ever reach the model).
-- the reconcile **fixed/open/new** label (`fixed|still-open|new`, plus `possibly-resolved — verify` for a
-  low-confidence match) — carry it in the finding's `detail`/`points` so the status chip reflects iteration.
+- `iteration` — the reconcile **fixed/open/new** label (`fixed|still-open|new`, plus `possibly-resolved`
+  for a low-confidence match) → the session-model `iteration` field (rendered as the iteration chip).
+  **Omit on a first review** (no prior state). The aggregate counts → the model's top-level
+  `iterationDelta` (also omitted on a first review).
 
 Each finding id → a `DET` sheet (`SURF[id]='sheet'`), per walkthrough's `render-contract.md` § Review-specific
 assembly: `{kicker:"<severity> · <category>", heading:"<claim>", summary:"<detail>",
-where:["<location>"], points:["Fix: <suggestedFix>", "Status: <verification-status>", "Iteration: <fixed/open/new>"], surface:"sheet"}`.
+where:["<location>"], points:["Fix: <suggestedFix>", "Status: <verification-status>"], surface:"sheet"}`
+(iteration is the structured `iteration` field/chip, not a sheet point).
 
 ## `files[].risk` → from risk-classify `files[]`
 The **risk-classify** finder's `files[]` (`{path, change, risk, note?}`) populates the session-model

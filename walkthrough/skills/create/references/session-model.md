@@ -87,6 +87,7 @@ exact keys `authoring-guide.md` keys its mapping table off of — do not rename 
   // --- review fields (optional; populated only by lens via walkthrough:render) ---
   // Omit-empty governs all of these: a normal session walkthrough never sets them.
   "verdict": "ship|fix|block",        // → hero chip (ship=ok, fix=warn, block=danger)
+  "iterationDelta": "2 fixed · 1 new · 3 still-open",  // → findings-section delta subhead; omit on a first review
   "adherence": {                      // → adherence-panel (components/review.md)
     "specItems": [ { "label": "...", "state": "met|partial|missing" } ],
     "planSteps": [ { "label": "...", "state": "followed|deviated" } ]
@@ -95,7 +96,8 @@ exact keys `authoring-guide.md` keys its mapping table off of — do not rename 
     { "id": "F1", "severity": "critical|high|medium|low",  // 'info' is NOT a severity — render-only chip role for 'low' (review-model-assembly.md)
       "category": "spec-gap|plan-deviation|bug|silent-failure|security|risk|test-gap|quality",
       "location": "path:line", "claim": "...", "detail": "...",
-      "suggestedFix": "...", "status": "verified|unverified-flagged" }
+      "suggestedFix": "...", "status": "verified|unverified-flagged",
+      "iteration": "fixed|still-open|new|possibly-resolved" }  // → iteration chip; omit on a first review (set only by lens)
   ],
   "diffHunks": [                      // → annotated-diff (components/review.md)
     { "path": "...", "lines": [ { "k": "ctx|add|del", "n": 0, "text": "...", "finding": "F1" } ] }
@@ -255,3 +257,9 @@ populated **only** by the `lens` plugin, which assembles the model in context an
 `walkthrough:render`. `create`/`document`/`update` never set them; omit-empty keeps them inert. Each
 `findings[]` id maps to a `DET` sheet entry (`SURF[id]='sheet'`), and both its findings-list card and
 its annotated-diff pin call `openSurface('<id>')`.
+
+`iteration` (`fixed|still-open|new|possibly-resolved`) and `iterationDelta` are the **state-aware**
+fields: lens sets them from its reconcile step. `iteration` renders as a second chip on each findings-list
+card (role: `fixed`=ok, `still-open`/`possibly-resolved`=warn, `new`=info); `iterationDelta` renders as a
+subhead under the findings heading. On a **first review** there is no prior state — both are omitted
+(omit-empty), so no iteration chip or delta appears.

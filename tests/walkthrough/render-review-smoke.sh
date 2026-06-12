@@ -14,4 +14,7 @@ grep -q 'class="adh"' "$F" || fail "adherence-panel component missing"
 if grep -vE 'data:image|feTurbulence' "$F" | grep -vE '^[[:space:]]*--' | grep -Eq '#[0-9a-fA-F]{6}'; then
   fail "raw hex outside grain SVG / token defs — tokens only"
 fi
+# C2 — the fixed/open/new iteration delta is structurally surfaced: a per-finding iteration chip + a delta subhead.
+grep -q 'data-iter=' "$F" || fail "no iteration chip (data-iter) on findings cards"
+grep -qiE '[0-9]+ (fixed|new|still-open)' "$F" || fail "no iteration delta subhead (e.g. '2 fixed · 1 new')"
 echo "PASS: review render smoke"

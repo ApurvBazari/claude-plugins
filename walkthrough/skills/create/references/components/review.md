@@ -46,13 +46,14 @@ Three components for `lens` review docs. Tokens only; wire to the shared handler
 <section id="<id>">
   <div class="sec-label">findings</div>
   <h2>What the review <em>found</em></h2>
+  <div class="iter-delta">2 fixed · 1 new · 3 still-open</div>
   <div class="pills">
     <div class="pill on" data-f="bug" onclick="tog(this)"><span class="s" style="background:var(--rose)"></span>bug</div>
     <div class="pill on" data-f="spec-gap" onclick="tog(this)"><span class="s" style="background:var(--amber)"></span>spec-gap</div>
   </div>
   <div class="cards">
     <div class="tcard" data-cat="bug" style="border-left-color:var(--rose)" onclick="openSurface('F1')">
-      <div class="cat"><span class="chip danger">high</span> bug</div>
+      <div class="cat"><span class="chip danger">high</span> bug <span class="chip info" data-iter="new">new</span></div>
       <div class="tn">F1 — <claim></div>
       <div class="td"><path:line></div>
     </div>
@@ -61,6 +62,16 @@ Three components for `lens` review docs. Tokens only; wire to the shared handler
 ```
 
 **CSS — none of its own.** This component depends entirely on the `.pills`/`.pill`/`.cards`/`.tcard` block from `files-timeline.md` (Filterable cards). If you are NOT also rendering that component elsewhere in the doc, you MUST still paste its CSS block, or the findings list renders completely unstyled (a silent, visual-only failure). The `.cat` line hosts a severity `.chip`.
+
+The delta subhead needs one rule (tokens only):
+
+```css
+.iter-delta{font-family:var(--mono);font-size:.72rem;color:var(--ts);margin:-.4rem 0 1rem;letter-spacing:.04em;}
+```
+
+The iteration chip reuses the shared `.chip` primitive with `data-iter` carrying the literal label
+(`fixed`/`still-open`/`new`/`possibly-resolved`); roles: `fixed`=ok, `still-open`/`possibly-resolved`=warn,
+`new`=info. Omit the chip and the subhead entirely on a first review.
 
 **Wiring:** pills → `tog(this)`; card → `openSurface('<finding-id>')`. Severity chip role per the `severity → chip role` map.
 

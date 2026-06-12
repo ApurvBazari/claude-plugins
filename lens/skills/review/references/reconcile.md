@@ -47,8 +47,9 @@ and would therefore report a `critical → major` softening as "same":
 
 Store both `recommendedEscalation` and the derived `verdict` — the verdict still drives the hero chip.
 
-Pair it with the counts, e.g. `2 fixed · 1 new · 3 still-open` — this is the iteration delta surfaced in
-the rendered doc as the per-finding iteration label (carried in each finding's detail/points per review-model-assembly.md; the renderer has no dedicated chip for this label) and the report.
+Pair it with the counts, e.g. `2 fixed · 1 new · 3 still-open` — the **iteration delta**, surfaced as the
+session-model `iterationDelta` (the findings-section subhead in HTML; the verdict-header delta in markdown)
+and per finding via the `iteration` field → the iteration chip.
 
 ## `review-state.json` shape
 Keyed by **target**; per target a `verdict` + a `findings` map keyed by **fingerprint**:

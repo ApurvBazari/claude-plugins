@@ -117,6 +117,7 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
 .tcard .cat{font-family:var(--mono);font-size:.55rem;text-transform:uppercase;letter-spacing:.1em;}
 .tcard .tn{font-weight:600;margin:.25rem 0;font-size:.92rem;}
 .tcard .td{font-size:.8rem;color:var(--ts);}
+.iter-delta{font-family:var(--mono);font-size:.72rem;color:var(--ts);margin:-.4rem 0 1rem;letter-spacing:.04em;}
 /* component CSS: file tree + risk coloring (components/files-timeline.md) */
 .tree{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.3rem;font-family:var(--mono);font-size:.72rem;line-height:1.75;color:var(--ts);white-space:pre;overflow-x:auto;margin-top:1rem;}
 .tree .dir{color:var(--accent);}
@@ -179,13 +180,14 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
     <section id="findings-sec">
       <div class="sec-label">findings</div>
       <h2>What the review <em>found</em></h2>
+      <div class="iter-delta">2 fixed · 1 new · 3 still-open</div>
       <p class="lede">One finding, severity-ranked. Toggle the category pill to filter; click a card for the full claim, evidence, and suggested fix.</p>
       <div class="pills">
         <div class="pill on" data-f="bug" onclick="tog(this)"><span class="s" style="background:var(--rose)"></span>bug</div>
       </div>
       <div class="cards">
         <div class="tcard" data-cat="bug" style="border-left-color:var(--rose)" onclick="openSurface('F1')">
-          <div class="cat"><span class="chip danger">high</span> bug</div>
+          <div class="cat"><span class="chip danger">high</span> bug <span class="chip warn" data-iter="still-open">still-open</span></div>
           <div class="tn">F1 — Password compared with == allowing type coercion</div>
           <div class="td">src/auth/login.ts:42</div>
         </div>
