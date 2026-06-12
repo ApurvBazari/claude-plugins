@@ -35,4 +35,8 @@ grep -qi 'distinct from the verifier' "$ASM" || fail "W2: status clarifier missi
 # W3 — CLAUDE.md states lens has exactly two skills; 'lens-render' is the render half of review.
 grep -qi 'exactly two skills' "$CLAUDEMD" || fail "W3: two-skills clarification missing in CLAUDE.md"
 
+# W1/D3 consistency — the renamed 'severity trend' / deferred write-back must not leave stale 'verdict trend' wording in the operative docs.
+grep -qi 'verdict trend' "$REC" && fail "reconcile must say 'severity trend', not 'verdict trend'"
+grep -qi 'verdict trend' "$SKILL" && fail "SKILL must say 'severity trend', not 'verdict trend'"
+
 echo "PASS: lens doc contracts"

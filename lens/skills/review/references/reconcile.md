@@ -2,8 +2,8 @@
 
 Re-running `/lens:review` on the same target should show **progress**, not a fresh wall of findings. The
 reconcile step matches this run's engine findings against the prior run stored in
-`.claude/lens/review-state.json`, labels each **fixed / still-open / new**, computes the **verdict trend**,
-and writes the updated state back. The state file is the **only** write lens makes besides the rendered
+`.claude/lens/review-state.json`, labels each **fixed / still-open / new**, computes the **severity trend**,
+and (after a successful render) writes the updated state back. The state file is the **only** write lens makes besides the rendered
 artifact (read-only contract).
 
 ## Fingerprint — match by meaning, not by line

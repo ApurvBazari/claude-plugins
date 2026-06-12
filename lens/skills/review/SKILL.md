@@ -27,7 +27,7 @@ memory** here — the write-back to `review-state.json` is deferred to Step 5 (a
 ## Step 4: Render (lens-render)
 Build the review-model from the **reconciled** findings per `references/review-model-assembly.md`
 (narrative + `adherence` from `requirements` findings + `findings[]` with the fixed/open/new iteration label (carried in each finding's detail/points per review-model-assembly.md) +
-verdict trend + `files[].risk` + `diffHunks[]` + derived `verdict`). If `walkthrough` is installed,
+severity trend + `files[].risk` + `diffHunks[]` + derived `verdict`). If `walkthrough` is installed,
 invoke `walkthrough:render` with the model in context and output path
 `<configured-path>/<YYYY-MM-DD-HHMM>-<slug>.html` (default `.claude/lens/`). Otherwise emit a markdown
 report per `references/markdown-fallback.md`.
