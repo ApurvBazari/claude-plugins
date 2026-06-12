@@ -36,13 +36,16 @@ Match each new finding to a prior finding by fingerprint:
 Never re-flag a finding as **new** just because its lines moved — that is exactly what the stable-context
 fingerprint prevents.
 
-## Verdict trend
-Compare this run's `verdict` (derived from `recommendedEscalation`, see `review-model-assembly.md`) to the
-prior run's stored verdict:
+## Severity trend
+Compare this run's **`recommendedEscalation`** (the 4-value `minor|moderate|major|critical`) to the prior
+run's stored escalation — NOT the 3-value `verdict`, which **collapses** `major`+`critical` into `block`
+and would therefore report a `critical → major` softening as "same":
 
-- **improving** — verdict softened (e.g. `block` → `fix`, `fix` → `ship`).
+- **improving** — escalation softened (e.g. `critical` → `major`, `moderate` → `minor`).
 - **same** — unchanged.
-- **regressed** — verdict hardened (e.g. `ship` → `fix`).
+- **regressed** — escalation hardened (e.g. `minor` → `moderate`).
+
+Store both `recommendedEscalation` and the derived `verdict` — the verdict still drives the hero chip.
 
 Pair it with the counts, e.g. `2 fixed · 1 new · 3 still-open` — this is the iteration delta surfaced in
 the rendered doc as the per-finding iteration label (carried in each finding's detail/points per review-model-assembly.md; the renderer has no dedicated chip for this label) and the report.
@@ -54,6 +57,7 @@ Keyed by **target**; per target a `verdict` + a `findings` map keyed by **finger
 {
   "<target>": {
     "verdict": "fix",
+    "recommendedEscalation": "moderate",
     "lastRun": "2026-06-09T14:32:00Z",
     "findings": {
       "<fingerprint>": {

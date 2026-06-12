@@ -17,4 +17,7 @@ grep -qi 'globally-stable' "$ASM"  && fail "C1: 'globally-stable' must be gone f
 # C3 — no dangling cross-plugin reference to walkthrough's authoring-guide.md.
 grep -qi 'authoring-guide' "$ASM" && fail "C3: dangling authoring-guide ref must be gone from review-model-assembly"
 
+# W1 — severity trend is computed from the 4-value recommendedEscalation, not the 3-value verdict.
+grep -qi 'collapses' "$REC" || fail "W1: trend section must explain verdict collapses major+critical (key on escalation)"
+
 echo "PASS: lens doc contracts"
