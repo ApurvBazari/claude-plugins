@@ -96,6 +96,22 @@ fingerprint is retained so they aren't re-surfaced as `new`):
 }
 ```
 
+## Orchestrator mode (compute-only)
+When lens is driven by an **orchestrator** (e.g. vicario/matali's P5 REVIEW) instead of a human running
+`/lens:review`, reconcile runs in **compute-only** mode: it RETURNS the reconciled object and **writes
+nothing** — the **orchestrator is the single writer** of review state (it persists its own findings +
+iteration history). This is the same compute-vs-write split the standalone path already uses (§Write-back),
+with the write omitted because the caller owns persistence.
+
+- The orchestrator **supplies the prior state** to reconcile against, so lens needs no `review-state.json`
+  of its own in this mode.
+- lens **skips the render** entirely — the orchestrator renders at its own human gate.
+- The returned object carries:
+  - `delta` — `{ fixed, new, stillOpen }` counts (the iteration delta).
+  - `severityTrend` — `improving | same | regressed` per §Severity trend.
+  - per-finding `iteration` — `fixed | still-open | new | possibly-resolved` per §Labeling (carried on the
+    reconciled findings / render-model, not the engine schema).
+
 ## Write-back (after render only)
 Reconcile **computes** the updated map (update `lastSeen` on matched fingerprints, add new ones, mark
 unmatched priors `fixed`, carry forward `acknowledged` entries, and store this run's

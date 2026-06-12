@@ -39,8 +39,15 @@ computed in Step 3 back to `.claude/lens/review-state.json` — the single state
 Then tell the user the path + the one-line `verdict` + the iteration delta (e.g. "2 fixed · 1 new"); offer
 to open (never auto-open).
 
+## Orchestrator mode (compute-only)
+When invoked by an **orchestrator** (not `/lens:review`), run Steps 2–3 only, then **return** the
+reconciled `{findings, delta, severityTrend}` object in context and **skip Step 4 (render) and Step 5
+(state write)** — the orchestrator persists and renders at its own gate (see `references/reconcile.md`
+§ Orchestrator mode). Standalone `/lens:review` runs all five steps unchanged.
+
 ## Key Rules
 - **Read-only (except `review-state.json`).** Never commit, edit, stage, or block; the only write is the state file + the rendered doc.
 - **Engine owns judgment; review owns rendering + state.** Keep the boundary clean — this skill adds no findings, the engine holds no state.
 - **State-aware.** Re-running reconciles vs `review-state.json` (fixed/open/new); never re-flag a finding as new just because lines moved.
 - **walkthrough optional.** Markdown fallback when absent (announce the degrade).
+- **Compute-only when orchestrated.** An orchestrator caller gets the reconciled object returned and lens writes nothing; only standalone `/lens:review` writes `review-state.json` (after render).
