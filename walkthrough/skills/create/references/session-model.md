@@ -92,7 +92,7 @@ exact keys `authoring-guide.md` keys its mapping table off of — do not rename 
     "planSteps": [ { "label": "...", "state": "followed|deviated" } ]
   },
   "findings": [                       // → findings-list + diff pins; each id also a DET sheet
-    { "id": "F1", "severity": "critical|high|medium|low|info",
+    { "id": "F1", "severity": "critical|high|medium|low",  // 'info' is NOT a severity — render-only chip role for 'low' (review-model-assembly.md)
       "category": "spec-gap|plan-deviation|bug|silent-failure|security|risk|test-gap|quality",
       "location": "path:line", "claim": "...", "detail": "...",
       "suggestedFix": "...", "status": "verified|unverified-flagged" }
