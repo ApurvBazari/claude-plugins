@@ -11,3 +11,7 @@
 - fix: set `degraded` when a finder/adapter returns null or fails; correct the unwired multi-skeptic-voting note; validate finder output before fan-in.
 - fix: engine description states when-to-invoke not its pipeline (SK-04); plugin/marketplace descriptions trimmed under the 120-char cap.
 - feat: least-privilege `tools` allowlist + model-per-role on the six finder/verifier agents.
+- fix: review-files remediation — within-run id semantics (not cross-run); drop dangling authoring-guide ref; severity trend on recommendedEscalation; state written only after a successful render; v1.1 won't-fix fenced as not-yet-wired; finding-status vs verifier-status disambiguated; CLAUDE.md states the two-skill surface.
+- feat: structured iteration chip — fixed/open/new now surfaces as an `iteration` field + chip + `iterationDelta` in the rendered review (engine schema untouched).
+- feat: full markdown-fallback parity — narrative spine + capped annotated diff-hunks section.
+- feat: adapter normalization spec — forcing wrapper-prompt + per-adapter maps for the 5 adapters (`references/adapter-dispatch.md`).
