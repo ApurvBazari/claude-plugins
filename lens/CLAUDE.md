@@ -112,12 +112,12 @@ Both choices persist to `.claude/lens/settings.md`. That file also holds the **p
 | Path | Purpose |
 |---|---|
 | `.claude/lens/settings.md` | gitignore choice + default output path + project-custom finder registry |
-| `.claude/lens/review-state.json` | prior findings + statuses for state-aware re-review (fixed / open / new + verdict trend) |
+| `.claude/lens/review-state.json` | prior findings + statuses for state-aware re-review (fixed / open / new + severity trend) |
 | `.claude/lens/<rendered review>` | the output artifact (HTML via walkthrough, or markdown fallback) |
 
 ## State-aware re-review
 
-`.claude/lens/review-state.json` holds prior findings and their statuses. On a re-review of the same scope, the engine compares the new findings against the prior set to classify each as **fixed / still open / new**, and tracks the **verdict trend** across runs — so a second review shows progress, not just a fresh wall of findings.
+`.claude/lens/review-state.json` holds prior findings and their statuses. On a re-review of the same scope, the engine compares the new findings against the prior set to classify each as **fixed / still open / new**, and tracks the **severity trend** across runs — so a second review shows progress, not just a fresh wall of findings.
 
 ## Markdown fallback + the `walkthrough:render` handoff
 

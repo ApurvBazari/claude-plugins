@@ -49,7 +49,7 @@ All lens state lives under `.claude/lens/`. On the first review in a repo, lens 
 - asks whether to add `.claude/lens/` to `.gitignore` (review artifacts can contain session content — gitignoring is the default offer), and
 - asks for a default output path for rendered reviews.
 
-Both choices persist to `.claude/lens/settings.md`, which also holds your **project-custom finder registry** (extra finders specific to this codebase). The rendered review is written under `.claude/lens/`, and `.claude/lens/review-state.json` records prior findings and their statuses so a re-review can show what's **fixed / still open / new** and the **verdict trend** over time.
+Both choices persist to `.claude/lens/settings.md`, which also holds your **project-custom finder registry** (extra finders specific to this codebase). The rendered review is written under `.claude/lens/`, and `.claude/lens/review-state.json` records prior findings and their statuses so a re-review can show what's **fixed / still open / new** and the **severity trend** over time.
 
 ## What it is / isn't
 

@@ -7,8 +7,10 @@ REC="$ROOT/lens/skills/review/references/reconcile.md"
 SKILL="$ROOT/lens/skills/review/SKILL.md"
 CLAUDEMD="$ROOT/lens/CLAUDE.md"
 FC="$ROOT/lens/skills/engine/references/finder-contract.md"
+READMEMD="$ROOT/lens/README.md"
+CHANGELOGMD="$ROOT/lens/CHANGELOG.md"
 fail(){ echo "FAIL: $1"; exit 1; }
-for f in "$PIPE" "$ASM" "$REC" "$SKILL" "$CLAUDEMD" "$FC"; do [ -s "$f" ] || fail "missing $f"; done
+for f in "$PIPE" "$ASM" "$REC" "$SKILL" "$CLAUDEMD" "$FC" "$READMEMD" "$CHANGELOGMD"; do [ -s "$f" ] || fail "missing $f"; done
 
 # C1 — ids are within-run stable; cross-run identity is the reconcile fingerprint, never the id.
 grep -qiE 'within[- ]run' "$PIPE" || fail "C1: pipeline must call ids within-run stable"
@@ -38,6 +40,9 @@ grep -qi 'exactly two skills' "$CLAUDEMD" || fail "W3: two-skills clarification 
 # W1/D3 consistency — the renamed 'severity trend' / deferred write-back must not leave stale 'verdict trend' wording in the operative docs.
 grep -qi 'verdict trend' "$REC" && fail "reconcile must say 'severity trend', not 'verdict trend'"
 grep -qi 'verdict trend' "$SKILL" && fail "SKILL must say 'severity trend', not 'verdict trend'"
+grep -qi 'verdict trend' "$CLAUDEMD" && fail "CLAUDE.md must say 'severity trend', not 'verdict trend'"
+grep -qi 'verdict trend' "$READMEMD" && fail "README must say 'severity trend', not 'verdict trend'"
+grep -qi 'verdict trend' "$CHANGELOGMD" && fail "CHANGELOG must say 'severity trend', not 'verdict trend'"
 
 # C2/I1 — the possibly-resolved enum mapping must state the ' — verify' suffix is markdown-only (dropped for the bare enum value).
 grep -qi 'suffix is markdown-only' "$ASM" || fail "review-model-assembly must explain possibly-resolved suffix is dropped for the enum"
