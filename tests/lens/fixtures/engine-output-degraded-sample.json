@@ -1,0 +1,25 @@
+{
+  "findings": [
+    {
+      "id": "F1",
+      "title": "Login handler emits no audit-log entry",
+      "severity": "medium",
+      "dimension": "requirements",
+      "verified": false,
+      "file": "src/auth/login.ts",
+      "label": "spec-gap",
+      "claim": "The spec requires an audit-log entry on every login attempt; none is emitted.",
+      "detail": "The adversarial verifier errored mid-refute (a tool failure), so this finding is KEPT and flagged as unverified rather than silently dropped — the degraded contract. verified is false and the review-model renders it as 'unverified-flagged'.",
+      "suggestedFix": "Emit an audit-log record (actor, ip, outcome) on each login attempt, success or failure.",
+      "source": "spec-adherence",
+      "votes": {
+        "total": 1,
+        "couldNotRefute": 0,
+        "refuted": 0
+      }
+    }
+  ],
+  "recommendedEscalation": "moderate",
+  "degraded": true,
+  "summary": "Degraded review: the adversarial VERIFY pass errored part-way, so its one finding is retained as unverified-flagged (verified:false) rather than dropped. degraded is true; recommendedEscalation is moderate (verdict 'fix')."
+}
