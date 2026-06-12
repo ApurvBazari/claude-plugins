@@ -124,8 +124,10 @@ No surviving findings → `minor`.
 ## 7. Stable ids (ASSEMBLE)
 
 Finders emit **local** ids (`F1`, `F2`, … within their own output). During dedup/assemble the engine
-assigns **globally-stable** `F<n>` ids across the merged set, so two finders' `F1`s don't collide and ids
-are stable for the renderer and for state-aware re-review.
+assigns **within-run-stable** `F<n>` ids across the merged set, so two finders' `F1`s don't collide and
+the renderer can wire each diff pin to its sheet within a single document. These ids are NOT stable across
+runs (a new finding renumbers the set positionally) — cross-run identity is the reconcile **fingerprint**,
+never the id (see `../../review/references/reconcile.md`).
 
 ## 8. Huge-diff rule
 

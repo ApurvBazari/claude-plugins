@@ -58,7 +58,7 @@ session-model `category` enum (`spec-gap|plan-deviation|bug|silent-failure|secur
 | `simplify` | * | `quality` |
 
 Carry onto each entry:
-- `id` — the engine's globally-stable `F<n>`.
+- `id` — the engine's run-stable `F<n>` (unique within this one review document; cross-run matching uses the reconcile fingerprint, not the id).
 - `severity` — verbatim (`critical|high|medium|low`; the engine never emits `info` — `info` is a
   render-only chip role, see the chip map below).
 - `location` — `"<file>:<line>"` from the finding's `file`/`line` (omit if the finding has none).
