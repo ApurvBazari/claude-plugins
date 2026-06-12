@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.0 — 2026-06-13
+
+### Cowork-first-class
+- `create` now resolves its output directory on first run: in a non-git folder (the Cowork knowledge-work case) it asks whether to write to a visible `walkthroughs/` folder or the hidden `.claude/walkthrough/`, and remembers the choice in `<base>/settings.md`. Git repositories are unaffected — they keep writing to `.claude/walkthrough/` with no new prompt.
+- Documented Cowork compatibility: walkthrough is a pure-skill plugin (no hooks, no scripts), so it installs and runs in Claude Cowork and emits the same portable HTML deliverable. Added `cowork` / `claude-cowork` keywords and a "Works in Cowork" README section.
+- No change to `update` / `document` (the location prompt is create-only) and no change to the synthesis model.
+
 ## 1.1.0 — 2026-06-08
 
 ### Detail surfaces
