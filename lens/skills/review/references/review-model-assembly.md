@@ -15,8 +15,7 @@ The spec→plan→impl story is told with the **standard** session-model fields 
   narrative; `components[]` lists which catalog components each section hosts.
 - `timeline[]` — the spec → plan → implementation arc (`{t, label, ref}`; `ref` → a section id).
 - `decisions[]` — the design decisions surfaced from the intent record / plan (`{title, why, alternatives, tradeoffs[]}`).
-- `nodes[]`/`edges[]` — only if a diagram genuinely helps (run the diagram-fidelity check in
-  `authoring-guide.md`); a review usually needs none.
+- `nodes[]`/`edges[]` — only if a diagram genuinely helps; a review usually needs none.
 
 These reuse the existing fields verbatim — do not rename them.
 

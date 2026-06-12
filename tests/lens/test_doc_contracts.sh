@@ -14,4 +14,7 @@ grep -qiE 'within[- ]run' "$PIPE" || fail "C1: pipeline must call ids within-run
 grep -qi 'globally-stable' "$PIPE" && fail "C1: 'globally-stable' must be gone from pipeline"
 grep -qi 'globally-stable' "$ASM"  && fail "C1: 'globally-stable' must be gone from review-model-assembly"
 
+# C3 — no dangling cross-plugin reference to walkthrough's authoring-guide.md.
+grep -qi 'authoring-guide' "$ASM" && fail "C3: dangling authoring-guide ref must be gone from review-model-assembly"
+
 echo "PASS: lens doc contracts"
