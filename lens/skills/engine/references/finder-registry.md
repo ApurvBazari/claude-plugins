@@ -74,3 +74,6 @@ Every tier's raw output is normalized into the `review-findings` shape before de
   e.g. an adapter's native category like `brittle-test` becomes `label:"brittle-test"`, `dimension:"test"`.
 - `verified` is normalized to `false` on intake (the VERIFY stage owns the flip); `source` records the
   producing finder/adapter for provenance and dedup merging.
+
+Adapter-tier producers emit prose, not the finding shape — see `adapter-dispatch.md` for the forcing
+wrapper-prompt and the per-adapter maps that normalize each of the 5 into the contract above.

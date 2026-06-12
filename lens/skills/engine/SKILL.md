@@ -20,7 +20,7 @@ None found → reconstruct from the transcript and set `degraded:true`.
 ## Step 3: Analyze
 Dispatch the built-in finder agents concurrently (`spec-adherence`, `plan-adherence`, `correctness`,
 `risk-classify`, `test-gaps`). Then run the **finder registry** per `references/finder-registry.md`:
-the **adapter tier** (the 5 read-only adapters, when installed) + the **project tier** (custom finders
+the **adapter tier** (the 5 read-only adapters, when installed) (normalized into the finding shape per `references/adapter-dispatch.md`) + the **project tier** (custom finders
 registered in `.claude/lens/settings.md`). Read-only ENFORCED at the boundary.
 Tag every candidate with its `dimension` per the producer->dimension map.
 
