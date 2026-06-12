@@ -10,7 +10,7 @@ Each finding the agent emits must carry the **required** fields of a `review-fin
 
 | Field | Value |
 |---|---|
-| `id` | a local id (`F1`, `F2`, … within your output — the engine reassigns globally-stable ids) |
+| `id` | a local id (`F1`, `F2`, … within your output — the engine reassigns within-run-stable ids) |
 | `title` | one-line statement of the finding |
 | `severity` | one of `critical` \| `high` \| `medium` \| `low` (**no `info`**) |
 | `dimension` | one value from the closed enum (see §2) |

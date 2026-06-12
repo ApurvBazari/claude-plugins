@@ -6,13 +6,15 @@ ASM="$ROOT/lens/skills/review/references/review-model-assembly.md"
 REC="$ROOT/lens/skills/review/references/reconcile.md"
 SKILL="$ROOT/lens/skills/review/SKILL.md"
 CLAUDEMD="$ROOT/lens/CLAUDE.md"
+FC="$ROOT/lens/skills/engine/references/finder-contract.md"
 fail(){ echo "FAIL: $1"; exit 1; }
-for f in "$PIPE" "$ASM" "$REC" "$SKILL" "$CLAUDEMD"; do [ -s "$f" ] || fail "missing $f"; done
+for f in "$PIPE" "$ASM" "$REC" "$SKILL" "$CLAUDEMD" "$FC"; do [ -s "$f" ] || fail "missing $f"; done
 
 # C1 — ids are within-run stable; cross-run identity is the reconcile fingerprint, never the id.
 grep -qiE 'within[- ]run' "$PIPE" || fail "C1: pipeline must call ids within-run stable"
 grep -qi 'globally-stable' "$PIPE" && fail "C1: 'globally-stable' must be gone from pipeline"
 grep -qi 'globally-stable' "$ASM"  && fail "C1: 'globally-stable' must be gone from review-model-assembly"
+grep -qi 'globally-stable' "$FC"   && fail "C1: 'globally-stable' must be gone from finder-contract"
 
 # C3 — no dangling cross-plugin reference to walkthrough's authoring-guide.md.
 grep -qi 'authoring-guide' "$ASM" && fail "C3: dangling authoring-guide ref must be gone from review-model-assembly"
