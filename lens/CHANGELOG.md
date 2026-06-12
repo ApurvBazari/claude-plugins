@@ -15,3 +15,6 @@
 - feat: structured iteration chip — fixed/open/new now surfaces as an `iteration` field + chip + `iterationDelta` in the rendered review (engine schema untouched).
 - feat: full markdown-fallback parity — narrative spine + capped annotated diff-hunks section.
 - feat: adapter normalization spec — forcing wrapper-prompt + per-adapter maps for the 5 adapters (`references/adapter-dispatch.md`).
+- feat: compute-only orchestrator return mode — when driven by an orchestrator (vicario/matali P5 REVIEW), reconcile returns `{findings, delta, severityTrend}` and writes nothing; the orchestrator owns persistence + render. Standalone `/lens:review` runs all five steps unchanged.
+- feat: `delta` + `severityTrend` schema fields (optional, field-additive — vicario's validator still passes); per-finding `iteration` stays render-only per the engine-schema-untouched rule.
+- feat: `acknowledged` (won't-fix) suppression wired in orchestrator mode — the caller supplies the input path lens's render couldn't; standalone path remains unwired (no input path).
