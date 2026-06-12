@@ -89,7 +89,9 @@ fingerprint is retained so they aren't re-surfaced as `new`):
 }
 ```
 
-## Write-back
-After labeling, write the updated map back to `.claude/lens/review-state.json`: update `lastSeen` on
-matched fingerprints, add new ones, mark unmatched priors `fixed`, carry forward `acknowledged` entries,
-and store this run's `verdict`. This is the single state write — everything else lens does is read-only.
+## Write-back (after render only)
+Reconcile **computes** the updated map (update `lastSeen` on matched fingerprints, add new ones, mark
+unmatched priors `fixed`, carry forward `acknowledged` entries, and store this run's
+`recommendedEscalation` + `verdict`) but does **not** write it here. The write to
+`.claude/lens/review-state.json` happens **only after the render succeeds** (SKILL Step 5), so a failed
+render never advances the state. This is the single state write — everything else lens does is read-only.

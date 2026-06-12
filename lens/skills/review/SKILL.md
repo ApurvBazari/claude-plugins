@@ -21,8 +21,8 @@ returns a `review-findings` object in context.
 Read `.claude/lens/review-state.json` for this target (if present). Match each engine finding to a prior
 one by **fingerprint** per `references/reconcile.md` (dimension + normalized claim + nearest *stable*
 context — never the raw line number); label **fixed / still-open / new** and flag low-confidence
-matches *"possibly-resolved — verify"*. Compute the verdict trend, then write the updated state back to
-`review-state.json`. (v1.1: carry forward "won't-fix" acknowledgments and suppress them.)
+matches *"possibly-resolved — verify"*. **Compute** the severity trend and the updated state map **in
+memory** here — the write-back to `review-state.json` is deferred to Step 5 (after a successful render).
 
 ## Step 4: Render (lens-render)
 Build the review-model from the **reconciled** findings per `references/review-model-assembly.md`
@@ -32,8 +32,12 @@ invoke `walkthrough:render` with the model in context and output path
 `<configured-path>/<YYYY-MM-DD-HHMM>-<slug>.html` (default `.claude/lens/`). Otherwise emit a markdown
 report per `references/markdown-fallback.md`.
 
-## Step 5: Report
-Tell the user the path + the one-line `verdict` + the iteration delta (e.g. "2 fixed · 1 new"); offer to open (never auto-open).
+## Step 5: Write state, then report
+**Write-back (after a successful render only).** Now that Step 4 produced an artifact, write the state map
+computed in Step 3 back to `.claude/lens/review-state.json` — the single state write. On a render failure,
+**skip the write** so the state never advances without an artifact (no stale `fixed` labels next run).
+Then tell the user the path + the one-line `verdict` + the iteration delta (e.g. "2 fixed · 1 new"); offer
+to open (never auto-open).
 
 ## Key Rules
 - **Read-only (except `review-state.json`).** Never commit, edit, stage, or block; the only write is the state file + the rendered doc.
