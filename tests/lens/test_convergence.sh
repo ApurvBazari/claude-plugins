@@ -18,4 +18,9 @@ grep -qi 'delta' "$REC" || fail "CO2: reconcile must name delta in the returned 
 grep -qi 'compute-only' "$SKILL" || fail "CO3: SKILL must document the compute-only branch"
 grep -qiE 'skip .*render|skip Step 4' "$SKILL" || fail "CO3: SKILL compute-only must skip the render"
 
+# CO4 — acknowledged suppression wired for orchestrator mode (caller supplies it); standalone stays fenced.
+grep -qi 'wired in orchestrator mode' "$REC" || fail "CO4: reconcile must wire acknowledged for orchestrator mode"
+grep -qiE 'suppressed|kept out' "$REC" || fail "CO4: acknowledged findings must be suppressed"
+grep -qiE 'not yet wired|no input path' "$REC" || fail "CO4: standalone acknowledged fence must remain"
+
 echo "PASS: lens convergence compute-only contracts"

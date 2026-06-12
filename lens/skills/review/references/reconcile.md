@@ -96,6 +96,15 @@ fingerprint is retained so they aren't re-surfaced as `new`):
 }
 ```
 
+#### Wired in orchestrator mode
+
+The "no input path" limitation is **standalone-only**. In **orchestrator mode** (§Orchestrator mode) the
+caller — e.g. matali's human gate — supplies acknowledged findings as part of the prior state it passes in.
+reconcile then honors them: an `acknowledged` fingerprint is **suppressed** from the returned `findings`
+(kept out of the caller's blocker set) while its fingerprint is **retained** in the supplied state so it is
+not re-surfaced as `new`. lens still sets nothing itself — the orchestrator owns the acknowledgment input
+and its persistence. Standalone `/lens:review` remains **not yet wired** (no input path).
+
 ## Orchestrator mode (compute-only)
 When lens is driven by an **orchestrator** (e.g. vicario/matali's P5 REVIEW) instead of a human running
 `/lens:review`, reconcile runs in **compute-only** mode: it RETURNS the reconciled object and **writes
