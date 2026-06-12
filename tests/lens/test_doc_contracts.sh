@@ -24,4 +24,7 @@ grep -qi 'collapses' "$REC" || fail "W1: trend section must explain verdict coll
 grep -qi 'after a successful render' "$SKILL" || fail "D3: SKILL must write state only after a successful render"
 grep -qi 'only after the render succeeds' "$REC" || fail "D3: reconcile write-back must be deferred to post-render"
 
+# D4 — v1.1 acknowledged/won't-fix is fenced as not yet wired (no input path in v1).
+grep -qiE 'not yet wired|no input path' "$REC" || fail "D4: v1.1 won't-fix must be fenced as not yet wired"
+
 echo "PASS: lens doc contracts"

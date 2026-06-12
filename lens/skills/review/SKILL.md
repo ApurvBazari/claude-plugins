@@ -22,7 +22,7 @@ Read `.claude/lens/review-state.json` for this target (if present). Match each e
 one by **fingerprint** per `references/reconcile.md` (dimension + normalized claim + nearest *stable*
 context — never the raw line number); label **fixed / still-open / new** and flag low-confidence
 matches *"possibly-resolved — verify"*. **Compute** the severity trend and the updated state map **in
-memory** here — the write-back to `review-state.json` is deferred to Step 5 (after a successful render).
+memory** here — the write-back to `review-state.json` is deferred to Step 5 (after a successful render). (v1.1 `acknowledged`/won't-fix carry-forward is **not yet wired** — no input path in v1.)
 
 ## Step 4: Render (lens-render)
 Build the review-model from the **reconciled** findings per `references/review-model-assembly.md`

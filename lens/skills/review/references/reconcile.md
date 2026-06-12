@@ -78,6 +78,12 @@ Keyed by **target**; per target a `verdict` + a `findings` map keyed by **finger
 - `firstSeen` / `lastSeen` — when the fingerprint first appeared and was last seen.
 
 ### v1.1 — acknowledged (won't-fix)
+
+> **v1.1 — not yet wired.** v1 has **no input path** to set `acknowledged`: the render is non-interactive,
+> so nothing in v1 can mark a finding "won't-fix" (mirrors the deferred multi-skeptic voting in
+> `../../engine/references/pipeline.md`). The suppress logic below is the forward design; in v1 no finding
+> is ever acknowledged.
+
 A finding may carry `acknowledged: { reason }` (a "won't-fix" the human accepted). Acknowledged findings
 **persist** in state and are **suppressed** on later runs (kept out of the rendered findings, but their
 fingerprint is retained so they aren't re-surfaced as `new`):
