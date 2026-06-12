@@ -39,4 +39,7 @@ grep -qi 'exactly two skills' "$CLAUDEMD" || fail "W3: two-skills clarification 
 grep -qi 'verdict trend' "$REC" && fail "reconcile must say 'severity trend', not 'verdict trend'"
 grep -qi 'verdict trend' "$SKILL" && fail "SKILL must say 'severity trend', not 'verdict trend'"
 
+# C2/I1 — the possibly-resolved enum mapping must state the ' — verify' suffix is markdown-only (dropped for the bare enum value).
+grep -qi 'suffix is markdown-only' "$ASM" || fail "review-model-assembly must explain possibly-resolved suffix is dropped for the enum"
+
 echo "PASS: lens doc contracts"

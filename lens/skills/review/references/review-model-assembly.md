@@ -67,7 +67,7 @@ Carry onto each entry:
   own per-vote `status` (that status only reports whether verification *ran cleanly* vs *errored*;
   refuted findings are dropped before assembly, so only these two values ever reach the model).
 - `iteration` — the reconcile **fixed/open/new** label (`fixed|still-open|new`, plus `possibly-resolved`
-  for a low-confidence match) → the session-model `iteration` field (rendered as the iteration chip).
+  for a low-confidence match — reconcile's full label is `possibly-resolved — verify`; strip the ` — verify` suffix (the suffix is markdown-only) to get the bare enum value) → the session-model `iteration` field (rendered as the iteration chip).
   **Omit on a first review** (no prior state). The aggregate counts → the model's top-level
   `iterationDelta` (also omitted on a first review).
 
