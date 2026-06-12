@@ -56,7 +56,7 @@ items (full coverage); in the headless/contract-only path only the gaps appear (
 | ... | plan | deviated |
 ```
 
-### 4. Findings, grouped by severity
+### 5. Findings, grouped by severity
 Group findings under `## Critical` / `## High` / `## Medium` / `## Low` headings (highest first). Each
 finding shows its location, claim, suggestedFix, the **verification status** (`verified` |
 `unverified-flagged`), and the **fixed/open/new** iteration label (`fixed` | `still-open` | `new` |
@@ -76,7 +76,7 @@ dropped"), matching the HTML render which only narrates them, never lists them.
 A `fixed` finding still appears (struck or under a `Fixed since last review` note) so the iteration delta
 is visible, not just disappeared.
 
-### 5. The change, annotated (diff hunks)
+### 6. The change, annotated (diff hunks)
 
 Render `diffHunks[]` as plain fenced diffs — **only the finding-bearing hunks plus minimal surrounding
 context**, never the whole patch (mirror the HTML annotated-diff scope + the huge-diff cap). Where the HTML
@@ -94,7 +94,7 @@ finding:
 
 Omit this section if `diffHunks[]` is absent.
 
-### 6. Risk table
+### 7. Risk table
 One row per changed file with its risk class (from risk-classify `files[]`). Omit if `files[]` is absent
 (headless path).
 

@@ -2,8 +2,10 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 F="$ROOT/tests/lens/fixtures/fallback-sample.md"
+MF="$ROOT/lens/skills/review/references/markdown-fallback.md"
 fail(){ echo "FAIL: $1"; exit 1; }
 [ -s "$F" ] || fail "fixture missing: produce via markdown-fallback on the sample review-model"
+[ -s "$MF" ] || fail "markdown-fallback.md missing"
 
 # Degrade notice — this is the markdown path, taken when walkthrough is absent.
 grep -qi 'walkthrough is not installed' "$F" || fail "missing fallback notice"
@@ -31,5 +33,10 @@ grep -qE '^## Risk' "$F" || fail "missing '## Risk' table"
 grep -qiE '^## Decisions' "$F" || fail "no Decisions narrative section (D1 parity)"
 grep -qiE '^## The change, annotated' "$F" || fail "no diff-hunks section (D1 parity)"
 grep -qE '← *F[0-9]' "$F" || fail "diff hunks lack inline finding markers (← F<n>)"
+
+# D1 — markdown-fallback section numbering must be sequential (no duplicate/skipped headings).
+[ "$(grep -cE '^### 4\.' "$MF")" -eq 1 ] || fail "markdown-fallback: duplicate or missing '### 4.' heading"
+grep -qE '^### 5\. Findings' "$MF" || fail "markdown-fallback: Findings must be section 5"
+grep -qE '^### 7\. Risk' "$MF" || fail "markdown-fallback: Risk table must be section 7"
 
 echo "PASS: lens fallback report"
