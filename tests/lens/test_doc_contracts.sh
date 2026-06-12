@@ -30,4 +30,7 @@ grep -qiE 'not yet wired|no input path' "$REC" || fail "D4: v1.1 won't-fix must 
 # W2 — the finding-status (confirmed vs flagged) is disambiguated from the verifier's status.
 grep -qi 'distinct from the verifier' "$ASM" || fail "W2: status clarifier missing in review-model-assembly"
 
+# W3 — CLAUDE.md states lens has exactly two skills; 'lens-render' is the render half of review.
+grep -qi 'exactly two skills' "$CLAUDEMD" || fail "W3: two-skills clarification missing in CLAUDE.md"
+
 echo "PASS: lens doc contracts"

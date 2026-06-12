@@ -125,6 +125,10 @@ The renderer's happy path is `walkthrough:render`: lens passes the fully-built r
 
 ## Skills (planned surface — built in later tasks)
 
+lens has **exactly two skills**: `review` (user-facing, `/lens:review`) and `engine` (internal,
+`user-invocable: false`). There is no separate `render` skill in lens — "lens-render" names the **render
+half inside `skills/review`**, and rendering itself is delegated to walkthrough's `render` skill.
+
 - `review/SKILL.md` — the one user-facing skill (`/lens:review [target]`). Runs the 5-stage pipeline: delegates the judgment half to `engine`, then does the render half (`lens-render`: review-model → `walkthrough:render` / markdown fallback).
 - `engine/SKILL.md` — **internal** (`user-invocable: false`), data-only judgment core: scope → intent → analyze → verify → dedup → rank → return `review-findings` JSON. Writes nothing, never prompts.
 - `agents/` — six finder/verifier agents: the **five built-in finders** (`spec-adherence`, `plan-adherence`, `correctness`, `risk-classify`, `test-gaps`) that each emit `review-findings` tagged with their `dimension`, plus the **`verifier`** (the adversarial skeptic used by the VERIFY stage, emitting a per-finding refute **vote** `{id, refuted, reason, status}`; the engine aggregates these votes into the schema's `votes{total,couldNotRefute,refuted}` and resolves each finding's `verified` bool). `test-gaps` owns the `test` / missing-test dimension; the `pr-test-analyzer` adapter only covers brittle/overfit.
