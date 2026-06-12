@@ -98,4 +98,19 @@ archive-retention: 10
 ---'
 assert_eq "$expected" "$got" "idempotent: same value twice = unchanged"
 
+# --- Case 7: set -e fail-fast — a sub-command failure must abort non-zero ---
+# Point <file> at an existing DIRECTORY so the bootstrap redirect `> "$file"` fails
+# ("is a directory"). Under the new `set -e` (the point of the -uo -> -euo edit), the
+# script aborts non-zero instead of falling through to `exit 0` and silently losing the
+# write. Root-proof: redirecting to a directory fails regardless of uid.
+dir_as_file="$FIXTURE_ROOT/.claude/handoff/a-directory"
+mkdir -p "$dir_as_file"
+rc=0
+bash "$MERGE" "$dir_as_file" archive-retention 10 >/dev/null 2>&1 || rc=$?
+if [[ "$rc" -ne 0 ]]; then
+  PASS_COUNT=$((PASS_COUNT + 1)); echo "  ok: set -e aborts non-zero on a failed write (rc=$rc)"
+else
+  FAIL_COUNT=$((FAIL_COUNT + 1)); echo "  FAIL: expected non-zero exit on failed write, got 0"
+fi
+
 summary
