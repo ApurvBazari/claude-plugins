@@ -18,4 +18,8 @@ done
 # finder-registry references the dispatch doc.
 grep -qi 'adapter-dispatch' "$REG" || fail "finder-registry must reference adapter-dispatch.md"
 
+# The two load-bearing semantic clauses most likely to be 'simplified away'.
+grep -qiE 'no[^a-z]+info' "$AD" || fail "wrapper must keep the 'no info' severity rule"
+grep -qi 'skip pure missing-coverage' "$AD" || fail "pr-test-analyzer must keep its skip-missing-coverage scoping"
+
 echo "PASS: adapter dispatch contract"

@@ -6,7 +6,7 @@ engine normalizes them. Two parts: a generic **wrapper-prompt** applied to every
 **per-adapter map** for each of the 5.
 
 Normalization is **best-effort**: an adapter whose output still can't be mapped is dropped, `degraded:true`
-is set, and the missing dimension is named in `summary` (per `pipeline.md` §3 and `engine/SKILL.md` Step 4).
+is set, and the missing dimension is named in `summary` (per `engine/SKILL.md` Step 3 + Step 4).
 
 ## Part 1 — the forcing wrapper-prompt (every adapter)
 
@@ -22,8 +22,13 @@ Prepend this contract to every adapter dispatch:
 
 The engine still validates each item before fan-in (drop + `degraded` on a non-conforming item) — the
 wrapper raises the hit rate; it does not replace validation.
+An adapter that ships its own Output Format section may not fully honor this wrapper; the validation belt
+(drop + `degraded`) is the backstop for exactly those cases. `type-design-analyzer` (qualitative ratings,
+no per-finding structure) is the expected lowest-yield adapter — it leans hardest on the fallback.
 
 ## Part 2 — per-adapter maps
+
+**Dimension assignments are owned by `finder-registry.md`'s adapter table** — this doc specifies only how to fill the remaining finding fields (severity scale, `label`, `file`/`line`). If they ever disagree, finder-registry wins.
 
 ### `silent-failure-hunter` → `dimension: silent-failure`
 Native output: prose findings about swallowed errors / inadequate fallbacks. Map each reported failure to
