@@ -27,4 +27,7 @@ grep -qi 'only after the render succeeds' "$REC" || fail "D3: reconcile write-ba
 # D4 — v1.1 acknowledged/won't-fix is fenced as not yet wired (no input path in v1).
 grep -qiE 'not yet wired|no input path' "$REC" || fail "D4: v1.1 won't-fix must be fenced as not yet wired"
 
+# W2 — the finding-status (confirmed vs flagged) is disambiguated from the verifier's status.
+grep -qi 'distinct from the verifier' "$ASM" || fail "W2: status clarifier missing in review-model-assembly"
+
 echo "PASS: lens doc contracts"

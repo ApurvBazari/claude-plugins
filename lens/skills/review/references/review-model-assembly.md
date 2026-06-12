@@ -63,7 +63,9 @@ Carry onto each entry:
 - `location` — `"<file>:<line>"` from the finding's `file`/`line` (omit if the finding has none).
 - `claim`, `detail`, `suggestedFix` — verbatim from the finding (omit-empty per field).
 - `status` — the reconcile **verification** status: `verified` (verifier confirmed) or `unverified-flagged`
-  (verify errored mid-way, kept and flagged). This is the session-model `status` enum.
+  (verify errored mid-way, kept and flagged). This is the session-model `status` enum — distinct from the verifier's
+  own per-vote `status` (that status only reports whether verification *ran cleanly* vs *errored*;
+  refuted findings are dropped before assembly, so only these two values ever reach the model).
 - the reconcile **fixed/open/new** label (`fixed|still-open|new`, plus `possibly-resolved — verify` for a
   low-confidence match) — carry it in the finding's `detail`/`points` so the status chip reflects iteration.
 
