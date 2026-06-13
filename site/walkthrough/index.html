@@ -145,11 +145,12 @@ section.vis{opacity:1;transform:none;}
       <a href="#pipeline">Pipeline</a>
       <a href="#skills">Skills</a>
       <a href="#contained">Self-contained</a>
+      <a href="#cowork">In Cowork</a>
       <a href="#example">Example</a>
       <a href="#isnt">Is / isn't</a>
     </div>
     <div style="display:flex;align-items:center;gap:.8rem">
-      <div class="nav-meta"><span class="dot"></span> PLUGIN · v1.0.0</div>
+      <div class="nav-meta"><span class="dot"></span> PLUGIN · v1.3.0</div>
       <button class="theme-btn" onclick="tgl()">◑ THEME</button></div>
   </div></nav>
   <div class="progress" id="prog"></div>
@@ -245,13 +246,14 @@ section.vis{opacity:1;transform:none;}
     <section id="skills">
       <div class="sec-label">04 — reference</div>
       <h2>Three skills, one <em>shared</em> renderer</h2>
-      <p class="lede">All three are <code>/walkthrough:&lt;name&gt;</code>, all default frontmatter — user- <em>and</em> intent-invocable. Typing the slash form works; so does asking in plain language. There are no hidden building blocks, no agents, no hooks, no scripts.</p>
+      <p class="lede">The three user-facing skills are <code>/walkthrough:&lt;name&gt;</code>, all default frontmatter — user- <em>and</em> intent-invocable. Typing the slash form works; so does asking in plain language. Alongside them sits one <strong>internal</strong> building block — <code>render</code> (<code>user-invocable: false</code>), consumed by the <code>lens</code> plugin. No agents, no hooks, no scripts.</p>
       <table class="ref-table">
         <thead><tr><th>Skill</th><th>Input</th><th>What it does</th></tr></thead>
         <tbody>
           <tr><td class="slash">/walkthrough:create</td><td class="cell-mode">session <span class="tag auto">auto</span></td><td>Renders the current session from scratch through the five-stage pipeline. The optional <span class="cell-mono">[focus]</span> argument scopes the synthesis. Also fires on plain-language intent — "visualize this session", "walk me through what we did", "walk me through it" (or "this" / "that"), or "make a session recap".</td></tr>
           <tr><td class="slash">/walkthrough:update</td><td class="cell-mode">session <span class="tag auto">auto</span></td><td>Refreshes an existing walkthrough in place — reconstructs the prior model from the rendered HTML, folds in the spec/source files you name, and overwrites the <strong>same file</strong>. Always asks which document first.</td></tr>
           <tr><td class="slash">/walkthrough:document</td><td class="cell-mode">subject <span class="tag auto">auto</span></td><td>Renders a subject — a plugin, the marketplace, or any path — instead of a session. README + manifest are canonical. This is what builds every page under <span class="cell-mono">site/</span>, including this one.</td></tr>
+          <tr><td class="slash">render</td><td class="cell-mode">internal</td><td>Renders a pre-synthesized model → HTML (skips gather + synthesize), reusing the same visual layer. Internal (<span class="cell-mono">user-invocable: false</span>) — not a user command; consumed by the <code>lens</code> plugin to render its findings.</td></tr>
         </tbody>
       </table>
       <div class="callout">
@@ -270,11 +272,25 @@ section.vis{opacity:1;transform:none;}
         <div class="edge"><div class="n">two themes</div><div class="t">Dark + warm-light</div><p>One in-document toggle, viewer's choice per-view. Nothing about it requires a server or a build step.</p></div>
         <div class="edge"><div class="n">open components</div><div class="t">Floor, not ceiling</div><p>Catalog entries used verbatim where they fit; bespoke components composed from the same primitives where they don't — passing a looks-native checklist. A <span class="cell-mono">.chip</span> primitive (five status roles: <span class="cell-mono">ok</span>, <span class="cell-mono">info</span>, <span class="cell-mono">warn</span>, <span class="cell-mono">danger</span>, <span class="cell-mono">neutral</span>) drops a status badge inline in any component.</p></div>
       </div>
-      <p style="margin-top:1.4rem">The result renders with no network beyond that one font fetch — copy the file anywhere, email it, drop it in a wiki, and it works without the plugin, without a server, and without a connection. Walkthroughs are written to <code>.claude/walkthrough/&lt;YYYY-MM-DD-HHMM&gt;-&lt;slug&gt;.html</code>; on first run <code>create</code> offers to add that directory to <code>.gitignore</code>, since a session artifact can contain code and prose you exchanged. When a walkthrough on the same subject already exists, a <strong>proliferation guard</strong> kicks in — <code>create</code> asks whether to update it in place, write a new versioned file, or overwrite, rather than silently piling up <code>-2</code>/<code>-3</code> copies.</p>
+      <p style="margin-top:1.4rem">The result renders with no network beyond that one font fetch — copy the file anywhere, email it, drop it in a wiki, and it works without the plugin, without a server, and without a connection. Walkthroughs are written to <code>.claude/walkthrough/&lt;YYYY-MM-DD-HHMM&gt;-&lt;slug&gt;.html</code> (or a visible <code>walkthroughs/</code> folder you pick on first run in a non-git directory); on first run <code>create</code> offers to add that directory to <code>.gitignore</code>, since a session artifact can contain code and prose you exchanged. When a walkthrough on the same subject already exists, a <strong>proliferation guard</strong> kicks in — <code>create</code> asks whether to update it in place, write a new versioned file, or overwrite, rather than silently piling up <code>-2</code>/<code>-3</code> copies.</p>
+    </section>
+
+    <section id="cowork">
+      <div class="sec-label">06 — in cowork</div>
+      <h2>First-class in <em>Claude Cowork</em></h2>
+      <p class="lede">walkthrough is a <strong>pure-skill plugin</strong> — no hooks, no shell scripts, no agents — so it installs and runs in <a href="https://claude.com/product/cowork">Claude Cowork</a> exactly as it does in Claude Code. Its one portable HTML file is a natural Cowork deliverable: run it and you get an explorable page you can email, drop in a wiki, or open offline.</p>
+      <div class="edge-grid">
+        <div class="edge"><div class="n">runs anywhere skills run</div><div class="t">No hooks, no scripts</div><p>Nothing in walkthrough depends on plugin hooks — it's skills over a shared visual layer, so it loads and runs as a first-class citizen in Cowork, not just Claude Code.</p></div>
+        <div class="edge"><div class="n">adaptive output</div><div class="t">Finds you a visible home</div><p>A Cowork folder is often not a git repo, so on first run there <code>create</code> asks where to write — a visible <span class="cell-mono">walkthroughs/</span> folder or the hidden <span class="cell-mono">.claude/walkthrough/</span> — and remembers the choice.</p></div>
+      </div>
+      <div class="callout">
+        <h4>Git repos are unchanged</h4>
+        <p>In a git repository — the typical Claude Code case — nothing changes: walkthroughs go to <code>.claude/walkthrough/</code> with no new prompt. The location question appears only in a non-git folder.</p>
+      </div>
     </section>
 
     <section id="example">
-      <div class="sec-label">06 — example</div>
+      <div class="sec-label">07 — example</div>
       <h2>Create, then <em>refresh</em> in place</h2>
       <p class="lede"><code>/walkthrough:create architecture decisions</code> scopes a session recap to the decisions you made; <code>/walkthrough:update</code> later folds in a new spec and overwrites the same file.</p>
       <div class="codeblock">
@@ -311,7 +327,7 @@ write        overwrite the SAME file — no new file, no backup
     </section>
 
     <section id="isnt">
-      <div class="sec-label">07 — boundaries</div>
+      <div class="sec-label">08 — boundaries</div>
       <h2>What it <em>is</em> — and isn't</h2>
       <p class="lede">A walkthrough is a snapshot, not a live view. Knowing the boundary keeps expectations honest.</p>
       <div class="edge-grid">
@@ -327,7 +343,7 @@ write        overwrite the SAME file — no new file, no backup
         <a href="../">← marketplace</a>
         <a href="https://github.com/ApurvBazari/claude-plugins/tree/main/walkthrough">source on GitHub</a>
       </div>
-      <div class="meta">walkthrough · v1.0.0 · MIT · by Apurv Bazari</div>
+      <div class="meta">walkthrough · v1.3.0 · MIT · by Apurv Bazari</div>
     </div>
   </main>
   <aside class="panel" id="panel"><span class="x" onclick="closeD()">✕</span>

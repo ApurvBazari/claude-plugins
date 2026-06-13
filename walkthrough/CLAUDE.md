@@ -15,7 +15,7 @@ The visual layer (`create/references/`: `design-system.md`, `interactivity.md`, 
 | **Themes** | Dark + warm-light, in-document toggle | Two `:root` blocks; viewer picks per-view, no rebuild |
 | **Component system** | Open — catalog is a floor, not a ceiling | Bespoke components composed from primitives when content fits no catalog entry |
 | **Rendering** | Inline everything (CSS/JS/SVG); only external is a Google Fonts `@import` | Self-containment is the core promise — no CDN scripts, no `<img>`, no `<script src>` |
-| **Storage** | `.claude/walkthrough/<ts>-<slug>.html`, in-repo, gitignore prompt on first run | Mirrors handoff's in-repo + gitignore-by-default privacy model |
+| **Storage** | `<base>/<ts>-<slug>.html`; `<base>` = `.claude/walkthrough/` in a git repo (gitignore prompt on first run) or a first-run-chosen `walkthroughs/` ∣ `.claude/walkthrough/` in a non-git folder | Git-repo behavior unchanged; non-git (Cowork) folders pick a visible-or-hidden base, remembered in `<base>/settings.md` |
 
 ## The 5-stage pipeline
 
@@ -128,4 +128,4 @@ One internal building block: `render/SKILL.md` (`user-invocable: false`) — inv
 
 ## AskUserQuestion usage
 
-`create` makes up to three `AskUserQuestion` calls: the thin-session prompt (2 options), the first-run gitignore prompt (3 options), and — conditionally — a proliferation-guard prompt (3 options) triggered when a same-subject slug already exists in `.claude/walkthrough/`. `update` adds the target picker, whose options are built **dynamically** from the `.claude/walkthrough/` listing — kept fixed-length per the guard: a yes/no confirm when a single doc exists, and a 2–4-option list (plus the tool's built-in "Other") otherwise. Because the list is dynamic, the guard's single-option case is handled by the yes/no form. Both skills reference `.claude/rules/ask-user-question-guard.md` per the convention for any skill that uses the tool.
+`create` makes up to four `AskUserQuestion` calls: the thin-session prompt (2 options), the first-run output-location prompt (2 options, non-git folder only), the first-run gitignore prompt (3 options), and — conditionally — a proliferation-guard prompt (3 options) triggered when a same-subject slug already exists in `<base>`. `update` adds the target picker, whose options are built **dynamically** from the `.claude/walkthrough/` listing — kept fixed-length per the guard: a yes/no confirm when a single doc exists, and a 2–4-option list (plus the tool's built-in "Other") otherwise. Because the list is dynamic, the guard's single-option case is handled by the yes/no form. Both skills reference `.claude/rules/ask-user-question-guard.md` per the convention for any skill that uses the tool.
