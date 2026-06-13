@@ -246,13 +246,14 @@ section.vis{opacity:1;transform:none;}
     <section id="skills">
       <div class="sec-label">04 — reference</div>
       <h2>Three skills, one <em>shared</em> renderer</h2>
-      <p class="lede">All three are <code>/walkthrough:&lt;name&gt;</code>, all default frontmatter — user- <em>and</em> intent-invocable. Typing the slash form works; so does asking in plain language. There are no hidden building blocks, no agents, no hooks, no scripts.</p>
+      <p class="lede">The three user-facing skills are <code>/walkthrough:&lt;name&gt;</code>, all default frontmatter — user- <em>and</em> intent-invocable. Typing the slash form works; so does asking in plain language. Alongside them sits one <strong>internal</strong> building block — <code>render</code> (<code>user-invocable: false</code>), consumed by the <code>lens</code> plugin. No agents, no hooks, no scripts.</p>
       <table class="ref-table">
         <thead><tr><th>Skill</th><th>Input</th><th>What it does</th></tr></thead>
         <tbody>
           <tr><td class="slash">/walkthrough:create</td><td class="cell-mode">session <span class="tag auto">auto</span></td><td>Renders the current session from scratch through the five-stage pipeline. The optional <span class="cell-mono">[focus]</span> argument scopes the synthesis. Also fires on plain-language intent — "visualize this session", "walk me through what we did", "walk me through it" (or "this" / "that"), or "make a session recap".</td></tr>
           <tr><td class="slash">/walkthrough:update</td><td class="cell-mode">session <span class="tag auto">auto</span></td><td>Refreshes an existing walkthrough in place — reconstructs the prior model from the rendered HTML, folds in the spec/source files you name, and overwrites the <strong>same file</strong>. Always asks which document first.</td></tr>
           <tr><td class="slash">/walkthrough:document</td><td class="cell-mode">subject <span class="tag auto">auto</span></td><td>Renders a subject — a plugin, the marketplace, or any path — instead of a session. README + manifest are canonical. This is what builds every page under <span class="cell-mono">site/</span>, including this one.</td></tr>
+          <tr><td class="slash">render</td><td class="cell-mode">internal</td><td>Renders a pre-synthesized model → HTML (skips gather + synthesize), reusing the same visual layer. Internal (<span class="cell-mono">user-invocable: false</span>) — not a user command; consumed by the <code>lens</code> plugin to render its findings.</td></tr>
         </tbody>
       </table>
       <div class="callout">

@@ -79,6 +79,10 @@ A walkthrough is a snapshot — but you can refresh one in place as the work evo
 
 `document` is both user- and intent-invokable: the slash form works, and so does *"document this plugin"* or *"make a docs page for notify"*.
 
+## The internal `render` skill
+
+Alongside the three user-facing skills, walkthrough ships one **internal** skill — `render` (`user-invocable: false`). It renders a model that's already in context straight to HTML, skipping the gather + synthesize stages, and reuses the same visual layer. It exists for *other plugins* to call programmatically — the [`lens`](../lens/) review companion uses it to render its findings. You never invoke it directly; "render the session" for users is `/walkthrough:create`.
+
 ## Where files go
 
 Walkthroughs are written to:
