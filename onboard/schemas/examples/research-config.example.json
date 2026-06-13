@@ -1,0 +1,17 @@
+{
+  "disabledBuiltins": ["security"],
+  "extraSpecialists": [
+    {
+      "name": "accessibility",
+      "dimension": "WCAG / a11y coverage",
+      "agent": ".claude/agents/research-a11y.md",
+      "scopeGlobs": ["src/components/**"]
+    },
+    {
+      "name": "i18n",
+      "dimension": "Internationalization coverage",
+      "prompt": "Assess i18n: hardcoded strings, message catalogs, locale handling.",
+      "scopeGlobs": ["src/**"]
+    }
+  ]
+}

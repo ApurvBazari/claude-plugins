@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/ApurvBazari/claude-plugins/onboard/schemas/research-config.json",
+  "title": "Onboard Research — Project Config",
+  "description": "Optional target-repo config at .claude/onboard-research.config.json that tunes the research roster: disable built-in dimensions and/or add custom specialists. Each custom specialist supplies a prompt or an agent reference and emits research-findings.json-shaped output so it flows through the same verifier and synthesizer.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "disabledBuiltins": {
+      "type": "array",
+      "items": {
+        "enum": ["architecture", "data-model", "testing", "security", "conventions", "domain", "dependencies"]
+      },
+      "description": "Built-in dimensions to turn off for this project."
+    },
+    "extraSpecialists": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "dimension"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "dimension": { "type": "string", "minLength": 1 },
+          "prompt": { "type": "string", "description": "Inline specialist prompt. Provide this OR `agent`." },
+          "agent": { "type": "string", "description": "Path to a user agent file, e.g. .claude/agents/research-a11y.md. Provide this OR `prompt`." },
+          "scopeGlobs": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}
