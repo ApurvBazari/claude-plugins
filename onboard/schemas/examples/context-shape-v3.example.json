@@ -1,0 +1,14 @@
+{
+  "version": 3,
+  "source": "onboard:start",
+  "projectPath": "/abs/path/to/project",
+  "callerExtras": { "installedPlugins": [], "coveredCapabilities": [] },
+  "phases": { "cicdAndDelivery": { "cicd": { "provider": "none" } } },
+  "research": {
+    "engineUsed": "subagent",
+    "depth": "standard",
+    "roster": { "builtins": ["architecture", "testing"] },
+    "findings": {},
+    "artifacts": { "location": "committed", "written": [], "html": null }
+  }
+}
