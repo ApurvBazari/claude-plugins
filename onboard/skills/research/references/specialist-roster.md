@@ -86,7 +86,7 @@ Each specialist returns a `research-findings.json` object (`dimension`, `status`
 ## How the engine uses this file
 
 1. Compute the effective roster (`custom-specialist-contract.md`) and apply the depth cap (`depth-profiles.md`).
-2. For each enabled built-in dimension, take its `scopeGlobs`, **intersect** with the detected source roots, fill `{scopeGlobs}` into the prompt template above.
+2. For each enabled built-in dimension, take its `scopeGlobs`, **intersect** with the detected source roots (root-dwelling globs — manifests/lockfiles, docs, test/lint config — are exempt from the intersection; see SKILL § Step 2), fill `{scopeGlobs}` into the prompt template above.
 3. Dispatch `research-specialist` in ONE batch (Step 3 of the SKILL), one per dimension, each prompt carrying `dispatchedAsAgent: true`.
 4. Collect the `research-findings.json` objects for Gate-1.
 

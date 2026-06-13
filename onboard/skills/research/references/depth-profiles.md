@@ -35,7 +35,7 @@ effectiveRoster = (builtins − disabledBuiltins) ∪ extraSpecialists   # from 
 Each specialist receives a `scopeGlobs` array that bounds its reads:
 
 1. Start from the dimension's default `scopeGlobs` in `specialist-roster.md` (or the custom's `scopeGlobs`).
-2. **Intersect** with the detected source roots from the engine's SCOPE step (Step 2) so a glob never escapes the real source tree.
+2. **Intersect** with the detected source roots from the engine's SCOPE step (Step 2) so a glob never escapes the real source tree — except **root-dwelling globs** (manifests/lockfiles, docs, test/lint config) which are exempt from the intersection (see SKILL § Step 2), since they legitimately live at the repo root.
 3. At `standard`, prefer the tighter end of the dimension's globs (the engine may sample representative subtrees on a very large repo); at `comprehensive`, pass the full intersected set.
 
 The point: depth `standard` is the everyday default — fast, four core dimensions, one verify pass. `comprehensive` is the "tell me everything" mode — all seven dimensions plus any project customs, still one verify pass. `minimal` is the empty-repo / recon-only floor that produces a valid dossier with an empty roster and empty findings.
