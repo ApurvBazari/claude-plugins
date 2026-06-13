@@ -1,6 +1,6 @@
 ---
 name: discard
-description: Archive the active handoff without acting on it. Use when the user explicitly wants to discard a saved handoff — same effect as picking Discard in the resume flow, but invokable directly from anywhere.
+description: Use when the user explicitly wants to discard a saved handoff without acting on it (the work is no longer relevant). Invokable anywhere via /handoff:discard.
 disable-model-invocation: true
 ---
 

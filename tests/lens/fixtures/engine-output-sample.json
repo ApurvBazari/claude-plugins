@@ -1,0 +1,44 @@
+{
+  "findings": [
+    {
+      "id": "F1",
+      "title": "Rate-limiting requirement not implemented",
+      "severity": "medium",
+      "dimension": "requirements",
+      "verified": true,
+      "file": "src/auth/login.ts",
+      "label": "spec-gap",
+      "claim": "The spec requires rate-limiting of login attempts, but no rate-limit logic exists in the implementation.",
+      "detail": "The spec item 'Rate-limit attempts' is listed as a hard requirement to prevent brute-force attacks. The current implementation of the login handler in src/auth/login.ts makes no attempt to track failed attempts, enforce a lockout threshold, or return 429 responses. This leaves the endpoint fully open to credential-stuffing and brute-force attacks.",
+      "suggestedFix": "Add a sliding-window rate limiter (e.g. express-rate-limit or a Redis-backed counter) keyed on IP + username. Return HTTP 429 with Retry-After once the threshold is exceeded.",
+      "source": "spec-adherence",
+      "votes": {
+        "total": 3,
+        "couldNotRefute": 3,
+        "refuted": 0
+      }
+    },
+    {
+      "id": "F2",
+      "title": "Password compared with == allowing type coercion",
+      "severity": "high",
+      "dimension": "correctness",
+      "verified": true,
+      "file": "src/auth/login.ts",
+      "line": 42,
+      "label": "bug",
+      "claim": "Password compared with == allowing type coercion",
+      "detail": "Use a constant-time strict comparison; == permits type juggling. An attacker can craft an input that coerces to the expected password value, bypassing authentication entirely. In Node.js, '0' == false evaluates to true, so a numeric-coercible password input could slip through the equality check.",
+      "suggestedFix": "Use crypto.timingSafeEqual on Buffers derived from Buffer.from(input) and Buffer.from(stored) after hashing both with the same algorithm. This prevents both type-coercion bypasses and timing side-channels.",
+      "source": "correctness",
+      "votes": {
+        "total": 3,
+        "couldNotRefute": 3,
+        "refuted": 0
+      }
+    }
+  ],
+  "recommendedEscalation": "major",
+  "degraded": false,
+  "summary": "Two findings identified in src/auth/login.ts: a missing rate-limiting requirement (spec-gap, medium) and a high-severity correctness bug where password comparison uses == instead of a constant-time strict equality, enabling type-coercion bypass. The high-severity finding drives the escalation to 'major'. Both findings were independently verified and unrefuted."
+}

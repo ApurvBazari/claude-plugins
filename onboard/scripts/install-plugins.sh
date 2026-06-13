@@ -14,6 +14,9 @@
 # are reported via the JSON output for the caller to surface in stdout summary
 # and mcpStatus telemetry.
 
+# NOTE: utility script, but intentionally hook-style error handling — this is a
+# best-effort installer whose failure must NEVER abort onboard generation.
+# It reports per-plugin status via JSON and always exits 0. See .claude/rules/shell-scripts.md.
 set -uo pipefail
 
 if [[ $# -lt 1 ]]; then

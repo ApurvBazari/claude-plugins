@@ -31,3 +31,8 @@ __pycache__/
 future-plans/
 docs/
 .superpowers/
+# walkthrough rendered docs (may contain session content)
+.claude/walkthrough/
+
+# handoff directives (may contain session content)
+.claude/handoff/

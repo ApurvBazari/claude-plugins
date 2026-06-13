@@ -2,6 +2,8 @@
 name: config-generator
 description: Generates all Claude Code tooling artifacts (CLAUDE.md, rules, skills, agents, hooks, MCP, output styles, snapshots, telemetry) from a codebase analysis report and wizard answers. Dispatched by /onboard:start Phase 3 and onboard:generate; hard-fails if invoked without dispatchedAsAgent=true.
 color: purple
+tools: Read, Write, Edit, Glob, Bash
+model: opus
 ---
 
 # Config Generator Agent
@@ -167,3 +169,13 @@ Before declaring completion, verify:
 - **Create `.claude/` directories as needed** — `rules/`, `skills/`, `agents/` may not exist yet
 - **Use the actual project data** — Every artifact must reflect what was actually found in analysis, not generic templates
 - **Respect the autonomy level** — This affects the tone of all generated content
+
+## Output Format
+
+Return a structured generation result to the caller (do not write it to a file):
+
+- **status**: `success` | `hard-fail`
+- **generatedArtifacts**: the list of files written (paths), grouped Core / Enriched
+- **telemetry**: the 7 status keys from `onboard-meta.json` (`hookStatus`, `mcpStatus`, `outputStyleStatus`, `lspStatus`, `builtInSkillsStatus`, `skillStatus`, `agentStatus`) each with its `status` enum value
+- **skipped**: any agents skipped via `coveredCapabilities`, with the covering plugin
+- **On hard-fail**: return the exact failure message (dispatch-context, frontmatter-validation, or Phase-7 self-audit) and the artifacts written before the failure. Never return a partial-success as success.

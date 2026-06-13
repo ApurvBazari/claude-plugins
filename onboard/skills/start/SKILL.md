@@ -1,6 +1,6 @@
 ---
 name: start
-description: Full interactive onboarding wizard — analyzes the codebase, gathers developer preferences through adaptive Q&A, then generates a complete tailored Claude Code tooling setup (CLAUDE.md, rules, skills, agents, hooks, metadata). Use only when the user explicitly invokes /onboard:start.
+description: Use ONLY when the user explicitly runs /onboard:start. The full interactive onboarding wizard that sets up tailored Claude Code tooling for a project. Never auto-invoke.
 disable-model-invocation: true
 ---
 
@@ -22,9 +22,9 @@ Tell the developer:
 
 ---
 
-## Phase 0: Empty-Repo Guard
+## Step 0: Empty-Repo Guard
 
-Runs **before** Phase 1 Analysis. Detects repositories with no source code and routes them to a minimal, canonical-shape stub instead of running the full analysis + wizard. Closes 2026-04-17 release-gate findings B14, B15, B16.
+Runs **before** Step 1 Analysis. Detects repositories with no source code and routes them to a minimal, canonical-shape stub instead of running the full analysis + wizard. Closes 2026-04-17 release-gate findings B14, B15, B16.
 
 ### Step 0.1: Detect empty repository
 
@@ -39,12 +39,12 @@ SRC_COUNT=$(find . -type f \
   | wc -l | tr -d ' ')
 ```
 
-- `SRC_COUNT > 0` → source code exists → **skip Phase 0 entirely**, fall through to Phase 1 Analysis. Most common case.
+- `SRC_COUNT > 0` → source code exists → **skip Step 0 entirely**, fall through to Step 1 Analysis. Most common case.
 - `SRC_COUNT == 0` → empty repo → proceed to Step 0.2.
 
 ### Step 0.2: Detect prior stub (auto-promote)
 
-If `.claude/onboard-meta.json` already exists AND `jq -r '.mode // empty'` returns `"stub-empty-repo"` AND `SRC_COUNT > 0`: auto-promote. Skip Phase 0 entirely; run Phase 1 Analysis → Phase 2 Wizard → Phase 3 Generation. Full generation overwrites the stub artifacts. Append an `updateHistory` entry to the new `onboard-meta.json` noting the `"stub → full"` promotion.
+If `.claude/onboard-meta.json` already exists AND `jq -r '.mode // empty'` returns `"stub-empty-repo"` AND `SRC_COUNT > 0`: auto-promote. Skip Step 0 entirely; run Step 1 Analysis → Step 2 Wizard → Step 3 Generation. Full generation overwrites the stub artifacts. Append an `updateHistory` entry to the new `onboard-meta.json` noting the `"stub → full"` promotion.
 
 If prior stub exists AND `SRC_COUNT == 0` (user ran init twice on empty dir): default to no-op — inform the developer a stub already exists, skip re-write.
 
@@ -68,11 +68,11 @@ Default: **Generate canonical stub**.
 - **Placeholder only** → write CLAUDE.md with the placeholder content from the stub procedure (below) but SKIP the `.claude/` directory. Return minimal handoff. Do not proceed to further phases.
 - **Generate canonical stub** (default) → follow `references/empty-repo-stub-procedure.md`. It prescribes: the 3 files, the canonical `onboard-meta.json` schema with all 7 Phase 7 status keys set to `status: "skipped"` + `reason: "stub-mode-no-code"`, dynamic `pluginVersion` resolution (no hardcoded literals), and the 3-file atomic write order.
 
-After either stub path completes, run a minimal handoff (see the stub procedure's § Post-write handoff section) and return — do NOT continue to Phase 1 Analysis.
+After either stub path completes, run a minimal handoff (see the stub procedure's § Post-write handoff section) and return — do NOT continue to Step 1 Analysis.
 
 ---
 
-## Phase 1: Automated Analysis
+## Step 1: Automated Analysis
 
 ### Step 1.1: Check for Existing Claude Config
 
@@ -104,7 +104,7 @@ Spawn the `codebase-analyzer` agent to perform deep analysis. The agent will:
 - Check testing setup, CI/CD, conventions
 - Produce a structured analysis report
 
-**Data handoff**: The analyzer agent's full structured report remains in the conversational context. Do not write it to a file — it will be passed to the config-generator agent via the conversation in Phase 3.
+**Data handoff**: The analyzer agent's full structured report remains in the conversational context. Do not write it to a file — it will be passed to the config-generator agent via the conversation in Step 3.
 
 **Script failure fallback**: If any analysis script fails (permission denied, timeout, or unsupported environment), log the failure and continue with deep codebase exploration only. Do not block the wizard — the scripts provide supplementary data, not required data.
 
@@ -138,11 +138,11 @@ After the analysis summary is confirmed, offer the developer a choice:
 > 1. **Quick setup** — I'll infer most settings from your codebase analysis and ask just a couple of key questions
 > 2. **Guided walkthrough** (recommended) — I'll walk you through a short wizard to capture your preferences
 
-If the developer chooses **Quick setup**, the wizard runs in Quick Mode (see wizard skill for inference rules). If they choose **Guided walkthrough**, proceed to Phase 2 (which includes preset selection).
+If the developer chooses **Quick setup**, the wizard runs in Quick Mode (see wizard skill for inference rules). If they choose **Guided walkthrough**, proceed to Step 2 (which includes preset selection).
 
 ---
 
-## Phase 2: Interactive Wizard
+## Step 2: Interactive Wizard
 
 Use the `wizard` skill to guide the developer through adaptive questions. The skill contains the full question bank, branching logic, and workflow presets.
 
@@ -174,7 +174,7 @@ Wait for confirmation before proceeding to generation.
 
 ---
 
-## Phase 2.5: Plugin Detection
+## Step 2.5: Plugin Detection
 
 Before generation, detect installed Claude Code plugins to enrich the output with plugin-aware features (Plugin Integration section, per-directory skill annotations, plugin-aware agent skipping, quality-gate hooks referencing plugin skills).
 
@@ -217,34 +217,34 @@ If no plugins were detected:
 
 ---
 
-## Phase 2.6: Build Onboard Context
+## Step 2.6: Build Onboard Context
 
-Follow the canonical procedure in `references/onboard-context-builder.md` to assemble the single context object that Phase 3 dispatches to `Skill(onboard:generate)`. The builder is the **single source of truth** for init context construction — every preset path (Custom / Standard / Minimal / Comprehensive / Quick Mode) invokes it. Do not maintain preset-specific context builders; that was the drift that caused release-gate findings B1, B5, B6, B8, B10, B12, B13 (2026-04-17 sweep).
+Follow the canonical procedure in `references/onboard-context-builder.md` to assemble the single context object that Step 3 dispatches to `Skill(onboard:generate)`. The builder is the **single source of truth** for init context construction — every preset path (Custom / Standard / Minimal / Comprehensive / Quick Mode) invokes it. Do not maintain preset-specific context builders; that was the drift that caused release-gate findings B1, B5, B6, B8, B10, B12, B13 (2026-04-17 sweep).
 
 Inputs already in conversation context:
 
-- Phase 1 analysis report
-- Phase 2 wizard output (canonical `wizardAnswers` shape per `../wizard/SKILL.md` § Output § Canonical shape invariant)
-- Phase 2.5 plugin detection results (`installedPlugins`, `coveredCapabilities`, `pluginSurfaces`)
+- Step 1 analysis report
+- Step 2 wizard output (canonical `wizardAnswers` shape per `../wizard/SKILL.md` § Output § Canonical shape invariant)
+- Step 2.5 plugin detection results (`installedPlugins`, `coveredCapabilities`, `pluginSurfaces`)
 - Project root path (current working directory)
 
 The builder emits a context object per the canonical schema. Key invariants:
 
 - All 7 callerExtras Phase-7 flags populated explicitly (`disableMCP`, `disableLSP`, `disableBuiltInSkills`, `disableSkillTuning`, `disableAgentTuning`, `disableOutputStyleTuning`, `allowHttpHooks`) — init-path defaults are `false` for all (Phase 7 blocks run fully; interactive confirmation runs).
-- `callerExtras.installedPlugins` and `pluginSurfaces` populated from Phase 2.5 probes.
+- `callerExtras.installedPlugins` and `pluginSurfaces` populated from Step 2.5 probes.
 - Every wizardAnswers field populated (including defaults for skipped fields per `../wizard/SKILL.md` § Skip Behavior).
 
-Run the builder's validation step before proceeding to Phase 3. If validation fails, refuse to dispatch — surface the error to the user with the offending field name.
+Run the builder's validation step before proceeding to Step 3. If validation fails, refuse to dispatch — surface the error to the user with the offending field name.
 
 ---
 
-## Phase 3: Generation via Skill(onboard:generate)
+## Step 3: Generation via Skill(onboard:generate)
 
 ### Step 3.1: Model resolution (no separate prompt)
 
-The model has already been chosen by this point — either explicitly through the wizard's Phase 5.2 (Custom preset), or implicitly via the preset default (Minimal/Standard/Comprehensive use `claude-opus-4-7[1m]` per `wizard/references/workflow-presets.md` § Per-preset exchange targets).
+The model has already been chosen by this point — either explicitly through the wizard's Phase 5.2 (Custom preset), or implicitly via the preset default (Minimal/Standard/Comprehensive use `claude-opus-4-7[1m]` per `../wizard/references/workflow-presets.md` § Per-preset exchange targets).
 
-**Do NOT** ask "Which model would you like to use?" here. That used to be a separate post-summary question in earlier versions of init/SKILL.md and the wizard's Phase 5.2 also asked the same thing — the duplicate prompt was findings A4 in the 2026-04-16 release-gate test.
+**Do NOT** ask "Which model would you like to use?" here. That used to be a separate post-summary question in earlier versions of start/SKILL.md and the wizard's Phase 5.2 also asked the same thing — the duplicate prompt was findings A4 in the 2026-04-16 release-gate test.
 
 Resolve the model from the wizard answers as follows:
 
@@ -255,20 +255,20 @@ chosenModel = wizardAnswers.skillTuning?.defaultModel
             ?? "claude-opus-4-7[1m]"
 ```
 
-The preset-default fallback is documented in `wizard/references/workflow-presets.md`. The final fallback (`claude-opus-4-7[1m]`) covers any path where the wizard answers don't include a model (e.g., a future bug or a Quick Mode bail-out before Phase 5.2).
+The preset-default fallback is documented in `../wizard/references/workflow-presets.md`. The final fallback (`claude-opus-4-7[1m]`) covers any path where the wizard answers don't include a model (e.g., a future bug or a Quick Mode bail-out before Phase 5.2).
 
 The wizard's Phase 6 summary already shows the chosen model — the developer has already seen and confirmed it. If they wanted to change it, they would have done so in the summary tweak step (or by editing `.claude/settings.json` after init).
 
-The model choice is written into `context.modelChoice` by the Phase 2.6 builder.
+The model choice is written into `context.modelChoice` by the Step 2.6 builder.
 
 ### Step 3.2: Dispatch to Skill(onboard:generate)
 
-**Invoke `Skill(onboard:generate)` with the context object built in Phase 2.6.** One contract, one validator, one agent-dispatch boundary.
+**Invoke `Skill(onboard:generate)` with the context object built in Step 2.6.** One contract, one validator, one agent-dispatch boundary.
 
 ```
 Skill(
   skill: "onboard:generate",
-  args: <stringified context object from Phase 2.6>
+  args: <stringified context object from Step 2.6>
 )
 ```
 
@@ -318,7 +318,7 @@ After generation completes, list every file that was created:
 
 ---
 
-## Phase 3.5: Ecosystem Setup
+## Step 3.5: Ecosystem Setup
 
 If the wizard answers include `ecosystemPlugins`, set up the requested plugins.
 
@@ -426,7 +426,7 @@ If no plugins were set up (none requested or none available), skip this report e
 
 ---
 
-## Phase 4: Education & Handoff
+## Step 4: Education & Handoff
 
 ### Step 4.1: Explain Key Artifacts
 
@@ -471,7 +471,7 @@ If ecosystem plugins were set up, add:
 ## Key Rules
 
 - **Never dispatch `config-generator` directly** — always go through `Skill(onboard:generate)`. Direct dispatch bypasses the shared validation contract and the `dispatchedAsAgent` safety net.
-- **Empty-repo guard always runs first** — Phase 0 fires before Phase 1 Analysis, even if the user explicitly says "just analyze". A zero-source-count repo must hit the 3-option menu, not the wizard.
+- **Empty-repo guard always runs first** — Step 0 fires before Step 1 Analysis, even if the user explicitly says "just analyze". A zero-source-count repo must hit the 3-option menu, not the wizard.
 - **Settings.json is always merge-aware** — never overwrite `.claude/settings.json` outright. Read it first, merge hooks, then write. The file may already contain hooks from other sources.
 - **Notify setup is inform-only when global config is already complete** — the `globalConfigured` detection (config + hook both present) means no project-local offer is made. Never re-setup what is already wired.
-- **Halt and surface on context builder validation failure** — if Phase 2.6 validation fails, refuse to dispatch and show the offending field. Never attempt generation with an incomplete or malformed context object.
+- **Halt and surface on context builder validation failure** — if Step 2.6 validation fails, refuse to dispatch and show the offending field. Never attempt generation with an incomplete or malformed context object.
