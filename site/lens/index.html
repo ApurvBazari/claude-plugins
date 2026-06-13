@@ -1,0 +1,378 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>lens — claude-plugins</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root{
+  --bg-deep:#08090c; --bg-card:#0f1117; --bg-card-hover:#151821; --bg-elevated:#1a1d28; --bg-inset:#060709;
+  --border:#1e2230; --border-active:#2d3348; --border-strong:#3a4159;
+  --tp:#e8eaf0; --ts:#7d8399; --tm:#4a5068; --tf:#2e3349;
+  --blue:#3b82f6; --green:#22c55e; --amber:#f59e0b; --rose:#f43f5e; --purple:#a78bfa;
+  --accent:#22d3ee; --accent-glow:rgba(34,211,238,.16); --accent-soft:rgba(34,211,238,.08);
+  --blue-soft:rgba(59,130,246,.1); --green-soft:rgba(34,197,94,.1); --amber-soft:rgba(245,158,11,.1); --rose-soft:rgba(244,63,94,.1); --purple-soft:rgba(167,139,250,.1);
+  --mono:'JetBrains Mono',monospace; --serif:'Instrument Serif',serif; --sans:'DM Sans',sans-serif;
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+html[data-theme="light"]{
+  --bg-deep:#faf8f4; --bg-card:#fff; --bg-card-hover:#f5f1ea; --bg-elevated:#fff; --bg-inset:#f5f1ea;
+  --border:#e5dfd6; --border-active:#d8cfc1; --border-strong:#c9c0b3;
+  --tp:#2a2520; --ts:#6b6157; --tm:#9e9486; --tf:#c9c0b3;
+  --blue:#2d5fa0; --green:#2d7a3a; --amber:#b87333; --rose:#b83a3a; --purple:#7a3b8f;
+  --accent:#c05e2b; --accent-glow:rgba(192,94,43,.16); --accent-soft:rgba(192,94,43,.09);
+  --blue-soft:rgba(45,95,160,.1); --green-soft:rgba(45,122,58,.1); --amber-soft:rgba(184,115,51,.1); --rose-soft:rgba(184,58,58,.1); --purple-soft:rgba(122,59,143,.1);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg-deep);color:var(--tp);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .3s,color .3s;}
+body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+/* nav */
+nav{position:fixed;top:0;left:0;right:0;height:54px;z-index:100;backdrop-filter:blur(20px) saturate(180%);background:color-mix(in srgb,var(--bg-deep) 82%,transparent);border-bottom:1px solid var(--border);}
+.nav-in{max-width:1180px;margin:0 auto;height:100%;display:flex;align-items:center;justify-content:space-between;padding:0 1.6rem;}
+.logo{font-family:var(--mono);font-size:.82rem;font-weight:600;letter-spacing:.02em;}
+.logo span{color:var(--accent);}
+.nav-links{display:flex;gap:.3rem;font-family:var(--mono);font-size:.68rem;}
+.nav-links a{color:var(--ts);text-decoration:none;padding:.3rem .55rem;border-radius:6px;transition:.2s;}
+.nav-links a:hover,.nav-links a.on{color:var(--tp);background:var(--accent-soft);}
+.nav-meta{display:flex;align-items:center;gap:.45rem;font-family:var(--mono);font-size:.62rem;color:var(--tm);text-transform:uppercase;letter-spacing:.12em;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2.5s infinite;}
+.theme-btn{cursor:pointer;font-family:var(--mono);font-size:.62rem;color:var(--ts);border:1px solid var(--border);padding:.28rem .6rem;border-radius:6px;background:none;}
+.progress{position:fixed;top:54px;left:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--blue));z-index:101;width:0;box-shadow:0 0 8px var(--accent-glow);}
+main{max-width:1180px;margin:0 auto;padding:0 1.6rem;padding-top:78px;}
+.eyebrow{font-family:var(--mono);font-size:.68rem;color:var(--accent);text-transform:uppercase;letter-spacing:.18em;display:inline-flex;align-items:center;gap:.6rem;margin-bottom:.8rem;}
+.eyebrow::before{content:'';width:26px;height:1px;background:var(--accent);}
+h1{font-family:var(--serif);font-size:clamp(2.4rem,6vw,4rem);font-weight:400;line-height:1.04;letter-spacing:-.025em;margin:.2rem 0;max-width:880px;}
+h1 em,h2 em{font-style:italic;color:var(--accent);}
+h2{font-family:var(--serif);font-size:clamp(1.7rem,3.5vw,2.4rem);font-weight:400;line-height:1.15;margin:.2rem 0 .3rem;}
+.lede{color:var(--ts);font-size:1.08rem;line-height:1.7;max-width:720px;margin:.6rem 0 0;}
+p{color:var(--ts);font-size:.92rem;line-height:1.7;max-width:720px;}
+p code,li code{font-family:var(--mono);font-size:.8rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
+section{padding:4rem 0 2rem;scroll-margin-top:70px;opacity:0;transform:translateY(24px);transition:opacity .7s var(--ease),transform .7s var(--ease);}
+section.vis{opacity:1;transform:none;}
+.sec-label{font-family:var(--mono);font-size:.65rem;color:var(--tm);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.5rem;}
+/* hero stats */
+.hstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:1.8rem;}
+.hstat{background:var(--bg-card);padding:1.1rem 1.2rem;}
+.hstat .v{font-family:var(--serif);font-size:1.9rem;color:var(--tp);line-height:1;}
+.hstat .v em{font-style:italic;color:var(--accent);}
+.hstat .l{font-family:var(--mono);font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;margin-top:.4rem;}
+/* detail panel */
+.panel{position:fixed;top:0;right:0;width:300px;height:100vh;background:var(--bg-card);border-left:1px solid var(--border-active);padding:24px 20px;overflow:auto;transform:translateX(100%);transition:transform .25s var(--ease);box-shadow:-20px 0 50px rgba(0,0,0,.3);z-index:200;}
+.panel.open{transform:none;}
+.panel .x{position:absolute;top:14px;right:16px;color:var(--tm);cursor:pointer;font-size:18px;}
+.panel .pk{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);}
+.panel h3{font-family:var(--serif);font-weight:400;font-size:1.4rem;margin:.2rem 0 .6rem;}
+.panel .pb{font-size:.86rem;color:var(--ts);line-height:1.6;}
+.panel code{font-family:var(--mono);font-size:.72rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@media(max-width:780px){.nav-links{display:none}}
+/* === component CSS (only the selected components) === */
+/* hero chips (typeTags) */
+.chips{display:flex;flex-wrap:wrap;gap:.5rem;margin:1.2rem 0 .2rem;}
+.chip{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ts);background:var(--bg-card);border:1px solid var(--border);padding:.32rem .65rem;border-radius:20px;}
+.chip.accent{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 30%,transparent);background:var(--accent-soft);}
+/* callout */
+.callout{background:var(--accent-soft);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:.9rem 1.2rem;margin:1.1rem 0;}
+.callout h4{font-family:var(--serif);font-weight:400;color:var(--accent);margin:0 0 .3rem;font-size:1.1rem;}
+.callout p{margin:0;font-size:.86rem;color:var(--ts);}
+.callout code{font-family:var(--mono);font-size:.78rem;background:var(--bg-card);color:var(--accent);padding:1px 5px;border-radius:4px;}
+/* annotated code block */
+.codeblock{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:1.1rem 0;}
+.cb-head{display:flex;justify-content:space-between;align-items:center;padding:.5rem .9rem;background:var(--bg-elevated);border-bottom:1px solid var(--border);font-family:var(--mono);font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;}
+.cb-file{color:var(--accent);}
+.cb-lang{color:var(--tm);}
+.cb-body{margin:0;padding:.9rem 1.1rem;font-family:var(--mono);font-size:.78rem;line-height:1.65;color:var(--ts);white-space:pre;overflow-x:auto;}
+.cb-body code{color:var(--tp);}
+/* flow / pipeline diagram */
+.flow{display:flex;align-items:center;flex-wrap:wrap;gap:.4rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1.2rem 0;}
+.fnode{flex:1;min-width:110px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:.8rem .9rem;font-family:var(--mono);font-size:.7rem;cursor:pointer;transition:all .3s var(--ease);}
+.fnode:hover{border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow);transform:scale(1.03);}
+.fnode .nl{font-size:.55rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;}
+.fnode.accent{border-color:color-mix(in srgb,var(--accent) 40%,transparent);background:linear-gradient(135deg,var(--bg-elevated),var(--accent-soft));}
+.fnode.gate{border-style:dashed;border-color:var(--border-strong);background:var(--bg-card);}
+.fnode.gate .nl{color:var(--accent);}
+.farr{color:var(--border-strong);font-size:1.1rem;}
+/* converge diagram — two input lanes merging into the shared visual layer */
+.converge{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1.2rem 0;display:flex;align-items:center;gap:.9rem;flex-wrap:wrap;}
+.conv-lanes{display:flex;flex-direction:column;gap:.7rem;flex:1;min-width:200px;}
+.conv-lane{background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:.8rem .95rem;cursor:pointer;transition:all .3s var(--ease);}
+.conv-lane:hover{border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow);}
+.conv-lane .nl{font-size:.55rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);}
+.conv-lane .lt{font-family:var(--mono);font-size:.74rem;color:var(--tp);margin-top:.15rem;}
+.conv-lane .ld{font-size:.72rem;color:var(--ts);margin-top:.2rem;line-height:1.5;}
+.conv-merge{color:var(--border-strong);font-size:1.4rem;}
+.conv-core{flex:1;min-width:150px;background:linear-gradient(135deg,var(--bg-elevated),var(--accent-soft));border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);border-radius:10px;padding:1rem;cursor:pointer;transition:all .3s var(--ease);}
+.conv-core:hover{box-shadow:0 0 24px var(--accent-glow);transform:scale(1.02);}
+.conv-core .nl{font-size:.55rem;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);}
+.conv-core .ct{font-family:var(--serif);font-size:1.15rem;color:var(--tp);margin-top:.2rem;line-height:1.2;}
+.conv-out{flex:0 0 auto;text-align:center;}
+.conv-out .nl{font-size:.55rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);margin-bottom:.3rem;}
+.conv-artifact{font-family:var(--mono);font-size:.7rem;color:var(--accent);background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);padding:.55rem .7rem;border-radius:8px;}
+/* skills reference table — same primitives as compare-table */
+.ref-table{width:100%;border-collapse:separate;border-spacing:0;font-size:.82rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:1.2rem 0;}
+.ref-table th{font-family:var(--mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);padding:.85rem 1.25rem;text-align:left;background:var(--bg-elevated);border-bottom:1px solid var(--border);font-weight:500;}
+.ref-table td{padding:.75rem 1.25rem;border-bottom:1px solid var(--border);color:var(--ts);vertical-align:top;}
+.ref-table tr:last-child td{border-bottom:none;}
+.ref-table tr:hover td{background:var(--bg-card-hover);}
+.ref-table .slash{font-family:var(--mono);font-size:.76rem;color:var(--accent);white-space:nowrap;}
+.ref-table .tag{font-family:var(--mono);font-size:.58rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);border:1px solid var(--border);padding:.12rem .4rem;border-radius:4px;display:inline-block;}
+.ref-table .tag.auto{color:var(--green);border-color:color-mix(in srgb,var(--green) 35%,transparent);background:var(--green-soft);}
+.ref-table .tag.hidden-int{color:var(--purple);border-color:color-mix(in srgb,var(--purple) 35%,transparent);background:var(--purple-soft);}
+.ref-table .cell-mode{font-family:var(--mono);font-size:.7rem;color:var(--ts);white-space:nowrap;}
+.cell-mono{font-family:var(--mono);font-size:.74rem;color:var(--accent);}
+/* key–value metadata grid */
+.edge-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:.7rem;margin-top:1rem;}
+.edge{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:.85rem 1rem;}
+.edge .n{font-family:var(--mono);font-size:.62rem;color:var(--accent);}
+.edge .t{font-weight:600;margin:.2rem 0;font-size:.88rem;color:var(--tp);}
+.edge p{font-size:.78rem;margin:0;color:var(--ts);}
+/* legend */
+.legend{display:flex;gap:.6rem;flex-wrap:wrap;margin:1rem 0;}
+.lg{font-family:var(--mono);font-size:.6rem;color:var(--tp);padding:.5rem .7rem;border-radius:8px;border:1px solid var(--border);display:flex;align-items:center;gap:.5rem;background:var(--bg-card);}
+.lg i{width:14px;height:14px;border-radius:4px;display:inline-block;}
+/* footer */
+.foot{border-top:1px solid var(--border);margin-top:3rem;padding:2.2rem 0 4rem;display:flex;flex-wrap:wrap;gap:1.4rem;align-items:center;justify-content:space-between;}
+.foot-links{display:flex;flex-wrap:wrap;gap:.5rem;}
+.foot-links a{font-family:var(--mono);font-size:.7rem;color:var(--ts);text-decoration:none;border:1px solid var(--border);padding:.4rem .8rem;border-radius:8px;background:var(--bg-card);transition:all .2s var(--ease);}
+.foot-links a:hover{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 35%,transparent);background:var(--accent-soft);}
+.foot .meta{font-family:var(--mono);font-size:.62rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;}
+</style></head>
+<body>
+  <nav><div class="nav-in">
+    <div class="logo">◆ claude<span>-plugins</span></div>
+    <div class="nav-links">
+      <a href="#top" class="on">Overview</a>
+      <a href="#what">What it does</a>
+      <a href="#brain">Brain & eyes</a>
+      <a href="#pipeline">Pipeline</a>
+      <a href="#finders">Finders</a>
+      <a href="#skills">Skills</a>
+      <a href="#storage">Storage</a>
+      <a href="#example">Example</a>
+      <a href="#isnt">Is / isn't</a>
+    </div>
+    <div style="display:flex;align-items:center;gap:.8rem">
+      <div class="nav-meta"><span class="dot"></span> PLUGIN · v1.0.0</div>
+      <button class="theme-btn" onclick="tgl()">◑ THEME</button></div>
+  </div></nav>
+  <div class="progress" id="prog"></div>
+  <main>
+    <section id="top" class="vis" style="padding-top:2.4rem">
+      <div class="eyebrow">claude-plugins · lens</div>
+      <h1>Review the work against <em>what was asked</em> — before it ships.</h1>
+      <p class="lede">lens is an in-session, intent-grounded review companion. It checks the current change against its own <strong>spec and plan</strong> — the question no diff-only reviewer can reach: <em>did this build what was actually asked, and follow the plan?</em> Every finding then survives an adversarial verification pass, and the result renders as an interactive review document.</p>
+      <div class="chips">
+        <span class="chip accent">intent-grounded</span>
+        <span class="chip">code-review</span>
+        <span class="chip">pr-review</span>
+        <span class="chip">adversarial-verification</span>
+        <span class="chip">interactive-html</span>
+      </div>
+      <div class="codeblock" style="max-width:560px">
+        <div class="cb-head"><span class="cb-file">install</span><span class="cb-lang">bash</span></div>
+        <pre class="cb-body"><code>claude plugin install lens@apurvbazari-plugins</code></pre>
+      </div>
+      <div class="hstats">
+        <div class="hstat"><div class="v"><em>1</em></div><div class="l">user skill</div></div>
+        <div class="hstat"><div class="v">6</div><div class="l">agents</div></div>
+        <div class="hstat"><div class="v">5</div><div class="l">pipeline stages</div></div>
+        <div class="hstat"><div class="v">3</div><div class="l">finder tiers</div></div>
+        <div class="hstat"><div class="v"><em>0</em></div><div class="l">writes to code</div></div>
+      </div>
+    </section>
+
+    <section id="what">
+      <div class="sec-label">01 — what it does</div>
+      <h2>Judged against <em>intent</em>, not just the patch</h2>
+      <p class="lede">Run <code>/lens:review [target]</code> when you've finished a change and want a second, intent-aware opinion before you commit, push, or open a PR. lens resolves what you were trying to build — from the spec and plan — reads the actual diff and source, and judges the work on two axes a diff-only tool can't reach.</p>
+      <p>With no argument, lens reviews the working tree plus this branch's commits against the merge-base with the default branch. The optional <code>target</code> overrides the diff scope — a path, a ref, or a range. On top of <strong>spec adherence</strong> (does the change implement what the spec asked, no more and no less) and <strong>plan adherence</strong> (did it follow the plan it set out, or quietly diverge), it runs the usual correctness, risk, and test-gap checks — plus, via optional adapters, security, type, silent-failure, and comment checks.</p>
+      <p>Every candidate finding then survives an <strong>adversarial verification</strong> pass: an independent skeptic agent tries to refute it against real source, and only unrefuted findings make the report. The output is an interactive review document you read, then decide what to do — lens never decides for you.</p>
+      <div class="callout">
+        <h4>The failure diff-only review can't catch</h4>
+        <p>A bug-free implementation of the <strong>wrong</strong> spec is the failure that <code>/code-review</code> and external PR bots can never see. lens runs inside the live session that produced the code, so it can ask whether the work matches the intent — not just whether the patch is internally sound.</p>
+      </div>
+    </section>
+
+    <section id="brain">
+      <div class="sec-label">02 — the core idea</div>
+      <h2>The <em>brain</em> and the <em>eyes</em></h2>
+      <p class="lede">lens is the <strong>brain</strong> — it judges. <a href="../walkthrough/">walkthrough</a> is the <strong>eyes</strong> — it renders. lens does the reasoning (scope, intent, analysis, verification) and produces a structured review model; it then hands that model to <code>walkthrough:render</code> to become a self-contained interactive HTML review, in the same house style as every other walkthrough. Click a lane for detail.</p>
+      <div class="converge" aria-label="lens judges, then hands its findings to the renderer">
+        <div class="conv-lanes">
+          <div class="conv-lane" data-d="engine" onclick="openD('engine')" tabindex="0" role="button" aria-label="The engine — data-only judgment core">
+            <div class="nl">brain · engine</div>
+            <div class="lt">scope → intent → analyze → verify</div>
+            <div class="ld">A data-only judgment core (<span class="cell-mono">user-invocable: false</span>). Returns review-findings JSON — writes nothing, never prompts.</div>
+          </div>
+          <div class="conv-lane" data-d="render" onclick="openD('render')" tabindex="0" role="button" aria-label="The render half inside skills/review">
+            <div class="nl">eyes · render half</div>
+            <div class="lt">review-model → artifact</div>
+            <div class="ld">Builds the review-model from those findings and delegates rendering to walkthrough — markdown fallback if walkthrough is absent.</div>
+          </div>
+        </div>
+        <span class="conv-merge">→</span>
+        <div class="conv-core" data-d="walkthrough-render" onclick="openD('walkthrough-render')" tabindex="0" role="button" aria-label="walkthrough:render — the shared visual layer">
+          <div class="nl">walkthrough:render</div>
+          <div class="ct">shared house-style visual layer</div>
+        </div>
+        <span class="conv-merge">→</span>
+        <div class="conv-out">
+          <div class="nl">artifact</div>
+          <div class="conv-artifact">interactive review (HTML / md)</div>
+        </div>
+      </div>
+      <p><strong>Neither plugin imports the other.</strong> lens checks for walkthrough at runtime: present → the full interactive HTML review (annotated diff hunks, an adherence panel, a findings list, an overall verdict); absent → lens degrades gracefully to a self-contained <strong>markdown report</strong> with the same content. No install of walkthrough is required to use lens — walkthrough is an enhancer, never a dependency. lens calls only walkthrough's internal <code>render</code> skill, never <code>create</code> / <code>update</code> / <code>document</code>.</p>
+    </section>
+
+    <section id="pipeline">
+      <div class="sec-label">03 — architecture</div>
+      <h2>The five-stage <em>review</em> pipeline</h2>
+      <p class="lede">Every <code>/lens:review</code> runs a fixed five-stage pipeline, all in-session. The judgment half (scope → intent → analyze → verify) lives in the data-only engine; the assemble stage builds the review-model and hands it to the renderer. Click any stage for detail.</p>
+      <div class="flow" aria-label="lens review pipeline — five stages">
+        <div class="fnode" data-d="scope" onclick="openD('scope')" tabindex="0" role="button" aria-label="Stage 1 scope"><div class="nl">stage 1</div>scope</div>
+        <span class="farr">→</span>
+        <div class="fnode" data-d="intent" onclick="openD('intent')" tabindex="0" role="button" aria-label="Stage 2 intent"><div class="nl">stage 2</div>intent</div>
+        <span class="farr">→</span>
+        <div class="fnode" data-d="analyze" onclick="openD('analyze')" tabindex="0" role="button" aria-label="Stage 3 analyze"><div class="nl">stage 3</div>analyze</div>
+        <span class="farr">→</span>
+        <div class="fnode" data-d="verify" onclick="openD('verify')" tabindex="0" role="button" aria-label="Stage 4 verify"><div class="nl">stage 4</div>verify</div>
+        <span class="farr">→</span>
+        <div class="fnode accent" data-d="assemble" onclick="openD('assemble')" tabindex="0" role="button" aria-label="Stage 5 assemble"><div class="nl">stage 5</div>assemble</div>
+      </div>
+      <p>SCOPE resolves the diff target; INTENT locates the spec + plan and builds an intent record (reconstructing from the transcript and marking adherence <code>reconstructed</code> if none is found); ANALYZE dispatches the finder subagents in parallel; VERIFY runs the adversarial refute pass and deduplicates — a finding that errors mid-verify is kept as <em>unverified — flagged</em>, never silently dropped; ASSEMBLE builds the review-model and renders it under <code>.claude/lens/</code>.</p>
+    </section>
+
+    <section id="finders">
+      <div class="sec-label">04 — the finders</div>
+      <h2>A three-tier <em>finder registry</em></h2>
+      <p class="lede">ANALYZE dispatches finders that all emit the same <code>review-findings</code> contract. Read-only is enforced at the dispatch boundary for every tier — an adapter or finder can report, never edit, stage, commit, or block.</p>
+      <div class="edge-grid">
+        <div class="edge"><div class="n">tier 1 · built-in</div><div class="t">Ships with lens</div><p>Five finders — <span class="cell-mono">spec-adherence</span> + <span class="cell-mono">plan-adherence</span> (the wedge), <span class="cell-mono">correctness</span>, <span class="cell-mono">risk-classify</span>, <span class="cell-mono">test-gaps</span> — plus the <span class="cell-mono">verifier</span>. Findings-only by construction.</p></div>
+        <div class="edge"><div class="n">tier 2 · adapters</div><div class="t">Optional external tooling</div><p>Runtime-detected, skipped silently when absent (e.g. the <span class="cell-mono">pr-review-toolkit</span> agents). Most inherit write tools from their source, so each is constrained to findings-only at the boundary.</p></div>
+        <div class="edge"><div class="n">tier 3 · project-custom</div><div class="t">Per-project finders</div><p>Extra finders specific to this codebase, registered in <span class="cell-mono">.claude/lens/settings.md</span> and constrained findings-only at dispatch.</p></div>
+      </div>
+      <p style="margin-top:1.4rem">Then VERIFY runs the adversarial pass: each candidate finding goes to the independent <strong>verifier</strong> skeptic, prompted to refute it against real source. It emits a per-finding refute vote; the engine aggregates those votes into <code>votes{total, couldNotRefute, refuted}</code> and resolves each finding's <code>verified</code> bool. Only unrefuted findings survive into the report.</p>
+      <div class="callout">
+        <h4>The review-findings contract</h4>
+        <p>The engine emits, and the renderer consumes, a single canonical <code>review-findings</code> schema — a field-additive superset of vicario's, with a co-owned nine-value <code>dimension</code> enum (vicario's six <span class="cell-mono">requirements / correctness / security / types / silent-failure / simplify</span> plus lens's <span class="cell-mono">test / risk / comment</span>). Field-additive only: never rename or repurpose a vicario field, only add optional ones.</p>
+      </div>
+    </section>
+
+    <section id="skills">
+      <div class="sec-label">05 — reference</div>
+      <h2>One skill, one <em>hidden</em> engine</h2>
+      <p class="lede">lens has exactly two skills: the user-facing <code>review</code> and an internal <code>engine</code>. The six agents are the five built-in finders plus the adversarial verifier. No hooks, no scripts, no compiled code.</p>
+      <table class="ref-table">
+        <thead><tr><th>Skill</th><th>Invocation</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="slash">/lens:review</td><td class="cell-mode">user <span class="tag auto">auto</span></td><td>The one user-facing entry point. Runs the five-stage pipeline over the current change — the optional <span class="cell-mono">[target]</span> overrides the diff scope. Delegates judgment to <code>engine</code>, then renders the review via <code>walkthrough:render</code> (markdown fallback).</td></tr>
+          <tr><td class="slash">engine</td><td class="cell-mode"><span class="tag hidden-int">internal</span></td><td>The data-only judgment core (<span class="cell-mono">user-invocable: false</span>): scope → intent → analyze → verify → dedup → rank → return <code>review-findings</code> JSON. Writes nothing, never prompts — the reusable core a tool like vicario could consume directly.</td></tr>
+        </tbody>
+      </table>
+      <table class="ref-table">
+        <thead><tr><th>Agent</th><th>Role</th><th>Dimension</th></tr></thead>
+        <tbody>
+          <tr><td class="slash">spec-adherence</td><td>Does the change implement what the spec asked, no more and no less?</td><td class="cell-mode">requirements</td></tr>
+          <tr><td class="slash">plan-adherence</td><td>Did it follow the plan it set out, or quietly diverge?</td><td class="cell-mode">requirements</td></tr>
+          <tr><td class="slash">correctness</td><td>Logic, edge cases, and behavioural bugs in the diff.</td><td class="cell-mode">correctness</td></tr>
+          <tr><td class="slash">risk-classify</td><td>Blast radius and risk of the change.</td><td class="cell-mode">risk</td></tr>
+          <tr><td class="slash">test-gaps</td><td>Missing or inadequate test coverage for the new behaviour.</td><td class="cell-mode">test</td></tr>
+          <tr><td class="slash">verifier</td><td>The adversarial skeptic — tries to refute each candidate finding against real source. Only unrefuted findings survive.</td><td class="cell-mode">(verify pass)</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="storage">
+      <div class="sec-label">06 — the core promise</div>
+      <h2>Read-only by <em>contract</em></h2>
+      <p class="lede">lens reads the diff and source, produces an artifact, and the human decides. It never commits, edits, stages, or blocks — there is no write path through any finder, adapter, or verify agent.</p>
+      <div class="edge-grid">
+        <div class="edge"><div class="n">read-only</div><div class="t">Two writes, and only two</div><p>The <strong>only</strong> things lens writes are the rendered review artifact (HTML via walkthrough, or the markdown fallback) and <span class="cell-mono">.claude/lens/review-state.json</span>. Read-only is enforced at the finder boundary.</p></div>
+        <div class="edge"><div class="n">first-run setup</div><div class="t">gitignore + output path</div><p>On the first review in a repo, lens offers to add <span class="cell-mono">.claude/lens/</span> to <span class="cell-mono">.gitignore</span> (the default offer, since artifacts can contain session content) and asks for a default output path. Both persist to <span class="cell-mono">.claude/lens/settings.md</span>.</p></div>
+        <div class="edge"><div class="n">state-aware re-review</div><div class="t">fixed / open / new + trend</div><p><span class="cell-mono">.claude/lens/review-state.json</span> records prior findings and statuses, so a re-review of the same scope shows what's fixed, still open, or new — and the severity trend across runs.</p></div>
+        <div class="edge"><div class="n">settings.md</div><div class="t">Choices + custom finders</div><p>Holds your gitignore choice, default output path, and the project-custom finder registry — the third tier specific to this codebase.</p></div>
+      </div>
+      <p style="margin-top:1.4rem">All lens state lives under <code>.claude/lens/</code>, in-repo and gitignored by default — mirroring walkthrough's and handoff's privacy model. There are no hooks, no shell scripts, and no compiled code: lens is markdown skills and agents over a JSON contract, consistent with the rest of the marketplace.</p>
+    </section>
+
+    <section id="example">
+      <div class="sec-label">07 — example</div>
+      <h2>Run it before you <em>push</em></h2>
+      <p class="lede"><code>/lens:review</code> with no argument reviews the working tree plus this branch's commits against the merge-base — judging the diff against the spec and plan, then verifying every finding.</p>
+      <div class="codeblock">
+        <div class="cb-head"><span class="cb-file">/lens:review</span><span class="cb-lang">transcript</span></div>
+        <pre class="cb-body"><code>&gt; /lens:review
+
+scope      working tree + branch commits vs merge-base (origin/main)
+intent     spec: docs/superpowers/specs/sms-parser-hdfc.md
+           plan: 7 steps  →  intent record built
+analyze    dispatch finders in parallel (built-in + adapters)
+verify     adversarial refute pass — 11 candidates → 7 survive
+assemble   review-model → walkthrough:render
+
+→ .claude/lens/2026-06-13-review.html
+
+  Adherence    spec ✓   plan ⚠ (step 5 diverged: caching added, not planned)
+  Findings     7 verified  ·  1 unverified — flagged
+    high   2   medium   3   low   2
+  Re-review    3 fixed · 2 still open · 2 new   (severity trend ↓)
+  Verdict      moderate — read the adherence panel before merging
+
+→ you read the review. you decide. lens writes nothing to your code.</code></pre>
+      </div>
+      <div class="legend" aria-label="Review marker legend">
+        <span class="lg"><i style="background:var(--green)"></i>✓ verified / adheres</span>
+        <span class="lg"><i style="background:var(--amber)"></i>⚠ diverged / unverified — flagged</span>
+        <span class="lg"><i style="background:var(--accent)"></i>state-aware re-review delta</span>
+      </div>
+    </section>
+
+    <section id="isnt">
+      <div class="sec-label">08 — boundaries</div>
+      <h2>What it <em>is</em> — and isn't</h2>
+      <p class="lede">lens is an intent-grounded, in-session review companion — not a linter, not a CI gate, and nothing that writes to your code. Knowing the boundary keeps expectations honest.</p>
+      <div class="edge-grid">
+        <div class="edge"><div class="n">it is</div><div class="t">An intent-grounded reviewer</div><p>It reads the diff and source, reconstructs what you were asked to build, verifies its own findings adversarially, and renders a review document for a human to act on.</p></div>
+        <div class="edge"><div class="n">it isn't</div><div class="t">A diff-only linter</div><p>The whole point is judging against spec and plan, not just the patch in isolation — that's the wedge a diff-only tool can never reach.</p></div>
+        <div class="edge"><div class="n">it isn't</div><div class="t">A CI gate</div><p>In v1 lens runs in your session, on demand. It does not run in CI and does not gate merges.</p></div>
+        <div class="edge"><div class="n">it isn't</div><div class="t">Anything that writes to code</div><p>Read-only by contract — it never commits, edits, stages, or blocks. The only writes are the review artifact and <span class="cell-mono">review-state.json</span>. You read; you decide.</p></div>
+      </div>
+    </section>
+
+    <div class="foot">
+      <div class="foot-links">
+        <a href="../">← marketplace</a>
+        <a href="../walkthrough/">walkthrough (the eyes)</a>
+        <a href="https://github.com/ApurvBazari/claude-plugins/tree/main/lens">source on GitHub</a>
+      </div>
+      <div class="meta">lens · v1.0.0 · MIT · by Apurv Bazari</div>
+    </div>
+  </main>
+  <aside class="panel" id="panel"><span class="x" onclick="closeD()">✕</span>
+    <div class="pk" id="pk">Detail</div><h3 id="ph">—</h3><div class="pb" id="pbd"></div></aside>
+  <script>
+const DET={
+ engine:{k:"Brain",h:"The engine",b:"lens-engine (<code>skills/engine</code>, internal, <code>user-invocable: false</code>, data-only): runs scope → intent → analyze → verify → dedup → rank and <strong>returns</strong> a <code>review-findings</code> JSON object. It writes nothing and never prompts the user — the reusable judgment core that a tool like vicario could consume directly, independent of how the result is displayed."},
+ render:{k:"Eyes",h:"The render half",b:"lens-render (inside <code>skills/review</code>) consumes the engine's JSON, builds a review-model (narrative + adherence + findings + risk + annotated hunks + overall verdict), and invokes <code>walkthrough:render</code> to produce the artifact. lens does no HTML synthesis itself; when walkthrough is absent it renders the same review-model to a self-contained markdown report instead."},
+ 'walkthrough-render':{k:"Shared",h:"walkthrough:render",b:"walkthrough's internal (<code>user-invocable: false</code>) render skill — the programmatic entrypoint it exposes for exactly this. It inlines the pre-synthesized review-model into the house-style interactive HTML, reusing the same design tokens, themes, and components as every other walkthrough. Neither plugin imports the other; lens detects walkthrough at runtime."},
+ scope:{k:"Stage 1",h:"SCOPE",b:"Resolve the diff target. Default: working tree + this branch's commits vs the merge-base with the default branch; <code>[target]</code> overrides (a path, a ref, a range). Empty diff or no repo → tell the user, stop."},
+ intent:{k:"Stage 2",h:"INTENT",b:"Locate the spec + plan and build an <strong>intent record</strong>. Priority: explicit args &gt; <code>docs/superpowers/specs/</code> (latest) &gt; the plan &gt; the transcript. None found → reconstruct from the transcript and mark adherence <code>reconstructed</code>."},
+ analyze:{k:"Stage 3",h:"ANALYZE",b:"Dispatch finder subagents in parallel across the three-tier registry. Built-in finders are spec-adherence + plan-adherence (the wedge → <code>requirements</code>), correctness, risk-classify, and test-gaps. All emit the same <code>review-findings</code> contract; read-only is enforced at the boundary."},
+ verify:{k:"Stage 4",h:"VERIFY",b:"Adversarial refute pass. Each candidate finding goes to the independent <strong>verifier</strong> skeptic, prompted to refute it against real source; only unrefuted findings survive. Dedup across finders. A finding that errors mid-verify is <strong>kept</strong> as <em>unverified — flagged</em>, never silently dropped."},
+ assemble:{k:"Stage 5",h:"ASSEMBLE",b:"Build the review-model from the verified findings and invoke <code>walkthrough:render</code> (markdown fallback if absent) to an output path under <code>.claude/lens/</code>. Also updates <code>review-state.json</code> so the next review of the same scope can show fixed / open / new and the severity trend."}
+};
+const panel=document.getElementById('panel');
+function openD(id){const d=DET[id];if(!d)return;pk.textContent=d.k;ph.textContent=d.h;pbd.innerHTML=d.b;panel.classList.add('open');}
+function openCard(el){if(!el)return;pk.textContent=el.dataset.k||'Detail';ph.textContent=el.dataset.t||'';pbd.innerHTML=el.dataset.desc||'';panel.classList.add('open');}
+function closeD(){panel.classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeD();});
+function animate(scope){scope.querySelectorAll('.fil').forEach(f=>{f.style.width='0';requestAnimationFrame(()=>requestAnimationFrame(()=>{f.style.width=f.dataset.w+'%';}));});}
+function tgl(){const h=document.documentElement;const t=h.getAttribute('data-theme')==='dark'?'light':'dark';h.setAttribute('data-theme',t);try{localStorage.setItem('wt-theme',t);}catch(e){}}
+(function(){try{const t=localStorage.getItem('wt-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vis');const d=e.target.querySelector('.detail.show');if(d)animate(d);}}),{threshold:.1});
+document.querySelectorAll('section').forEach(s=>io.observe(s));
+addEventListener('scroll',()=>{const sc=scrollY/(document.body.scrollHeight-innerHeight)*100;if(prog)prog.style.width=sc+'%';
+ let cur='';document.querySelectorAll('section[id]').forEach(s=>{if(scrollY>=s.offsetTop-120)cur=s.id;});
+ document.querySelectorAll('.nav-links a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+cur));},{passive:true});
+document.querySelectorAll('[role="button"]').forEach(n=>n.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();n.click();}}));
+  </script>
+</body></html>

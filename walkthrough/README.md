@@ -14,6 +14,14 @@ claude plugin install walkthrough@apurvbazari-plugins
 
 That's it. No setup step, no configuration file required.
 
+## Skills
+
+- `/walkthrough:create [focus]` — render the current session as a self-contained interactive HTML document. See [Usage](#usage).
+- `/walkthrough:update [changed-file-paths…]` — refresh an existing walkthrough in place. See [Updating an existing walkthrough](#updating-an-existing-walkthrough).
+- `/walkthrough:document <subject> [output-path]` — render a plugin, the marketplace, or any path as a docs page. See [Documenting a subject](#documenting-a-subject).
+
+> `render` is an internal building block (`user-invocable: false`) used by other plugins (e.g. lens) — see [The internal `render` skill](#the-internal-render-skill).
+
 ## Usage
 
 ```

@@ -1,6 +1,6 @@
 # claude-plugins
 
-> Claude Code plugins for the project lifecycle — `onboard` keeps AI configs aligned as your code evolves, `notify` closes the loop, `handoff` carries session intent across context boundaries, and `walkthrough` turns a session into an explorable document. Four plugins that work on their own and **compose together**.
+> Claude Code plugins for the project lifecycle — `onboard` keeps AI configs aligned as your code evolves, `notify` closes the loop, `handoff` carries session intent across context boundaries, `walkthrough` turns a session into an explorable document, and `lens` reviews work against its spec before it ships. Five plugins that work on their own and **compose together**.
 
 Built on top of [Claude Code](https://code.claude.com/docs/en) by Anthropic. Distributed under [MIT](./LICENSE).
 
@@ -16,6 +16,21 @@ Built on top of [Claude Code](https://code.claude.com/docs/en) by Anthropic. Dis
 | **[notify](./notify/)** | macOS / Linux system notifications when Claude finishes a task. Duration-filtered so short tasks don't spam you. | You leave Claude running long jobs in the background. |
 | **[handoff](./handoff/)** | Save the directive of a wrap-up session, then auto-surface it at the next SessionStart with an Execute / Edit / Discard / Save-for-later prompt. | You end sessions by pasting "continue this work in the new window" prompts into the next session. |
 | **[walkthrough](./walkthrough/)** | Render the current session as a self-contained interactive HTML document with diagrams and clickable detail. | You want a readable, shareable artifact of a session instead of scrolling back through the transcript. |
+| **[lens](./lens/)** | Intent-grounded review companion — reviews the session's diff **against the spec and plan it was meant to follow**, adversarially verifies the findings, and renders an interactive review. | You've finished a change and want a second, intent-aware opinion before you commit, push, or open a PR. |
+
+---
+
+## Commands
+
+Every user-invocable command across the five plugins (internal building-block skills with `user-invocable: false` are omitted — these are the ones you invoke directly):
+
+| Plugin | Commands |
+|---|---|
+| **onboard** | `/onboard:start` · `/onboard:check` · `/onboard:evolve` · `/onboard:update` · `/onboard:verify` |
+| **notify** | `/notify:setup` · `/notify:check` · `/notify:uninstall` |
+| **handoff** | `/handoff:save` · `/handoff:pickup` · `/handoff:check` · `/handoff:discard` |
+| **walkthrough** | `/walkthrough:create` · `/walkthrough:document` · `/walkthrough:update` |
+| **lens** | `/lens:review` |
 
 ---
 
@@ -36,9 +51,9 @@ claude plugin install onboard@claude-community
 claude plugin install notify@claude-community
 ```
 
-### Option B — install from `apurvbazari-plugins` (all four plugins, latest commit)
+### Option B — install from `apurvbazari-plugins` (all five plugins, latest commit)
 
-This route always serves the latest commit when you want changes ahead of the community marketplace's nightly snapshot, and is the only route for `handoff` and `walkthrough`.
+This route always serves the latest commit when you want changes ahead of the community marketplace's nightly snapshot, and is the only route for `handoff`, `walkthrough`, and `lens`.
 
 ```bash
 # Add this marketplace
@@ -57,6 +72,7 @@ claude plugin install onboard@apurvbazari-plugins
 claude plugin install notify@apurvbazari-plugins
 claude plugin install handoff@apurvbazari-plugins
 claude plugin install walkthrough@apurvbazari-plugins
+claude plugin install lens@apurvbazari-plugins
 ```
 
 ---
@@ -134,6 +150,18 @@ After a long session — a debugging marathon, a feature, an architecture decisi
 **One house style, open component system.** Every walkthrough shares a fixed design system (tokens only, two themes). The component catalog is a floor, not a ceiling — when content fits no catalog entry, a bespoke component is composed from the same primitives so it still looks native; empty sections are omitted, not stubbed.
 
 For the skill reference, the design-system invariant, the 5-stage render pipeline, and the storage model: [walkthrough/README.md →](./walkthrough/README.md)
+
+---
+
+## lens
+
+Review Claude's work **before it ships** — against the spec and plan it was meant to follow. `lens` runs inside the live session that produced the code, so it can ask the question a diff-only reviewer can't: *did this build what was actually asked, and did it follow the plan?* A bug-free implementation of the **wrong** spec is the failure `/code-review` and external PR bots can never catch.
+
+**Brain and eyes.** lens is the brain — it judges (scope → intent → analyze → adversarially verify → assemble). [`walkthrough`](./walkthrough/) is the eyes — lens hands its structured findings to `walkthrough:render` for an interactive HTML review, and degrades to a self-contained markdown report when walkthrough isn't installed. Neither plugin imports the other.
+
+**Read-only by contract.** lens never commits, edits, stages, or blocks — it reads the diff and source, verifies its findings adversarially, and renders a review for a human to act on. You decide what to do with it.
+
+For the full five-stage pipeline, the 3-tier finder registry, the optional read-only adapters, and state-aware re-review: [lens/README.md →](./lens/README.md)
 
 ---
 
