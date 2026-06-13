@@ -35,5 +35,8 @@ read **only** the group files for the components you actually select. Paths are 
 | Legend | A key explaining diagram symbols / colors | `layout-prose.md` |
 | Interactive explorer | A selector driving a live diagram + detail pane from one data model | `interactive.md` |
 | Data-driven step timeline | Phases of parallel/sequential steps with source pills + micro-cycles | `interactive.md` |
+| Annotated diff | A reviewed change — `diffHunks[]` with inline finding pins | `review.md` |
+| Findings list | Review `findings[]`, severity-ranked + filterable by category | `review.md` |
+| Adherence panel | `adherence` — spec items + plan steps marked met/partial/missing | `review.md` |
 
 ## Composing beyond the catalog — see `authoring-guide.md`.

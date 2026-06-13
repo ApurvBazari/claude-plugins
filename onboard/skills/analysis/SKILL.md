@@ -1,6 +1,6 @@
 ---
 name: analysis
-description: Read-only codebase analysis — tech stack detection, model recommendations, complexity scoring. Internal building block invoked by the codebase-analyzer agent during /onboard:start — not user-invocable.
+description: Invoked by the codebase-analyzer agent during /onboard:start to run read-only codebase analysis (stack, model, complexity). Internal building block; not user-invocable.
 user-invocable: false
 ---
 

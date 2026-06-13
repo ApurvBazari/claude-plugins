@@ -1,6 +1,6 @@
 ---
 name: uninstall
-description: Remove notify hooks, scripts, and config files from the chosen scope (global and/or project). Surgically deletes only notify-owned entries from settings.json; preserves all other hooks. Use only when user explicitly invokes /notify:uninstall.
+description: Use only when the user explicitly invokes /notify:uninstall — removes notify's hooks and config while leaving other settings intact. User-invoked only.
 disable-model-invocation: true
 ---
 

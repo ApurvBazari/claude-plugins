@@ -67,11 +67,4 @@ fi
 
 echo "Sending test notification (base: $BASE_DIR)..."
 echo '{"last_assistant_message":"Test notification — setup is working!"}' | "$NOTIFY_SCRIPT" stop
-
-EXIT_CODE=$?
-if [[ "$EXIT_CODE" -eq 0 ]]; then
-  echo "Test notification sent successfully. You should see it on your screen."
-else
-  echo "ERROR: Notification failed with exit code $EXIT_CODE."
-  exit 1
-fi
+echo "Test notification sent successfully. You should see it on your screen."

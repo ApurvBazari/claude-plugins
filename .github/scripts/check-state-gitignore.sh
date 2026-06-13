@@ -1,15 +1,20 @@
 #!/usr/bin/env bash
-# check-state-gitignore.sh — verify the root .gitignore ignores onboard
-# runtime state files.
+# check-state-gitignore.sh — verify the root .gitignore ignores files that may
+# contain user-entered or session content.
 #
-# These files persist wizard answers that may include user-entered free-text
-# (project descriptions, pain points, custom conventions). A user who pastes
-# a secret into a wizard answer would otherwise see it committed to git on
-# the next `git add .`. Keeping them gitignored is a simple, durable guard.
+# Two privacy classes:
+#   1. onboard runtime state — persists wizard answers (project descriptions,
+#      pain points, custom conventions) that may include pasted secrets.
+#   2. session-content dirs — walkthrough renders and handoff directives can
+#      embed transcript/session content.
+# Keeping all of them gitignored is a simple, durable guard against an accidental
+# `git add .` committing them.
 #
 # Required entries:
 #   .claude/onboard-snapshot.json
 #   .claude/onboard-meta.json
+#   .claude/walkthrough/
+#   .claude/handoff/
 
 set -euo pipefail
 
@@ -23,6 +28,8 @@ fi
 required=(
   ".claude/onboard-snapshot.json"
   ".claude/onboard-meta.json"
+  ".claude/walkthrough/"
+  ".claude/handoff/"
 )
 
 missing=()
@@ -34,12 +41,12 @@ done
 
 if [[ "${#missing[@]}" -gt 0 ]]; then
   {
-    echo "::error::.gitignore is missing required onboard state-file entries:"
+    echo "::error::.gitignore is missing required state-file / session-content entries:"
     printf '  %s\n' "${missing[@]}"
     echo ""
-    echo "Add these lines to .gitignore — they persist wizard answers that may contain user-entered secrets."
+    echo "Add these lines to .gitignore — they persist wizard answers or session content that may contain secrets."
   } >&2
   exit 1
 fi
 
-echo "All onboard state-file entries are present in .gitignore"
+echo "All required state-file / session-content entries are present in .gitignore"

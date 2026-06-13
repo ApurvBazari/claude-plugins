@@ -1,6 +1,6 @@
 ---
 name: save
-description: Save the current session's intent as a handoff file so the next session can pick it up. Auto-invokes when the user signals end-of-session with phrases like "save handoff", "pick this up later", "continue in new session", "handoff this", "I'll come back to this", or "save for later". Prompts for confirmation via AskUserQuestion before writing — false positives are zero-cost. Slash form `/handoff:save` is the no-confirm fallback.
+description: Use when the user signals end-of-session — "save handoff", "pick this up later", "continue in a new session", "I'll come back to this". Captures the session's intent so the next session can resume it. Slash form /handoff:save is the explicit fallback.
 ---
 
 # Save Skill — Capture Session Intent for Handoff

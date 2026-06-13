@@ -1,8 +1,8 @@
 # walkthrough — Internal Conventions
 
-Render an explorable, self-contained interactive HTML document — from one of **two input modes**: a *session* (`create` renders from scratch, `update` refreshes in place) or a *subject* (`document` renders a plugin, the marketplace, or any path). Three skills, one shared visual layer, one output artifact per run, no hooks. Closest existing plugin in shape is `handoff/` (skills + optional in-repo settings file, no scripts), but the heavy lifting lives in the skills' `references/`, which together form the renderer.
+Render an explorable, self-contained interactive HTML document — from one of **two input modes**: a *session* (`create` renders from scratch, `update` refreshes in place) or a *subject* (`document` renders a plugin, the marketplace, or any path). Three user-facing skills, one shared visual layer, one output artifact per run, no hooks. Closest existing plugin in shape is `handoff/` (skills + optional in-repo settings file, no scripts), but the heavy lifting lives in the skills' `references/`, which together form the renderer.
 
-The visual layer (`create/references/`: `design-system.md`, `interactivity.md`, `page-scaffold.md`, `authoring-guide.md`, `components/`, `self-check.md`, `completeness.md`) is shared across all three skills. `update` and `document` reuse it unchanged and bring only what differs: `update` adds `reconstruct-and-merge.md`; `document` swaps the model — its own `subject-model.md` + `gather-subject.md` + `adapters/` replace `create`'s session model.
+The visual layer (`create/references/`: `design-system.md`, `interactivity.md`, `page-scaffold.md`, `authoring-guide.md`, `components/`, `self-check.md`, `completeness.md`) is shared across all three user-facing skills. `update` and `document` reuse it unchanged and bring only what differs: `update` adds `reconstruct-and-merge.md`; `document` swaps the model — its own `subject-model.md` + `gather-subject.md` + `adapters/` replace `create`'s session model.
 
 ## Locked design dimensions
 
@@ -91,6 +91,8 @@ First-class catalog additions in v0.4.0:
 First-class additions in v1.1.0:
 - **Detail surfaces** (see § Detail surfaces) — the click-to-open detail is now a structured schema rendered into two shells, a glance **pane** and a centered native `<dialog>` **sheet**, routed by `openSurface` with capped-depth (3) nesting via the browser top layer.
 
+First-class additions in v1.2.0: components/review.md (annotated-diff, findings-list, adherence-panel) + optional review fields on session-model + files[].risk coloring — all populated only by lens.
+
 ## Detail surfaces
 
 Clicking an interactive node, card, or cross-link chip opens its detail through **one router**, `openSurface(id)`, which routes to one of two shells rendered from a single structured schema:
@@ -117,8 +119,12 @@ Three user-facing skills (all show in `/walkthrough:` autocomplete; all default 
 - `create/SKILL.md` — renders the current session from scratch. The renderer is five `references/` files plus the `references/components/` catalog (`index.md` + per-group recipes loaded on demand).
 - `update/SKILL.md` — refreshes an EXISTING walkthrough in place: reconstructs the prior model from the rendered HTML, merges in explicitly-named files, and overwrites the same file. Reuses `create`'s renderer references unchanged for the render half (five `references/` files + the `components/` catalog); its own `references/reconstruct-and-merge.md` covers the reconstruct + merge stages.
 - `document/SKILL.md` — renders a *subject* (a plugin, the marketplace, or any path) instead of a session. Reuses `create`'s visual-layer references unchanged; brings its own `references/subject-model.md`, `references/gather-subject.md`, and `references/adapters/` (plugin + marketplace). README + manifest are canonical; the output path is an argument (the docs site passes `site/<plugin>/index.html`). No gitignore prompt — output is a published/derived artifact, not private session content.
+- `render/SKILL.md` — **internal** (`user-invocable: false`): renders a model already in context to a
+  caller-supplied output path; skips gather+synthesize, reuses create's renderer references. The
+  walkthrough plugin's first internal building block (programmatic-API category, like `onboard:generate`);
+  consumed by the `lens` plugin. "Render the session" for users remains `create`.
 
-No internal building blocks (no `user-invocable: false` skills), no agents, no hooks, no scripts.
+One internal building block: `render/SKILL.md` (`user-invocable: false`) — invoked by external plugins (e.g. lens) that supply a pre-synthesized model. The user-facing skills (`create`, `update`, `document`) handle synthesis themselves and do not call `render` directly. No agents, no hooks, no scripts.
 
 ## AskUserQuestion usage
 
