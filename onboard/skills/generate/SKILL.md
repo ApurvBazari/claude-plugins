@@ -48,13 +48,22 @@ If you find yourself reaching for the Write tool while executing this skill, STO
 
 ---
 
-## Step 0: Version Detection & v1 Rejection (NEW in 2.0)
+## Step 0: Version Detection (v3 primary · v2 adapter · v1 rejected)
 
 Before reading any other field, check the top-level `version` field:
 
 ```
-if input.version === 2:
-  → proceed to Step 1 (v2 path)
+if input.version === 3:
+  → v3 path: validate against references/context-shape-v3.json.
+    Read the OPTIONAL top-level `research` object (canonical shape:
+    ../../schemas/research-dossier.json). Until a later phase teaches
+    generation to consume it, pass `research` through as inert metadata —
+    record it under metadata.research for telemetry. Then proceed to Step 1.
+elif input.version === 2:
+  → v2 adapter path ("research-absent mode" = pre-3.0 behavior):
+    validate against references/context-shape-v2.json and proceed to Step 1
+    exactly as today. No `research` object is present; downstream output is
+    byte-identical to onboard 2.x.
 else:
   → HARD-REJECT with the error below; do NOT attempt to parse remaining fields
 ```
