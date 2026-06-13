@@ -1,0 +1,20 @@
+{
+  "dimension": "architecture",
+  "status": "assessed",
+  "claims": [
+    {
+      "id": "C1",
+      "statement": "Controllers call services which call repositories; no controller touches the DB directly.",
+      "evidence": ["src/api/users.controller.ts:14", "src/services/users.service.ts:8"],
+      "confidence": 0.9,
+      "category": "convention"
+    },
+    {
+      "id": "C2",
+      "statement": "The payments module imports the auth module but not vice versa.",
+      "evidence": ["src/payments/index.ts:3"],
+      "confidence": 0.75
+    }
+  ],
+  "notes": "Layering is consistent across the sampled modules."
+}
