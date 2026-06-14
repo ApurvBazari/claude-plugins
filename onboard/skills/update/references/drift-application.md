@@ -131,7 +131,9 @@ Only **newSkill additions** are applied on user approval. Stale candidates and n
 
 ## Artifact gap regeneration (for items surfaced by Step 4b.2)
 
-Invoke the `generate` skill via the Skill tool with a narrow `callerExtras.regenerateOnly` payload listing the missing artifact paths. Generate honors this scope and only writes the listed files. After regeneration, verify each file is present on disk and carries a fresh maintenance header.
+Invoke the `generate` skill via the Skill tool with a narrow `callerExtras.regenerateOnly` payload listing the missing artifact paths. **Construct the context with top-level `version: 3`** — `generate` is v3-only as of 3.0.0 and rejects a missing/other `version`. Carry `source`, `projectPath`, and `callerExtras` (with `regenerateOnly`), plus the `wizardAnswers` recorded in `onboard-meta.json`; this is a snapshot re-emit, so no `research` object is needed. Generate honors the `regenerateOnly` scope and only writes the listed files. After regeneration, verify each file is present on disk and carries a fresh maintenance header.
+
+> This `version: 3` + `regenerateOnly` construction is the single authoritative shape for every `onboard:generate` call made by `update` and `evolve` — the per-component missing-file steps elsewhere in this file (skills / agents / output-styles / standalone hooks / MCP) and the equivalent steps in `evolve/SKILL.md` all use it.
 
 ---
 

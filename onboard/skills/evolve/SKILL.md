@@ -148,6 +148,8 @@ Update `onboard-meta.json.mcpStatus` to reflect additions.
 
 ## Step 2d: Apply Skill Frontmatter Drift
 
+> Every `onboard:generate` invocation in this skill constructs a `version: 3` context (generate is v3-only) — see `../update/references/drift-application.md` § Artifact gap regeneration for the authoritative construction shape.
+
 Run the same drift classification as `../update/SKILL.md` § 4b.5 Skill Frontmatter Drift:
 
 1. Read `onboard-meta.json.skillStatus.generated`, `.claude/onboard-skill-snapshot.json`, and each live `.claude/skills/<skill>/SKILL.md`.
