@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Start Skill — Interactive Onboarding Wizard
 
-You are running the onboard init skill. This is a guided, 4-phase process that analyzes a developer's codebase and generates complete Claude tooling infrastructure.
+You are running the onboard init skill. This is a guided, multi-phase process that analyzes a developer's codebase and generates complete Claude tooling infrastructure.
 
 ## Overview
 
@@ -14,11 +14,13 @@ Tell the developer:
 
 > Starting **onboard** — I'll analyze your codebase, walk you through some questions about your project and workflow, then generate a complete Claude Code setup tailored to your project.
 >
-> This runs in 4 phases:
-> 1. **Automated Analysis** — I'll scan your codebase (read-only)
-> 2. **Interactive Wizard** — I'll ask about your workflow and preferences
-> 3. **Generation** — I'll create all Claude tooling artifacts
-> 4. **Handoff** — I'll explain everything that was generated
+> This runs in these phases:
+> 1. **Recon** — I scan your codebase (read-only, native tools)
+> 2. **Profile** — you pick a depth/scope profile (Minimal / Standard / Comprehensive)
+> 3. **Deep Research** — focused specialists investigate per dimension and I verify their findings, then write a research dossier + architecture map + risk register + glossary
+> 4. **Grounded Wizard** — I show you what research inferred; you confirm or override
+> 5. **Generation** — I create all Claude tooling artifacts
+> 6. **Handoff** — I explain everything that was generated
 
 ---
 
@@ -99,14 +101,12 @@ Wait for the developer's choice. If they choose "Update", redirect them to run `
 ### Step 1.2: Run Analysis
 
 Spawn the `codebase-analyzer` agent to perform deep analysis. The agent will:
-- Run the three shell scripts (analyze-structure.sh, detect-stack.sh, measure-complexity.sh)
+- Perform script-free recon (native Glob/Grep/Read + git one-liners) per `../../agents/codebase-analyzer.md`
 - Perform deep exploration of key configuration files
 - Check testing setup, CI/CD, conventions
 - Produce a structured analysis report
 
-**Data handoff**: The analyzer agent's full structured report remains in the conversational context. Do not write it to a file — it will be passed to the config-generator agent via the conversation in Step 3.
-
-**Script failure fallback**: If any analysis script fails (permission denied, timeout, or unsupported environment), log the failure and continue with deep codebase exploration only. Do not block the wizard — the scripts provide supplementary data, not required data.
+**Data handoff**: The analyzer agent's full structured report remains in the conversational context. Do not write it to a file — it will be passed to the config-generator agent via the conversation in Step 3. The analyzer also returns `reconHints = {detectedRoots, structureFacts}` — keep it in context for Step 1.5.
 
 While waiting, inform the developer:
 
@@ -129,38 +129,51 @@ Once analysis completes, present a concise summary to the developer:
 
 Wait for confirmation. Incorporate any corrections before proceeding.
 
-### Step 1.4: Choose Wizard Mode
+### Step 1.4: Select Profile
 
-After the analysis summary is confirmed, offer the developer a choice:
+After the recon summary is confirmed, ask the developer to pick a profile using `AskUserQuestion` (single-select, header: `"Profile"`). The profile sets **both** the research depth (Step 1.5) and the generation scope.
 
-> How would you like to set up your Claude tooling?
->
-> 1. **Quick setup** — I'll infer most settings from your codebase analysis and ask just a couple of key questions
-> 2. **Guided walkthrough** (recommended) — I'll walk you through a short wizard to capture your preferences
+| Label | Description |
+|---|---|
+| `Minimal` | Solo / prototype / fast. Recon-only research (no specialists), relaxed style, 1 agent, format-only hooks. |
+| `Standard (Recommended)` | Small teams / active projects. Core-4 research + verify, balanced autonomy, 3 agents, lint + SessionStart hooks. |
+| `Comprehensive` | Larger / regulated. Full 7-specialist research + verify, strict style, all quality-gate hooks. |
 
-If the developer chooses **Quick setup**, the wizard runs in Quick Mode (see wizard skill for inference rules). If they choose **Guided walkthrough**, proceed to Step 2 (which includes preset selection).
+Map the choice to `depth`: `Minimal → "minimal"`, `Standard → "standard"`, `Comprehensive → "comprehensive"`. Record it as `selectedPreset` for the grounded wizard + generation scope (per `../wizard/references/workflow-presets.md`). There is **no Custom profile** — the grounded wizard (Step 2) lets the developer override every field individually.
+
+### Step 1.5: Deep Research
+
+Dispatch the research engine with the chosen depth and the recon hints:
+
+```
+Skill(
+  skill: "onboard:research",
+  args: <stringified { projectPath: <cwd>, depth: <from Step 1.4>, reconHints: <from Step 1.2> }>
+)
+```
+
+The engine fans out read-only specialists per dimension, adversarially verifies their claims, synthesizes the research dossier, **asks where the four human-readable artifacts should land** (committed / local / none), writes `.claude/onboard-research.json` (+ the four `docs/onboard/` files per that choice), and returns the validated `research-dossier` object.
+
+Keep the returned dossier in conversation context: Step 2 reads `research.wizardInferences`, and Step 2.6 embeds the whole `research` object in the v3 context.
+
+Inform the developer before dispatching:
+
+> Researching your codebase in depth — focused specialists per dimension, with their findings verified against your code, producing a research dossier plus an architecture map, risk register, and glossary. This is read-only.
+
+For `minimal` depth the engine dispatches no specialists and returns a minimal dossier quickly (the fast/cheap path).
 
 ---
 
 ## Step 2: Interactive Wizard
 
-Use the `wizard` skill to guide the developer through adaptive questions. The skill contains the full question bank, branching logic, and workflow presets.
-
-The wizard starts with **preset selection** — offering Minimal, Standard, Comprehensive, or Custom profiles. If a preset is chosen, most questions are pre-answered and the wizard moves quickly to project description and confirmation.
-
-Key reminders:
-- **Offer presets first** to fast-track the wizard for developers who want quick setup
-- **Group questions** to keep the Custom path to 5-6 exchanges
-- **Reference analysis results** when asking questions
-- **Skip questions** that the analysis already answered clearly
-- **Adapt** based on prior answers
-- **Be conversational**, not interrogative
+Use the `wizard` skill to run the **grounded confirm/override surface**. It reads `research.wizardInferences` from the Step 1.5 dossier and presents confirm/override cards (workflow fields), cold asks (`autonomyLevel` + intent + pain points), and tuning/detection cards — ~2–3 exchanges. There is no preset selection here (done in Step 1.4) and no Custom path.
 
 After all questions are answered, present a summary:
 
 > Here's a summary of everything I've gathered:
 >
 > **Project**: [description]
+> **Model**: [model-id] ([source])
 > **Team**: [size]
 > **Primary work**: [tasks]
 > **Workflow**: [review process, branching, deploy frequency]
@@ -219,17 +232,19 @@ If no plugins were detected:
 
 ## Step 2.6: Build Onboard Context
 
-Follow the canonical procedure in `references/onboard-context-builder.md` to assemble the single context object that Step 3 dispatches to `Skill(onboard:generate)`. The builder is the **single source of truth** for init context construction — every preset path (Custom / Standard / Minimal / Comprehensive / Quick Mode) invokes it. Do not maintain preset-specific context builders; that was the drift that caused release-gate findings B1, B5, B6, B8, B10, B12, B13 (2026-04-17 sweep).
+Follow the canonical procedure in `references/onboard-context-builder.md` to assemble the single context object that Step 3 dispatches to `Skill(onboard:generate)`. The builder is the **single source of truth** for init context construction — every profile path (Minimal / Standard / Comprehensive) invokes it. Do not maintain profile-specific context builders; that was the drift that caused release-gate findings B1, B5, B6, B8, B10, B12, B13 (2026-04-17 sweep).
 
 Inputs already in conversation context:
 
 - Step 1 analysis report
+- Step 1.5 research dossier (the `research` object)
 - Step 2 wizard output (canonical `wizardAnswers` shape per `../wizard/SKILL.md` § Output § Canonical shape invariant)
 - Step 2.5 plugin detection results (`installedPlugins`, `coveredCapabilities`, `pluginSurfaces`)
 - Project root path (current working directory)
 
 The builder emits a context object per the canonical schema. Key invariants:
 
+- the builder emits **v3** (`version: 3`) and embeds the `research` object — see `references/onboard-context-builder.md`.
 - All 7 callerExtras Phase-7 flags populated explicitly (`disableMCP`, `disableLSP`, `disableBuiltInSkills`, `disableSkillTuning`, `disableAgentTuning`, `disableOutputStyleTuning`, `allowHttpHooks`) — init-path defaults are `false` for all (Phase 7 blocks run fully; interactive confirmation runs).
 - `callerExtras.installedPlugins` and `pluginSurfaces` populated from Step 2.5 probes.
 - Every wizardAnswers field populated (including defaults for skipped fields per `../wizard/SKILL.md` § Skip Behavior).
@@ -242,9 +257,9 @@ Run the builder's validation step before proceeding to Step 3. If validation fai
 
 ### Step 3.1: Model resolution (no separate prompt)
 
-The model has already been chosen by this point — either explicitly through the wizard's Phase 5.2 (Custom preset), or implicitly via the preset default (Minimal/Standard/Comprehensive use `claude-opus-4-7[1m]` per `../wizard/references/workflow-presets.md` § Per-preset exchange targets).
+The model has already been chosen by this point — either because the developer tuned it in the grounded wizard (`wizardAnswers.skillTuning?.defaultModel`), or implicitly via the profile default (Minimal/Standard/Comprehensive use `claude-opus-4-7[1m]` per `../wizard/references/workflow-presets.md` § Exchange target (uniform across profiles)).
 
-**Do NOT** ask "Which model would you like to use?" here. That used to be a separate post-summary question in earlier versions of start/SKILL.md and the wizard's Phase 5.2 also asked the same thing — the duplicate prompt was findings A4 in the 2026-04-16 release-gate test.
+**Do NOT** ask "Which model would you like to use?" here. That used to be a separate post-summary question in earlier versions of start/SKILL.md — the duplicate prompt was findings A4 in the 2026-04-16 release-gate test.
 
 Resolve the model from the wizard answers as follows:
 
@@ -255,9 +270,9 @@ chosenModel = wizardAnswers.skillTuning?.defaultModel
             ?? "claude-opus-4-7[1m]"
 ```
 
-The preset-default fallback is documented in `../wizard/references/workflow-presets.md`. The final fallback (`claude-opus-4-7[1m]`) covers any path where the wizard answers don't include a model (e.g., a future bug or a Quick Mode bail-out before Phase 5.2).
+The profile-default fallback is documented in `../wizard/references/workflow-presets.md`. The final fallback (`claude-opus-4-7[1m]`) covers any path where the wizard answers don't include a model (e.g., a future bug or the grounded wizard skipping the model-tuning card).
 
-The wizard's Phase 6 summary already shows the chosen model — the developer has already seen and confirmed it. If they wanted to change it, they would have done so in the summary tweak step (or by editing `.claude/settings.json` after init).
+The wizard's summary already shows the chosen model — the developer has already seen and confirmed it. If they wanted to change it, they would have done so in the summary tweak step (or by editing `.claude/settings.json` after init).
 
 The model choice is written into `context.modelChoice` by the Step 2.6 builder.
 
@@ -457,6 +472,7 @@ Based on what was generated, suggest what to try first:
 
 > **Next steps:**
 > - Review `CLAUDE.md` and adjust anything that doesn't match your preferences
+> - Review the research artifacts in `docs/onboard/` (or `.claude/onboard-research.json` if you chose local/none) — the dossier, architecture map, risk register, and glossary.
 > - Run `/onboard:check` anytime to check the health of your setup
 > - Run `/onboard:update` periodically to align with latest Claude best practices
 > - All generated files have maintenance headers — Claude will let you know when they need updating

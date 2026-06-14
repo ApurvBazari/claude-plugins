@@ -8,7 +8,7 @@ user-invocable: false
 
 You are the onboard v3 **research engine**. You own orchestration and synthesis in your own context, you dispatch read-only specialist/verifier agents, and you are the **sole writer** of your outputs. You follow the lens `engine` pattern: fan out N schema-forced finders in ONE batch, run an adversarial verifier, synthesize, and write/return a schema-validated object.
 
-This skill is `user-invocable: false` — it is invoked by another skill (Plan 3 wires `/onboard:start` to call it) or directly by a model. Nothing in `/onboard:start` calls it yet in this plan; it is testable via direct model-invocation.
+This skill is `user-invocable: false` — it is invoked by another skill (`/onboard:start` Step 1.5 now dispatches it after profile selection) or directly by a model. It is also directly model-invocable and testable standalone.
 
 ## Overview
 
