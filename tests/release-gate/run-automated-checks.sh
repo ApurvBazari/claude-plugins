@@ -536,6 +536,17 @@ if grep -qi "research self-audit" "$CG"; then
 else
   fail "5: config-generator missing the research self-audit (start summary alone is not subagent-visible)"
 fi
+VB="onboard/skills/generation/references/verify-backlog-seeding.md"
+if grep -qiE "sha-?256" "$VB" && grep -qi "without.*:line\|line.*stripped\|pathNoLine" "$VB"; then
+  pass "5: sourceClaim algorithm pinned (SHA-256, line-stripped path)"
+else
+  fail "5: sourceClaim algorithm not pinned"
+fi
+if ! grep -rq "statement+evidence\|statement + evidence" onboard; then
+  pass "5: sourceClaim preimage no longer includes raw evidence (no line-drift churn)"
+else
+  fail "5: sourceClaim preimage still hashes raw statement+evidence"
+fi
 echo ""
 
 # ─────────────────────────────────────────────────

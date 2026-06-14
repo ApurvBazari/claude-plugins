@@ -48,7 +48,7 @@ Write `docs/feature-list.json` **atomically** (`.tmp` + rename):
           "steps": ["<1–3 remediation-verification steps synthesized from statement + file:line evidence>"],
           "passes": false,
           "priority": 1,
-          "sourceClaim": "<dimension>:<stable-hash of statement+evidence>"
+          "sourceClaim": "<dimension>:<sha256-12 of normalized statement + line-stripped evidence path>"
         }
       ]
     }
@@ -61,7 +61,16 @@ Write `docs/feature-list.json` **atomically** (`.tmp` + rename):
 - **`steps`** — 1–3 concrete remediation-verification steps composed from the claim `statement` + `evidence` (findings carry no mitigation field, so synthesize). Example: `"Inspect src/auth/session.ts:42; confirm the missing CSRF guard named in the claim is added; add/verify a test covering it."`
 - **`priority`** — integer tier: `security` = 1, general `risk`/`hotspot` = 2, `test-gap` = 3. Order features by tier ascending, then by `confidence` descending within a tier; assign `F00N` ids in that order.
 - All seeded items start **`passes: false`**.
-- **`sourceClaim`** — provenance key `"<dimension>:<stable-hash of statement+evidence>"`, written on every onboard-seeded feature so a later re-research merge can match a fresh claim to its existing feature. The `feature-evaluator` ignores unknown fields — safe, documented extension.
+- **`sourceClaim`** — provenance key `"<dimension>:<sha256-12 of normalized statement + line-stripped evidence path>"`, written on every onboard-seeded feature so a later re-research merge can match a fresh claim to its existing feature. The `feature-evaluator` ignores unknown fields — safe, documented extension.
+
+### `sourceClaim` provenance key — pinned algorithm
+
+`sourceClaim = "<dimension>:<hash>"` where:
+- `hash` = the first **12 hex chars** of **SHA-256** over the **preimage**.
+- preimage = `normalize(statement) + "\n" + pathNoLine(firstEvidence)`, where
+  - `normalize(s)` = trim → lowercase → collapse runs of whitespace to a single space;
+  - `pathNoLine(e)` = the first evidence item's file path with any trailing `:<line>` (or `:<line>:<col>`) removed; empty string if the claim has no evidence path.
+- **Why line-stripped, not raw evidence:** a line number drifts on unrelated edits — hashing it would make a re-researched claim hash differently and read as **Vanished + New** (backlog churn). Statement + line-stripped path is stable across edits yet still distinguishes two same-statement claims in different files.
 
 ## Telemetry
 

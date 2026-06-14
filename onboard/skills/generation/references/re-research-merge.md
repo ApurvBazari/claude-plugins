@@ -19,7 +19,7 @@ For `<!-- onboard:plugin-integration:start/end -->` and `<!-- onboard:skill-reco
 
 ## Verify-backlog
 
-The backlog is **merged, not reseeded** — apply `verify-backlog-seeding.md` § Re-research merge (gated on the same marker).
+The backlog is **merged, not reseeded** — apply `verify-backlog-seeding.md` § Re-research merge (gated on the same marker). Identity is the pinned `sourceClaim` key (`verify-backlog-seeding.md` § `sourceClaim` provenance key — pinned algorithm): SHA-256-12 over the normalized statement + line-stripped evidence path, so a fresh claim matches its existing feature across edits.
 
 ## Telemetry
 
