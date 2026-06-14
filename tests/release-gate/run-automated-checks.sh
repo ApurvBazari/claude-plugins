@@ -411,6 +411,18 @@ if grep -qi "scoped/merge mode" "$RESEARCH" && grep -qi "refreshDimensions" "$RE
 else
   fail "4c: research/SKILL.md missing the scoped/merge mode"
 fi
+
+RR="onboard/skills/update/references/re-research.md"
+if [[ -f "$RR" ]] && grep -q "## § Detection" "$RR" && grep -q "## § Orchestration" "$RR"; then
+  pass "4c: re-research.md exists with split Detection (read-only) + Orchestration sections"
+else
+  fail "4c: re-research.md missing or not split into Detection/Orchestration"
+fi
+if grep -qi "escalat" "$RR" && grep -q "Depth-cap intersection" "$RR" && grep -q "not a snapshot replay" "$RR"; then
+  pass "4c: re-research.md carries the escalation rule + depth-cap intersection + no-regenerateOnly construction"
+else
+  fail "4c: re-research.md missing escalation / depth-cap / no-regenerateOnly contract"
+fi
 echo ""
 
 # ─────────────────────────────────────────────────
