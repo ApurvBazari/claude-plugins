@@ -331,6 +331,13 @@ if [[ -f "$RC" ]] && grep -q "Research-Grounded Generation (v3)" "$GENERATION" &
 else
   fail "4b: research-consumption.md missing or not linked/gated in generation/SKILL.md"
 fi
+
+VB="onboard/skills/generation/references/verify-backlog-seeding.md"
+if [[ -f "$VB" ]] && grep -q "seed-if-absent" "$VB" && grep -q "verifiedClaims" "$VB"; then
+  pass "4b: verify-backlog-seeding.md exists with seed-if-absent + verified-only source"
+else
+  fail "4b: verify-backlog-seeding.md missing or incomplete"
+fi
 echo ""
 
 # ─────────────────────────────────────────────────

@@ -314,6 +314,10 @@ Follow `references/evolution-hooks-guide.md`:
 - Copy detection scripts to `.claude/scripts/`
 - Initialize `.claude/greenfield-drift.json`
 
+### Verify-Backlog Seeding (v3, when `research` present)
+
+When a sanitized `research` object is present, seed `docs/feature-list.json` from verified security/risk/test-gap claims following `references/verify-backlog-seeding.md`. Research is the **primary** programmatic writer (**seed-if-absent** — never clobber an existing list); the harness/interactive feature-decomposition path is the fallback when no research findings exist. Always runs regardless of `research.artifacts.location`. Empty source set → write nothing. Skip entirely in research-absent mode.
+
 ### Sprint Contracts (if `enableSprintContracts`)
 
 Follow `references/sprint-contracts.md`:
