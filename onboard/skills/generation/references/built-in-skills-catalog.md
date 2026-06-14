@@ -95,7 +95,7 @@ When generating the CLAUDE.md subsection, pick the example that best matches the
 
 - **Core skills have no detection signal** — they're universally useful and always pre-checked. The wizard still lets developers uncheck them.
 - **Extra skill detection is additive** — detecting a signal means the skill is pre-checked, not that it's forced. Developers can always add extras that weren't auto-detected.
-- **No new probe script needed** — all detection signals reference fields already present in the codebase analysis report (from `analyze-structure.sh`, `detect-stack.sh`, and `measure-complexity.sh`).
+- **No new probe script needed** — all detection signals reference fields already present in the recon analysis report (native script-free recon — see `../../../agents/codebase-analyzer.md`).
 - **Stack category for examples** is determined by the primary detected stack (highest source file count). When the analysis report identifies multiple frameworks, use the primary.
 
 ## Adding a new built-in skill
