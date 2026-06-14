@@ -51,9 +51,7 @@ Quick health check showing last run date, generated artifacts, integrity status,
 
 ### `/onboard:generate` *(internal API — `user-invocable: false`, hidden from `/` menu)*
 
-Headless generation mode for programmatic consumers. Consumes the **v2 context shape** (`version: 2`, per `skills/generate/references/context-shape-v2.json`) and **rejects v1 input outright** — v1 callers must stay on onboard 1.10.0. Emits all Claude tooling artifacts without running the interactive wizard or codebase analysis.
-
-The v2 context contract is intentionally stable so external callers can rely on it.
+Internal generation step invoked by `/onboard:start` (after the grounded wizard) and by `/onboard:update` / `/onboard:evolve` (for missing-file repair). Consumes the v3 context shape (`version: 3`, per `skills/generate/references/context-shape-v3.json`) and emits all Claude tooling artifacts without re-running the interactive wizard or codebase analysis. This is not an external API — the v2 headless contract was removed in 3.0.0.
 
 ## Architecture
 
@@ -212,7 +210,7 @@ Snapshot updated. AI configs realigned to current code.
 - **PR template + commit conventions**
 - **`.claude/onboard-meta.json`** — generation manifest
 
-### Enriched (when wizard or headless flags enable)
+### Enriched (when the wizard enables it)
 
 - **CI/CD pipelines** (GitHub Actions: ci, tooling-audit, pr-review)
 - **Harness artifacts** (`docs/progress.md`, `docs/HARNESS-GUIDE.md`)
