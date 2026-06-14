@@ -311,6 +311,18 @@ if grep -q "codebase-derived" "$GEN_SKILL" && grep -qi "not.*untrusted-user-inpu
 else
   fail "4b: generate Step 3 missing the research dispatch framing note"
 fi
+
+CG="onboard/agents/config-generator.md"
+if grep -q "research-consumption.md" "$CG" && grep -q "verify-backlog-seeding.md" "$CG"; then
+  pass "4b: config-generator references both new consumption specs"
+else
+  fail "4b: config-generator missing references to research-consumption.md / verify-backlog-seeding.md"
+fi
+if grep -q "metadata.research" "$CG"; then
+  pass "4b: config-generator writes the metadata.research block"
+else
+  fail "4b: config-generator missing the metadata.research write"
+fi
 echo ""
 
 # ─────────────────────────────────────────────────
