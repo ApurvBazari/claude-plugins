@@ -30,7 +30,7 @@ From prior phases (already in conversation context):
 
 ## Output schema — context object passed to `Skill(onboard:generate)`
 
-Emits a **v3 context** (`version: 3`): the v3 shape adds the top-level `research` block and routes `generate` Step 0 down the v3 path. This is the **internal v1-shaped object** (`analysis`, `wizardAnswers`, `enriched`, `callerExtras`, …) that `generate` and `config-generator` consume directly — it is NOT the external `context-shape-v3.json` shape (that schema, which additionally requires a top-level `phases` block, is the contract for headless v2/v3 callers and is enforced at `generate` Step 0, then mapped to internal at Step 1.5). The internal field set otherwise matches `generate/SKILL.md` Step 1 § Required Context Structure. All fields populated; no `undefined` / absent top-level keys.
+Emits a **v3 context** (`version: 3`): the v3 shape adds the top-level `research` block and routes `generate` Step 0 down the v3 path. This is the **internal v1-shaped object** (`analysis`, `wizardAnswers`, `enriched`, `callerExtras`, …) that `generate` and `config-generator` consume directly; it satisfies `context-shape-v3.json`'s required set (`version`, `source`, `projectPath`, `callerExtras`) and adds the internal fields generate expects (the v3 schema is permissive — `additionalProperties: true` — and no longer requires a `phases` block). `generate` is v3-only as of 3.0.0 (no v2 adapter). The internal field set otherwise matches `generate/SKILL.md` Step 1 § Required Context Structure. All fields populated; no `undefined` / absent top-level keys.
 
 ```jsonc
 {
@@ -112,7 +112,7 @@ Emits a **v3 context** (`version: 3`): the v3 shape adds the top-level `research
 
 Embed the returned dossier verbatim as the context `research` field. Do not reshape it — it already validated at the engine's Gate-2 against the `research-dossier.json` schema. The builder does not re-validate the dossier; it is carried through untouched so `generate` (Step 0, v3 path) can read it as inert `metadata.research`.
 
-If Step 1.5 did not run (research declined / unavailable), omit `research` entirely — `generate` accepts a research-absent context, but it must then carry `version: 2` (v2-adapter path), not `version: 3`. The default for the init path is research-present `version: 3`.
+If Step 1.5 did not run (research declined / unavailable), omit `research` entirely — `generate` still accepts a research-absent context and the builder emits `version: 3` regardless (the v3 schema treats `research` as optional; `generate` is v3-only and rejects any non-`3` version). The default for the init path is research-present `version: 3`.
 
 ### Step 3: Resolve the model choice
 
@@ -201,7 +201,7 @@ Verify before invoking `Skill(onboard:generate)`:
 5. `wizardAnswers.projectDescription` non-empty **and passes the untrusted-input sanitiser below**
 6. `callerExtras.installedPlugins` is an array (possibly empty, never undefined)
 7. `callerExtras.pluginSurfaces` is an object (possibly empty `{}`)
-8. **v3 routing invariants** — confirm the assembled context satisfies the v3-path routing requirements: `version` is the integer `3`; `research` is present and is an object (the v3 path embeds the dossier); and `source` / `projectPath` / `callerExtras` are present (already checked above). Do NOT re-validate the embedded `research` object's internal shape — it passed the engine's Gate-2 against `research-dossier.json`. Note: the init builder emits the **internal v1-shaped object** (`analysis`, `wizardAnswers`, `enriched`, `callerExtras`, …) that `generate` and `config-generator` consume directly — it does NOT construct the external `context-shape-v3.json` shape (which additionally requires a top-level `phases` block); that external schema is the contract for headless v2/v3 callers, enforced at `generate` Step 0 and mapped to internal at Step 1.5. So do NOT gate dispatch on the external schema's full `required` set (e.g. `phases`) here. On failure of the routing invariants above, refuse to dispatch and surface the offending field (same halt behavior as the field checks above).
+8. **v3 routing invariants** — confirm the assembled context satisfies the v3-path routing requirements: `version` is the integer `3`; `research` is present and is an object (the v3 path embeds the dossier); and `source` / `projectPath` / `callerExtras` are present (already checked above). Do NOT re-validate the embedded `research` object's internal shape — it passed the engine's Gate-2 against `research-dossier.json`. Note: the init builder emits the **internal v1-shaped object** (`analysis`, `wizardAnswers`, `enriched`, `callerExtras`, …) that `generate` and `config-generator` consume directly. This object satisfies `context-shape-v3.json`'s required set (`version`, `source`, `projectPath`, `callerExtras`) and adds the internal fields; the v3 schema no longer requires a `phases` block (`generate` is v3-only as of 3.0.0, with no v2 adapter), so gate dispatch only on the v3 routing invariants above — there is no `phases` field to gate on. On failure of the routing invariants above, refuse to dispatch and surface the offending field (same halt behavior as the field checks above).
 
 #### Untrusted-input sanitiser
 
