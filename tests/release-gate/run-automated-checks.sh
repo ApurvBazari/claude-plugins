@@ -284,6 +284,30 @@ fi
 echo ""
 
 # ─────────────────────────────────────────────────
+echo "## Plan 4b — research consumption contract (static)"
+# ─────────────────────────────────────────────────
+GEN_SKILL="onboard/skills/generate/SKILL.md"
+
+if grep -q "onboard 3.x requires a \`research\` object for full (re)generation" "$GEN_SKILL"; then
+  pass "4b: generate Step 0.1 carries the D2 missing-research reject error"
+else
+  fail "4b: generate Step 0.1 missing the D2 reject error string"
+fi
+
+if grep -q "failed \`research-dossier.json\` validation at" "$GEN_SKILL"; then
+  pass "4b: generate Step 0.1 carries the malformed-research reject error"
+else
+  fail "4b: generate Step 0.1 missing the malformed-research reject error string"
+fi
+
+if grep -qi "regenerateOnly" "$GEN_SKILL"; then
+  pass "4b: generate references the regenerateOnly research exemption"
+else
+  fail "4b: generate missing the regenerateOnly exemption"
+fi
+echo ""
+
+# ─────────────────────────────────────────────────
 echo "═══════════════════════════════════════════"
 echo "## Summary"
 echo ""

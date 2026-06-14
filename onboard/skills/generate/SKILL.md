@@ -55,9 +55,8 @@ Before reading any other field, check the top-level `version` field:
 ```
 if input.version === 3:
   → v3 path: validate against references/context-shape-v3.json.
-    Read the OPTIONAL top-level `research` object (canonical shape:
-    ../../schemas/research-dossier.json) and park it as inert
-    metadata.research (active consumption arrives in a later plan).
+    Then enforce the research contract and validate/sanitize a present
+    `research` object per Step 0.1 below (D2 presence + Layered validation).
     Then proceed to Step 1.
 else:
   → HARD-REJECT with the error below; do NOT parse remaining fields.
@@ -80,6 +79,37 @@ After v3 detection succeeds, validate the input against the schema at `reference
 - `callerExtras` (object, at minimum empty)
 
 The internal `onboard:start` object additionally carries `analysis`, `wizardAnswers`, and (optionally) `research`. Validation failures produce a structured error pointing at the specific field; never silently downgrade.
+
+### Step 0.1: Research contract — required-unless-`regenerateOnly` + Layered validation (v3)
+
+After v3 schema validation, enforce the research contract before Step 1. This is where the previously-inert `research` object becomes a required, validated, sanitized input.
+
+**Presence (D2):**
+
+| `research` | `callerExtras.regenerateOnly` | Action |
+|---|---|---|
+| absent | truthy | research-absent mode — snapshot re-emit; no consumption, no seeding (today's behavior) |
+| absent | falsy / unset | **HARD REJECT** — the D2 error below; do NOT proceed, write nothing |
+| present | (either) | validate + sanitize (below); if `regenerateOnly`, do NOT consume the sanitized object (snapshot replay), but a present-and-invalid envelope still hard-rejects |
+
+The D2 reject error (verbatim — callers parse it for routing; distinct from the v3-only reject):
+
+> **Generation aborted**: onboard 3.x requires a `research` object for full (re)generation. The provided v3 context carried no top-level `research`, and `callerExtras.regenerateOnly` was not set. Run `onboard:start` (which builds the research dossier before generation), or set `callerExtras.regenerateOnly` for a narrow snapshot re-emit.
+
+**Layered validation + sanitize (when `research` is present):**
+
+1. **Envelope gate** — validate the object against `../../schemas/research-dossier.json` (read the schema as the contract; opportunistically `python3 -c "import jsonschema, json, sys; jsonschema.validate(json.load(open(sys.argv[1])), json.load(open(sys.argv[2])))"`). On failure → **HARD REJECT** with the malformed-research error below, naming the offending field; write NO artifacts.
+2. **Per-dimension contents check** — for each key in `research.findings{}`, validate its value against `../../schemas/research-findings.json`. A malformed value → **strip that dimension** from a sanitized COPY of `research` and record a warning. Never abort. (The dossier schema types `findings` as a generic object, so a malformed per-dimension finding passes the envelope gate — this check is where it is caught. Plan-2 carry-forward.)
+3. **Referential cleanup** — drop any `verifiedClaims` entry and any `droppedClaims[].id` whose `<dimension>` prefix was stripped in step 2, so the verified/dropped sets stay consistent with the surviving `findings{}`.
+4. **Carry forward** — pass the **sanitized** `research` object + accumulated warnings to Step 3 (the dispatch). NEVER mutate `.claude/onboard-research.json` on disk — sanitization yields a consumption view only.
+
+The malformed-research reject error (verbatim — distinct from the D2 error and the v3-only reject):
+
+> **Generation aborted**: the provided `research` object failed `research-dossier.json` validation at `<field>`. A malformed dossier signals a broken research engine; no artifacts were written. Re-run `onboard:research` to regenerate the dossier.
+
+**Sparse-but-valid is NOT an error.** A schema-valid dossier with empty `findings{}`, no `verifiedClaims`, or empty `wizardInferences` (e.g. minimal depth) is valid — consumption no-ops per row and the verify-backlog source set may be empty (→ no feature-list). Reject is only for a malformed envelope; degrade is only for a malformed individual dimension.
+
+**Telemetry generate owns (passed to the dispatch, not written here):** `consumed` (true when `research` present and NOT `regenerateOnly`; false otherwise), `depth` (`research.depth`), `verifiedClaimCount` (count of `research.verifiedClaims` AFTER sanitization). `generate` never writes files (dispatch contract) — `config-generator` completes (`backlogSeeded`/`backlogItemCount`) and writes the `metadata.research` block.
 
 ---
 
