@@ -757,6 +757,41 @@ fi
 echo ""
 
 # ─────────────────────────────────────────────────
+echo "### 17. v3 render + full research telemetry (Plan 5)"
+# ─────────────────────────────────────────────────
+# When a real /onboard:start ran research, metadata.research carries the FULL
+# telemetry block and (walkthrough present) an HTML render path. All assertions
+# are CONDITIONAL on research having actually run — absence is not a hard fail.
+if [[ -f "$META" ]]; then
+  CONSUMED=$(jq -r '.research.consumed // empty' "$META" 2>/dev/null)
+  if [[ "$CONSUMED" == "true" ]]; then
+    if [[ "$(jq '.research | has("engineUsed") and has("specialistsRun") and has("claimsVerified") and has("claimsDropped") and has("artifactLocation") and has("artifactsWritten")' "$META" 2>/dev/null)" == "true" ]]; then
+      pass "metadata.research full telemetry block present (engineUsed/specialistsRun/claimsVerified/claimsDropped/artifactLocation/artifactsWritten)"
+    else
+      fail "metadata.research.consumed=true but the full telemetry block is incomplete"
+    fi
+    if [[ "$(jq '.research | has("htmlRendered")' "$META" 2>/dev/null)" == "true" ]]; then
+      HTML=$(jq -r '.research.htmlRendered // "null"' "$META" 2>/dev/null)
+      if [[ "$HTML" == "null" ]]; then
+        warn "metadata.research.htmlRendered is null (walkthrough absent or location=none — informational)"
+      else
+        pass "metadata.research.htmlRendered set ($HTML)"
+      fi
+    else
+      fail "metadata.research.consumed=true but htmlRendered key missing"
+    fi
+    if [[ "$(jq -r '.research | has("verifiedClaimCount")' "$META" 2>/dev/null)" == "false" ]]; then
+      pass "metadata.research uses claimsVerified (legacy verifiedClaimCount removed)"
+    else
+      fail "metadata.research still carries the legacy verifiedClaimCount field"
+    fi
+  else
+    warn "metadata.research.consumed not true (research-absent / stub — informational)"
+  fi
+fi
+echo ""
+
+# ─────────────────────────────────────────────────
 echo "═══════════════════════════════════════════"
 echo "## Summary — ${PROFILE}"
 echo ""
