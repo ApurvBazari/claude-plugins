@@ -113,6 +113,9 @@ Follow `references/drift-classification.md` § 4b.8. Record as `lspDrift.{newLan
 #### 4b.9: Built-in Skills Drift
 Follow `references/drift-classification.md` § 4b.9. Record as `builtInSkillsDrift.{newSkills, newlyRelevant, staleCandidates}[]` for Step 7.
 
+#### 4b.10: Research Staleness
+Apply `references/re-research.md` § Detection: map the Step-3 codebase drift to research dimensions, intersect with the stored-depth roster (`onboard-meta.json.research.depth`), and apply the escalation rule. Record `reResearch = { dimensions, escalatedToFull }` for Step 6 (empty `dimensions` → no offer). Read-only classification — re-research itself runs in Step 7 on approval.
+
 ---
 
 ## Findings Report
@@ -194,6 +197,11 @@ Organize findings into categories:
 > - **Stale candidates**: [list or "none"] — skills whose detection signals no longer fire. Informational only.
 > - Impact: new skills can be added to CLAUDE.md on approval.
 >
+> ### Research Staleness (from Step 4b.10)
+> - **Stale dimensions**: [list or "none"] — research dimensions invalidated by codebase drift (intersected with your stored depth).
+> - **Scope**: [scoped: N dimensions / full re-research (broad drift)].
+> - Impact: re-grounds the dossier and re-sharpens CLAUDE.md / rules / agents + merges the verify backlog. You approve the re-research before it runs.
+>
 > ### Deprecated Patterns
 > - [Anything in current setup that's outdated]
 >
@@ -229,6 +237,7 @@ Group offers into these categories (each becomes one `multiSelect: true` questio
 | `best-practice-suggestions` | Reference guide recommendations (e.g., `observability.md` rule for the detected stack) |
 | `enriched-capabilities` | CI/CD, harness, evolution, sprint contracts, verification |
 | `plugin-drift` | Wire-in / remove offers from Step 4b.1 |
+| `research-staleness` | Re-ground offer from Step 4b.10 — "Re-ground research (N dimensions)" or "Full re-research" when escalated. One offer; pad with `None / Skip` per the single-option guard. |
 
 ### Combined AskUserQuestion call
 
@@ -319,6 +328,7 @@ Apply the full application procedure for each approved drift type — verbatim f
 - **Built-in skills drift** (4b.9): Follow `references/drift-application.md` § Built-in skills drift application (including placement migration).
 - **Artifact gap regeneration** (4b.2): Follow `references/drift-application.md` § Artifact gap regeneration.
 - **New best-practice additions** (4b.3): Follow `references/drift-application.md` § New best-practice additions.
+- **Research staleness** (4b.10): if the developer approved the re-ground, follow `references/re-research.md` § Orchestration — invoke `onboard:research` in scoped/merge mode, build the `version:3` context with the merged dossier + `callerExtras.reResearch` (NO `regenerateOnly`), and invoke `onboard:generate`. The merge-aware regen honors the user-customized-file merge/replace/skip choices already gathered in Step 6. On the atomic-abort fallback, report the failure and leave tooling untouched.
 
 ### Step 8: Update Metadata
 

@@ -436,6 +436,13 @@ if grep -q "Never write to any file" "$CHECK"; then
 else
   fail "4c: check read-only guarantee disturbed"
 fi
+
+UPDATE="onboard/skills/update/SKILL.md"
+if grep -q "re-research.md" "$UPDATE" && grep -qi "re-ground" "$UPDATE"; then
+  pass "4c: update detects research staleness + offers a re-ground"
+else
+  fail "4c: update missing the re-research detector/offer"
+fi
 echo ""
 
 # ─────────────────────────────────────────────────
