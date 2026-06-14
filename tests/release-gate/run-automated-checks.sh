@@ -443,6 +443,13 @@ if grep -q "re-research.md" "$UPDATE" && grep -qi "re-ground" "$UPDATE"; then
 else
   fail "4c: update missing the re-research detector/offer"
 fi
+
+EVOLVE="onboard/skills/evolve/SKILL.md"
+if grep -q "re-research.md" "$EVOLVE" && grep -qi "scoped" "$EVOLVE" && grep -qi "defer" "$EVOLVE"; then
+  pass "4c: evolve runs scoped re-research silently + defers full-escalation to update"
+else
+  fail "4c: evolve missing the scoped-silent / full-defer re-research path"
+fi
 echo ""
 
 # ─────────────────────────────────────────────────

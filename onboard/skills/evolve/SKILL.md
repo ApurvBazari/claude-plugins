@@ -250,6 +250,14 @@ Run the same drift classification as `../update/SKILL.md` § 4b.9 Built-in Skill
 
 Update `onboard-meta.json.builtInSkillsStatus` to reflect additions. The Step 2b.3 metadata mirror path picks up the refreshed `builtInSkillsStatus` via the read-modify-write pattern.
 
+## Step 2i: Apply Research Staleness (re-research)
+
+Apply `../update/references/re-research.md` (both sections):
+1. **Detect** (§ Detection): map the Step-1 FileChanged drift (Dependency / Config / Structural categories) to research dimensions, intersect with the stored-depth roster (`onboard-meta.json.research.depth`), apply the escalation rule → `{ dimensions, escalatedToFull }`. Empty set → no action.
+2. **Scoped (not escalated)** → run **silently** (evolve's drain-without-asking philosophy): invoke `onboard:research` in scoped/merge mode (stored depth + recorded `wizardAnswers`, no prompts), then follow § Orchestration steps 3–5 to build the `version:3` + `reResearch` (no `regenerateOnly`) context and regenerate merge-aware.
+3. **Escalated to full** → do **NOT** run silently. Log once: "Significant drift detected — run `/onboard:update` to re-ground research (full re-research is too large to auto-apply)." Leave the pass for the interactive surface (defer to `/onboard:update`). This mirrors evolve's explicit-consent floors for net-new installs.
+4. **Atomic abort** → on a research-engine failure, leave the prior dossier + tooling untouched, warn, and fall back to the snapshot-replay path.
+
 ## Step 3: Show Diff
 
 After applying all updates (both FileChanged and plugin integration), show what changed:
@@ -273,9 +281,11 @@ After applying all updates (both FileChanged and plugin integration), show what 
 > - .claude/onboard-lsp-snapshot.json: Updated baseline
 > - CLAUDE.md: Added `/claude-api` to built-in skills subsection (Anthropic SDK detected)
 > - .claude/onboard-builtin-skills-snapshot.json: Updated baseline
+> - .claude/onboard-research.json: Re-grounded [N] dimension(s) ([list]) and re-sharpened affected tooling; merged verify backlog
 >
 > **Not auto-applied** (needs your input):
 > - New directory src/services/ — want me to create a CLAUDE.md for it?
+> - Significant research drift (would need a full re-research) — run `/onboard:update` to re-ground
 >
 > **Note**: Subdirectory skill-annotation blocks (wrapped in `<!-- onboard:skill-recommendations:start/end -->` markers) are refreshed automatically via the role-attribute strategy. Subdirectory files that predate markered blocks are not auto-created — run `/onboard:update` to have those offered as new best-practice additions.
 
