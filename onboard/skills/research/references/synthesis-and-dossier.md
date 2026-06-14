@@ -128,13 +128,13 @@ For each {id, reason} in droppedClaims:
 # Risk Register — <project name>
 
 > Render of security + risk-tagged claims · <date>
-> (Verify-backlog seeding into docs/feature-list.json is deferred to Plan 4.)
+> (Verify-backlog seeding into docs/feature-list.json is wired — see `generation/references/verify-backlog-seeding.md`.)
 
 | ID | Dimension | Risk | Evidence | Confidence | Status |
 |----|-----------|------|----------|-----------|--------|
 | <dimension:Cn> | <dimension> | <statement> | <evidence> | <confidence> | verified / dropped |
 
-Source every row from a security-dimension claim or any claim whose `category` is `"risk"`.
+Source every row from a security-dimension claim or any claim tagged `category:"risk"` or `category:"test-gap"` (the register and the verify-backlog seed from the same set).
 ```
 
 ### `glossary.md`

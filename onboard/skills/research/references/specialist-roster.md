@@ -35,7 +35,7 @@ Each specialist returns a `research-findings.json` object (`dimension`, `status`
 **Default `scopeGlobs`:** `["**/*.test.*", "**/*.spec.*", "**/tests/**", "**/test/**", "**/__tests__/**", "**/*_test.*", "**/conftest.py"]`
 
 **Prompt template:**
-> Assess the **testing** posture of this project over {scopeGlobs}. Identify the test framework(s), how tests are laid out and named, the breadth (unit vs. integration vs. e2e), any coverage configuration, and the fixture/mocking conventions. Flag conspicuous gaps — critical code with no nearby test, an e2e layer that is empty, a coverage threshold that is unset. Emit one claim per testing fact, each with `file:line` evidence and a confidence. If the project has no tests, return `status:"assessed"` with a single claim recording the absence (that absence IS the finding), or `status:"not-assessed"` if you cannot even locate a test runner.
+> Assess the **testing** posture of this project over {scopeGlobs}. Identify the test framework(s), how tests are laid out and named, the breadth (unit vs. integration vs. e2e), any coverage configuration, and the fixture/mocking conventions. Flag conspicuous gaps — critical code with no nearby test, an e2e layer that is empty, a coverage threshold that is unset. Emit one claim per testing fact, each with `file:line` evidence and a confidence. If the project has no tests, return `status:"assessed"` with a single claim recording the absence (that absence IS the finding), or `status:"not-assessed"` if you cannot even locate a test runner. Tag any gap claim (untested critical path, empty e2e, unset coverage) with `category:"test-gap"`.
 
 ---
 
@@ -46,7 +46,7 @@ Each specialist returns a `research-findings.json` object (`dimension`, `status`
 **Default `scopeGlobs`:** `["src/**", "app/**", "**/auth/**", "**/middleware/**", "**/*.env*", "**/config/**"]`
 
 **Prompt template:**
-> Assess the **security** surface of this project over {scopeGlobs}. Identify the authentication/authorization approach, how secrets are handled (env, vault, hardcoded?), where and how input is validated, and any dangerous sinks (`eval`, shell-out, string-built SQL, unescaped output). Note security-sensitive paths (auth, payments, file upload). Emit one claim per security observation, each with `file:line` evidence and a confidence; a claimed vulnerability MUST cite the exact locus. Default to caution — do not assert a guard exists unless you read it. If there is no security-relevant surface, return `status:"not-assessed"`.
+> Assess the **security** surface of this project over {scopeGlobs}. Identify the authentication/authorization approach, how secrets are handled (env, vault, hardcoded?), where and how input is validated, and any dangerous sinks (`eval`, shell-out, string-built SQL, unescaped output). Note security-sensitive paths (auth, payments, file upload). Emit one claim per security observation, each with `file:line` evidence and a confidence; a claimed vulnerability MUST cite the exact locus. Default to caution — do not assert a guard exists unless you read it. If there is no security-relevant surface, return `status:"not-assessed"`. Tag any risk/vulnerability claim with `category:"risk"`.
 
 ---
 
@@ -79,7 +79,7 @@ Each specialist returns a `research-findings.json` object (`dimension`, `status`
 **Default `scopeGlobs`:** `["package.json", "package-lock.json", "yarn.lock", "pnpm-lock.yaml", "requirements*.txt", "pyproject.toml", "poetry.lock", "go.mod", "go.sum", "Cargo.toml", "Cargo.lock", "Gemfile*"]`
 
 **Prompt template:**
-> Assess the **dependencies** of this project over {scopeGlobs}. Read the manifest(s) and lockfile(s). Identify the notable/heavy/security-relevant libraries, the direct vs. transitive split, version currency (anything conspicuously old or unmaintained), and lockfile presence. Note supply-chain signals (a package pinned years old, a deprecated library). Emit one claim per dependency observation, each with `file:line` evidence (the manifest line) and a confidence. If there is no dependency manifest, return `status:"not-assessed"`.
+> Assess the **dependencies** of this project over {scopeGlobs}. Read the manifest(s) and lockfile(s). Identify the notable/heavy/security-relevant libraries, the direct vs. transitive split, version currency (anything conspicuously old or unmaintained), and lockfile presence. Note supply-chain signals (a package pinned years old, a deprecated library). Emit one claim per dependency observation, each with `file:line` evidence (the manifest line) and a confidence. If there is no dependency manifest, return `status:"not-assessed"`. Tag any supply-chain/version risk claim with `category:"risk"`.
 
 ---
 

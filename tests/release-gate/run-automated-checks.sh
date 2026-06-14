@@ -338,6 +338,20 @@ if [[ -f "$VB" ]] && grep -q "seed-if-absent" "$VB" && grep -q "verifiedClaims" 
 else
   fail "4b: verify-backlog-seeding.md missing or incomplete"
 fi
+
+ROSTER="onboard/skills/research/references/specialist-roster.md"
+SYN="onboard/skills/research/references/synthesis-and-dossier.md"
+TAG_COUNT=$(grep -c 'category:"test-gap"\|category:"risk"' "$ROSTER" || true)
+if [[ "$TAG_COUNT" -ge 3 ]]; then
+  pass "4b: specialist-roster tags categories in testing/security/dependencies (${TAG_COUNT} tags)"
+else
+  fail "4b: specialist-roster missing category-tagging instructions (found ${TAG_COUNT}, need ≥3)"
+fi
+if grep -q "verify-backlog-seeding.md" "$SYN" && grep -q 'category:"test-gap"' "$SYN"; then
+  pass "4b: synthesis-and-dossier wired to verify-backlog + risk-register includes test-gap"
+else
+  fail "4b: synthesis-and-dossier not wired (line 131/137)"
+fi
 echo ""
 
 # ─────────────────────────────────────────────────
