@@ -6,7 +6,7 @@ Loaded by `config-generator` (Generation Order step 6e) **only when a sanitized 
 
 Collect every claim whose namespaced id (`<dimension>:Cn`) is in `research.verifiedClaims` and NOT in `research.droppedClaims`, where either:
 - `dimension === "security"` (the whole dimension is risk surface), OR
-- the claim's `category` (case-insensitive) ∈ {`risk`, `test-gap`, `security`, `hotspot`}.
+- the claim's `category` (case-insensitive) ∈ {`risk`, `test-gap`, `security`}.
 
 De-dupe by `(dimension, id)`. Resolve each id to its finding for `statement` + `evidence` + `confidence`. Never seed a dropped/refuted claim (the verify thesis: the backlog stays adversarially-grounded).
 
@@ -14,7 +14,7 @@ If the source set is **empty** → write NO feature-list (do not emit an empty l
 
 ## Collision (seed-if-absent)
 
-If `docs/feature-list.json` already exists → **skip + warn** (record a warning; never clobber a list that may carry `passes` progress). The harness/interactive feature-decomposition path (when `enableHarness`) is the fallback writer and likewise writes only when no list exists.
+If `docs/feature-list.json` already exists → **skip + warn** (record a warning; never clobber a list that may carry `passes` progress). Research is the **primary and only** programmatic writer of `docs/feature-list.json` (the v2 harness/interactive decomposition path was retired in Plan 4a); seeding is **seed-if-absent** — an existing list is never clobbered.
 
 ## Re-research merge (when `callerExtras.reResearch` present)
 
@@ -59,7 +59,7 @@ Write `docs/feature-list.json` **atomically** (`.tmp` + rename):
 - **`id`** — sequential `F001`, `F002`, … across the whole list.
 - **`category`** — source-derived (`security` / `risk` / `test-gap`). Extends the harness descriptive set (`functional, ui, data, auth, …`). The `feature-evaluator` **routes** on `category` (these three have explicit verification routes — see § Combination Strategy) and **reads `obsolete`** to skip vanished claims (see § Determine PASS or FAIL). `sourceClaim` (pure merge provenance) is the only field the evaluator ignores — a safe, documented additive extension.
 - **`steps`** — 1–3 concrete remediation-verification steps composed from the claim `statement` + `evidence` (findings carry no mitigation field, so synthesize). Example: `"Inspect src/auth/session.ts:42; confirm the missing CSRF guard named in the claim is added; add/verify a test covering it."`
-- **`priority`** — integer tier: `security` = 1, general `risk`/`hotspot` = 2, `test-gap` = 3. Order features by tier ascending, then by `confidence` descending within a tier; assign `F00N` ids in that order.
+- **`priority`** — integer tier: `security` = 1, general `risk` = 2, `test-gap` = 3. Order features by tier ascending, then by `confidence` descending within a tier; assign `F00N` ids in that order.
 - All seeded items start **`passes: false`**.
 - **`sourceClaim`** — provenance key `"<dimension>:<sha256-12 of normalized statement + line-stripped evidence path>"`, written on every onboard-seeded feature so a later re-research merge can match a fresh claim to its existing feature. The `feature-evaluator` ignores unknown fields — safe, documented extension.
 

@@ -254,7 +254,7 @@ Update `onboard-meta.json.builtInSkillsStatus` to reflect additions. The Step 2b
 
 Apply `../update/references/re-research.md` (both sections):
 1. **Detect** (§ Detection): map the Step-1 FileChanged drift (Dependency / Config / Structural categories) to research dimensions, intersect with the stored-depth roster (`onboard-meta.json.research.depth`), apply the escalation rule → `{ dimensions, escalatedToFull }`. Empty set → no action.
-2. **Scoped (not escalated)** → run **silently** (evolve's drain-without-asking philosophy): invoke `onboard:research` in scoped/merge mode (stored depth + recorded `wizardAnswers`, no prompts), then follow § Orchestration steps 3–5 to build the `version:3` + `reResearch` (no `regenerateOnly`) context and regenerate merge-aware.
+2. **Scoped (not escalated)** → run **silently** (evolve's drain-without-asking philosophy): invoke `onboard:research` in scoped/merge mode (stored depth + the prior dossier, no prompts), then follow § Orchestration steps 3–5 to build the `version:3` + `reResearch` (no `regenerateOnly`) context and regenerate merge-aware.
 3. **Escalated to full** → do **NOT** run silently. Log once: "Significant drift detected — run `/onboard:update` to re-ground research (full re-research is too large to auto-apply)." Leave the pass for the interactive surface (defer to `/onboard:update`). This mirrors evolve's explicit-consent floors for net-new installs.
 4. **Atomic abort** → on a research-engine failure, leave the prior dossier + tooling untouched, warn, and fall back to the snapshot-replay path.
 

@@ -564,6 +564,29 @@ if grep -q "PASS | FAIL | OBSOLETE" "$FE" && grep -qi "Obsolete (skipped)" "$FE"
 else
   fail "5: feature-evaluator obsolete outcome not first-class in Output Format"
 fi
+VB="onboard/skills/generation/references/verify-backlog-seeding.md"
+RC="onboard/skills/generation/references/research-consumption.md"
+EVOLVE="onboard/skills/evolve/SKILL.md"
+if grep -qi "primary and only" "$VB" && ! grep -qi "fallback writer" "$VB"; then
+  pass "5: A1 — stale fallback-writer prose replaced"
+else
+  fail "5: A1 — fallback-writer prose still present"
+fi
+if ! grep -qiw "hotspot" "$VB" && ! grep -qiw "hotspot" "$RC"; then
+  pass "5: A3 — dangling hotspot enum removed from seeding + consumption"
+else
+  fail "5: A3 — hotspot enum still present"
+fi
+if grep -qi "stored depth + the prior dossier\|stored depth + prior dossier" "$EVOLVE"; then
+  pass "5: 4c#1 — evolve scoped input tightened to stored depth + prior dossier"
+else
+  fail "5: 4c#1 — evolve still over-specifies wizardAnswers"
+fi
+if ! grep -rqiE "is the fallback writer|is the fallback when no research" onboard/skills/; then
+  pass "5: A1 — no stale fallback-writer claim in any skill (incl. generation/SKILL.md loader)"
+else
+  fail "5: A1 — stale fallback-writer claim still present in a skill loader"
+fi
 echo ""
 
 # ─────────────────────────────────────────────────

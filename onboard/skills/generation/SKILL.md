@@ -320,7 +320,7 @@ Follow `references/evolution-hooks-guide.md`:
 
 ### Verify-Backlog Seeding (v3, when `research` present)
 
-When a sanitized `research` object is present, seed `docs/feature-list.json` from verified security/risk/test-gap claims following `references/verify-backlog-seeding.md`. Research is the **primary** programmatic writer (**seed-if-absent** — never clobber an existing list); the harness/interactive feature-decomposition path is the fallback when no research findings exist. Always runs regardless of `research.artifacts.location`. Empty source set → write nothing. Skip entirely in research-absent mode.
+When a sanitized `research` object is present, seed `docs/feature-list.json` from verified security/risk/test-gap claims following `references/verify-backlog-seeding.md`. Research is the **primary and only** programmatic writer (**seed-if-absent** — never clobber an existing list; the v2 harness/interactive decomposition path was retired in Plan 4a). Always runs regardless of `research.artifacts.location`. Empty source set → write nothing. Skip entirely in research-absent mode.
 
 ### Sprint Contracts (if `enableSprintContracts`)
 
