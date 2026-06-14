@@ -153,6 +153,10 @@ Follow `references/rules-guide.md` for patterns and YAML frontmatter.
 - **Rule strictness matches `codeStyleStrictness`**: relaxed = guidelines, moderate = should, strict = must
 - **Plugin cross-references** (`allowPluginReferences` flag): When `effectivePlugins` is non-empty, rules MAY reference installed plugins instead of duplicating their guidance. For example, `testing.md` can say *"This project uses `superpowers:test-driven-development` — follow its red/green/refactor loop"* instead of restating TDD guidance inline. This is controlled by a generation flag `allowPluginReferences: true` (default `true` when `effectivePlugins` is non-empty, else `false`). Before referencing a plugin, verify it's in `effectivePlugins` — never create dangling refs. If a rule references a plugin and that plugin is later uninstalled, `/onboard:update` should refresh the rule to its standalone version.
 
+### Research-Grounded Generation (v3)
+
+When a sanitized `research` object is present in the context, apply `references/research-consumption.md` to **sharpen** the artifacts below from **verified** claims: Root CLAUDE.md (Row 1), path-scoped rules (Row 2), Skill Selection (Row 3), agent archetypes (Row 4), and subdirectory CLAUDE.md placement (Row 5). When `research` is absent (research-absent / `regenerateOnly` mode), generate exactly as today — output is byte-identical. All rows are independently presence-gated and tolerate missing dimensions.
+
 ### Skills (.claude/skills/)
 
 Follow `references/skills-guide.md` for SKILL.md structure AND § Frontmatter Reference for the full field surface the generator emits.
@@ -354,6 +358,10 @@ TDD is the standard testing approach for all onboarded projects. These artifacts
 - `references/sprint-contracts.md` — Sprint contract format and negotiation
 - `references/agent-teams-guide.md` — Agent team compositions and quality hooks
 - `references/worktree-workflow.md` — Proactive worktree workflow using Claude Code native tools (EnterWorktree/ExitWorktree)
+
+### v3 research consumption (used when a `research` object is present)
+- `references/research-consumption.md` — the 5 research-sharpening rows (CLAUDE.md / rules / skills / agents / subdir)
+- `references/verify-backlog-seeding.md` — verified risk/test-gap claims → `docs/feature-list.json`
 
 ### Emission specs (verbatim — extracted from this skill)
 These carry the verbatim artifact templates and long emission enumerations for the stubbed sections above. Load the matching one when generating that artifact:

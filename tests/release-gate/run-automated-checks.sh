@@ -323,6 +323,14 @@ if grep -q "metadata.research" "$CG"; then
 else
   fail "4b: config-generator missing the metadata.research write"
 fi
+
+RC="onboard/skills/generation/references/research-consumption.md"
+GENERATION="onboard/skills/generation/SKILL.md"
+if [[ -f "$RC" ]] && grep -q "Research-Grounded Generation (v3)" "$GENERATION" && grep -q "research-consumption.md" "$GENERATION"; then
+  pass "4b: research-consumption.md exists + linked from generation/SKILL.md with the gated section"
+else
+  fail "4b: research-consumption.md missing or not linked/gated in generation/SKILL.md"
+fi
 echo ""
 
 # ─────────────────────────────────────────────────
