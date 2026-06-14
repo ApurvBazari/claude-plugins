@@ -1,16 +1,16 @@
 ---
 name: generate
-description: Use when a programmatic v2 caller needs headless Claude-tooling generation (no wizard/analysis) — invoked via the Skill tool by /onboard:start Phase 3 or external v2 callers. Requires a v2 context; not user-invocable.
+description: Internal v3 generation step — turns the onboard:start v3 context (analysis + wizardAnswers + research) into Claude tooling artifacts via the config-generator agent. Invoked through the Skill tool by /onboard:start and /onboard:update; not an external API; not user-invocable.
 user-invocable: false
 ---
 
-# Generate Skill — Headless Tooling Generation (v2-only)
+# Generate Skill — Internal v3 Tooling Generation
 
-You are running the onboard headless generation skill. This generates Claude tooling artifacts from pre-seeded context without running the interactive wizard or codebase analysis.
+You are running the onboard generation skill. It turns a pre-built **v3 context** (analysis + wizardAnswers + optional research) into Claude tooling artifacts via the `config-generator` agent, without re-running the interactive wizard or codebase analysis.
 
-This skill is designed for programmatic consumers that have already gathered project context through their own workflow and need onboard's generation capabilities directly.
+This skill is an **internal generation step**, invoked through the Skill tool by `onboard:start` (after the grounded wizard) and by `onboard:update` / `onboard:evolve` (for missing-file repair). It is not an external API.
 
-**Onboard 2.x is v2-only.** This skill rejects v1 input. v1 callers must stay on onboard 1.10.0. There is no migration helper, no auto-upgrade, no fallback path — see `../../CHANGELOG-2.0.md` for the locked breaking-change matrix.
+**Onboard 3.x is v3-only.** This skill accepts only `version: 3` contexts and rejects everything else — the v2 headless API and its adapter were removed in 3.0.0. There is no v2 path, no migration helper, and no fallback.
 
 <EXTREMELY-IMPORTANT>
 **DISPATCH CONTRACT — READ BEFORE TOUCHING ANYTHING**
@@ -48,7 +48,7 @@ If you find yourself reaching for the Write tool while executing this skill, STO
 
 ---
 
-## Step 0: Version Detection (v3 primary · v2 adapter · v1 rejected)
+## Step 0: Version Detection (v3-only)
 
 Before reading any other field, check the top-level `version` field:
 
@@ -56,49 +56,36 @@ Before reading any other field, check the top-level `version` field:
 if input.version === 3:
   → v3 path: validate against references/context-shape-v3.json.
     Read the OPTIONAL top-level `research` object (canonical shape:
-    ../../schemas/research-dossier.json). Until a later phase teaches
-    generation to consume it, pass `research` through as inert metadata —
-    record it under metadata.research for telemetry. Then proceed to Step 1.
-elif input.version === 2:
-  → v2 adapter path ("research-absent mode" = pre-3.0 behavior):
-    validate against references/context-shape-v2.json and proceed to Step 1
-    exactly as today. No `research` object is present; downstream output is
-    byte-identical to onboard 2.x.
+    ../../schemas/research-dossier.json) and park it as inert
+    metadata.research (active consumption arrives in a later plan).
+    Then proceed to Step 1.
 else:
-  → HARD-REJECT with the error below; do NOT attempt to parse remaining fields
+  → HARD-REJECT with the error below; do NOT parse remaining fields.
 ```
 
 The rejection error (verbatim — callers parse this string for routing):
 
-> **Headless generation aborted**: this is onboard 2.x which requires v2 contexts
-> (top-level `version: 2`). v1 callers must use onboard 1.10.0:
->
->     claude plugin install onboard@1.10.0
->
-> See `CHANGELOG-2.0.md` for the breaking-change matrix and the v2 schema at
-> `references/context-shape-v2.json`. There is no migration helper — v2 callers
-> must construct v2 contexts directly.
+> **Headless generation aborted**: onboard 3.x accepts only v3 contexts
+> (top-level `version: 3`). The v2 headless API was removed in 3.0.0 — there is
+> no v2 adapter and no migration helper. `onboard:generate` is now an internal
+> generation step invoked by `onboard:start` / `onboard:update`; external
+> programmatic v2 callers are no longer supported.
 
-No silent fallback. No partial v1 acceptance. Missing `version` field, `version: 1`, or any other value all route to rejection. The error is the only response.
+No silent fallback. A missing `version` field, `version: 1`, `version: 2`, or any other value all route to rejection. The error is the only response.
 
-After v2 detection succeeds, validate the input against the schema at `references/context-shape-v2.json` (draft-07 JSON Schema). Required top-level fields:
-- `version: 2`
+After v3 detection succeeds, validate the input against the schema at `references/context-shape-v3.json` (draft-07 JSON Schema). Required top-level fields:
+- `version: 3`
 - `source` (non-empty string)
 - `projectPath` (absolute path that exists)
 - `callerExtras` (object, at minimum empty)
-- `phases.cicdAndDelivery` (fully specified per `references/context-shape-v2.json § cicdAndDelivery`)
 
-Other phases (`vision`, `personas`, `domain`, `stack`, `dataArchitecture`, `apiIntegration`, `frontend`, `authSecurity`, `workflow`, `pluginRecommendation`, `risk`, `featureRoadmap`, `pluginInstall`, `schemaDraftReview`) are accepted but most carry `_status: deferred-to-round-N` and pass through as inert metadata. Round 1 only fully consumes cicdAndDelivery.
-
-Validation failures (after v2 detection) produce a structured error pointing at the specific field; never silently downgrade.
+The internal `onboard:start` object additionally carries `analysis`, `wizardAnswers`, and (optionally) `research`. Validation failures produce a structured error pointing at the specific field; never silently downgrade.
 
 ---
 
 ## Step 1: Read Context Input
 
-**Note (v2)**: the schema below describes the **internal v1-shaped format** that the dispatched `config-generator` agent expects. v2 callers do NOT construct this directly — instead, they construct the v2 shape per `references/context-shape-v2.json`, and this skill maps v2 → internal format in Step 1.5 below before dispatching the agent. The mapping table is documented in Step 1.5.
-
-For callers wondering "which schema should I implement?" — the answer is **always v2** (per `references/context-shape-v2.json`). The v1 documentation below remains here as the *intermediate* format that crosses the dispatch boundary.
+**Note**: the schema below is the **internal format** the dispatched `config-generator` agent consumes. The `onboard:start` v3 context builder produces it directly (analysis + wizardAnswers + optional research) — there is no external schema translation step. `generate` accepts the v3 context as-is and dispatches the agent.
 
 The caller must provide a context JSON object in the conversation. This object contains all the information that the wizard and analyzer would normally produce.
 
@@ -381,92 +368,6 @@ Callers (onboard:start and any external headless callers) are expected to have l
 | `agent-not-found` | `hookType="agent"` + `agentRef` referencing an agent whose plugin is not in `effectivePlugins` |
 | `invalid-timeout` | `timeout` field present but not a positive integer |
 | `high-frequency-event-unsuitable-for-agent` | `hookType="agent"` on `UserPromptSubmit` (fires on every prompt — agent latency makes it unusable) |
-
----
-
-## Step 1.5: Map v2 to Internal Format + Render v2-Specific Templates (NEW in 2.0)
-
-This step is the v2 → v1-internal translation layer. It runs after Step 0 validation succeeds and before Step 2's onboard-format mapping. Two responsibilities:
-
-### 1.5.a — Map v2 fields to internal format
-
-| v2 field | Internal field (used by Step 2/3) | Notes |
-|---|---|---|
-| `version: 2` | (dropped — used only by Step 0) | — |
-| `source` | `source` | Pass-through. |
-| `projectPath` | `projectPath` | Pass-through. |
-| `callerExtras.*` | `callerExtras.*` | Pass-through. The shape stayed compatible across v1→v2; only the top-level location moved (root in both). |
-| `phases.stack.stack` | `analysis.stack` | Move into the analysis report shape Step 2 builds. |
-| `phases.cicdAndDelivery.cicd.*` | (used by 1.5.b for template rendering) AND `enriched.*` (partial — see mapping in 1.5.c) | The cicdAndDelivery cicd subobject drives the new templates AND maps individual fields into the existing v1 `enriched.*` slots for back-compat with the unmodified config-generator agent. |
-| `phases.cicdAndDelivery._v1_carryover.ciAuditAction` | `enriched.ciAuditAction` | Direct mirror — preserves Q5.1 answer. |
-| `phases.cicdAndDelivery._v1_carryover.autoEvolutionMode` | `enriched.autoEvolutionMode` | Direct mirror — preserves Q5.2 answer. |
-| `phases.cicdAndDelivery._v1_carryover.prReviewTrigger` | `enriched.prReviewTrigger` | Direct mirror — preserves Q5.3 answer. |
-| phases that are deferred (`_status: deferred-to-round-N`) | (recorded in metadata only) | Round 1 alpha does not consume these — pass through as `metadata.deferredPhases[]`. |
-| `syntheses.*` | `metadata.syntheses[*]` | Recorded for telemetry. Missing syntheses for fully-specified phases produce a `warnings[]` entry. |
-| `dependencies.*` | `metadata.dependencies[*]` | Recorded for telemetry; consumed by visualize-graph.sh in user projects, not by config-generator. |
-
-### 1.5.b — Render v2-specific templates from cicdAndDelivery fields
-
-When `phases.cicdAndDelivery.cicd.provider === "github-actions"` AND `phases.cicdAndDelivery.cicd.autoDeploy !== "none"`:
-
-1. Load the 4 GHA template files from `references/cicd-templates/github-actions/`:
-   - `app-ci.yml.tmpl`
-   - `tooling-audit.yml.tmpl`
-   - `pr-review.yml.tmpl`
-   - `deploy.yml.tmpl`
-2. For each template, substitute placeholders using Mustache-like semantics:
-   - `{{phase.cicd.<field>}}` → value from `phases.cicdAndDelivery.cicd.<field>`
-   - `{{_v1_carryover.<field>}}` → value from `phases.cicdAndDelivery._v1_carryover.<field>`
-   - `{{#if <cond>}}...{{/if}}` blocks → keep body if cond is truthy
-   - `{{#each <array> as <var>, <index>}}...{{/each}}` → iterate (used for envLadder)
-   - `{{<value> | as-yaml-array}}` filter → render array as YAML inline list
-   - `{{<value> | default: <fallback>}}` filter → use fallback when value is null/missing
-   - `{{<value> | upper}}` filter → uppercase
-3. Capture the four rendered strings.
-
-When `phases.cicdAndDelivery.cicd.provider !== "github-actions"`:
-- Skip GHA rendering. Record a warning: `"cicdAndDelivery picked provider=<value>; non-GHA CI templates land in Round 6. CI/CD workflow generation skipped for this run."`
-- Skip the deploy template entirely if `autoDeploy === "none"` even on GHA.
-
-For the **sprint-contracts template**:
-1. Load `references/sprint-contracts-template.json`.
-2. Use the structure as the schema for emitted `docs/sprint-contracts/sprint-<N>.json` files (one per sprint declared in the wizard's feature decomposition).
-3. The `deploymentTargets` array is filled from `phases.cicdAndDelivery.cicd.envLadder` — each env becomes a target object with default verification/rollback inherited from cicdAndDelivery.
-
-For the **evolution wiring**:
-1. Read `references/evolution-wiring.md` (the mapping rules).
-2. Compute the appropriate `callerExtras.qualityGates.*` entries based on `phases.cicdAndDelivery.cicd.notifications.{channels, events}`:
-   - Slack/Discord/email channels with `deploy-success` / `deploy-failure` events → add `Stop` event hook entries
-   - Slack/Discord/email channels with `build-failure` events → add `PostToolUse:Bash` entries
-   - Slack/Discord/email channels with `security-alert` events → add `fileChanged` matcher entries for `*.audit-report.md`
-3. Inject these into `callerExtras.qualityGates` BEFORE dispatch — the existing config-generator hook-writing logic handles emission unmodified.
-
-### 1.5.c — Inject rendered artifacts into the dispatch prompt
-
-In Step 3's agent prompt, add a new section `"v2RenderedArtifacts"`:
-
-```jsonc
-{
-  "v2RenderedArtifacts": {
-    "githubWorkflows": {
-      ".github/workflows/ci.yml": "<rendered app-ci.yml.tmpl>",
-      ".github/workflows/tooling-audit.yml": "<rendered tooling-audit.yml.tmpl>",
-      ".github/workflows/pr-review.yml": "<rendered pr-review.yml.tmpl>",
-      ".github/workflows/deploy.yml": "<rendered deploy.yml.tmpl>"
-    },
-    "sprintContracts": [
-      { "path": "docs/sprint-contracts/sprint-1.json", "content": "<rendered sprint-1>" }
-    ],
-    "notifyHooks": [
-      { "path": ".claude/hooks/notify-on-deploy-failure.sh", "content": "<script body>" }
-    ]
-  }
-}
-```
-
-The dispatched `config-generator` agent receives these as pre-rendered strings — it does the Write calls (per the EXTREMELY-IMPORTANT contract above), but it does NOT re-render or re-interpret. It writes the strings verbatim to the paths declared.
-
-This preserves the dispatch contract: generate composes content, agent writes files. Neither side violates the original contract.
 
 ---
 
