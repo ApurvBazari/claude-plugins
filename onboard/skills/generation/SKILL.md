@@ -335,14 +335,6 @@ TDD is the standard testing approach for all onboarded projects. These artifacts
 6. **PR template** — Checklist includes "Tests written first (TDD), all pass".
 7. **Plugin recommendations** — If superpowers or feature-dev is missing, add "Recommended Plugins" section to CLAUDE.md with install commands.
 
-## Round 4 — Personas, Domain Model, Risk Reconciliation, mode, risks
-
-Onboard 2.0 alpha.5+ accepts up to 11 phase blocks plus a top-level `risks[]` array and a `mode` block. The R4 additions (`phases.personas`, `phases.domainModel`, `risks[]`, `mode`) are all **optional** — if absent, generation behaves identically to alpha.4 (layered, not gated). The full per-block generation behaviors (persona-aware agents, entity-aware schemas/routes, `docs/risks.md` emission, `mode.coupling`/`mode.depth` gating), the mandatory backward-compatibility rules, and the state-shape contract for upstream callers are in `references/round-4-phase-blocks.md`. Apply it verbatim.
-
-## Round 5 — deterministic outputs from featureRoadmap + schemaDraftReview
-
-When the v2 context carries populated R5 phases, onboard writes the feature roadmap artifacts (`docs/feature-list.json`, `docs/sprint-contracts/sprint-1.json`) and schema/contract files **deterministically** instead of via interactive prompts; pre-R5 contexts fall back to the interactive flow. The run conditions, the verbatim `docs/feature-list.json` + `sprint-1.json` field maps, the schema/contract output-path resolution table (db/api/event × language × outputStrategy), atomic-write rules, backward-compatibility, and failure modes are in `references/round-5-deterministic-outputs.md`. Apply it verbatim.
-
 ## Reference Files
 
 ### Core (always used)
@@ -375,8 +367,6 @@ These carry the verbatim artifact templates and long emission enumerations for t
 - `references/phase-7d-builtin-skills.md` — built-in Claude Code skills (Phase 7d)
 - `references/hooks-generation.md` — quality-gate / O6 / O7 / standalone / advanced-event / utility hooks + `hookStatus`
 - `references/quality-checklist.md` — pre-exit generation verification checklist
-- `references/round-4-phase-blocks.md` — personas / domainModel / risks / mode generation behaviors
-- `references/round-5-deterministic-outputs.md` — deterministic feature-list / sprint-1 / schema-contract writes
 
 ## Key Rules
 
