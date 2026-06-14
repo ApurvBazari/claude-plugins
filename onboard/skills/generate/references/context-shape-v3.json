@@ -2,25 +2,21 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://github.com/ApurvBazari/claude-plugins/onboard/skills/generate/references/context-shape-v3.json",
   "title": "Onboard Generate — v3 Context Shape",
-  "description": "Input schema for onboard:generate in onboard 3.x. v3 = v2 plus version:3 and an OPTIONAL top-level `research` object (canonical shape: onboard/schemas/research-dossier.json). The detailed `phases` definitions are inherited from context-shape-v2.json and validated by the generate adapter; this schema gates the version constant and accepts the research block. v2 is still accepted (research-absent mode); v1 is rejected.",
+  "description": "Input schema for onboard:generate in onboard 3.x. v3 is the ONLY accepted shape (the v2 headless API was removed in 3.0.0). The context is the internal object built by onboard:start (version:3 + analysis + wizardAnswers + an OPTIONAL top-level `research` object, canonical shape: onboard/schemas/research-dossier.json). There is no `phases` block and no inheritance from a v2 schema. v1 and v2 are rejected. NOTE: `research` is OPTIONAL here; generate makes it required for a full generation (and exempt for callerExtras.regenerateOnly re-emits) at runtime — see Plan 4b.",
   "type": "object",
-  "required": ["version", "source", "projectPath", "callerExtras", "phases"],
+  "required": ["version", "source", "projectPath", "callerExtras"],
   "additionalProperties": true,
   "properties": {
     "version": {
       "const": 3,
-      "description": "Schema version. HARD-REQUIRED for the v3 path. v2 callers keep version:2 (validated against context-shape-v2.json); v1 is rejected."
+      "description": "Schema version. HARD-REQUIRED and the only accepted value. v1 and v2 are rejected."
     },
     "source": { "type": "string", "minLength": 1 },
     "projectPath": { "type": "string" },
     "callerExtras": { "type": "object" },
-    "phases": {
-      "type": "object",
-      "description": "Inherits the v2 phase definitions; validated in detail by the generate adapter against context-shape-v2.json."
-    },
     "research": {
       "type": "object",
-      "description": "Optional synthesized research object. Canonical shape: onboard/schemas/research-dossier.json. Absent in research-absent (v2-adapter) mode."
+      "description": "Optional synthesized research object. Canonical shape: onboard/schemas/research-dossier.json."
     }
   }
 }
