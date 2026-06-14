@@ -509,6 +509,22 @@ if grep -qi "set by the render" "$RESEARCH" && ! grep -qi "HTML render.*deferred
 else
   fail "5: research/SKILL.md still pins artifacts.html:null / 'render deferred'"
 fi
+CG="onboard/agents/config-generator.md"
+if grep -q "engineUsed" "$CG" && grep -q "specialistsRun" "$CG" && grep -q "claimsDropped" "$CG" && grep -q "artifactsWritten" "$CG" && grep -q "htmlRendered" "$CG"; then
+  pass "5: config-generator writes the full metadata.research block"
+else
+  fail "5: config-generator missing full-telemetry fields"
+fi
+if ! grep -qi "full telemetry block.*Plan 5\|do not add them here" "$CG"; then
+  pass "5: config-generator deferral guard removed"
+else
+  fail "5: config-generator still defers the full block to Plan 5"
+fi
+if ! grep -rq "verifiedClaimCount" onboard; then
+  pass "5: legacy verifiedClaimCount renamed to claimsVerified everywhere"
+else
+  fail "5: verifiedClaimCount still present (rename incomplete)"
+fi
 echo ""
 
 # ─────────────────────────────────────────────────

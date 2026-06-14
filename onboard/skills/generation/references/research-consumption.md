@@ -26,4 +26,4 @@ Inform archetype selection with `architecture` + risk findings: material verifie
 Treat each verified `architecture`-dimension **module boundary** as an automatic subdirectory-CLAUDE.md candidate — same treatment as a monorepo package or a recognized architecture-pattern layer — in addition to the file-share thresholds. Still confirm candidates with the developer per the existing rule.
 
 ## Telemetry
-This reference contributes `verifiedClaimCount` (already computed by `generate` Step 0.1, post-sanitization). `backlogSeeded` / `backlogItemCount` come from `verify-backlog-seeding.md`. `config-generator` step 7 assembles the complete `metadata.research` block — see that step.
+This reference contributes `claimsVerified` (already computed by `generate` Step 0.1, post-sanitization). `backlogSeeded` / `backlogItemCount` come from `verify-backlog-seeding.md`. `config-generator` step 7 assembles the complete `metadata.research` block — see that step.

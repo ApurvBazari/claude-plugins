@@ -121,9 +121,16 @@ Generate artifacts in this order:
 
 7. **Metadata** (`.claude/onboard-meta.json`) — Record everything: plugin version, timestamp, wizard answers, list of generated artifacts, model recommendation. Include all 7 status keys parallel to `hookStatus`: `mcpStatus`, `outputStyleStatus`, `lspStatus`, `builtInSkillsStatus`, `skillStatus`, `agentStatus` (each with at minimum a `status` enum value: `emitted | skipped | declined | failed`). Add `.mcp.json`, `.claude/onboard-mcp-snapshot.json`, `.claude/rules/mcp-setup.md` (if written), `.claude/onboard-agent-snapshot.json`, `.claude/onboard-output-style-snapshot.json`, `.claude/onboard-lsp-snapshot.json`, `.claude/onboard-builtin-skills-snapshot.json` to `generatedArtifacts` (only those that were actually written).
 
-   **`metadata.research` (v3):** when a `research` object was provided, complete and write the minimal-useful block to `onboard-meta.json`: take `generate`'s partial telemetry (`consumed`/`depth`/`verifiedClaimCount`) from the dispatch payload and add `backlogSeeded` (true iff step 6e wrote `docs/feature-list.json` this run) and `backlogItemCount` (number of features seeded; 0 if not seeded). In research-absent mode write `"research": { "consumed": false }` only. The full telemetry block (engineUsed/specialistsRun/claimsVerified/…) + a Phase-7 research self-audit are **Plan 5** — do not add them here.
+   **`metadata.research` (v3 full block):** when a `research` object was provided, write the FULL telemetry block to `onboard-meta.json` from `generate`'s dispatch payload + the dossier:
+   - `consumed: true`, `engineUsed` (dossier `engineUsed`), `depth`,
+   - `specialistsRun` (array of the dimensions actually run — the dossier's assessed `findings{}` keys),
+   - `claimsVerified` (count of `verifiedClaims`), `claimsDropped` (count of `droppedClaims`),
+   - `artifactLocation` (dossier `artifacts.location`), `artifactsWritten` (dossier `artifacts.written`),
+   - `htmlRendered` (dossier `artifacts.html` — path or `null`),
+   - `backlogSeeded`, `backlogItemCount` (as 4b).
+   In research-absent mode write `"research": { "consumed": false }` only. On a `callerExtras.reResearch` run, ALSO add the 4c fields (`reResearch`/`refreshedDimensions`/`escalatedToFull`/`backlogMerged`) per the re-research telemetry note below.
 
-   **`metadata.research` re-research fields (v3, 4c):** when `callerExtras.reResearch` is present, ALSO record `reResearch: true`, `refreshedDimensions` (the marker's `dimensions`, or `"all"` when `escalatedToFull`), `escalatedToFull` (from the marker), and `backlogMerged: { added, kept, flaggedObsolete }` (counts from the verify-backlog merge, `verify-backlog-seeding.md` § Re-research merge). Absent marker → omit these four fields (the block is exactly 4b's shape). The full telemetry block + Phase-7 self-audit stay Plan 5.
+   **`metadata.research` re-research fields (v3, 4c):** when `callerExtras.reResearch` is present, ALSO record `reResearch: true`, `refreshedDimensions` (the marker's `dimensions`, or `"all"` when `escalatedToFull`), `escalatedToFull` (from the marker), and `backlogMerged: { added, kept, flaggedObsolete }` (counts from the verify-backlog merge, `verify-backlog-seeding.md` § Re-research merge). Absent marker → omit these four fields (the block is exactly 4b's shape).
 
 8. **Auto-install MCP plugins** — After metadata is written, run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh"` with the list of emitted-server plugin names. The script probes `claude plugin list --json`, skips already-installed plugins, and installs the rest. Failures are logged but do not fail generation. On completion, update `mcpStatus.autoInstalled` and `mcpStatus.autoInstallFailed` in `onboard-meta.json`.
 

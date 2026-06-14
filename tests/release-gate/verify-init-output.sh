@@ -681,7 +681,7 @@ if [[ -f "$META" ]]; then
     CONSUMED=$(jq -r '.research.consumed | if . == null then empty else tostring end' "$META" 2>/dev/null)
     if [[ "$CONSUMED" == "true" ]]; then
       # Minimal-useful block: all 5 keys must be present when consumed.
-      for sub in consumed depth verifiedClaimCount backlogSeeded backlogItemCount; do
+      for sub in consumed depth claimsVerified backlogSeeded backlogItemCount; do
         if [[ "$(jq ".research | has(\"${sub}\")" "$META" 2>/dev/null)" == "true" ]]; then
           pass "metadata.research.${sub} present"
         else
