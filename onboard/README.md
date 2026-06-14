@@ -26,12 +26,14 @@ This is the heart of the lifecycle loop — see [Drift detection deep dive](#dri
 
 ### `/onboard:start` *(destructive — user-invoked only)*
 
-Main entry point. Runs a 4-phase guided workflow:
+Main entry point. Runs a grounded, research-first guided workflow:
 
-1. **Automated Analysis** — codebase-analyzer agent (read-only) scans languages, frameworks, testing setup, CI/CD, project structure. Output stays in conversation context, not written to disk.
-2. **Interactive Wizard** — adaptive Q&A about project context, workflow, pain points, plugin preferences. Presets: Minimal / Standard / Comprehensive / Custom.
-3. **Generation** — config-generator agent emits Core artifacts (always) and Enriched artifacts (when enabled): see [Generated artifacts](#generated-artifacts).
-4. **Education & Handoff** — explains what was generated and how to use it.
+1. **Recon** — codebase-analyzer agent (read-only, script-free — native Glob/Grep/Read + git one-liners) scans languages, frameworks, testing setup, CI/CD, project structure and emits `reconHints`. Output stays in conversation context, not written to disk.
+2. **Profile select** — pick Minimal / Standard / Comprehensive. The profile sets how deep the research goes and how much tooling is generated (no Custom path).
+3. **Deep Research** — `onboard:research` fans out specialists, adversarially verifies, and synthesizes a research dossier plus 4 artifacts (research-dossier, architecture, risk-register, glossary).
+4. **Grounded Wizard** — instead of cold Q&A, you confirm or override the wizard answers the research already inferred (`research.wizardInferences`). Autonomy level is always asked cold, never inferred.
+5. **Generation** — config-generator agent emits Core artifacts (always) and Enriched artifacts (when enabled): see [Generated artifacts](#generated-artifacts).
+6. **Education & Handoff** — explains what was generated and how to use it.
 
 Includes an empty-repo guard — if the repo is empty, offers a 3-option menu (abort / placeholder / canonical stub) before running.
 
@@ -62,13 +64,17 @@ The v2 context contract is intentionally stable so external callers can rely on 
 Phase 0: Empty-Repo Guard ──→ no source files? 3-option menu
      │
      ▼
-Phase 1: Analysis ──→ codebase-analyzer agent (read-only)
-     │                  ├── analyze-structure.sh
-     │                  ├── detect-stack.sh
-     │                  └── measure-complexity.sh
+Phase 1: Recon ──→ codebase-analyzer agent (read-only, script-free)
+     │              └── native Glob/Grep/Read + git one-liners → reconHints
      ▼
-Phase 2: Wizard ──→ wizard skill (adaptive Q&A, presets)
-     │
+Phase 1.4: Profile select ──→ Minimal / Standard / Comprehensive
+     │                          └── sets research depth + generation scope
+     ▼
+Phase 1.5: Research ──→ Skill(onboard:research)
+     │                   └── dossier + research-dossier / architecture / risk-register / glossary
+     ▼
+Phase 2: Grounded Wizard ──→ confirm/override from research.wizardInferences
+     │                        (autonomy asked cold)
      ▼
 Phase 2.5: Plugin Detection ──→ siblings + marketplace probe
      │
@@ -79,11 +85,12 @@ Phase 3: Generation ──→ Skill(onboard:generate)
 Phase 4: Handoff ──→ explains generated artifacts, suggests next steps
 ```
 
-**Three specialised components do the work:**
+**The components that do the work:**
 
-- **codebase-analyzer agent** — read-only deep scan of project structure, dependencies, patterns
-- **wizard skill** — adaptive question flow, tailors questions to what the analyser found
-- **config-generator agent** — takes analysis + wizard answers and produces all artifacts
+- **codebase-analyzer agent** — read-only, script-free recon of project structure, dependencies, patterns
+- **research engine** (`onboard:research`) — fans out specialists, verifies, and synthesizes the dossier + 4 artifacts that ground the wizard
+- **wizard skill** — grounded confirm/override surface seeded by the research inferences
+- **config-generator agent** — takes the v3 context (recon + research + wizard) and produces all artifacts
 
 Internal architecture and agent contracts: [`onboard/CLAUDE.md`](./CLAUDE.md).
 
@@ -105,9 +112,9 @@ See the [Example](#example) below for a full two-run transcript showing init fol
 ```
 > /onboard:start
 
-Phase 1: Analysis
-━━━━━━━━━━━━━━━━━
-Scanning codebase…
+Phase 1: Recon
+━━━━━━━━━━━━━━
+Scanning codebase… (script-free — native search + git)
 
   Languages    TypeScript (94%), CSS (6%)
   Framework    Next.js 15 (App Router)
@@ -117,19 +124,28 @@ Scanning codebase…
   CI/CD        GitHub Actions (1 workflow)
   Size         48 files, 3,200 LOC
 
-Phase 2: Wizard
-━━━━━━━━━━━━━━━
-I detected Next.js 15 with App Router. A few questions to tailor your tooling:
+Phase 1.4: Profile
+━━━━━━━━━━━━━━━━━━
+How deep should I go?
+  (a) Minimal       — shallow research, core tooling only
+  (b) Standard      — balanced research + tooling   (recommended)
+  (c) Comprehensive — full research + enriched tooling
 
-  What's your testing philosophy?
-  (a) TDD — write tests first, always
-  (b) Test after — write tests for completed features
-  (c) Coverage targets — aim for a % threshold
-  (d) Minimal — only test critical paths
+> b
 
-> a
+Phase 1.5: Research
+━━━━━━━━━━━━━━━━━━━
+Fanning out specialists → verifying → synthesizing dossier…
+  Wrote research-dossier, architecture, risk-register, glossary
 
-  What level of autonomy should Claude have?
+Phase 2: Grounded Wizard
+━━━━━━━━━━━━━━━━━━━━━━━━
+From the research I inferred the following — confirm or override:
+
+  Testing philosophy   TDD          (vitest + RTL, tests co-located)   [confirm / change]
+> confirm
+
+  What level of autonomy should Claude have?   (asked cold — never inferred)
   (a) Always ask — suggest but never act without confirmation
   (b) Balanced — auto-format, advisory lint, blocking pre-commit
   (c) Autonomous — auto-format, auto-lint, enforce all gates
@@ -219,7 +235,7 @@ All generated files include self-maintaining headers (version + date) that promp
 
 ## Prerequisites
 
-- **bash** — analysis scripts (macOS and Linux ship with it)
+- **bash** — evolution + CI-audit scripts and generated hooks (recon itself is script-free; macOS and Linux ship with it)
 - **git** — repository analysis and contributor detection
 - **tree** (optional) — directory visualisation; falls back to `find`
 - **jq** (optional) — JSON parsing in hooks; generated hooks include a `python3` fallback

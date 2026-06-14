@@ -13,19 +13,24 @@ Phase 0: Empty-Repo Guard ──→ SRC_COUNT == 0?
      │                            │          └── stub path follows start/references/empty-repo-stub-procedure.md
      │                            └── no  → fall through to Phase 1
      ▼
-Phase 1: Analysis ──→ codebase-analyzer agent (read-only)
-     │                   ├── analyze-structure.sh
-     │                   ├── detect-stack.sh
-     │                   └── measure-complexity.sh
+Phase 1: Recon ──→ codebase-analyzer agent (read-only, script-free)
+     │              └── native Glob/Grep/Read + git one-liners → emits reconHints
      ▼
-Phase 2: Wizard ──→ wizard skill (adaptive Q&A, presets)
-     │
+Phase 1.4: Profile select ──→ Minimal / Standard / Comprehensive
+     │                          └── sets research depth + generation scope
+     ▼
+Phase 1.5: Research ──→ Skill(onboard:research)
+     │                   └── dossier + 4 artifacts:
+     │                       research-dossier, architecture, risk-register, glossary
+     ▼
+Phase 2: Grounded Wizard ──→ confirm/override from research.wizardInferences
+     │                        └── autonomyLevel always cold (never inferred)
      ▼
 Phase 2.5: Plugin Detection ──→ deep probe (siblings + marketplace cache)
      │                          + plugin-surface-probe (closes G.3)
      ▼
-Phase 2.6: Build Onboard Context ──→ start/references/onboard-context-builder.md
-     │
+Phase 2.6: Build v3 Context ──→ start/references/onboard-context-builder.md
+     │                           └── version: 3 + research block
      ▼
 Phase 3: Generation ──→ Skill(onboard:generate)
      │                   └── config-generator agent (write)
@@ -215,15 +220,16 @@ User-facing skills (show in `/onboard:` autocomplete):
 Internal building blocks (`user-invocable: false` — hidden from menu):
 
 - `generate/SKILL.md` — headless generation API, invoked via Skill tool
-- `wizard/SKILL.md` — drives the interactive Q&A (presets: Minimal/Standard/Comprehensive/Custom)
+- `wizard/SKILL.md` — drives the grounded confirm/override surface (research-seeded)
+- `research/SKILL.md` — the v3 research engine (fan-out specialists → verify → synthesize dossier)
 - `analysis/SKILL.md` — tech stack pattern matching, model recommendations
 - `generation/SKILL.md` — artifact generation logic, core + enriched modes
 
 ## Script Conventions
 
-- Scripts are supplementary — if they fail, the wizard continues with deep exploration only
+- Scripts are supplementary — if a detection / evolution / audit script fails, the flow degrades gracefully (logs and continues)
 - POSIX-compatible: must work on macOS (BSD) and Linux (GNU)
-- Analysis scripts: `analyze-structure.sh`, `detect-stack.sh`, `measure-complexity.sh`
+- Recon is **script-free** (native Glob/Grep/Read + git one-liners) as of v3.
 - Evolution scripts: `detect-dep-changes.sh`, `detect-config-changes.sh`, `detect-structure-changes.sh`
 - CI audit script: `audit-tooling.sh`
 
@@ -238,8 +244,6 @@ Internal building blocks (`user-invocable: false` — hidden from menu):
 ## Key Patterns
 
 - Maintenance headers on all generated artifacts (version + date)
-- Quick Mode: infers wizard answers from analysis results + one autonomy question
-- Preset path: pre-filled values for Minimal/Standard/Comprehensive profiles
-- Script failure fallback: log failure, continue with codebase exploration only
+- Grounded wizard: confirm/override surface seeded by research.wizardInferences; autonomyLevel always cold; three profiles (Minimal/Standard/Comprehensive) set research depth + gen scope (no Custom).
 - Plugin-aware agent generation: check coveredCapabilities before generating agents
 - Merge-aware hooks: always read settings.json first, never overwrite
