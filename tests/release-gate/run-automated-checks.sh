@@ -423,6 +423,19 @@ if grep -qi "escalat" "$RR" && grep -q "Depth-cap intersection" "$RR" && grep -q
 else
   fail "4c: re-research.md missing escalation / depth-cap / no-regenerateOnly contract"
 fi
+
+CHECK="onboard/skills/check/SKILL.md"
+if grep -q "re-research.md" "$CHECK" && grep -qi "research staleness" "$CHECK"; then
+  pass "4c: check consumes the Detection map + reports research staleness"
+else
+  fail "4c: check missing the research-staleness report"
+fi
+# Guard: check stays read-only.
+if grep -q "Never write to any file" "$CHECK"; then
+  pass "4c: check remains read-only"
+else
+  fail "4c: check read-only guarantee disturbed"
+fi
 echo ""
 
 # ─────────────────────────────────────────────────

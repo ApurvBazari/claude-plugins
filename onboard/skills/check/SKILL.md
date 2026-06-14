@@ -78,6 +78,10 @@ Do a lightweight check for drift against the state captured in `onboard-meta.jso
 
 **"Significant drift"** = 2 or more of the above detected simultaneously.
 
+### Research staleness (read-only)
+
+Map the drift signals above to the research dimensions they invalidate, per `../update/references/re-research.md` § Detection (drift→dimension map + depth-cap intersection against `onboard-meta.json.research.depth`). This is **read-only** — `check` never re-researches. If the intersected set is non-empty, list the stale dimensions and recommend a re-ground; if the drift would escalate to full (≥3 dims / framework bump / ≥2 new modules), say so.
+
 **Always confirm** drift findings with the developer before recommending action — false positives are possible.
 
 ---
@@ -148,6 +152,12 @@ Based on the status, provide targeted recommendations:
 > - [new dependencies, new directories, etc.]
 >
 > Run `/onboard:update` to incorporate these changes into your Claude tooling.
+
+### If research looks stale (dimensions invalidated):
+
+> Recent changes may have invalidated the research dossier in: [list stale dimensions].
+>
+> Run `/onboard:update` to re-ground research and refresh the affected tooling (you'll approve the re-research first), or `/onboard:evolve` for a scoped auto-refresh. [If escalation would fire:] This looks like broad drift — prefer `/onboard:update` (a full re-research).
 
 ---
 
