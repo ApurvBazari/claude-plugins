@@ -57,7 +57,7 @@ Write `docs/feature-list.json` **atomically** (`.tmp` + rename):
 ```
 
 - **`id`** — sequential `F001`, `F002`, … across the whole list.
-- **`category`** — source-derived: `security` (security-dimension or `category:"security"`), `risk` (`category ∈ {risk, hotspot}`), `test-gap` (`category:"test-gap"`). Extends the harness descriptive set (`functional, ui, data, auth, …`); the `feature-evaluator` does not validate `category`, so this is a safe, documented extension.
+- **`category`** — source-derived (`security` / `risk` / `test-gap`). Extends the harness descriptive set (`functional, ui, data, auth, …`). The `feature-evaluator` **routes** on `category` (these three have explicit verification routes — see § Combination Strategy) and **reads `obsolete`** to skip vanished claims (see § Determine PASS or FAIL). `sourceClaim` (pure merge provenance) is the only field the evaluator ignores — a safe, documented additive extension.
 - **`steps`** — 1–3 concrete remediation-verification steps composed from the claim `statement` + `evidence` (findings carry no mitigation field, so synthesize). Example: `"Inspect src/auth/session.ts:42; confirm the missing CSRF guard named in the claim is added; add/verify a test covering it."`
 - **`priority`** — integer tier: `security` = 1, general `risk`/`hotspot` = 2, `test-gap` = 3. Order features by tier ascending, then by `confidence` descending within a tier; assign `F00N` ids in that order.
 - All seeded items start **`passes: false`**.

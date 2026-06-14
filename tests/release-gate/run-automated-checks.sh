@@ -547,6 +547,23 @@ if ! grep -rq "statement+evidence\|statement + evidence" onboard; then
 else
   fail "5: sourceClaim preimage still hashes raw statement+evidence"
 fi
+FE="onboard/agents/feature-evaluator.md"
+VB="onboard/skills/generation/references/verify-backlog-seeding.md"
+if grep -q "test-gap" "$FE" && grep -qi "security" "$FE" && grep -qi "obsolete" "$FE"; then
+  pass "5: feature-evaluator routes research categories + skips obsolete"
+else
+  fail "5: feature-evaluator missing research-category routing / obsolete-skip"
+fi
+if ! grep -q "does not validate \`category\`\|does not validate category" "$VB"; then
+  pass "5: verify-backlog category prose corrected (evaluator routes on category)"
+else
+  fail "5: verify-backlog still claims the evaluator ignores category"
+fi
+if grep -q "PASS | FAIL | OBSOLETE" "$FE" && grep -qi "Obsolete (skipped)" "$FE"; then
+  pass "5: feature-evaluator Output Format represents the obsolete outcome (status enum + summary row)"
+else
+  fail "5: feature-evaluator obsolete outcome not first-class in Output Format"
+fi
 echo ""
 
 # ─────────────────────────────────────────────────
