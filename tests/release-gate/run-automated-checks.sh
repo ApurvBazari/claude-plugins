@@ -375,6 +375,32 @@ fi
 echo ""
 
 # ─────────────────────────────────────────────────
+echo "## Plan 4c — re-research on update/evolve (static)"
+# ─────────────────────────────────────────────────
+GEN_SKILL="onboard/skills/generate/SKILL.md"
+CSV3="onboard/skills/generate/references/context-shape-v3.json"
+
+if grep -q "reResearch" "$CSV3"; then
+  pass "4c: context-shape-v3.json documents the callerExtras.reResearch marker"
+else
+  fail "4c: context-shape-v3.json missing the reResearch marker doc"
+fi
+
+if grep -q "reResearch" "$GEN_SKILL"; then
+  pass "4c: generate threads the reResearch marker into the dispatch"
+else
+  fail "4c: generate missing the reResearch marker threading"
+fi
+
+# Guard: 4b Step 0.1 D2 contract MUST remain intact (4c does not touch it).
+if grep -q "onboard 3.x requires a \`research\` object for full (re)generation" "$GEN_SKILL"; then
+  pass "4c: generate Step 0.1 D2 contract intact (unchanged by 4c)"
+else
+  fail "4c: generate Step 0.1 D2 contract was disturbed"
+fi
+echo ""
+
+# ─────────────────────────────────────────────────
 echo "═══════════════════════════════════════════"
 echo "## Summary"
 echo ""

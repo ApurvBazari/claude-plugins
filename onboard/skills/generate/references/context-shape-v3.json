@@ -13,7 +13,19 @@
     },
     "source": { "type": "string", "minLength": 1 },
     "projectPath": { "type": "string" },
-    "callerExtras": { "type": "object" },
+    "callerExtras": {
+      "type": "object",
+      "properties": {
+        "reResearch": {
+          "type": "object",
+          "description": "v3 re-research marker (Plan 4c). Present ONLY on a re-research regen built by onboard:update / onboard:evolve — signals config-generator to run the merge-aware regen path (customization floor + marker surgery + progress-preserving backlog merge). Absent on first onboard and on regenerateOnly snapshot replays. Does NOT change generate Step 0.1 validation.",
+          "properties": {
+            "dimensions": { "type": "array", "items": { "type": "string" }, "description": "the research dimensions refreshed this run (scoped set), or all in-roster dims when escalated" },
+            "escalatedToFull": { "type": "boolean", "description": "true when the tiered escalation rule promoted a scoped re-research to full" }
+          }
+        }
+      }
+    },
     "research": {
       "type": "object",
       "description": "Optional synthesized research object. Canonical shape: onboard/schemas/research-dossier.json."
