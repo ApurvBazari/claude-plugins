@@ -717,6 +717,46 @@ fi
 echo ""
 
 # ─────────────────────────────────────────────────
+echo "### 16. v3 re-research on update/evolve (Plan 4c)"
+# ─────────────────────────────────────────────────
+# When a real /onboard:update or /onboard:evolve re-grounded research, generation
+# records 4c re-research telemetry under metadata.research and merges the verify
+# backlog (features may carry a sourceClaim provenance). All assertions are
+# CONDITIONAL on a re-research having actually run — absence is not a hard fail.
+if [[ -f "$META" ]]; then
+  IS_RERESEARCH=$(jq -r '.research.reResearch // empty' "$META" 2>/dev/null)
+  if [[ "$IS_RERESEARCH" == "true" ]]; then
+    if [[ "$(jq '.research | has("refreshedDimensions")' "$META" 2>/dev/null)" == "true" ]]; then
+      pass "metadata.research.refreshedDimensions present (4c re-research run)"
+    else
+      fail "metadata.research.reResearch=true but refreshedDimensions missing"
+    fi
+    if [[ "$(jq -r '.research.escalatedToFull | type' "$META" 2>/dev/null)" == "boolean" ]]; then
+      pass "metadata.research.escalatedToFull is boolean"
+    else
+      fail "metadata.research.escalatedToFull missing or not boolean"
+    fi
+    if [[ "$(jq '.research.backlogMerged | has("added") and has("kept") and has("flaggedObsolete")' "$META" 2>/dev/null)" == "true" ]]; then
+      pass "metadata.research.backlogMerged has {added,kept,flaggedObsolete}"
+    else
+      fail "metadata.research.backlogMerged missing required counts"
+    fi
+  else
+    warn "metadata.research.reResearch not set (no re-research run, or first onboard — informational)"
+  fi
+fi
+# Re-research backlog merge may carry sourceClaim provenance on seeded/merged features.
+if [[ -f "docs/feature-list.json" ]] && jq empty docs/feature-list.json 2>/dev/null; then
+  HAS_SRC=$(jq '[.sprints[]?.features[]? | select(has("sourceClaim"))] | length' docs/feature-list.json 2>/dev/null || echo 0)
+  if [[ "${HAS_SRC:-0}" -gt 0 ]]; then
+    pass "feature-list: ${HAS_SRC} feature(s) carry sourceClaim provenance (4c-seeded/merged)"
+  else
+    warn "feature-list: no sourceClaim provenance (pre-4c list or non-research list — informational)"
+  fi
+fi
+echo ""
+
+# ─────────────────────────────────────────────────
 echo "═══════════════════════════════════════════"
 echo "## Summary — ${PROFILE}"
 echo ""
