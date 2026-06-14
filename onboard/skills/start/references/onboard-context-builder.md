@@ -8,7 +8,7 @@ The 2026-04-17 release-gate sweep found 7 blocker-class bugs (B1, B5, B6, B8, B1
 
 **Root cause**: init was assembling a *subset* of the expected `callerExtras` structure and passing it via an ad-hoc prompt to the `config-generator` agent. Fields the generator expected but didn't receive fell into "absent-field" skip branches (MCP skipped, snapshot coupling broken, plugin detection shallow, LSP silently dropped, CLAUDE.md sections missing).
 
-**Fix**: all init preset paths (Custom / Standard / Minimal) call the procedure below to emit the full shape. Stub mode (Phase 0, empty-repo) emits a canonical-shape variant per `../references/empty-repo-stub-procedure.md`. Dispatch goes through `Skill(onboard:generate)` — so validation + agent dispatch live in one place.
+**Fix**: all init profile paths (Minimal / Standard / Comprehensive) call the procedure below to emit the full shape. Stub mode (Phase 0, empty-repo) emits a canonical-shape variant per `../references/empty-repo-stub-procedure.md`. Dispatch goes through `Skill(onboard:generate)` — so validation + agent dispatch live in one place.
 
 ## When to invoke this procedure
 
@@ -162,7 +162,7 @@ If all three probes yielded zero plugins: `installedPlugins: []`, `coveredCapabi
 **Critical for closing B1**: init passes these flags **explicitly as false**. Omitting the field would default to false at the generator, but passing explicitly makes the contract auditable.
 
 - `disableMCP` → **`false`** (always). Phase 7a's signal-driven path fires; `.mcp.json` emitted when `detect-mcp-signals.sh` returns ≥ 1 candidate. Pre-fix bug: init's absent callerExtras meant the generator never ran Phase 7a → `reason: "no-candidates"` despite signals being present.
-- `disableLSP` → **`false`**. Phase 7c runs if `lspPlugins` array from wizardAnswers is non-empty OR Quick Mode fallback enumerates candidates.
+- `disableLSP` → **`false`**. Phase 7c runs if `lspPlugins` array from wizardAnswers is non-empty OR the builder's Static Defaults supply the detected candidate list (when the wizard did not confirm a selection).
 - `disableBuiltInSkills` → **`false`**. Phase 7d runs; output is `builtInSkillsStatus.status: "documented"` (CLAUDE.md subsection, no separate snapshot file — see C1.6).
 
 #### Phase 7 SUPPRESS-PROMPT flags — init-path defaults
@@ -272,9 +272,9 @@ init Phase 3.3: Report Generation Results (list files written)
 
 **Do not** pass `dispatchedAsAgent: true` from init — that flag is the generate skill's responsibility. Init's only job is building the context and invoking the Skill tool.
 
-## Default values table — for Quick Mode / preset fallbacks
+## Default values table — Static Defaults for unconfirmed fields
 
-When a wizard preset omits a field, the builder fills in these defaults. The objective is **never** to pass `undefined` to the generator:
+When the grounded wizard does not confirm a field (e.g. the Minimal profile skips it, or the user accepts the inferred value without override), the builder fills in these Static Defaults. The objective is **never** to pass `undefined` to the generator:
 
 | Field | Default |
 |---|---|
@@ -296,7 +296,7 @@ Every default is populated explicitly — downstream generation should never nee
 
 ## Edge cases
 
-1. **Empty wizard (Quick Mode bail-out)** — wizard ran only Phase 1-1.4, no detailed answers. Builder fills in all defaults from the table above. `wizardStatus.presetUsed = "quick-mode"`. Still produces a valid context.
+1. **Empty / minimal wizard (Minimal profile)** — wizard ran only Phase 1-1.4 with the `minimal` profile selected at Step 1.4, no detailed answers. Builder fills in all defaults from the table above. `wizardStatus.presetUsed` always equals the profile chosen at Step 1.4 — for this empty/minimal path that is `"minimal"` (never a synthetic value). Still produces a valid context.
 
 2. **No plugins detected at all** — `installedPlugins: []`, `coveredCapabilities: []`, `pluginSurfaces: {}`, `allowPluginReferences: false`. `qualityGates.*` entries drop all plugin-referencing items → likely empty arrays. Generator's Phase 5 Plugin Integration block emits "No plugins detected" narrative.
 
@@ -312,7 +312,7 @@ Every default is populated explicitly — downstream generation should never nee
 
 ## Key rules
 
-1. **Single source of truth**: every init preset (Custom / Standard / Minimal) calls THIS procedure. Do not maintain preset-specific context builders — that's the drift that caused the original bugs.
+1. **Single source of truth**: every init profile (Minimal / Standard / Comprehensive) calls THIS procedure. Do not maintain profile-specific context builders — that's the drift that caused the original bugs.
 2. **Populate all top-level keys** — never leave `callerExtras.disableMCP` (etc.) undefined. Explicit `false` is the closing-B1 invariant.
 3. **Dispatch via `Skill(onboard:generate)`** — never call `Agent(config-generator)` directly from init. The Skill tool is the contract boundary.
 5. **Stub mode is separate** — empty-repo stubs follow `../references/empty-repo-stub-procedure.md`, not this builder. The builder assumes analysis + wizard have produced real data.
