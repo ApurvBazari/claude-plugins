@@ -12,7 +12,7 @@ This skill is `user-invocable: false` — it is invoked by another skill (Plan 3
 
 ## Overview
 
-**Input:** `projectPath` + a depth preset (`minimal` | `standard` | `comprehensive`) + optional recon hints.
+**Input:** `projectPath` + a depth preset (`minimal` | `standard` | `comprehensive`) + optional `reconHints = { detectedRoots[], structureFacts }`. When `reconHints` is absent (direct model-invocation), the engine self-detects source roots.
 **Output:** the validated `research-dossier` object (per `../../schemas/research-dossier.json`), returned to the caller AND written to `.claude/onboard-research.json` (+ four docs when the location dial says so).
 
 Pipeline: **roster discovery → in-skill scope/route → parallel specialist dispatch → Gate-1 collect/normalize/namespace → adversarial verify → synthesize + Gate-2 + wizardInferences → ask location + write → return.**
@@ -35,7 +35,9 @@ Read `references/depth-profiles.md` + `references/custom-specialist-contract.md`
 
 ## Step 2: Scope / route (in-skill, native, NO scripts)
 
-Using **native Glob / Grep / Read only** (deliberately NOT dependent on `codebase-analyzer`'s markdown report — Plan 2 stays decoupled from the Plan-3 recon rescope), determine the detected source roots and, per enabled dimension, the `scopeGlobs` (the dimension's default globs from `specialist-roster.md`, intersected with the detected roots; tightened at `standard`, widened at `comprehensive` per `depth-profiles.md`). Root-dwelling globs — manifests/lockfiles (`package.json`, `go.mod`, `Cargo.toml`), docs (`docs/**`, `README*`), and test/lint config (`conftest.py`, `pyproject.toml`, `.eslintrc*`, `.prettierrc*`, `biome.json`) — are **exempt from the source-root intersection**: they legitimately live at the repo root, so any root-dwelling glob passes through even when it sits outside the detected source subtrees. This bounds cost on large repos. **No shell scripts** — this engine is script-free.
+**Detected-roots source:** if `reconHints.detectedRoots` is provided by the caller (the Plan-3 `/onboard:start` flow passes it), use it as the detected-source-root set for the per-dimension `scopeGlobs` intersection below — do NOT re-detect. If `reconHints` is absent (direct invocation), self-detect the source roots with native Glob/Grep exactly as below. Roster discovery, depth cap, and specialist selection are unaffected either way.
+
+Using **native Glob / Grep / Read only** (the engine never parses `codebase-analyzer`'s markdown report — it accepts only the thin structured `reconHints.detectedRoots` hint, and self-detects natively when that hint is absent, so it stays decoupled from the analyzer's report even when wired into the Plan-3 recon rescope), determine the detected source roots and, per enabled dimension, the `scopeGlobs` (the dimension's default globs from `specialist-roster.md`, intersected with the detected roots; tightened at `standard`, widened at `comprehensive` per `depth-profiles.md`). Root-dwelling globs — manifests/lockfiles (`package.json`, `go.mod`, `Cargo.toml`), docs (`docs/**`, `README*`), and test/lint config (`conftest.py`, `pyproject.toml`, `.eslintrc*`, `.prettierrc*`, `biome.json`) — are **exempt from the source-root intersection**: they legitimately live at the repo root, so any root-dwelling glob passes through even when it sits outside the detected source subtrees. This bounds cost on large repos. **No shell scripts** — this engine is script-free.
 
 ## Step 3: Fan out specialists (ONE batch)
 
