@@ -450,6 +450,19 @@ if grep -q "re-research.md" "$EVOLVE" && grep -qi "scoped" "$EVOLVE" && grep -qi
 else
   fail "4c: evolve missing the scoped-silent / full-defer re-research path"
 fi
+
+RRM="onboard/skills/generation/references/re-research-merge.md"
+GENERATION="onboard/skills/generation/SKILL.md"
+if [[ -f "$RRM" ]] && grep -q "Re-Research Merge-Aware Generation (v3)" "$GENERATION" && grep -q "re-research-merge.md" "$GENERATION"; then
+  pass "4c: re-research-merge.md exists + linked from generation/SKILL.md with the gated section"
+else
+  fail "4c: re-research-merge.md missing or not linked/gated in generation/SKILL.md"
+fi
+if [[ -f "$RRM" ]] && grep -qi "customization floor" "$RRM" && grep -qi "marker-delimited surgery" "$RRM"; then
+  pass "4c: re-research-merge.md carries the customization floor + marker surgery"
+else
+  fail "4c: re-research-merge.md missing the customization floor / marker surgery"
+fi
 echo ""
 
 # ─────────────────────────────────────────────────

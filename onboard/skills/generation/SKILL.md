@@ -157,6 +157,10 @@ Follow `references/rules-guide.md` for patterns and YAML frontmatter.
 
 When a sanitized `research` object is present in the context, apply `references/research-consumption.md` to **sharpen** the artifacts below from **verified** claims: Root CLAUDE.md (Row 1), path-scoped rules (Row 2), Skill Selection (Row 3), agent archetypes (Row 4), and subdirectory CLAUDE.md placement (Row 5). When `research` is absent (research-absent / `regenerateOnly` mode), generate exactly as today — output is byte-identical. All rows are independently presence-gated and tolerate missing dimensions.
 
+### Re-Research Merge-Aware Generation (v3)
+
+When `callerExtras.reResearch` is present (a re-research regen from `update`/`evolve`), apply `references/re-research-merge.md` across the whole generation order: re-sharpen all artifacts from the **merged** dossier while honoring the **customization floor** (never clobber a user-customized file — `update` confirms, `evolve` skips+warns), marker-delimited surgery, and the **progress-preserving** verify-backlog merge. When the marker is absent (first onboard / `regenerateOnly`), generate exactly as today.
+
 ### Skills (.claude/skills/)
 
 Follow `references/skills-guide.md` for SKILL.md structure AND § Frontmatter Reference for the full field surface the generator emits.
@@ -366,6 +370,7 @@ TDD is the standard testing approach for all onboarded projects. These artifacts
 ### v3 research consumption (used when a `research` object is present)
 - `references/research-consumption.md` — the 5 research-sharpening rows (CLAUDE.md / rules / skills / agents / subdir)
 - `references/verify-backlog-seeding.md` — verified risk/test-gap claims → `docs/feature-list.json`
+- `references/re-research-merge.md` — full merge-aware regen (customization floor + marker surgery) on a `reResearch` run
 
 ### Emission specs (verbatim — extracted from this skill)
 These carry the verbatim artifact templates and long emission enumerations for the stubbed sections above. Load the matching one when generating that artifact:
