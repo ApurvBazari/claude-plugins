@@ -18,7 +18,7 @@ This skill is `user-invocable: false` — it is invoked by another skill (`/onbo
 Pipeline: **roster discovery → in-skill scope/route → parallel specialist dispatch → Gate-1 collect/normalize/namespace → adversarial verify → synthesize + Gate-2 + wizardInferences → ask location + write → return.**
 
 Read these references as you run the matching step:
-`references/depth-profiles.md`, `references/specialist-roster.md`, `references/custom-specialist-contract.md`, `references/verification-procedure.md`, `references/synthesis-and-dossier.md`, `references/dossier-merge.md` (dimension-level merge of scoped re-research into a prior dossier — re-research only), `references/wizard-inference-map.md`.
+`references/depth-profiles.md`, `references/specialist-roster.md`, `references/custom-specialist-contract.md`, `references/verification-procedure.md`, `references/synthesis-and-dossier.md`, `references/render-adapter.md` (maps the dossier to a walkthrough `session-model` for the optional HTML render — Step 7.5), `references/dossier-merge.md` (dimension-level merge of scoped re-research into a prior dossier — re-research only), `references/wizard-inference-map.md`.
 
 ## Step 0: Empty-repo self-guard
 
@@ -72,6 +72,15 @@ Ask the per-run artifact location (`committed | local | none`, single-select, no
 - **Only if `committed`**: write `docs/onboard/{research-dossier,architecture,risk-register,glossary}.md` (pure renders → **overwrite**) and seed `docs/onboard/adr/NNNN-*.md` (**seed-if-absent → never clobber**).
 - Record actual paths in `artifacts.written[]`, set `artifacts.html=null`, re-write the object so disk reflects the final `written[]`.
 
+### Step 7.5: Optional interactive render (when `walkthrough` present)
+
+After the markdown docs are written, if `artifacts.location ∈ {committed, local}`, attempt an interactive HTML render (mirrors `lens → walkthrough:render`):
+1. Assemble a walkthrough `session-model` from the dossier per `references/render-adapter.md`.
+2. **Invoke `walkthrough:render`** with `{ model, outputPath: ".claude/walkthrough/<YYYY-MM-DD-HHMM>-onboard-research.html" }`. The tool call itself is the presence test — if the `walkthrough` plugin is not installed and the render skill is unavailable, **degrade**: set `artifacts.html = null`, keep the markdown docs, and announce "walkthrough not installed — research rendered as markdown only."
+3. On success, set `artifacts.html` = the output path. On `location:"none"`, skip the render entirely (`artifacts.html = null`).
+
+On a 4c re-research with `location:"committed"`, re-render the HTML alongside the overwritten markdown docs.
+
 ## Step 8: Return
 
 Return the validated `research-dossier` object to the caller. (Plan 3 later feeds it to the grounded wizard + generate.)
@@ -89,7 +98,7 @@ Step 7's location prompt uses a single-select `AskUserQuestion` with three fixed
 5. **The engine owns the flip** — the verifier votes; the engine builds `verifiedClaims[]` / `droppedClaims[]`. Verification errors keep the claim.
 6. **`dimension:Cn` namespacing** — minted at Gate-1; raw findings stay bare `^C[0-9]+$`.
 7. **Object always written; docs gated by location** — `.claude/onboard-research.json` is written for every location choice; `docs/onboard/` only when `committed`. Render-docs overwrite; ADRs seed-if-absent (never clobber).
-8. **`engineUsed:"subagent"`, `artifacts.html:null`** — the Workflow backend and HTML render are deferred; both values are fixed in this plan.
+8. **`engineUsed:"subagent"`** — the Workflow backend stays deferred (always `"subagent"`). **`artifacts.html` is set by the render step (Step 7.5)** — the path when `walkthrough:render` succeeds, `null` when walkthrough is absent or `location:"none"`.
 9. **Runtime validation = schema-as-contract** — read the relevant schema file as the contract and check conformance directly; opportunistically shell to `python3 -c "import jsonschema; …"` for a hard check when the dev dep is present. No new shipped dependency.
 10. **Script-free** — this engine and its agents ship no `.sh` scripts; all scope/route is native Glob/Grep/Read.
 11. **No version bump** — onboard stays `2.0.1`; this plan is additive.

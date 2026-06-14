@@ -27,7 +27,7 @@ Build an object with the EXACT fields from `onboard/schemas/research-dossier.jso
   "artifacts": {
     "location": "<committed|local|none>",   // from the per-run prompt (Step 4)
     "written":  [ /* paths actually written — filled AFTER the writes */ ],
-    "html":     null                        // ALWAYS null in this plan (HTML render deferred)
+    "html":     null   // set by the render step (render-adapter.md); path when walkthrough present + location≠none
   }
 }
 ```

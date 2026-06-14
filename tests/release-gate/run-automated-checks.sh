@@ -491,6 +491,24 @@ echo ""
 # ─────────────────────────────────────────────────
 echo "## Plan 5 — ship + 3.0.0 cutover (static)"
 # ─────────────────────────────────────────────────
+RA="onboard/skills/research/references/render-adapter.md"
+RESEARCH="onboard/skills/research/SKILL.md"
+SD="onboard/skills/research/references/synthesis-and-dossier.md"
+if [[ -f "$RA" ]] && grep -q "render-adapter.md" "$RESEARCH"; then
+  pass "5: render-adapter.md exists + linked from research/SKILL.md"
+else
+  fail "5: render-adapter.md missing or not linked"
+fi
+if grep -q "walkthrough:render" "$RESEARCH" && grep -q "render-adapter.md" "$SD"; then
+  pass "5: synthesizer wires the walkthrough:render handoff"
+else
+  fail "5: synthesizer missing the walkthrough:render handoff"
+fi
+if grep -qi "set by the render" "$RESEARCH" && ! grep -qi "HTML render.*deferred\|render.*are deferred" "$RESEARCH"; then
+  pass "5: artifacts.html no longer hardcoded null (render no longer deferred)"
+else
+  fail "5: research/SKILL.md still pins artifacts.html:null / 'render deferred'"
+fi
 echo ""
 
 # ─────────────────────────────────────────────────
