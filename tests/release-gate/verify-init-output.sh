@@ -667,6 +667,56 @@ fi
 echo ""
 
 # ─────────────────────────────────────────────────
+echo "### 15. v3 research consumption + verify-backlog (Plan 4b)"
+# ─────────────────────────────────────────────────
+# When a real /onboard:start run consumed research, generation records a minimal
+# metadata.research block and (when verified risk/test-gap claims existed) seeds
+# docs/feature-list.json in the evaluator-readable harness shape. Both are
+# CONDITIONAL on the run actually having research + findings, so absence is not a
+# hard fail here — this section is the dogfood gate, not a unit test.
+
+if [[ -f "$META" ]]; then
+  HAS_RESEARCH_META=$(jq 'has("research")' "$META" 2>/dev/null || echo "false")
+  if [[ "$HAS_RESEARCH_META" == "true" ]]; then
+    CONSUMED=$(jq -r '.research.consumed | if . == null then empty else tostring end' "$META" 2>/dev/null)
+    if [[ "$CONSUMED" == "true" ]]; then
+      # Minimal-useful block: all 5 keys must be present when consumed.
+      for sub in consumed depth verifiedClaimCount backlogSeeded backlogItemCount; do
+        if [[ "$(jq ".research | has(\"${sub}\")" "$META" 2>/dev/null)" == "true" ]]; then
+          pass "metadata.research.${sub} present"
+        else
+          fail "metadata.research.${sub} missing — 4b minimal-useful block requires all 5 keys"
+        fi
+      done
+    elif [[ "$CONSUMED" == "false" ]]; then
+      pass "metadata.research.consumed=false (research-absent / regenerateOnly mode)"
+    else
+      fail "metadata.research present but .consumed is not a boolean"
+    fi
+  else
+    warn "metadata.research absent (run had no research, or pre-4b output — informational)"
+  fi
+fi
+
+# Verify-backlog: when seeded, docs/feature-list.json must be evaluator-readable.
+if [[ -f "docs/feature-list.json" ]]; then
+  if jq empty docs/feature-list.json 2>/dev/null; then
+    HAS_SPRINTS=$(jq 'has("sprints")' docs/feature-list.json 2>/dev/null || echo "false")
+    HAS_FEATURE_SHAPE=$(jq '[.sprints[]?.features[]? | has("id") and has("steps") and has("passes")] | (length > 0) and all' docs/feature-list.json 2>/dev/null || echo "false")
+    if [[ "$HAS_SPRINTS" == "true" && "$HAS_FEATURE_SHAPE" == "true" ]]; then
+      pass "feature-list: evaluator-readable harness shape (sprints[].features[].{id,steps,passes})"
+    elif [[ "$HAS_SPRINTS" == "true" ]]; then
+      warn "feature-list: sprints present but features missing id/steps/passes (or empty)"
+    else
+      warn "feature-list: present but not in sprints[] harness shape (may be a non-research list)"
+    fi
+  else
+    fail "feature-list: docs/feature-list.json is invalid JSON"
+  fi
+fi
+echo ""
+
+# ─────────────────────────────────────────────────
 echo "═══════════════════════════════════════════"
 echo "## Summary — ${PROFILE}"
 echo ""
