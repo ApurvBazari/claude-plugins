@@ -252,10 +252,11 @@ fi
 echo ""
 
 # ─────────────────────────────────────────────────
-echo "### 12. Wizard exchange cap removed (C4 release-gate sweep)"
+echo "### 12. Wizard collapsed to grounded confirm/override (v3 flow)"
 # ─────────────────────────────────────────────────
-# wizard/SKILL.md should no longer advertise a hard 6-exchange cap.
-# Adaptive sizing language and the Custom-preset escape hatch should be present.
+# v3 collapsed the wizard: no hard exchange cap, no preset-selection step, no
+# Custom path, no mid-wizard escape hatch. The grounded surface confirms/overrides
+# research.wizardInferences across a fixed three-exchange shape.
 if grep -qE '6.exchange (hard )?(limit|cap)|Hard 6.exchange' \
    onboard/skills/wizard/SKILL.md 2>/dev/null; then
   fail "wizard/SKILL.md still mentions a hard 6-exchange cap"
@@ -263,16 +264,22 @@ else
   pass "wizard cap removed (no hard 6-exchange limit language)"
 fi
 
-if grep -q "Adaptive exchange sizing" onboard/skills/wizard/SKILL.md 2>/dev/null; then
-  pass "wizard documents adaptive exchange sizing"
+if grep -q "Three-exchange shape" onboard/skills/wizard/SKILL.md 2>/dev/null; then
+  pass "wizard documents the v3 three-exchange grounded shape"
 else
-  fail "wizard missing 'Adaptive exchange sizing' section"
+  fail "wizard missing 'Three-exchange shape' section (v3 grounded flow)"
 fi
 
-if grep -q "Mid-wizard escape hatch" onboard/skills/wizard/SKILL.md 2>/dev/null; then
-  pass "wizard has Custom-preset escape hatch (Phase 5.0)"
+# The v2 mid-wizard escape hatch and Custom path must be GONE (escapeHatchTriggered
+# is now always false; presetUsed enum dropped custom). v2 documented the escape
+# hatch as a markdown SECTION HEADING (e.g. "#### Phase 5.0 — Mid-wizard escape
+# hatch"); v3 only references it inline as a negation in a Key Rule ("...no
+# mid-wizard escape hatch"). Anchor the check to a heading so the inline v3
+# disclaimer does NOT trip a false reintroduction.
+if grep -qiE '^#+.*escape hatch' onboard/skills/wizard/SKILL.md 2>/dev/null; then
+  fail "wizard/SKILL.md still documents a mid-wizard/Custom-preset escape hatch section (removed in v3)"
 else
-  fail "wizard missing escape hatch section"
+  pass "wizard escape hatch removed (v3 — no escape-hatch section heading)"
 fi
 echo ""
 

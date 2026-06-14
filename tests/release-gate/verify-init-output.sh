@@ -494,35 +494,129 @@ fi
 echo ""
 
 # ─────────────────────────────────────────────────
-echo "### 12. Wizard telemetry (C4 release-gate sweep — wizardStatus added)"
+echo "### 12. Wizard telemetry (v3 collapsed wizard — canonical 5-key wizardStatus)"
 # ─────────────────────────────────────────────────
+# v3 dropped the "Choose Wizard Mode" / Quick-Mode-vs-Guided step and the Custom
+# preset. The canonical wizardStatus shape (wizard/SKILL.md Key Rule 7) has EXACTLY
+# 5 keys: presetUsed, exchangesUsed, phasesAsked, phasesSkipped, escapeHatchTriggered.
+#   - presetUsed enum: minimal | standard | comprehensive (NO custom/quick-mode/interactive)
+#   - escapeHatchTriggered: always false (escape hatch removed; key retained for shape stability)
 if [[ -f "$META" ]]; then
   HAS_WIZ=$(jq 'has("wizardStatus")' "$META" 2>/dev/null || echo "false")
   if [[ "$HAS_WIZ" == "true" ]]; then
     pass "telemetry: wizardStatus present"
-    # Expected sub-fields: presetUsed, exchangesUsed, phasesAsked, phasesSkipped, escapeHatchTriggered
+    # Canonical 5-key shape — every key MUST be present (empty arrays valid; missing keys not).
     for sub in presetUsed exchangesUsed phasesAsked phasesSkipped escapeHatchTriggered; do
       HAS_SUB=$(jq ".wizardStatus | has(\"${sub}\")" "$META" 2>/dev/null || echo "false")
       if [[ "$HAS_SUB" == "true" ]]; then
         pass "wizardStatus.${sub} present"
       else
-        warn "wizardStatus.${sub} missing"
+        fail "wizardStatus.${sub} missing — v3 canonical shape requires all 5 keys"
       fi
     done
+
+    # presetUsed enum: minimal | standard | comprehensive only.
+    PRESET_USED=$(jq -r '.wizardStatus.presetUsed // empty' "$META" 2>/dev/null)
+    case "$PRESET_USED" in
+      minimal|standard|comprehensive)
+        pass "wizardStatus.presetUsed=\"${PRESET_USED}\" (valid v3 enum)"
+        ;;
+      custom|quick-mode|interactive)
+        fail "wizardStatus.presetUsed=\"${PRESET_USED}\" is a dropped v2 value — must be minimal|standard|comprehensive"
+        ;;
+      "")
+        fail "wizardStatus.presetUsed missing or empty"
+        ;;
+      *)
+        fail "wizardStatus.presetUsed=\"${PRESET_USED}\" is not in {minimal|standard|comprehensive}"
+        ;;
+    esac
+
+    # escapeHatchTriggered: always false in v3 (escape hatch removed, key retained).
+    ESCAPE_HATCH=$(jq -r '.wizardStatus.escapeHatchTriggered' "$META" 2>/dev/null)
+    if [[ "$ESCAPE_HATCH" == "false" ]]; then
+      pass "wizardStatus.escapeHatchTriggered=false (v3 escape hatch removed; key retained)"
+    else
+      fail "wizardStatus.escapeHatchTriggered=\"${ESCAPE_HATCH}\" — v3 requires it to always be false"
+    fi
   else
     if [[ "$PROFILE" == "empty" ]]; then
       warn "wizardStatus missing (empty profile may skip)"
     else
-      fail "telemetry: wizardStatus missing — C4 requires per-run wizard telemetry"
+      fail "telemetry: wizardStatus missing — v3 requires per-run wizard telemetry"
     fi
+  fi
+
+  # wizardAnswers.selectedPreset enum: minimal | standard | comprehensive (dropped custom).
+  HAS_ANSWERS=$(jq 'has("wizardAnswers")' "$META" 2>/dev/null || echo "false")
+  if [[ "$HAS_ANSWERS" == "true" ]]; then
+    SELECTED_PRESET=$(jq -r '.wizardAnswers.selectedPreset // empty' "$META" 2>/dev/null)
+    case "$SELECTED_PRESET" in
+      minimal|standard|comprehensive)
+        pass "wizardAnswers.selectedPreset=\"${SELECTED_PRESET}\" (valid v3 enum)"
+        ;;
+      custom|quick-mode|interactive)
+        fail "wizardAnswers.selectedPreset=\"${SELECTED_PRESET}\" is a dropped v2 value — must be minimal|standard|comprehensive"
+        ;;
+      "")
+        # Stub-mode paths emit wizardAnswers:{} (no selectedPreset). Acceptable.
+        if [[ "$STUB_MODE" == "stub-empty-repo" || "$PROFILE" == "empty" ]]; then
+          pass "wizardAnswers.selectedPreset absent (acceptable for stub/empty path)"
+        else
+          fail "wizardAnswers.selectedPreset missing — v3 canonical shape requires it"
+        fi
+        ;;
+      *)
+        fail "wizardAnswers.selectedPreset=\"${SELECTED_PRESET}\" is not in {minimal|standard|comprehensive}"
+        ;;
+    esac
   fi
 fi
 echo ""
 
+# ─────────────────────────────────────────────────
+echo "### 13. v3 research artifacts (recon → profile → research spine)"
+# ─────────────────────────────────────────────────
+# The v3 flow runs onboard:research between profile-select and the grounded wizard.
+# The research engine ALWAYS writes .claude/onboard-research.json (every location
+# choice, including "none"); it writes docs/onboard/{research-dossier,architecture,
+# risk-register,glossary}.md ONLY when the per-run location choice is "committed".
+# The test harness runs /onboard:start manually and does not control that choice,
+# so the docs/onboard/ files are CONDITIONAL — present them as informational, never
+# a hard fail. (research/SKILL.md Step 7.)
+RESEARCH=".claude/onboard-research.json"
+if [[ -f "$RESEARCH" ]]; then
+  if jq empty "$RESEARCH" 2>/dev/null; then
+    pass "research: ${RESEARCH} exists and is valid JSON"
+  else
+    fail "research: ${RESEARCH} exists but is invalid JSON"
+  fi
+else
+  if [[ "$STUB_MODE" == "stub-empty-repo" || "$PROFILE" == "empty" ]]; then
+    warn "research: ${RESEARCH} absent (acceptable for stub/empty path)"
+  else
+    fail "research: ${RESEARCH} missing — v3 research engine always writes it"
+  fi
+fi
+
+# docs/onboard/ render artifacts — only when the run chose "committed". Conditional.
+DOCS_PRESENT=0
+for doc in research-dossier architecture risk-register glossary; do
+  if [[ -f "docs/onboard/${doc}.md" ]]; then
+    DOCS_PRESENT=$((DOCS_PRESENT + 1))
+  fi
+done
+if [[ "$DOCS_PRESENT" -eq 4 ]]; then
+  pass "research docs: all 4 docs/onboard/*.md present (run chose 'committed')"
+elif [[ "$DOCS_PRESENT" -eq 0 ]]; then
+  pass "research docs: docs/onboard/*.md absent (run chose 'local'/'none' — conditional, not required)"
+else
+  warn "research docs: ${DOCS_PRESENT}/4 docs/onboard/*.md present — expected all 4 or none"
+fi
 echo ""
 
 # ─────────────────────────────────────────────────
-echo "### 11. Plugin Integration slash-ref existence — no fabrications (Cluster 3)"
+echo "### 14. Plugin Integration slash-ref existence — no fabrications (Cluster 3)"
 # ─────────────────────────────────────────────────
 # Every /<plugin>:<slug> in the generated CLAUDE.md MUST correspond to an
 # actual file at <plugin>/commands/<slug>.md OR <plugin>/skills/<slug>/SKILL.md.
