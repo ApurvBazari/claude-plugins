@@ -18,7 +18,7 @@ This skill is `user-invocable: false` — it is invoked by another skill (`/onbo
 Pipeline: **roster discovery → in-skill scope/route → parallel specialist dispatch → Gate-1 collect/normalize/namespace → adversarial verify → synthesize + Gate-2 + wizardInferences → ask location + write → return.**
 
 Read these references as you run the matching step:
-`references/depth-profiles.md`, `references/specialist-roster.md`, `references/custom-specialist-contract.md`, `references/verification-procedure.md`, `references/synthesis-and-dossier.md`, `references/wizard-inference-map.md`.
+`references/depth-profiles.md`, `references/specialist-roster.md`, `references/custom-specialist-contract.md`, `references/verification-procedure.md`, `references/synthesis-and-dossier.md`, `references/dossier-merge.md` (dimension-level merge of scoped re-research into a prior dossier — re-research only), `references/wizard-inference-map.md`.
 
 ## Step 0: Empty-repo self-guard
 
@@ -38,6 +38,16 @@ Read `references/depth-profiles.md` + `references/custom-specialist-contract.md`
 **Detected-roots source:** if `reconHints.detectedRoots` is provided by the caller (the Plan-3 `/onboard:start` flow passes it), use it as the detected-source-root set for the per-dimension `scopeGlobs` intersection below — do NOT re-detect. If `reconHints` is absent (direct invocation), self-detect the source roots with native Glob/Grep exactly as below. Roster discovery, depth cap, and specialist selection are unaffected either way.
 
 Using **native Glob / Grep / Read only** (the engine never parses `codebase-analyzer`'s markdown report — it accepts only the thin structured `reconHints.detectedRoots` hint, and self-detects natively when that hint is absent, so it stays decoupled from the analyzer's report even when wired into the Plan-3 recon rescope), determine the detected source roots and, per enabled dimension, the `scopeGlobs` (the dimension's default globs from `specialist-roster.md`, intersected with the detected roots; tightened at `standard`, widened at `comprehensive` per `depth-profiles.md`). Root-dwelling globs — manifests/lockfiles (`package.json`, `go.mod`, `Cargo.toml`), docs (`docs/**`, `README*`), and test/lint config (`conftest.py`, `pyproject.toml`, `.eslintrc*`, `.prettierrc*`, `biome.json`) — are **exempt from the source-root intersection**: they legitimately live at the repo root, so any root-dwelling glob passes through even when it sits outside the detected source subtrees. This bounds cost on large repos. **No shell scripts** — this engine is script-free.
+
+## Step 2.5: Scoped/merge mode (re-research only)
+
+When invoked with `{ refreshDimensions[], priorDossier, depth }` (the re-research orchestration in `../update/references/re-research.md`), run in **scoped/merge mode** instead of a fresh full run:
+- Compute the **scoped set** = `refreshDimensions ∩ effectiveRoster` (the Step-1 roster after the stored-depth cap). Drop out-of-roster refresh dimensions with a warning; if the scoped set is empty, dispatch no specialists and return `priorDossier` unchanged.
+- Run Steps 3–5 (specialist dispatch → Gate-1 → verify) for **only** the scoped set.
+- **Merge** into a copy of `priorDossier` per `references/dossier-merge.md` (re-run dims replace their slot; untouched dims carry forward; `verifiedClaims`/`droppedClaims` recomputed for the scoped set; failed fresh dim → retain prior + warn).
+- Carry `depth`, `roster`, `engineUsed`, and `artifacts.location` from `priorDossier`; **skip the Step-7 location prompt** (reuse the stored location). Gate-2 validate, then write the merged dossier (Step 7's write path).
+
+A first-onboard run (no `priorDossier`) skips this step entirely — Steps 3–8 run as the full fresh pipeline.
 
 ## Step 3: Fan out specialists (ONE batch)
 
@@ -83,3 +93,4 @@ Step 7's location prompt uses a single-select `AskUserQuestion` with three fixed
 9. **Runtime validation = schema-as-contract** — read the relevant schema file as the contract and check conformance directly; opportunistically shell to `python3 -c "import jsonschema; …"` for a hard check when the dev dep is present. No new shipped dependency.
 10. **Script-free** — this engine and its agents ship no `.sh` scripts; all scope/route is native Glob/Grep/Read.
 11. **No version bump** — onboard stays `2.0.1`; this plan is additive.
+12. **Scoped/merge mode is depth-respecting + non-interactive** — re-research re-runs only `refreshDimensions ∩ effectiveRoster`, never re-prompts the location, and never re-runs the wizard. The merged dossier is Gate-2-validated before the (sole-writer) write.

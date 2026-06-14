@@ -398,6 +398,19 @@ if grep -q "onboard 3.x requires a \`research\` object for full (re)generation" 
 else
   fail "4c: generate Step 0.1 D2 contract was disturbed"
 fi
+
+DM="onboard/skills/research/references/dossier-merge.md"
+RESEARCH="onboard/skills/research/SKILL.md"
+if [[ -f "$DM" ]] && grep -q "dossier-merge.md" "$RESEARCH"; then
+  pass "4c: dossier-merge.md exists + linked from research/SKILL.md"
+else
+  fail "4c: dossier-merge.md missing or not linked"
+fi
+if grep -qi "scoped/merge mode" "$RESEARCH" && grep -qi "refreshDimensions" "$RESEARCH"; then
+  pass "4c: research/SKILL.md has the scoped/merge re-research mode"
+else
+  fail "4c: research/SKILL.md missing the scoped/merge mode"
+fi
 echo ""
 
 # ─────────────────────────────────────────────────
