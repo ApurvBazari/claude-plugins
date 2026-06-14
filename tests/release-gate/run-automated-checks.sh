@@ -474,6 +474,18 @@ if grep -q "refreshedDimensions" "$CG" && grep -q "backlogMerged" "$CG"; then
 else
   fail "4c: config-generator missing the 4c telemetry fields"
 fi
+VB="onboard/skills/generation/references/verify-backlog-seeding.md"
+OBCLAUDE="onboard/CLAUDE.md"
+if grep -q "sourceClaim" "$VB" && grep -qi "Re-research merge" "$VB"; then
+  pass "4c: verify-backlog-seeding has the merge path + sourceClaim provenance"
+else
+  fail "4c: verify-backlog-seeding missing the merge path / sourceClaim"
+fi
+if grep -qi "re-research" "$OBCLAUDE"; then
+  pass "4c: onboard/CLAUDE.md notes the re-research capability"
+else
+  fail "4c: onboard/CLAUDE.md missing the re-research note"
+fi
 echo ""
 
 # ─────────────────────────────────────────────────

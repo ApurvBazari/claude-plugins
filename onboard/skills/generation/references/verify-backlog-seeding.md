@@ -16,6 +16,18 @@ If the source set is **empty** → write NO feature-list (do not emit an empty l
 
 If `docs/feature-list.json` already exists → **skip + warn** (record a warning; never clobber a list that may carry `passes` progress). The harness/interactive feature-decomposition path (when `enableHarness`) is the fallback writer and likewise writes only when no list exists.
 
+## Re-research merge (when `callerExtras.reResearch` present)
+
+On a re-research regen an existing `docs/feature-list.json` is **merged**, not skipped — routed by the `reResearch` marker (no marker + existing list → today's seed-if-absent skip). Merge is **dimension-scoped** to the marker's `dimensions` (the dimensions actually re-run):
+
+- **New** verified claim (no feature with a matching `sourceClaim`) → append as `passes:false`, next sequential `F00N` id (after the current max).
+- **Matched** claim (`sourceClaim` equal) → keep the existing feature verbatim — preserve `passes` (incl. `passes:true`), manual edits, `priority`, `steps`.
+- **Vanished** claim in a re-run dimension (existing feature whose `sourceClaim` dimension is in `dimensions` but whose `sourceClaim` is no longer in the fresh verified set) → set `obsolete: true`; **never delete a `passes:true` feature**. A `passes:false` obsolete feature may be pruned.
+- **Carried-forward** dimensions' features (dimension not in `dimensions`) → untouched.
+- **User-added** features (no `sourceClaim`, or a `sourceClaim` whose dimension onboard never seeded) → always preserved.
+
+Atomic write (`.tmp` + rename). Report `backlogMerged: { added, kept, flaggedObsolete }` to `config-generator` step 7.
+
 ## Output shape (evaluator-readable harness shape)
 
 Write `docs/feature-list.json` **atomically** (`.tmp` + rename):
@@ -35,7 +47,8 @@ Write `docs/feature-list.json` **atomically** (`.tmp` + rename):
           "description": "<claim statement>",
           "steps": ["<1–3 remediation-verification steps synthesized from statement + file:line evidence>"],
           "passes": false,
-          "priority": 1
+          "priority": 1,
+          "sourceClaim": "<dimension>:<stable-hash of statement+evidence>"
         }
       ]
     }
@@ -48,6 +61,7 @@ Write `docs/feature-list.json` **atomically** (`.tmp` + rename):
 - **`steps`** — 1–3 concrete remediation-verification steps composed from the claim `statement` + `evidence` (findings carry no mitigation field, so synthesize). Example: `"Inspect src/auth/session.ts:42; confirm the missing CSRF guard named in the claim is added; add/verify a test covering it."`
 - **`priority`** — integer tier: `security` = 1, general `risk`/`hotspot` = 2, `test-gap` = 3. Order features by tier ascending, then by `confidence` descending within a tier; assign `F00N` ids in that order.
 - All seeded items start **`passes: false`**.
+- **`sourceClaim`** — provenance key `"<dimension>:<stable-hash of statement+evidence>"`, written on every onboard-seeded feature so a later re-research merge can match a fresh claim to its existing feature. The `feature-evaluator` ignores unknown fields — safe, documented extension.
 
 ## Telemetry
 

@@ -109,3 +109,4 @@ Internal building blocks (`user-invocable: false` — hidden from menu):
 - Plugin-aware agent generation: check coveredCapabilities before generating agents
 - Merge-aware hooks: always read settings.json first, never overwrite
 - v3 research consumption: when a `research` dossier is present, generation sharpens CLAUDE.md/rules/skills/agents/subdir from verified claims and seeds the verify backlog (`docs/feature-list.json`, seed-if-absent). Absent research → byte-identical to the non-research path.
+- v3 re-research (update/evolve): on a staleness signal, `update`/`evolve` re-run `onboard:research` scoped (auto-escalating to full), merge it into the prior dossier, and regenerate merge-aware (customization floor + marker surgery + progress-preserving backlog merge). `evolve` runs the scoped path silently and defers full-escalation to `update`; `check` detects + recommends (read-only). Absent a staleness signal → byte-identical to the snapshot-replay path.
