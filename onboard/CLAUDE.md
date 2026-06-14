@@ -35,6 +35,7 @@ Phase 2.6: Build v3 Context ──→ start/references/onboard-context-builder.m
 Phase 3: Generation ──→ Skill(onboard:generate)
      │                   └── config-generator agent (write)
      │                       ├── Core: CLAUDE.md, rules, skills, agents, hooks
+     │                       ├── v3: consumes research → sharpens artifacts + seeds docs/feature-list.json
      │                       ├── Enriched: CI/CD, harness, evolution, teams (if enabled)
      │                       └── Pre-exit self-audit on 7 Phase 7 telemetry keys
      ▼
@@ -107,3 +108,4 @@ Internal building blocks (`user-invocable: false` — hidden from menu):
 - Grounded wizard: confirm/override surface seeded by research.wizardInferences; autonomyLevel always cold; three profiles (Minimal/Standard/Comprehensive) set research depth + gen scope (no Custom).
 - Plugin-aware agent generation: check coveredCapabilities before generating agents
 - Merge-aware hooks: always read settings.json first, never overwrite
+- v3 research consumption: when a `research` dossier is present, generation sharpens CLAUDE.md/rules/skills/agents/subdir from verified claims and seeds the verify backlog (`docs/feature-list.json`, seed-if-absent). Absent research → byte-identical to the non-research path.

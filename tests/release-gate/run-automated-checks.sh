@@ -359,6 +359,19 @@ if grep -q "Round 5" "$SC" || grep -q "featureRoadmap.sprint1" "$SC"; then
 else
   pass "4b: sprint-contracts.md no longer references the deleted Round-5 section"
 fi
+
+CSV3="onboard/skills/generate/references/context-shape-v3.json"
+OBCLAUDE="onboard/CLAUDE.md"
+if grep -qi "required for a full generation" "$CSV3" && grep -qi "regenerateOnly" "$CSV3"; then
+  pass "4b: context-shape-v3.json description states runtime-required-unless-regenerateOnly"
+else
+  fail "4b: context-shape-v3.json description note missing/insufficient"
+fi
+if grep -qi "consumes.*research\|research.*sharpen\|verify backlog" "$OBCLAUDE"; then
+  pass "4b: onboard/CLAUDE.md notes generation consumes research (v3)"
+else
+  fail "4b: onboard/CLAUDE.md missing the consumes-research note"
+fi
 echo ""
 
 # ─────────────────────────────────────────────────
