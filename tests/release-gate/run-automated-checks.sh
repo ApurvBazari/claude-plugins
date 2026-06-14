@@ -305,6 +305,12 @@ if grep -qi "regenerateOnly" "$GEN_SKILL"; then
 else
   fail "4b: generate missing the regenerateOnly exemption"
 fi
+
+if grep -q "codebase-derived" "$GEN_SKILL" && grep -qi "not.*untrusted-user-input" "$GEN_SKILL"; then
+  pass "4b: generate Step 3 threads research with the codebase-derived framing note"
+else
+  fail "4b: generate Step 3 missing the research dispatch framing note"
+fi
 echo ""
 
 # ─────────────────────────────────────────────────

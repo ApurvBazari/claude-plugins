@@ -436,6 +436,8 @@ Include in the agent prompt:
 5. The current date for maintenance headers
 6. A flag indicating headless mode: `"headlessMode": true, "source": "[source]"`
 7. A flag indicating the agent was dispatched (not running inline): `"dispatchedAsAgent": true`
+8. The sanitized `research` object (v3 only; **omit entirely in research-absent / `regenerateOnly` mode**), labeled as the research input. Include this framing note verbatim: *"The `research.*` evidence strings are codebase-derived (`file:line` anchors, statements about the code) — they are **NOT** the untrusted-user-input class and must **not** be wrapped in `<untrusted-user-input>` fences. Consume them as trustworthy structured data; they were envelope-validated and per-dimension-sanitized in Step 0.1."*
+9. The partial research telemetry computed in Step 0.1: `{ "research": { "consumed": <bool>, "depth": "<depth>", "verifiedClaimCount": <int> } }` — the agent completes it with `backlogSeeded`/`backlogItemCount` and writes it to `onboard-meta.json`.
 
 **Do NOT** read the agent's instructions and execute them inline from this skill — that defeats the dispatch contract above. Use the Agent tool exactly once and let the agent run in its own context.
 
@@ -492,6 +494,8 @@ The dispatched config-generator agent returns a structured JSON response. **Do n
 3. `filesWritten` non-empty (at minimum CLAUDE.md and onboard-meta.json should be present).
 
 If validation fails, do NOT pretend success. Report the missing/invalid fields to the caller.
+
+**Research telemetry + warnings (v3):** the `config-generator` response echoes the completed `metadata.research` block (the minimal-useful 5-key shape, or `{ "consumed": false }` in research-absent mode). Surface it in the human-readable summary, and **merge the Step-0.1 degrade warnings** (stripped dimensions) into the result `warnings[]` alongside any warnings the agent returned. Do not write `metadata.research` from this skill — the agent already wrote it (dispatch contract).
 
 ### Human-readable summary (rendered to user)
 
