@@ -352,6 +352,13 @@ if grep -q "verify-backlog-seeding.md" "$SYN" && grep -q 'category:"test-gap"' "
 else
   fail "4b: synthesis-and-dossier not wired (line 131/137)"
 fi
+
+SC="onboard/skills/generation/references/sprint-contracts.md"
+if grep -q "Round 5" "$SC" || grep -q "featureRoadmap.sprint1" "$SC"; then
+  fail "4b: sprint-contracts.md still references the deleted Round-5/featureRoadmap mechanism"
+else
+  pass "4b: sprint-contracts.md no longer references the deleted Round-5 section"
+fi
 echo ""
 
 # ─────────────────────────────────────────────────
