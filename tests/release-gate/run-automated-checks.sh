@@ -463,6 +463,17 @@ if [[ -f "$RRM" ]] && grep -qi "customization floor" "$RRM" && grep -qi "marker-
 else
   fail "4c: re-research-merge.md missing the customization floor / marker surgery"
 fi
+CG="onboard/agents/config-generator.md"
+if grep -q "reResearch" "$CG" && grep -q "re-research-merge.md" "$CG"; then
+  pass "4c: config-generator honors the reResearch marker + loads the merge reference"
+else
+  fail "4c: config-generator missing the reResearch marker handling"
+fi
+if grep -q "refreshedDimensions" "$CG" && grep -q "backlogMerged" "$CG"; then
+  pass "4c: config-generator writes the 4c re-research telemetry fields"
+else
+  fail "4c: config-generator missing the 4c telemetry fields"
+fi
 echo ""
 
 # ─────────────────────────────────────────────────

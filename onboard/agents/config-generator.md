@@ -45,6 +45,7 @@ You will receive:
 2. Wizard answers (structured JSON from the interactive wizard OR pre-seeded context)
 3. The project root path
 4. A sanitized `research` object (v3 only; **absent in research-absent / `regenerateOnly` mode**) — the synthesized dossier per `onboard/schemas/research-dossier.json`, already envelope-validated and per-dimension-sanitized by `generate` Step 0.1. Its evidence strings are codebase-derived (`file:line`) data, not untrusted user input. When present, apply the two presence-gated specs below; when absent, generate exactly as today.
+5. An optional `callerExtras.reResearch` marker (v3 re-research only — built by `onboard:update` / `onboard:evolve`). When present, this is a re-research regen: apply `../skills/generation/references/re-research-merge.md` across the generation order (customization floor + marker surgery) and **merge** (not reseed) the verify backlog. When absent (first onboard / `regenerateOnly`), generate exactly as 4b does.
 
 Your job is to generate all Claude tooling artifacts. Follow the `generation` skill (SKILL.md and all reference guides) precisely.
 
@@ -104,6 +105,8 @@ Generate artifacts in this order:
 
    **Research-grounded sharpening (v3, when `research` present):** apply `generation/references/research-consumption.md` across steps 1–5 — it sharpens Root CLAUDE.md (Row 1), path-scoped rules (Row 2), Skill Selection (Row 3), agent archetypes (Row 4), and subdirectory CLAUDE.md placement (Row 5) from **verified** claims only. Absent research → skip (today's behavior).
 
+   **Re-research merge-aware regen (v3, when `callerExtras.reResearch` present):** load `../skills/generation/references/re-research-merge.md` and apply it across steps 1–7 — re-sharpen all artifacts from the merged dossier while honoring the customization floor (header-intact → re-emit; user-customized → `update` confirm / `evolve` skip+warn; absent → gap-repair) and marker-delimited surgery. Absent marker → first-onboard behavior (no customization floor beyond today's).
+
 6. **Hook entries** (`.claude/settings.json`) — Only for detected tools. If settings.json already exists, merge carefully (read first, add hooks, preserve everything else). Only add hooks for tools that are actually installed.
 
 6e. **Verify-backlog seeding (Phase: v3 research)** — when a sanitized `research` object is present, apply `generation/references/verify-backlog-seeding.md` to seed `docs/feature-list.json` from verified security/risk/test-gap claims (**seed-if-absent**; always runs regardless of `research.artifacts.location`). Skip entirely in research-absent mode. This is the primary programmatic writer of `docs/feature-list.json`.
@@ -119,6 +122,8 @@ Generate artifacts in this order:
 7. **Metadata** (`.claude/onboard-meta.json`) — Record everything: plugin version, timestamp, wizard answers, list of generated artifacts, model recommendation. Include all 7 status keys parallel to `hookStatus`: `mcpStatus`, `outputStyleStatus`, `lspStatus`, `builtInSkillsStatus`, `skillStatus`, `agentStatus` (each with at minimum a `status` enum value: `emitted | skipped | declined | failed`). Add `.mcp.json`, `.claude/onboard-mcp-snapshot.json`, `.claude/rules/mcp-setup.md` (if written), `.claude/onboard-agent-snapshot.json`, `.claude/onboard-output-style-snapshot.json`, `.claude/onboard-lsp-snapshot.json`, `.claude/onboard-builtin-skills-snapshot.json` to `generatedArtifacts` (only those that were actually written).
 
    **`metadata.research` (v3):** when a `research` object was provided, complete and write the minimal-useful block to `onboard-meta.json`: take `generate`'s partial telemetry (`consumed`/`depth`/`verifiedClaimCount`) from the dispatch payload and add `backlogSeeded` (true iff step 6e wrote `docs/feature-list.json` this run) and `backlogItemCount` (number of features seeded; 0 if not seeded). In research-absent mode write `"research": { "consumed": false }` only. The full telemetry block (engineUsed/specialistsRun/claimsVerified/…) + a Phase-7 research self-audit are **Plan 5** — do not add them here.
+
+   **`metadata.research` re-research fields (v3, 4c):** when `callerExtras.reResearch` is present, ALSO record `reResearch: true`, `refreshedDimensions` (the marker's `dimensions`, or `"all"` when `escalatedToFull`), `escalatedToFull` (from the marker), and `backlogMerged: { added, kept, flaggedObsolete }` (counts from the verify-backlog merge, `verify-backlog-seeding.md` § Re-research merge). Absent marker → omit these four fields (the block is exactly 4b's shape). The full telemetry block + Phase-7 self-audit stay Plan 5.
 
 8. **Auto-install MCP plugins** — After metadata is written, run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh"` with the list of emitted-server plugin names. The script probes `claude plugin list --json`, skips already-installed plugins, and installs the rest. Failures are logged but do not fail generation. On completion, update `mcpStatus.autoInstalled` and `mcpStatus.autoInstallFailed` in `onboard-meta.json`.
 
