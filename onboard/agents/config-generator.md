@@ -150,6 +150,8 @@ Generate artifacts in this order:
 
    If any key is missing or has an invalid `status` enum value, **hard-fail** the generation. Do not return a partial-success result. The user/caller must see the failure so they can re-run or investigate. This is the contract that prevents silent Phase 7 regressions.
 
+   **Research self-audit (v3 `metadata.research` coherence):** after the key-presence check, audit the research telemetry block. If `metadata.research.consumed === true`, verify the block is coherent — `.claude/onboard-research.json` exists; `claimsVerified`, `claimsDropped`, `specialistsRun`, `artifactLocation`, `artifactsWritten` are present; `artifactsWritten` paths match the on-disk docs for the recorded `artifactLocation`; and `htmlRendered` is non-null **iff** the `walkthrough` plugin was present at render time (null is correct when walkthrough is absent or `location:"none"`). If `metadata.research.consumed === false` (research-absent / stub mode), record the research key as `status:"skipped"` with a reason (mirrors the existing skipped-key convention). Unlike the key-presence check above, surface any research incoherence as a **warning** in the returned `warnings[]` (do not hard-fail) — the research render/telemetry is augmentative, not a generation-blocking contract.
+
 ### Maintenance Header
 
 Every generated file must include the maintenance header. For markdown files:

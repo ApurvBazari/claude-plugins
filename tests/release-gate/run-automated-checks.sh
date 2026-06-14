@@ -525,6 +525,17 @@ if ! grep -rq "verifiedClaimCount" onboard; then
 else
   fail "5: verifiedClaimCount still present (rename incomplete)"
 fi
+START="onboard/skills/start/SKILL.md"
+if grep -qi "research self-audit" "$START" && grep -q "htmlRendered" "$START"; then
+  pass "5: start Phase-7 self-audit covers the research telemetry"
+else
+  fail "5: start Phase-7 missing the research self-audit"
+fi
+if grep -qi "research self-audit" "$CG"; then
+  pass "5: config-generator enforces the research self-audit (subagent-visible)"
+else
+  fail "5: config-generator missing the research self-audit (start summary alone is not subagent-visible)"
+fi
 echo ""
 
 # ─────────────────────────────────────────────────
