@@ -587,6 +587,20 @@ if ! grep -rqiE "is the fallback writer|is the fallback when no research" onboar
 else
   fail "5: A1 — stale fallback-writer claim still present in a skill loader"
 fi
+GEN="onboard/skills/generate/SKILL.md"
+# Plan 5 P4 sweeps stale v2-only/Quick-Mode/headless PROSE. The headlessMode dispatch flag is
+# load-bearing (config-generator + generation key on it); the plan keeps all flag NAMES — exempt it.
+GEN_STALE=$(grep -iE "v2[ -]only|quick mode|headless" "$GEN" | grep -iv "headlessmode" || true)
+if [ -z "$GEN_STALE" ]; then
+  pass "5: sweep#1 — generate/SKILL.md free of v2-only/Quick-Mode/headless prose (headlessMode flag exempt)"
+else
+  fail "5: sweep#1 — generate/SKILL.md still carries stale v2/headless prose"
+fi
+if ! grep -q "string — semver\|string—semver" "$GEN"; then
+  pass "5: sweep#1 — generate version descriptor no longer 'string — semver'"
+else
+  fail "5: sweep#1 — generate still describes version as a semver string"
+fi
 echo ""
 
 # ─────────────────────────────────────────────────
