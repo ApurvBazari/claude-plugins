@@ -12,7 +12,7 @@ Follow `references/built-in-skills-catalog.md` for the 9-skill catalog, tier cla
 |---|---|---|
 | **Path A — explicit caller list** | `callerExtras.builtInSkills` present | Use it verbatim as the accepted list. Empty array = "candidates existed but declined all" → `builtInSkillsStatus: { status: "declined", accepted: [] }`. Non-empty array → `status: "documented"` (CLAUDE.md subsection is the artifact). |
 | **Path A — wizard answer** | `wizardAnswers.builtInSkills` present | Use wizard's accepted list. Same `declined` semantics if empty; `"documented"` status when non-empty. |
-| **Path B — Quick Mode default** | wizard absent AND callerExtras list absent | Accept the full candidate list (4 core + N fired extras). Emit CLAUDE.md subsection + snapshot + telemetry `status: "documented"`. **Built-in skills' core tier always fires; this path NEVER produces an empty result.** |
+| **Path B — internal generation default** | wizard absent AND callerExtras list absent | Accept the full candidate list (4 core + N fired extras). Emit CLAUDE.md subsection + snapshot + telemetry `status: "documented"`. **Built-in skills' core tier always fires; this path NEVER produces an empty result.** |
 | **Path SKIP — caller-disabled** | `callerExtras.disableBuiltInSkills === true` | No CLAUDE.md subsection, no snapshot. Telemetry: `builtInSkillsStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [] }`. **Telemetry IS still written.** |
 
 **Inputs**:
@@ -47,7 +47,7 @@ Build the full candidate list: 4 core + N extras (0-5) whose signals fired. Reco
 
 - If `callerExtras.builtInSkills` is present → use it verbatim as the accepted list (headless mode). An empty array means "declined all".
 - Else if `wizardAnswers.builtInSkills` is present → use it as the accepted list.
-- Else (Quick Mode / absent field) → accept the full candidate list (all core + fired extras).
+- Else (internal generation / absent field) → accept the full candidate list (all core + fired extras).
 
 Record as `generated[]`. Skills in `planned[]` but not in `generated[]` go into `skipped[]` with `reason: "user-declined"`.
 

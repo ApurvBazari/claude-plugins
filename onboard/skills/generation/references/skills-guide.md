@@ -344,6 +344,6 @@ Adapt the verbosity and structure of generated skills based on the developer's `
    - `context: fork` requires `agent`. If the referenced agent is not in `.claude/agents/` or `effectivePlugins`, demote to no-fork and append a warning to `skillStatus.warnings`.
    - `paths` entries are globs. Warn when none match any file in the repo today, but still emit (developer may add files later).
    - Reject underscore-form keys pre-write — this is a generation bug, not a silent fix.
-5. **Present a batched confirmation table** before writing any `SKILL.md`. Developer options: *Accept all* (default, keeps headless + quick-mode paths byte-stable), *Tweak skill N*, *Skip skill N*. Skipped skills record `skillStatus.skipped[].reason = "user-declined-confirmation"`.
+5. **Present a batched confirmation table** before writing any `SKILL.md`. Developer options: *Accept all* (default, keeps the non-interactive (internal-generation) paths byte-stable), *Tweak skill N*, *Skip skill N*. Skipped skills record `skillStatus.skipped[].reason = "user-declined-confirmation"`.
 6. **Write the drift snapshot** at `.claude/onboard-skill-snapshot.json` mirroring only the emitted frontmatter (one object per skill name). This is the diff baseline for `/onboard:update` and `/onboard:evolve`.
 7. **Omitting a field is explicit**. When inference produces no concrete value, omit the field rather than emitting `null`, `""`, or `[]`. This keeps pre-feature-equivalent skills byte-identical to historical output.

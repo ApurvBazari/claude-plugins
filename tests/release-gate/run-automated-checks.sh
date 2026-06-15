@@ -601,6 +601,22 @@ if ! grep -q "string — semver\|string—semver" "$GEN"; then
 else
   fail "5: sweep#1 — generate still describes version as a semver string"
 fi
+OBCLAUDE="onboard/CLAUDE.md"
+if ! grep -qiE "headless mode|hard cutover" "$OBCLAUDE"; then
+  pass "5: sweep#2 — CLAUDE.md free of Headless/Hard-cutover prose"
+else
+  fail "5: sweep#2 — CLAUDE.md still carries Headless/Hard-cutover prose"
+fi
+if ! grep -rqiE "quick[ -]mode" onboard/skills/generation/references; then
+  pass "5: sweep#2 — generation references free of Quick-Mode prose"
+else
+  fail "5: sweep#2 — Quick-Mode prose remains in generation references"
+fi
+if ! grep -rqE "\(Plan [0-9]" onboard/skills/; then
+  pass "5: sweep#2 — no internal plan-number markers in shipped onboard/skills prose"
+else
+  fail "5: sweep#2 — internal plan-number marker(s) still present in onboard/skills"
+fi
 echo ""
 
 # ─────────────────────────────────────────────────

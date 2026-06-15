@@ -11,7 +11,7 @@ Follow `references/output-styles-guide.md` for archetype inference, frontmatter 
 | Path | Trigger | Behavior |
 |---|---|---|
 | **Path A — wizard answer** | `wizardAnswers.outputStyleTuning` present with `mode: "tuned"` | Use wizard's archetype override + activation default. Run Step 6 batched confirmation unless headless. |
-| **Path B — Quick Mode default** | wizard absent OR `mode: "defaults"` | Infer top-priority archetype from signals (Steps 1+3). Emit catalog defaults + snapshot + telemetry `status: "emitted"`. **No silent no-op.** |
+| **Path B — internal generation default** | wizard absent OR `mode: "defaults"` | Infer top-priority archetype from signals (Steps 1+3). Emit catalog defaults + snapshot + telemetry `status: "emitted"`. **No silent no-op.** |
 | **Path SUPPRESS — tuning disabled** | `callerExtras.disableOutputStyleTuning === true` | Same as Path B but skip Step 6 batched confirmation entirely. Artifacts ARE generated. Telemetry: `outputStyleStatus: { status: "emitted", source: "inferred", ... }`. |
 | **Path DECLINED** | wizard `archetypeOverride === "skip-emit"` | No file written. Telemetry: `outputStyleStatus: { status: "declined", reason: "skip-emit-selected" }`. |
 | **Path NO-CANDIDATES** | candidate set empty after Steps 1+2 | No file written. Telemetry: `outputStyleStatus: { status: "skipped", reason: "archetype-not-fired" }`. |

@@ -12,7 +12,7 @@ Follow `references/lsp-plugin-catalog.md` for the 12-entry language→plugin map
 |---|---|---|
 | **Path A — explicit caller list** | `callerExtras.lspPlugins` is a non-null array | Use it verbatim as the accepted list. Empty array = "detected but declined all" → `lspStatus: { status: "declined", accepted: [] }`. |
 | **Path A — wizard answer** | `wizardAnswers.lspPlugins` present | Use wizard's accepted list. Same `declined` semantics if empty. |
-| **Path B — Quick Mode default** | wizard answer absent AND callerExtras list absent AND detection found candidates | Accept ALL detected plugins. Emit + snapshot + telemetry `status: "emitted"`. |
+| **Path B — internal generation default** | wizard answer absent AND callerExtras list absent AND detection found candidates | Accept ALL detected plugins. Emit + snapshot + telemetry `status: "emitted"`. |
 | **Path NO-CANDIDATES** | `detect-lsp-signals.sh` returns empty array | No install, no snapshot. Telemetry: `lspStatus: { status: "skipped", reason: "detection-empty", planned: [], generated: [] }`. |
 | **Path SKIP — caller-disabled** | `callerExtras.disableLSP === true` | No script run, no install, no snapshot. Telemetry: `lspStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [] }`. **Telemetry IS still written.** |
 
@@ -39,7 +39,7 @@ Empty array → nothing to recommend. Emit `lspStatus: { planned: [], generated:
 
 - If `callerExtras.lspPlugins` is a non-null array → use it verbatim as the accepted list (headless path; caller supplies an explicit list or nothing).
 - Else if `wizardAnswers.lspPlugins` exists (from wizard Phase 5.6) → use that as the accepted list.
-- Else → use all detected plugins as the accepted list (autonomous Quick Mode path).
+- Else → use all detected plugins as the accepted list (autonomous internal-generation path).
 
 Always preserve the full detected list as `recommended`, independent of what was accepted.
 

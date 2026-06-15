@@ -486,7 +486,7 @@ All agents get full tool access. Generator archetype keeps its default `isolatio
    - `model` must match the allowed set (or be a full model ID). Invalid → drop, warn `invalid-model-value`.
    - `isolation: worktree` requires a git repository. If the target is non-git → drop field, warn `isolation-non-git-dir`.
 
-5. **Present a batched confirmation table** before writing any agent file. Developer options: *Accept all* (default, keeps headless + quick-mode paths byte-stable), *Tweak agent N*, *Skip agent N*. Skipped agents record `agentStatus.skipped[].reason = "user-declined-confirmation"`.
+5. **Present a batched confirmation table** before writing any agent file. Developer options: *Accept all* (default, keeps the non-interactive (internal-generation) paths byte-stable), *Tweak agent N*, *Skip agent N*. Skipped agents record `agentStatus.skipped[].reason = "user-declined-confirmation"`.
 
 6. **Write the drift snapshot** at `.claude/onboard-agent-snapshot.json` mirroring only the emitted frontmatter (one object per agent name). Pure JSON, no maintenance header. Consumed by `onboard:update` / `onboard:evolve` as the drift baseline.
 

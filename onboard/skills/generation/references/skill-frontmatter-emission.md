@@ -24,7 +24,7 @@ Every generated `SKILL.md` carries YAML frontmatter. The generator computes the 
 
 **Step 4 — Batched confirmation (always runs).** Before writing any `SKILL.md`, present a single table summarizing every candidate skill and its computed frontmatter. Use `AskUserQuestion` with options:
 
-- **Accept all** — default. Guarantees Quick Mode / headless (including `callerExtras.disableSkillTuning: true`) passes through without re-prompting.
+- **Accept all** — default. Guarantees internal generation (including `callerExtras.disableSkillTuning: true`) passes through without re-prompting.
 - **Tweak skill N** — re-prompt only that skill's fields (which to change: model / effort / allowed-tools / paths / context+agent). Other skills proceed with their accepted values. Mark tweaked fields `source: "user-tweaked"`.
 - **Skip skill N** — record `skillStatus.skipped[] = [{ "skill": "<name>", "reason": "user-declined-confirmation" }]`. Skipped skills are not written, not snapshotted, and not included in `skillStatus.generated[]`.
 

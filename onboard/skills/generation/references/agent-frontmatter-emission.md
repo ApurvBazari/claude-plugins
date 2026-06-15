@@ -30,7 +30,7 @@ Archetype-defined `disallowedTools` always win for semantic protection (reviewer
 
 **Step 4 — Batched confirmation (always runs).** Before writing any agent file, present a single table summarizing every candidate agent and its computed frontmatter. Use `AskUserQuestion` with options:
 
-- **Accept all** — default. Guarantees Quick Mode / headless (including `callerExtras.disableAgentTuning: true`) passes through without re-prompting.
+- **Accept all** — default. Guarantees internal generation (including `callerExtras.disableAgentTuning: true`) passes through without re-prompting.
 - **Tweak agent N** — re-prompt only that agent's fields (which to change: model / effort / tools / disallowedTools / color / isolation / maxTurns / permissionMode). Other agents proceed with their accepted values. Mark tweaked fields `source: "user-tweaked"`.
 - **Skip agent N** — record `agentStatus.skipped[] = [{ "agent": "<name>", "reason": "user-declined-confirmation" }]`. Skipped agents are not written, not snapshotted, and not included in `agentStatus.generated[]`.
 

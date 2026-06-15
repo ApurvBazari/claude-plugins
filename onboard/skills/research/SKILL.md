@@ -1,6 +1,6 @@
 ---
 name: research
-description: Internal research engine for onboard v3 — fans out read-only specialists per dimension, adversarially verifies their claims, synthesizes the canonical research object, and renders four markdown artifacts. Invoked via the Skill tool by /onboard:start (Plan 3) or directly by a model; not user-invocable. Returns the validated research-dossier object.
+description: Internal research engine for onboard v3 — fans out read-only specialists per dimension, adversarially verifies their claims, synthesizes the canonical research object, and renders four markdown artifacts. Invoked via the Skill tool by /onboard:start or directly by a model; not user-invocable. Returns the validated research-dossier object.
 user-invocable: false
 ---
 
@@ -27,7 +27,7 @@ Probe for in-scope source (native Glob/Grep — no scripts). If the repo has **z
 - Assemble a **minimal dossier**: `engineUsed:"subagent"`, `depth:` the preset (or `"minimal"`), `roster:{builtins:[], disabledBuiltins:[], customSpecialists:[]}`, `findings:{}`, `verifiedClaims:[]`, `droppedClaims:[]`, `wizardInferences:{}`, `artifacts:{location:<asked>, written:[], html:null}`.
 - Validate it at Gate-2, write `.claude/onboard-research.json`, return it. Do NOT fan out.
 
-(Plan 3 also fires onboard's Phase-0 guard before research; this is the engine's own floor.)
+(Onboard also fires its Phase-0 guard before research; this is the engine's own floor.)
 
 ## Step 1: Roster discovery
 
@@ -83,7 +83,7 @@ On a 4c re-research with `location:"committed"`, re-render the HTML alongside th
 
 ## Step 8: Return
 
-Return the validated `research-dossier` object to the caller. (Plan 3 later feeds it to the grounded wizard + generate.)
+Return the validated `research-dossier` object to the caller, which later feeds it to the grounded wizard + generate.
 
 ## Guard Usage
 
