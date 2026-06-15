@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.0.0 — 2026-06-15
+
+### ⚠ Major — research-grounded onboarding
+
+- **Research engine**: `/onboard:start` now runs a verified, multi-dimension research pass (architecture, data-model, testing, security, + conventions/domain/dependencies at depth) before generation, emitting a canonical `.claude/onboard-research.json` dossier + markdown docs (dossier, architecture map, risk register, glossary/ADR seeds).
+- **Grounded wizard**: the 6-phase wizard collapses to a confirm/override surface over research-inferred answers (`autonomyLevel` still asked cold).
+- **Generation consumes research**: CLAUDE.md, path-scoped rules, skills, agents, and subdir placement are sharpened from verified findings; the risk/test-gap register seeds `docs/feature-list.json` for `/onboard:verify`.
+- **Re-research on update/evolve**: a staleness signal re-grounds the affected research dimensions and regenerates merge-aware, preserving customizations + `passes` progress.
+- **Optional interactive render**: when the `walkthrough` plugin is present, the dossier also renders to a self-contained interactive HTML (skipped silently otherwise).
+- **v2 retired**: the external headless v2 context API + adapters are removed; `generate` is a v3-only internal generation step (use `onboard@2.x` for the v2 surface).
+- Full research telemetry in `onboard-meta.json` + a Phase-7 research self-audit.
+
 ## 2.0.1 — 2026-06-11
 - refactor: split generation/SKILL.md (1812→<500 lines) and update/SKILL.md (604→<500) into references.
 - fix: repoint stale init/ references to start/ (reference-integrity); ## Step headings in start.

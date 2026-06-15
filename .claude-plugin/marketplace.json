@@ -11,8 +11,8 @@
     {
       "name": "onboard",
       "source": "./onboard",
-      "description": "Analyze codebases and generate tailored Claude tooling — v2 context shape; rejects v1 input (use onboard@1.10.0 for v1)",
-      "version": "2.0.1",
+      "description": "Analyze codebases with deep, verified research and generate evidence-grounded Claude tooling — CLAUDE.md, path-scoped rules, skills, agents, hooks, and a verify backlog.",
+      "version": "3.0.0",
       "keywords": [
         "onboarding",
         "setup",

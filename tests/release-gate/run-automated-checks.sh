@@ -617,6 +617,23 @@ if ! grep -rqE "\(Plan [0-9]" onboard/skills/; then
 else
   fail "5: sweep#2 — internal plan-number marker(s) still present in onboard/skills"
 fi
+PJ="onboard/.claude-plugin/plugin.json"
+MK=".claude-plugin/marketplace.json"
+if [[ "$(jq -r '.version' "$PJ")" == "3.0.0" ]] && [[ "$(jq -r '.plugins[]|select(.name=="onboard")|.version' "$MK")" == "3.0.0" ]]; then
+  pass "5: onboard bumped to 3.0.0 (plugin.json + marketplace.json)"
+else
+  fail "5: onboard version not 3.0.0 in both manifests"
+fi
+if ! jq -r '.description' "$PJ" | grep -qi "v2 context shape\|rejects v1"; then
+  pass "5: onboard manifest description rewritten off the v2 framing"
+else
+  fail "5: onboard manifest description still references the v2 context shape"
+fi
+if grep -q "## 3.0.0" onboard/CHANGELOG.md; then
+  pass "5: onboard CHANGELOG has the 3.0.0 entry"
+else
+  fail "5: onboard CHANGELOG missing the 3.0.0 entry"
+fi
 echo ""
 
 # ─────────────────────────────────────────────────
