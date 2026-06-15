@@ -71,5 +71,5 @@ never hand-edit `site/*.html`.
 
 ## Documentation URLs
 
-Reference Claude Code docs at `https://code.claude.com/docs/en/*` (the legacy
-`https://docs.anthropic.com/en/docs/claude-code/*` URLs 301-redirect).
+Reference Claude Code docs at `https://code.claude.com/docs/en/*` — the canonical
+home. (Older Anthropic-hosted doc links 301-redirect; always use the canonical home.)
