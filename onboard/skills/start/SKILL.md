@@ -317,11 +317,10 @@ The model choice is written into `context.modelChoice` by the Step 2.6 builder.
 **Invoke `Skill(onboard:generate)` with the context object built in Step 2.6.** One contract, one validator, one agent-dispatch boundary.
 
 ```
-Skill(
-  skill: "onboard:generate",
-  args: <stringified context object from Step 2.6>
-)
+Skill(onboard:generate, {mode:"write", context})   // context from Step 2.6 — the same object Step 2.7 planned from
 ```
+
+By this point the developer has approved the plan at Step 2.9; write mode honors that plan (same artifact set + decisions).
 
 The generate skill then:
 

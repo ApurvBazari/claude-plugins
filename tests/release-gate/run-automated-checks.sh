@@ -494,20 +494,23 @@ echo "## Plan 5 — ship + 3.0.0 cutover (static)"
 RA="onboard/skills/research/references/render-adapter.md"
 RESEARCH="onboard/skills/research/SKILL.md"
 SD="onboard/skills/research/references/synthesis-and-dossier.md"
+START="onboard/skills/start/SKILL.md"
 if [[ -f "$RA" ]] && grep -q "render-adapter.md" "$RESEARCH"; then
   pass "5: render-adapter.md exists + linked from research/SKILL.md"
 else
   fail "5: render-adapter.md missing or not linked"
 fi
-if grep -q "walkthrough:render" "$RESEARCH" && grep -q "render-adapter.md" "$SD"; then
-  pass "5: synthesizer wires the walkthrough:render handoff"
+# B3 folded the standalone research HTML render into the pre-implementation gate (start Step 2.9):
+# the walkthrough:render handoff now lives in start/SKILL.md, and artifacts.html is set by the gate.
+if grep -q "walkthrough:render" "$START" && grep -q "render-adapter.md" "$SD"; then
+  pass "5: pre-implementation gate wires the walkthrough:render handoff"
 else
-  fail "5: synthesizer missing the walkthrough:render handoff"
+  fail "5: pre-implementation gate missing the walkthrough:render handoff"
 fi
-if grep -qi "set by the render" "$RESEARCH" && ! grep -qi "HTML render.*deferred\|render.*are deferred" "$RESEARCH"; then
-  pass "5: artifacts.html no longer hardcoded null (render no longer deferred)"
+if grep -qi "set by the onboard pre-implementation gate" "$RESEARCH" && ! grep -qi "HTML render.*deferred\|render.*are deferred" "$RESEARCH"; then
+  pass "5: artifacts.html set by the gate (research render folded into the gate)"
 else
-  fail "5: research/SKILL.md still pins artifacts.html:null / 'render deferred'"
+  fail "5: research/SKILL.md artifacts.html provenance not pinned to the gate"
 fi
 CG="onboard/agents/config-generator.md"
 if grep -q "engineUsed" "$CG" && grep -q "specialistsRun" "$CG" && grep -q "claimsDropped" "$CG" && grep -q "artifactsWritten" "$CG" && grep -q "htmlRendered" "$CG"; then
