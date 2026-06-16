@@ -146,9 +146,9 @@ modelChoice = wizardAnswers.skillTuning?.defaultModel
 
 #### Plugin detection outputs
 
-- `installedPlugins` → from Phase 2.5 deep probe (sibling + marketplace cache per `../generation/references/plugin-detection-guide.md`)
-- `coveredCapabilities` → derived from `installedPlugins` per `../generation/references/plugin-detection-guide.md § coveredCapabilities Derivation`
-- `pluginSurfaces` → from Phase 2.5 surface probe per `../generation/references/plugin-surface-probe.md`
+- `installedPlugins` → from Phase 2.5 deep probe (sibling + marketplace cache per `../../generation/references/plugin-detection-guide.md`)
+- `coveredCapabilities` → derived from `installedPlugins` per `../../generation/references/plugin-detection-guide.md § coveredCapabilities Derivation`
+- `pluginSurfaces` → from Phase 2.5 surface probe per `../../generation/references/plugin-surface-probe.md`
 
 If all three probes yielded zero plugins: `installedPlugins: []`, `coveredCapabilities: []`, `pluginSurfaces: {}`, `allowPluginReferences: false`. This is a valid state — subsequent Phase 7 blocks still fire and still emit their telemetry.
 
@@ -180,7 +180,7 @@ Init is interactive by definition; never suppress confirmation prompts.
 
 #### Quality gates + phase skills
 
-Derive per `../generation/references/plugin-detection-guide.md § qualityGates Derivation` + `§ phaseSkills Derivation`. Honor autonomyLevel downgrade for `preCommit[].mode`:
+Derive per `../../generation/references/plugin-detection-guide.md § qualityGates Derivation` + `§ phaseSkills Derivation`. Honor autonomyLevel downgrade for `preCommit[].mode`:
 
 | `wizardAnswers.autonomyLevel` | Downgrade |
 |---|---|
@@ -304,7 +304,7 @@ Every default is populated explicitly — downstream generation should never nee
 
 2. **No plugins detected at all** — `installedPlugins: []`, `coveredCapabilities: []`, `pluginSurfaces: {}`, `allowPluginReferences: false`. `qualityGates.*` entries drop all plugin-referencing items → likely empty arrays. Generator's Phase 5 Plugin Integration block emits "No plugins detected" narrative.
 
-3. **Plugin installed but hooks-only** (e.g., `security-guidance`) — `pluginSurfaces.security-guidance.type: "hooks-only"`. claude-md-guide's Plugin Integration template emits hook narrative, not a fabricated slash ref (see `../generation/references/plugin-surface-probe.md` + `claude-md-guide.md`). Closes G.3.
+3. **Plugin installed but hooks-only** (e.g., `security-guidance`) — `pluginSurfaces.security-guidance.type: "hooks-only"`. claude-md-guide's Plugin Integration template emits hook narrative, not a fabricated slash ref (see `../../generation/references/plugin-surface-probe.md` + `../../generation/references/claude-md-guide.md`). Closes G.3.
 
 4. **wizardAnswers includes `skillTuning.mode: "tuned"`** — builder passes the tuning object through; config-generator composes archetype defaults with the tuning overrides. `disableSkillTuning` stays `false` regardless of `mode` value.
 
