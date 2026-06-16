@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/ApurvBazari/claude-plugins/onboard/schemas/generation-manifest.json",
+  "title": "Onboard Generation Manifest (generate plan-mode output)",
+  "description": "Returned by Skill(onboard:generate, {mode:'plan'}). Lists what generation WILL write — without writing. onboard assembles this plus the research dossier into the previewModel rendered at the pre-implementation gate (start Step 2.9). Also the contract for update/adopt plan renders.",
+  "type": "object",
+  "required": ["mode", "flow", "changes", "decisions"],
+  "additionalProperties": false,
+  "properties": {
+    "mode": { "const": "plan" },
+    "flow": { "enum": ["start", "update", "adopt"] },
+    "changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "action", "purpose"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string" },
+          "action": { "enum": ["create", "merge", "modernize", "record", "add-header", "regenerate"] },
+          "purpose": { "type": "string" },
+          "outline": { "type": "string" },
+          "tier": { "enum": ["core", "enriched"] },
+          "origin": { "enum": ["generated", "adopted", "user"] }
+        }
+      }
+    },
+    "decisions": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "model": { "type": "string" },
+        "autonomy": { "type": "string" },
+        "profile": { "enum": ["minimal", "standard", "comprehensive", "retrofit"] },
+        "hooks": { "type": "array", "items": { "type": "string" } },
+        "mcp": { "type": "array", "items": { "type": "string" } },
+        "lsp": { "type": "array", "items": { "type": "string" } },
+        "pluginIntegration": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "warnings": { "type": "array", "items": { "type": "string" } }
+  }
+}
