@@ -720,6 +720,14 @@ else
 fi
 echo ""
 
+# Audit-pipeline Tier-A: exercise open-gap-audit-pr.sh logic with a stubbed gh (no real PR).
+if bash tests/audit-pipeline/test-open-gap-audit-pr.sh >/dev/null 2>&1; then
+  pass "audit: open-gap-audit-pr.sh logic (gh-stubbed) — all cases"
+else
+  fail "audit: open-gap-audit-pr.sh logic (gh-stubbed) — see tests/audit-pipeline/test-open-gap-audit-pr.sh"
+fi
+echo ""
+
 # ─────────────────────────────────────────────────
 echo "═══════════════════════════════════════════"
 echo "## Summary"
