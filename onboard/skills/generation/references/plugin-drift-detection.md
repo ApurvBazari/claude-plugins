@@ -10,7 +10,7 @@ Each caller resolves the baseline `previousPlugins` list using the first source 
 
 | Caller | Baseline order |
 |---|---|
-| `update` | 1. `.claude/onboard-meta.json.detectedPlugins.installedPlugins` (always populated by init/generate since v1.2.0, regardless of `pluginSource`) → 2. `.claude/onboard-meta.json.callerExtras.installedPlugins` (legacy pre-v1.2.0 projects) → 3. empty |
+| `update` | 1. `.claude/onboard-meta.json.detectedPlugins.installedPlugins` (always populated by start/generate since v1.2.0, regardless of `pluginSource`) → 2. `.claude/onboard-meta.json.callerExtras.installedPlugins` (legacy pre-v1.2.0 projects) → 3. empty |
 | `evolve` | 1. `.claude/onboard-meta.json.detectedPlugins.installedPlugins` → 2. skip step entirely (evolve requires a baseline) |
 | `generate` | Falls back to current-state probe only (no baseline diff — it's generating fresh) |
 
@@ -76,7 +76,7 @@ Once the developer approves the drift changes, the caller applies them by follow
 - Subsection Content Rules — which subsections render given the current plugin mix
 - qualityGates / phaseSkills / coveredCapabilities Derivation — via the pointer into `plugin-detection-guide.md`
 
-Hook script templates come from `hooks-guide.md` § Quality-Gate Hook Templates (same source used by init and evolve today — do not duplicate).
+Hook script templates come from `hooks-guide.md` § Quality-Gate Hook Templates (same source used by start and evolve today — do not duplicate).
 
 ## Post-apply Persistence
 

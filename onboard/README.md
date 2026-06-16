@@ -110,7 +110,7 @@ When `/onboard:start` runs in **enriched mode**, it installs auto-evolution hook
 
 Then `/onboard:evolve` reads the drift log, compares against the original snapshot, categorises changes (new dependencies, structural shifts, config diffs, missing hooks), proposes targeted updates, and applies the ones you approve. Snapshot updates after each run so subsequent invocations are incremental.
 
-See the [Example](#example) below for a full two-run transcript showing init followed by evolve detecting drift two weeks later.
+See the [Example](#example) below for a full two-run transcript showing start followed by evolve detecting drift two weeks later.
 
 ## Example
 

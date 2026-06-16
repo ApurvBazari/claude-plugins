@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Start Skill — Interactive Onboarding Wizard
 
-You are running the onboard init skill. This is a guided, multi-phase process that analyzes a developer's codebase and generates complete Claude tooling infrastructure.
+You are running the onboard start skill. This is a guided, multi-phase process that analyzes a developer's codebase and generates complete Claude tooling infrastructure.
 
 ## Overview
 
@@ -48,7 +48,7 @@ SRC_COUNT=$(find . -type f \
 
 If `.claude/onboard-meta.json` already exists AND `jq -r '.mode // empty'` returns `"stub-empty-repo"` AND `SRC_COUNT > 0`: auto-promote. Skip Step 0 entirely; run Step 1 Analysis → Step 2 Wizard → Step 3 Generation. Full generation overwrites the stub artifacts. Append an `updateHistory` entry to the new `onboard-meta.json` noting the `"stub → full"` promotion.
 
-If prior stub exists AND `SRC_COUNT == 0` (user ran init twice on empty dir): default to no-op — inform the developer a stub already exists, skip re-write.
+If prior stub exists AND `SRC_COUNT == 0` (user ran start twice on empty dir): default to no-op — inform the developer a stub already exists, skip re-write.
 
 ### Step 0.3: Present the 3-option menu
 
@@ -238,7 +238,7 @@ If no plugins were detected:
 
 ## Step 2.6: Build Onboard Context
 
-Follow the canonical procedure in `references/onboard-context-builder.md` to assemble the single context object that Step 3 dispatches to `Skill(onboard:generate)`. The builder is the **single source of truth** for init context construction — every profile path (Minimal / Standard / Comprehensive) invokes it. Do not maintain profile-specific context builders; that was the drift that caused release-gate findings B1, B5, B6, B8, B10, B12, B13 (2026-04-17 sweep).
+Follow the canonical procedure in `references/onboard-context-builder.md` to assemble the single context object that Step 3 dispatches to `Skill(onboard:generate)`. The builder is the **single source of truth** for start context construction — every profile path (Minimal / Standard / Comprehensive) invokes it. Do not maintain profile-specific context builders; that was the drift that caused release-gate findings B1, B5, B6, B8, B10, B12, B13 (2026-04-17 sweep).
 
 Inputs already in conversation context:
 
@@ -251,7 +251,7 @@ Inputs already in conversation context:
 The builder emits a context object per the canonical schema. Key invariants:
 
 - the builder emits **v3** (`version: 3`) and embeds the `research` object — see `references/onboard-context-builder.md`.
-- All 7 callerExtras Phase-7 flags populated explicitly (`disableMCP`, `disableLSP`, `disableBuiltInSkills`, `disableSkillTuning`, `disableAgentTuning`, `disableOutputStyleTuning`, `allowHttpHooks`) — init-path defaults are `false` for all (Phase 7 blocks run fully; interactive confirmation runs).
+- All 7 callerExtras Phase-7 flags populated explicitly (`disableMCP`, `disableLSP`, `disableBuiltInSkills`, `disableSkillTuning`, `disableAgentTuning`, `disableOutputStyleTuning`, `allowHttpHooks`) — start-path defaults are `false` for all (Phase 7 blocks run fully; interactive confirmation runs).
 - `callerExtras.installedPlugins` and `pluginSurfaces` populated from Step 2.5 probes.
 - Every wizardAnswers field populated (including defaults for skipped fields per `../wizard/SKILL.md` § Skip Behavior).
 
@@ -316,7 +316,7 @@ chosenModel = wizardAnswers.skillTuning?.defaultModel
 
 The profile-default fallback is documented in `../wizard/references/workflow-presets.md`. The final fallback (`claude-opus-4-7[1m]`) covers any path where the wizard answers don't include a model (e.g., a future bug or the grounded wizard skipping the model-tuning card).
 
-The wizard's summary already shows the chosen model — the developer has already seen and confirmed it. If they wanted to change it, they would have done so in the summary tweak step (or by editing `.claude/settings.json` after init).
+The wizard's summary already shows the chosen model — the developer has already seen and confirmed it. If they wanted to change it, they would have done so in the summary tweak step (or by editing `.claude/settings.json` after start).
 
 The model choice is written into `context.modelChoice` by the Step 2.6 builder.
 

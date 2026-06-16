@@ -618,6 +618,15 @@ if [ -z "$HEADLESS_SURVIVORS" ]; then
 else
   fail "cleanup: 'headless' survives in: $(echo "$HEADLESS_SURVIVORS" | tr '\n' ' ')"
 fi
+# Pre-merge cleanup round 2 (2026-06-17): the init skill was renamed to start; the file
+# init/SKILL.md no longer exists. This guards against stale `init/SKILL.md` file refs.
+# (Prose "init" is NOT gateable — init.sh / /init / verify-init-output.sh are legitimate.)
+INIT_FILEREF=$(grep -rIn 'init/SKILL\.md' onboard/ | grep -vE '(^|/)CHANGELOG' || true)
+if [ -z "$INIT_FILEREF" ]; then
+  pass "cleanup: onboard/ free of stale init/SKILL.md file refs (renamed to start/SKILL.md)"
+else
+  fail "cleanup: stale init/SKILL.md ref(s): $(echo "$INIT_FILEREF" | tr '\n' ' ')"
+fi
 if ! grep -rqiE "quick[ -]mode" onboard/skills/generation/references; then
   pass "5: sweep#2 — generation references free of Quick-Mode prose"
 else

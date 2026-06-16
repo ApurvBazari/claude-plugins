@@ -256,7 +256,7 @@ After the wizard completes, compile all answers into the following structured JS
 }
 ```
 
-The `ecosystemPlugins` field captures which ecosystem plugins the developer wants set up. This gets passed to the config-generator agent along with the analysis report. The init command acts on these choices in Phase 3.5.
+The `ecosystemPlugins` field captures which ecosystem plugins the developer wants set up. This gets passed to the config-generator agent along with the analysis report. The start command acts on these choices in Phase 3.5.
 
 The `advancedHookEvents` field is an array of event names the developer explicitly selected in Exchange 3 (advanced hook events card). An empty array (`[]`) means "the developer kept the default — no advanced events beyond inference" — generation suppresses advanced event inference for that run. An absent field (omitted entirely) means "the grounded confirm/override surface didn't run this card (programmatic path)" — inference runs normally. See `generation/SKILL.md` § Advanced Event Hooks for the full mapping.
 

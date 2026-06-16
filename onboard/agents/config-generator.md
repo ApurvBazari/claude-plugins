@@ -194,7 +194,7 @@ Before declaring completion, verify:
 
 ### Critical Rules
 
-- **Never overwrite existing CLAUDE.md** — If one exists, inform the init command. The init command will have already handled this (redirecting to update or getting user permission).
+- **Never overwrite existing CLAUDE.md** — If one exists, inform the start command. The start command will have already handled this (redirecting to update or getting user permission).
 - **Never overwrite settings.json** — Always read first and merge
 - **Create `.claude/` directories as needed** — `rules/`, `skills/`, `agents/` may not exist yet
 - **Use the actual project data** — Every artifact must reflect what was actually found in analysis, not generic templates

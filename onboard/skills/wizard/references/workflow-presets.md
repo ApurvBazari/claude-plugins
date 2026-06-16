@@ -129,7 +129,7 @@ The grounded confirm/override wizard runs **~2–3 `AskUserQuestion` exchanges f
 | Standard | `claude-opus-4-7[1m]` (Opus 4.7 1M context) |
 | Comprehensive | `claude-opus-4-7[1m]` (Opus 4.7 1M context) |
 
-The high-tier default reflects: Claude tooling generation is a one-time-per-project investment; the model strength makes a measurable difference in the quality of the artifacts produced. Users can downgrade per-project by editing `.claude/settings.json` after init.
+The high-tier default reflects: Claude tooling generation is a one-time-per-project investment; the model strength makes a measurable difference in the quality of the artifacts produced. Users can downgrade per-project by editing `.claude/settings.json` after start.
 
 ---
 

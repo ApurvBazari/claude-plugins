@@ -60,7 +60,7 @@ Also read any Claude config files that may have been added manually after the in
 
 ### Step 3: Re-analyze the Codebase
 
-Run a fresh analysis (same as init Phase 1):
+Run a fresh analysis (same as start Phase 1):
 - Run the three analysis scripts
 - Perform deep codebase exploration
 

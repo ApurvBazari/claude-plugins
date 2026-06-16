@@ -52,7 +52,7 @@ Look for and read:
 - `.claude/settings.json`
 - `.claude/settings.local.json`
 
-If substantial Claude config exists, flag this clearly — the user may want `/onboard:update` instead of a fresh init.
+If substantial Claude config exists, flag this clearly — the user may want `/onboard:update` instead of a fresh start.
 
 ### 4. Produce Structured Report
 
