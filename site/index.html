@@ -125,15 +125,15 @@ section.vis{opacity:1;transform:none;}
       <a href="#install">Install</a>
     </div>
     <div style="display:flex;align-items:center;gap:.8rem">
-      <div class="nav-meta"><span class="dot"></span> MARKETPLACE · 4 PLUGINS</div>
+      <div class="nav-meta"><span class="dot"></span> MARKETPLACE · 5 PLUGINS</div>
       <button class="theme-btn" onclick="tgl()">◑ THEME</button></div>
   </div></nav>
   <div class="progress" id="prog"></div>
   <main>
     <section id="top" class="vis" style="padding-top:2.4rem">
       <div class="eyebrow">claude-plugins · marketplace</div>
-      <h1>Four plugins for the <em>project lifecycle</em>.</h1>
-      <p class="lede"><code>onboard</code> keeps AI configs aligned as your code evolves, <code>notify</code> closes the loop, <code>handoff</code> carries session intent across context boundaries, and <code>walkthrough</code> turns a session into an explorable document. Four plugins that work on their own and <strong>compose together</strong>.</p>
+      <h1>Five plugins for the <em>project lifecycle</em>.</h1>
+      <p class="lede"><code>onboard</code> keeps AI configs aligned as your code evolves, <code>notify</code> closes the loop, <code>handoff</code> carries session intent across context boundaries, <code>walkthrough</code> turns a session into an explorable document, and <code>lens</code> reviews work against its spec before it ships. Five plugins that work on their own and <strong>compose together</strong>.</p>
       <div class="chips">
         <span class="chip accent">marketplace</span>
         <span class="chip">claude-code</span>
@@ -145,7 +145,7 @@ section.vis{opacity:1;transform:none;}
         <pre class="cb-body"><code>claude plugin marketplace add apurvbazari/claude-plugins</code></pre>
       </div>
       <div class="hstats">
-        <div class="hstat"><div class="v"><em>4</em></div><div class="l">plugins</div></div>
+        <div class="hstat"><div class="v"><em>5</em></div><div class="l">plugins</div></div>
         <div class="hstat"><div class="v">2</div><div class="l">install routes</div></div>
         <div class="hstat"><div class="v"><em>MIT</em></div><div class="l">licensed</div></div>
       </div>
@@ -197,13 +197,23 @@ section.vis{opacity:1;transform:none;}
           <span class="pgo">open page <span class="arr">→</span></span>
         </a>
 
+        <a class="pcard" href="./lens/" aria-label="lens — open plugin page">
+          <div class="pcard-top"><h3>lens</h3><span class="ver">v1.0.0</span></div>
+          <p class="pdesc">Intent-grounded review companion — reviews the session diff against its spec and plan, adversarially verifies findings, and renders an interactive review.</p>
+          <div class="pkeys">
+            <span class="pkey">code-review</span><span class="pkey">pr-review</span><span class="pkey">intent-grounded</span>
+            <span class="pkey">adversarial-verification</span><span class="pkey">interactive-html</span>
+          </div>
+          <span class="pgo">open page <span class="arr">→</span></span>
+        </a>
+
       </div>
     </section>
 
     <section id="install">
       <div class="sec-label">02 — getting started</div>
       <h2>Two <em>install routes</em></h2>
-      <p class="lede">Install from Anthropic's reviewed community directory, or add this marketplace directly for the latest commit and all four plugins.</p>
+      <p class="lede">Install from Anthropic's reviewed community directory, or add this marketplace directly for the latest commit and all five plugins.</p>
 
       <p style="margin-top:1.4rem"><strong>Route A — Anthropic's community marketplace</strong> (<code>onboard</code>, <code>notify</code>). Snapshots that passed Anthropic's automated security scan, with auto-update on by default. Discoverable via <code>/plugin → Discover</code>.</p>
       <div class="codeblock">
@@ -213,14 +223,15 @@ claude plugin install onboard@claude-community
 claude plugin install notify@claude-community</code></pre>
       </div>
 
-      <p style="margin-top:1.6rem"><strong>Route B — this marketplace</strong> (all four plugins, latest commit). The only route for <code>handoff</code> and <code>walkthrough</code>, and the way to get changes ahead of the nightly community snapshot.</p>
+      <p style="margin-top:1.6rem"><strong>Route B — this marketplace</strong> (all five plugins, latest commit). The only route for <code>handoff</code>, <code>walkthrough</code>, and <code>lens</code>, and the way to get changes ahead of the nightly community snapshot.</p>
       <div class="codeblock">
         <div class="cb-head"><span class="cb-file">apurvbazari-plugins</span><span class="cb-lang">bash</span></div>
         <pre class="cb-body"><code>claude plugin marketplace add apurvbazari/claude-plugins
 claude plugin install onboard@apurvbazari-plugins
 claude plugin install notify@apurvbazari-plugins
 claude plugin install handoff@apurvbazari-plugins
-claude plugin install walkthrough@apurvbazari-plugins</code></pre>
+claude plugin install walkthrough@apurvbazari-plugins
+claude plugin install lens@apurvbazari-plugins</code></pre>
       </div>
       <p style="margin-top:1.4rem">Built on top of <a href="https://code.claude.com/docs/en" style="color:var(--accent);text-decoration:none">Claude Code</a> by Anthropic. Distributed under MIT.</p>
     </section>
@@ -232,7 +243,7 @@ claude plugin install walkthrough@apurvbazari-plugins</code></pre>
         <a href="https://code.claude.com/docs/en/plugin-marketplaces">marketplaces guide</a>
         <a href="https://github.com/anthropics/claude-plugins-community">community marketplace</a>
       </div>
-      <div class="meta">claude-plugins · 4 plugins · MIT · by Apurv Bazari</div>
+      <div class="meta">claude-plugins · 5 plugins · MIT · by Apurv Bazari</div>
     </div>
   </main>
   <aside class="panel" id="panel"><span class="x" onclick="closeD()">✕</span>

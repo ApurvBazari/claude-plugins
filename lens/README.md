@@ -12,6 +12,12 @@ claude plugin install lens@apurvbazari-plugins
 
 That's it. No setup step required up front — lens does a small first-run setup the first time you review in a repo (see [Where files go](#where-files-go)).
 
+## Skills
+
+- `/lens:review [target]` — intent-grounded review of the current change against its spec and plan; adversarially verifies findings and renders an interactive review (HTML via walkthrough, or a markdown fallback). Full details under [Usage](#usage) below.
+
+> `engine` is an internal building block (`user-invocable: false`) — the data-only judgment core that `review` calls; you never invoke it directly.
+
 ## Usage
 
 ```
