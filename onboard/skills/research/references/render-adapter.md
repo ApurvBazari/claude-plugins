@@ -25,3 +25,26 @@ First-onboard or re-research synthesis, walkthrough installed, `location ∈ {co
 - Evidence `file:line` strings map to `details[].where[]` verbatim (clickable).
 - Zero risk/test-gap/security claims → `findings[]` is empty (the cards section renders empty, not an error).
 - The model is assembled in context and handed to `walkthrough:render`; no HTML is written by onboard.
+
+## previewModel (the shared pre-implementation render input)
+
+`previewModel` is the unified input rendered at the pre-implementation gate (start Step 2.9; update; adopt). Shape:
+
+```jsonc
+{
+  "flow": "start" | "update" | "adopt",
+  "research": { "architecture": ..., "risks": [...], "glossary": [...] } | null,
+  "changes": [ /* generationManifest changes[] entries */ ],
+  "decisions": { /* generationManifest decisions */ },
+  "warnings": [ ... ]
+}
+```
+
+Map it to a walkthrough `session-model` with these sections, in order:
+1. **Overview** — one paragraph: flow + profile + what the gate is asking.
+2. **What I learned** (only when `research` ≠ null) — architecture map, top risks, glossary highlights.
+3. **What I'll build** — `changes[]` grouped by `tier`, each artifact a node titled by `path` with its `purpose` + `outline` + an `action`/`origin` badge.
+4. **Key decisions** — `decisions` as a labelled list (model, autonomy, profile, hooks, MCP, LSP, plugin integration).
+5. **Risks / warnings** — `warnings[]` plus research risks.
+
+Populators: **start** fills `changes`/`decisions` from `generate(plan)`; **update** from its offer-set + re-research delta; **adopt** from its record-set. One adapter, three populators.
