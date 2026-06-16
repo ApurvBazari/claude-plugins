@@ -67,12 +67,13 @@ run_script "" 2026-06-17 chore/audit-2026-06-17 >/dev/null
 # shellcheck disable=SC2015
 [ "$(created_count)" = 1 ] && pass "changed vs prior -> opens PR" || fail "changed vs prior -> opens PR (created=$(created_count))"
 
-# 5. Existing open PR -> skip even with content
+# 5. Existing open PR -> skip even with content (and confirm it skipped via the existing-PR branch)
 make_sandbox
 report 2026-06-17 "Body."
-run_script 42 2026-06-17 chore/audit-2026-06-17 >/dev/null
+out="$(run_script 42 2026-06-17 chore/audit-2026-06-17)"
 # shellcheck disable=SC2015
-[ "$(created_count)" = 0 ] && pass "existing PR -> skip" || fail "existing PR -> skip (created=$(created_count))"
+{ [ "$(created_count)" = 0 ] && echo "$out" | grep -q "already open"; } \
+  && pass "existing PR -> skip (via existing-PR branch)" || fail "existing PR -> skip (created=$(created_count), out=$out)"
 
 echo "  audit-pipeline: ${PASS} passed, ${FAIL} failed"
 [ "${FAIL}" -eq 0 ]

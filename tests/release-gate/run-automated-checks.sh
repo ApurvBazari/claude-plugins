@@ -612,7 +612,7 @@ else
 fi
 # Pre-merge cleanup (2026-06-17): onboard vocabulary is fully de-headlessed. CHANGELOGs are
 # historical and exempt. This guards against the term creeping back in new docs.
-HEADLESS_SURVIVORS=$(grep -rIl 'headless\|Headless' onboard/ | grep -v CHANGELOG || true)
+HEADLESS_SURVIVORS=$(grep -rIl 'headless\|Headless' onboard/ | grep -vE 'CHANGELOG[^/]*$' || true)
 if [ -z "$HEADLESS_SURVIVORS" ]; then
   pass "cleanup: onboard/ free of 'headless' vocabulary (CHANGELOG exempt)"
 else
