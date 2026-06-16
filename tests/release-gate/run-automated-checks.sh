@@ -640,6 +640,79 @@ fi
 echo ""
 
 # ─────────────────────────────────────────────────
+echo "## F2 — adopt/retrofit foreign tooling (static)"
+# ─────────────────────────────────────────────────
+ADOPT="onboard/skills/adopt/SKILL.md"
+ADOPT_DET="onboard/skills/adopt/references/detection-and-classification.md"
+ADOPT_SYN="onboard/skills/adopt/references/baseline-synthesis.md"
+
+if [[ -f "$ADOPT" ]] && head -1 "$ADOPT" | grep -q '^---$' && grep -q 'disable-model-invocation: true' "$ADOPT"; then
+  pass "F2: adopt/SKILL.md exists with disable-model-invocation"
+else
+  fail "F2: adopt/SKILL.md missing or not user-only"
+fi
+
+if [[ -f "$ADOPT_DET" ]] && [[ -f "$ADOPT_SYN" ]]; then
+  pass "F2: adopt references (detection-and-classification + baseline-synthesis) exist"
+else
+  fail "F2: adopt references missing"
+fi
+
+if grep -q "references/detection-and-classification.md" "$ADOPT" && grep -q "references/baseline-synthesis.md" "$ADOPT"; then
+  pass "F2: adopt/SKILL.md loads both references"
+else
+  fail "F2: adopt/SKILL.md does not load its references"
+fi
+
+# Adopt is baseline-only + never calls generate (the central safety property).
+if grep -qi "never modif" "$ADOPT" && grep -qi "baseline" "$ADOPT" && ! grep -q "Skill(onboard:generate" "$ADOPT"; then
+  pass "F2: adopt is baseline-only and does not call generate"
+else
+  fail "F2: adopt safety property not asserted (never-modify / baseline-only / no generate call)"
+fi
+
+# Record-set semantics + retrofit meta in baseline-synthesis.
+if grep -q 'action.*record' "$ADOPT_SYN" && grep -q 'origin.*adopted' "$ADOPT_SYN" && grep -q 'mode.*retrofit' "$ADOPT_SYN" && grep -q 'artifactProvenance' "$ADOPT_SYN"; then
+  pass "F2: baseline-synthesis carries record/adopted/retrofit/artifactProvenance"
+else
+  fail "F2: baseline-synthesis missing record-set / provenance encoding"
+fi
+
+# Three entry points wired.
+if grep -qi "Adopt" onboard/skills/start/SKILL.md && grep -q "Skill(onboard:adopt)" onboard/skills/start/SKILL.md; then
+  pass "F2: start existing-config branch offers adopt"
+else
+  fail "F2: start does not offer adopt"
+fi
+if grep -q "Skill(onboard:adopt)" onboard/skills/update/SKILL.md && grep -qi "adopt" onboard/skills/update/SKILL.md; then
+  pass "F2: update missing-baseline guard offers adopt"
+else
+  fail "F2: update does not offer adopt"
+fi
+
+# Drift-classification honors adopted provenance.
+if grep -q "4b.0" onboard/skills/update/references/drift-classification.md && grep -qi "diffable-with-caution" onboard/skills/update/references/drift-classification.md; then
+  pass "F2: drift-classification treats origin:adopted as diffable-with-caution"
+else
+  fail "F2: drift-classification missing the adopted-provenance rule"
+fi
+
+# Provenance documented in the meta-shape refs.
+if grep -q "artifactProvenance" onboard/agents/config-generator.md; then
+  pass "F2: config-generator documents artifactProvenance/retrofit"
+else
+  fail "F2: config-generator missing the provenance note"
+fi
+
+# No internal plan-number markers leaked into shipped adopt prose (guarded globally too, asserted here for locality).
+if ! grep -rqE '\(Plan [0-9]' onboard/skills/adopt/; then
+  pass "F2: adopt prose free of internal plan-number markers"
+else
+  fail "F2: adopt prose contains a plan-number marker"
+fi
+echo ""
+
+# ─────────────────────────────────────────────────
 echo "═══════════════════════════════════════════"
 echo "## Summary"
 echo ""
