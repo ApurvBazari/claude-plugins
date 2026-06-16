@@ -269,6 +269,26 @@ Build `previewModel` from the research dossier (Step 1.5) + the manifest (Step 2
 
 ---
 
+## Step 2.9: Render + hard gate (review before implementation)
+
+This is the review-before-implementation gate. **Nothing has been written yet.**
+
+1. **Render.** Map `previewModel` → a walkthrough `session-model` per `../research/references/render-adapter.md`, then invoke `walkthrough:render` with `{ model, outputPath: ".claude/walkthrough/<YYYY-MM-DD-HHMM>-onboard-plan.html" }`.
+   - **walkthrough absent** (render skill unavailable) → offer install via AskUserQuestion (single-select, header `"Walkthrough"`): **Install now (Recommended)** ("render this preview as an interactive page") / **Skip — markdown preview**.
+     - Install now → `claude plugin install walkthrough@apurvbazari-plugins` via Bash; re-probe; success → render as above; failure → markdown fallback.
+     - Skip / failure → **markdown gate**: present `previewModel` inline as markdown (Overview · What I learned · What I'll build grouped by tier with each artifact's purpose+outline · Key decisions · Risks). Optionally also write `.claude/onboard-plan.md`.
+   - **`walkthrough:render` present but fails at runtime** → don't abort the gate; announce the degrade and fall through to the **markdown gate** above. (Invoking the skill is itself the presence test: an uninstalled skill surfaces as *absent* above; a runtime render error lands here.)
+   - This degrades the HTML render only — never the gate.
+2. **Gate.** AskUserQuestion (single-select, header `"Generate?"`):
+   - **Approve & generate (Recommended)** → proceed to Step 3 (write mode).
+   - **Adjust** → return to the Step 2 wizard summary to revise answers/profile, then re-run Step 2.6 → 2.7 → 2.8 → 2.9.
+   - **Cancel** → stop. Write nothing. Print: "Cancelled — no files were created."
+3. Only **Approve** advances to Step 3. Until then, nothing is written to disk.
+
+**Guard Usage:** the install offer and the gate both use fixed-option single-selects (≥2 options), so the single-option guard in `.claude/rules/ask-user-question-guard.md` does not apply.
+
+---
+
 ## Step 3: Generation via Skill(onboard:generate)
 
 ### Step 3.1: Model resolution (no separate prompt)
