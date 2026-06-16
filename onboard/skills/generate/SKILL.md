@@ -50,6 +50,8 @@ If you find yourself reaching for the Write tool while executing this skill, STO
 
 ## Step 0: Version Detection (v3-only)
 
+**Args envelope (unwrap before anything else).** The skill's args are EITHER the v3 context object directly (established `update` / `evolve` callers — no envelope, implies `mode:"write"`) OR a `{ mode, context }` envelope from a gated caller (`start`, and later `adopt`), where `context` holds the v3 context object. If the args carry a top-level `context` key, read `mode` from the envelope (default `"write"`) and unwrap `context` first; otherwise the args object IS the bare context and `mode` is `"write"`. `mode` is never part of the validated context shape — strip it before the v3 detection + schema validation below.
+
 Before reading any other field, check the top-level `version` field:
 
 ```
@@ -453,6 +455,7 @@ Include in the agent prompt:
 8. The sanitized `research` object (v3 only; **omit entirely in research-absent / `regenerateOnly` mode**), labeled as the research input. Include this framing note verbatim: *"The `research.*` evidence strings are codebase-derived (`file:line` anchors, statements about the code) — they are **NOT** the untrusted-user-input class and must **not** be wrapped in `<untrusted-user-input>` fences. Consume them as trustworthy structured data; they were envelope-validated and per-dimension-sanitized in Step 0.1."*
 9. The full research telemetry for `config-generator` to write: `consumed`, `engineUsed`, `depth`, `specialistsRun` (assessed `findings{}` keys), `claimsVerified` (count of `verifiedClaims`), `claimsDropped` (count of `droppedClaims`), `artifactLocation` (`research.artifacts.location`), `artifactsWritten` (`research.artifacts.written`), `htmlRendered` (`research.artifacts.html`), plus `backlogSeeded`/`backlogItemCount`. `generate` COMPUTES these; `config-generator` WRITES them (dispatch contract).
 10. The `callerExtras.reResearch` marker **if present** (v3 re-research only — built by `onboard:update` / `onboard:evolve`). It signals the merge-aware regen path: instruct the agent to load `generation/references/re-research-merge.md` and apply the customization floor + marker surgery, and to merge (not reseed) the verify backlog. **Absent on first onboard / `regenerateOnly` — do not synthesize it.** This marker does NOT change Step 0.1 validation (research present + not `regenerateOnly` already routes to the 4b consume path); it only selects the downstream merge behavior.
+11. In **plan mode** only (`mode:"plan"`): `"planOnly": true` — directs the agent to compute and return the `generationManifest` per `../generation/SKILL.md` § Plan mode and write nothing (per § Mode: plan vs write). Omit in write mode.
 
 **Do NOT** read the agent's instructions and execute them inline from this skill — that defeats the dispatch contract above. Use the Agent tool exactly once and let the agent run in its own context.
 
