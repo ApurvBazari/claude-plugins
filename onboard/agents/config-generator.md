@@ -20,7 +20,11 @@ You are a Claude tooling configuration specialist. Your job is to take a codebas
 
 ## Instructions
 
-### Step 0: Dispatch context check (HARD-FAIL)
+### Step 0: Plan mode
+
+If dispatched with `planOnly: true`: keep the `dispatchedAsAgent` hard-fail, perform the analysis/decision steps below, but DO NOT call Write or Edit on any artifact. Instead emit the `generationManifest` (per `../skills/generation/SKILL.md` § Plan mode) as your structured return value, then stop. Any Write/Edit call while `planOnly` is true is a contract violation.
+
+### Step 1: Dispatch context check (HARD-FAIL)
 
 Before doing anything else, verify your context contains `"dispatchedAsAgent": true`. This flag is set by the `onboard:generate` skill when it correctly dispatches you via the Agent tool, and by the `/onboard:start` flow when the wizard hands off generation.
 
