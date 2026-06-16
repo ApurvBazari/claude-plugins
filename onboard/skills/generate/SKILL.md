@@ -402,6 +402,19 @@ Callers (onboard:start and the other internal callers — onboard:update / onboa
 
 ---
 
+## Mode: plan vs write
+
+This skill accepts an optional `mode` in its args: `"plan"` or `"write"` (default `"write"` when absent — preserves the programmatic contract).
+
+- **`mode: "write"`** (default) — the full generation pipeline that writes artifacts (everything documented below). Unchanged behavior.
+- **`mode: "plan"`** — dispatch `config-generator` with `planOnly: true`. The agent computes the artifact set + per-artifact outline + decisions and **returns a `generationManifest`** (validated vs `../../schemas/generation-manifest.json`) **without writing anything**. Validate the returned manifest; on a validation error, fail-loud and return the error (do not write).
+
+The plan/write split lives here — callers never invoke `config-generator` directly. The `dispatchedAsAgent` hard-fail stays on both modes.
+
+**Honor-plan invariant:** a `write` run that follows an approved `plan` for the same context MUST produce the same `changes[]` paths and the same `decisions`. Prose content is regenerated at write time.
+
+---
+
 ## Step 2: Map Context to Onboard Format
 
 The v3 context uses the same field names and values as the standard wizard output (see wizard skill's Output section). Map the context directly:
