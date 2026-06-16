@@ -17,8 +17,8 @@ Follow `references/lsp-plugin-catalog.md` for the 12-entry language→plugin map
 | **Path SKIP — caller-disabled** | `callerExtras.disableLSP === true` | No script run, no install, no snapshot. Telemetry: `lspStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [] }`. **Telemetry IS still written.** |
 
 **Inputs**:
-- `callerExtras.disableLSP` (optional, headless) — see Path SKIP above; headless callers may pass `true` by default for placeholder code in scaffolds
-- `callerExtras.lspPlugins` (optional, headless) — see Path A above
+- `callerExtras.disableLSP` (optional, programmatic) — see Path SKIP above; programmatic callers may pass `true` by default for placeholder code in scaffolds
+- `callerExtras.lspPlugins` (optional, programmatic) — see Path A above
 - `wizardAnswers.lspPlugins` (optional) — see Path A above
 - Output of `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"` — JSON array sorted by fileCount desc
 
@@ -37,7 +37,7 @@ Empty array → nothing to recommend. Emit `lspStatus: { planned: [], generated:
 
 **Step 2 — Resolve selected plugins.**
 
-- If `callerExtras.lspPlugins` is a non-null array → use it verbatim as the accepted list (headless path; caller supplies an explicit list or nothing).
+- If `callerExtras.lspPlugins` is a non-null array → use it verbatim as the accepted list (programmatic path; caller supplies an explicit list or nothing).
 - Else if `wizardAnswers.lspPlugins` exists (from wizard Phase 5.6) → use that as the accepted list.
 - Else → use all detected plugins as the accepted list (autonomous internal-generation path).
 

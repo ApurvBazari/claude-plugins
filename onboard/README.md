@@ -56,7 +56,7 @@ Quick health check showing last run date, generated artifacts, integrity status,
 
 ### `/onboard:generate` *(internal API — `user-invocable: false`, hidden from `/` menu)*
 
-Internal generation step invoked by `/onboard:start` (after the grounded wizard) and by `/onboard:update` / `/onboard:evolve` (for missing-file repair). Consumes the v3 context shape (`version: 3`, per `skills/generate/references/context-shape-v3.json`) and emits all Claude tooling artifacts without re-running the interactive wizard or codebase analysis. This is not an external API — the v2 headless contract was removed in 3.0.0. It accepts a `mode`: `"plan"` computes the `generationManifest` (what it *would* write) for the pre-implementation gate without writing; `"write"` (default) runs the full pipeline.
+Internal generation step invoked by `/onboard:start` (after the grounded wizard) and by `/onboard:update` / `/onboard:evolve` (for missing-file repair). Consumes the v3 context shape (`version: 3`, per `skills/generate/references/context-shape-v3.json`) and emits all Claude tooling artifacts without re-running the interactive wizard or codebase analysis. This is not an external API — the v2 external-caller contract was removed in 3.0.0. It accepts a `mode`: `"plan"` computes the `generationManifest` (what it *would* write) for the pre-implementation gate without writing; `"write"` (default) runs the full pipeline.
 
 ## Architecture
 

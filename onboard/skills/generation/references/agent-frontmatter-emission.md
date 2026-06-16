@@ -34,7 +34,7 @@ Archetype-defined `disallowedTools` always win for semantic protection (reviewer
 - **Tweak agent N** — re-prompt only that agent's fields (which to change: model / effort / tools / disallowedTools / color / isolation / maxTurns / permissionMode). Other agents proceed with their accepted values. Mark tweaked fields `source: "user-tweaked"`.
 - **Skip agent N** — record `agentStatus.skipped[] = [{ "agent": "<name>", "reason": "user-declined-confirmation" }]`. Skipped agents are not written, not snapshotted, and not included in `agentStatus.generated[]`.
 
-**Headless passthrough**: when `callerExtras.disableAgentTuning` is `true`, skip Step 4 entirely and emit with the inferred-plus-tuned values. Record each agent's `frontmatterFields.<name>.source = "inferred"` or `"wizard-default"` per Step 2. This mirrors the `callerExtras.disableSkillTuning` escape hatch.
+**Programmatic passthrough**: when `callerExtras.disableAgentTuning` is `true`, skip Step 4 entirely and emit with the inferred-plus-tuned values. Record each agent's `frontmatterFields.<name>.source = "inferred"` or `"wizard-default"` per Step 2. This mirrors the `callerExtras.disableSkillTuning` escape hatch.
 
 **Step 5 — Write agent files.** Emit only fields that have concrete values — never emit empty strings or empty lists. Omitted fields preserve pre-feature-equivalent behavior exactly and keep pre-upgrade fixtures byte-identical. The description prefix convention (for encoding `proactive` intent per the archetype table) is applied inline in the final description string, not as a separate field.
 

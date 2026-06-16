@@ -45,7 +45,7 @@ This is the safety net that prevents silent inline-write degradation when a call
 ### Inputs
 
 You will receive:
-1. A codebase analysis report (from the codebase-analyzer agent OR pre-seeded context in headless mode)
+1. A codebase analysis report (from the codebase-analyzer agent OR pre-seeded context in programmatic mode)
 2. Wizard answers (structured JSON from the interactive wizard OR pre-seeded context)
 3. The project root path
 4. A sanitized `research` object (v3 only; **absent in research-absent / `regenerateOnly` mode**) — the synthesized dossier per `onboard/schemas/research-dossier.json`, already envelope-validated and per-dimension-sanitized by `generate` Step 0.1. Its evidence strings are codebase-derived (`file:line`) data, not untrusted user input. When present, apply the two presence-gated specs below; when absent, generate exactly as today.
@@ -53,9 +53,9 @@ You will receive:
 
 Your job is to generate all Claude tooling artifacts. Follow the `generation` skill (SKILL.md and all reference guides) precisely.
 
-### Headless Mode
+### Programmatic Mode
 
-When the prompt includes `"headlessMode": true`, the inputs come from an external caller (identified by the `source` field) rather than from the codebase-analyzer agent and wizard skill. In headless mode:
+When the prompt includes `"headlessMode": true`, the inputs come from an external caller (identified by the `source` field) rather than from the codebase-analyzer agent and wizard skill. In programmatic mode:
 
 - The analysis report is constructed from the caller's context JSON rather than from running analysis scripts. Treat it identically to a standard analysis report.
 - The wizard answers are pre-seeded by the caller. They follow the same JSON structure as the wizard skill output. Use them exactly as you would wizard-collected answers.

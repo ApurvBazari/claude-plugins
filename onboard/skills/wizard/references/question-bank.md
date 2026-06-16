@@ -261,7 +261,7 @@ AskUserQuestion({
 })
 ```
 
-**Headless mode** (`callerExtras.lspPlugins` / `callerExtras.disableLSP` / `callerExtras.builtInSkills` / `callerExtras.disableBuiltInSkills`): the detection prompt never fires — generation reads the caller-supplied value directly.
+**Programmatic mode** (`callerExtras.lspPlugins` / `callerExtras.disableLSP` / `callerExtras.builtInSkills` / `callerExtras.disableBuiltInSkills`): the detection prompt never fires — generation reads the caller-supplied value directly.
 
 ---
 

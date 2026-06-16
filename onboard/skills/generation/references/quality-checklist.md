@@ -31,11 +31,11 @@ Before finishing generation, verify:
 - [ ] Standalone quality-gate hooks match profile + autonomyLevel (comprehensive → all four, standard → SessionStart only, minimal → none)
 - [ ] Standalone hooks do not reference plugin skills (no `/superpowers:*`, no `code-review:*`)
 - [ ] Standalone preCommit hook uses project's actual test command from analysis
-- [ ] effectivePlugins resolution works for all three scenarios: headless (callerExtras), standalone with plugins (self-detected), standalone without plugins (none)
+- [ ] effectivePlugins resolution works for all three scenarios: programmatic (callerExtras), standalone with plugins (self-detected), standalone without plugins (none)
 - [ ] Plugin Integration section generates in standalone mode when plugins are self-detected
 - [ ] Plugin-referencing quality-gate hooks generated when effectiveQualityGates is present (regardless of entry point)
 - [ ] onboard-meta.json records pluginSource
-- [ ] onboard-meta.json.detectedPlugins is populated unconditionally (from effectivePlugins resolution), including headless runs — empty object is valid but the field must exist
+- [ ] onboard-meta.json.detectedPlugins is populated unconditionally (from effectivePlugins resolution), including programmatic runs — empty object is valid but the field must exist
 - [ ] If both plugins installed: no "Recommended Plugins" section in CLAUDE.md
 - [ ] CLAUDE.md "Development Workflow" references match actually installed plugins (no dangling refs)
 - [ ] PR template includes TDD checklist item ("Tests written first, all pass")

@@ -12,12 +12,12 @@ Follow `references/mcp-guide.md` for emission rules, catalog, and transport shap
 |---|---|---|
 | **Path A — wizard answer** | `wizardAnswers` contains MCP server preferences (rare; MCP is signal-driven, not wizard-gated) | Emit per wizard. |
 | **Path B — internal generation default** | wizard absent AND no candidate signals | Emit `mcpStatus: { status: "skipped", reason: "no-candidates" }`. No `.mcp.json`, no snapshot. |
-| **Path C — signal-driven (default)** | `${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh` returns ≥1 candidate | Emit `.mcp.json` + snapshot + telemetry. **This path fires regardless of wizard or headless mode** unless `callerExtras.disableMCP === true`. |
+| **Path C — signal-driven (default)** | `${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh` returns ≥1 candidate | Emit `.mcp.json` + snapshot + telemetry. **This path fires regardless of wizard or programmatic mode** unless `callerExtras.disableMCP === true`. |
 | **Path SKIP — caller-disabled** | `callerExtras.disableMCP === true` | No `.mcp.json`, no snapshot. Telemetry: `mcpStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [] }`. **Telemetry IS still written.** |
 
 **Inputs**:
 - `analysis.stack` — frameworks, deps, config-file fingerprints
-- `callerExtras.disableMCP` (optional, headless) — see Path SKIP above
+- `callerExtras.disableMCP` (optional, programmatic) — see Path SKIP above
 - Output of `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh" <project-root>` — canonical signal list
 
 **Telemetry contract**: `mcpStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | documented | skipped | declined | failed`) per the Default behavior matrix in `generate/SKILL.md`.

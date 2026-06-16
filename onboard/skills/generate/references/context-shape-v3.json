@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://github.com/ApurvBazari/claude-plugins/onboard/skills/generate/references/context-shape-v3.json",
   "title": "Onboard Generate — v3 Context Shape",
-  "description": "Input schema for onboard:generate in onboard 3.x. v3 is the ONLY accepted shape (the v2 headless API was removed in 3.0.0). The context is the internal object built by onboard:start (version:3 + analysis + wizardAnswers + an OPTIONAL top-level `research` object, canonical shape: onboard/schemas/research-dossier.json). There is no `phases` block and no inheritance from a v2 schema. v1 and v2 are rejected. NOTE: `research` is OPTIONAL here; generate makes it required for a full generation (and exempt for callerExtras.regenerateOnly re-emits) at runtime — see generate/SKILL.md Step 0.1.",
+  "description": "Input schema for onboard:generate in onboard 3.x. v3 is the ONLY accepted shape (the v2 external-caller API was removed in 3.0.0). The context is the internal object built by onboard:start (version:3 + analysis + wizardAnswers + an OPTIONAL top-level `research` object, canonical shape: onboard/schemas/research-dossier.json). There is no `phases` block and no inheritance from a v2 schema. v1 and v2 are rejected. NOTE: `research` is OPTIONAL here; generate makes it required for a full generation (and exempt for callerExtras.regenerateOnly re-emits) at runtime — see generate/SKILL.md Step 0.1.",
   "type": "object",
   "required": ["version", "source", "projectPath", "callerExtras"],
   "additionalProperties": true,

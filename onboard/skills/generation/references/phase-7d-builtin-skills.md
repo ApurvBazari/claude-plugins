@@ -16,8 +16,8 @@ Follow `references/built-in-skills-catalog.md` for the 9-skill catalog, tier cla
 | **Path SKIP — caller-disabled** | `callerExtras.disableBuiltInSkills === true` | No CLAUDE.md subsection, no snapshot. Telemetry: `builtInSkillsStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [] }`. **Telemetry IS still written.** |
 
 **Inputs**:
-- `callerExtras.disableBuiltInSkills` (optional, headless) — see Path SKIP above; headless callers may pass `true` by default for placeholder code in scaffolds
-- `callerExtras.builtInSkills` (optional, headless) — see Path A above
+- `callerExtras.disableBuiltInSkills` (optional, programmatic) — see Path SKIP above; programmatic callers may pass `true` by default for placeholder code in scaffolds
+- `callerExtras.builtInSkills` (optional, programmatic) — see Path A above
 - `wizardAnswers.builtInSkills` (optional) — see Path A above
 
 **Telemetry contract**: `builtInSkillsStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | documented | skipped | declined | failed`) per the Default behavior matrix in `generate/SKILL.md`. **Built-in skills is the primary user of the `"documented"` value** — its "artifact" is a CLAUDE.md subsection rather than a separate file + snapshot, so `"documented"` is semantically more accurate than `"emitted"` when the phase runs. See Phase 7d below for the firing paths.
@@ -45,7 +45,7 @@ Build the full candidate list: 4 core + N extras (0-5) whose signals fired. Reco
 
 **Step 2 — Resolve accepted list.** Determine which skills to generate from the candidate list:
 
-- If `callerExtras.builtInSkills` is present → use it verbatim as the accepted list (headless mode). An empty array means "declined all".
+- If `callerExtras.builtInSkills` is present → use it verbatim as the accepted list (programmatic mode). An empty array means "declined all".
 - Else if `wizardAnswers.builtInSkills` is present → use it as the accepted list.
 - Else (internal generation / absent field) → accept the full candidate list (all core + fired extras).
 

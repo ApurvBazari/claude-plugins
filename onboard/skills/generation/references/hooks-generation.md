@@ -4,7 +4,7 @@
 
 #### Quality-Gate Hooks (from `effectiveQualityGates`)
 
-When `effectiveQualityGates` is present (from either `callerExtras.qualityGates` in headless mode or `detectedPlugins.qualityGates` in standalone mode with detected plugins), generate boundary-enforcement hooks that reinforce the CLAUDE.md Plugin Integration discipline. Four hook categories are supported, each driven by a field on the `qualityGates` object:
+When `effectiveQualityGates` is present (from either `callerExtras.qualityGates` in programmatic mode or `detectedPlugins.qualityGates` in standalone mode with detected plugins), generate boundary-enforcement hooks that reinforce the CLAUDE.md Plugin Integration discipline. Four hook categories are supported, each driven by a field on the `qualityGates` object:
 
 | Field | Event | Default mode | What it does |
 |---|---|---|---|
@@ -421,7 +421,7 @@ These hooks reference project conventions rather than installed plugins:
 
 ##### Standalone script conventions
 
-Standalone hooks follow the same shell conventions as headless hooks:
+Standalone hooks follow the same shell conventions as programmatic hooks:
 - `#!/usr/bin/env bash` + `set -u` (not `set -euo pipefail` — see Shell Options section above)
 - ShellCheck-clean (`shellcheck -x`)
 - Advisory hooks always `exit 0`, blocking hooks `exit 2` with stderr on failure
@@ -431,11 +431,11 @@ Standalone hooks follow the same shell conventions as headless hooks:
 
 ##### hookStatus telemetry for standalone hooks
 
-Record standalone quality-gate hooks in `onboard-meta.json` under the same `hookStatus` key used by headless hooks. The shape is identical — `planned`, `generated`, `skipped`, `warnings`. The `skipped[].reason` for profile-excluded hooks is `"profile-excluded"`.
+Record standalone quality-gate hooks in `onboard-meta.json` under the same `hookStatus` key used by programmatic hooks. The shape is identical — `planned`, `generated`, `skipped`, `warnings`. The `skipped[].reason` for profile-excluded hooks is `"profile-excluded"`.
 
 ##### Merge behavior
 
-Same as headless mode: read existing `.claude/settings.json` first, merge hook entries, never overwrite. If a hook with the same matcher/event already exists, skip (don't duplicate). Standalone quality-gate hooks coexist with format/lint hooks from the Autonomy Cascade — they use different events/matchers and do not conflict.
+Same as programmatic mode: read existing `.claude/settings.json` first, merge hook entries, never overwrite. If a hook with the same matcher/event already exists, skip (don't duplicate). Standalone quality-gate hooks coexist with format/lint hooks from the Autonomy Cascade — they use different events/matchers and do not conflict.
 
 #### Advanced Event Hooks (from `qualityGates.<advanced-event>` or wizard opt-in)
 

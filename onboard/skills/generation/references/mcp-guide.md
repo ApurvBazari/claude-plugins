@@ -118,11 +118,11 @@ Parallel to `hookStatus`. Added to `onboard-meta.json`:
 }
 ```
 
-Headless callers read `mcpStatus` from the generate-skill return and can surface it in their own handoff output.
+Programmatic callers read `mcpStatus` from the generate-skill return and can surface it in their own handoff output.
 
 ## Caller Escape Hatch
 
-Headless callers may pass `callerExtras.disableMCP: true` to suppress `.mcp.json` emission entirely. When set:
+Programmatic callers may pass `callerExtras.disableMCP: true` to suppress `.mcp.json` emission entirely. When set:
 
 - Skip Phase 7a completely
 - Record `mcpStatus.skipped = [{ server: "*", reason: "caller-disabled" }]`

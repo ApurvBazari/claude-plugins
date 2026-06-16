@@ -15,19 +15,19 @@ Generate all Claude Code artifacts for a project based on analysis data and deve
 ## Inputs
 
 You receive:
-1. **Codebase Analysis Report** — From the codebase-analyzer agent, or from pre-seeded context in headless mode
-2. **Wizard Answers** — Structured JSON from the wizard phase, or from pre-seeded context in headless mode
+1. **Codebase Analysis Report** — From the codebase-analyzer agent, or from pre-seeded context in programmatic mode
+2. **Wizard Answers** — Structured JSON from the wizard phase, or from pre-seeded context in programmatic mode
 3. **Project Root Path** — Where to write artifacts
 
-## Headless Mode Guard
+## Programmatic Mode Guard
 
-When `headlessMode` is `true` in the input context, this skill is being invoked via `/onboard:generate` from an external caller. In headless mode:
+When `headlessMode` is `true` in the input context, this skill is being invoked via `/onboard:generate` from an external caller. In programmatic mode:
 
 - **Skip all interactive steps** — Do not ask the developer any questions, present confirmation prompts, or wait for user input. All decisions have already been made by the caller.
 - **Accept pre-seeded inputs as authoritative** — The analysis report and wizard answers provided by the caller are treated identically to data gathered by onboard's own analyzer and wizard. Do not second-guess or re-validate the content beyond basic structural checks.
-- **Merge hooks carefully** — The caller may have already written hooks to `.claude/settings.json`. Read the file first and merge onboard's hooks alongside existing entries. This is the most common source of conflicts in headless mode.
+- **Merge hooks carefully** — The caller may have already written hooks to `.claude/settings.json`. Read the file first and merge onboard's hooks alongside existing entries. This is the most common source of conflicts in programmatic mode.
 - **Record provenance** — Include `headlessMode: true` and the caller's `source` identifier in `onboard-meta.json`.
-- **All generation rules still apply** — Artifact order, quality checks, maintenance headers, autonomy cascade, reference guides — everything in this skill applies equally in headless mode. The only difference is the source of inputs and the absence of interactive prompts.
+- **All generation rules still apply** — Artifact order, quality checks, maintenance headers, autonomy cascade, reference guides — everything in this skill applies equally in programmatic mode. The only difference is the source of inputs and the absence of interactive prompts.
 
 ## Maintenance Header
 
@@ -88,7 +88,7 @@ When dispatched with `planOnly: true`, run the front half of generation — all 
 
 Before generating any artifacts, resolve the effective plugin list. This determines whether plugin-aware features (Plugin Integration section, per-directory skill annotations, plugin-aware agent skipping, plugin-referencing quality-gate hooks) are generated.
 
-1. If `callerExtras.installedPlugins` is present and non-empty → use it as `effectivePlugins` (headless mode — caller-provided data is authoritative)
+1. If `callerExtras.installedPlugins` is present and non-empty → use it as `effectivePlugins` (programmatic mode — caller-provided data is authoritative)
 2. Else if `detectedPlugins.installedPlugins` is present and non-empty → use it as `effectivePlugins` (standalone mode — self-detected via `references/plugin-detection-guide.md`)
 3. Else → `effectivePlugins` is empty (no plugins available)
 
@@ -205,7 +205,7 @@ Follow `references/agents-guide.md` for agent file structure, archetypes, and fr
 
 Each agent is a single markdown file with YAML frontmatter and free-form instructions body. The `name` frontmatter field must match the filename stem.
 
-#### Plugin-Aware Agent Generation (Headless Mode)
+#### Plugin-Aware Agent Generation (Programmatic Mode)
 
 When `effectiveCoveredCapabilities` is non-empty, **skip agents whose capability is already covered by an installed plugin**. Project-level agents in `.claude/agents/` take priority over plugin agents, so generating a generic `code-reviewer.md` would shadow a superior plugin implementation.
 
@@ -290,7 +290,7 @@ Always generate this file with:
 - List of generated artifacts
 - Model recommendation and whether user approved
 - Plugin detection results: `detectedPlugins` object — always populated from `effectivePlugins`, `effectiveCoveredCapabilities`, `effectiveQualityGates`, `effectivePhaseSkills` (resolved per § Effective Plugin List Resolution). Populate regardless of `pluginSource` so that `onboard:update` has a single canonical baseline to diff against. When `effectivePlugins` is empty, write `detectedPlugins: { installedPlugins: [], coveredCapabilities: [], qualityGates: {}, phaseSkills: {} }` — do not omit the field.
-- Plugin source: `pluginSource` — `"callerExtras"` | `"self-detected"` | `"none"` — records how the effective plugin list was resolved (headless callers still get `detectedPlugins` mirrored for drift-detection continuity)
+- Plugin source: `pluginSource` — `"callerExtras"` | `"self-detected"` | `"none"` — records how the effective plugin list was resolved (programmatic callers still get `detectedPlugins` mirrored for drift-detection continuity)
 
 ## Quality Checklist
 
@@ -298,7 +298,7 @@ Before finishing generation, run the full pre-exit verification checklist in `re
 
 ## Extended Generation (Enriched Mode)
 
-When the wizard or headless context includes extended preferences (CI/CD, harness, evolution, verification), generate these additional artifacts. These are universally useful — not limited to any specific caller.
+When the wizard or programmatic context includes extended preferences (CI/CD, harness, evolution, verification), generate these additional artifacts. These are universally useful — not limited to any specific caller.
 
 ### CI/CD Pipelines (if `willDeploy` and no existing CI/CD detected)
 
@@ -396,8 +396,8 @@ These carry the verbatim artifact templates and long emission enumerations for t
 
 ## Key Rules
 
-- **Headless mode prohibits all interactive prompts** — when `headlessMode: true`, every decision has been pre-made by the caller. Never ask the developer a question, show a confirmation prompt, or wait for input. Treat caller inputs as authoritative.
+- **Programmatic mode prohibits all interactive prompts** — when `headlessMode: true`, every decision has been pre-made by the caller. Never ask the developer a question, show a confirmation prompt, or wait for input. Treat caller inputs as authoritative.
 - **Version string is always read from `plugin.json`, never hardcoded** — the maintenance header `{VERSION}` must be resolved at generation time from the manifest. A hardcoded literal will become stale without warning.
-- **`settings.json` is always read before writing** — hooks are merged alongside existing entries, never overwriting the file. This is the most common headless-mode conflict source.
+- **`settings.json` is always read before writing** — hooks are merged alongside existing entries, never overwriting the file. This is the most common programmatic-mode conflict source.
 - **Plugin-covered capabilities are never re-generated** — before generating any agent, check `coveredCapabilities`. An agent that shadows an installed plugin must be skipped entirely, not generated with a note.
 - **Standalone TDD artifacts are conditional on `superpowers` absence** — the standalone TDD skill and TDD test-writer agent are only generated when the superpowers plugin is not installed. Never generate both; they conflict.

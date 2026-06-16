@@ -204,6 +204,6 @@ Phase 7b (Output Styles)
 2. **Never overwrite pre-existing files**. Use `existedPreOnboard` as the guard. This matches skill/agent/MCP precedent.
 3. **Always populate `outputStyleStatus`** in `onboard-meta.json` — even in no-emit cases (skipped, archetype-not-fired). Telemetry is load-bearing for the drift contract.
 4. **Reference built-ins in CLAUDE.md**, not in emitted files. Users already have the built-ins.
-5. **Respect the headless escape hatch**. When `callerExtras.disableOutputStyleTuning: true`, skip batched confirmation entirely; emit with inferred + wizard-default values. This is the headless path.
+5. **Respect the programmatic escape hatch**. When `callerExtras.disableOutputStyleTuning: true`, skip batched confirmation entirely; emit with inferred + wizard-default values. This is the programmatic path.
 6. **Never touch settings.json** (shared). Only settings.local.json (personal). outputStyle is a per-machine preference by Claude Code's design.
 7. **Validate frontmatter before writing**. `name` must be lowercase-hyphen (matches filename stem). `archetype` must be one of the 5. `source` must be one of the 4 values. `keep-coding-instructions` must be boolean.

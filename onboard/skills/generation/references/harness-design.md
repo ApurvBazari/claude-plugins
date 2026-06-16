@@ -426,7 +426,7 @@ All harness artifacts are generated during Phase 3 (AI Tooling), after scaffold 
 2. `docs/feature-list.json` — written from Phase 1 feature decomposition
 3. `docs/progress.md` — initialized with Session 1 (onboard init) entry
 4. `docs/verification-reports/` — directory created (empty until first /onboard:verify run)
-5. Session startup protocol — added to CLAUDE.md via onboard headless `callerExtras`
+5. Session startup protocol — added to CLAUDE.md via onboard programmatic `callerExtras`
 6. E2E verification guidance — added to CLAUDE.md
 7. Single feature focus rule — added to CLAUDE.md
 8. Test immutability rule — added to CLAUDE.md

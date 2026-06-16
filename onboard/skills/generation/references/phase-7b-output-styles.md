@@ -10,7 +10,7 @@ Follow `references/output-styles-guide.md` for archetype inference, frontmatter 
 
 | Path | Trigger | Behavior |
 |---|---|---|
-| **Path A — wizard answer** | `wizardAnswers.outputStyleTuning` present with `mode: "tuned"` | Use wizard's archetype override + activation default. Run Step 6 batched confirmation unless headless. |
+| **Path A — wizard answer** | `wizardAnswers.outputStyleTuning` present with `mode: "tuned"` | Use wizard's archetype override + activation default. Run Step 6 batched confirmation unless programmatic. |
 | **Path B — internal generation default** | wizard absent OR `mode: "defaults"` | Infer top-priority archetype from signals (Steps 1+3). Emit catalog defaults + snapshot + telemetry `status: "emitted"`. **No silent no-op.** |
 | **Path SUPPRESS — tuning disabled** | `callerExtras.disableOutputStyleTuning === true` | Same as Path B but skip Step 6 batched confirmation entirely. Artifacts ARE generated. Telemetry: `outputStyleStatus: { status: "emitted", source: "inferred", ... }`. |
 | **Path DECLINED** | wizard `archetypeOverride === "skip-emit"` | No file written. Telemetry: `outputStyleStatus: { status: "declined", reason: "skip-emit-selected" }`. |
@@ -19,7 +19,7 @@ Follow `references/output-styles-guide.md` for archetype inference, frontmatter 
 **Inputs**:
 - `analysis.*` — existing wizard + analysis signals (teamSize, projectMaturity, primaryTasks, securitySensitivity, deployFrequency, painPoints, project description)
 - `wizardAnswers.outputStyleTuning` (optional) — `{ mode, archetypeOverride?, activationDefault? }`. Treat absence as `{ mode: "defaults" }`
-- `callerExtras.disableOutputStyleTuning` (optional, headless) — see Path SUPPRESS above
+- `callerExtras.disableOutputStyleTuning` (optional, programmatic) — see Path SUPPRESS above
 
 **Telemetry contract**: `outputStyleStatus` MUST be present in `onboard-meta.json` after every generation. The SUPPRESS-PROMPT-ONLY family (`disableOutputStyleTuning`) MUST NOT collapse to `status: "skipped"` — that's the SKIP-PHASE family's behavior, and Phase 7b has no SKIP-PHASE flag.
 
@@ -56,7 +56,7 @@ Follow `references/output-styles-guide.md` for archetype inference, frontmatter 
 - One row showing: archetype, target path, activation default
 - Options: **Accept** (default), **Override archetype** (re-prompt with the 7-option archetype list), **Skip emit** (record `{reason: "user-declined-confirmation"}` and exit)
 
-**Headless passthrough**: when `callerExtras.disableOutputStyleTuning` is `true`, skip Step 6 entirely and emit with the Step 5 frontmatter as-is. Mirrors the `callerExtras.disableMCP` and `callerExtras.disableSkillTuning` patterns.
+**Programmatic passthrough**: when `callerExtras.disableOutputStyleTuning` is `true`, skip Step 6 entirely and emit with the Step 5 frontmatter as-is. Mirrors the `callerExtras.disableMCP` and `callerExtras.disableSkillTuning` patterns.
 
 **Step 7 — Write the style file.** Emit `.claude/output-styles/<name>.md` with the frontmatter from Step 5 followed by the catalog body template. Project-specific markers (`<angle-bracket>` placeholders) are filled from `analysis.*`; drop the parent sentence when a marker can't be filled cleanly.
 
