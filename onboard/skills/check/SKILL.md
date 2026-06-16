@@ -15,9 +15,10 @@ Read `.claude/onboard-meta.json`:
 
 **If not found**:
 
-> This project hasn't been set up with onboard yet.
+> This project hasn't been set up with onboard yet — there's no `onboard-meta.json` baseline to health-check.
 >
-> Run `/onboard:start` to analyze your codebase and generate Claude tooling.
+> - **No Claude tooling yet?** Run `/onboard:start` to analyze your codebase and generate it.
+> - **Already have hand-crafted tooling** (foreign — not onboard-managed: a root `CLAUDE.md`, `.claude/` rules/skills/agents/output-styles, `.mcp.json`, or hooks in `.claude/settings.json`)? Run `/onboard:adopt` to bring it under management — adopt synthesizes the baseline and never modifies your files. Then `/onboard:check` and `/onboard:update` will work against it.
 
 Stop here.
 
@@ -175,7 +176,7 @@ Also display a quick reminder of the developer's preferences:
 ## Key Rules
 
 - **Never write to any file** — this skill is fully read-only. All Steps are observation and reporting; no files are created, modified, or deleted.
-- **Halt at Step 1 if `onboard-meta.json` is missing** — do not continue to artifact checks or drift detection without a metadata baseline. The user must run `/onboard:start` first.
+- **Halt at Step 1 if `onboard-meta.json` is missing** — do not continue to artifact checks or drift detection without a metadata baseline. The user must run `/onboard:start` first (or `/onboard:adopt` if they have existing hand-crafted tooling to bring under management).
 - **Parse error requires explicit user choice** — if `onboard-meta.json` is malformed, surface the two options (re-initialize or metadata-free check) via `AskUserQuestion` and wait. Never silently skip drift detection.
 - **Drift findings are always confirmed before acting** — the check reports drift; it never auto-applies or recommends immediate edits. Direct the user to `/onboard:update` for any changes.
 - **Drift thresholds are concrete, not vague** — use the exact numeric thresholds defined in Step 4 (3+ new deps, >20% test file delta, major version bump, etc.). Do not flag drift on noise below these thresholds.
