@@ -77,7 +77,11 @@ Phase 2: Grounded Wizard ──→ confirm/override from research.wizardInferenc
 Phase 2.5: Plugin Detection ──→ siblings + marketplace probe
      │
      ▼
-Phase 3: Generation ──→ Skill(onboard:generate)
+Phase 2.7-2.9: Plan → Preview → HARD GATE ──→ Skill(onboard:generate {mode:plan})
+     │                                         └── previewModel (research + blueprint) → walkthrough:render
+     │                                             Approve → write │ Adjust → re-plan │ Cancel → nothing
+     ▼
+Phase 3: Generation (post-gate) ──→ Skill(onboard:generate {mode:"write"})
      │                   └── config-generator agent (write)
      ▼
 Phase 4: Handoff ──→ explains generated artifacts, suggests next steps

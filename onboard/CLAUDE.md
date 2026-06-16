@@ -32,7 +32,11 @@ Phase 2.5: Plugin Detection ──→ deep probe (siblings + marketplace cache)
 Phase 2.6: Build v3 Context ──→ start/references/onboard-context-builder.md
      │                           └── version: 3 + research block
      ▼
-Phase 3: Generation ──→ Skill(onboard:generate)
+Phase 2.7-2.9: Plan → Preview → HARD GATE ──→ Skill(onboard:generate {mode:plan})
+     │                                         └── previewModel (research + blueprint) → walkthrough:render
+     │                                             Approve → write │ Adjust → re-plan │ Cancel → nothing
+     ▼
+Phase 3: Generation (post-gate) ──→ Skill(onboard:generate {mode:"write"})
      │                   └── config-generator agent (write)
      │                       ├── Core: CLAUDE.md, rules, skills, agents, hooks
      │                       ├── v3: consumes research → sharpens artifacts + seeds docs/feature-list.json

@@ -11,6 +11,7 @@
 - **Optional interactive render**: when the `walkthrough` plugin is present, the dossier also renders to a self-contained interactive HTML (skipped silently otherwise).
 - **v2 retired**: the external headless v2 context API + adapters are removed; `generate` is a v3-only internal generation step (use `onboard@2.x` for the v2 surface).
 - Full research telemetry in `onboard-meta.json` + a Phase-7 research self-audit.
+- **Pre-implementation walkthrough gate**: `/onboard:start` now computes a generation plan (`generate {mode:"plan"}` → `generationManifest`, schema `schemas/generation-manifest.json`), assembles a unified `previewModel` (research + blueprint), and renders it via `walkthrough:render` behind a hard Approve/Adjust/Cancel gate before any write. walkthrough-absent degrades to an inline markdown gate (offer-install first). `/onboard:update` renders the same change preview before its Step-6 approval. Research Step 7.5's standalone HTML render folds into the gate.
 
 ## 2.0.1 — 2026-06-11
 - refactor: split generation/SKILL.md (1812→<500 lines) and update/SKILL.md (604→<500) into references.
