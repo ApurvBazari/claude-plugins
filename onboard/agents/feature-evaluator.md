@@ -120,7 +120,7 @@ Evaluate each criterion in the sprint contract:
 
 Each criterion is either MET or NOT MET. The sprint gate passes only if ALL `required` criteria are met.
 
-### 7. Stop Dev Server
+### 8. Stop Dev Server
 
 After testing is complete, stop the dev server process started in step 3.
 
