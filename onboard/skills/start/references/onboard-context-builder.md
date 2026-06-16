@@ -1,18 +1,18 @@
-# Onboard Context Builder — Init-Path Reference
+# Onboard Context Builder — Start-Path Reference
 
 Canonical procedure for building the internal-generation context object from `/onboard:start` wizard answers + analysis + plugin detection. Produces the canonical context shape for `Skill(onboard:generate) → config-generator` agent.
 
 ## Why this reference exists
 
-The 2026-04-17 release-gate sweep found 7 blocker-class bugs (B1, B5, B6, B8, B10, B12, B13) clustered in init's context construction — proving the generator is correct when given a properly-formed context.
+The 2026-04-17 release-gate sweep found 7 blocker-class bugs (B1, B5, B6, B8, B10, B12, B13) clustered in start's context construction — proving the generator is correct when given a properly-formed context.
 
-**Root cause**: init was assembling a *subset* of the expected `callerExtras` structure and passing it via an ad-hoc prompt to the `config-generator` agent. Fields the generator expected but didn't receive fell into "absent-field" skip branches (MCP skipped, snapshot coupling broken, plugin detection shallow, LSP silently dropped, CLAUDE.md sections missing).
+**Root cause**: start was assembling a *subset* of the expected `callerExtras` structure and passing it via an ad-hoc prompt to the `config-generator` agent. Fields the generator expected but didn't receive fell into "absent-field" skip branches (MCP skipped, snapshot coupling broken, plugin detection shallow, LSP silently dropped, CLAUDE.md sections missing).
 
-**Fix**: all init profile paths (Minimal / Standard / Comprehensive) call the procedure below to emit the full shape. Stub mode (Phase 0, empty-repo) emits a canonical-shape variant per `../references/empty-repo-stub-procedure.md`. Dispatch goes through `Skill(onboard:generate)` — so validation + agent dispatch live in one place.
+**Fix**: all start profile paths (Minimal / Standard / Comprehensive) call the procedure below to emit the full shape. Stub mode (Phase 0, empty-repo) emits a canonical-shape variant per `../references/empty-repo-stub-procedure.md`. Dispatch goes through `Skill(onboard:generate)` — so validation + agent dispatch live in one place.
 
 ## When to invoke this procedure
 
-Called from `init/SKILL.md` Phase 2.6, after Phase 1 Analysis, Phase 2 Wizard, and Phase 2.5 Plugin Detection have completed. Returns the fully-populated context object. Init then passes the object to `Skill(onboard:generate)` in Phase 3.
+Called from `start/SKILL.md` Phase 2.6, after Phase 1 Analysis, Phase 2 Wizard, and Phase 2.5 Plugin Detection have completed. Returns the fully-populated context object. Start then passes the object to `Skill(onboard:generate)` in Phase 3.
 
 ## Inputs
 
@@ -26,7 +26,7 @@ From prior phases (already in conversation context):
 | Phase 2 Wizard | `wizardStatus` (canonical 5-subkey telemetry) | Mirrored into `onboard-meta.json` post-generation |
 | Phase 2.5 Plugin Detection | `installedPlugins[]`, `coveredCapabilities[]`, `pluginSurfaces{}` | `context.callerExtras.*` |
 | Resolved at runtime | `projectPath` (absolute) | `context.projectPath` |
-| Resolved at runtime | `modelChoice` (per init SKILL.md § 3.1) | `context.modelChoice` |
+| Resolved at runtime | `modelChoice` (per start SKILL.md § 3.1) | `context.modelChoice` |
 
 ## Output schema — context object passed to `Skill(onboard:generate)`
 
@@ -44,15 +44,15 @@ Emits a **v3 context** (`version: 3`): the v3 shape adds the top-level `research
 
   "research": { /* research-dossier object returned verbatim by /onboard:start Step 1.5 Skill(onboard:research); canonical shape: research-dossier.json */ },
 
-  "modelChoice": "claude-opus-4-7[1m]",  // resolved per init SKILL.md § 3.1
+  "modelChoice": "claude-opus-4-7[1m]",  // resolved per start SKILL.md § 3.1
 
   "ecosystemPlugins": { "notify": true },  // or false; comes from wizardAnswers.ecosystemPlugins
 
   "enriched": {
     "enableCICD":           <boolean>,  // derived: wizardAnswers.willDeploy && wizardAnswers.ciPreference !== "none"
-    "enableHarness":        false,      // init-path default
+    "enableHarness":        false,      // start-path default
     "enableEvolution":      true,       // default on; overridden only when wizardAnswers.evolutionPref === "none"
-    "enableSprintContracts": false,     // init-path default
+    "enableSprintContracts": false,     // start-path default
     "enableTeams":          <boolean>,  // derived: wizardAnswers.teamSize !== "solo" && wizardAnswers.isProduction === true
     "enableVerification":   true,       // default on
     "willDeploy":           <boolean>,  // from wizardAnswers
@@ -68,15 +68,15 @@ Emits a **v3 context** (`version: 3`): the v3 shape adds the top-level `research
     "coveredCapabilities": [ /* derived from installedPlugins per plugin-detection-guide.md */ ],
     "pluginSurfaces":      { /* from Phase 2.5 surface probe — see plugin-surface-probe.md */ },
     "allowPluginReferences": true,       // default true when installedPlugins is non-empty
-    "allowHttpHooks":        false,      // opt-in only; init never auto-enables http hooks
+    "allowHttpHooks":        false,      // opt-in only; start never auto-enables http hooks
 
-    // Phase 7 family — SKIP-PHASE flags (init default: never skip)
-    "disableMCP":            false,      // init ALWAYS runs Phase 7a — this is the B1 fix
-    "disableLSP":            false,      // init runs Phase 7c when LSP candidates exist
-    "disableBuiltInSkills":  false,      // init runs Phase 7d; output is status:"documented" (see C1.6)
+    // Phase 7 family — SKIP-PHASE flags (start default: never skip)
+    "disableMCP":            false,      // start ALWAYS runs Phase 7a — this is the B1 fix
+    "disableLSP":            false,      // start runs Phase 7c when LSP candidates exist
+    "disableBuiltInSkills":  false,      // start runs Phase 7d; output is status:"documented" (see C1.6)
 
-    // Phase 7 family — SUPPRESS-PROMPT flags (init default: never suppress interactive confirmation)
-    "disableSkillTuning":    false,      // init keeps Phase 7 batched confirmation ON (interactive mode)
+    // Phase 7 family — SUPPRESS-PROMPT flags (start default: never suppress interactive confirmation)
+    "disableSkillTuning":    false,      // start keeps Phase 7 batched confirmation ON (interactive mode)
     "disableAgentTuning":    false,      // same
     "disableOutputStyleTuning": false,   // same
 
@@ -99,7 +99,7 @@ Emits a **v3 context** (`version: 3`): the v3 shape adds the top-level `research
 
 - `source` → literal `"onboard:start"`
 - `version` → integer literal `3` (the v3 context routing version that `generate` Step 0 keys on; it reads `research` and routes down the v3 path). This is NOT the plugin version.
-- `projectPath` → resolved via `pwd` (init runs in the project root)
+- `projectPath` → resolved via `pwd` (start runs in the project root)
 
 ### Step 2: Carry forward analysis + wizard + research outputs
 
@@ -112,11 +112,11 @@ Emits a **v3 context** (`version: 3`): the v3 shape adds the top-level `research
 
 Embed the returned dossier verbatim as the context `research` field. Do not reshape it — it already validated at the engine's Gate-2 against the `research-dossier.json` schema. The builder does not re-validate the dossier; it is carried through untouched so `generate` (Step 0, v3 path) can read it as inert `metadata.research`.
 
-If Step 1.5 did not run (research declined / unavailable), omit `research` entirely — `generate` still accepts a research-absent context and the builder emits `version: 3` regardless (the v3 schema treats `research` as optional; `generate` is v3-only and rejects any non-`3` version). The default for the init path is research-present `version: 3`.
+If Step 1.5 did not run (research declined / unavailable), omit `research` entirely — `generate` still accepts a research-absent context and the builder emits `version: 3` regardless (the v3 schema treats `research` as optional; `generate` is v3-only and rejects any non-`3` version). The default for the start path is research-present `version: 3`.
 
 ### Step 3: Resolve the model choice
 
-Use the resolution order in `init/SKILL.md § 3.1`:
+Use the resolution order in `start/SKILL.md § 3.1`:
 
 ```
 modelChoice = wizardAnswers.skillTuning?.defaultModel
@@ -127,10 +127,10 @@ modelChoice = wizardAnswers.skillTuning?.defaultModel
 
 ### Step 4: Derive the `enriched` flags
 
-| Flag | Derivation | Init-path default |
+| Flag | Derivation | Start-path default |
 |---|---|---|
 | `enableCICD` | `wizardAnswers.willDeploy && wizardAnswers.ciPreference !== "none"` | varies |
-| `enableHarness` | — | **false** (harness artifacts not emitted in init) |
+| `enableHarness` | — | **false** (harness artifacts not emitted in start) |
 | `enableEvolution` | — | **true** (always on; adds drift-detection hooks) |
 | `enableSprintContracts` | — | **false** |
 | `enableTeams` | `wizardAnswers.teamSize !== "solo" && wizardAnswers.isProduction` | varies |
@@ -155,19 +155,19 @@ If all three probes yielded zero plugins: `installedPlugins: []`, `coveredCapabi
 #### Opt-in fields
 
 - `allowPluginReferences` → `true` when `installedPlugins.length > 0`, else `false`
-- `allowHttpHooks` → `false` always in init-path; hook emission refuses http-type entries. Users who want http hooks must opt in via an advanced wizard answer (not yet exposed in any preset).
+- `allowHttpHooks` → `false` always in start-path; hook emission refuses http-type entries. Users who want http hooks must opt in via an advanced wizard answer (not yet exposed in any preset).
 
-#### Phase 7 SKIP-PHASE flags — init-path defaults
+#### Phase 7 SKIP-PHASE flags — start-path defaults
 
-**Critical for closing B1**: init passes these flags **explicitly as false**. Omitting the field would default to false at the generator, but passing explicitly makes the contract auditable.
+**Critical for closing B1**: start passes these flags **explicitly as false**. Omitting the field would default to false at the generator, but passing explicitly makes the contract auditable.
 
-- `disableMCP` → **`false`** (always). Phase 7a's signal-driven path fires; `.mcp.json` emitted when `detect-mcp-signals.sh` returns ≥ 1 candidate. Pre-fix bug: init's absent callerExtras meant the generator never ran Phase 7a → `reason: "no-candidates"` despite signals being present.
+- `disableMCP` → **`false`** (always). Phase 7a's signal-driven path fires; `.mcp.json` emitted when `detect-mcp-signals.sh` returns ≥ 1 candidate. Pre-fix bug: start's absent callerExtras meant the generator never ran Phase 7a → `reason: "no-candidates"` despite signals being present.
 - `disableLSP` → **`false`**. Phase 7c runs if `lspPlugins` array from wizardAnswers is non-empty OR the builder's Static Defaults supply the detected candidate list (when the wizard did not confirm a selection).
 - `disableBuiltInSkills` → **`false`**. Phase 7d runs; output is `builtInSkillsStatus.status: "documented"` (CLAUDE.md subsection, no separate snapshot file — see C1.6).
 
-#### Phase 7 SUPPRESS-PROMPT flags — init-path defaults
+#### Phase 7 SUPPRESS-PROMPT flags — start-path defaults
 
-Init is interactive by definition; never suppress confirmation prompts.
+Start is interactive by definition; never suppress confirmation prompts.
 
 - `disableSkillTuning` → **`false`** (Phase 7 skill batched confirmation runs)
 - `disableAgentTuning` → **`false`** (Phase 7 agent batched confirmation runs)
@@ -201,7 +201,7 @@ Verify before invoking `Skill(onboard:generate)`:
 5. `wizardAnswers.projectDescription` non-empty **and passes the untrusted-input sanitiser below**
 6. `callerExtras.installedPlugins` is an array (possibly empty, never undefined)
 7. `callerExtras.pluginSurfaces` is an object (possibly empty `{}`)
-8. **v3 routing invariants** — confirm the assembled context satisfies the v3-path routing requirements: `version` is the integer `3`; the init path always emits a `research` object (research ran in Step 1.5), so confirm `research` is present and is an object (the v3 path embeds the dossier) — `research` is schema-optional only so `regenerateOnly` snapshot replays may omit it; and `source` / `projectPath` / `callerExtras` are present (already checked above). Do NOT re-validate the embedded `research` object's internal shape — it passed the engine's Gate-2 against `research-dossier.json`. Note: the init builder emits the **internal v1-shaped object** (`analysis`, `wizardAnswers`, `enriched`, `callerExtras`, …) that `generate` and `config-generator` consume directly. This object satisfies `context-shape-v3.json`'s required set (`version`, `source`, `projectPath`, `callerExtras`) and adds the internal fields; the v3 schema no longer requires a `phases` block (`generate` is v3-only as of 3.0.0, with no v2 adapter), so gate dispatch only on the v3 routing invariants above — there is no `phases` field to gate on. On failure of the routing invariants above, refuse to dispatch and surface the offending field (same halt behavior as the field checks above).
+8. **v3 routing invariants** — confirm the assembled context satisfies the v3-path routing requirements: `version` is the integer `3`; the start path always emits a `research` object (research ran in Step 1.5), so confirm `research` is present and is an object (the v3 path embeds the dossier) — `research` is schema-optional only so `regenerateOnly` snapshot replays may omit it; and `source` / `projectPath` / `callerExtras` are present (already checked above). Do NOT re-validate the embedded `research` object's internal shape — it passed the engine's Gate-2 against `research-dossier.json`. Note: the start builder emits the **internal v1-shaped object** (`analysis`, `wizardAnswers`, `enriched`, `callerExtras`, …) that `generate` and `config-generator` consume directly. This object satisfies `context-shape-v3.json`'s required set (`version`, `source`, `projectPath`, `callerExtras`) and adds the internal fields; the v3 schema no longer requires a `phases` block (`generate` is v3-only as of 3.0.0, with no v2 adapter), so gate dispatch only on the v3 routing invariants above — there is no `phases` field to gate on. On failure of the routing invariants above, refuse to dispatch and surface the offending field (same halt behavior as the field checks above).
 
 #### Untrusted-input sanitiser
 
@@ -243,17 +243,17 @@ The recursive walk covers fields added in any Round (1 through 6) without per-ro
 
 If any check fails, report to the user:
 
-> Init-path context-builder validation failed: `<field>` is missing or invalid.
+> Start-path context-builder validation failed: `<field>` is missing or invalid.
 > This is a bug — please report with the wizard transcript.
 
 Do NOT proceed to dispatch with invalid context.
 
 ## Dispatch contract
 
-After Step 6 passes, init's Phase 3 invokes `Skill(onboard:generate)` with the context object as the single argument. The generate skill validates, then dispatches `Agent(config-generator)` with `dispatchedAsAgent: true`.
+After Step 6 passes, start's Phase 3 invokes `Skill(onboard:generate)` with the context object as the single argument. The generate skill validates, then dispatches `Agent(config-generator)` with `dispatchedAsAgent: true`.
 
 ```
-init Phase 3
+start Phase 3
   │
   ▼
 Skill(onboard:generate)
@@ -267,14 +267,14 @@ Agent(config-generator)
 Structured JSON response back through the Skill chain
   │
   ▼
-init Phase 3.3: Report Generation Results (list files written)
+start Phase 3.3: Report Generation Results (list files written)
 ```
 
-**Do not** pass `dispatchedAsAgent: true` from init — that flag is the generate skill's responsibility. Init's only job is building the context and invoking the Skill tool.
+**Do not** pass `dispatchedAsAgent: true` from start — that flag is the generate skill's responsibility. Start's only job is building the context and invoking the Skill tool.
 
-## Artifact provenance (init path)
+## Artifact provenance (start path)
 
-The init path generates fresh artifacts, so every artifact this builder's downstream generation writes is `origin:"generated"`. `onboard-meta.json` records this implicitly (an **absent** `artifactProvenance` map means all-generated). Contrast `/onboard:adopt`, which catalogs *pre-existing* artifacts and writes `artifactProvenance["<path>"] = "adopted"` for each (see `../../adopt/references/baseline-synthesis.md`). The two paths never both run on the same repo: init writes a fresh baseline; adopt synthesizes one from existing tooling; either makes `/onboard:update` work.
+The start path generates fresh artifacts, so every artifact this builder's downstream generation writes is `origin:"generated"`. `onboard-meta.json` records this implicitly (an **absent** `artifactProvenance` map means all-generated). Contrast `/onboard:adopt`, which catalogs *pre-existing* artifacts and writes `artifactProvenance["<path>"] = "adopted"` for each (see `../../adopt/references/baseline-synthesis.md`). The two paths never both run on the same repo: start writes a fresh baseline; adopt synthesizes one from existing tooling; either makes `/onboard:update` work.
 
 ## Default values table — Static Defaults for unconfirmed fields
 
@@ -316,7 +316,7 @@ Every default is populated explicitly — downstream generation should never nee
 
 ## Key rules
 
-1. **Single source of truth**: every init profile (Minimal / Standard / Comprehensive) calls THIS procedure. Do not maintain profile-specific context builders — that's the drift that caused the original bugs.
+1. **Single source of truth**: every start profile (Minimal / Standard / Comprehensive) calls THIS procedure. Do not maintain profile-specific context builders — that's the drift that caused the original bugs.
 2. **Populate all top-level keys** — never leave `callerExtras.disableMCP` (etc.) undefined. Explicit `false` is the closing-B1 invariant.
-3. **Dispatch via `Skill(onboard:generate)`** — never call `Agent(config-generator)` directly from init. The Skill tool is the contract boundary.
+3. **Dispatch via `Skill(onboard:generate)`** — never call `Agent(config-generator)` directly from start. The Skill tool is the contract boundary.
 5. **Stub mode is separate** — empty-repo stubs follow `../references/empty-repo-stub-procedure.md`, not this builder. The builder assumes analysis + wizard have produced real data.
