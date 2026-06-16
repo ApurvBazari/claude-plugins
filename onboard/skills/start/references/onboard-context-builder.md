@@ -272,6 +272,10 @@ init Phase 3.3: Report Generation Results (list files written)
 
 **Do not** pass `dispatchedAsAgent: true` from init — that flag is the generate skill's responsibility. Init's only job is building the context and invoking the Skill tool.
 
+## Artifact provenance (init path)
+
+The init path generates fresh artifacts, so every artifact this builder's downstream generation writes is `origin:"generated"`. `onboard-meta.json` records this implicitly (an **absent** `artifactProvenance` map means all-generated). Contrast `/onboard:adopt`, which catalogs *pre-existing* artifacts and writes `artifactProvenance["<path>"] = "adopted"` for each (see `../adopt/references/baseline-synthesis.md`). The two paths never both run on the same repo: init writes a fresh baseline; adopt synthesizes one from existing tooling; either makes `/onboard:update` work.
+
 ## Default values table — Static Defaults for unconfirmed fields
 
 When the grounded wizard does not confirm a field (e.g. the Minimal profile skips it, or the user accepts the inferred value without override), the builder fills in these Static Defaults. The objective is **never** to pass `undefined` to the generator:
