@@ -274,7 +274,7 @@ init Phase 3.3: Report Generation Results (list files written)
 
 ## Artifact provenance (init path)
 
-The init path generates fresh artifacts, so every artifact this builder's downstream generation writes is `origin:"generated"`. `onboard-meta.json` records this implicitly (an **absent** `artifactProvenance` map means all-generated). Contrast `/onboard:adopt`, which catalogs *pre-existing* artifacts and writes `artifactProvenance["<path>"] = "adopted"` for each (see `../adopt/references/baseline-synthesis.md`). The two paths never both run on the same repo: init writes a fresh baseline; adopt synthesizes one from existing tooling; either makes `/onboard:update` work.
+The init path generates fresh artifacts, so every artifact this builder's downstream generation writes is `origin:"generated"`. `onboard-meta.json` records this implicitly (an **absent** `artifactProvenance` map means all-generated). Contrast `/onboard:adopt`, which catalogs *pre-existing* artifacts and writes `artifactProvenance["<path>"] = "adopted"` for each (see `../../adopt/references/baseline-synthesis.md`). The two paths never both run on the same repo: init writes a fresh baseline; adopt synthesizes one from existing tooling; either makes `/onboard:update` work.
 
 ## Default values table — Static Defaults for unconfirmed fields
 

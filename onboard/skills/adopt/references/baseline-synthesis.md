@@ -19,7 +19,7 @@ Also build, in context, the baseline `onboard-meta.json` and the snapshot object
 
 ## A4: synthesize the meta object (in context)
 
-Canonical-shape `onboard-meta.json` with retrofit additions. Resolve `<dynamic>` plugin version exactly as `../start/references/empty-repo-stub-procedure.md § Dynamic version resolution` (CLI-first, plugin.json fallback, hard-fail if unresolved — reuse that block verbatim).
+Canonical-shape `onboard-meta.json` with retrofit additions. Resolve `<dynamic>` plugin version exactly as `../../start/references/empty-repo-stub-procedure.md § Dynamic version resolution` (CLI-first, plugin.json fallback, hard-fail if unresolved — reuse that block verbatim).
 
 ```jsonc
 {
