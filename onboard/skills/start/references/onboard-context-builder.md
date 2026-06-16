@@ -319,4 +319,4 @@ Every default is populated explicitly — downstream generation should never nee
 1. **Single source of truth**: every start profile (Minimal / Standard / Comprehensive) calls THIS procedure. Do not maintain profile-specific context builders — that's the drift that caused the original bugs.
 2. **Populate all top-level keys** — never leave `callerExtras.disableMCP` (etc.) undefined. Explicit `false` is the closing-B1 invariant.
 3. **Dispatch via `Skill(onboard:generate)`** — never call `Agent(config-generator)` directly from start. The Skill tool is the contract boundary.
-5. **Stub mode is separate** — empty-repo stubs follow `../references/empty-repo-stub-procedure.md`, not this builder. The builder assumes analysis + wizard have produced real data.
+4. **Stub mode is separate** — empty-repo stubs follow `../references/empty-repo-stub-procedure.md`, not this builder. The builder assumes analysis + wizard have produced real data.
