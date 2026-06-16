@@ -88,13 +88,21 @@ Glob for: CLAUDE.md, .claude/**, .claude/settings.json
 
 > I see this project already has Claude tooling set up:
 > - [list what was found]
->
-> Would you like to:
-> 1. **Update** — Check your existing setup against latest best practices (`/onboard:update`)
-> 2. **Start fresh** — Replace the existing setup with a new one generated from scratch
-> 3. **Cancel** — Keep everything as-is
 
-Wait for the developer's choice. If they choose "Update", redirect them to run `/onboard:update`. If "Cancel", stop. If "Start fresh", continue but note that existing files will be overwritten.
+Ask via `AskUserQuestion` (single-select, header `"Existing config"`):
+
+- **Adopt (Recommended)** — "Bring the existing tooling under onboard management without changing it, so `/onboard:update` works. Runs `/onboard:adopt`."
+- **Update** — "Check the existing setup against latest best practices (`/onboard:update`)."
+- **Start fresh** — "Replace the existing setup with a newly generated one (existing files will be overwritten)."
+- **Cancel** — "Keep everything as-is."
+
+Dispatch on the choice:
+- **Adopt** → run the `adopt` skill (`Skill(onboard:adopt)`); when it returns, this start invocation is done (adopt owns the baseline). Do not continue into analysis/generation.
+- **Update** → redirect the developer to run `/onboard:update`. Stop.
+- **Start fresh** → continue to Step 1.2; note that existing files will be overwritten at generation.
+- **Cancel** → stop.
+
+**Guard Usage:** four fixed options (≥2), so the single-option guard in `.claude/rules/ask-user-question-guard.md` does not apply.
 
 **If minimal or no Claude config exists**, proceed directly to analysis.
 
