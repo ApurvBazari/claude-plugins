@@ -211,6 +211,12 @@ Organize findings into categories:
 
 ---
 
+### Step 5.5: Render the change preview (before approval)
+
+Assemble a `previewModel` (per `../research/references/render-adapter.md` § previewModel) with `flow:"update"`: `changes[]` = the accumulated offer-set from Steps 4–4b (action `modernize`/`create`/`regenerate`, all `origin:"generated"` — update manages onboard-generated artifacts); `research` = the re-research delta when Step 4b.10 ran, else null; `decisions` = the current model/autonomy/profile from `onboard-meta.json`; `warnings` = user-customized-file flags + any "best-practices check unavailable" note. Render it via `walkthrough:render` to `.claude/walkthrough/<YYYY-MM-DD-HHMM>-onboard-update.html`, with the same walkthrough-absent → offer-install → markdown fallback as start Step 2.9. This is a preview only — the actual approval remains the Step 6 batched AskUserQuestion; nothing is applied until Step 7.
+
+---
+
 ## Upgrade Offers
 
 ### Step 6: Offer Targeted Upgrades (AskUserQuestion)
