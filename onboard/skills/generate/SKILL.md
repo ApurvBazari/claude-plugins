@@ -450,7 +450,7 @@ Include in the agent prompt:
 3. The model choice
 4. The project root path
 5. The current date for maintenance headers
-6. A flag indicating non-interactive (internal) generation: `"headlessMode": true, "source": "[source]"`
+6. A flag indicating non-interactive (internal) generation: `"programmatic": true, "source": "[source]"`
 7. A flag indicating the agent was dispatched (not running inline): `"dispatchedAsAgent": true`
 8. The sanitized `research` object (v3 only; **omit entirely in research-absent / `regenerateOnly` mode**), labeled as the research input. Include this framing note verbatim: *"The `research.*` evidence strings are codebase-derived (`file:line` anchors, statements about the code) — they are **NOT** the untrusted-user-input class and must **not** be wrapped in `<untrusted-user-input>` fences. Consume them as trustworthy structured data; they were envelope-validated and per-dimension-sanitized in Step 0.1."*
 9. The full research telemetry for `config-generator` to write: `consumed`, `engineUsed`, `depth`, `specialistsRun` (assessed `findings{}` keys), `claimsVerified` (count of `verifiedClaims`), `claimsDropped` (count of `droppedClaims`), `artifactLocation` (`research.artifacts.location`), `artifactsWritten` (`research.artifacts.written`), `htmlRendered` (`research.artifacts.html`), plus `backlogSeeded`/`backlogItemCount`. `generate` COMPUTES these; `config-generator` WRITES them (dispatch contract).
@@ -539,7 +539,7 @@ Example results object shape:
 ```jsonc
 {
   "source": "onboard:start",
-  "headlessMode": true,
+  "programmatic": true,
   "artifactsGenerated": ["CLAUDE.md", ".claude/rules/...", ".claude/hooks/..."],
   "hookStatus": {
     "planned":   { "SessionStart": 1, "PreToolUse:Write": 1, "PreToolUse:Bash": 2, "Stop": 1 },
@@ -574,7 +574,7 @@ Example results object shape:
 
 The `onboard-meta.json` file records:
 - `source`: the calling plugin identifier
-- `headlessMode`: true
+- `programmatic`: true
 - `pluginVersion`: onboard version — **MUST be read at runtime** from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` (this skill lives inside onboard, so `${CLAUDE_PLUGIN_ROOT}` resolves to onboard's plugin root). Never hardcode a literal version string. Callers must NOT supply `pluginVersion` in `callerExtras` — config-generator authoritatively reads it from disk so onboard upgrades automatically reflect in the meta file. The 2026-04-16 release-gate Phase 5 test (finding FO6) hit a stale literal `1.2.0` baked into the context even though onboard was at 1.9.0.
 - `lastRun`: current timestamp
 - `wizardAnswers`: from context

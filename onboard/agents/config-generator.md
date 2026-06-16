@@ -55,12 +55,12 @@ Your job is to generate all Claude tooling artifacts. Follow the `generation` sk
 
 ### Programmatic Mode
 
-When the prompt includes `"headlessMode": true`, the inputs come from an external caller (identified by the `source` field) rather than from the codebase-analyzer agent and wizard skill. In programmatic mode:
+When the prompt includes `"programmatic": true`, the inputs come from an external caller (identified by the `source` field) rather than from the codebase-analyzer agent and wizard skill. In programmatic mode:
 
 - The analysis report is constructed from the caller's context JSON rather than from running analysis scripts. Treat it identically to a standard analysis report.
 - The wizard answers are pre-seeded by the caller. They follow the same JSON structure as the wizard skill output. Use them exactly as you would wizard-collected answers.
 - **Merge-aware hook generation is critical**: The caller may have already added its own hooks to `.claude/settings.json` before invoking generation. Always read the existing file first, preserve all existing hook entries, and add onboard hooks alongside them. Never overwrite.
-- Record `headlessMode: true` and `source: "[caller]"` in `onboard-meta.json` alongside the standard metadata fields.
+- Record `programmatic: true` and `source: "[caller]"` in `onboard-meta.json` alongside the standard metadata fields.
 - If the caller provides a `callerExtras` object, store it in `onboard-meta.json` under the `callerExtras` key for traceability.
 
 All other generation behavior — artifact order, quality checks, maintenance headers, autonomy cascade — remains identical to standard mode.

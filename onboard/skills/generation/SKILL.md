@@ -21,12 +21,12 @@ You receive:
 
 ## Programmatic Mode Guard
 
-When `headlessMode` is `true` in the input context, this skill is being invoked via `/onboard:generate` from an external caller. In programmatic mode:
+When `programmatic` is `true` in the input context, this skill is being invoked via `/onboard:generate` from an external caller. In programmatic mode:
 
 - **Skip all interactive steps** — Do not ask the developer any questions, present confirmation prompts, or wait for user input. All decisions have already been made by the caller.
 - **Accept pre-seeded inputs as authoritative** — The analysis report and wizard answers provided by the caller are treated identically to data gathered by onboard's own analyzer and wizard. Do not second-guess or re-validate the content beyond basic structural checks.
 - **Merge hooks carefully** — The caller may have already written hooks to `.claude/settings.json`. Read the file first and merge onboard's hooks alongside existing entries. This is the most common source of conflicts in programmatic mode.
-- **Record provenance** — Include `headlessMode: true` and the caller's `source` identifier in `onboard-meta.json`.
+- **Record provenance** — Include `programmatic: true` and the caller's `source` identifier in `onboard-meta.json`.
 - **All generation rules still apply** — Artifact order, quality checks, maintenance headers, autonomy cascade, reference guides — everything in this skill applies equally in programmatic mode. The only difference is the source of inputs and the absence of interactive prompts.
 
 ## Maintenance Header
@@ -396,7 +396,7 @@ These carry the verbatim artifact templates and long emission enumerations for t
 
 ## Key Rules
 
-- **Programmatic mode prohibits all interactive prompts** — when `headlessMode: true`, every decision has been pre-made by the caller. Never ask the developer a question, show a confirmation prompt, or wait for input. Treat caller inputs as authoritative.
+- **Programmatic mode prohibits all interactive prompts** — when `programmatic: true`, every decision has been pre-made by the caller. Never ask the developer a question, show a confirmation prompt, or wait for input. Treat caller inputs as authoritative.
 - **Version string is always read from `plugin.json`, never hardcoded** — the maintenance header `{VERSION}` must be resolved at generation time from the manifest. A hardcoded literal will become stale without warning.
 - **`settings.json` is always read before writing** — hooks are merged alongside existing entries, never overwriting the file. This is the most common programmatic-mode conflict source.
 - **Plugin-covered capabilities are never re-generated** — before generating any agent, check `coveredCapabilities`. An agent that shadows an installed plugin must be skipped entirely, not generated with a note.

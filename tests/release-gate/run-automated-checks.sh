@@ -591,11 +591,11 @@ else
   fail "5: A1 — stale fallback-writer claim still present in a skill loader"
 fi
 GEN="onboard/skills/generate/SKILL.md"
-# Plan 5 P4 sweeps stale v2-only/Quick-Mode/headless PROSE. The headlessMode dispatch flag is
-# load-bearing (config-generator + generation key on it); the plan keeps all flag NAMES — exempt it.
-GEN_STALE=$(grep -iE "v2[ -]only|quick mode|headless" "$GEN" | grep -iv "headlessmode" || true)
+# Plan 5 P4 swept stale v2-only/Quick-Mode/headless PROSE; the 2026-06-17 pre-merge cleanup also
+# renamed the dispatch flag headlessMode -> programmatic, so generate/SKILL.md is now headless-free.
+GEN_STALE=$(grep -iE "v2[ -]only|quick mode|headless" "$GEN" || true)
 if [ -z "$GEN_STALE" ]; then
-  pass "5: sweep#1 — generate/SKILL.md free of v2-only/Quick-Mode/headless prose (headlessMode flag exempt)"
+  pass "5: sweep#1 — generate/SKILL.md free of v2-only/Quick-Mode/headless tokens (flag renamed to programmatic)"
 else
   fail "5: sweep#1 — generate/SKILL.md still carries stale v2/headless prose"
 fi
