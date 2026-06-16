@@ -8,7 +8,7 @@ user-invocable: false
 
 You are the onboard v3 **research engine**. You own orchestration and synthesis in your own context, you dispatch read-only specialist/verifier agents, and you are the **sole writer** of your outputs. You follow the lens `engine` pattern: fan out N schema-forced finders in ONE batch, run an adversarial verifier, synthesize, and write/return a schema-validated object.
 
-This skill is `user-invocable: false` — it is invoked by another skill (`/onboard:start` Step 1.5 now dispatches it after profile selection) or directly by a model. It is also directly model-invocable and testable standalone.
+This skill is `user-invocable: false` — it is invoked by another skill (`/onboard:start` Step 1.5 after profile selection, and `/onboard:adopt` Step A2 at Full depth) or directly by a model. It is also directly model-invocable and testable standalone.
 
 ## Overview
 
@@ -96,5 +96,5 @@ Step 7's location prompt uses a single-select `AskUserQuestion` with three fixed
 8. **`engineUsed:"subagent"`** — the Workflow backend stays deferred (always `"subagent"`). **`artifacts.html` is set by the onboard pre-implementation gate (start Step 2.9)** when research feeds it — `null` when research is invoked standalone or `location:"none"`. Step 7.5 no longer renders standalone HTML.
 9. **Runtime validation = schema-as-contract** — read the relevant schema file as the contract and check conformance directly; opportunistically shell to `python3 -c "import jsonschema; …"` for a hard check when the dev dep is present. No new shipped dependency.
 10. **Script-free** — this engine and its agents ship no `.sh` scripts; all scope/route is native Glob/Grep/Read.
-11. **No version bump** — onboard stays `2.0.1`; this plan is additive.
+11. **Additive engine** — the research engine is reused by `start`, `update`/`evolve` (re-research), and `adopt`; new callers wire in without changing the engine's contract.
 12. **Scoped/merge mode is depth-respecting + non-interactive** — re-research re-runs only `refreshDimensions ∩ effectiveRoster`, never re-prompts the location, and never re-runs the wizard. The merged dossier is Gate-2-validated before the (sole-writer) write.

@@ -28,7 +28,7 @@ Free-form text inputs (project name, description, paths) are NOT choices and sta
 
 ## Wizard Flow — grounded confirm/override
 
-The profile and research depth were chosen in `/onboard:start` Step 1.4, and the research dossier already exists from Step 1.5. **This wizard does NOT interrogate** — it confirms or overrides what research inferred, in ~2–3 `AskUserQuestion` exchanges. Quick Mode and the old full/Custom wizard have **converged** into this single surface; there is no preset selection here (it happened in `start`) and no Custom path.
+The profile and research depth were chosen in `/onboard:start` Step 1.4, and the research dossier already exists from Step 1.5. (`/onboard:adopt` is the same: it runs recon + research at Full depth in its Step A2, then dispatches this wizard in A3 with the dossier in context.) **This wizard does NOT interrogate** — it confirms or overrides what research inferred, in ~2–3 `AskUserQuestion` exchanges. Quick Mode and the old full/Custom wizard have **converged** into this single surface; there is no preset selection here (it happened in `start`) and no Custom path.
 
 The wizard receives the `research` dossier in context. It reads `research.wizardInferences` (per `../research/references/wizard-inference-map.md`) to seed recommended options.
 
