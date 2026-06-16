@@ -610,6 +610,14 @@ if ! grep -qiE "headless mode|hard cutover" "$OBCLAUDE"; then
 else
   fail "5: sweep#2 — CLAUDE.md still carries Headless/Hard-cutover prose"
 fi
+# Pre-merge cleanup (2026-06-17): onboard vocabulary is fully de-headlessed. CHANGELOGs are
+# historical and exempt. This guards against the term creeping back in new docs.
+HEADLESS_SURVIVORS=$(grep -rIl 'headless\|Headless' onboard/ | grep -v CHANGELOG || true)
+if [ -z "$HEADLESS_SURVIVORS" ]; then
+  pass "cleanup: onboard/ free of 'headless' vocabulary (CHANGELOG exempt)"
+else
+  fail "cleanup: 'headless' survives in: $(echo "$HEADLESS_SURVIVORS" | tr '\n' ' ')"
+fi
 if ! grep -rqiE "quick[ -]mode" onboard/skills/generation/references; then
   pass "5: sweep#2 — generation references free of Quick-Mode prose"
 else
