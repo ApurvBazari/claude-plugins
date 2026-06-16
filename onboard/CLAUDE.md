@@ -76,20 +76,20 @@ Phase 4: Handoff ──→ explains generated artifacts, suggests next steps
 
 User-facing skills (show in `/onboard:` autocomplete):
 
-- `start/SKILL.md` — full interactive wizard + generation (`disable-model-invocation: true`)
-- `update/SKILL.md` — align with latest best practices (`disable-model-invocation: true`)
-- `adopt/SKILL.md` — retrofit foreign hand-crafted tooling into an onboard baseline; writes meta + snapshots only, never modifies a hand-crafted file (`disable-model-invocation: true`)
-- `check/SKILL.md` — tooling health check (auto-invocable)
-- `verify/SKILL.md` — independent feature verification via feature-evaluator agent (auto-invocable)
-- `evolve/SKILL.md` — apply pending tooling drift updates (auto-invocable)
+- `skills/start/SKILL.md` — full interactive wizard + generation (`disable-model-invocation: true`)
+- `skills/update/SKILL.md` — align with latest best practices (`disable-model-invocation: true`)
+- `skills/adopt/SKILL.md` — retrofit foreign hand-crafted tooling into an onboard baseline; writes meta + snapshots only, never modifies a hand-crafted file (`disable-model-invocation: true`)
+- `skills/check/SKILL.md` — tooling health check (auto-invocable)
+- `skills/verify/SKILL.md` — independent feature verification via feature-evaluator agent (auto-invocable)
+- `skills/evolve/SKILL.md` — apply pending tooling drift updates (auto-invocable)
 
 Internal building blocks (`user-invocable: false` — hidden from menu):
 
-- `generate/SKILL.md` — internal generation step, invoked via Skill tool
-- `wizard/SKILL.md` — drives the grounded confirm/override surface (research-seeded)
-- `research/SKILL.md` — the v3 research engine (fan-out specialists → verify → synthesize dossier)
-- `analysis/SKILL.md` — tech stack pattern matching, model recommendations
-- `generation/SKILL.md` — artifact generation logic, core + enriched modes
+- `skills/generate/SKILL.md` — internal generation step, invoked via Skill tool
+- `skills/wizard/SKILL.md` — drives the grounded confirm/override surface (research-seeded)
+- `skills/research/SKILL.md` — the v3 research engine (fan-out specialists → verify → synthesize dossier)
+- `skills/analysis/SKILL.md` — tech stack pattern matching, model recommendations
+- `skills/generation/SKILL.md` — artifact generation logic, core + enriched modes
 
 ## Script Conventions
 

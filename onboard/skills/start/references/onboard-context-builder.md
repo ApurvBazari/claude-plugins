@@ -12,7 +12,7 @@ The 2026-04-17 release-gate sweep found 7 blocker-class bugs (B1, B5, B6, B8, B1
 
 ## When to invoke this procedure
 
-Called from `start/SKILL.md` Phase 2.6, after Phase 1 Analysis, Phase 2 Wizard, and Phase 2.5 Plugin Detection have completed. Returns the fully-populated context object. Start then passes the object to `Skill(onboard:generate)` in Phase 3.
+Called from `../SKILL.md` Phase 2.6, after Phase 1 Analysis, Phase 2 Wizard, and Phase 2.5 Plugin Detection have completed. Returns the fully-populated context object. Start then passes the object to `Skill(onboard:generate)` in Phase 3.
 
 ## Inputs
 
@@ -22,7 +22,7 @@ From prior phases (already in conversation context):
 |---|---|---|
 | Phase 1 Analysis report | `analysis` object (stack, complexity, configs, structure) | `context.analysis` |
 | Step 1.5 Research | the `research-dossier` object returned by `/onboard:start` Step 1.5 (`Skill(onboard:research)`) | `context.research` |
-| Phase 2 Wizard | `wizardAnswers` (preset-branched shape — see `wizard/SKILL.md`) | `context.wizardAnswers` |
+| Phase 2 Wizard | `wizardAnswers` (preset-branched shape — see `../../wizard/SKILL.md`) | `context.wizardAnswers` |
 | Phase 2 Wizard | `wizardStatus` (canonical 5-subkey telemetry) | Mirrored into `onboard-meta.json` post-generation |
 | Phase 2.5 Plugin Detection | `installedPlugins[]`, `coveredCapabilities[]`, `pluginSurfaces{}` | `context.callerExtras.*` |
 | Resolved at runtime | `projectPath` (absolute) | `context.projectPath` |
@@ -30,7 +30,7 @@ From prior phases (already in conversation context):
 
 ## Output schema — context object passed to `Skill(onboard:generate)`
 
-Emits a **v3 context** (`version: 3`): the v3 shape adds the top-level `research` block and routes `generate` Step 0 down the v3 path. This is the **internal v1-shaped object** (`analysis`, `wizardAnswers`, `enriched`, `callerExtras`, …) that `generate` and `config-generator` consume directly; it satisfies `context-shape-v3.json`'s required set (`version`, `source`, `projectPath`, `callerExtras`) and adds the internal fields generate expects (the v3 schema is permissive — `additionalProperties: true` — and no longer requires a `phases` block). `generate` is v3-only as of 3.0.0 (no v2 adapter). The internal field set otherwise matches `generate/SKILL.md` Step 1 § Required Context Structure. All fields populated; no `undefined` / absent top-level keys.
+Emits a **v3 context** (`version: 3`): the v3 shape adds the top-level `research` block and routes `generate` Step 0 down the v3 path. This is the **internal v1-shaped object** (`analysis`, `wizardAnswers`, `enriched`, `callerExtras`, …) that `generate` and `config-generator` consume directly; it satisfies `context-shape-v3.json`'s required set (`version`, `source`, `projectPath`, `callerExtras`) and adds the internal fields generate expects (the v3 schema is permissive — `additionalProperties: true` — and no longer requires a `phases` block). `generate` is v3-only as of 3.0.0 (no v2 adapter). The internal field set otherwise matches `../../generate/SKILL.md` Step 1 § Required Context Structure. All fields populated; no `undefined` / absent top-level keys.
 
 ```jsonc
 {
@@ -40,7 +40,7 @@ Emits a **v3 context** (`version: 3`): the v3 shape adds the top-level `research
 
   "analysis": { /* Phase 1 report — same shape config-generator expects */ },
 
-  "wizardAnswers": { /* Phase 2 canonical shape; see wizard/SKILL.md § Canonical Output */ },
+  "wizardAnswers": { /* Phase 2 canonical shape; see ../../wizard/SKILL.md § Canonical Output */ },
 
   "research": { /* research-dossier object returned verbatim by /onboard:start Step 1.5 Skill(onboard:research); canonical shape: research-dossier.json */ },
 
@@ -116,7 +116,7 @@ If Step 1.5 did not run (research declined / unavailable), omit `research` entir
 
 ### Step 3: Resolve the model choice
 
-Use the resolution order in `start/SKILL.md § 3.1`:
+Use the resolution order in `../SKILL.md § 3.1`:
 
 ```
 modelChoice = wizardAnswers.skillTuning?.defaultModel
@@ -283,7 +283,7 @@ When the grounded wizard does not confirm a field (e.g. the Minimal profile skip
 | Field | Default |
 |---|---|
 | `wizardAnswers.teamSize` | `"solo"` |
-| `wizardAnswers.testingPhilosophy` | `"tdd"` (hard-wired per generate/SKILL.md contract) |
+| `wizardAnswers.testingPhilosophy` | `"tdd"` (hard-wired per ../../generate/SKILL.md contract) |
 | `wizardAnswers.codeStyleStrictness` | `"moderate"` |
 | `wizardAnswers.securitySensitivity` | `"standard"` |
 | `wizardAnswers.projectMaturity` | `"new"` if analysis has < 50 files, else `"early"` |

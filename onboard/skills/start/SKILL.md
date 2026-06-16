@@ -303,7 +303,7 @@ This is the review-before-implementation gate. **Nothing has been written yet.**
 
 The model has already been chosen by this point — either because the developer tuned it in the grounded wizard (`wizardAnswers.skillTuning?.defaultModel`), or implicitly via the profile default (Minimal/Standard/Comprehensive use `claude-opus-4-7[1m]` per `../wizard/references/workflow-presets.md` § Exchange target (uniform across profiles)).
 
-**Do NOT** ask "Which model would you like to use?" here. That used to be a separate post-summary question in earlier versions of start/SKILL.md — the duplicate prompt was findings A4 in the 2026-04-16 release-gate test.
+**Do NOT** ask "Which model would you like to use?" here. That used to be a separate post-summary question in earlier versions of this skill (`SKILL.md`) — the duplicate prompt was findings A4 in the 2026-04-16 release-gate test.
 
 Resolve the model from the wizard answers as follows:
 

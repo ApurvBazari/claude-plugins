@@ -186,13 +186,13 @@ The caller must provide a context JSON object in the conversation. This object c
     "frontendPatterns": "object (optional — same shape as wizard output)",
     "backendPatterns": "object (optional — same shape as wizard output)",
     "devopsPatterns": "object (optional — same shape as wizard output)",
-    "advancedHookEvents": "string[] (optional) — event names the developer explicitly selected in wizard Phase 5.1. Empty array = suppress inference. Absent = inference runs. See generation/SKILL.md § Advanced Event Hooks § Wizard opt-in plumbing.",
-    "advancedHookTypes": "object (optional) — map<eventName, 'command'|'prompt'|'agent'|'http'> from wizard Phase 5.1.1. Selects the execution type per event. Only keys for judgment-capable events (UserPromptSubmit, Stop, TaskCreated, TaskCompleted, Elicitation) are honored; others ignored. Absent = use per-event defaults + inference rules. See generation/SKILL.md § Hook Type Validation.",
+    "advancedHookEvents": "string[] (optional) — event names the developer explicitly selected in wizard Phase 5.1. Empty array = suppress inference. Absent = inference runs. See ../generation/SKILL.md § Advanced Event Hooks § Wizard opt-in plumbing.",
+    "advancedHookTypes": "object (optional) — map<eventName, 'command'|'prompt'|'agent'|'http'> from wizard Phase 5.1.1. Selects the execution type per event. Only keys for judgment-capable events (UserPromptSubmit, Stop, TaskCreated, TaskCompleted, Elicitation) are honored; others ignored. Absent = use per-event defaults + inference rules. See ../generation/SKILL.md § Hook Type Validation.",
     "advancedHookTypeExtras": "object (optional) — map<eventName, {agentRef?, httpUrl?, promptRef?, promptInline?}> from wizard Phase 5.1.1 follow-up exchange. Provides the required auxiliary field for prompt/agent/http types. Missing aux for a selected type → validation failure per the skip-reason table.",
-    "skillTuning": "object (optional) — { mode: 'defaults' | 'tuned', defaultModel?, defaultEffort?, preApprovalPosture? } from wizard Phase 5.2. Shapes the archetype-inferred skill frontmatter. Absent or mode='defaults' emits archetype defaults only. mode='tuned' refines model/effort/allowed-tools via the three project-level settings. See generation/SKILL.md § Skills § Skill Frontmatter Emission.",
-    "agentTuning": "object (optional) — { mode: 'defaults' | 'tuned', defaultModel?, defaultEffort?, preApprovalPosture?, defaultIsolation? } from wizard Phase 5.3. Shapes the archetype-inferred agent frontmatter. Absent or mode='defaults' emits archetype defaults only. mode='tuned' refines model/effort/disallowedTools/permissionMode/isolation via the four project-level settings. See generation/SKILL.md § Agents § Agent Frontmatter Emission.",
-    "lspPlugins": "string[] (optional) — developer-accepted list of marketplace LSP plugins from wizard Phase 5.6. Empty array = 'detected but declined all'. Absent = internal generation (no wizard) — full detected list is implicit accept. See generation/SKILL.md § LSP Plugin Recommendations — Phase 7c and ../generation/references/lsp-plugin-catalog.md.",
-    "builtInSkills": "string[] (optional) — developer-accepted list of built-in Claude Code skill names from wizard Phase 5.7. Empty array = 'candidates existed but declined all'. Absent = internal generation (no wizard) — full candidate list (core + fired extras) is implicit accept. See generation/SKILL.md § Built-in Claude Code Skills — Phase 7d and ../generation/references/built-in-skills-catalog.md."
+    "skillTuning": "object (optional) — { mode: 'defaults' | 'tuned', defaultModel?, defaultEffort?, preApprovalPosture? } from wizard Phase 5.2. Shapes the archetype-inferred skill frontmatter. Absent or mode='defaults' emits archetype defaults only. mode='tuned' refines model/effort/allowed-tools via the three project-level settings. See ../generation/SKILL.md § Skills § Skill Frontmatter Emission.",
+    "agentTuning": "object (optional) — { mode: 'defaults' | 'tuned', defaultModel?, defaultEffort?, preApprovalPosture?, defaultIsolation? } from wizard Phase 5.3. Shapes the archetype-inferred agent frontmatter. Absent or mode='defaults' emits archetype defaults only. mode='tuned' refines model/effort/disallowedTools/permissionMode/isolation via the four project-level settings. See ../generation/SKILL.md § Agents § Agent Frontmatter Emission.",
+    "lspPlugins": "string[] (optional) — developer-accepted list of marketplace LSP plugins from wizard Phase 5.6. Empty array = 'detected but declined all'. Absent = internal generation (no wizard) — full detected list is implicit accept. See ../generation/SKILL.md § LSP Plugin Recommendations — Phase 7c and ../generation/references/lsp-plugin-catalog.md.",
+    "builtInSkills": "string[] (optional) — developer-accepted list of built-in Claude Code skill names from wizard Phase 5.7. Empty array = 'candidates existed but declined all'. Absent = internal generation (no wizard) — full candidate list (core + fired extras) is implicit accept. See ../generation/SKILL.md § Built-in Claude Code Skills — Phase 7d and ../generation/references/built-in-skills-catalog.md."
   },
 
   "modelChoice": "string — sonnet | opus | haiku",
@@ -231,8 +231,8 @@ The caller must provide a context JSON object in the conversation. This object c
     "disableBuiltInSkills": "boolean (optional, SKIP-PHASE family) — when true, skip Phase 7d built-in skills emission entirely (no CLAUDE.md subsection, no .claude/onboard-builtin-skills-snapshot.json). Use for scaffolded projects whose source files are still placeholders — detection signals are premature. Defaults to false. Internal callers may pass true by default; users can rerun /onboard:evolve to prompt once real code exists. MUST still emit telemetry: builtInSkillsStatus = { status: 'skipped', reason: 'caller-disabled' }.",
     "builtInSkills": "string[] (optional) — explicit list of built-in Claude Code skill names to document in the generated CLAUDE.md during Phase 7d. When present, skips wizard Phase 5.7 and treats the array as the accepted list verbatim. Pass an empty array to record 'candidates existed but declined all'. When absent (and disableBuiltInSkills is not true), wizard Phase 5.7 runs in interactive mode or defaults to the full candidate list (core + fired extras) during internal generation (no wizard). See ../generation/references/built-in-skills-catalog.md for valid skill names.",
     "qualityGates": {
-      "description": "object (optional) — boundary-enforcement hook spec. Onboard translates these into .claude/settings.json hook entries. See generation/SKILL.md § Quality-Gate Hooks for the full schema.",
-      "_perEntryTypeFields_": "EVERY entry in sessionStart/preCommit/featureStart/postFeature/sessionEnd/userPromptSubmit/preCompact/subagentStart/taskCreated/taskCompleted/fileChanged/configChange/elicitation accepts these 7 OPTIONAL fields for type selection (documented once here, honored uniformly): { hookType: 'command'|'prompt'|'agent'|'http' (default per generation/SKILL.md § Per-event defaults), promptRef: path to .claude/hooks/*.prompt.md, promptInline: inline prompt text (exactly one of promptRef/promptInline required when hookType='prompt'), agentRef: agent name required when hookType='agent', httpUrl: https-only URL required when hookType='http', httpHeaders: {k:v} optional http headers supporting ${VAR} expansion, timeout: positive int ms override (defaults: command 5000, prompt 15000, agent 60000, http 5000) }. See generation/SKILL.md § Hook Type Validation for the full rule set and skip reasons.",
+      "description": "object (optional) — boundary-enforcement hook spec. Onboard translates these into .claude/settings.json hook entries. See ../generation/SKILL.md § Quality-Gate Hooks for the full schema.",
+      "_perEntryTypeFields_": "EVERY entry in sessionStart/preCommit/featureStart/postFeature/sessionEnd/userPromptSubmit/preCompact/subagentStart/taskCreated/taskCompleted/fileChanged/configChange/elicitation accepts these 7 OPTIONAL fields for type selection (documented once here, honored uniformly): { hookType: 'command'|'prompt'|'agent'|'http' (default per ../generation/SKILL.md § Per-event defaults), promptRef: path to .claude/hooks/*.prompt.md, promptInline: inline prompt text (exactly one of promptRef/promptInline required when hookType='prompt'), agentRef: agent name required when hookType='agent', httpUrl: https-only URL required when hookType='http', httpHeaders: {k:v} optional http headers supporting ${VAR} expansion, timeout: positive int ms override (defaults: command 5000, prompt 15000, agent 60000, http 5000) }. See ../generation/SKILL.md § Hook Type Validation for the full rule set and skip reasons.",
       "sessionStart": [
         {
           "type": "reminder",
@@ -327,17 +327,17 @@ The caller must provide a context JSON object in the conversation. This object c
 }
 ```
 
-**`qualityGates` semantics** (in brief — full spec in `generation/SKILL.md`):
+**`qualityGates` semantics** (in brief — full spec in `../generation/SKILL.md`):
 
 - `mode: "blocking"` → generated hook script exits 2 with stderr feedback. Claude cannot proceed without addressing the block. Default for `preCommit`.
 - `mode: "advisory"` → generated hook script exits 0 with stdout. Claude sees the message and continues. Default for everything else.
 - **autonomyLevel downgrade**: callers are expected to downgrade `preCommit[].mode` to `"advisory"` when `wizardAnswers.autonomyLevel === "always-ask"`. Onboard honors whatever mode it receives — it does not second-guess the caller's autonomy derivation.
 - **Plugin availability**: onboard checks that each referenced skill's plugin is in `installedPlugins` before writing a hook entry. Missing → entry is dropped + warning recorded in `onboard-meta.json`.
-- **Advanced event fields** (`sessionEnd`, `userPromptSubmit`, `preCompact`, `subagentStart`, `taskCreated`, `taskCompleted`, `fileChanged`, `configChange`, `elicitation`) are all optional. Each accepts either an explicit array or is inferred from wizard answers and analyzer signals — see `generation/SKILL.md` § Advanced Event Hooks for the per-event inference rules. Matcher-incompatible events (see `../generation/references/hooks-guide.md` § Matcher Compatibility) must have no `matcher` field in the generated settings entry regardless of what the caller passes.
-- **Hook type selection** (per-entry `hookType` + aux fields — see `_perEntryTypeFields_` above) is optional on every entry. Absent → per-event default applies (see `generation/SKILL.md` § Advanced Event Hooks § Per-event defaults). The 10 validation rules in `generation/SKILL.md` § Hook Type Validation drop invalid entries with a structured `skipped` reason — they never fail the whole generation.
+- **Advanced event fields** (`sessionEnd`, `userPromptSubmit`, `preCompact`, `subagentStart`, `taskCreated`, `taskCompleted`, `fileChanged`, `configChange`, `elicitation`) are all optional. Each accepts either an explicit array or is inferred from wizard answers and analyzer signals — see `../generation/SKILL.md` § Advanced Event Hooks for the per-event inference rules. Matcher-incompatible events (see `../generation/references/hooks-guide.md` § Matcher Compatibility) must have no `matcher` field in the generated settings entry regardless of what the caller passes.
+- **Hook type selection** (per-entry `hookType` + aux fields — see `_perEntryTypeFields_` above) is optional on every entry. Absent → per-event default applies (see `../generation/SKILL.md` § Advanced Event Hooks § Per-event defaults). The 10 validation rules in `../generation/SKILL.md` § Hook Type Validation drop invalid entries with a structured `skipped` reason — they never fail the whole generation.
 - **HTTP opt-in**: `callerExtras.allowHttpHooks` must be `true` for any `hookType: "http"` entry to be emitted. Omitting it (or setting `false`) causes http entries to be skipped with reason `http-not-opted-in`. Non-https URLs are always refused with reason `insecure-http-url`.
 
-**Backward compat**: `callerExtras.qualityGates`, `phaseSkills`, `allowPluginReferences`, and `allowHttpHooks` are all optional. Callers that omit them get the pre-upgrade behavior (no quality-gate hooks, no Plugin Integration section, no plugin cross-references in rules, no http hooks). Callers that pass the legacy 4-field `qualityGates` shape (only `sessionStart` / `preCommit` / `featureStart` / `postFeature`) also get pre-upgrade behavior for the advanced event fields — they fall through to the inference rules in `generation/SKILL.md`. Callers that omit the new per-entry `hookType`/aux fields get `command`-type output identical to pre-upgrade behavior (every current fixture remains byte-identical).
+**Backward compat**: `callerExtras.qualityGates`, `phaseSkills`, `allowPluginReferences`, and `allowHttpHooks` are all optional. Callers that omit them get the pre-upgrade behavior (no quality-gate hooks, no Plugin Integration section, no plugin cross-references in rules, no http hooks). Callers that pass the legacy 4-field `qualityGates` shape (only `sessionStart` / `preCommit` / `featureStart` / `postFeature`) also get pre-upgrade behavior for the advanced event fields — they fall through to the inference rules in `../generation/SKILL.md`. Callers that omit the new per-entry `hookType`/aux fields get `command`-type output identical to pre-upgrade behavior (every current fixture remains byte-identical).
 
 ### Default behavior matrix — Phase 7 disable flags
 
@@ -362,7 +362,7 @@ There are **two distinct families** of `callerExtras` disable flags. They MUST N
 | `"declined"` | User explicitly declined in interactive flow (wizard answered "no" / empty array). |
 | `"failed"` | Phase attempted but failed (e.g., script crash, write error). Triggers warning in `warnings[]` but never aborts the run. |
 
-**Hard rule** (load-bearing): EVERY Phase 7 block MUST emit its telemetry status key in `onboard-meta.json`, even when status is `"skipped"`. Missing keys are bugs, not absences. The `config-generator` agent's pre-exit self-audit verifies all four keys (`mcpStatus`, `outputStyleStatus`, `lspStatus`, `builtInSkillsStatus`) exist before returning. See `generation/SKILL.md` Phase 7 blocks for the per-phase Path A/B/C firing logic that ensures this invariant holds whether wizard answers are present, absent, or the SUPPRESS-PROMPT-ONLY flags are set.
+**Hard rule** (load-bearing): EVERY Phase 7 block MUST emit its telemetry status key in `onboard-meta.json`, even when status is `"skipped"`. Missing keys are bugs, not absences. The `config-generator` agent's pre-exit self-audit verifies all four keys (`mcpStatus`, `outputStyleStatus`, `lspStatus`, `builtInSkillsStatus`) exist before returning. See `../generation/SKILL.md` Phase 7 blocks for the per-phase Path A/B/C firing logic that ensures this invariant holds whether wizard answers are present, absent, or the SUPPRESS-PROMPT-ONLY flags are set.
 
 ### Validation
 
@@ -386,7 +386,7 @@ Stop and do not proceed.
 
 Callers (onboard:start and the other internal callers — onboard:update / onboard:evolve) are expected to have length-capped (16 KiB) + `\r`-stripped these fields before dispatch via the same recursive walk — see `../start/references/onboard-context-builder.md` § Untrusted-input sanitiser for the authoritative procedure. Do not duplicate the cap/strip work here; just apply the recursive framing consistently across all in-scope string leaves.
 
-**Per-entry hook-type validation** — applied during generation, not at this step. Each `callerExtras.qualityGates.<event>[]` entry passes through the 10-rule validator in `generation/SKILL.md` § Hook Type Validation. Validation failures drop the offending entry and record a `skipped[]` entry with a structured reason; they never fail the overall generation. The complete skip-reason table (for authoritative reference):
+**Per-entry hook-type validation** — applied during generation, not at this step. Each `callerExtras.qualityGates.<event>[]` entry passes through the 10-rule validator in `../generation/SKILL.md` § Hook Type Validation. Validation failures drop the offending entry and record a `skipped[]` entry with a structured reason; they never fail the overall generation. The complete skip-reason table (for authoritative reference):
 
 | Skip reason | Condition |
 |---|---|
@@ -492,7 +492,7 @@ The dispatched config-generator agent returns a structured JSON response. **Do n
     // ... one entry per file written
   ],
   "telemetry": {
-    "hookStatus":          { "status": "emitted",  /* canonical shape per generation/SKILL.md */ },
+    "hookStatus":          { "status": "emitted",  /* canonical shape per ../generation/SKILL.md */ },
     "skillStatus":         { "status": "emitted",  /* ... */ },
     "agentStatus":         { "status": "emitted",  /* ... */ },
     "mcpStatus":           { "status": "emitted",  /* ... */ },
@@ -554,7 +554,7 @@ Example results object shape:
     "warnings":  [],
     "downgradeApplied": null  // optional — set to an object when autonomyLevel forced a preCommit mode downgrade
   },
-  "skillStatus": {                             // new in onboard 1.5.0 — canonical shape in generation/SKILL.md § Skill Frontmatter Emission
+  "skillStatus": {                             // new in onboard 1.5.0 — canonical shape in ../generation/SKILL.md § Skill Frontmatter Emission
     "planned":    ["react-component", "pr-summarizer"],
     "generated":  ["react-component", "pr-summarizer"],
     "skipped":    [],

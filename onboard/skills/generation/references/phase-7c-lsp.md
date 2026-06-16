@@ -1,4 +1,4 @@
-<!-- Extracted from generation/SKILL.md via progressive-disclosure. Content is verbatim emission spec / templates. -->
+<!-- Extracted from ../SKILL.md via progressive-disclosure. Content is verbatim emission spec / templates. -->
 
 # LSP Plugin Recommendations — Phase 7c
 
@@ -22,7 +22,7 @@ Follow `references/lsp-plugin-catalog.md` for the 12-entry language→plugin map
 - `wizardAnswers.lspPlugins` (optional) — see Path A above
 - Output of `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"` — JSON array sorted by fileCount desc
 
-**Telemetry contract**: `lspStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | documented | skipped | declined | failed`) per the Default behavior matrix in `generate/SKILL.md`.
+**Telemetry contract**: `lspStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | documented | skipped | declined | failed`) per the Default behavior matrix in `../../generate/SKILL.md`.
 
 **Step 1 — Detect candidate plugins.** Run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"`. Output is a JSON array sorted by fileCount desc, e.g.:
 

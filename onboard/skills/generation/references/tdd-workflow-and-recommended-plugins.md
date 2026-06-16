@@ -1,4 +1,4 @@
-<!-- Extracted from generation/SKILL.md via progressive-disclosure. Content is verbatim emission spec / templates. -->
+<!-- Extracted from ../SKILL.md via progressive-disclosure. Content is verbatim emission spec / templates. -->
 
 # Plugin-Aware TDD Workflow + Recommended Plugins
 

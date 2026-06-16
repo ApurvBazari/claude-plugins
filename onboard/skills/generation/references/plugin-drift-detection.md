@@ -83,7 +83,7 @@ Hook script templates come from `hooks-guide.md` § Quality-Gate Hook Templates 
 After applying drift changes, update the appropriate metadata file:
 
 - `onboard:update` → write `currentPlugins` to `.claude/onboard-meta.json.detectedPlugins.installedPlugins` (create the field if missing). Also refresh `detectedPlugins.coveredCapabilities`, `detectedPlugins.qualityGates`, `detectedPlugins.phaseSkills`, and `hookStatus`.
-- `onboard:evolve` → write `currentPlugins` to `.claude/onboard-meta.json.detectedPlugins.installedPlugins` and refresh the other fields per `evolve/SKILL.md` Step 2b.3.
+- `onboard:evolve` → write `currentPlugins` to `.claude/onboard-meta.json.detectedPlugins.installedPlugins` and refresh the other fields per `../../evolve/SKILL.md` Step 2b.3.
 
 Never fabricate a baseline — if there was none, do not invent one. Persist the new state so the next run has a comparison point.
 

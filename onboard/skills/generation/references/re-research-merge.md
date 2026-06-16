@@ -1,6 +1,6 @@
 # Re-Research Merge-Aware Generation (v3)
 
-Loaded by `config-generator` (via `generation/SKILL.md § Re-Research Merge-Aware Generation (v3)`) **only when `callerExtras.reResearch` is present** — a re-research regen built by `onboard:update` / `onboard:evolve`, not a first onboard or a `regenerateOnly` snapshot replay. When the marker is absent, skip this entire reference — generate exactly as the non-re-research path does.
+Loaded by `config-generator` (via `../SKILL.md § Re-Research Merge-Aware Generation (v3)`) **only when `callerExtras.reResearch` is present** — a re-research regen built by `onboard:update` / `onboard:evolve`, not a first onboard or a `regenerateOnly` snapshot replay. When the marker is absent, skip this entire reference — generate exactly as the non-re-research path does.
 
 A re-research regen re-runs the whole generation order from the **merged** `research` dossier (so cross-cutting artifacts — root CLAUDE.md, the verify backlog — stay correct), but it MUST NOT clobber user customizations or remediation progress.
 

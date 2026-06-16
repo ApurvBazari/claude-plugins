@@ -1,4 +1,4 @@
-<!-- Extracted from generation/SKILL.md via progressive-disclosure. Content is verbatim emission spec / templates. -->
+<!-- Extracted from ../SKILL.md via progressive-disclosure. Content is verbatim emission spec / templates. -->
 
 # MCP Servers (.mcp.json) — Phase 7a
 
@@ -20,7 +20,7 @@ Follow `references/mcp-guide.md` for emission rules, catalog, and transport shap
 - `callerExtras.disableMCP` (optional, programmatic) — see Path SKIP above
 - Output of `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh" <project-root>` — canonical signal list
 
-**Telemetry contract**: `mcpStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | documented | skipped | declined | failed`) per the Default behavior matrix in `generate/SKILL.md`.
+**Telemetry contract**: `mcpStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | documented | skipped | declined | failed`) per the Default behavior matrix in `../../generate/SKILL.md`.
 
 **Step 1 — Detect candidates**. Run the detection script; parse JSON output. Candidates marked `confidence: "always"` (context7) emit unconditionally. Candidates marked `confidence: "high"` emit when the signal evaluates unambiguously (see `references/mcp-guide.md` § Confidence Tiers). Dedupe by server name.
 

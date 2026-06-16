@@ -30,7 +30,7 @@ Before doing anything else, verify your context contains `"dispatchedAsAgent": t
 if [[ "$(grep -c 'dispatchedAsAgent.*true' <<<"$AGENT_PROMPT")" -eq 0 ]]; then
   echo "HARD-FAIL: research-verifier was invoked without dispatchedAsAgent=true."
   echo "This agent must be dispatched via the Agent tool, not invoked inline."
-  echo "Refusing to run. See onboard/skills/research/SKILL.md § Step 5 (verify)."
+  echo "Refusing to run. See ../skills/research/SKILL.md § Step 5 (verify)."
   exit 1
 fi
 ```

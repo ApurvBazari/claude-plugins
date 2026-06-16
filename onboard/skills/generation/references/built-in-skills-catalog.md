@@ -106,7 +106,7 @@ When Anthropic ships a new built-in skill worth recommending:
 2. Add stack-specific example rows to all four template tables.
 3. If the skill is an extra, add the detection signal field reference.
 4. Bump onboard minor version.
-5. No changes needed in `wizard/SKILL.md` or `generation/SKILL.md` — both consume the catalog generically via the 9-skill count and tier classification.
+5. No changes needed in `../../wizard/SKILL.md` or `../SKILL.md` — both consume the catalog generically via the 9-skill count and tier classification.
 
 ## Removing a built-in skill
 
@@ -114,5 +114,5 @@ If Anthropic deprecates or removes a built-in skill:
 
 1. Remove the row from the catalog table.
 2. Remove the corresponding example rows from all four template tables.
-3. The drift handler in `update/SKILL.md` Step 4b.9 will classify the skill as `staleCandidate` on the next run.
+3. The drift handler in `../../update/SKILL.md` Step 4b.9 will classify the skill as `staleCandidate` on the next run.
 4. Bump onboard minor version.

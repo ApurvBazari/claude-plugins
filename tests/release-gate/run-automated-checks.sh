@@ -737,6 +737,14 @@ else
 fi
 echo ""
 
+# Ref integrity: every cross-skill `<path>/SKILL.md` prose ref in onboard/ must resolve.
+if bash .github/scripts/check-skill-refs.sh >/dev/null 2>&1; then
+  pass "refs: cross-skill SKILL.md references resolve (.github/scripts/check-skill-refs.sh)"
+else
+  fail "refs: broken cross-skill SKILL.md ref — run .github/scripts/check-skill-refs.sh"
+fi
+echo ""
+
 # ─────────────────────────────────────────────────
 echo "═══════════════════════════════════════════"
 echo "## Summary"

@@ -148,7 +148,7 @@ The rule file is the long-form reference; the stdout block is the quick-glance.
 
 ## mcp-setup.md Template
 
-Emit this file at `.claude/rules/mcp-setup.md` when any emitted server requires auth OR when a pre-existing `.mcp.json` was detected. Use standard rules frontmatter (`paths: **` — project-wide context). Include the maintenance header per § Maintenance Header in `generation/SKILL.md`.
+Emit this file at `.claude/rules/mcp-setup.md` when any emitted server requires auth OR when a pre-existing `.mcp.json` was detected. Use standard rules frontmatter (`paths: **` — project-wide context). Include the maintenance header per § Maintenance Header in `../SKILL.md`.
 
 Template body (fill the `{{ ... }}` placeholders from `mcpStatus.generated` + catalog metadata):
 

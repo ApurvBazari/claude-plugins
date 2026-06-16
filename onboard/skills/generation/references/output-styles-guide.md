@@ -2,7 +2,7 @@
 
 Output styles are project-scoped system-prompt modifiers that change how Claude Code responds session-wide. They live at `.claude/output-styles/<name>.md` (project) or `~/.claude/output-styles/<name>.md` (user). Claude Code ships three built-in styles that never need files; onboard Phase 7b emits project-specific custom styles.
 
-This guide is the authoritative reference consumed by `generation/SKILL.md` § Phase 7b. For the 5 body templates, see `output-styles-catalog.md`.
+This guide is the authoritative reference consumed by `../SKILL.md` § Phase 7b. For the 5 body templates, see `output-styles-catalog.md`.
 
 ---
 

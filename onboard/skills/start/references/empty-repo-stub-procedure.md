@@ -1,6 +1,6 @@
 # Empty-Repo Stub Procedure
 
-Canonical procedure for generating a minimal, canonical-shape `.claude/` stub when `/onboard:start` runs on a repo with no source code. Invoked by `start/SKILL.md` § Phase 0 (Empty-Repo Guard) after the developer picks option 3 ("Generate canonical stub") from the Phase 0 menu.
+Canonical procedure for generating a minimal, canonical-shape `.claude/` stub when `/onboard:start` runs on a repo with no source code. Invoked by `../SKILL.md` § Phase 0 (Empty-Repo Guard) after the developer picks option 3 ("Generate canonical stub") from the Phase 0 menu.
 
 ## Why this reference exists
 
@@ -14,7 +14,7 @@ This procedure closes all three by moving the logic INTO the start skill (Phase 
 
 ## Invocation
 
-Called from `start/SKILL.md` § Phase 0 Empty-Repo Guard, after:
+Called from `../SKILL.md` § Phase 0 Empty-Repo Guard, after:
 
 1. The guard detected no source files (`SRC_COUNT == 0` via the documented `find` filter)
 2. The developer selected option 3 ("Generate canonical stub") from the 3-option `AskUserQuestion` menu

@@ -1,6 +1,6 @@
 # Adopt — Baseline Synthesis (A4 + A6)
 
-Canonical procedure for synthesizing the onboard baseline from a detected foreign-tooling surface, and writing it. Invoked by `adopt/SKILL.md` (A4 builds the record-set + meta in context; A6 writes them after the gate approves). **Adopt writes ONLY `onboard-meta.json` + snapshots (+ the research engine's own `onboard-research.json`, written in A2). It touches NONE of the existing hand-crafted artifacts.**
+Canonical procedure for synthesizing the onboard baseline from a detected foreign-tooling surface, and writing it. Invoked by `../SKILL.md` (A4 builds the record-set + meta in context; A6 writes them after the gate approves). **Adopt writes ONLY `onboard-meta.json` + snapshots (+ the research engine's own `onboard-research.json`, written in A2). It touches NONE of the existing hand-crafted artifacts.**
 
 ## A4: build the record-set (in context, writes nothing)
 
@@ -29,8 +29,8 @@ Canonical-shape `onboard-meta.json` with retrofit additions. Resolve `<dynamic>`
   "source": "onboard:adopt",
   "mode": "retrofit",
 
-  "wizardAnswers": { /* canonical shape from the A3 grounded wizard — wizard/SKILL.md § Output */ },
-  "wizardStatus": { /* canonical 5-key shape — wizard/SKILL.md § Key Rule 7 */ },
+  "wizardAnswers": { /* canonical shape from the A3 grounded wizard — ../../wizard/SKILL.md § Output */ },
+  "wizardStatus": { /* canonical 5-key shape — ../../wizard/SKILL.md § Key Rule 7 */ },
 
   "research": {
     "consumed": true, "engineUsed": "subagent", "depth": "comprehensive",

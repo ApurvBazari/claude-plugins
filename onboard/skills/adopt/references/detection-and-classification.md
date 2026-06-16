@@ -1,6 +1,6 @@
 # Adopt — Detection & Classification (A1)
 
-Canonical procedure for detecting and classifying a repo's pre-existing Claude tooling surface. Invoked by `adopt/SKILL.md` Step A1. Read-only — this procedure writes nothing.
+Canonical procedure for detecting and classifying a repo's pre-existing Claude tooling surface. Invoked by `../SKILL.md` Step A1. Read-only — this procedure writes nothing.
 
 ## Detect the surface
 

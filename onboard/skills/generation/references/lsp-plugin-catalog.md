@@ -39,7 +39,7 @@ When Anthropic ships a new official `-lsp` plugin:
 1. Add a row to the catalog table above with the language label, plugin name, extensions, binary name, and install prereq.
 2. Add a corresponding entry to the `LANGUAGES` array in `onboard/scripts/detect-lsp-signals.sh` (the script itself; plugin-root-relative paths at runtime use `${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh`).
 3. Bump onboard minor version (language coverage is additive — no migration needed).
-4. No changes needed in `wizard/SKILL.md` or `generation/SKILL.md` — both consume the script's JSON output generically.
+4. No changes needed in `../../wizard/SKILL.md` or `../SKILL.md` — both consume the script's JSON output generically.
 
 ## Rename / deprecation handling
 
