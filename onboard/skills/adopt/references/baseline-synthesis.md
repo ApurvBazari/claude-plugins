@@ -72,7 +72,7 @@ Notes:
 
 ## A4: synthesize snapshots (in context)
 
-Capture **current** (hand-crafted) state as the baseline so update shows zero drift immediately after adopt. One file per present category, same shapes update's drift detectors read (`drift-classification.md` §§ 4b.5–4b.9):
+Capture **current** (hand-crafted) state as the baseline so update shows zero drift immediately after adopt. One file per present category, same shapes update's drift detectors read (`drift-classification.md` §§ 4b.4–4b.9):
 
 - `.claude/onboard-skill-snapshot.json` — `{ "<skill>": { <frontmatter fields parsed from the live SKILL.md> } }`
 - `.claude/onboard-agent-snapshot.json` — `{ "<agent>": { <live frontmatter> } }`
