@@ -792,6 +792,22 @@ fi
 echo ""
 
 # ─────────────────────────────────────────────────
+echo "### 18. Pre-implementation gate artifact (Step 2.9 — optional)"
+# ─────────────────────────────────────────────────
+# /onboard:start Step 2.9 renders a previewModel walkthrough to
+# .claude/walkthrough/<YYYY-MM-DD-HHMM>-onboard-plan.html, or falls back to
+# an inline markdown gate (optionally persisting .claude/onboard-plan.md).
+# The artifact is optional — walkthrough may be absent and markdown not persisted.
+if compgen -G ".claude/walkthrough/*-onboard-plan.html" >/dev/null; then
+  pass "pre-implementation plan walkthrough rendered"
+elif [[ -f ".claude/onboard-plan.md" ]]; then
+  pass "pre-implementation plan rendered (markdown fallback)"
+else
+  warn "no pre-implementation plan artifact (walkthrough may be absent and markdown not persisted)"
+fi
+echo ""
+
+# ─────────────────────────────────────────────────
 echo "═══════════════════════════════════════════"
 echo "## Summary — ${PROFILE}"
 echo ""
