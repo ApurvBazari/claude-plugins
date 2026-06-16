@@ -78,6 +78,7 @@ User-facing skills (show in `/onboard:` autocomplete):
 
 - `start/SKILL.md` — full interactive wizard + generation (`disable-model-invocation: true`)
 - `update/SKILL.md` — align with latest best practices (`disable-model-invocation: true`)
+- `adopt/SKILL.md` — retrofit foreign hand-crafted tooling into an onboard baseline; writes meta + snapshots only, never modifies a hand-crafted file (`disable-model-invocation: true`)
 - `check/SKILL.md` — tooling health check (auto-invocable)
 - `verify/SKILL.md` — independent feature verification via feature-evaluator agent (auto-invocable)
 - `evolve/SKILL.md` — apply pending tooling drift updates (auto-invocable)
@@ -114,3 +115,4 @@ Internal building blocks (`user-invocable: false` — hidden from menu):
 - Merge-aware hooks: always read settings.json first, never overwrite
 - v3 research consumption: when a `research` dossier is present, generation sharpens CLAUDE.md/rules/skills/agents/subdir from verified claims and seeds the verify backlog (`docs/feature-list.json`, seed-if-absent). Absent research → byte-identical to the non-research path.
 - v3 re-research (update/evolve): on a staleness signal, `update`/`evolve` re-run `onboard:research` scoped (auto-escalating to full), merge it into the prior dossier, and regenerate merge-aware (customization floor + marker surgery + progress-preserving backlog merge). `evolve` runs the scoped path silently and defers full-escalation to `update`; `check` detects + recommends (read-only). Absent a staleness signal → byte-identical to the snapshot-replay path.
+- Provenance + retrofit: `/onboard:adopt` synthesizes a `mode:"retrofit"` baseline from pre-existing tooling, tracking each artifact `origin:"adopted"` in `onboard-meta.json.artifactProvenance`; `update` treats adopted artifacts as diffable-with-caution and defers all modernization (e.g. adding maintenance headers) to per-item approval. An absent `artifactProvenance` map means all-generated (backward-compatible).
