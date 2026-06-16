@@ -22,11 +22,19 @@ Check for `.claude/onboard-meta.json`:
 Read: .claude/onboard-meta.json
 ```
 
-**If not found**:
+**If not found**, probe for pre-existing tooling (native Glob): `CLAUDE.md` (root) or any `.claude/` rules/skills/agents/output-styles, `.mcp.json`, or hooks in `.claude/settings.json`.
 
-> This project hasn't been set up with onboard yet. Run `/onboard:start` first to generate your Claude tooling.
+- **Existing tooling detected** (foreign — not onboard-managed) → offer to adopt it via `AskUserQuestion` (single-select, header `"No baseline"`):
+  - **Adopt then update (Recommended)** — "Bring the existing tooling under management (`/onboard:adopt`), then continue this update."
+  - **Cancel** — "Do nothing."
 
-Stop here.
+  On **Adopt then update**: run `Skill(onboard:adopt)`. Adopt synthesizes the baseline (it never modifies your files) and, because it was entered from here, hands control straight back — continue into Step 2 with the freshly written `.claude/onboard-meta.json`. On **Cancel**: stop.
+
+  **Guard Usage:** two fixed options (≥2), so the single-option guard in `.claude/rules/ask-user-question-guard.md` does not apply.
+
+- **No tooling at all** → there is nothing to update or adopt:
+  > This project hasn't been set up with onboard yet. Run `/onboard:start` first to generate your Claude tooling.
+  Stop here.
 
 **If found**, parse and display:
 
@@ -46,6 +54,7 @@ Read every file listed in `onboard-meta.json`'s `generatedArtifacts` array. For 
 - Check if file still exists
 - Check if maintenance header is intact (indicates no manual override)
 - If maintenance header is missing or modified, flag as "user-customized" — extra caution needed
+- **Provenance:** before flagging, consult `onboard-meta.json`'s `mode` + `artifactProvenance` per `references/drift-classification.md` § 4b.0. An `origin:"adopted"` artifact (or any artifact in a `mode:"retrofit"` baseline) has an **expected** absent header — do not flag it "user-customized" on that basis; it is diffable-with-caution and its first modernization offer is "add maintenance header / migrate to conventions".
 
 Also read any Claude config files that may have been added manually after the initial run.
 
@@ -213,7 +222,7 @@ Organize findings into categories:
 
 ### Step 5.5: Render the change preview (before approval)
 
-Assemble a `previewModel` (per `../research/references/render-adapter.md` § previewModel) with `flow:"update"`: `changes[]` = the accumulated offer-set from Steps 4–4b (action `modernize`/`create`/`regenerate`, all `origin:"generated"` — update manages onboard-generated artifacts); `research` = the re-research delta when Step 4b.10 ran, else null; `decisions` = the current model/autonomy/profile from `onboard-meta.json`; `warnings` = user-customized-file flags + any "best-practices check unavailable" note. Render it via `walkthrough:render` to `.claude/walkthrough/<YYYY-MM-DD-HHMM>-onboard-update.html`, with the same walkthrough-absent → offer-install → markdown fallback as start Step 2.9. This is a preview only — the actual approval remains the Step 6 batched AskUserQuestion; nothing is applied until Step 7.
+Assemble a `previewModel` (per `../research/references/render-adapter.md` § previewModel) with `flow:"update"`: `changes[]` = the accumulated offer-set from Steps 4–4b (action `modernize`/`create`/`regenerate`; each artifact's `origin` carried from the baseline — `"generated"` for onboard-managed artifacts, `"adopted"` for artifacts brought under management via `/onboard:adopt` in a `mode:"retrofit"` baseline); `research` = the re-research delta when Step 4b.10 ran, else null; `decisions` = the current model/autonomy/profile from `onboard-meta.json`; `warnings` = user-customized-file flags + any "best-practices check unavailable" note. Render it via `walkthrough:render` to `.claude/walkthrough/<YYYY-MM-DD-HHMM>-onboard-update.html`, with the same walkthrough-absent → offer-install → markdown fallback as start Step 2.9. This is a preview only — the actual approval remains the Step 6 batched AskUserQuestion; nothing is applied until Step 7.
 
 ---
 
@@ -238,7 +247,7 @@ Group offers into these categories (each becomes one `multiSelect: true` questio
 | Group | What goes here |
 |---|---|
 | `artifact-gaps` | Files in `generatedArtifacts` missing from disk; user-customized files that need merge/replace decision |
-| `user-edit-detections` | Files where the maintenance header was modified or other edits detected |
+| `user-edit-detections` | Files where the maintenance header was modified, an adopted artifact awaiting its first maintenance header, or other edits detected |
 | `new-dependencies-or-languages` | New dep additions (e.g., `@anthropic-ai/sdk`), new languages (Rust → `rust-analyzer-lsp`), built-in skills newly relevant. **LSP plugins for newly detected languages are `autoChecked: true` by default**, matching wizard Phase 5.6 pre-check behavior. |
 | `best-practice-suggestions` | Reference guide recommendations (e.g., `observability.md` rule for the detected stack) |
 | `enriched-capabilities` | CI/CD, harness, evolution, sprint contracts, verification |
@@ -380,7 +389,7 @@ Update `.claude/onboard-meta.json`:
 
 ## Key Rules
 
-- **Require `onboard-meta.json` before any work** — if the file is missing, halt at Step 1 with a message to run `/onboard:start`. Never run fresh analysis or apply updates without a baseline.
+- **Require a baseline before drift work** — if `onboard-meta.json` is missing, halt at Step 1. When foreign tooling is present, offer `/onboard:adopt` to synthesize the baseline (then continue); otherwise direct the developer to `/onboard:start`. Never run drift application without a baseline.
 - **All upgrades require explicit approval** — never apply a detected drift item without the developer selecting it in the Step 6 `AskUserQuestion` call. "Apply later" is a valid answer; "Apply all" still requires the pre-question selection, not a silent auto-apply.
 - **Never overwrite user-customized files without per-item choice** — files with a modified or absent maintenance header are flagged and require a merge/replace/skip decision before any change is made.
 - **User-edits in frontmatter are display-only, never rewritten** — for skill, agent, and output-style frontmatter drift, `userEdit` items are shown for awareness only. Onboard updates the snapshot to accept the edit but never overwrites the hand-edited value.
