@@ -181,9 +181,7 @@ After all questions are answered, present a summary:
 > **Pain points**: [time sinks, error-prone areas, automation wishes]
 > **Preferences**: [testing, style, security, autonomy]
 >
-> Ready to generate your Claude tooling based on this? Or would you like to adjust anything?
-
-Wait for confirmation before proceeding to generation.
+> Next I'll show you a full preview of what I'll build before anything is written.
 
 ---
 
@@ -250,6 +248,24 @@ The builder emits a context object per the canonical schema. Key invariants:
 - Every wizardAnswers field populated (including defaults for skipped fields per `../wizard/SKILL.md` § Skip Behavior).
 
 Run the builder's validation step before proceeding to Step 3. If validation fails, refuse to dispatch — surface the error to the user with the offending field name.
+
+---
+
+## Step 2.7: Generation Plan (plan mode)
+
+Dispatch generation in plan mode — it computes what it will write without writing:
+
+```
+Skill(onboard:generate, {mode:"plan", context})   // context from Step 2.6
+```
+
+The skill returns a `generationManifest` (validated vs `../../schemas/generation-manifest.json`): `changes[]` (path, action, purpose, outline, tier, origin) + `decisions` + `warnings`. **Nothing is written.** Keep the manifest in context.
+
+If plan mode fails or the manifest fails validation, do NOT proceed — surface the error; let the developer retry or cancel.
+
+## Step 2.8: Assemble the preview model
+
+Build `previewModel` from the research dossier (Step 1.5) + the manifest (Step 2.7) per `../research/references/render-adapter.md` § previewModel: `flow:"start"`; `research` = architecture map + top risks + glossary from the dossier (null if research was minimal/empty); `changes`/`decisions`/`warnings` from the manifest.
 
 ---
 
