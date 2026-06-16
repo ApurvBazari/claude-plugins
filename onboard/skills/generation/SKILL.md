@@ -73,6 +73,15 @@ The developer's `autonomyLevel` preference cascades across all generated artifac
 
 **Conflict resolution**: When `autonomyLevel` and `codeStyleStrictness` produce conflicting tone verbs, `autonomyLevel` overrides for tone (how assertive the language is), while `codeStyleStrictness` controls quantity (how many rules/checks are generated).
 
+## Plan mode (planOnly: true)
+
+When dispatched with `planOnly: true`, run the front half of generation — all the "what to generate" decisions — and STOP before any Write/Edit:
+
+1. Compute the artifact set exactly as write mode would (Core tier always; Enriched tiers per wizard flags; rules/skills/agents from detected patterns + research claims; hooks from autonomy; MCP/LSP from signals; plugin integration from detection).
+2. For each artifact emit one `changes[]` entry: `path`, `action` (`create` for a new file, `merge` for a merge-aware write into an existing file such as `.claude/settings.json`), `purpose` (one line), `outline` (section list for CLAUDE.md and multi-section artifacts), `tier`, `origin: "generated"`.
+3. Populate `decisions` from the resolved context: `model`, `autonomy`, `profile`, `hooks`, `mcp`, `lsp`, `pluginIntegration`.
+4. Return `{ mode: "plan", flow: "start", changes, decisions, warnings }`. **Write nothing.** Do not run Phase 7a–d writes; only their planned outcomes appear as `changes[]` entries.
+
 ## Artifact Generation Rules
 
 ### Effective Plugin List Resolution
