@@ -80,9 +80,35 @@ After either stub path completes, run a minimal handoff (see the stub procedure'
 
 Runs **after** the Phase 0 guard (a stub/abort/placeholder run returns above and never reaches here) and **before** Phase 1 Recon. This wires the durable phase-task list that the rest of the flow transitions.
 
-First, read the contract: `references/phase-tracking.md`. It is the single source of truth for the task subjects, the `pending → in_progress → completed` (plus `deleted`) state machine, the HARD GATE mapping, and Cancel semantics. Follow it verbatim — do not re-derive its rules here.
+First, read the contract: `references/phase-tracking.md`. It is the single source of truth for the task subjects, the `pending → in_progress → completed` (plus `deleted`) state machine, the HARD GATE mapping, Cancel semantics, and the **on-disk resume procedure** (§ Resume). Follow it verbatim — do not re-derive its rules here.
 
-> **Resume handling** (checking for an existing incomplete `onboard:phase:` list and offering Resume / Restart, plus the `onboard-meta.json.currentPhase` anchor writes) is added in the meta-anchor step (task B3). For now, always create a **fresh** list.
+### Step: Resume probe (durable on-disk artifacts)
+
+Before creating a fresh task list, probe for a prior interrupted run. The cross-session anchor is the set of **durable on-disk artifacts** — NOT the task list (the harness task list may be session-scoped and is not guaranteed to survive a new session, so it is in-session visibility only). Probe the two artifacts in order, exactly per `references/phase-tracking.md` § Resume:
+
+```bash
+META=".claude/onboard-meta.json"
+DOSSIER=".claude/onboard-research.json"
+CURRENT_PHASE=$([ -f "$META" ] && jq -r '.currentPhase // empty' "$META" || echo "")
+META_MAJOR=$([ -f "$META" ] && jq -r '._generated.version // empty' "$META" | cut -d. -f1 || echo "")
+```
+
+Branch:
+
+1. **Probe 1 — generation-era meta.** If `onboard-meta.json` exists AND has a `currentPhase` (integer or `"done"`) AND `META_MAJOR == "3"` (the segment before the first `.` of `_generated.version`) AND the run's task list — if it still exists this session — is **not** cancelled (no gate-or-later task `deleted`; § Cancel-resume guard):
+   - if `currentPhase == "done"` → the prior run already finished. Do **not** offer resume; route to the existing-config flow (this mirrors the Phase 1 "existing config" branch — Adopt / Update / Start fresh).
+   - else (integer `currentPhase`, i.e. `6`) → offer **Resume** (finish from Phase `currentPhase + 1` = Phase 7 Handoff) or **Restart**, via the fixed-two-option `AskUserQuestion` below.
+2. **Probe 2 — research dossier, no meta.** Else if `.claude/onboard-research.json` exists but `onboard-meta.json` does **not** (and any task list present is non-cancelled) → research completed, generation never ran. Offer **Resume into Phase 3** (the wizard re-confirms from the dossier's `research.wizardInferences` — this is NOT skipping the wizard; continue forward through context → plan-gate → generation) or **Restart**, via the same prompt.
+3. **Probe 3 — neither.** Else → fresh start. Skip the prompt; proceed to create a fresh list below.
+
+For probes 1 (integer case) and 2, present the offer via `AskUserQuestion` (single-select, header `"Resume?"`, **two fixed options**):
+
+- **Resume (Recommended)** — "Continue the interrupted run." Rehydrate from the checkpoint artifact(s): for probe 2 read `.claude/onboard-research.json` and re-derive context, re-create the task list with already-completed phases marked `completed` and the rest `pending`, and continue from the resume target (Phase 7 for probe 1, Phase 3 for probe 2). For probe 1, re-create the list with 0–6 `completed` and 7 `pending`.
+- **Restart** — "Discard the interrupted run and start fresh from Phase 0." Mark any leftover incomplete tasks `deleted`, then fall through to create a fresh list below. (Generation is merge-aware, so a restart that re-reaches Phase 6 will not clobber user edits.)
+
+**Guard Usage:** both options are **fixed** (not built from a dynamic list that could collapse to one), so the single-option guard in `.claude/rules/ask-user-question-guard.md` does **not** apply. On **Resume**, skip the fresh-list creation below and jump to the resume target phase. On **Restart** (or probe 3), continue here.
+
+### Step: Create the phase-task list
 
 Create the **8** phase tasks via `TaskCreate`, all `status: "pending"`, one per phase, exactly per the contract's § Task list — `/onboard:start` table (subjects, `activeForm`):
 
@@ -436,6 +462,15 @@ After generation completes, list every file that was created:
 
 > **Phase complete:** after generation returns and the file list above is reported, `TaskUpdate(onboard:phase:6:generation → completed)`. The ecosystem-plugin-install step below is an optional tail of Phase 6 — it does not get its own task.
 
+> **Set the `currentPhase` anchor (orchestrator-owned, per `references/phase-tracking.md` § Resume).** Generation (Phase 6) is the first thing to write `.claude/onboard-meta.json`, so this is the first point a `currentPhase` can exist. After Phase 6 returns successfully, the **orchestrator** (not the config-generator agent — do not change its emission logic) updates the just-written meta to set a top-level `currentPhase: 6`:
+>
+> ```bash
+> META=".claude/onboard-meta.json"
+> tmp=$(mktemp) && jq '.currentPhase = 6' "$META" > "$tmp" && mv "$tmp" "$META"
+> ```
+>
+> This marks the run as generation-era for cross-session resume (probe 1). It is flipped to `"done"` at Phase 7 completion below. A merge-aware re-run of Phase 6 (recovery from an interrupted write) simply re-applies `= 6`.
+
 ---
 
 ### Step: ecosystem-plugin-install
@@ -593,7 +628,16 @@ If ecosystem plugins were set up, add:
 
 > Your project is now set up for AI-assisted development with Claude Code. Happy coding!
 
-> **Phase complete:** after the closing line, `TaskUpdate(onboard:phase:7:handoff → completed)`. All 8 phase tasks are now `completed` — the run is done. (The `onboard-meta.json.currentPhase = "done"` write that accompanies this is added in the meta-anchor step, task B3.)
+> **Phase complete:** after the closing line, `TaskUpdate(onboard:phase:7:handoff → completed)`. All 8 phase tasks are now `completed` — the run is done.
+
+> **Finalize the `currentPhase` anchor (orchestrator-owned, per `references/phase-tracking.md` § Resume).** Now that handoff completed, the orchestrator flips the meta's `currentPhase` from `6` to the string `"done"`:
+>
+> ```bash
+> META=".claude/onboard-meta.json"
+> tmp=$(mktemp) && jq '.currentPhase = "done"' "$META" > "$tmp" && mv "$tmp" "$META"
+> ```
+>
+> A `"done"` meta is **not** resumable (probe 1 routes it to the existing-config flow on a future run, not a Resume offer).
 
 ## Key Rules
 
@@ -603,3 +647,4 @@ If ecosystem plugins were set up, add:
 - **Notify setup is inform-only when global config is already complete** — the `globalConfigured` detection (config + hook both present) means no project-local offer is made. Never re-setup what is already wired.
 - **Halt and surface on context builder validation failure** — if the Phase 4 build-v3-context validation fails, refuse to dispatch and show the offending field. Never attempt generation with an incomplete or malformed context object.
 - **The orchestrator owns every phase-task transition** — per `references/phase-tracking.md`, Step 0 creates the 8 `onboard:phase:N:*` tasks; each phase marks its own task `in_progress` before its work (and before any agent/Skill dispatch) and `completed` after. Subagents (`codebase-analyzer`, `config-generator`) and internal skills (`research`, `wizard`, `generate`) are task-blind. The enum is exactly `pending`/`in_progress`/`completed`/`deleted` — no "blocked"/"cancelled". The Phase 5 gate stays `in_progress` while awaiting the decision; Approve → `completed`, Adjust → loop (no change), Cancel → mark tasks 5/6/7 `deleted`.
+- **The resume anchor is on-disk artifacts, not the task list** — Step 0's resume probe (per `references/phase-tracking.md` § Resume) keys on durable files: `onboard-meta.json` with an integer `currentPhase` (probe 1, generation-era) → research dossier with no meta (probe 2, post-research) → neither (clean start). The harness task list is in-session visibility only. `currentPhase` is **orchestrator-owned and written from Phase 6 onward only** (the meta's first existence): set `= 6` after Phase 6 returns, then `= "done"` at Phase 7 completion. Phases 0–5 write no `currentPhase` (no meta exists) — their durable progress is the research dossier. Do **not** move these writes into the config-generator agent; the orchestrator updates the meta after generation returns. Absent `currentPhase` ⇒ no resume offered (back-compat).
