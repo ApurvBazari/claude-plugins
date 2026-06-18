@@ -16,6 +16,7 @@
 - Renamed the internal `headlessMode` generation flag to `programmatic` and migrated "headless" vocabulary to "programmatic" across internal reference docs; pre-3.0.0 `onboard-meta.json` may carry the legacy `headlessMode` key (ignored). Exercised the tooling-gap-audit PR-opener under test (gh-stubbed) and tightened the report-prompt format contract.
 - Completed the `init`→`start` skill-name migration across the remaining internal docs, fixed a Key-rules numbering gap, and path-qualified cross-skill `SKILL.md` references with a new resolver gate so they cannot silently break. Documentation/CI only; no generation-behavior change.
 - Reference-integrity round 3: new `.github/scripts/check-ref-paths.sh` resolver (path-shaped non-`SKILL.md` `.md` refs; basename-existence + `CLAUDE.md` collision exemption) + fixture test, wired into the release-gate belt; fixed 36 wrong-path cross-skill references in onboard prose.
+- Durable phase tracking: `/onboard:start`, `:update`, `:evolve`, `:adopt` now create durable phase tasks with checkpoint-resume (start records `currentPhase` in `onboard-meta.json` after Phase 6) — see `skills/start/references/phase-tracking.md`.
 
 ## 2.0.1 — 2026-06-11
 - refactor: split generation/SKILL.md (1812→<500 lines) and update/SKILL.md (604→<500) into references.

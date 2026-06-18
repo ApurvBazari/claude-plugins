@@ -769,6 +769,14 @@ else
 fi
 echo ""
 
+# Phase tracking: durable task wiring in all onboard entry-point skills + contract reference exists.
+if bash .github/scripts/check-phase-tracking.sh >/dev/null 2>&1; then
+  pass "phase-tracking: durable tracking wired in onboard entry points"
+else
+  fail "phase-tracking: missing tracking wiring — run .github/scripts/check-phase-tracking.sh"
+fi
+echo ""
+
 # ─────────────────────────────────────────────────
 echo "═══════════════════════════════════════════"
 echo "## Summary"
