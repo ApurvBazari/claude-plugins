@@ -10,7 +10,7 @@ Interactive wizard that analyzes codebases and generates complete Claude tooling
      ▼
 Phase 0: Empty-Repo Guard ──→ SRC_COUNT == 0?
      │                            ├── yes → 3-option menu (abort / placeholder / canonical stub)
-     │                            │          └── stub path follows start/references/empty-repo-stub-procedure.md
+     │                            │          └── stub path follows skills/start/references/empty-repo-stub-procedure.md
      │                            └── no  → fall through to Phase 1
      ▼
 Phase 1: Recon ──→ codebase-analyzer agent (read-only, script-free)
@@ -29,7 +29,7 @@ Phase 2: Grounded Wizard ──→ confirm/override from research.wizardInferenc
 Phase 2.5: Plugin Detection ──→ deep probe (siblings + marketplace cache)
      │                          + plugin-surface-probe (closes G.3)
      ▼
-Phase 2.6: Build v3 Context ──→ start/references/onboard-context-builder.md
+Phase 2.6: Build v3 Context ──→ skills/start/references/onboard-context-builder.md
      │                           └── version: 3 + research block
      ▼
 Phase 2.7-2.9: Plan → Preview → HARD GATE ──→ Skill(onboard:generate {mode:plan})

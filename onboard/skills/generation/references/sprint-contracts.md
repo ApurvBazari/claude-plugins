@@ -4,7 +4,7 @@ Sprint contracts define the success criteria for a sprint BEFORE work begins. Th
 
 Based on Anthropic's harness design: "Before each sprint, generator and evaluator negotiate a contract defining deliverables and success criteria."
 
-> **v3 (onboard 3.x):** when research found verified risk/test-gap claims, sprint-1's `docs/feature-list.json` is **seeded from research** (see `generation/references/verify-backlog-seeding.md`); otherwise the interactive negotiation flow below produces it. The negotiation flow applies to **sprint-2..N at sprint boundaries** in both cases.
+> **v3 (onboard 3.x):** when research found verified risk/test-gap claims, sprint-1's `docs/feature-list.json` is **seeded from research** (see `verify-backlog-seeding.md`); otherwise the interactive negotiation flow below produces it. The negotiation flow applies to **sprint-2..N at sprint boundaries** in both cases.
 
 ## Contract Format
 

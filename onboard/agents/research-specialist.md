@@ -42,7 +42,7 @@ If the flag is absent, **hard-fail immediately**. Do NOT read source, do NOT emi
 You will receive, in your dispatch prompt:
 1. `dimension` — the single dimension you assess (e.g. `"architecture"`, or a custom dimension string).
 2. `scopeGlobs` — the glob patterns bounding the subtrees you read (e.g. `["src/**", "app/**"]`). Stay within them; they exist to bound cost on large repos.
-3. `prompt` — the dimension-specific investigation brief (what evidence this dimension produces, what to look for). The engine fills this from `references/specialist-roster.md` (built-ins) or the custom specialist's `prompt`/`agent`.
+3. `prompt` — the dimension-specific investigation brief (what evidence this dimension produces, what to look for). The engine fills this from `../skills/research/references/specialist-roster.md` (built-ins) or the custom specialist's `prompt`/`agent`.
 4. `projectPath` — the absolute project root.
 
 ### Step 1: Investigate deeply within scope
