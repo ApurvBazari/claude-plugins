@@ -1,6 +1,6 @@
 # Wizard Question Bank
 
-Catalog of questions for the grounded confirm/override wizard. The profile (Minimal / Standard / Comprehensive) is already chosen in `/onboard:start` Step 1.4 and the research dossier already exists from Step 1.5 — so this wizard does **not** interrogate. It runs ~2–3 `AskUserQuestion` exchanges that **confirm or override** what research inferred.
+Catalog of questions for the grounded confirm/override wizard. The profile (Minimal / Standard / Comprehensive) is already chosen in `/onboard:start` Phase 2 profile-select step and the research dossier already exists from Phase 2 (Research) — so this wizard does **not** interrogate. It runs ~2–3 `AskUserQuestion` exchanges that **confirm or override** what research inferred.
 
 Two question shapes appear below:
 
@@ -267,7 +267,7 @@ AskUserQuestion({
 
 ## Exchange Grouping (uniform — ~2–3 exchanges, all profiles)
 
-The grounded wizard does not branch on profile. It runs the same ~2–3 exchanges regardless of which profile was chosen in `/onboard:start` Step 1.4, skipping any group with no candidates or no signal.
+The grounded wizard does not branch on profile. It runs the same ~2–3 exchanges regardless of which profile was chosen in `/onboard:start` Phase 2 profile-select step, skipping any group with no candidates or no signal.
 
 ```
 Exchange 1 — Workflow & preferences (confirm/override):
@@ -287,7 +287,7 @@ Exchange 3 — Tuning cards + detection:
 
 Summary & confirmation:
   Present everything gathered (recon analysis + research inferences + confirmed/overridden
-  answers + the model line); confirm before control returns to /onboard:start Step 2.5.
+  answers + the model line); confirm before control returns to /onboard:start Phase 4 (Plugin Detection).
 ```
 
 Question selection within an exchange is still **signal-gated**: skip a confirm/override question entirely when analysis/research already answers it unambiguously (the recommended option would be the only sensible answer), skip Category 3/4/5 when the stack isn't detected, and skip Q1.3 when the repo has <10 source files (auto-classify as "new").

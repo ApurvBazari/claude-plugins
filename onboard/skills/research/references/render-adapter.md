@@ -1,9 +1,9 @@
 # Render Adapter — Research Dossier → Walkthrough `session-model` (v3)
 
-Maps the synthesized `research` dossier — and the shared `previewModel` (see § previewModel) — to a `walkthrough` **`session-model`** (schema: `walkthrough/skills/create/references/session-model.md`; render contract: `walkthrough/skills/render/references/render-contract.md`) so `walkthrough:render` can emit one self-contained interactive HTML. The HTML render now happens at the onboard **pre-implementation gate** (`start` Step 2.9 / `update` Step 5.5 / `adopt` A5), which loads this adapter; research itself no longer renders standalone HTML (folded into the gate — see `../SKILL.md` Step 7.5). Mirrors the proven `lens → review-model-assembly.md → walkthrough:render` handoff.
+Maps the synthesized `research` dossier — and the shared `previewModel` (see § previewModel) — to a `walkthrough` **`session-model`** (schema: `walkthrough/skills/create/references/session-model.md`; render contract: `walkthrough/skills/render/references/render-contract.md`) so `walkthrough:render` can emit one self-contained interactive HTML. The HTML render now happens at the onboard **pre-implementation gate** (`start` Phase 5 (the gate) / `update` Step 5.5 / `adopt` A5), which loads this adapter; research itself no longer renders standalone HTML (folded into the gate — see `../SKILL.md` Step 7.5). Mirrors the proven `lens → review-model-assembly.md → walkthrough:render` handoff.
 
 ## When this runs
-At the pre-implementation gate (`start` Step 2.9 / `update` Step 5.5 / `adopt` A5), when `walkthrough` is installed and the render succeeds. If `walkthrough` is absent or the render fails, the gate degrades to an inline markdown gate (the gate itself is never skipped). onboard never writes the HTML itself; `walkthrough:render` owns it.
+At the pre-implementation gate (`start` Phase 5 (the gate) / `update` Step 5.5 / `adopt` A5), when `walkthrough` is installed and the render succeeds. If `walkthrough` is absent or the render fails, the gate degrades to an inline markdown gate (the gate itself is never skipped). onboard never writes the HTML itself; `walkthrough:render` owns it.
 
 ## Mapping
 
@@ -28,7 +28,7 @@ At the pre-implementation gate (`start` Step 2.9 / `update` Step 5.5 / `adopt` A
 
 ## previewModel (the shared pre-implementation render input)
 
-`previewModel` is the unified input rendered at the pre-implementation gate (start Step 2.9; update; adopt). Shape:
+`previewModel` is the unified input rendered at the pre-implementation gate (start Phase 5 (the gate); update; adopt). Shape:
 
 ```jsonc
 {

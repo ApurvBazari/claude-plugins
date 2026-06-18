@@ -56,7 +56,7 @@ Present a short catalog to the developer:
 
 > **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(onboard:adopt:phase:1:recon-research → in_progress)` now, **before** dispatching the `codebase-analyzer` agent and **before** invoking `Skill(onboard:research)` (both task-blind). Mark it `TaskUpdate(... → completed)` after the research engine returns the validated dossier.
 
-1. **Recon** — spawn the `codebase-analyzer` agent (per `../../agents/codebase-analyzer.md`), exactly as `start` Step 1.2. Keep its report + `reconHints` in context.
+1. **Recon** — spawn the `codebase-analyzer` agent (per `../../agents/codebase-analyzer.md`), exactly as `start` Phase 1 (Recon). Keep its report + `reconHints` in context.
 2. **Research** — dispatch the research engine at **Full depth**:
 
 ```
@@ -99,7 +99,7 @@ Assemble `previewModel` per `../research/references/render-adapter.md § preview
 - `decisions` = `{ model: <resolved>, autonomy: wizardAnswers.autonomyLevel, profile: "retrofit", hooks: [...detected hook events], mcp: [...detected servers], lsp: [...detected plugins], pluginIntegration: [...detectedPlugins] }`;
 - `warnings` = e.g. "N artifacts have no maintenance header — they'll be offered for modernization on your next `/onboard:update`."
 
-Then render + hard-gate exactly like `start` Step 2.9:
+Then render + hard-gate exactly like `start` Phase 5 (Plan → Preview → Gate):
 
 1. **Render.** Map `previewModel` → a walkthrough `session-model` per the render-adapter, then invoke `walkthrough:render` with `{ model, outputPath: ".claude/walkthrough/<YYYY-MM-DD-HHMM>-onboard-adopt.html" }`.
    - **walkthrough absent** → offer install via AskUserQuestion (single-select, header `"Walkthrough"`): **Install now (Recommended)** / **Skip — markdown preview**. Install now → `claude plugin install walkthrough@apurvbazari-plugins` via Bash; re-probe; success → render; failure → markdown fallback.

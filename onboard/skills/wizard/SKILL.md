@@ -28,7 +28,7 @@ Free-form text inputs (project name, description, paths) are NOT choices and sta
 
 ## Wizard Flow — grounded confirm/override
 
-The profile and research depth were chosen in `/onboard:start` Step 1.4, and the research dossier already exists from Step 1.5. (`/onboard:adopt` is the same: it runs recon + research at Full depth in its Step A2, then dispatches this wizard in A3 with the dossier in context.) **This wizard does NOT interrogate** — it confirms or overrides what research inferred, in ~2–3 `AskUserQuestion` exchanges. Quick Mode and the old full/Custom wizard have **converged** into this single surface; there is no preset selection here (it happened in `start`) and no Custom path.
+The profile and research depth were chosen in `/onboard:start` Phase 2 profile-select step, and the research dossier already exists from Phase 2 (Research). (`/onboard:adopt` is the same: it runs recon + research at Full depth in its Step A2, then dispatches this wizard in A3 with the dossier in context.) **This wizard does NOT interrogate** — it confirms or overrides what research inferred, in ~2–3 `AskUserQuestion` exchanges. Quick Mode and the old full/Custom wizard have **converged** into this single surface; there is no preset selection here (it happened in `start`) and no Custom path.
 
 The wizard receives the `research` dossier in context. It reads `research.wizardInferences` (per `../research/references/wizard-inference-map.md`) to seed recommended options.
 
@@ -62,7 +62,7 @@ A developer who accepts all defaults clears Exchange 3 in one pass.
 
 ### Summary & Confirmation
 
-Present everything gathered (recon `analysis` + `research` inferences + confirmed/overridden answers + the chosen model line) and confirm before control returns to `/onboard:start`, which proceeds to Step 2.5 (Plugin Detection). **Always include the model line** as before: `Model: <model-id> (<source>)`.
+Present everything gathered (recon `analysis` + `research` inferences + confirmed/overridden answers + the chosen model line) and confirm before control returns to `/onboard:start`, which proceeds to Phase 4 (Plugin Detection). **Always include the model line** as before: `Model: <model-id> (<source>)`.
 
 ## Exchange 3 detail — recorded field shapes
 
@@ -134,7 +134,7 @@ Note: a `research.wizardInferences` value may be an enum *stem* (e.g. `teamSize:
 
    | State field | Updated when |
    |---|---|
-   | `state.presetUsed` | Set once from the profile chosen in `/onboard:start` Step 1.4 (`minimal | standard | comprehensive`) |
+   | `state.presetUsed` | Set once from the profile chosen in `/onboard:start` Phase 2 profile-select step (`minimal | standard | comprehensive`) |
    | `state.exchangesUsed` | Incremented on every `AskUserQuestion` call the wizard makes |
    | `state.phasesAsked` | Pushed when an exchange presents questions to the developer |
    | `state.phasesSkipped` | Pushed when an exchange (or detection group) is gated off (no signal, programmatic path) |

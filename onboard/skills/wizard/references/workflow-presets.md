@@ -1,6 +1,6 @@
 # Workflow Profiles
 
-Three pre-configured profiles for common development setups. The profile is chosen in `/onboard:start` Step 1.4 — it does **two** things:
+Three pre-configured profiles for common development setups. The profile is chosen in `/onboard:start` Phase 2 profile-select step — it does **two** things:
 
 1. **Bounds research depth** — how deep the research engine reads before the wizard runs (recon-only → core-4 → all-7).
 2. **Pre-fills the generation scope** — sensible autonomy / strictness / agent-count / hook defaults the wizard then presents as overridable.
@@ -11,7 +11,7 @@ The profile no longer changes how *much* the wizard asks: the grounded confirm/o
 
 ## Profile Definitions
 
-Each profile maps to a **research depth** (consumed by `/onboard:start` Step 1.5 / the research engine — see `../../research/references/depth-profiles.md`) plus a **generation-scope pre-fill** (the autonomy / strictness / agent / hook defaults the wizard seeds as recommended, overridable options).
+Each profile maps to a **research depth** (consumed by `/onboard:start` Phase 2 (Research) / the research engine — see `../../research/references/depth-profiles.md`) plus a **generation-scope pre-fill** (the autonomy / strictness / agent / hook defaults the wizard seeds as recommended, overridable options).
 
 ### Minimal
 
@@ -135,8 +135,8 @@ The high-tier default reflects: Claude tooling generation is a one-time-per-proj
 
 ## How Profiles Work
 
-1. The developer picks a profile (Minimal / Standard / Comprehensive) in `/onboard:start` Step 1.4 — before research runs.
-2. The profile's `researchDepth` bounds the research engine in Step 1.5 (Step 1.5 wiring lands in a later task).
+1. The developer picks a profile (Minimal / Standard / Comprehensive) in `/onboard:start` Phase 2 profile-select step — before research runs.
+2. The profile's `researchDepth` bounds the research engine in Phase 2 (Research).
 3. The profile's generation-scope values are loaded as the **recommended (overridable) defaults** for the grounded wizard.
 4. The grounded wizard confirms or overrides those values (~2–3 exchanges) — the developer still provides Q1.1 (project description, always project-specific).
 5. The developer can tweak any pre-filled value during the wizard or at the summary review before generation.

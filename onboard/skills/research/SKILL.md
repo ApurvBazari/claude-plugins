@@ -8,7 +8,7 @@ user-invocable: false
 
 You are the onboard v3 **research engine**. You own orchestration and synthesis in your own context, you dispatch read-only specialist/verifier agents, and you are the **sole writer** of your outputs. You follow the lens `engine` pattern: fan out N schema-forced finders in ONE batch, run an adversarial verifier, synthesize, and write/return a schema-validated object.
 
-This skill is `user-invocable: false` — it is invoked by another skill (`/onboard:start` Step 1.5 after profile selection, and `/onboard:adopt` Step A2 at Full depth) or directly by a model. It is also directly model-invocable and testable standalone.
+This skill is `user-invocable: false` — it is invoked by another skill (`/onboard:start` Phase 2 (Research) after profile selection, and `/onboard:adopt` Step A2 at Full depth) or directly by a model. It is also directly model-invocable and testable standalone.
 
 ## Overview
 
@@ -18,7 +18,7 @@ This skill is `user-invocable: false` — it is invoked by another skill (`/onbo
 Pipeline: **roster discovery → in-skill scope/route → parallel specialist dispatch → Gate-1 collect/normalize/namespace → adversarial verify → synthesize + Gate-2 + wizardInferences → ask location + write → return.**
 
 Read these references as you run the matching step:
-`references/depth-profiles.md`, `references/specialist-roster.md`, `references/custom-specialist-contract.md`, `references/verification-procedure.md`, `references/synthesis-and-dossier.md`, `references/render-adapter.md` (maps the dossier to a walkthrough `session-model`; the interactive HTML render now happens at the onboard pre-implementation gate — start Step 2.9), `references/dossier-merge.md` (dimension-level merge of scoped re-research into a prior dossier — re-research only), `references/wizard-inference-map.md`.
+`references/depth-profiles.md`, `references/specialist-roster.md`, `references/custom-specialist-contract.md`, `references/verification-procedure.md`, `references/synthesis-and-dossier.md`, `references/render-adapter.md` (maps the dossier to a walkthrough `session-model`; the interactive HTML render now happens at the onboard pre-implementation gate — start Phase 5 (Plan → Preview → Gate)), `references/dossier-merge.md` (dimension-level merge of scoped re-research into a prior dossier — re-research only), `references/wizard-inference-map.md`.
 
 ## Step 0: Empty-repo self-guard
 
@@ -74,7 +74,7 @@ Ask the per-run artifact location (`committed | local | none`, single-select, no
 
 ### Step 7.5: HTML render folded into the pre-implementation gate
 
-The interactive HTML render of research now happens at the onboard pre-implementation gate (start Step 2.9), where research is the first section of the unified `previewModel`. This step writes only the markdown docs (Step 7); it no longer renders standalone HTML. `artifacts.html` is set by the gate, or remains `null` when research is invoked standalone / `location:"none"`.
+The interactive HTML render of research now happens at the onboard pre-implementation gate (start Phase 5 (the gate)), where research is the first section of the unified `previewModel`. This step writes only the markdown docs (Step 7); it no longer renders standalone HTML. `artifacts.html` is set by the gate, or remains `null` when research is invoked standalone / `location:"none"`.
 
 ## Step 8: Return
 
@@ -93,7 +93,7 @@ Step 7's location prompt uses a single-select `AskUserQuestion` with three fixed
 5. **The engine owns the flip** — the verifier votes; the engine builds `verifiedClaims[]` / `droppedClaims[]`. Verification errors keep the claim.
 6. **`dimension:Cn` namespacing** — minted at Gate-1; raw findings stay bare `^C[0-9]+$`.
 7. **Object always written; docs gated by location** — `.claude/onboard-research.json` is written for every location choice; `docs/onboard/` only when `committed`. Render-docs overwrite; ADRs seed-if-absent (never clobber).
-8. **`engineUsed:"subagent"`** — the Workflow backend stays deferred (always `"subagent"`). **`artifacts.html` is set by the onboard pre-implementation gate (start Step 2.9)** when research feeds it — `null` when research is invoked standalone or `location:"none"`. Step 7.5 no longer renders standalone HTML.
+8. **`engineUsed:"subagent"`** — the Workflow backend stays deferred (always `"subagent"`). **`artifacts.html` is set by the onboard pre-implementation gate (start Phase 5 (the gate))** when research feeds it — `null` when research is invoked standalone or `location:"none"`. Step 7.5 no longer renders standalone HTML.
 9. **Runtime validation = schema-as-contract** — read the relevant schema file as the contract and check conformance directly; opportunistically shell to `python3 -c "import jsonschema; …"` for a hard check when the dev dep is present. No new shipped dependency.
 10. **Script-free** — this engine and its agents ship no `.sh` scripts; all scope/route is native Glob/Grep/Read.
 11. **Additive engine** — the research engine is reused by `start`, `update`/`evolve` (re-research), and `adopt`; new callers wire in without changing the engine's contract.
