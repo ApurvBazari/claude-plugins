@@ -51,12 +51,12 @@ Build `AskUserQuestion` call(s) (≤4 questions each) covering: `teamSize`, `pro
 
 Present each as an **overridable card with its static/preset default pre-selected** (these are NOT research-inferable):
 
-- Advanced hook events + per-event type (the former Phase 5.1 / 5.1.1 content) — default: none beyond inference.
-- Skill tuning / agent tuning / output-style tuning (former Phase 5.2 / 5.3 / 5.4) — default: `{ mode: "defaults" }` each.
+- Advanced hook events + per-event type (Step 1) — default: none beyond inference.
+- Skill tuning / agent tuning / output-style tuning (Steps 2 / 3 / 4) — default: `{ mode: "defaults" }` each.
 
 Then the **detection prompts** (unchanged detection logic, folded into this exchange):
 
-- Ecosystem plugins (former Phase 5.5), LSP plugins (former Phase 5.6), built-in skills (former Phase 5.7). The single-option guard in `.claude/rules/ask-user-question-guard.md` still applies to each dynamically-built group.
+- Ecosystem plugins (Step 5), LSP plugins (Step 6), built-in skills (Step 7). The single-option guard in `.claude/rules/ask-user-question-guard.md` still applies to each dynamically-built group.
 
 A developer who accepts all defaults clears Exchange 3 in one pass.
 
@@ -83,9 +83,9 @@ Record per-event type in `wizardAnswers.advancedHookTypes[<eventName>]` (`"comma
 
 **Skill / agent / output-style tuning** — default `{ mode: "defaults" }` each (archetype inference only). When overridden, record `wizardAnswers.skillTuning` / `agentTuning` / `outputStyleTuning` with `mode: "tuned"` and the per-mode settings documented in § Output. Per-skill / per-agent / per-style tweaks happen in the generation-time confirmation step, not here.
 
-**Detection prompts** — ecosystem plugins, LSP plugins, built-in skills (former Phase 5.5 / 5.6 / 5.7):
+**Detection prompts** — ecosystem plugins, LSP plugins, built-in skills (Steps 5 / 6 / 7):
 
-- Ecosystem plugins: probe install status with `ls "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh" 2>/dev/null` and present each with an `[installed]` / `[not installed]` marker; selected-but-missing plugins install in /onboard:start Phase 3.5.
+- Ecosystem plugins: probe install status with `ls "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh" 2>/dev/null` and present each with an `[installed]` / `[not installed]` marker; selected-but-missing plugins install in /onboard:start Phase 6 (ecosystem-plugin-install step).
 - LSP plugins: run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"`; empty array → skip and record `wizardAnswers.lspPlugins = []`; otherwise present detected plugins (pre-checked when `fileCount ≥ 10`) in fileCount-descending order and record the accepted names in `wizardAnswers.lspPlugins`.
 - Built-in skills: detect candidates from the analysis report (4 core always; extras when their signal fires) and record the accepted names in `wizardAnswers.builtInSkills`.
 - LSP plugins and built-in skills are issued together as **two `multiSelect` questions in one `AskUserQuestion` call** (the canonical two-block pattern). The single-option guard in `.claude/rules/ask-user-question-guard.md` applies to each dynamically-built group: a standalone group that collapses to 1 candidate becomes a yes/no; a group inside the combined call is padded with an explicit `None / Skip` (envelope intact); a zero-candidate group is dropped.
@@ -256,7 +256,7 @@ After the wizard completes, compile all answers into the following structured JS
 }
 ```
 
-The `ecosystemPlugins` field captures which ecosystem plugins the developer wants set up. This gets passed to the config-generator agent along with the analysis report. The start command acts on these choices in Phase 3.5.
+The `ecosystemPlugins` field captures which ecosystem plugins the developer wants set up. This gets passed to the config-generator agent along with the analysis report. The start command acts on these choices in Phase 6 (ecosystem-plugin-install step).
 
 The `advancedHookEvents` field is an array of event names the developer explicitly selected in Exchange 3 (advanced hook events card). An empty array (`[]`) means "the developer kept the default — no advanced events beyond inference" — generation suppresses advanced event inference for that run. An absent field (omitted entirely) means "the grounded confirm/override surface didn't run this card (programmatic path)" — inference runs normally. See `../generation/SKILL.md` § Advanced Event Hooks for the full mapping.
 

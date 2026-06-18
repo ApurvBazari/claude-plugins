@@ -211,7 +211,7 @@ These cannot be inferred from research; they are cold free-form asks (or "skip" 
 **Map to**: `ecosystemPlugins.notify`
 **Default**: `true`
 **Skip if**: notify plugin is not installed in Claude Code.
-**Probe install status**: `ls "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh" 2>/dev/null`; present each plugin with an `[installed]` / `[not installed]` marker. Selected-but-missing plugins install in /onboard:start Phase 3.5.
+**Probe install status**: `ls "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh" 2>/dev/null`; present each plugin with an `[installed]` / `[not installed]` marker. Selected-but-missing plugins install in /onboard:start Phase 6 (ecosystem-plugin-install step).
 **Note**: If accepted, the start command will run notify's install script, write a default `notify-config.json`, and merge hooks into `settings.json`.
 
 ---
