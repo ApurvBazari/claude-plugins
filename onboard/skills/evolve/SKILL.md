@@ -24,7 +24,26 @@ Stop and do not proceed.
 
 If any source has drift, continue.
 
+## Initialize Phase Tracking
+
+Runs **after** the Guard confirms there is drift to drain, **before** Step 0 below. This wires the durable phase-task list that the rest of the flow transitions for in-session visibility.
+
+First, read the contract: `../start/references/phase-tracking.md` (the cross-skill source of truth — `start` is its worked example). It defines the task subjects and the `pending → in_progress → completed` (plus `deleted`) state machine. Follow it verbatim. `evolve` runs on an already-onboarded project (a meta + snapshots exist by the time the Guard passes), so it has no cross-session resume probe of its own; the task list here is **in-session progress visibility**, and the durable record lives in the on-disk artifacts the contract describes.
+
+`evolve` has a **short, gateless ladder** (per the contract's § Other entry points: `evolve` presents a diff *after* applying — it has **no hard gate**, so no gate task and no `deleted`-on-cancel transition; it runs straight through). Create the **4** `evolve` phase tasks via `TaskCreate`, all `status: "pending"`, one per ladder phase, using the `onboard:evolve:phase:` subject prefix:
+
+| Subject | `activeForm` |
+|---|---|
+| `onboard:evolve:phase:0:detect-drift` | Detecting accumulated drift |
+| `onboard:evolve:phase:1:apply-updates` | Applying drift updates |
+| `onboard:evolve:phase:2:show-diff` | Showing the diff |
+| `onboard:evolve:phase:3:clear-entries` | Clearing processed entries |
+
+Only this orchestrator touches the list. Every internal skill it later invokes (`onboard:generate`, `onboard:research`) is **task-blind** per the contract's § Ownership — when `evolve` invokes `generate` inside the apply phase, that does **not** create its own list; it runs inside this Phase-1 task.
+
 ## Step 0: Detect Plugin Drift
+
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(onboard:evolve:phase:0:detect-drift → in_progress)` now, **before** the plugin-drift detection below. This task spans Step 0 (plugin drift) and Step 1 (FileChanged drift entries). Mark it `TaskUpdate(... → completed)` after Step 1 has read and summarized the FileChanged drift entries.
 
 Plugin drift detection follows the shared procedure in `../generation/references/plugins/plugin-drift-detection.md`. Evolve-specific parameters:
 
@@ -64,7 +83,11 @@ Present a summary when entries exist:
 >
 > I'll update your CLAUDE.md, rules, and skills to reflect these changes.
 
+> **Phase complete:** after Step 0's plugin drift is detected and Step 1's FileChanged drift entries are read and summarized, `TaskUpdate(onboard:evolve:phase:0:detect-drift → completed)`.
+
 ## Step 2: Apply FileChanged Updates
+
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(onboard:evolve:phase:1:apply-updates → in_progress)` now, **before** the first write in Step 2 and **before** any `Skill(onboard:generate)`/`Skill(onboard:research)` dispatch (both task-blind — they run inside this Phase-1 task, not their own list). This one task spans the entire apply span — Steps 2, 2b, 2c, 2d, 2e, 2f, 2g, 2h, and 2i. Mark it `TaskUpdate(... → completed)` after the last apply sub-step (Step 2i research staleness) finishes.
 
 For each category of FileChanged drift:
 
@@ -258,7 +281,11 @@ Apply `../update/references/re-research.md` (both sections):
 3. **Escalated to full** → do **NOT** run silently. Log once: "Significant drift detected — run `/onboard:update` to re-ground research (full re-research is too large to auto-apply)." Leave the pass for the interactive surface (defer to `/onboard:update`). This mirrors evolve's explicit-consent floors for net-new installs.
 4. **Atomic abort** → on a research-engine failure, leave the prior dossier + tooling untouched, warn, and fall back to the snapshot-replay path.
 
+> **Phase complete:** after the last apply sub-step (Step 2i) finishes, `TaskUpdate(onboard:evolve:phase:1:apply-updates → completed)`.
+
 ## Step 3: Show Diff
+
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(onboard:evolve:phase:2:show-diff → in_progress)` now, **before** showing the diff. `evolve` presents this diff **after** applying — there is **no hard gate** here (per the contract's § Other entry points, `evolve` has no gate phase), so this is a plain transition, not a gate. Mark it `TaskUpdate(... → completed)` after the diff is shown.
 
 After applying all updates (both FileChanged and plugin integration), show what changed:
 
@@ -289,7 +316,11 @@ After applying all updates (both FileChanged and plugin integration), show what 
 >
 > **Note**: Subdirectory skill-annotation blocks (wrapped in `<!-- onboard:skill-recommendations:start/end -->` markers) are refreshed automatically via the role-attribute strategy. Subdirectory files that predate markered blocks are not auto-created — run `/onboard:update` to have those offered as new best-practice additions.
 
+> **Phase complete:** after the diff above is shown, `TaskUpdate(onboard:evolve:phase:2:show-diff → completed)`.
+
 ## Step 4: Clear Processed Entries
+
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(onboard:evolve:phase:3:clear-entries → in_progress)` now, **before** clearing the processed entries. Mark it `TaskUpdate(... → completed)` after the entries are cleared — that completes the last phase of the run; all 4 `evolve` tasks are now `completed`.
 
 After updates are applied:
 1. Update `lastAuditedAt` in greenfield-drift.json to current timestamp
@@ -297,8 +328,11 @@ After updates are applied:
 3. Keep any entries that were NOT processed (e.g., structural changes that need developer input)
 4. Plugin drift state is persisted in greenfield-meta.json (updated in Step 2b.3) — there is no separate "clear" action for plugin drift.
 
+> **Phase complete:** after the processed entries are cleared, `TaskUpdate(onboard:evolve:phase:3:clear-entries → completed)`. All 4 phase tasks are now `completed` — the run is done.
+
 ## Key Rules
 
+0. **Own the gateless phase-task list end to end** — per `../start/references/phase-tracking.md`, the Initialize Phase Tracking step creates the 4 `onboard:evolve:phase:N:*` tasks; each phase marks its own task `in_progress` before its work (and before any `Skill(onboard:generate)`/`Skill(onboard:research)` dispatch) and `completed` after. Those internal skills are **task-blind** — invoking `generate` inside the apply phase does NOT spawn its own list. The enum is exactly `pending`/`in_progress`/`completed`/`deleted` — no "blocked"/"cancelled". `evolve` has **no hard gate**: it shows the diff *after* applying, so there is no `in_progress`-while-awaiting gate task and no `deleted`-on-cancel transition — every phase is a straight `in_progress → completed`. The list is **in-session visibility only** — the durable record is the on-disk meta/snapshots.
 1. **Read before writing** — Always read the current state of CLAUDE.md, rules, settings.json, and greenfield-meta.json before making changes.
 2. **Surgical updates** — Only change the specific sections affected by the drift. Don't rewrite entire files.
 3. **Ask for structural** — Dependency and config changes can be auto-applied. Structural changes (new CLAUDE.md files) require developer confirmation.
