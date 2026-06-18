@@ -1,8 +1,8 @@
 # Output Styles Generation Guide
 
-Output styles are project-scoped system-prompt modifiers that change how Claude Code responds session-wide. They live at `.claude/output-styles/<name>.md` (project) or `~/.claude/output-styles/<name>.md` (user). Claude Code ships three built-in styles that never need files; onboard Phase 7b emits project-specific custom styles.
+Output styles are project-scoped system-prompt modifiers that change how Claude Code responds session-wide. They live at `.claude/output-styles/<name>.md` (project) or `~/.claude/output-styles/<name>.md` (user). Claude Code ships three built-in styles that never need files; onboard emission Step 2 emits project-specific custom styles.
 
-This guide is the authoritative reference consumed by `../SKILL.md` § Phase 7b. For the 5 body templates, see `output-styles-catalog.md`.
+This guide is the authoritative reference consumed by `../SKILL.md` § emission Step 2. For the 5 body templates, see `output-styles-catalog.md`.
 
 ---
 
@@ -74,15 +74,15 @@ Unknown frontmatter keys (`archetype`, `source`) are silently ignored by Claude 
 ### `source` values
 
 - `inferred` — archetype inference fired, no wizard tuning, accept-all in batched confirmation
-- `wizard-default` — wizard Phase 5.4 was in `tuned` mode but developer kept `archetypeOverride: "inherit"`
+- `wizard-default` — wizard Step 4 was in `tuned` mode but developer kept `archetypeOverride: "inherit"`
 - `user-confirmed` — developer explicitly clicked Accept on the batched confirmation
-- `user-tweaked` — developer overrode archetype in Phase 5.4 or tweaked during batched confirmation
+- `user-tweaked` — developer overrode archetype in wizard Step 4 or tweaked during batched confirmation
 
 ---
 
 ## `settings.local.json` merge rules
 
-When `wizardAnswers.outputStyleTuning.activationDefault` is `"write-to-settings"`, Phase 7b merges `outputStyle: "<emitted-name>"` into the project's `.claude/settings.local.json`. The file is strict JSON (same format as `.claude/settings.json` per `hooks-guide.md` § Settings Merge Strategy).
+When `wizardAnswers.outputStyleTuning.activationDefault` is `"write-to-settings"`, emission Step 2 merges `outputStyle: "<emitted-name>"` into the project's `.claude/settings.local.json`. The file is strict JSON (same format as `.claude/settings.json` per `hooks-guide.md` § Settings Merge Strategy).
 
 Four precise cases:
 
@@ -105,7 +105,7 @@ Four precise cases:
 
 ## Snapshot contract
 
-After emission, Phase 7b writes `.claude/onboard-output-style-snapshot.json` as the drift baseline. Mirrors the skill/agent snapshot pattern.
+After emission, emission Step 2 writes `.claude/onboard-output-style-snapshot.json` as the drift baseline. Mirrors the skill/agent snapshot pattern.
 
 ### Shape
 
@@ -144,7 +144,7 @@ Drift detection runs against all entries. Developers who want to prune stale ent
 
 ### Pre-existing files
 
-Before writing, Phase 7b probes `.claude/output-styles/` for files that existed before the run. Pre-existing files are recorded in `outputStyleStatus.existedPreOnboard[]` and **never overwritten, never added to the snapshot**. They're considered user-owned and fall outside onboard's lifecycle.
+Before writing, emission Step 2 probes `.claude/output-styles/` for files that existed before the run. Pre-existing files are recorded in `outputStyleStatus.existedPreOnboard[]` and **never overwritten, never added to the snapshot**. They're considered user-owned and fall outside onboard's lifecycle.
 
 ---
 
@@ -177,7 +177,7 @@ Built-in styles (Default / Explanatory / Learning) are always available via `/co
 ## Generation flow summary
 
 ```
-Phase 7b (Output Styles)
+emission Step 2 (Output Styles)
   1. Classify archetype(s) from existing wizard + analysis signals
   2. Apply wizard.outputStyleTuning.archetypeOverride if set
      - "inherit"     → use inferred top priority

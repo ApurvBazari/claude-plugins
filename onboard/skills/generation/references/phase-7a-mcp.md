@@ -1,10 +1,10 @@
 <!-- Extracted from ../SKILL.md via progressive-disclosure. Content is verbatim emission spec / templates. -->
 
-# MCP Servers (.mcp.json) — Phase 7a
+# MCP Servers (.mcp.json) — emission Step 1
 
 Follow `mcp-guide.md` for emission rules, catalog, and transport shapes.
 
-**When to run**: After Recommended Plugins copy is resolved and before Hooks are merged. Phase 7a runs once per generation; drift handling lives in `update`/`evolve`.
+**When to run**: After Recommended Plugins copy is resolved and before Hooks are merged. emission Step 1 runs once per generation; drift handling lives in `update`/`evolve`.
 
 **Firing paths** (mutually exclusive — exactly one fires per generation):
 
@@ -50,17 +50,17 @@ Follow `mcp-guide.md` for emission rules, catalog, and transport shapes.
 
 **Step 6 — Write `.claude/rules/mcp-setup.md`** (conditional on at least one server requiring auth OR on `existedPreOnboard: true`). Use the template in `mcp-guide.md` § mcp-setup.md Template. Include per-server env-var requirements and OAuth steps. Omit when no auth is needed and no pre-existing file existed.
 
-**Step 7 — Auto-install matching plugins** (after Phase 8 metadata is written, see § Auto-install Plugins below). Running after metadata ensures telemetry is persisted even if install fails.
+**Step 7 — Auto-install matching plugins** (after the metadata-write step, see § Auto-install Plugins below). Running after metadata ensures telemetry is persisted even if install fails.
 
 **Step 8 — Post-emit stdout summary**. Print a terse block listing each emitted server and any pending auth steps. See `mcp-guide.md` § Post-emit Summary.
 
 #### Auto-install Plugins
 
-After the metadata file is written in Phase 8, invoke `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugin1> <plugin2> ...` for each server's `plugin` field (if present). The script:
+After the metadata file is written (the metadata-write step), invoke `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugin1> <plugin2> ...` for each server's `plugin` field (if present). The script:
 
 1. Probes `claude plugin list --json` once
 2. Skips plugins already installed
 3. Calls `claude plugin install <plugin>` for each remaining plugin
-4. Logs failures to stdout but always exits 0 — install layer must never fail Phase 7a
+4. Logs failures to stdout but always exits 0 — install layer must never fail emission Step 1
 
 On completion, update `mcpStatus.autoInstalled` and `mcpStatus.autoInstallFailed` in `onboard-meta.json` (re-write the single field; do not touch other keys).

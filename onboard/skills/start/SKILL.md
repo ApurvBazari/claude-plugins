@@ -346,7 +346,7 @@ The generate skill then:
 
 1. Validates the context (see `../generate/SKILL.md` § Validation)
 2. Dispatches `Agent(config-generator)` with `dispatchedAsAgent: true`
-3. Runs the full generation pipeline (Phase 7a MCP, 7b Output Styles, 7c LSP, 7d Built-in Skills) per `../generation/SKILL.md`
+3. Runs the full generation pipeline (emission Step 1 MCP, Step 2 Output Styles, Step 3 LSP, Step 4 Built-in Skills) per `../generation/SKILL.md`
 4. Runs pre-exit self-audit verifying all 7 generation-phase telemetry keys are present. The self-audit also covers the v3 research telemetry block:
    - **Research self-audit:** if `metadata.research.consumed === true`, verify the block is coherent — `.claude/onboard-research.json` exists; `claimsVerified`, `claimsDropped`, `specialistsRun`, `artifactLocation`, `artifactsWritten` are present; `artifactsWritten` paths match the on-disk docs for the recorded `artifactLocation`; and `htmlRendered` is non-null **iff** the `walkthrough` plugin was present at render time (null is correct when absent or `location:"none"`). If `consumed === false` (research-absent / stub mode), record the research key as `status:"skipped"` with a reason (mirrors the existing skipped-key convention). Surface any incoherence as a self-audit warning.
 5. Returns a structured JSON response with `filesWritten`, `telemetry`, `auditPassed`, `warnings`

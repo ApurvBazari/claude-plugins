@@ -1,10 +1,10 @@
 <!-- Extracted from ../SKILL.md via progressive-disclosure. Content is verbatim emission spec / templates. -->
 
-# Output Styles — Phase 7b
+# Output Styles — emission Step 2
 
 Follow `output-styles-guide.md` for archetype inference, frontmatter schema, and `settings.local.json` merge rules. Follow `output-styles-catalog.md` for the 5 body templates.
 
-**When to run**: After Phase 7a (MCP) and before Hooks are merged. Phase 7b runs once per generation; drift handling lives in `update`/`evolve`.
+**When to run**: After emission Step 1 (MCP) and before Hooks are merged. emission Step 2 runs once per generation; drift handling lives in `update`/`evolve`.
 
 **Firing paths** (mutually exclusive — exactly one fires per generation):
 
@@ -21,7 +21,7 @@ Follow `output-styles-guide.md` for archetype inference, frontmatter schema, and
 - `wizardAnswers.outputStyleTuning` (optional) — `{ mode, archetypeOverride?, activationDefault? }`. Treat absence as `{ mode: "defaults" }`
 - `callerExtras.disableOutputStyleTuning` (optional, programmatic) — see Path SUPPRESS above
 
-**Telemetry contract**: `outputStyleStatus` MUST be present in `onboard-meta.json` after every generation. The SUPPRESS-PROMPT-ONLY family (`disableOutputStyleTuning`) MUST NOT collapse to `status: "skipped"` — that's the SKIP-PHASE family's behavior, and Phase 7b has no SKIP-PHASE flag.
+**Telemetry contract**: `outputStyleStatus` MUST be present in `onboard-meta.json` after every generation. The SUPPRESS-PROMPT-ONLY family (`disableOutputStyleTuning`) MUST NOT collapse to `status: "skipped"` — that's the SKIP-PHASE family's behavior, and emission Step 2 has no SKIP-PHASE flag.
 
 **Step 1 — Classify firing archetypes.** Evaluate the 5 firing conditions from `output-styles-guide.md` § Archetype inference. Record the full firing set — even archetypes that won't be chosen — in `outputStyleStatus.planned[]` for telemetry.
 
@@ -31,7 +31,7 @@ Follow `output-styles-guide.md` for archetype inference, frontmatter schema, and
 |---|---|
 | absent / `"inherit"` | Use Step 1 firing set unchanged; pick top priority in Step 3 |
 | `onboarding` / `teaching` / `production-ops` / `research` / `solo` | Force that archetype as the sole candidate, regardless of Step 1 firing set. Mark `source: "user-tweaked"` |
-| `"skip-emit"` | Record `outputStyleStatus.skipped = [{ reason: "skip-emit-selected" }]`; exit Phase 7b without emitting any file. Do NOT populate snapshot. Do NOT touch settings.local.json |
+| `"skip-emit"` | Record `outputStyleStatus.skipped = [{ reason: "skip-emit-selected" }]`; exit emission Step 2 without emitting any file. Do NOT populate snapshot. Do NOT touch settings.local.json |
 
 **Step 3 — Resolve priority.** From the candidate set produced by Steps 1+2, apply priority: `production-ops > onboarding > teaching > research > solo`. Emit ONLY the top match. If the candidate set is empty (no archetype fired, no override), record `outputStyleStatus.skipped = [{ reason: "archetype-not-fired" }]` and exit without emission.
 

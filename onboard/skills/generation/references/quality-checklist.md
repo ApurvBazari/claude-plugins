@@ -40,7 +40,7 @@ Before finishing generation, verify:
 - [ ] CLAUDE.md "Development Workflow" references match actually installed plugins (no dangling refs)
 - [ ] PR template includes TDD checklist item ("Tests written first, all pass")
 - [ ] No stale references to `minimal`, `write-after`, or `comprehensive` testing philosophies
-- [ ] Phase 7a ran before Hooks section (when any MCP candidate fires)
+- [ ] emission Step 1 ran before Hooks section (when any MCP candidate fires)
 - [ ] `.mcp.json` is pure JSON (no comments) and uses `${VAR}` form for secrets
 - [ ] Pre-existing `.mcp.json` was NOT overwritten (check for `mcpStatus.existedPreOnboard`)
 - [ ] `.claude/onboard-mcp-snapshot.json` matches what was written to `.mcp.json`
@@ -48,7 +48,7 @@ Before finishing generation, verify:
 - [ ] `.claude/rules/mcp-setup.md` emitted when any server needs auth OR pre-existing file detected
 - [ ] Auto-install ran after metadata write (never before)
 - [ ] `callerExtras.disableMCP: true` skips artifact writes BUT still emits `mcpStatus: { status: "skipped", reason: "caller-disabled" }` (SKIP-PHASE family contract)
-- [ ] Phase 7b ran after Phase 7a and before Hooks
+- [ ] emission Step 2 ran after emission Step 1 and before Hooks
 - [ ] Emitted output-style file is at `.claude/output-styles/<archetype-name>.md` with matching `name` frontmatter
 - [ ] Pre-existing output-style file was NOT overwritten (check for `outputStyleStatus.existedPreOnboard[]`)
 - [ ] `.claude/onboard-output-style-snapshot.json` contains frontmatter-only entry for the emitted style
@@ -57,13 +57,13 @@ Before finishing generation, verify:
 - [ ] Existing `outputStyle` in `settings.local.json` was NOT overwritten (Cases 3/4 warn only)
 - [ ] `callerExtras.disableOutputStyleTuning: true` ONLY suppresses Step 6 batched confirmation; artifacts + snapshot + `outputStyleStatus: { status: "emitted", source: "inferred" }` are STILL produced (SUPPRESS-PROMPT family contract)
 - [ ] CLAUDE.md Plugin Integration includes the `### Output styles` subsection (built-ins + emitted custom + activation path)
-- [ ] Phase 7c (LSP) emitted `lspStatus` regardless of firing path — `status` is one of: `emitted`, `skipped`, `declined`
+- [ ] emission Step 3 (LSP) emitted `lspStatus` regardless of firing path — `status` is one of: `emitted`, `skipped`, `declined`
 - [ ] `callerExtras.disableLSP: true` skips artifact writes BUT still emits `lspStatus: { status: "skipped", reason: "caller-disabled" }` (SKIP-PHASE family contract)
-- [ ] Phase 7d ran after Phase 7c (LSP) and before Hooks section
+- [ ] emission Step 4 ran after emission Step 3 (LSP) and before Hooks section
 - [ ] `<!-- onboard:builtin-skills:start/end -->` markers present in CLAUDE.md (inside Plugin Integration or standalone)
 - [ ] `.claude/onboard-builtin-skills-snapshot.json` contains `recommended` and `accepted` arrays (plain JSON, no `_generated`)
 - [ ] `onboard-meta.json.builtInSkillsStatus` populated alongside `hookStatus`, `mcpStatus`, `skillStatus`, `agentStatus`, `outputStyleStatus`, `lspStatus` (with `status` enum value)
 - [ ] `callerExtras.disableBuiltInSkills: true` skips artifact writes BUT still emits `builtInSkillsStatus: { status: "skipped", reason: "caller-disabled" }` (SKIP-PHASE family contract)
 - [ ] CLAUDE.md includes `### Built-in Claude Code skills` subsection (or standalone `## Built-in Claude Code skills` section when no plugins) with project-specific examples
-- [ ] **Pre-exit self-audit**: all 4 Phase 7 telemetry keys (`mcpStatus`, `outputStyleStatus`, `lspStatus`, `builtInSkillsStatus`) exist in `onboard-meta.json` — missing key = hard-fail before returning
+- [ ] **Pre-exit self-audit**: all 4 emission telemetry keys (`mcpStatus`, `outputStyleStatus`, `lspStatus`, `builtInSkillsStatus`) exist in `onboard-meta.json` — missing key = hard-fail before returning
 - [ ] **Research self-audit**: if `metadata.research.consumed`, the block is coherent (`claimsVerified`/`claimsDropped`/`specialistsRun`/`artifactLocation`/`artifactsWritten` present; `artifactsWritten` matches on-disk docs; `htmlRendered` non-null iff walkthrough present) — incoherence is a returned `warnings[]` entry, not a hard-fail; `consumed:false` → research key `status:"skipped"`

@@ -71,16 +71,16 @@ Emits a **v3 context** (`version: 3`): the v3 shape adds the top-level `research
     "allowHttpHooks":        false,      // opt-in only; start never auto-enables http hooks
 
     // Generation-phase family — SKIP-PHASE flags (start default: never skip)
-    "disableMCP":            false,      // start ALWAYS runs generation Phase 7a — this is the B1 fix
-    "disableLSP":            false,      // start runs generation Phase 7c when LSP candidates exist
-    "disableBuiltInSkills":  false,      // start runs generation Phase 7d; output is status:"documented" (see C1.6)
+    "disableMCP":            false,      // start ALWAYS runs generation emission Step 1 — this is the B1 fix
+    "disableLSP":            false,      // start runs generation emission Step 3 when LSP candidates exist
+    "disableBuiltInSkills":  false,      // start runs generation emission Step 4; output is status:"documented" (see C1.6)
 
     // Generation-phase family — SUPPRESS-PROMPT flags (start default: never suppress interactive confirmation)
     "disableSkillTuning":    false,      // start keeps the generation skill batched confirmation ON (interactive mode)
     "disableAgentTuning":    false,      // same
     "disableOutputStyleTuning": false,   // same
 
-    // Generation Phase 7c + 7d explicit selections (from wizard)
+    // Generation emission Step 3 + Step 4 explicit selections (from wizard)
     "lspPlugins":            [ /* wizardAnswers.lspPlugins — empty array means "declined all" */ ],
     "builtInSkills":         [ /* wizardAnswers.builtInSkills — empty array means "declined all" */ ],
 
@@ -161,9 +161,9 @@ If all three probes yielded zero plugins: `installedPlugins: []`, `coveredCapabi
 
 **Critical for closing B1**: start passes these flags **explicitly as false**. Omitting the field would default to false at the generator, but passing explicitly makes the contract auditable.
 
-- `disableMCP` → **`false`** (always). Phase 7a's signal-driven path fires; `.mcp.json` emitted when `detect-mcp-signals.sh` returns ≥ 1 candidate. Pre-fix bug: start's absent callerExtras meant the generator never ran Phase 7a → `reason: "no-candidates"` despite signals being present.
-- `disableLSP` → **`false`**. Phase 7c runs if `lspPlugins` array from wizardAnswers is non-empty OR the builder's Static Defaults supply the detected candidate list (when the wizard did not confirm a selection).
-- `disableBuiltInSkills` → **`false`**. Phase 7d runs; output is `builtInSkillsStatus.status: "documented"` (CLAUDE.md subsection, no separate snapshot file — see C1.6).
+- `disableMCP` → **`false`** (always). emission Step 1's signal-driven path fires; `.mcp.json` emitted when `detect-mcp-signals.sh` returns ≥ 1 candidate. Pre-fix bug: start's absent callerExtras meant the generator never ran emission Step 1 → `reason: "no-candidates"` despite signals being present.
+- `disableLSP` → **`false`**. emission Step 3 runs if `lspPlugins` array from wizardAnswers is non-empty OR the builder's Static Defaults supply the detected candidate list (when the wizard did not confirm a selection).
+- `disableBuiltInSkills` → **`false`**. emission Step 4 runs; output is `builtInSkillsStatus.status: "documented"` (CLAUDE.md subsection, no separate snapshot file — see C1.6).
 
 #### Generation-phase SUPPRESS-PROMPT flags — start-path defaults
 
@@ -171,7 +171,7 @@ Start is interactive by definition; never suppress confirmation prompts.
 
 - `disableSkillTuning` → **`false`** (generation skill batched confirmation runs)
 - `disableAgentTuning` → **`false`** (generation agent batched confirmation runs)
-- `disableOutputStyleTuning` → **`false`** (generation Phase 7b batched confirmation runs)
+- `disableOutputStyleTuning` → **`false`** (generation emission Step 2 batched confirmation runs)
 
 #### Explicit selection arrays
 
@@ -260,7 +260,7 @@ Skill(onboard:generate)
   │ (validates callerExtras; builds agent prompt)
   ▼
 Agent(config-generator)
-  │ (runs full generation pipeline including generation Phase 7a/b/c/d)
+  │ (runs full generation pipeline including generation emission Step 1/2/3/4)
   │ (writes artifacts + snapshots + onboard-meta.json)
   │ (runs pre-exit self-audit for all 7 generation-phase status keys)
   ▼
@@ -308,7 +308,7 @@ Every default is populated explicitly — downstream generation should never nee
 
 4. **wizardAnswers includes `skillTuning.mode: "tuned"`** — builder passes the tuning object through; config-generator composes archetype defaults with the tuning overrides. `disableSkillTuning` stays `false` regardless of `mode` value.
 
-5. **`lspPlugins: []` (detected but all declined)** — valid state. `disableLSP: false` still. Generator's Phase 7c emits `lspStatus.status: "declined"` with empty `planned[]` / `generated[]`.
+5. **`lspPlugins: []` (detected but all declined)** — valid state. `disableLSP: false` still. Generator's emission Step 3 emits `lspStatus.status: "declined"` with empty `planned[]` / `generated[]`.
 
 6. **User-edit preservation on re-run** — if `.claude/onboard-meta.json` already exists from a prior run, the builder still runs fresh. Generator handles merge semantics. Do NOT read prior onboard-meta to pre-populate context fields — source of truth is this run's wizard + analysis.
 

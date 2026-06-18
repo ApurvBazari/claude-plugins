@@ -212,14 +212,14 @@ Run the same drift classification as `../update/SKILL.md` § 4b.8 LSP Plugin Dri
 
 **Auto-apply rules** (evolve's "drain drift without asking" philosophy — bounded by explicit-consent floor for new plugin installs):
 
-- **newLanguage** → **re-prompt** via a single `AskUserQuestion` multiSelect (reuse wizard Phase 5.6 phrasing): "Detected new languages since last run: `<list>`. Install these LSP plugins?". Pre-check entries with `fileCount ≥ 10`, unchecked below. User accepts → invoke `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugins>`, append to `onboard-lsp-snapshot.json.recommended[]` AND `accepted[]` (preserve alphabetical sort), and merge install results into `lspStatus.autoInstalled[]` / `lspStatus.autoInstallFailed[]`. User declines individual entries → still append to `recommended[]` so subsequent drift runs don't re-surface (but omit from `accepted[]`). This respects the user's earlier choice: "prompt during wizard" posture carries through to evolve — never silent install of net-new plugins.
+- **newLanguage** → **re-prompt** via a single `AskUserQuestion` multiSelect (reuse wizard Step 6 phrasing): "Detected new languages since last run: `<list>`. Install these LSP plugins?". Pre-check entries with `fileCount ≥ 10`, unchecked below. User accepts → invoke `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugins>`, append to `onboard-lsp-snapshot.json.recommended[]` AND `accepted[]` (preserve alphabetical sort), and merge install results into `lspStatus.autoInstalled[]` / `lspStatus.autoInstallFailed[]`. User declines individual entries → still append to `recommended[]` so subsequent drift runs don't re-surface (but omit from `accepted[]`). This respects the user's earlier choice: "prompt during wizard" posture carries through to evolve — never silent install of net-new plugins.
 - **uninstalled** → no action. Log once: "LSP plugin `<name>` was uninstalled since last run — leaving it out of snapshot.accepted on next update." Do NOT reinstall.
 - **stillValid** → no action.
 - **staleCandidate** → no action. Log once.
 
 **Snapshot-missing migration** (pre-1.8.0 projects running evolve on 1.8.0+):
 
-When `.claude/onboard-lsp-snapshot.json` is absent, fire a one-time initial prompt just like `/onboard:start` Phase 5.6. After the user's response, write the snapshot with `recommended` = full detected list, `accepted` = user's selected subset. Subsequent evolve runs follow the normal drift flow.
+When `.claude/onboard-lsp-snapshot.json` is absent, fire a one-time initial prompt just like `/onboard:start` wizard Step 6. After the user's response, write the snapshot with `recommended` = full detected list, `accepted` = user's selected subset. Subsequent evolve runs follow the normal drift flow.
 
 **Programmatic mode** (when called via `generate` with `callerExtras.lspPlugins` set): evolve delegates to the caller's explicit list — no prompt fires. An empty array means "declined all"; an absent caller value falls through to interactive prompting.
 
@@ -235,7 +235,7 @@ Run the same drift classification as `../update/SKILL.md` § 4b.9 Built-in Skill
 
 **Auto-apply rules** (evolve's "drain drift without asking" philosophy — bounded by explicit-consent floor for new built-in skill additions):
 
-- **newSkill** → **re-prompt** (not silent-add). Batch all `newSkill` entries into **one `AskUserQuestion` multiSelect** (same format as wizard Phase 5.7). Present each new skill with its description and detection signal. The developer selects which to accept.
+- **newSkill** → **re-prompt** (not silent-add). Batch all `newSkill` entries into **one `AskUserQuestion` multiSelect** (same format as wizard Step 7). Present each new skill with its description and detection signal. The developer selects which to accept.
   - For each accepted skill: add to `builtInSkillsStatus.generated[]`. Find the `<!-- onboard:builtin-skills:start/end -->` markers in CLAUDE.md and regenerate the content between them, including the new skill with its stack-specific example. Update `.claude/onboard-builtin-skills-snapshot.json` — append to both `recommended[]` and `accepted[]`.
   - For each declined skill: add to `builtInSkillsStatus.skipped[]` with `reason: "user-declined"`. Append to `snapshot.recommended[]` only (not `accepted[]`).
 - **staleCandidate** → no action. Log once: "Built-in skill `<name>` detection signal no longer fires — informational only."

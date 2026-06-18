@@ -1,8 +1,8 @@
 # Built-in Skills Catalog
 
-Maps project characteristics to Anthropic-provided built-in Claude Code skills used by Phase 7d of the generation pipeline. These skills are available in every Claude Code session — no plugin install required.
+Maps project characteristics to Anthropic-provided built-in Claude Code skills used by emission Step 4 of the generation pipeline. These skills are available in every Claude Code session — no plugin install required.
 
-When `onboard:start` runs, wizard Phase 5.7 presents a checkbox list of recommended built-in skills. Accepted entries are documented in the generated CLAUDE.md with project-specific usage examples.
+When `onboard:start` runs, wizard Step 7 presents a checkbox list of recommended built-in skills. Accepted entries are documented in the generated CLAUDE.md with project-specific usage examples.
 
 See `lsp-plugin-catalog.md` for the sibling LSP catalog pattern and `mcp-guide.md` for the MCP catalog pattern.
 

@@ -248,7 +248,7 @@ Group offers into these categories (each becomes one `multiSelect: true` questio
 |---|---|
 | `artifact-gaps` | Files in `generatedArtifacts` missing from disk; user-customized files that need merge/replace decision |
 | `user-edit-detections` | Files where the maintenance header was modified, an adopted artifact awaiting its first maintenance header, or other edits detected |
-| `new-dependencies-or-languages` | New dep additions (e.g., `@anthropic-ai/sdk`), new languages (Rust → `rust-analyzer-lsp`), built-in skills newly relevant. **LSP plugins for newly detected languages are `autoChecked: true` by default**, matching wizard Phase 5.6 pre-check behavior. |
+| `new-dependencies-or-languages` | New dep additions (e.g., `@anthropic-ai/sdk`), new languages (Rust → `rust-analyzer-lsp`), built-in skills newly relevant. **LSP plugins for newly detected languages are `autoChecked: true` by default**, matching wizard Step 6 pre-check behavior. |
 | `best-practice-suggestions` | Reference guide recommendations (e.g., `observability.md` rule for the detected stack) |
 | `enriched-capabilities` | CI/CD, harness, evolution, sprint contracts, verification |
 | `plugin-drift` | Wire-in / remove offers from Step 4b.1 |

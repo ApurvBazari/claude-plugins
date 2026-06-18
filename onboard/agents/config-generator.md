@@ -115,13 +115,13 @@ Generate artifacts in this order:
 
 6e. **Verify-backlog seeding (Phase: v3 research)** — when a sanitized `research` object is present, apply `../skills/generation/references/verify-backlog-seeding.md` to seed `docs/feature-list.json` from verified security/risk/test-gap claims (**seed-if-absent**; always runs regardless of `research.artifacts.location`). Skip entirely in research-absent mode. This is the primary programmatic writer of `docs/feature-list.json`.
 
-6a. **MCP servers (`.mcp.json`) — Phase 7a** — Follow the Path A/B/C/SKIP firing logic in `../skills/generation/SKILL.md` § MCP Servers — Phase 7a. Path C (signal-driven) fires by default when `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh"` returns ≥1 candidate. SKIP-PHASE family (`callerExtras.disableMCP === true`) suppresses artifact writes BUT MUST still write `mcpStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [] }` to `onboard-meta.json`. Telemetry is mandatory regardless of path.
+6a. **MCP servers (`.mcp.json`) — emission Step 1** — Follow the Path A/B/C/SKIP firing logic in `../skills/generation/SKILL.md` § MCP Servers — emission Step 1. Path C (signal-driven) fires by default when `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh"` returns ≥1 candidate. SKIP-PHASE family (`callerExtras.disableMCP === true`) suppresses artifact writes BUT MUST still write `mcpStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [] }` to `onboard-meta.json`. Telemetry is mandatory regardless of path.
 
-6b. **Output Styles (`.claude/output-styles/`) — Phase 7b** — Follow Path A/B/SUPPRESS/DECLINED/NO-CANDIDATES firing logic in `../skills/generation/SKILL.md` § Output Styles — Phase 7b. SUPPRESS-PROMPT-ONLY family (`callerExtras.disableOutputStyleTuning === true`) skips ONLY Step 6 batched confirmation; artifact + snapshot + telemetry `status: "emitted"` ARE still produced. Telemetry is mandatory.
+6b. **Output Styles (`.claude/output-styles/`) — emission Step 2** — Follow Path A/B/SUPPRESS/DECLINED/NO-CANDIDATES firing logic in `../skills/generation/SKILL.md` § Output Styles — emission Step 2. SUPPRESS-PROMPT-ONLY family (`callerExtras.disableOutputStyleTuning === true`) skips ONLY Step 6 batched confirmation; artifact + snapshot + telemetry `status: "emitted"` ARE still produced. Telemetry is mandatory.
 
-6c. **LSP plugins — Phase 7c** — Follow Path A/B/NO-CANDIDATES/SKIP firing logic in `../skills/generation/SKILL.md` § LSP Plugin Recommendations — Phase 7c. SKIP-PHASE family (`callerExtras.disableLSP === true`) suppresses script run + install + snapshot BUT MUST still write `lspStatus: { status: "skipped", reason: "caller-disabled" }`. Telemetry is mandatory regardless of path.
+6c. **LSP plugins — emission Step 3** — Follow Path A/B/NO-CANDIDATES/SKIP firing logic in `../skills/generation/SKILL.md` § LSP Plugin Recommendations — emission Step 3. SKIP-PHASE family (`callerExtras.disableLSP === true`) suppresses script run + install + snapshot BUT MUST still write `lspStatus: { status: "skipped", reason: "caller-disabled" }`. Telemetry is mandatory regardless of path.
 
-6d. **Built-in Claude Code Skills — Phase 7d** — Follow Path A/B/SKIP firing logic in `../skills/generation/SKILL.md` § Built-in Claude Code Skills — Phase 7d. SKIP-PHASE family (`callerExtras.disableBuiltInSkills === true`) suppresses CLAUDE.md subsection + snapshot BUT MUST still write `builtInSkillsStatus: { status: "skipped", reason: "caller-disabled" }`. Telemetry is mandatory regardless of path.
+6d. **Built-in Claude Code Skills — emission Step 4** — Follow Path A/B/SKIP firing logic in `../skills/generation/SKILL.md` § Built-in Claude Code Skills — emission Step 4. SKIP-PHASE family (`callerExtras.disableBuiltInSkills === true`) suppresses CLAUDE.md subsection + snapshot BUT MUST still write `builtInSkillsStatus: { status: "skipped", reason: "caller-disabled" }`. Telemetry is mandatory regardless of path.
 
 7. **Metadata** (`.claude/onboard-meta.json`) — Record everything: plugin version, timestamp, wizard answers, list of generated artifacts, model recommendation. Include all 7 status keys parallel to `hookStatus`: `mcpStatus`, `outputStyleStatus`, `lspStatus`, `builtInSkillsStatus`, `skillStatus`, `agentStatus` (each with at minimum a `status` enum value: `emitted | skipped | declined | failed`). Add `.mcp.json`, `.claude/onboard-mcp-snapshot.json`, `.claude/rules/mcp-setup.md` (if written), `.claude/onboard-agent-snapshot.json`, `.claude/onboard-output-style-snapshot.json`, `.claude/onboard-lsp-snapshot.json`, `.claude/onboard-builtin-skills-snapshot.json` to `generatedArtifacts` (only those that were actually written).
 
@@ -143,7 +143,7 @@ Generate artifacts in this order:
 
 8. **Auto-install MCP plugins** — After metadata is written, run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh"` with the list of emitted-server plugin names. The script probes `claude plugin list --json`, skips already-installed plugins, and installs the rest. Failures are logged but do not fail generation. On completion, update `mcpStatus.autoInstalled` and `mcpStatus.autoInstallFailed` in `onboard-meta.json`.
 
-9. **Pre-exit self-audit (Phase 7 telemetry contract)** — Before returning to the caller, verify all 4 Phase 7 telemetry keys exist in `onboard-meta.json`:
+9. **Pre-exit self-audit (emission telemetry contract)** — Before returning to the caller, verify all 4 emission telemetry keys exist in `onboard-meta.json`:
 
    ```bash
    META=".claude/onboard-meta.json"
@@ -157,7 +157,7 @@ Generate artifacts in this order:
    done
    ```
 
-   If any key is missing or has an invalid `status` enum value, **hard-fail** the generation. Do not return a partial-success result. The user/caller must see the failure so they can re-run or investigate. This is the contract that prevents silent Phase 7 regressions.
+   If any key is missing or has an invalid `status` enum value, **hard-fail** the generation. Do not return a partial-success result. The user/caller must see the failure so they can re-run or investigate. This is the contract that prevents silent emission-telemetry regressions.
 
    **Research self-audit (v3 `metadata.research` coherence):** after the key-presence check, audit the research telemetry block. If `metadata.research.consumed === true`, verify the block is coherent — `.claude/onboard-research.json` exists; `claimsVerified`, `claimsDropped`, `specialistsRun`, `artifactLocation`, `artifactsWritten` are present; `artifactsWritten` paths match the on-disk docs for the recorded `artifactLocation`; and `htmlRendered` is non-null **iff** the `walkthrough` plugin was present at render time (null is correct when walkthrough is absent or `location:"none"`). If `metadata.research.consumed === false` (research-absent / stub mode), record the research key as `status:"skipped"` with a reason (mirrors the existing skipped-key convention). Unlike the key-presence check above, surface any research incoherence as a **warning** in the returned `warnings[]` (do not hard-fail) — the research render/telemetry is augmentative, not a generation-blocking contract.
 
@@ -190,7 +190,7 @@ Before declaring completion, verify:
 - Hooks reference tools that are installed
 - settings.json was merged (not overwritten) if it existed
 - onboard-meta.json is complete
-- **Phase 7 telemetry self-audit ran successfully** — `mcpStatus`, `outputStyleStatus`, `lspStatus`, `builtInSkillsStatus` all present in onboard-meta.json with valid `status` enum values (`emitted | documented | skipped | declined | failed`). Missing key = hard-fail, do not return.
+- **emission telemetry self-audit ran successfully** — `mcpStatus`, `outputStyleStatus`, `lspStatus`, `builtInSkillsStatus` all present in onboard-meta.json with valid `status` enum values (`emitted | documented | skipped | declined | failed`). Missing key = hard-fail, do not return.
 
 ### Critical Rules
 

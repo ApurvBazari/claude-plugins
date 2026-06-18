@@ -189,7 +189,7 @@ The Plugin Integration subsection generation rules live in `../SKILL.md` § Plug
 
 ## LSP Support Reference
 
-Generated root CLAUDE.md includes an LSP support subsection inside Plugin Integration when onboard has recommended or installed one or more marketplace LSP plugins (Phase 7c). The subsection documents:
+Generated root CLAUDE.md includes an LSP support subsection inside Plugin Integration when onboard has recommended or installed one or more marketplace LSP plugins (emission Step 3). The subsection documents:
 
 - **Installed LSP plugins** (from `lspStatus.accepted`): plugin name, covered language(s), and the language-server binary that must be present on `$PATH`. Pull the binary name and install prereq from `lsp-plugin-catalog.md`.
 - **Recommended but declined** (from `lspStatus.skipped` when `reason === "user-declined"`): listed with a short note "run `/onboard:evolve` to install".
@@ -210,11 +210,11 @@ Plugins surface diagnostics, go-to-definition, and hover docs inside Claude Code
 
 Omit the subsection entirely when `lspStatus.accepted` and `lspStatus.skipped` are both empty (no candidates detected). Keep the subsection under 10 lines.
 
-The emission rules live in `../SKILL.md` § LSP Plugin Recommendations — Phase 7c. For the language→plugin mapping, see `lsp-plugin-catalog.md`.
+The emission rules live in `../SKILL.md` § LSP Plugin Recommendations — emission Step 3. For the language→plugin mapping, see `lsp-plugin-catalog.md`.
 
 ## Built-in Skills Reference
 
-Generated root CLAUDE.md includes a built-in skills subsection when onboard has recommended and the developer has accepted one or more built-in Claude Code skills (Phase 7d). The subsection is wrapped in `<!-- onboard:builtin-skills:start/end -->` markers regardless of placement. It documents:
+Generated root CLAUDE.md includes a built-in skills subsection when onboard has recommended and the developer has accepted one or more built-in Claude Code skills (emission Step 4). The subsection is wrapped in `<!-- onboard:builtin-skills:start/end -->` markers regardless of placement. It documents:
 
 - **Accepted skills** (from `builtInSkillsStatus.generated`): skill name, one-line description, and a project-specific usage example matched to the detected stack.
 - **Placement**: inside Plugin Integration (as `### Built-in Claude Code skills`) when plugins are installed, or as a standalone `## Built-in Claude Code skills` section when no plugins are present.
@@ -239,7 +239,7 @@ These Anthropic-provided skills are available in every Claude Code session — n
 
 Omit the subsection entirely when `builtInSkillsStatus.generated` is empty (developer declined all candidates). Keep the subsection under 15 lines.
 
-The emission rules live in `../SKILL.md` § Built-in Claude Code Skills — Phase 7d. For the skill catalog, detection signals, and stack-specific example templates, see `built-in-skills-catalog.md`.
+The emission rules live in `../SKILL.md` § Built-in Claude Code Skills — emission Step 4. For the skill catalog, detection signals, and stack-specific example templates, see `built-in-skills-catalog.md`.
 
 ## Tone by Autonomy Level
 

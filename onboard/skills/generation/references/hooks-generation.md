@@ -534,7 +534,7 @@ Each entry passes through this 11-rule validator before the settings.json write.
 
 When `wizardAnswers.advancedHookEvents` is present and non-empty, it takes priority over the inference rules for exactly the events it names. Events not in the array fall back to inference. An empty-but-present array (`[]`) means "user said no to all advanced events" — inference is suppressed entirely for that run (the one exception to rule 3 in Input sources above).
 
-`wizardAnswers.advancedHookTypes` (optional) supplies per-event type selection from Phase 5.1.1. Only judgment-capable events (`userPromptSubmit`, `stop`, `taskCreated`, `taskCompleted`, `elicitation`) honor this field; other event keys are ignored silently. `wizardAnswers.advancedHookTypeExtras` supplies the auxiliary field (`agentRef`, `httpUrl`, `promptRef`, `promptInline`) required by the chosen type — same validator applies.
+`wizardAnswers.advancedHookTypes` (optional) supplies per-event type selection from wizard Step 1. Only judgment-capable events (`userPromptSubmit`, `stop`, `taskCreated`, `taskCompleted`, `elicitation`) honor this field; other event keys are ignored silently. `wizardAnswers.advancedHookTypeExtras` supplies the auxiliary field (`agentRef`, `httpUrl`, `promptRef`, `promptInline`) required by the chosen type — same validator applies.
 
 Mapping from wizard names (camelCase) to hookStatus keys (`Event[:Matcher][:Type]`, type suffix omitted for `command`):
 

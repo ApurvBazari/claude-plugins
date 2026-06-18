@@ -1,6 +1,6 @@
 # MCP Generation Guide
 
-Rules for emitting `.mcp.json` during Phase 7a of the generation pipeline.
+Rules for emitting `.mcp.json` during emission Step 1 of the generation pipeline.
 
 ## Purpose
 
@@ -124,7 +124,7 @@ Programmatic callers read `mcpStatus` from the generate-skill return and can sur
 
 Programmatic callers may pass `callerExtras.disableMCP: true` to suppress `.mcp.json` emission entirely. When set:
 
-- Skip Phase 7a completely
+- Skip emission Step 1 completely
 - Record `mcpStatus.skipped = [{ server: "*", reason: "caller-disabled" }]`
 - Do NOT emit `mcp-setup.md`
 - Do NOT attempt auto-install
@@ -133,7 +133,7 @@ Used when the scaffold template already ships an `.mcp.json`.
 
 ## Post-emit Summary
 
-After Phase 7a completes, emit a stdout block summarizing what happened — keep it terse:
+After emission Step 1 completes, emit a stdout block summarizing what happened — keep it terse:
 
 ```
 MCP servers configured:

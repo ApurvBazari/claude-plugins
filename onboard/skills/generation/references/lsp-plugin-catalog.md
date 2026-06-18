@@ -1,8 +1,8 @@
 # LSP Plugin Catalog
 
-Maps detected project languages to official Claude Code marketplace LSP plugins used by Phase 7c of the generation pipeline and by `detect-lsp-signals.sh`. Each plugin ships its own `lspServers` config inline in its `plugin.json` — onboard does **not** generate any project-level LSP config files.
+Maps detected project languages to official Claude Code marketplace LSP plugins used by emission Step 3 of the generation pipeline and by `detect-lsp-signals.sh`. Each plugin ships its own `lspServers` config inline in its `plugin.json` — onboard does **not** generate any project-level LSP config files.
 
-When `onboard:start` detects files of these extensions, wizard Phase 5.6 presents a checkbox list of the matching plugins. User-selected entries are installed via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugin-name>`.
+When `onboard:start` detects files of these extensions, wizard Step 6 presents a checkbox list of the matching plugins. User-selected entries are installed via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugin-name>`.
 
 See `mcp-guide.md` for the sibling MCP catalog pattern.
 
@@ -30,7 +30,7 @@ See `mcp-guide.md` for the sibling MCP catalog pattern.
 
 ## Signal strictness
 
-Any file of a listed extension triggers the plugin candidate (no threshold). Rationale: the wizard's Phase 5.6 checklist is the natural filter — users uncheck any plugins they don't want. For sorting the checklist, `detect-lsp-signals.sh` emits a `fileCount` field and sorts candidates descending so the primary language sits at the top with its box checked by default.
+Any file of a listed extension triggers the plugin candidate (no threshold). Rationale: the wizard's Step 6 checklist is the natural filter — users uncheck any plugins they don't want. For sorting the checklist, `detect-lsp-signals.sh` emits a `fileCount` field and sorts candidates descending so the primary language sits at the top with its box checked by default.
 
 ## Adding a new language
 

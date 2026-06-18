@@ -1,8 +1,8 @@
 # Output Styles Catalog
 
-Body templates for the 5 custom output styles emitted by onboard generation Phase 7b. One file per archetype. Generation fills in project-specific content markers marked `<…>` using wizard answers and analysis findings.
+Body templates for the 5 custom output styles emitted by onboard generation emission Step 2. One file per archetype. Generation fills in project-specific content markers marked `<…>` using wizard answers and analysis findings.
 
-Each template has the YAML frontmatter emitted by Phase 7b and the body content below. Keep the body imperative, second-person ("You are …", "Claude Code …"), and strip any project-specific jargon that isn't inferrable from analysis.
+Each template has the YAML frontmatter emitted by emission Step 2 and the body content below. Keep the body imperative, second-person ("You are …", "Claude Code …"), and strip any project-specific jargon that isn't inferrable from analysis.
 
 All styles share the `keep-coding-instructions: true` default. Setting it to `true` preserves Claude Code's built-in software-engineering instructions so the custom style is additive, not replacement. Only set to `false` when the style explicitly wants a non-engineering persona — none of the five archetypes in this catalog need that.
 
@@ -292,7 +292,7 @@ You are working with a solo developer who knows this project deeply. Skip ceremo
 
 ---
 
-## Generation rules (applied by Phase 7b)
+## Generation rules (applied by emission Step 2)
 
 1. **File path**: always `.claude/output-styles/<archetype-name>.md` matching the archetype (e.g., archetype `production-ops` → `operator.md`).
 2. **`name` field value**: always the filename stem (no extension). Activation keys match.
@@ -300,4 +300,4 @@ You are working with a solo developer who knows this project deeply. Skip ceremo
 4. **`keep-coding-instructions`**: always `true` for these 5 archetypes. Custom styles default to stripping coding instructions; we want to preserve them.
 5. **`archetype` + `source`**: internal tracking fields (not standard Claude Code frontmatter). Claude Code ignores unknown frontmatter keys. Kept for drift detection.
 6. **Body customization (project markers)**: wherever the template contains `<angle-bracket markers>`, fill with project-specific content from `analysis.*`. If the marker can't be filled cleanly, drop the parent sentence rather than leaving a dangling placeholder.
-7. **Never emit two styles from one run**: Phase 7b emits exactly one style per run — the top-priority archetype match. Snapshot accumulates across runs (see `output-styles-guide.md` § Snapshot contract § Multi-run accumulation).
+7. **Never emit two styles from one run**: emission Step 2 emits exactly one style per run — the top-priority archetype match. Snapshot accumulates across runs (see `output-styles-guide.md` § Snapshot contract § Multi-run accumulation).

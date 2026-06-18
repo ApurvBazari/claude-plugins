@@ -1395,7 +1395,7 @@ The `prompt` field is populated at generation time from either `promptInline` (e
 
 ### Type-variant generation rules
 
-1. **Inference vs. explicit** — only the defaults marked in plan § 3 fire automatically (UserPromptSubmit→prompt on `securitySensitivity=high`, TaskCompleted→agent when `enableTeams && agentRef`, Elicitation→http when `auditUrl`). All other variants require caller `qualityGates.<event>[].hookType` or wizard Phase 5.1.1 selection.
+1. **Inference vs. explicit** — only the defaults marked in plan § 3 fire automatically (UserPromptSubmit→prompt on `securitySensitivity=high`, TaskCompleted→agent when `enableTeams && agentRef`, Elicitation→http when `auditUrl`). All other variants require caller `qualityGates.<event>[].hookType` or wizard Step 1 selection.
 2. **Validation** — apply the 10 rules in `../SKILL.md` § Hook Type Validation before emitting any variant. Missing required fields drop the entry with the appropriate `skipped` reason.
 3. **Prompt file creation** — when `hookType: "prompt"` + `promptRef` is supplied, copy the file to `${project}/.claude/hooks/<slug>.prompt.md`. When `promptInline` is supplied, embed directly in settings.json (no sidecar file).
 4. **Agent existence check** — before emitting an `agent`-type entry, verify the referenced agent's plugin is in `effectivePlugins`. Missing → skip with reason `agent-not-found`.

@@ -28,7 +28,7 @@ Every generated `SKILL.md` carries YAML frontmatter. The generator computes the 
 - **Tweak skill N** — re-prompt only that skill's fields (which to change: model / effort / allowed-tools / paths / context+agent). Other skills proceed with their accepted values. Mark tweaked fields `source: "user-tweaked"`.
 - **Skip skill N** — record `skillStatus.skipped[] = [{ "skill": "<name>", "reason": "user-declined-confirmation" }]`. Skipped skills are not written, not snapshotted, and not included in `skillStatus.generated[]`.
 
-**Programmatic passthrough**: when `callerExtras.disableSkillTuning` is `true`, skip Step 4 entirely and emit with the inferred-plus-tuned values. Record each skill's `frontmatterFields.<name>.source = "inferred"` or `"wizard-default"` per Step 2. This mirrors the `callerExtras.disableMCP` escape hatch in Phase 7a.
+**Programmatic passthrough**: when `callerExtras.disableSkillTuning` is `true`, skip Step 4 entirely and emit with the inferred-plus-tuned values. Record each skill's `frontmatterFields.<name>.source = "inferred"` or `"wizard-default"` per Step 2. This mirrors the `callerExtras.disableMCP` escape hatch in emission Step 1.
 
 **Step 5 — Write `SKILL.md` files.** Emit only fields that have concrete values — never emit empty strings or empty lists. Omitted fields preserve pre-feature-equivalent behavior exactly and keep pre-upgrade fixtures byte-identical.
 

@@ -80,7 +80,7 @@ When dispatched with `planOnly: true`, run the front half of generation — all 
 1. Compute the artifact set exactly as write mode would (Core tier always; Enriched tiers per wizard flags; rules/skills/agents from detected patterns + research claims; hooks from autonomy; MCP/LSP from signals; plugin integration from detection).
 2. For each artifact emit one `changes[]` entry: `path`, `action` (`create` for a new file, `merge` for a merge-aware write into an existing file such as `.claude/settings.json`), `purpose` (one line), `outline` (section list for CLAUDE.md and multi-section artifacts), `tier`, `origin: "generated"`.
 3. Populate `decisions` from the resolved context: `model`, `autonomy`, `profile`, `hooks`, `mcp`, `lsp`, `pluginIntegration`.
-4. Return `{ mode: "plan", flow: "start", changes, decisions, warnings }`. **Write nothing.** Do not run Phase 7a–d writes; only their planned outcomes appear as `changes[]` entries.
+4. Return `{ mode: "plan", flow: "start", changes, decisions, warnings }`. **Write nothing.** Do not run emission Step 1–4 writes; only their planned outcomes appear as `changes[]` entries.
 
 ## Artifact Generation Rules
 
@@ -231,21 +231,21 @@ Every generated agent file carries YAML frontmatter — `name`, `description`, p
 
 All projects use TDD (red-green-refactor); generation adapts to which workflow plugins are installed (resolve via `effectivePlugins`). The superpowers×feature-dev strategy matrix, the key principles, the plugin-recommendation message shown during generation, and the verbatim `## Recommended Plugins` CLAUDE.md template (emitted only when plugins are missing) are in `references/tdd-workflow-and-recommended-plugins.md`. Emit the `## Recommended Plugins` block verbatim.
 
-### MCP Servers (.mcp.json) — Phase 7a
+### MCP Servers (.mcp.json) — emission Step 1
 
-Follow `references/mcp-guide.md` for emission rules, catalog, and transport shapes. The Phase-7a generation contract — the 4 firing paths (A/B/C/SKIP), inputs, telemetry contract, the 8 emission steps (detect → pre-existing check → write `.mcp.json` → snapshot → `mcpStatus` → `mcp-setup.md` → auto-install → stdout summary), the verbatim `mcpStatus` JSON shape, and the Auto-install Plugins sub-procedure — is in `references/phase-7a-mcp.md`. Apply it verbatim. Runs after Recommended Plugins copy and before Hooks.
+Follow `references/mcp-guide.md` for emission rules, catalog, and transport shapes. The emission-Step-1 generation contract — the 4 firing paths (A/B/C/SKIP), inputs, telemetry contract, the 8 emission steps (detect → pre-existing check → write `.mcp.json` → snapshot → `mcpStatus` → `mcp-setup.md` → auto-install → stdout summary), the verbatim `mcpStatus` JSON shape, and the Auto-install Plugins sub-procedure — is in `references/phase-7a-mcp.md`. Apply it verbatim. Runs after Recommended Plugins copy and before Hooks.
 
-### Output Styles (.claude/output-styles/) — Phase 7b
+### Output Styles (.claude/output-styles/) — emission Step 2
 
-Follow `references/output-styles-guide.md` (archetype inference, frontmatter schema, `settings.local.json` merge rules) and `references/output-styles-catalog.md` (5 body templates). The Phase-7b generation contract — the 5 firing paths, inputs, telemetry contract, the 11 emission steps, the `settings.local.json` 4-case merge table, and the verbatim snapshot/`outputStyleStatus` JSON shapes plus enum values — is in `references/phase-7b-output-styles.md`. Apply it verbatim. Runs after Phase 7a and before Hooks.
+Follow `references/output-styles-guide.md` (archetype inference, frontmatter schema, `settings.local.json` merge rules) and `references/output-styles-catalog.md` (5 body templates). The emission-Step-2 generation contract — the 5 firing paths, inputs, telemetry contract, the 11 emission steps, the `settings.local.json` 4-case merge table, and the verbatim snapshot/`outputStyleStatus` JSON shapes plus enum values — is in `references/phase-7b-output-styles.md`. Apply it verbatim. Runs after emission Step 1 and before Hooks.
 
-### LSP Plugin Recommendations — Phase 7c
+### LSP Plugin Recommendations — emission Step 3
 
-Follow `references/lsp-plugin-catalog.md` for the 12-entry language→plugin mapping. The Phase-7c generation contract — the 5 firing paths, inputs, telemetry contract, the 7 emission steps (detect via `detect-lsp-signals.sh` → resolve selected → CLAUDE.md subsection → metadata-first install → snapshot → `lspStatus` schema → stdout summary), and the verbatim snapshot/`lspStatus` JSON shapes — is in `references/phase-7c-lsp.md`. Apply it verbatim. Onboard emits NO project-level `.lsp.json`. Runs after Phase 7b and before Hooks.
+Follow `references/lsp-plugin-catalog.md` for the 12-entry language→plugin mapping. The emission-Step-3 generation contract — the 5 firing paths, inputs, telemetry contract, the 7 emission steps (detect via `detect-lsp-signals.sh` → resolve selected → CLAUDE.md subsection → metadata-first install → snapshot → `lspStatus` schema → stdout summary), and the verbatim snapshot/`lspStatus` JSON shapes — is in `references/phase-7c-lsp.md`. Apply it verbatim. Onboard emits NO project-level `.lsp.json`. Runs after emission Step 2 and before Hooks.
 
-### Built-in Claude Code Skills — Phase 7d
+### Built-in Claude Code Skills — emission Step 4
 
-Follow `references/built-in-skills-catalog.md` for the 9-skill catalog, tier classification, detection signals, and stack-specific example templates. The Phase-7d generation contract — the 4 firing paths, inputs, telemetry contract (primary user of the `"documented"` status), the 7 emission steps (detect → resolve accepted → placement path → compose subsection → snapshot → telemetry → stdout summary), and the verbatim snapshot/`builtInSkillsStatus` JSON shapes plus `<!-- onboard:builtin-skills:start/end -->` marker rules — is in `references/phase-7d-builtin-skills.md`. Apply it verbatim. Runs after Phase 7c and before Hooks.
+Follow `references/built-in-skills-catalog.md` for the 9-skill catalog, tier classification, detection signals, and stack-specific example templates. The emission-Step-4 generation contract — the 4 firing paths, inputs, telemetry contract (primary user of the `"documented"` status), the 7 emission steps (detect → resolve accepted → placement path → compose subsection → snapshot → telemetry → stdout summary), and the verbatim snapshot/`builtInSkillsStatus` JSON shapes plus `<!-- onboard:builtin-skills:start/end -->` marker rules — is in `references/phase-7d-builtin-skills.md`. Apply it verbatim. Runs after emission Step 3 and before Hooks.
 
 ### Hooks (.claude/settings.json)
 
@@ -294,7 +294,7 @@ Always generate this file with:
 
 ## Quality Checklist
 
-Before finishing generation, run the full pre-exit verification checklist in `references/quality-checklist.md` — every item must pass. It ends with the **pre-exit self-audit**: all 4 Phase 7 telemetry keys (`mcpStatus`, `outputStyleStatus`, `lspStatus`, `builtInSkillsStatus`) must exist in `onboard-meta.json`, or hard-fail before returning.
+Before finishing generation, run the full pre-exit verification checklist in `references/quality-checklist.md` — every item must pass. It ends with the **pre-exit self-audit**: all 4 emission telemetry keys (`mcpStatus`, `outputStyleStatus`, `lspStatus`, `builtInSkillsStatus`) must exist in `onboard-meta.json`, or hard-fail before returning.
 
 ## Extended Generation (Enriched Mode)
 
@@ -387,10 +387,10 @@ These carry the verbatim artifact templates and long emission enumerations for t
 - `references/skill-frontmatter-emission.md` — 7-step SKILL.md frontmatter emission + `skillStatus`
 - `references/agent-frontmatter-emission.md` — 7-step agent frontmatter emission + `agentStatus`
 - `references/tdd-workflow-and-recommended-plugins.md` — plugin-aware TDD matrix + `## Recommended Plugins` template
-- `references/phase-7a-mcp.md` — MCP `.mcp.json` emission (Phase 7a) + auto-install
-- `references/phase-7b-output-styles.md` — output-styles emission (Phase 7b) + settings.local.json merge
-- `references/phase-7c-lsp.md` — LSP plugin recommendations (Phase 7c)
-- `references/phase-7d-builtin-skills.md` — built-in Claude Code skills (Phase 7d)
+- `references/phase-7a-mcp.md` — MCP `.mcp.json` emission (emission Step 1) + auto-install
+- `references/phase-7b-output-styles.md` — output-styles emission (emission Step 2) + settings.local.json merge
+- `references/phase-7c-lsp.md` — LSP plugin recommendations (emission Step 3)
+- `references/phase-7d-builtin-skills.md` — built-in Claude Code skills (emission Step 4)
 - `references/hooks-generation.md` — quality-gate / O6 / O7 / standalone / advanced-event / utility hooks + `hookStatus`
 - `references/quality-checklist.md` — pre-exit generation verification checklist
 
