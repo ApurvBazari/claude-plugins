@@ -16,34 +16,34 @@ Phase 0: Empty-Repo Guard ──→ SRC_COUNT == 0?
 Phase 1: Recon ──→ codebase-analyzer agent (read-only, script-free)
      │              └── native Glob/Grep/Read + git one-liners → emits reconHints
      ▼
-Phase 1.4: Profile select ──→ Minimal / Standard / Comprehensive
-     │                          └── sets research depth + generation scope
+Phase 2: Research
+     │   ├── Step: profile-select ──→ Minimal / Standard / Comprehensive (sets research depth + gen scope)
+     │   └── Step: deep-research ──→ Skill(onboard:research)
+     │                                └── dossier + 4 artifacts:
+     │                                    research-dossier, architecture, risk-register, glossary
      ▼
-Phase 1.5: Research ──→ Skill(onboard:research)
-     │                   └── dossier + 4 artifacts:
-     │                       research-dossier, architecture, risk-register, glossary
-     ▼
-Phase 2: Grounded Wizard ──→ confirm/override from research.wizardInferences
+Phase 3: Grounded Wizard ──→ confirm/override from research.wizardInferences
      │                        └── autonomyLevel always cold (never inferred)
      ▼
-Phase 2.5: Plugin Detection ──→ deep probe (siblings + marketplace cache)
-     │                          + plugin-surface-probe (closes G.3)
+Phase 4: Plugin Detection & Context
+     │   ├── Step: plugin-detection ──→ deep probe (siblings + marketplace cache)
+     │   ├── Step: probe-plugin-surfaces ──→ + plugin-surface-probe (closes G.3)
+     │   └── Step: build-v3-context ──→ skills/start/references/onboard-context-builder.md
+     │                                   └── version: 3 + research block
      ▼
-Phase 2.6: Build v3 Context ──→ skills/start/references/onboard-context-builder.md
-     │                           └── version: 3 + research block
+Phase 5: Plan → Preview → HARD GATE ──→ Skill(onboard:generate {mode:plan})
+     │   ├── Step: plan ──→ generationManifest (nothing written)
+     │   ├── Step: preview ──→ previewModel (research + blueprint) → walkthrough:render
+     │   └── Step: gate ──→ Approve → write │ Adjust → re-plan │ Cancel → nothing
      ▼
-Phase 2.7-2.9: Plan → Preview → HARD GATE ──→ Skill(onboard:generate {mode:plan})
-     │                                         └── previewModel (research + blueprint) → walkthrough:render
-     │                                             Approve → write │ Adjust → re-plan │ Cancel → nothing
-     ▼
-Phase 3: Generation (post-gate) ──→ Skill(onboard:generate {mode:"write"})
+Phase 6: Generation (post-gate) ──→ Skill(onboard:generate {mode:"write"})
      │                   └── config-generator agent (write)
      │                       ├── Core: CLAUDE.md, rules, skills, agents, hooks
      │                       ├── v3: consumes research → sharpens artifacts + seeds docs/feature-list.json
      │                       ├── Enriched: CI/CD, harness, evolution, teams (if enabled)
-     │                       └── Pre-exit self-audit on 7 Phase 7 telemetry keys
+     │                       └── Pre-exit self-audit on the 7 generation-phase telemetry keys
      ▼
-Phase 4: Handoff ──→ explains generated artifacts, suggests next steps
+Phase 7: Handoff ──→ explains generated artifacts, suggests next steps
 ```
 
 ## Agent Handoff Pattern

@@ -15,20 +15,22 @@ Tell the developer:
 > Starting **onboard** — I'll analyze your codebase, walk you through some questions about your project and workflow, then generate a complete Claude Code setup tailored to your project.
 >
 > This runs in these phases:
-> 1. **Recon** — I scan your codebase (read-only, native tools)
-> 2. **Profile** — you pick a depth/scope profile (Minimal / Standard / Comprehensive)
-> 3. **Deep Research** — focused specialists investigate per dimension and I verify their findings, then write a research dossier + architecture map + risk register + glossary
-> 4. **Grounded Wizard** — I show you what research inferred; you confirm or override
-> 5. **Generation** — I create all Claude tooling artifacts
-> 6. **Handoff** — I explain everything that was generated
+> - **Phase 0 — Empty-repo guard**: if there's no source code yet, I route to a minimal stub instead of the full flow
+> - **Phase 1 — Recon**: I scan your codebase (read-only, native tools)
+> - **Phase 2 — Research**: you pick a depth/scope profile (Minimal / Standard / Comprehensive), then focused specialists investigate per dimension and I verify their findings, writing a research dossier + architecture map + risk register + glossary
+> - **Phase 3 — Grounded Wizard**: I show you what research inferred; you confirm or override
+> - **Phase 4 — Plugin detection & context**: I detect installed plugins and assemble the generation context
+> - **Phase 5 — Plan → Preview → gate**: I show a full preview behind a hard Approve / Adjust / Cancel gate; nothing is written until you approve
+> - **Phase 6 — Generation**: I create all Claude tooling artifacts
+> - **Phase 7 — Handoff**: I explain everything that was generated
 
 ---
 
-## Step 0: Empty-Repo Guard
+## Phase 0: Empty-Repo Guard
 
-Runs **before** Step 1 Analysis. Detects repositories with no source code and routes them to a minimal, canonical-shape stub instead of running the full analysis + wizard. Closes 2026-04-17 release-gate findings B14, B15, B16.
+Runs **before** Phase 1 Recon. Detects repositories with no source code and routes them to a minimal, canonical-shape stub instead of running the full analysis + wizard. Closes 2026-04-17 release-gate findings B14, B15, B16.
 
-### Step 0.1: Detect empty repository
+### Step: Detect empty repository
 
 Count source-code files (exclude `.git/`, dotfiles, `README*`, `LICENSE*`, `.gitignore`):
 
@@ -41,16 +43,16 @@ SRC_COUNT=$(find . -type f \
   | wc -l | tr -d ' ')
 ```
 
-- `SRC_COUNT > 0` → source code exists → **skip Step 0 entirely**, fall through to Step 1 Analysis. Most common case.
-- `SRC_COUNT == 0` → empty repo → proceed to Step 0.2.
+- `SRC_COUNT > 0` → source code exists → **skip Phase 0 entirely**, fall through to Phase 1 Recon. Most common case.
+- `SRC_COUNT == 0` → empty repo → proceed to the prior-stub check below.
 
-### Step 0.2: Detect prior stub (auto-promote)
+### Step: Detect prior stub (auto-promote)
 
-If `.claude/onboard-meta.json` already exists AND `jq -r '.mode // empty'` returns `"stub-empty-repo"` AND `SRC_COUNT > 0`: auto-promote. Skip Step 0 entirely; run Step 1 Analysis → Step 2 Wizard → Step 3 Generation. Full generation overwrites the stub artifacts. Append an `updateHistory` entry to the new `onboard-meta.json` noting the `"stub → full"` promotion.
+If `.claude/onboard-meta.json` already exists AND `jq -r '.mode // empty'` returns `"stub-empty-repo"` AND `SRC_COUNT > 0`: auto-promote. Skip Phase 0 entirely; run Phase 1 Recon → Phase 3 Wizard → Phase 6 Generation. Full generation overwrites the stub artifacts. Append an `updateHistory` entry to the new `onboard-meta.json` noting the `"stub → full"` promotion.
 
 If prior stub exists AND `SRC_COUNT == 0` (user ran start twice on empty dir): default to no-op — inform the developer a stub already exists, skip re-write.
 
-### Step 0.3: Present the 3-option menu
+### Step: Present the 3-option menu
 
 For empty repos without a prior stub, use `AskUserQuestion` (single-select, header: `"Empty repo"`):
 
@@ -64,19 +66,19 @@ Default: **Generate canonical stub**.
 
 **Single-option guard** (per `.claude/rules/ask-user-question-guard.md`): the menu has 3 options → no guard needed.
 
-### Step 0.4: Execute the selected path
+### Step: Execute the selected path
 
 - **Abort** → stop the skill. No files written.
 - **Placeholder only** → write CLAUDE.md with the placeholder content from the stub procedure (below) but SKIP the `.claude/` directory. Return minimal handoff. Do not proceed to further phases.
-- **Generate canonical stub** (default) → follow `references/empty-repo-stub-procedure.md`. It prescribes: the 3 files, the canonical `onboard-meta.json` schema with all 7 Phase 7 status keys set to `status: "skipped"` + `reason: "stub-mode-no-code"`, dynamic `pluginVersion` resolution (no hardcoded literals), and the 3-file atomic write order.
+- **Generate canonical stub** (default) → follow `references/empty-repo-stub-procedure.md`. It prescribes: the 3 files, the canonical `onboard-meta.json` schema with all 7 generation-phase status keys set to `status: "skipped"` + `reason: "stub-mode-no-code"`, dynamic `pluginVersion` resolution (no hardcoded literals), and the 3-file atomic write order.
 
-After either stub path completes, run a minimal handoff (see the stub procedure's § Post-write handoff section) and return — do NOT continue to Step 1 Analysis.
+After either stub path completes, run a minimal handoff (see the stub procedure's § Post-write handoff section) and return — do NOT continue to Phase 1 Recon.
 
 ---
 
-## Step 1: Automated Analysis
+## Phase 1: Recon (Automated Analysis)
 
-### Step 1.1: Check for Existing Claude Config
+### Step: Check for Existing Claude Config
 
 Before running analysis, check if the project already has Claude configuration:
 
@@ -99,14 +101,14 @@ Ask via `AskUserQuestion` (single-select, header `"Existing config"`):
 Dispatch on the choice:
 - **Adopt** → run the `adopt` skill (`Skill(onboard:adopt)`); when it returns, this start invocation is done (adopt owns the baseline). Do not continue into analysis/generation.
 - **Update** → redirect the developer to run `/onboard:update`. Stop.
-- **Start fresh** → continue to Step 1.2; note that existing files will be overwritten at generation.
+- **Start fresh** → continue to the analysis step below; note that existing files will be overwritten at generation.
 - **Cancel** → stop.
 
 **Guard Usage:** four fixed options (≥2), so the single-option guard in `.claude/rules/ask-user-question-guard.md` does not apply.
 
 **If minimal or no Claude config exists**, proceed directly to analysis.
 
-### Step 1.2: Run Analysis
+### Step: Run Analysis
 
 Spawn the `codebase-analyzer` agent to perform deep analysis. The agent will:
 - Perform script-free recon (native Glob/Grep/Read + git one-liners) per `../../agents/codebase-analyzer.md`
@@ -114,13 +116,13 @@ Spawn the `codebase-analyzer` agent to perform deep analysis. The agent will:
 - Check testing setup, CI/CD, conventions
 - Produce a structured analysis report
 
-**Data handoff**: The analyzer agent's full structured report remains in the conversational context. Do not write it to a file — it will be passed to the config-generator agent via the conversation in Step 3. The analyzer also returns `reconHints = {detectedRoots, structureFacts}` — keep it in context for Step 1.5.
+**Data handoff**: The analyzer agent's full structured report remains in the conversational context. Do not write it to a file — it will be passed to the config-generator agent via the conversation in Phase 6 Generation. The analyzer also returns `reconHints = {detectedRoots, structureFacts}` — keep it in context for the Phase 2 Research step.
 
 While waiting, inform the developer:
 
 > Analyzing your codebase... This reads your project structure, detects your tech stack, and assesses complexity. Nothing is modified.
 
-### Step 1.3: Present Analysis Summary
+### Step: Present Analysis Summary
 
 Once analysis completes, present a concise summary to the developer:
 
@@ -137,9 +139,13 @@ Once analysis completes, present a concise summary to the developer:
 
 Wait for confirmation. Incorporate any corrections before proceeding.
 
-### Step 1.4: Select Profile
+---
 
-After the recon summary is confirmed, ask the developer to pick a profile using `AskUserQuestion` (single-select, header: `"Profile"`). The profile sets **both** the research depth (Step 1.5) and the generation scope.
+## Phase 2: Research
+
+### Step: profile-select
+
+After the recon summary is confirmed, ask the developer to pick a profile using `AskUserQuestion` (single-select, header: `"Profile"`). The profile sets **both** the research depth (the deep-research step below) and the generation scope.
 
 | Label | Description |
 |---|---|
@@ -147,22 +153,22 @@ After the recon summary is confirmed, ask the developer to pick a profile using 
 | `Standard (Recommended)` | Small teams / active projects. Core-4 research + verify, balanced autonomy, 3 agents, lint + SessionStart hooks. |
 | `Comprehensive` | Larger / regulated. Full 7-specialist research + verify, strict style, all quality-gate hooks. |
 
-Map the choice to `depth`: `Minimal → "minimal"`, `Standard → "standard"`, `Comprehensive → "comprehensive"`. Record it as `selectedPreset` for the grounded wizard + generation scope (per `../wizard/references/workflow-presets.md`). There is **no Custom profile** — the grounded wizard (Step 2) lets the developer override every field individually.
+Map the choice to `depth`: `Minimal → "minimal"`, `Standard → "standard"`, `Comprehensive → "comprehensive"`. Record it as `selectedPreset` for the grounded wizard + generation scope (per `../wizard/references/workflow-presets.md`). There is **no Custom profile** — the grounded wizard (Phase 3) lets the developer override every field individually.
 
-### Step 1.5: Deep Research
+### Step: Deep Research
 
 Dispatch the research engine with the chosen depth and the recon hints:
 
 ```
 Skill(
   skill: "onboard:research",
-  args: <stringified { projectPath: <cwd>, depth: <from Step 1.4>, reconHints: <from Step 1.2> }>
+  args: <stringified { projectPath: <cwd>, depth: <from the profile-select step>, reconHints: <from Phase 1 Recon> }>
 )
 ```
 
 The engine fans out read-only specialists per dimension, adversarially verifies their claims, synthesizes the research dossier, **asks where the four human-readable artifacts should land** (committed / local / none), writes `.claude/onboard-research.json` (+ the four `docs/onboard/` files per that choice), and returns the validated `research-dossier` object.
 
-Keep the returned dossier in conversation context: Step 2 reads `research.wizardInferences`, and Step 2.6 embeds the whole `research` object in the v3 context.
+Keep the returned dossier in conversation context: Phase 3 (Grounded Wizard) reads `research.wizardInferences`, and the Phase 4 build-v3-context step embeds the whole `research` object in the v3 context.
 
 Inform the developer before dispatching:
 
@@ -172,9 +178,9 @@ For `minimal` depth the engine dispatches no specialists and returns a minimal d
 
 ---
 
-## Step 2: Interactive Wizard
+## Phase 3: Grounded Wizard
 
-Use the `wizard` skill to run the **grounded confirm/override surface**. It reads `research.wizardInferences` from the Step 1.5 dossier and presents confirm/override cards (workflow fields), cold asks (`autonomyLevel` + intent + pain points), and tuning/detection cards — ~2–3 exchanges. There is no preset selection here (done in Step 1.4) and no Custom path.
+Use the `wizard` skill to run the **grounded confirm/override surface**. It reads `research.wizardInferences` from the Phase 2 Research dossier and presents confirm/override cards (workflow fields), cold asks (`autonomyLevel` + intent + pain points), and tuning/detection cards — ~2–3 exchanges. There is no preset selection here (done in the Phase 2 profile-select step) and no Custom path.
 
 After all questions are answered, present a summary:
 
@@ -193,11 +199,15 @@ After all questions are answered, present a summary:
 
 ---
 
-## Step 2.5: Plugin Detection
+---
+
+## Phase 4: Plugin Detection & Context
+
+### Step: plugin-detection
 
 Before generation, detect installed Claude Code plugins to enrich the output with plugin-aware features (Plugin Integration section, per-directory skill annotations, plugin-aware agent skipping, quality-gate hooks referencing plugin skills).
 
-### Step 2.5.1: Probe Filesystem — canonical deep probe
+#### Probe Filesystem — canonical deep probe
 
 Follow the canonical procedure in `../generation/references/plugin-detection-guide.md` § Known Plugin Probe List. The probe walks **both** locations to catch sibling installs AND marketplace-installed plugins:
 
@@ -208,18 +218,18 @@ Build `installedPlugins` from successful probes across the full catalog. Do not 
 
 **Fallback when `CLAUDE_PLUGIN_ROOT` is unset**: the marketplace-cache probe still runs (keys off `$HOME`). Only fall back to "no plugins detected" when BOTH probe locations yield zero hits across the catalog.
 
-### Step 2.5.2: Probe Plugin Surfaces
+#### Step: probe-plugin-surfaces
 
 For each entry in `installedPlugins`, run the surface-probe procedure in `../generation/references/plugin-surface-probe.md` to classify the plugin as `command-or-skill`, `hooks-only`, or `agent-only`. The resulting `pluginSurfaces` map feeds the Plugin Integration template to prevent fabricated slash refs (e.g., `/security-guidance:security-review` for a hooks-only plugin — release-gate finding G.3, 2026-04-17).
 
-### Step 2.5.3: Derive coveredCapabilities, qualityGates, phaseSkills
+#### Derive coveredCapabilities, qualityGates, phaseSkills
 
 Apply the derivation rules in `../generation/references/plugin-detection-guide.md`:
 - `coveredCapabilities` — combine per-plugin capabilities, deduplicated
 - `qualityGates` — filter defaults by `installedPlugins`, then downgrade `preCommit[].mode` per `wizardAnswers.autonomyLevel`
 - `phaseSkills` — filter defaults by `installedPlugins`; remove empty phases
 
-### Step 2.5.4: Present Detection Results
+#### Present Detection Results
 
 If plugins were detected:
 
@@ -236,48 +246,50 @@ If no plugins were detected:
 
 ---
 
-## Step 2.6: Build Onboard Context
+### Step: build-v3-context
 
-Follow the canonical procedure in `references/onboard-context-builder.md` to assemble the single context object that Step 3 dispatches to `Skill(onboard:generate)`. The builder is the **single source of truth** for start context construction — every profile path (Minimal / Standard / Comprehensive) invokes it. Do not maintain profile-specific context builders; that was the drift that caused release-gate findings B1, B5, B6, B8, B10, B12, B13 (2026-04-17 sweep).
+Follow the canonical procedure in `references/onboard-context-builder.md` to assemble the single context object that Phase 6 Generation dispatches to `Skill(onboard:generate)`. The builder is the **single source of truth** for start context construction — every profile path (Minimal / Standard / Comprehensive) invokes it. Do not maintain profile-specific context builders; that was the drift that caused release-gate findings B1, B5, B6, B8, B10, B12, B13 (2026-04-17 sweep).
 
 Inputs already in conversation context:
 
-- Step 1 analysis report
-- Step 1.5 research dossier (the `research` object)
-- Step 2 wizard output (canonical `wizardAnswers` shape per `../wizard/SKILL.md` § Output § Canonical shape invariant)
-- Step 2.5 plugin detection results (`installedPlugins`, `coveredCapabilities`, `pluginSurfaces`)
+- Phase 1 Recon analysis report
+- Phase 2 research dossier (the `research` object)
+- Phase 3 wizard output (canonical `wizardAnswers` shape per `../wizard/SKILL.md` § Output § Canonical shape invariant)
+- Phase 4 plugin detection results (`installedPlugins`, `coveredCapabilities`, `pluginSurfaces`)
 - Project root path (current working directory)
 
 The builder emits a context object per the canonical schema. Key invariants:
 
 - the builder emits **v3** (`version: 3`) and embeds the `research` object — see `references/onboard-context-builder.md`.
-- All 7 callerExtras Phase-7 flags populated explicitly (`disableMCP`, `disableLSP`, `disableBuiltInSkills`, `disableSkillTuning`, `disableAgentTuning`, `disableOutputStyleTuning`, `allowHttpHooks`) — start-path defaults are `false` for all (Phase 7 blocks run fully; interactive confirmation runs).
-- `callerExtras.installedPlugins` and `pluginSurfaces` populated from Step 2.5 probes.
+- All 7 callerExtras generation-phase flags populated explicitly (`disableMCP`, `disableLSP`, `disableBuiltInSkills`, `disableSkillTuning`, `disableAgentTuning`, `disableOutputStyleTuning`, `allowHttpHooks`) — start-path defaults are `false` for all (the generation phases run fully; interactive confirmation runs).
+- `callerExtras.installedPlugins` and `pluginSurfaces` populated from the Phase 4 plugin-detection probes.
 - Every wizardAnswers field populated (including defaults for skipped fields per `../wizard/SKILL.md` § Skip Behavior).
 
-Run the builder's validation step before proceeding to Step 3. If validation fails, refuse to dispatch — surface the error to the user with the offending field name.
+Run the builder's validation step before proceeding to Phase 6 Generation. If validation fails, refuse to dispatch — surface the error to the user with the offending field name.
 
 ---
 
-## Step 2.7: Generation Plan (plan mode)
+---
+
+## Phase 5: Plan → Preview → Gate
+
+### Step: plan (plan mode)
 
 Dispatch generation in plan mode — it computes what it will write without writing:
 
 ```
-Skill(onboard:generate, {mode:"plan", context})   // context from Step 2.6
+Skill(onboard:generate, {mode:"plan", context})   // context from the Phase 4 build-v3-context step
 ```
 
 The skill returns a `generationManifest` (validated vs `../../schemas/generation-manifest.json`): `changes[]` (path, action, purpose, outline, tier, origin) + `decisions` + `warnings`. **Nothing is written.** Keep the manifest in context.
 
 If plan mode fails or the manifest fails validation, do NOT proceed — surface the error; let the developer retry or cancel.
 
-## Step 2.8: Assemble the preview model
+### Step: preview (assemble the preview model)
 
-Build `previewModel` from the research dossier (Step 1.5) + the manifest (Step 2.7) per `../research/references/render-adapter.md` § previewModel: `flow:"start"`; `research` = architecture map + top risks + glossary from the dossier (null if research was minimal/empty); `changes`/`decisions`/`warnings` from the manifest.
+Build `previewModel` from the research dossier (Phase 2 Research) + the manifest (the plan step above) per `../research/references/render-adapter.md` § previewModel: `flow:"start"`; `research` = architecture map + top risks + glossary from the dossier (null if research was minimal/empty); `changes`/`decisions`/`warnings` from the manifest.
 
----
-
-## Step 2.9: Render + hard gate (review before implementation)
+### Step: gate (render + hard gate — review before implementation)
 
 This is the review-before-implementation gate. **Nothing has been written yet.**
 
@@ -288,18 +300,18 @@ This is the review-before-implementation gate. **Nothing has been written yet.**
    - **`walkthrough:render` present but fails at runtime** → don't abort the gate; announce the degrade and fall through to the **markdown gate** above. (Invoking the skill is itself the presence test: an uninstalled skill surfaces as *absent* above; a runtime render error lands here.)
    - This degrades the HTML render only — never the gate.
 2. **Gate.** AskUserQuestion (single-select, header `"Generate?"`):
-   - **Approve & generate (Recommended)** → proceed to Step 3 (write mode).
-   - **Adjust** → return to the Step 2 wizard summary to revise answers/profile, then re-run Step 2.6 → 2.7 → 2.8 → 2.9.
+   - **Approve & generate (Recommended)** → proceed to Phase 6 Generation (write mode).
+   - **Adjust** → return to the Phase 3 wizard summary to revise answers/profile, then re-run the Phase 4 build-v3-context step → Phase 5 plan → preview → gate.
    - **Cancel** → stop. Write nothing. Print: "Cancelled — no files were created."
-3. Only **Approve** advances to Step 3. Until then, nothing is written to disk.
+3. Only **Approve** advances to Phase 6 Generation. Until then, nothing is written to disk.
 
 **Guard Usage:** the install offer and the gate both use fixed-option single-selects (≥2 options), so the single-option guard in `.claude/rules/ask-user-question-guard.md` does not apply.
 
 ---
 
-## Step 3: Generation via Skill(onboard:generate)
+## Phase 6: Generation (via Skill(onboard:generate))
 
-### Step 3.1: Model resolution (no separate prompt)
+### Step: model-resolution (no separate prompt)
 
 The model has already been chosen by this point — either because the developer tuned it in the grounded wizard (`wizardAnswers.skillTuning?.defaultModel`), or implicitly via the profile default (Minimal/Standard/Comprehensive use `claude-opus-4-7[1m]` per `../wizard/references/workflow-presets.md` § Exchange target (uniform across profiles)).
 
@@ -318,24 +330,24 @@ The profile-default fallback is documented in `../wizard/references/workflow-pre
 
 The wizard's summary already shows the chosen model — the developer has already seen and confirmed it. If they wanted to change it, they would have done so in the summary tweak step (or by editing `.claude/settings.json` after start).
 
-The model choice is written into `context.modelChoice` by the Step 2.6 builder.
+The model choice is written into `context.modelChoice` by the Phase 4 build-v3-context builder.
 
-### Step 3.2: Dispatch to Skill(onboard:generate)
+### Step: dispatch to Skill(onboard:generate)
 
-**Invoke `Skill(onboard:generate)` with the context object built in Step 2.6.** One contract, one validator, one agent-dispatch boundary.
+**Invoke `Skill(onboard:generate)` with the context object built in the Phase 4 build-v3-context step.** One contract, one validator, one agent-dispatch boundary.
 
 ```
-Skill(onboard:generate, {mode:"write", context})   // context from Step 2.6 — the same object Step 2.7 planned from
+Skill(onboard:generate, {mode:"write", context})   // context from the Phase 4 build-v3-context step — the same object the Phase 5 plan step planned from
 ```
 
-By this point the developer has approved the plan at Step 2.9; write mode honors that plan (same artifact set + decisions).
+By this point the developer has approved the plan at the Phase 5 gate; write mode honors that plan (same artifact set + decisions).
 
 The generate skill then:
 
 1. Validates the context (see `../generate/SKILL.md` § Validation)
 2. Dispatches `Agent(config-generator)` with `dispatchedAsAgent: true`
 3. Runs the full generation pipeline (Phase 7a MCP, 7b Output Styles, 7c LSP, 7d Built-in Skills) per `../generation/SKILL.md`
-4. Runs pre-exit self-audit verifying all 7 Phase 7 telemetry keys are present. The self-audit also covers the v3 research telemetry block:
+4. Runs pre-exit self-audit verifying all 7 generation-phase telemetry keys are present. The self-audit also covers the v3 research telemetry block:
    - **Research self-audit:** if `metadata.research.consumed === true`, verify the block is coherent — `.claude/onboard-research.json` exists; `claimsVerified`, `claimsDropped`, `specialistsRun`, `artifactLocation`, `artifactsWritten` are present; `artifactsWritten` paths match the on-disk docs for the recorded `artifactLocation`; and `htmlRendered` is non-null **iff** the `walkthrough` plugin was present at render time (null is correct when absent or `location:"none"`). If `consumed === false` (research-absent / stub mode), record the research key as `status:"skipped"` with a reason (mirrors the existing skipped-key convention). Surface any incoherence as a self-audit warning.
 5. Returns a structured JSON response with `filesWritten`, `telemetry`, `auditPassed`, `warnings`
 
@@ -357,7 +369,7 @@ Before dispatching, inform the developer:
 > - LSP plugin integration (if source files detected)
 > - Setup metadata
 
-### Step 3.3: Report Generation Results
+### Step: report-results
 
 After generation completes, list every file that was created:
 
@@ -377,11 +389,11 @@ After generation completes, list every file that was created:
 
 ---
 
-## Step 3.5: Ecosystem Setup
+### Step: ecosystem-plugin-install
 
 If the wizard answers include `ecosystemPlugins`, set up the requested plugins.
 
-### Step 3.5.1: Resolve Requested Ecosystem Plugins
+#### Resolve Requested Ecosystem Plugins
 
 For each plugin the developer selected in the wizard (`ecosystemPlugins.notify`, etc.), verify it's installed. If it's missing, **offer inline install** — do not skip silently, because the developer explicitly asked for it.
 
@@ -395,7 +407,7 @@ ls "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh" 2>/dev/null
 Characteristic files per plugin:
 - `notify` → `scripts/notify.sh`
 
-**If the probe finds the file**, the plugin is installed — proceed to Step 3.5.2 (for notify).
+**If the probe finds the file**, the plugin is installed — proceed to the notify setup sub-step below (for notify).
 
 **If the probe returns nothing**, the plugin is missing. Tell the developer:
 
@@ -421,7 +433,7 @@ Then continue to the next requested plugin. Repeat for each entry in `ecosystemP
 
 **Edge case** — if a plugin was NOT requested in the wizard (`ecosystemPlugins.<plugin>` is `false` or absent), skip it entirely. Do not probe, do not prompt. This step only acts on what the developer explicitly asked for.
 
-### Step 3.5.2: Set Up Notify (if requested and available)
+#### Set Up Notify (if requested and available)
 
 If `ecosystemPlugins.notify` is `true` and notify is available, **first probe for pre-existing global configuration** before offering any project-local setup:
 
@@ -473,7 +485,7 @@ Where `$BASE_DIR` is the same scope used for the generated Claude tooling (typic
 
 Report: `Notify plugin configured — you'll get system notifications when Claude finishes tasks.` (or, when `globalConfigured`, the inform-only line above.)
 
-### Step 3.5.3: Report Ecosystem Setup
+#### Report Ecosystem Setup
 
 > **Ecosystem plugins set up:**
 > - [list what was configured]
@@ -485,9 +497,11 @@ If no plugins were set up (none requested or none available), skip this report e
 
 ---
 
-## Step 4: Education & Handoff
+---
 
-### Step 4.1: Explain Key Artifacts
+## Phase 7: Handoff (Education & Handoff)
+
+### Step: Explain Key Artifacts
 
 Briefly explain the most important generated artifacts:
 
@@ -503,7 +517,7 @@ Briefly explain the most important generated artifacts:
 >
 > **Hooks** — Auto-formatting and linting happen in the background. You don't need to think about these.
 
-### Step 4.2: Quick Start Suggestions
+### Step: Quick Start Suggestions
 
 Based on what was generated, suggest what to try first:
 
@@ -512,7 +526,7 @@ Based on what was generated, suggest what to try first:
 > 2. [Stack-specific suggestion, e.g., "Ask Claude to create a new React component and see how it follows your patterns"]
 > 3. [Pain-point based suggestion, e.g., "Ask Claude to write tests for a module you mentioned is error-prone"]
 
-### Step 4.3: Next Steps
+### Step: Next Steps
 
 > **Next steps:**
 > - Review `CLAUDE.md` and adjust anything that doesn't match your preferences
@@ -524,14 +538,14 @@ Based on what was generated, suggest what to try first:
 If ecosystem plugins were set up, add:
 > - Run `/notify:check` to verify notifications are working
 
-### Step 4.4: Closing
+### Step: Closing
 
 > Your project is now set up for AI-assisted development with Claude Code. Happy coding!
 
 ## Key Rules
 
 - **Never dispatch `config-generator` directly** — always go through `Skill(onboard:generate)`. Direct dispatch bypasses the shared validation contract and the `dispatchedAsAgent` safety net.
-- **Empty-repo guard always runs first** — Step 0 fires before Step 1 Analysis, even if the user explicitly says "just analyze". A zero-source-count repo must hit the 3-option menu, not the wizard.
+- **Empty-repo guard always runs first** — Phase 0 fires before Phase 1 Recon, even if the user explicitly says "just analyze". A zero-source-count repo must hit the 3-option menu, not the wizard.
 - **Settings.json is always merge-aware** — never overwrite `.claude/settings.json` outright. Read it first, merge hooks, then write. The file may already contain hooks from other sources.
 - **Notify setup is inform-only when global config is already complete** — the `globalConfigured` detection (config + hook both present) means no project-local offer is made. Never re-setup what is already wired.
-- **Halt and surface on context builder validation failure** — if Step 2.6 validation fails, refuse to dispatch and show the offending field. Never attempt generation with an incomplete or malformed context object.
+- **Halt and surface on context builder validation failure** — if the Phase 4 build-v3-context validation fails, refuse to dispatch and show the offending field. Never attempt generation with an incomplete or malformed context object.

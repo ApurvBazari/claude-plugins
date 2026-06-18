@@ -70,26 +70,23 @@ Phase 0: Empty-Repo Guard ──→ no source files? 3-option menu
 Phase 1: Recon ──→ codebase-analyzer agent (read-only, script-free)
      │              └── native Glob/Grep/Read + git one-liners → reconHints
      ▼
-Phase 1.4: Profile select ──→ Minimal / Standard / Comprehensive
-     │                          └── sets research depth + generation scope
+Phase 2: Research ──→ profile-select (Minimal / Standard / Comprehensive) → Skill(onboard:research)
+     │                  └── sets research depth + gen scope; dossier + research-dossier / architecture / risk-register / glossary
      ▼
-Phase 1.5: Research ──→ Skill(onboard:research)
-     │                   └── dossier + research-dossier / architecture / risk-register / glossary
-     ▼
-Phase 2: Grounded Wizard ──→ confirm/override from research.wizardInferences
+Phase 3: Grounded Wizard ──→ confirm/override from research.wizardInferences
      │                        (autonomy asked cold)
      ▼
-Phase 2.5: Plugin Detection ──→ siblings + marketplace probe
+Phase 4: Plugin Detection & Context ──→ siblings + marketplace probe → build v3 context
      │
      ▼
-Phase 2.7-2.9: Plan → Preview → HARD GATE ──→ Skill(onboard:generate {mode:plan})
-     │                                         └── previewModel (research + blueprint) → walkthrough:render
-     │                                             Approve → write │ Adjust → re-plan │ Cancel → nothing
+Phase 5: Plan → Preview → HARD GATE ──→ Skill(onboard:generate {mode:plan})
+     │                                    └── previewModel (research + blueprint) → walkthrough:render
+     │                                        Approve → write │ Adjust → re-plan │ Cancel → nothing
      ▼
-Phase 3: Generation (post-gate) ──→ Skill(onboard:generate {mode:"write"})
+Phase 6: Generation (post-gate) ──→ Skill(onboard:generate {mode:"write"})
      │                   └── config-generator agent (write)
      ▼
-Phase 4: Handoff ──→ explains generated artifacts, suggests next steps
+Phase 7: Handoff ──→ explains generated artifacts, suggests next steps
 ```
 
 **The components that do the work:**
@@ -131,8 +128,8 @@ Scanning codebase… (script-free — native search + git)
   CI/CD        GitHub Actions (1 workflow)
   Size         48 files, 3,200 LOC
 
-Phase 1.4: Profile
-━━━━━━━━━━━━━━━━━━
+Phase 2: Research — profile select
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 How deep should I go?
   (a) Minimal       — shallow research, core tooling only
   (b) Standard      — balanced research + tooling   (recommended)
@@ -140,12 +137,12 @@ How deep should I go?
 
 > b
 
-Phase 1.5: Research
-━━━━━━━━━━━━━━━━━━━
+Phase 2: Research — deep research
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Fanning out specialists → verifying → synthesizing dossier…
   Wrote research-dossier, architecture, risk-register, glossary
 
-Phase 2: Grounded Wizard
+Phase 3: Grounded Wizard
 ━━━━━━━━━━━━━━━━━━━━━━━━
 From the research I inferred the following — confirm or override:
 
@@ -159,8 +156,8 @@ From the research I inferred the following — confirm or override:
 
 > b
 
-Phase 2.9: Preview & Gate
-━━━━━━━━━━━━━━━━━━━━━━━━
+Phase 5: Preview & Gate
+━━━━━━━━━━━━━━━━━━━━━━━
 Here's everything I'll create — review before I write anything:
   research: 3 risks, architecture map, glossary
   + 12 files (CLAUDE.md, 3 rules, 1 skill, 1 agent, settings.json, …)
@@ -168,7 +165,7 @@ Here's everything I'll create — review before I write anything:
   Approve & generate?  [Approve / Adjust / Cancel]
 > Approve
 
-Phase 3: Generation
+Phase 6: Generation
 ━━━━━━━━━━━━━━━━━━━
 Generated 12 artifacts:
 
@@ -184,7 +181,7 @@ Generated 12 artifacts:
 
   Snapshot saved to .claude/onboard-meta.json
 
-Phase 4: Handoff
+Phase 7: Handoff
 ━━━━━━━━━━━━━━━━
 Your project is set up for AI-assisted development. Try:
   1. Open a file — Claude has context about your conventions
