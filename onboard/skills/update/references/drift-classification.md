@@ -22,10 +22,10 @@ This is the only provenance-specific logic update needs; everything else in the 
 
 ## 4b.1: Plugin Drift
 
-Follow `../generation/references/plugin-drift-detection.md` for the full procedure. Summary for update:
+Follow `../../generation/references/plugin-drift-detection.md` for the full procedure. Summary for update:
 
 1. **Resolve baseline** using the caller order for `update`: first `.claude/onboard-meta.json.detectedPlugins.installedPlugins`, then `.claude/onboard-meta.json.callerExtras.installedPlugins`, else empty.
-2. **Probe current state** against the Known Plugin Probe List in `../generation/references/plugin-detection-guide.md`. Also probe any plugin in the baseline that isn't in the known list.
+2. **Probe current state** against the Known Plugin Probe List in `../../generation/references/plugin-detection-guide.md`. Also probe any plugin in the baseline that isn't in the known list.
 3. **Compute diff** — produce the `driftReport` object described in `plugin-drift-detection.md` § Output Schema.
 4. **Note the baseline source**. If the baseline was empty, flag the findings section with "Plugin Integration not tracked before — all detected plugins offered as new additions."
 
@@ -47,7 +47,7 @@ This complements the existing "maintenance header removed" detection in Step 2: 
 
 ## 4b.3: New Best-Practice Additions
 
-Compare the current project against the built-in generation reference guides (`../generation/references/claude-md-guide.md`, `rules-guide.md`, `hooks-guide.md`, `skills-guide.md`, `agents-guide.md`). Surface only items that:
+Compare the current project against the built-in generation reference guides (`../../generation/references/claude-md-guide.md`, `rules-guide.md`, `hooks-guide.md`, `skills-guide.md`, `agents-guide.md`). Surface only items that:
 
 - Appear in the reference guides as a recommended artifact for the project's stack/complexity, AND
 - Are not present in `onboard-meta.json.generatedArtifacts`, AND
@@ -59,7 +59,7 @@ Keep this narrow — do not parse the live WebFetch output to infer new recommen
 
 ## 4b.4: MCP Drift
 
-Compare `.mcp.json`, the drift snapshot `.claude/onboard-mcp-snapshot.json`, and a fresh signal scan (`bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh"`). Follow `../generation/references/mcp-guide.md` for emission rules — this step only classifies drift; applying is deferred to Step 7.
+Compare `.mcp.json`, the drift snapshot `.claude/onboard-mcp-snapshot.json`, and a fresh signal scan (`bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh"`). Follow `../../generation/references/mcp-guide.md` for emission rules — this step only classifies drift; applying is deferred to Step 7.
 
 1. **Read the three sources**:
    - `.mcp.json` at project root (if absent and `mcpStatus.existedPreOnboard` is false, record `mcpDrift.status: "file-missing"`)
@@ -180,7 +180,7 @@ Re-run detection against the current codebase analysis to identify which built-i
 
 1. **Read the inputs**:
    - `.claude/onboard-builtin-skills-snapshot.json` — `{ recommended, accepted }`. Missing file → treat as `recommended: [], accepted: []` (pre-1.9.0 project).
-   - Fresh detection against the current codebase: check each extra skill's detection signal per `generation/references/built-in-skills-catalog.md`. Core skills (`/loop`, `/simplify`, `/debug`, `/pr-summary`) are always candidates.
+   - Fresh detection against the current codebase: check each extra skill's detection signal per `../../generation/references/built-in-skills-catalog.md`. Core skills (`/loop`, `/simplify`, `/debug`, `/pr-summary`) are always candidates.
 
 2. **Classify** per candidate skill from the fresh detection:
    - **newSkill** — skill name in fresh candidates but not in `snapshot.recommended`. A new detection signal fired since last onboard/evolve run (e.g., `@anthropic-ai/sdk` added to dependencies → `/claude-api` detected). Surface as a suggested addition.
