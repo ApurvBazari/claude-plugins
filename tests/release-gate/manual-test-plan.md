@@ -1,273 +1,280 @@
-# Release Gate — Manual Test Plan
+# Release Gate — Manual Test Plan (onboard v3)
 
-Comprehensive end-to-end testing for the develop → main release covering PRs #16-#40 + the **2026-04-16 release-gate fix sweep** (16 commits across C1-C4 / M1-M6 / L1-L5+L6 fixing the gaps the previous test run surfaced).
+End-to-end manual testing for the develop → main release of **onboard 3.0.0** — the research-grounded onboarding rewrite. This plan exercises the v3 Phase 0–7 flow (`/onboard:start`), the Minimal / Standard / Comprehensive **profiles** (no Custom preset, no Quick Mode), the grounded confirm/override wizard, research-consuming generation, the drift lifecycle (`update` / `evolve` / `adopt`), CI/audit infrastructure, and the **durable phase-tracking** feature.
+
+The automated belt (`run-automated-checks.sh`) parses static plugin sources and generated-artifact schemas; it does NOT exercise a live `/onboard:start` run. This manual plan covers the live behavior the belt cannot reach.
 
 **Prerequisites:**
-1. Run `./tests/release-gate/run-automated-checks.sh` — all checks must pass (now includes URL convention, lifecycle-setup absence, wizard cap removal checks)
-2. Run `./tests/release-gate/setup-test-repos.sh` — creates 4 scratch repos (test-nextjs, test-python, test-monorepo, test-empty)
+1. Run `./tests/release-gate/run-automated-checks.sh` — all checks must pass (242 checks: structure, manifests, references, ShellCheck, URL convention, phase-numbering belt, generated-artifact schemas via `verify-init-output.sh`).
+2. Run `./tests/release-gate/setup-test-repos.sh` — creates 4 scratch repos (`test-nextjs`, `test-python`, `test-monorepo`, `test-empty`).
 
-Test repos are created at `$TMPDIR/release-gate-tests/`.
+Test repos are created at `$TMPDIR/release-gate-tests/`. The drift scenario uses `./tests/release-gate/mutate-for-drift.sh` to mutate `test-nextjs` after its initial setup.
 
 ---
 
-## Phase 2: Fresh `/onboard:init` — Rich Project
+## Scenario A: Fresh `/onboard:start` — Rich Project (nextjs)
 
-**Target:** `$TMPDIR/release-gate-tests/test-nextjs`
-**PRs covered:** #30, #32, #34, #35, #36, #37, #38, #39
+**Target:** `$TMPDIR/release-gate-tests/test-nextjs` (Next.js + Vercel + Prisma)
 
 ```bash
 cd $TMPDIR/release-gate-tests/test-nextjs
 claude
-# Then run: /onboard:init
+# Then run: /onboard:start
 ```
 
-### Skills migration (PR #30)
+When prompted at Phase 2 profile-select, choose **Comprehensive** for the most thorough run, and opt into the advanced tuning cards in the wizard so the full surface is exercised.
 
-- [ ] Type `/onboard:` — autocomplete shows only 5 user-facing skills: `init`, `update`, `status`, `verify`, `evolve`
-- [ ] Internal skills (`wizard`, `analysis`, `generation`, `generate`) are NOT in autocomplete
+### Skills surface
 
-### Wizard flow (PRs #34-#39 + 2026-04-16 fix sweep C4 / M1)
+- [ ] Type `/onboard:` — autocomplete shows only the user-facing skills: `start`, `update`, `adopt`, `check`, `verify`, `evolve`
+- [ ] Internal skills (`wizard`, `analysis`, `generation`, `generate`, `research`) are NOT in autocomplete
 
-Answer "Standard" or "Custom" preset when prompted. For thorough testing, choose Custom and opt YES to advanced options.
+### Phase 0 — Empty-Repo Guard
 
-- [ ] **Phase 0** — Preset selection uses **AskUserQuestion** with options `Minimal / Standard (Recommended) / Comprehensive / Custom` — NOT inline numbered text "Type 1/2/3" (M1)
-- [ ] **Phase 5.0 (Custom only)** — Mid-wizard escape hatch fires once near start of Phase 5: AskUserQuestion with `Continue customizing` (default) vs `Use Quick Mode defaults from here` (C4)
-- [ ] **Phase 5.1** — Advanced hook opt-in question appears. Answer YES.
-- [ ] **Phase 5.1 follow-up** — When YES, the 9 advanced events are presented as **3 thematic multiSelect questions in ONE AskUserQuestion call**: `Lifecycle events`, `User events`, `Tool events` (M1 — single exchange covers all 9)
-- [ ] **Phase 5.1.1** — Execution type selection per judgment-capable event appears with cost-table preamble
-- [ ] **Phase 5.2** — Skill tuning gate appears. Accept defaults. The chosen model is captured here (or defaults to `claude-opus-4-7[1m]` for non-Custom presets per L1)
-- [ ] **Phase 5.3** — Agent tuning gate appears. Accept defaults.
-- [ ] **Phase 5.4** — Output style tuning appears. Verify archetype inference mentions `production-ops` (Vercel + team signals)
-- [ ] **Phase 5.6 + 5.7 — combined exchange** — LSP plugins AND built-in skills are presented as TWO multiSelect questions in ONE AskUserQuestion call (C4 + M1). `typescript-lsp` pre-checked (≥10 .tsx files); core skills (`/loop`, `/simplify`, `/debug`, `/pr-summary`) pre-checked; `/schedule` visible (project has `.github/workflows/`)
-- [ ] **Phase 6 summary** — explicitly shows `Model: <model-id> (<source>)` line where source is `your selection` / `preset default` / `fallback default` (L1)
-- [ ] **No separate post-summary "Which model would you like to use?" prompt** — model is resolved from wizard answers via Step 3.1 of init (L1)
-- [ ] **No hard 6-exchange cap** — wizard runs every applicable phase to completion; Custom-preset typical exchange count 5–8 (C4)
+- [ ] Because `test-nextjs` has source files (`SRC_COUNT > 0`), Phase 0 is skipped silently — the 3-option empty-repo menu (Abort / Placeholder only / Generate canonical stub) does NOT appear
 
-### Generation verification (PRs #32, #34-#39)
+### Phase 1 — Recon
 
-After init completes, verify the generated artifacts:
+- [ ] No substantial existing Claude config, so the "Existing config" prompt (Adopt / Update / Start fresh / Cancel) does NOT appear — flow proceeds directly to analysis
+- [ ] `codebase-analyzer` runs read-only (native Glob/Grep/Read + git one-liners) — nothing is written to disk during recon
+- [ ] An analysis summary is presented: project type, languages with file counts, frameworks with versions, testing, CI/CD, complexity score — and asks for confirmation before proceeding
+- [ ] Confirm the summary (or correct it); the wizard does NOT start until you confirm
 
-**Hook schema (PR #32):**
-```bash
-cat .claude/settings.json | jq '.hooks'
-```
-- [ ] Events use nested `hooks: [...]` array structure, NOT flat `{ "type": "command" }` directly in event array
+### Phase 2 — Research
 
-**Expanded hooks (PR #34):**
+- [ ] **profile-select** uses **AskUserQuestion** (single-select, header `Profile`) with exactly three options: `Minimal` / `Standard (Recommended)` / `Comprehensive` — there is **no Custom option** and **no "Type 1/2/3" inline numbered prompt**
+- [ ] Choosing `Comprehensive` maps to `depth: "comprehensive"` and records `selectedPreset`
+- [ ] The research engine (`Skill(onboard:research)`) fans out read-only specialists per dimension, verifies their claims against the code, then asks **where the four human-readable artifacts land** (committed `docs/onboard/` / local `.claude/` / none)
+- [ ] `.claude/onboard-research.json` is written (the dossier), plus — for the committed/local choice — `docs/onboard/` architecture map, risk register, and glossary
+- [ ] Research is read-only — no source files are modified
+
+### Phase 3 — Grounded Wizard
+
+The v3 wizard **confirms/overrides** what research inferred — it does NOT interrogate from scratch. Expect ~2–3 `AskUserQuestion` exchanges.
+
+- [ ] **Exchange 1 (workflow & preferences)** — confirm/override cards for `teamSize`, `projectMaturity`, `codeStyleStrictness`, `securitySensitivity`, `codeReviewProcess`, `branchingStrategy`, `deployFrequency`; the recommended option is seeded from `research.wizardInferences` and its description cites the inference evidence. `primaryTasks` is a separate `multiSelect`, pre-checked from inferred `primaryWork`
+- [ ] **Exchange 2 (cold asks)** — `autonomyLevel` is **always asked cold** (`always-ask` / `balanced` / `autonomous`), never pre-filled from research; project description is presented as editable free-form text; pain points are three free-form prompts (`timeSinks` / `errorProne` / `automationWishes`) with a skip option
+- [ ] **Exchange 3 (tuning cards + detection)** — each presented as an overridable card with its default pre-selected:
+  - [ ] **Step 1** Advanced hook events — when overridden, the 9 events render thematically (lifecycle / user / tool) as `multiSelect` groups; for judgment-capable events (`UserPromptSubmit`, `Stop`, `TaskCreated`, `TaskCompleted`, `Elicitation`) the per-event execution-type picker shows the cost table (shell / prompt / agent / http) before asking; choosing `http` triggers the data-leaves-the-machine confirmation
+  - [ ] **Steps 2 / 3 / 4** Skill / agent / output-style tuning cards default to `{ mode: "defaults" }`; accept or tune
+  - [ ] **Step 5** Ecosystem plugins — each shown with `[installed]` / `[not installed]` marker (e.g. `notify`)
+  - [ ] **Step 6 + Step 7 combined** — LSP plugins AND built-in skills issued as **two `multiSelect` questions in ONE `AskUserQuestion` call**. `typescript-lsp` pre-checked (≥10 .tsx files); the 4 core built-in skills (`/loop`, `/simplify`, `/debug`, `/pr-summary`) pre-checked; `/schedule` visible (`.github/workflows/` present)
+- [ ] **No preset selection, no Custom path, no mid-wizard escape hatch** appears anywhere in the wizard — those were the v2 model
+- [ ] **Summary** shows everything gathered including a `Model: <model-id> (<source>)` line, and announces the full preview before anything is written
+
+### Phase 4 — Plugin Detection & Context
+
+- [ ] Plugin detection probes **both** sibling installs and the marketplace cache; detected plugins are listed ("These will be integrated into your generated CLAUDE.md and quality-gate hooks"), or "No Claude Code plugins detected" if none
+- [ ] The build-v3-context step assembles the single context object and runs its validation; if validation fails the run refuses to dispatch and surfaces the offending field (no partial generation)
+
+### Phase 5 — Plan → Preview → HARD GATE
+
+- [ ] Generation runs in **plan mode first** — a `generationManifest` is computed (`changes[]` + `decisions` + `warnings`) and **nothing is written**
+- [ ] A preview is rendered via `walkthrough:render` to `.claude/walkthrough/<date>-onboard-plan.html`. If walkthrough is absent, an install offer appears (Install now / Skip — markdown preview); a render failure degrades to the **markdown gate** (Overview · What I learned · What I'll build by tier · Key decisions · Risks) — the gate itself never degrades
+- [ ] The gate is an **AskUserQuestion** (header `Generate?`): `Approve & generate (Recommended)` / `Adjust` / `Cancel`
+- [ ] **Confirm nothing is on disk yet** — no `.claude/` artifacts beyond the research dossier + walkthrough preview exist before you Approve
+- [ ] **Adjust path** (optional): choosing `Adjust` returns to the wizard summary to revise, then re-runs context → plan → preview → gate (the gate loops). No artifacts written during the loop
+- [ ] Approve to continue
+
+### Phase 6 — Generation
+
+After Approve, generation writes the artifacts. Verify them:
+
+**Core tier:**
 ```bash
 cat .claude/settings.json | jq '.hooks | keys'
+ls .claude/rules/ .claude/skills/ .claude/agents/ 2>/dev/null
 ```
-- [ ] Keys include expanded events beyond the original 5 (look for: `SessionStart`, `UserPromptSubmit`, `PreCompact`, `TaskCreated`, etc.)
-- [ ] If opted YES to advanced types: at least one `"type": "prompt"` or `"type": "agent"` entry present
+- [ ] Root `CLAUDE.md` exists (100–200 lines, maintenance header present)
+- [ ] Hook events use the nested `hooks: [...]` array structure (not a flat `{ "type": "command" }` directly in the event array)
+- [ ] If advanced hook types were chosen: at least one `"type": "prompt"`, `"type": "agent"`, or `"type": "http"` entry is present
+- [ ] Path-scoped rules in `.claude/rules/` reflect the actual detected stack (not generic templates)
+- [ ] 2–3 stack/pain-point-driven skills in `.claude/skills/`, each with valid frontmatter
+- [ ] Agents in `.claude/agents/` each have YAML frontmatter with `tools:` and some of `model` / `isolation` / `color` / `effort`. Plugin-covered capabilities are skipped (e.g. no generic `code-reviewer.md` if a review plugin is installed)
 
-**MCP generation (PR #35):**
+**MCP (emission Step 1):**
 ```bash
 cat .mcp.json | jq '.mcpServers | keys'
 ```
-- [ ] Contains `context7` (always)
-- [ ] Contains `vercel` (vercel.json present)
-- [ ] Contains `prisma` (prisma/ directory present)
+- [ ] Contains `context7` (always), `vercel` (vercel.json present), `prisma` (prisma/ present)
 - [ ] `.claude/rules/mcp-setup.md` exists with auth instructions
 
-**Agent frontmatter (PR #36):**
+**Output styles (emission Step 2):**
 ```bash
-head -20 .claude/agents/*.md
+ls .claude/output-styles/ && head -10 .claude/output-styles/*.md
 ```
-- [ ] Each agent has YAML frontmatter between `---` markers
-- [ ] Frontmatter includes `tools:` field
-- [ ] Frontmatter includes at least some of: `model`, `isolation`, `color`, `effort`
+- [ ] At least one `.md` with `name:` + `description:` frontmatter; archetype matches a production-ops/team signal for this Vercel + team project
 
-**Output styles (PR #37):**
-```bash
-ls .claude/output-styles/
-head -10 .claude/output-styles/*.md
-```
-- [ ] At least one `.md` file exists in `.claude/output-styles/`
-- [ ] File has YAML frontmatter with `name:` and `description:`
-- [ ] Archetype matches production-ops (for Vercel project)
+**LSP (emission Step 3):**
+- [ ] `typescript-lsp` install attempted (`claude plugin list 2>/dev/null | grep typescript-lsp`); onboard emits NO project-level `.lsp.json`
 
-**LSP (PR #38):**
-- [ ] `typescript-lsp` was installed (check: `claude plugin list 2>/dev/null | grep typescript-lsp`)
-- [ ] `.claude/onboard-lsp-snapshot.json` exists with `recommended` and `accepted` arrays
-
-**Built-in skills (PR #39):**
+**Built-in skills (emission Step 4):**
 ```bash
 grep -A 20 'Built-in Claude Code skills' CLAUDE.md
 ```
-- [ ] Section exists in CLAUDE.md with stack-specific examples
-- [ ] `/loop`, `/simplify`, `/debug`, `/pr-summary` mentioned as core
-- [ ] `.claude/onboard-builtin-skills-snapshot.json` exists
+- [ ] CLAUDE.md subsection (marker-delimited `<!-- onboard:builtin-skills:start/end -->`) lists the core skills with stack-specific examples
 
-**Telemetry completeness (C1 + C4 release-gate sweep):**
+**Research-grounded generation (v3):**
+- [ ] Generated CLAUDE.md / rules / skills / agents reflect **verified** research claims (sharpened from the dossier, not generic boilerplate)
+- [ ] `docs/feature-list.json` is seeded from verified security/risk/test-gap claims (seed-if-absent — an existing list is never clobbered)
+
+**Telemetry — `onboard-meta.json` (v3 self-audit keys):**
 ```bash
 cat .claude/onboard-meta.json | jq 'keys'
-cat .claude/onboard-meta.json | jq '{mcpStatus: .mcpStatus.status, outputStyleStatus: .outputStyleStatus.status, lspStatus: .lspStatus.status, builtInSkillsStatus: .builtInSkillsStatus.status}'
+cat .claude/onboard-meta.json | jq '{mcp:.mcpStatus.status, outStyle:.outputStyleStatus.status, lsp:.lspStatus.status, builtin:.builtInSkillsStatus.status, skill:.skillStatus.status, agent:.agentStatus.status, hook:.hookStatus.status}'
 cat .claude/onboard-meta.json | jq '.wizardStatus'
-cat .claude/onboard-meta.json | jq '.pluginVersion'
+cat .claude/onboard-meta.json | jq '.research'
+cat .claude/onboard-meta.json | jq '{pluginVersion, currentPhase}'
 ```
-- [ ] Contains all status keys: `mcpStatus`, `skillStatus`, `agentStatus`, `outputStyleStatus`, `lspStatus`, `builtInSkillsStatus`
-- [ ] **Each Phase 7 status object has `.status` field** with value in `{emitted, skipped, declined, failed}` (C1)
-- [ ] **`wizardStatus` present** with `presetUsed` / `exchangesUsed` / `phasesAsked` / `phasesSkipped` / `escapeHatchTriggered` (C4)
-- [ ] **`pluginVersion` matches installed onboard version** — NOT a stale literal `1.2.0` (L4 — should reflect 1.10.0+ post-release-gate sweep)
+- [ ] All 7 generation-phase status objects present: `mcpStatus`, `outputStyleStatus`, `lspStatus`, `builtInSkillsStatus`, `skillStatus`, `agentStatus`, `hookStatus` — each with a `.status` field
+- [ ] **`wizardStatus`** has **exactly the 5 canonical keys**: `presetUsed`, `exchangesUsed`, `phasesAsked`, `phasesSkipped`, `escapeHatchTriggered`
+- [ ] `wizardStatus.presetUsed` is in `{minimal | standard | comprehensive}` — never `custom` / `quick-mode` / `interactive` (dropped v2 shapes)
+- [ ] `wizardStatus.escapeHatchTriggered` is **always `false`** (escape hatch removed; key retained for shape stability)
+- [ ] `wizardAnswers.selectedPreset` is in `{minimal | standard | comprehensive}`
+- [ ] **`research` self-audit block** is coherent: `consumed: true`; `.claude/onboard-research.json` exists; `claimsVerified`, `claimsDropped`, `specialistsRun`, `artifactLocation`, `artifactsWritten` present; `artifactsWritten` paths match the on-disk docs for the recorded `artifactLocation`; `htmlRendered` non-null iff `walkthrough` was present at render time
+- [ ] **`pluginVersion`** matches the installed onboard version (3.0.0+) — not a stale literal
+- [ ] **`currentPhase` is `"done"`** after a complete run (set to `6` after Phase 6, flipped to `"done"` at Phase 7 — see Scenario E)
 
 **Snapshot files:**
-- [ ] `.claude/onboard-mcp-snapshot.json` exists
-- [ ] `.claude/onboard-skill-snapshot.json` exists
-- [ ] `.claude/onboard-agent-snapshot.json` exists
-- [ ] `.claude/onboard-output-style-snapshot.json` exists
-- [ ] `.claude/onboard-lsp-snapshot.json` exists
-- [ ] `.claude/onboard-builtin-skills-snapshot.json` exists
+- [ ] `.claude/onboard-mcp-snapshot.json`, `-skill-snapshot.json`, `-agent-snapshot.json`, `-output-style-snapshot.json`, `-lsp-snapshot.json`, `-builtin-skills-snapshot.json` all exist
 
-**Session validation:**
+### Phase 7 — Handoff
+
+- [ ] A handoff narration explains the key artifacts (CLAUDE.md, rules, skills, agents, hooks) and suggests stack/pain-point-based "try these first" items
+- [ ] Next steps mention reviewing `docs/onboard/` research artifacts (or `.claude/onboard-research.json`), `/onboard:check`, and `/onboard:update`
+
+### Session validation
+
 - [ ] Close and reopen Claude Code in the project — session starts cleanly with no schema errors
 
 ---
 
-## Phase 3: Fresh `/onboard:init` — Variant Projects
+## Scenario B: Fresh `/onboard:start` — Variant Projects
 
-### test-python (minimal)
+### test-python (Minimal profile)
 
 ```bash
 cd $TMPDIR/release-gate-tests/test-python
 claude
-# Run: /onboard:init — choose Minimal or Standard preset
+# Run: /onboard:start — choose the Minimal profile at Phase 2 profile-select
 ```
 
-- [ ] Solo archetype detected (no team/security/production signals)
+- [ ] Minimal profile → Phase 2 research dispatches **no specialists** and returns a minimal dossier quickly (the fast/cheap path); `research.consumed` may be `false`/minimal — meta records the research key accordingly
+- [ ] Solo/relaxed archetype detected (no team/security/production signals)
 - [ ] `.mcp.json` contains only `context7` (no vercel, no prisma, no chrome-devtools)
-- [ ] Phase 5.6: `pyright-lsp` appears as candidate (may not be pre-checked with only 5 .py files)
-- [ ] Minimal hook set generated (fewer events than the rich project)
-- [ ] Output style maps to solo archetype (not production-ops)
+- [ ] Phase 3 Exchange 3: `pyright-lsp` appears as a candidate (may not be pre-checked with only 5 .py files)
+- [ ] Format-only / minimal hook set generated (fewer events than the rich project)
+- [ ] Output style maps to a solo/relaxed archetype (not production-ops)
 - [ ] Session starts cleanly
 
-### test-monorepo (Turborepo)
+### test-monorepo (Standard profile)
 
 ```bash
 cd $TMPDIR/release-gate-tests/test-monorepo
 claude
-# Run: /onboard:init — choose Standard preset
+# Run: /onboard:start — choose the Standard profile
 ```
 
-- [ ] Subdirectory CLAUDE.md candidates offered (apps/web, apps/api, packages/)
-- [ ] `/codebase-visualizer` appears in Phase 5.7 built-in skills multiSelect
-- [ ] Multiple LSP candidates shown (`typescript-lsp` for .ts files)
-- [ ] Complexity score inferred as medium or higher (multiple packages)
+- [ ] Standard profile → Phase 2 dispatches Core-4 specialists + verify
+- [ ] Subdirectory CLAUDE.md candidates offered for the packages (apps/web, apps/api, packages/) — each package is an automatic architectural-boundary candidate
+- [ ] Phase 3 Exchange 3: `typescript-lsp` shown for the .ts files; multiple LSP candidates possible
+- [ ] Complexity inferred as medium or higher (multiple packages)
 - [ ] Session starts cleanly
 
-### test-empty (edge case)
+### test-empty (Phase 0 edge case)
 
 ```bash
 cd $TMPDIR/release-gate-tests/test-empty
 claude
-# Run: /onboard:init
+# Run: /onboard:start
 ```
 
-- [ ] No crashes — wizard completes gracefully
-- [ ] No schema errors in generated artifacts
-- [ ] Minimal/default hooks only (no advanced types offered)
-- [ ] No MCP servers beyond context7 (or no MCP at all)
-- [ ] No LSP candidates (no source files detected)
+- [ ] **Phase 0 fires** (`SRC_COUNT == 0`): the 3-option **AskUserQuestion** menu appears — `Abort` / `Placeholder only` / `Generate canonical stub` (default)
+- [ ] Choosing **Generate canonical stub** writes exactly 3 files — `CLAUDE.md`, `.claude/settings.json`, `.claude/onboard-meta.json` — in canonical schema with stub-mode markers; all 7 generation-phase status keys are `status: "skipped"` with `reason: "stub-mode-no-code"`
+- [ ] `pluginVersion` in the stub meta is resolved dynamically (no hardcoded literal)
+- [ ] The stub run does **not** run the wizard, research, or full generation — and (per phase-tracking) creates **no** task list
+- [ ] Re-running `/onboard:start` after adding source files **auto-promotes** the stub to a full run (overwrites stub artifacts; appends a `"stub → full"` `updateHistory` entry)
 - [ ] Session starts cleanly
 
 ---
 
-## Phase 4: Drift Lifecycle
+## Scenario C: Drift Lifecycle (update / evolve)
 
-**Target:** `$TMPDIR/release-gate-tests/test-nextjs` (after Phase 2 init)
-**PRs covered:** #33, #34-#39
+**Target:** `$TMPDIR/release-gate-tests/test-nextjs` (after Scenario A completed). Apply the standard drift mutations first:
 
-### 4A: `/onboard:update` — Artifact drift (M2 release-gate sweep — AskUserQuestion approval)
+```bash
+cd $TMPDIR/release-gate-tests/test-nextjs
+bash /path/to/claude-plugins/tests/release-gate/mutate-for-drift.sh
+```
+
+The mutations are: (1) delete a generated rule, (2) edit an agent's frontmatter, (3) edit an output-style body, (4) add `@anthropic-ai/sdk` to package.json, (5) add `src/main.rs`.
+
+### C1: `/onboard:update` — artifact + signal drift
 
 ```bash
 cd $TMPDIR/release-gate-tests/test-nextjs
 claude
+# Run: /onboard:update
 ```
 
-**M2 contract — approval flow:**
+**Approval flow:**
+- [ ] The approval prompt is a **single AskUserQuestion call** (not inline "all / specific / none" text): a pre-question (`Review and pick` / `Apply all` / `Apply later` / `Skip`) plus per-group `multiSelect` questions in the same call
+- [ ] Offer groups are categorized (`Artifact gaps`, `User-edit detections`, `New dependencies / languages`, `Best practice suggestions`); only groups with ≥1 offer render
+- [ ] **Apply later**: choosing it writes `.claude/onboard-pending-updates.json` with a `pendingOffers[]` array. Re-running `/onboard:update` re-presents pending items merged with new drift; after applying, the snapshot file is deleted
+- [ ] Any doc URLs fetched during update use `https://code.claude.com/docs/en/*`, not legacy `docs.anthropic.com/en/docs/claude-code/*`
 
-- [ ] Approval prompt is a **single AskUserQuestion call** (not inline "all / specific / none" text). Includes a pre-question (`Review and pick` / `Apply all` / `Apply later` / `Skip`) plus per-group multiSelect questions in the same call.
-- [ ] Offer groups are categorized: `Artifact gaps`, `User-edit detections`, `New dependencies / languages`, `Best practice suggestions` (only groups with ≥1 offer render)
-- [ ] **Apply later test**: Choose `Apply later` in the pre-question. Verify `.claude/onboard-pending-updates.json` is written with a `pendingOffers[]` array. Re-running `/onboard:update` should re-present the pending items merged with any new drift; after applying, the snapshot file is deleted.
-- [ ] Doc URLs fetched by update (Step 4) use `https://code.claude.com/docs/en/*`, NOT legacy `docs.anthropic.com/en/docs/claude-code/*` (L2)
+**Per-mutation expectations:**
+- [ ] **Mutation 1 (deleted rule)** — detected under `Artifact gaps`; on approval the rule file is regenerated/restored
+- [ ] **Mutation 2 (edited agent frontmatter)** — classified as a `user-edit`; the change is **not** reverted (user edits preserved)
+- [ ] **Mutation 3 (output-style body edit)** — **not** flagged (the body is outside snapshot scope)
+- [ ] **Mutation 4 (`@anthropic-ai/sdk`)** — `/claude-api` flagged as a newly relevant built-in skill under `Best practice suggestions`
+- [ ] **Mutation 5 (`src/main.rs`)** — `rust-analyzer-lsp` listed as a `newLanguage` candidate under `New dependencies / languages`, as a **first-class selectable option** (not narrative prose), **auto-checked by default** (matching the wizard LSP pre-check behavior)
 
-**Test 1: Deleted artifact**
-```bash
-# Before entering Claude, delete a generated rule:
-rm .claude/rules/*.md  # pick one rule file
-# Then in Claude: /onboard:update
-```
-- [ ] Update detects the missing artifact under "Artifact Gaps"
-- [ ] Offers to regenerate (in the `Artifact gaps` AskUserQuestion group)
-- [ ] On approval, rule file is restored
+**v3 re-research (staleness):**
+- [ ] If the dependency/language changes constitute a staleness signal, `update` re-runs `onboard:research` scoped (auto-escalating to full when warranted), merges into the prior dossier, and regenerates **merge-aware** (customization floor honored — the user-edited agent from Mutation 2 is not clobbered)
 
-**Test 2: User-edited agent frontmatter**
-```bash
-# Edit an agent's model field in .claude/agents/*.md
-# Change model: to a different value (e.g., sonnet → haiku)
-# Then: /onboard:update
-```
-- [ ] Update classifies the change as `user-edit`
-- [ ] Does NOT revert the change (preserves user edits)
-
-**Test 3: Output style body edit**
-```bash
-# Edit the body (below frontmatter) of .claude/output-styles/*.md
-# Add a paragraph of custom instructions
-# Then: /onboard:update
-```
-- [ ] Update does NOT flag this change (body is outside snapshot scope)
-
-**Test 4: New dependency signal**
-```bash
-# Add @anthropic-ai/sdk to package.json dependencies
-# Then: /onboard:update
-```
-- [ ] Update Step 4b.9 flags `/claude-api` as a newly relevant built-in skill
-
-**Test 5: New language file (M2 release-gate sweep — first-class numbered offer + auto-checked)**
-```bash
-# Create a Rust file:
-echo 'fn main() {}' > src/main.rs
-# Then: /onboard:update
-```
-- [ ] Update Step 4b.8 lists `rust-analyzer-lsp` as a `newLanguage` candidate
-- [ ] **`rust-analyzer-lsp` appears as a first-class option in the `New dependencies / languages` AskUserQuestion group, NOT as narrative prose** (M2 / A8)
-- [ ] **`rust-analyzer-lsp` is auto-checked by default** (matches wizard Phase 5.6 pre-check behavior, M2)
-
-### 4B: `/onboard:evolve` — Auto-apply
+### C2: `/onboard:evolve` — auto-apply
 
 ```bash
-# With the main.rs still present:
+# With src/main.rs still present:
 /onboard:evolve
 ```
-- [ ] Evolve re-prompts for `rust-analyzer-lsp` (via batched multiSelect, NOT silent install)
+- [ ] Evolve re-prompts for `rust-analyzer-lsp` via batched `multiSelect` (not a silent install)
+- [ ] Evolve runs the scoped re-research path **silently** and defers full-escalation to `update`; after applying it shows a diff (evolve has **no** hard gate)
 
-### 4C: Plugin drift (PR #33)
+### C3: Plugin drift
 
 ```bash
-# Install superpowers plugin:
 claude plugin install superpowers
 # Then: /onboard:update
 ```
-- [ ] Update surfaces "Plugin Drift" finding with `superpowers` listed
-- [ ] On approval: CLAUDE.md gains marker-wrapped `## Plugin Integration` section
-- [ ] `onboard-meta.json.detectedPlugins.installedPlugins` includes `"superpowers"`
+- [ ] Update surfaces a "Plugin Drift" finding listing `superpowers`
+- [ ] On approval, CLAUDE.md gains the marker-wrapped `## Plugin Integration` section; `onboard-meta.json.detectedPlugins.installedPlugins` includes `"superpowers"`
 
 ```bash
-# Now uninstall:
 claude plugin uninstall superpowers
 # Then: /onboard:update
 ```
-- [ ] Update lists the removal
-- [ ] On approval: CLAUDE.md markers stripped, obsolete hooks/artifacts cleaned
+- [ ] Update lists the removal; on approval the Plugin Integration markers are stripped and obsolete hooks/artifacts cleaned
+
+### C4: `/onboard:adopt` — retrofit foreign tooling
+
+On a project with hand-crafted (non-onboard) Claude config — e.g. a fresh repo where you manually create a `CLAUDE.md` + `.claude/rules/` without onboard:
+
+```bash
+# In a repo with hand-crafted CLAUDE.md / .claude/ but NO onboard-meta.json:
+/onboard:start
+# At Phase 1 "Existing config", choose Adopt (Recommended)
+```
+- [ ] The "Existing config" prompt offers `Adopt` / `Update` / `Start fresh` / `Cancel`; choosing **Adopt** runs the `adopt` skill
+- [ ] Adopt synthesizes a `mode: "retrofit"` baseline: writes `onboard-meta.json` (each artifact tracked `origin: "adopted"` in `artifactProvenance`) + snapshots, but **never modifies a hand-crafted file**
+- [ ] A subsequent `/onboard:update` treats adopted artifacts as diffable-with-caution and defers modernization (e.g. adding maintenance headers) to per-item approval
 
 ---
 
-## Phase 6: CI & Audit Infrastructure
+## Scenario D: CI & Audit Infrastructure
 
-**PRs covered:** #17, #19, #31, #40
-
-### 6A: `/validate` from repo root
+### D1: `/validate` from repo root
 
 ```bash
 cd /path/to/claude-plugins
@@ -276,51 +283,96 @@ claude
 ```
 - [ ] All checks pass (structure, manifests, references, ShellCheck)
 
-### 6B: Notify security hardening (PR #31)
+### D2: Notify security hardening
 
 ```bash
-# From a project with notify configured:
-# Trigger a stop event (let Claude finish a task with notify hooks active)
+# From a project with notify configured, trigger a Stop event (let Claude finish a task with notify hooks active)
 ```
-- [ ] Notification fires
-- [ ] Timestamp file written at `$TMPDIR/claude-notify-session-start-$UID` (not a symlink)
+- [ ] Notification fires; the session-start timestamp file is a regular file (not a symlink) at `$TMPDIR/claude-notify-session-start-$UID`
 
-### 6C: Tooling gap audit workflow (PR #40)
+### D3: Tooling gap audit workflow
 
-1. Go to **GitHub → Actions → Tooling Gap Audit → Run workflow** (workflow_dispatch)
-2. Select branch: `develop`
-3. Click **Run workflow**
-
-- [ ] Workflow starts and Phase 1 (Analyze) begins
-- [ ] Phase 1 completes — check for `.audit-data-<date>.json` in the commit
-- [ ] Phase 2 (Report) completes — check for `<date>-gap-report.md` in the commit
-- [ ] PR opens against `develop` with title `chore(audit): tooling gap report <date>`
-- [ ] Report follows the strict schema (Summary, Surface Snapshot, Coverage, Patterns, Gap List, Baseline Changes sections)
+1. **GitHub → Actions → Tooling Gap Audit → Run workflow** (workflow_dispatch), branch `develop`, **Run workflow**.
+- [ ] Phase 1 (Analyze) begins and completes — `.audit-data-<date>.json` appears in the commit
+- [ ] Phase 2 (Report) completes — `<date>-gap-report.md` appears in the commit
+- [ ] A PR opens against `develop` titled `chore(audit): tooling gap report <date>`, following the strict schema (Summary, Surface Snapshot, Coverage, Patterns, Gap List, Baseline Changes)
 
 **No-change cycle:**
-4. Re-trigger workflow_dispatch immediately
-- [ ] Workflow completes but no new PR opens (content identical to previous report)
+2. Re-trigger workflow_dispatch immediately.
+- [ ] Workflow completes but no new PR opens (content identical to the previous report)
+
+---
+
+## Scenario E: Durable Phase Tracking
+
+The v3 phase-tracking feature surfaces each phase as a durable `TaskCreate`/`TaskUpdate` task and supports checkpoint resume. Verify the live task transitions and the resume probe. Contract: `onboard/skills/start/references/phase-tracking.md`.
+
+### E1: `/onboard:start` task list
+
+On a fresh `/onboard:start` run (use `test-nextjs` before Scenario A, or a fresh clone), watch the task list (the in-session task panel):
+
+- [ ] At Step 0, **8** tasks are created up front, all `pending`, with subjects `onboard:phase:0:guard` … `onboard:phase:7:handoff`
+- [ ] `onboard:phase:0:guard` transitions to `completed` immediately (the guard ran/was skipped)
+- [ ] Each subsequent phase task goes `in_progress` **before** its work begins (and before any agent/Skill dispatch) and `completed` after — exactly one task `in_progress` at a time
+- [ ] The internal skills (`research`, `wizard`, `generate`) and the dispatched agents (`codebase-analyzer`, `config-generator`) create **no** tasks of their own — only the orchestrator transitions the list
+
+### E2: HARD GATE task states
+
+During Phase 5 (Plan → Preview → gate):
+- [ ] While awaiting the gate decision, `onboard:phase:5:plan-gate` stays **`in_progress`** (the enum has no "awaiting" state)
+- [ ] **Approve** → `onboard:phase:5:plan-gate` → `completed`, then Phase 6 runs
+- [ ] **Adjust** → `onboard:phase:5:plan-gate` stays `in_progress` (no status change) while the gate loops back to the wizard summary
+- [ ] **Cancel** → `onboard:phase:5:plan-gate`, `:6:generation`, and `:7:handoff` are all marked **`deleted`**; tasks 0–4 remain `completed`; **nothing is written to disk** and the run prints "Cancelled — no files were created."
+
+### E3: `currentPhase` anchor in meta
+
+```bash
+cat .claude/onboard-meta.json | jq '.currentPhase'
+```
+- [ ] After Phase 6 generation returns, `onboard-meta.json.currentPhase` is the integer **`6`** (meta's first existence — the orchestrator, not the config-generator, writes it)
+- [ ] After Phase 7 handoff completes, `currentPhase` is flipped to the string **`"done"`**
+- [ ] On a **Cancel** run (E2), no `onboard-meta.json` is created at all (the gate precedes the only write phase) — there is no `currentPhase`
+
+### E4: Resume / Restart on re-run
+
+The cross-session resume anchor is the **durable on-disk artifacts**, not the task list.
+
+- [ ] **Probe 2 (post-research resume)** — interrupt a run after Phase 2 research (so `.claude/onboard-research.json` exists but `onboard-meta.json` does NOT). Re-run `/onboard:start`: a two-option **AskUserQuestion** (header `Resume?`) offers `Resume (Recommended)` / `Restart`. Choosing **Resume** rehydrates `research` from the dossier and re-confirms the wizard from `research.wizardInferences` (it does NOT skip the wizard), then continues forward through context → plan-gate → generation
+- [ ] **Probe 1 (generation-era resume)** — interrupt after Phase 6 but before Phase 7 (so `onboard-meta.json` has integer `currentPhase: 6`). Re-run `/onboard:start`: the same Resume/Restart offer appears; **Resume** finishes from Phase 7 Handoff
+- [ ] **Done meta → no resume** — after a fully completed run (`currentPhase: "done"`), re-running `/onboard:start` does **not** offer Resume — it routes to the existing-config flow (Adopt / Update / Start fresh)
+- [ ] **Restart** — choosing Restart marks leftover incomplete tasks `deleted`, creates a fresh list, and begins at Phase 0; a Restart that re-reaches Phase 6 is merge-aware (does not clobber user edits)
+- [ ] **Cancel-resume guard** — a list whose gate-or-later tasks are `deleted` (the Cancel signature) does NOT trigger a resume offer on a same-session re-run (treated as a clean start)
+
+### E5: update / evolve / adopt task lists
+
+Each user-facing entry point owns its own task list with a distinct subject prefix:
+
+- [ ] `/onboard:update` creates **8** tasks `onboard:update:phase:0:verify-baseline` … `:7:summary`; the gate task is `:5:approve-gate` (stays `in_progress` while awaiting approval; Cancel → `5/6/7` `deleted`)
+- [ ] `/onboard:evolve` creates **4** tasks `onboard:evolve:phase:0:detect-drift` … `:3:clear-entries`; **gateless** — every phase is a straight `in_progress → completed`, no `deleted`-on-cancel transition
+- [ ] `/onboard:adopt` creates **6** tasks `onboard:adopt:phase:0:detect-classify` … `:5:write-handoff`; the gate task is `:4:preview-gate`. When `adopt` is entered from `/onboard:update`'s missing-baseline guard, the two lists coexist and neither touches the other's tasks
 
 ---
 
 ## Sign-off
 
-Once all phases pass:
+Once all scenarios pass:
 
-| Phase | Status | Notes |
+| Scenario | Status | Notes |
 |---|---|---|
-| Phase 1 (automated) | [ ] Pass | `run-automated-checks.sh` — now includes URL convention, lifecycle-setup absence, wizard cap removal |
-| Phase 2 (nextjs init) | [ ] Pass | Expect findings-phase2-nextjs-v2.md with ≥30 pass / 0 fail (was 14 pass / 13 warn / 6 fail pre-sweep) |
-| Phase 3a (python) | [ ] Pass | |
-| Phase 3b (monorepo) | [ ] Pass | |
-| Phase 3c (empty) | [ ] Pass | |
-| Phase 4 (drift) | [ ] Pass | Expect findings-phase4-drift-v2.md — AskUserQuestion approval flow; auto-checked LSP for new-language |
-| Phase 5 (CI/audit) | [ ] Pass | |
+| Phase 1 (automated) | [ ] Pass | `run-automated-checks.sh` — 242 checks green |
+| A (nextjs start) | [ ] Pass | Comprehensive profile; full Phase 0–7 + telemetry. See `findings-phase2-nextjs-v2.md` |
+| B-a (python) | [ ] Pass | Minimal profile. See `findings-phase3a-python-v2.md` |
+| B-b (monorepo) | [ ] Pass | Standard profile. See `findings-phase3b-monorepo-v2.md` |
+| B-c (empty) | [ ] Pass | Phase 0 stub + auto-promote. See `findings-phase3c-empty-v2.md` |
+| C (drift: update/evolve/adopt) | [ ] Pass | Batched approval; auto-checked LSP; re-research. See `findings-phase4-drift-v2.md` |
+| D (CI/audit) | [ ] Pass | See `findings-phase6-ci-audit-v2.md` |
+| E (phase-tracking) | [ ] Pass | Task list, HARD GATE states, `currentPhase`, Resume/Restart |
 
-**Release-ready:** All phases passed. Safe to merge develop → main.
+**Release-ready:** all scenarios passed. Safe to merge develop → main (merge commit, never squash).
 
-## Legend for this checklist
+## Legend
 
-- `(L#)`, `(M#)`, `(C#)` — finding identifiers from the 2026-04-16 release-gate fix sweep (see `tests/release-gate/findings-*.md` for context)
-- `(PR #NN)` — prior enhancement PRs (onboard 1.3.0→1.9.0 + audit infrastructure)
-- Where a check cites both, the behavior comes from the original PR and is tightened / corrected by the sweep fix.
+- **Phase 0–7** — the `/onboard:start` flow phases (Empty-Repo Guard / Recon / Research / Grounded Wizard / Plugin Detection & Context / Plan→Preview→Gate / Generation / Handoff).
+- **Profile** — Minimal / Standard / Comprehensive, chosen at the Phase 2 profile-select step; sets research depth + generation scope. There is no Custom profile and no Quick Mode in v3.
+- **Exchange / emission Step** — the wizard runs Exchanges 1–3 (tuning cards as Steps 1–7); generation emits the catalog as emission Steps 1–4 (MCP / Output Styles / LSP / Built-in Skills).
+- Scenario names (`nextjs` / `python` / `monorepo` / `empty` / `drift` / `ci-audit`) match the release-gate's own `setup-test-repos.sh` repos and `findings-*-v2.md` files — that is the test harness's structure, independent of onboard's phases.
