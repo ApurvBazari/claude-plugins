@@ -2,7 +2,7 @@
 
 # LSP Plugin Recommendations — Phase 7c
 
-Follow `references/lsp-plugin-catalog.md` for the 12-entry language→plugin mapping. Phase 7c recommends and installs official marketplace LSP plugins based on detected source-file presence. Onboard does NOT emit any project-level `.lsp.json` — installing the right plugin is the complete story (LSP config ships inside each plugin's manifest).
+Follow `lsp-plugin-catalog.md` for the 12-entry language→plugin mapping. Phase 7c recommends and installs official marketplace LSP plugins based on detected source-file presence. Onboard does NOT emit any project-level `.lsp.json` — installing the right plugin is the complete story (LSP config ships inside each plugin's manifest).
 
 **When to run**: After Phase 7b (Output Styles) and before Hooks. Runs once per generation; drift handling lives in `update`/`evolve`.
 

@@ -23,7 +23,7 @@ When `effectiveQualityGates` is present (from either `callerExtras.qualityGates`
 
 **Plugin availability check**: Before generating a hook entry for a `preCommit` / `postFeature` skill reference, verify the referenced plugin is actually in `effectivePlugins`. If missing, skip that hook entry silently and append a warning to `onboard-meta.json` under `warnings[]`. Never fail the generation.
 
-**Merge semantics**: All quality-gate hooks merge into `.claude/settings.json` following the existing merge strategy (see `references/hooks-guide.md` § Settings Merge Strategy). If a hook with the same matcher/event already exists, skip don't duplicate.
+**Merge semantics**: All quality-gate hooks merge into `.claude/settings.json` following the existing merge strategy (see `hooks-guide.md` § Settings Merge Strategy). If a hook with the same matcher/event already exists, skip don't duplicate.
 
 **Hook Status Telemetry**: While walking through the 4 hook categories (`sessionStart`, `preCommit`, `featureStart`, `postFeature`), onboard MUST record what was planned, what was actually generated, and what was skipped (and why) into a structured `hookStatus` object. This object is:
 
@@ -114,7 +114,7 @@ The mental model: `hookStatus` answers "how well did the Plugin Integration cont
 - **Invariant**: for every event key, `planned[key] - len(generated[key]) == (number of skipped[] entries whose `event` matches that key exactly)`. If this doesn't balance, the telemetry is broken — treat as a generation bug.
 - **Backward compat**: for pre-upgrade callers (no `hookType` fields, no `allowHttpHooks`), every key in `planned` / `generated` has NO type suffix — the shape is byte-identical to pre-upgrade fixtures. Type suffixes only appear when a caller/wizard explicitly used a non-command type.
 
-See `references/hooks-guide.md` for generated script templates, ShellCheck requirements, and concrete examples of sessionStart + featureStart + preCommit hooks.
+See `hooks-guide.md` for generated script templates, ShellCheck requirements, and concrete examples of sessionStart + featureStart + preCommit hooks.
 
 #### O6 — SessionStart reminder hook
 
@@ -439,7 +439,7 @@ Same as programmatic mode: read existing `.claude/settings.json` first, merge ho
 
 #### Advanced Event Hooks (from `qualityGates.<advanced-event>` or wizard opt-in)
 
-In addition to the four core quality-gate categories (sessionStart / preCommit / featureStart / postFeature), onboard emits hooks for nine advanced Claude Code events when the caller requests them or the wizard's advanced-hook step selects them. All templates live in `references/hooks-guide.md` § Advanced Event Templates — this section covers the generation contract only.
+In addition to the four core quality-gate categories (sessionStart / preCommit / featureStart / postFeature), onboard emits hooks for nine advanced Claude Code events when the caller requests them or the wizard's advanced-hook step selects them. All templates live in `hooks-guide.md` § Advanced Event Templates — this section covers the generation contract only.
 
 ##### Input sources (in priority order)
 
@@ -449,7 +449,7 @@ In addition to the four core quality-gate categories (sessionStart / preCommit /
 
 ##### Per-event inference rules
 
-| Event | Inference trigger | Template script (in `references/hooks-guide.md`) |
+| Event | Inference trigger | Template script (in `hooks-guide.md`) |
 |---|---|---|
 | `SessionEnd` | Always emit (safe cleanup stub) | `session-end.sh` |
 | `UserPromptSubmit` | `wizardAnswers.securitySensitivity === "high"` OR `hookify` in `effectivePlugins` | `user-prompt-preflight.sh` |
@@ -457,7 +457,7 @@ In addition to the four core quality-gate categories (sessionStart / preCommit /
 | `SubagentStart` | `enriched.enableTeams === true` | `subagent-start-audit.sh` |
 | `TaskCreated` | `enriched.enableTeams === true` | `task-created-check.sh` |
 | `TaskCompleted` | `enriched.enableTeams === true` AND analyzer detected a test command — replace the `__TEST_CMD__` placeholder in the template with the literal command (e.g. `npm test`, `pytest -q`). Skip this hook entirely if no test command was detected. | `task-completed-verify.sh` |
-| `FileChanged` | `enriched.enableEvolution === true` — use the drift-detection matcher set from `references/evolution-hooks-guide.md`; fall back to the generic lockfile matcher when the caller supplies no explicit matcher | `file-changed-notice.sh` or the drift scripts from evolution-hooks-guide |
+| `FileChanged` | `enriched.enableEvolution === true` — use the drift-detection matcher set from `evolution-hooks-guide.md`; fall back to the generic lockfile matcher when the caller supplies no explicit matcher | `file-changed-notice.sh` or the drift scripts from evolution-hooks-guide |
 | `ConfigChange` | Analyzer detected `.claude/settings.json` OR `.claude/rules/` under git version control (`versionControlledClaude === true`) — matcher `"project_settings"` | `config-change-warn.sh` |
 | `Elicitation` | `.mcp.json` present in the repo OR analyzer reports MCP servers in the stack — omit matcher unless caller names specific servers | `elicitation-audit.sh` |
 
@@ -510,7 +510,7 @@ Each entry passes through this 11-rule validator before the settings.json write.
 
 | Type | `generated[<key>]` array value | Physical file | Plugin-level source of truth |
 |---|---|---|---|
-| `command` | script basename (e.g., `session-end.sh`) | `${project}/.claude/hooks/<name>.sh` | template in `references/hooks-guide.md` |
+| `command` | script basename (e.g., `session-end.sh`) | `${project}/.claude/hooks/<name>.sh` | template in `hooks-guide.md` |
 | `prompt` | prompt filename (e.g., `user-prompt-secret-scan.prompt.md`) | `${project}/.claude/hooks/<name>.prompt.md` (copied verbatim from `promptRef` file OR written from `promptInline` text if >1 line) | optional default in `references/default-prompts/` |
 | `agent` | agent name (e.g., `code-reviewer`) | no new file — references existing agent via `type: "agent"` settings entry | `effectivePlugins` provides the agent |
 | `http` | URL (e.g., `https://audit.internal/e`) | no new file — URL lives inline in `settings.json` | caller-supplied |
@@ -519,10 +519,10 @@ Each entry passes through this 11-rule validator before the settings.json write.
 
 ##### Generation rules
 
-1. **Matcher-incompatible events MUST NOT emit a `matcher` field** in the settings entry. Applies to: `SessionEnd`, `UserPromptSubmit`, `SubagentStart`, `TaskCompleted`. See `references/hooks-guide.md` § Matcher Compatibility for the authoritative table. Silently ignoring an extraneous matcher is not acceptable — the generated JSON must be honest.
+1. **Matcher-incompatible events MUST NOT emit a `matcher` field** in the settings entry. Applies to: `SessionEnd`, `UserPromptSubmit`, `SubagentStart`, `TaskCompleted`. See `hooks-guide.md` § Matcher Compatibility for the authoritative table. Silently ignoring an extraneous matcher is not acceptable — the generated JSON must be honest.
 2. **Matcher-capable events MUST scope narrowly**. `PreCompact` defaults to `"auto"` (manual compactions stay quiet). `FileChanged` must specify a filename glob — omitting the matcher means "watch every file" and produces avoidable noise. `ConfigChange` defaults to `"project_settings"`. `Elicitation` omits the matcher only when the caller explicitly intends to audit every MCP server.
 3. **All advanced events are advisory by default** — the generated scripts always `exit 0`. The caller may upgrade `taskCreated` / `taskCompleted` to `mode: "blocking"` explicitly; all other events ignore `mode` (only advisory is supported because Claude Code does not honor `exit 2` on them).
-4. **Script generation**: copy the corresponding template from `references/hooks-guide.md` § Advanced Event Templates into `<project>/.claude/hooks/<script-name>`, make executable (`chmod +x`), verify `shellcheck -x` passes. Do NOT re-author the templates inline — the guide is authoritative.
+4. **Script generation**: copy the corresponding template from `hooks-guide.md` § Advanced Event Templates into `<project>/.claude/hooks/<script-name>`, make executable (`chmod +x`), verify `shellcheck -x` passes. Do NOT re-author the templates inline — the guide is authoritative.
 5. **Merge semantics**: same as quality-gate hooks — read existing `.claude/settings.json`, append the new hook entry under its event key, skip if a hook with the same matcher already exists. Never overwrite.
 6. **hookStatus telemetry**: every advanced event hook that is planned, generated, or skipped MUST appear in `hookStatus` under the `<Event>[:<Matcher>][:<Type>]` key. The type suffix is **omitted when type is `command`** (backward compatible — existing fixtures are unchanged). Examples: `"PreCompact:auto"` (command, no suffix), `"UserPromptSubmit:prompt"` (no matcher → single colon before type), `"Elicitation::http"` (no matcher + non-command type → double colon preserves position), `"FileChanged:package-lock.json|Cargo.lock"` (command with matcher). The canonical-shape invariant — `planned[event] - len(generated[event]) == count(skipped where event matches)` — applies equally.
 7. **Plugin availability**: when an advanced event's inference condition references an installed plugin (e.g., `hookify` for `UserPromptSubmit`), verify the plugin is in `effectivePlugins` before emitting. Missing → record in `hookStatus.skipped[]` with reason `plugin-not-installed`.
@@ -562,7 +562,7 @@ Utility hooks are generated alongside quality-gate hooks but are **NOT** tracked
 
 When `enableHarness` is true in the generation context, generate a `WorktreeCreate` hook that runs `init.sh` when the developer enters a worktree via `EnterWorktree`.
 
-**What to generate**: The script and settings.json entry from `references/hooks-guide.md` § WorktreeCreate hook (init.sh auto-runner).
+**What to generate**: The script and settings.json entry from `hooks-guide.md` § WorktreeCreate hook (init.sh auto-runner).
 
 **Why this is not in hookStatus**: `hookStatus` tracks only quality-gate hooks derived from `callerExtras.qualityGates` (see scope boundary above). The WorktreeCreate hook is infrastructure — it bootstraps development environments, not Plugin Integration discipline.
 

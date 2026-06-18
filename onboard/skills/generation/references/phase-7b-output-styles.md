@@ -2,7 +2,7 @@
 
 # Output Styles — Phase 7b
 
-Follow `references/output-styles-guide.md` for archetype inference, frontmatter schema, and `settings.local.json` merge rules. Follow `references/output-styles-catalog.md` for the 5 body templates.
+Follow `output-styles-guide.md` for archetype inference, frontmatter schema, and `settings.local.json` merge rules. Follow `output-styles-catalog.md` for the 5 body templates.
 
 **When to run**: After Phase 7a (MCP) and before Hooks are merged. Phase 7b runs once per generation; drift handling lives in `update`/`evolve`.
 

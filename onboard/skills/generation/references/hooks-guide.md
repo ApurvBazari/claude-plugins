@@ -211,7 +211,7 @@ Onboard ships exactly one default prompt template, used only by the inference pa
 
 | Template | Path (inside onboard plugin) | Used when |
 |---|---|---|
-| `user-prompt-secret-scan.md` | `skills/generation/references/default-prompts/user-prompt-secret-scan.md` | `UserPromptSubmit` inference path fires `hookType: "prompt"` (i.e., `wizardAnswers.securitySensitivity === "high"`) and no caller/wizard prompt was supplied (see EC6 in plan) |
+| `user-prompt-secret-scan.md` | `default-prompts/user-prompt-secret-scan.md` | `UserPromptSubmit` inference path fires `hookType: "prompt"` (i.e., `wizardAnswers.securitySensitivity === "high"`) and no caller/wizard prompt was supplied (see EC6 in plan) |
 
 All other prompt-type hooks (for `TaskCreated`, `Stop`, etc.) require the caller or wizard to supply `promptRef` / `promptInline` explicitly — there are no canned defaults outside `UserPromptSubmit`.
 
@@ -1141,8 +1141,8 @@ exit 0
 
 ### Cross-reference
 
-- The legacy `FileChanged` drift pipeline (`detect-dep-changes.sh`, `detect-config-changes.sh`, `detect-structure-changes.sh`) stays in `references/evolution-hooks-guide.md`. That guide now cross-references this section for the base advisory template; the drift-specific scripts are unchanged.
-- Team-mode `TaskCreated` / `TaskCompleted` behavior likewise lives in `references/agent-teams-guide.md` for team-composition concerns; this section owns the event-level generation contract.
+- The legacy `FileChanged` drift pipeline (`detect-dep-changes.sh`, `detect-config-changes.sh`, `detect-structure-changes.sh`) stays in `evolution-hooks-guide.md`. That guide now cross-references this section for the base advisory template; the drift-specific scripts are unchanged.
+- Team-mode `TaskCreated` / `TaskCompleted` behavior likewise lives in `agent-teams-guide.md` for team-composition concerns; this section owns the event-level generation contract.
 
 ---
 
@@ -1174,7 +1174,7 @@ Each variant follows the canonical shape from § Hook Types Reference. Timeout d
 }
 ```
 
-The `prompt` field is populated at generation time from either `promptInline` (embedded verbatim) or by reading the file at `promptRef` (typically `.claude/hooks/<slug>.prompt.md`). The default prompt template for secret-scan ships at `onboard/skills/generation/references/default-prompts/user-prompt-secret-scan.md`.
+The `prompt` field is populated at generation time from either `promptInline` (embedded verbatim) or by reading the file at `promptRef` (typically `.claude/hooks/<slug>.prompt.md`). The default prompt template for secret-scan ships at `default-prompts/user-prompt-secret-scan.md`.
 
 **`http` variant** (prompt-telemetry / audit endpoint — requires `allowHttpHooks: true`):
 

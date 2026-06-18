@@ -2,7 +2,7 @@
 
 # Built-in Claude Code Skills — Phase 7d
 
-Follow `references/built-in-skills-catalog.md` for the 9-skill catalog, tier classification (core vs extra), detection signals, and stack-specific example templates.
+Follow `built-in-skills-catalog.md` for the 9-skill catalog, tier classification (core vs extra), detection signals, and stack-specific example templates.
 
 **When to run**: After Phase 7c (LSP) and before Hooks. Runs once per generation; drift handling lives in `update`/`evolve`.
 
