@@ -233,19 +233,19 @@ All projects use TDD (red-green-refactor); generation adapts to which workflow p
 
 ### MCP Servers (.mcp.json) — emission Step 1
 
-Follow `references/mcp-guide.md` for emission rules, catalog, and transport shapes. The emission-Step-1 generation contract — the 4 firing paths (A/B/C/SKIP), inputs, telemetry contract, the 8 emission steps (detect → pre-existing check → write `.mcp.json` → snapshot → `mcpStatus` → `mcp-setup.md` → auto-install → stdout summary), the verbatim `mcpStatus` JSON shape, and the Auto-install Plugins sub-procedure — is in `references/phase-7a-mcp.md`. Apply it verbatim. Runs after Recommended Plugins copy and before Hooks.
+Follow `references/mcp-guide.md` for emission rules, catalog, and transport shapes. The emission-Step-1 generation contract — the 4 firing paths (A/B/C/SKIP), inputs, telemetry contract, the 8 emission steps (detect → pre-existing check → write `.mcp.json` → snapshot → `mcpStatus` → `mcp-setup.md` → auto-install → stdout summary), the verbatim `mcpStatus` JSON shape, and the Auto-install Plugins sub-procedure — is in `references/mcp-emission.md`. Apply it verbatim. Runs after Recommended Plugins copy and before Hooks.
 
 ### Output Styles (.claude/output-styles/) — emission Step 2
 
-Follow `references/output-styles-guide.md` (archetype inference, frontmatter schema, `settings.local.json` merge rules) and `references/output-styles-catalog.md` (5 body templates). The emission-Step-2 generation contract — the 5 firing paths, inputs, telemetry contract, the 11 emission steps, the `settings.local.json` 4-case merge table, and the verbatim snapshot/`outputStyleStatus` JSON shapes plus enum values — is in `references/phase-7b-output-styles.md`. Apply it verbatim. Runs after emission Step 1 and before Hooks.
+Follow `references/output-styles-guide.md` (archetype inference, frontmatter schema, `settings.local.json` merge rules) and `references/output-styles-catalog.md` (5 body templates). The emission-Step-2 generation contract — the 5 firing paths, inputs, telemetry contract, the 11 emission steps, the `settings.local.json` 4-case merge table, and the verbatim snapshot/`outputStyleStatus` JSON shapes plus enum values — is in `references/output-styles-emission.md`. Apply it verbatim. Runs after emission Step 1 and before Hooks.
 
 ### LSP Plugin Recommendations — emission Step 3
 
-Follow `references/lsp-plugin-catalog.md` for the 12-entry language→plugin mapping. The emission-Step-3 generation contract — the 5 firing paths, inputs, telemetry contract, the 7 emission steps (detect via `detect-lsp-signals.sh` → resolve selected → CLAUDE.md subsection → metadata-first install → snapshot → `lspStatus` schema → stdout summary), and the verbatim snapshot/`lspStatus` JSON shapes — is in `references/phase-7c-lsp.md`. Apply it verbatim. Onboard emits NO project-level `.lsp.json`. Runs after emission Step 2 and before Hooks.
+Follow `references/lsp-plugin-catalog.md` for the 12-entry language→plugin mapping. The emission-Step-3 generation contract — the 5 firing paths, inputs, telemetry contract, the 7 emission steps (detect via `detect-lsp-signals.sh` → resolve selected → CLAUDE.md subsection → metadata-first install → snapshot → `lspStatus` schema → stdout summary), and the verbatim snapshot/`lspStatus` JSON shapes — is in `references/lsp-emission.md`. Apply it verbatim. Onboard emits NO project-level `.lsp.json`. Runs after emission Step 2 and before Hooks.
 
 ### Built-in Claude Code Skills — emission Step 4
 
-Follow `references/built-in-skills-catalog.md` for the 9-skill catalog, tier classification, detection signals, and stack-specific example templates. The emission-Step-4 generation contract — the 4 firing paths, inputs, telemetry contract (primary user of the `"documented"` status), the 7 emission steps (detect → resolve accepted → placement path → compose subsection → snapshot → telemetry → stdout summary), and the verbatim snapshot/`builtInSkillsStatus` JSON shapes plus `<!-- onboard:builtin-skills:start/end -->` marker rules — is in `references/phase-7d-builtin-skills.md`. Apply it verbatim. Runs after emission Step 3 and before Hooks.
+Follow `references/built-in-skills-catalog.md` for the 9-skill catalog, tier classification, detection signals, and stack-specific example templates. The emission-Step-4 generation contract — the 4 firing paths, inputs, telemetry contract (primary user of the `"documented"` status), the 7 emission steps (detect → resolve accepted → placement path → compose subsection → snapshot → telemetry → stdout summary), and the verbatim snapshot/`builtInSkillsStatus` JSON shapes plus `<!-- onboard:builtin-skills:start/end -->` marker rules — is in `references/builtin-skills-emission.md`. Apply it verbatim. Runs after emission Step 3 and before Hooks.
 
 ### Hooks (.claude/settings.json)
 
@@ -387,10 +387,10 @@ These carry the verbatim artifact templates and long emission enumerations for t
 - `references/skill-frontmatter-emission.md` — 7-step SKILL.md frontmatter emission + `skillStatus`
 - `references/agent-frontmatter-emission.md` — 7-step agent frontmatter emission + `agentStatus`
 - `references/tdd-workflow-and-recommended-plugins.md` — plugin-aware TDD matrix + `## Recommended Plugins` template
-- `references/phase-7a-mcp.md` — MCP `.mcp.json` emission (emission Step 1) + auto-install
-- `references/phase-7b-output-styles.md` — output-styles emission (emission Step 2) + settings.local.json merge
-- `references/phase-7c-lsp.md` — LSP plugin recommendations (emission Step 3)
-- `references/phase-7d-builtin-skills.md` — built-in Claude Code skills (emission Step 4)
+- `references/mcp-emission.md` — MCP `.mcp.json` emission (emission Step 1) + auto-install
+- `references/output-styles-emission.md` — output-styles emission (emission Step 2) + settings.local.json merge
+- `references/lsp-emission.md` — LSP plugin recommendations (emission Step 3)
+- `references/builtin-skills-emission.md` — built-in Claude Code skills (emission Step 4)
 - `references/hooks-generation.md` — quality-gate / O6 / O7 / standalone / advanced-event / utility hooks + `hookStatus`
 - `references/quality-checklist.md` — pre-exit generation verification checklist
 
