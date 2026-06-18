@@ -761,6 +761,14 @@ else
 fi
 echo ""
 
+# Phase numbering: onboard phase labels must be whole numbers in 0–7 (no fractional/lettered/out-of-range).
+if bash .github/scripts/check-phase-numbering.sh >/dev/null 2>&1; then
+  pass "phase-numbering: onboard phase labels are whole numbers (.github/scripts/check-phase-numbering.sh)"
+else
+  fail "phase-numbering: fractional/lettered phase label — run .github/scripts/check-phase-numbering.sh"
+fi
+echo ""
+
 # ─────────────────────────────────────────────────
 echo "═══════════════════════════════════════════"
 echo "## Summary"
