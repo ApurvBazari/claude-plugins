@@ -745,6 +745,22 @@ else
 fi
 echo ""
 
+# Ref integrity (paths): every path-shaped non-SKILL.md .md prose ref in onboard/ resolves or is exempt.
+if bash .github/scripts/check-ref-paths.sh >/dev/null 2>&1; then
+  pass "refs: non-SKILL.md .md path-refs resolve or are exempt (.github/scripts/check-ref-paths.sh)"
+else
+  fail "refs: broken non-SKILL.md .md path-ref — run .github/scripts/check-ref-paths.sh"
+fi
+echo ""
+
+# Ref integrity (paths) fixture: the resolver classifies real bugs vs lookalikes correctly.
+if bash tests/ref-paths/test-check-ref-paths.sh >/dev/null 2>&1; then
+  pass "refs: check-ref-paths.sh exemption logic (fixture) — real bug flagged, lookalikes exempt"
+else
+  fail "refs: check-ref-paths.sh fixture failed — see tests/ref-paths/test-check-ref-paths.sh"
+fi
+echo ""
+
 # ─────────────────────────────────────────────────
 echo "═══════════════════════════════════════════"
 echo "## Summary"
