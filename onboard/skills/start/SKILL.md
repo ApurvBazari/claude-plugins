@@ -72,11 +72,40 @@ Default: **Generate canonical stub**.
 - **Placeholder only** → write CLAUDE.md with the placeholder content from the stub procedure (below) but SKIP the `.claude/` directory. Return minimal handoff. Do not proceed to further phases.
 - **Generate canonical stub** (default) → follow `references/empty-repo-stub-procedure.md`. It prescribes: the 3 files, the canonical `onboard-meta.json` schema with all 7 generation-phase status keys set to `status: "skipped"` + `reason: "stub-mode-no-code"`, dynamic `pluginVersion` resolution (no hardcoded literals), and the 3-file atomic write order.
 
-After either stub path completes, run a minimal handoff (see the stub procedure's § Post-write handoff section) and return — do NOT continue to Phase 1 Recon.
+After either stub path completes, run a minimal handoff (see the stub procedure's § Post-write handoff section) and return — do NOT continue to Phase 1 Recon. The stub paths never reach Step 0 below, so no task list is created for a stub run.
+
+---
+
+## Step 0: Initialize Phase Tracking
+
+Runs **after** the Phase 0 guard (a stub/abort/placeholder run returns above and never reaches here) and **before** Phase 1 Recon. This wires the durable phase-task list that the rest of the flow transitions.
+
+First, read the contract: `references/phase-tracking.md`. It is the single source of truth for the task subjects, the `pending → in_progress → completed` (plus `deleted`) state machine, the HARD GATE mapping, and Cancel semantics. Follow it verbatim — do not re-derive its rules here.
+
+> **Resume handling** (checking for an existing incomplete `onboard:phase:` list and offering Resume / Restart, plus the `onboard-meta.json.currentPhase` anchor writes) is added in the meta-anchor step (task B3). For now, always create a **fresh** list.
+
+Create the **8** phase tasks via `TaskCreate`, all `status: "pending"`, one per phase, exactly per the contract's § Task list — `/onboard:start` table (subjects, `activeForm`):
+
+| Subject | `activeForm` |
+|---|---|
+| `onboard:phase:0:guard` | Checking for an empty repository |
+| `onboard:phase:1:recon` | Reconnoitering the codebase |
+| `onboard:phase:2:research` | Researching the codebase |
+| `onboard:phase:3:wizard` | Confirming preferences |
+| `onboard:phase:4:context` | Detecting plugins & building context |
+| `onboard:phase:5:plan-gate` | Planning & awaiting approval |
+| `onboard:phase:6:generation` | Generating tooling |
+| `onboard:phase:7:handoff` | Handing off |
+
+Phase 0 (`onboard:phase:0:guard`) already ran above — the moment the list exists, mark it `in_progress` then `completed` (the empty-repo branch was taken or skipped; either way the guard work is done). The remaining tasks (1–7) stay `pending` until their phase boundary below.
+
+Only this orchestrator touches the list. The dispatched agents (`codebase-analyzer`, `config-generator`) and every internally-invoked `Skill` (`research`, `wizard`, `generate`) are task-blind — the orchestrator owns every transition (per the contract's § Ownership).
 
 ---
 
 ## Phase 1: Recon (Automated Analysis)
+
+> **Phase transition (per `references/phase-tracking.md`):** `TaskUpdate(onboard:phase:1:recon → in_progress)` now, **before** the recon work begins and **before** dispatching the `codebase-analyzer` agent. Mark it `TaskUpdate(... → completed)` only after the analysis summary is confirmed at the end of this phase.
 
 ### Step: Check for Existing Claude Config
 
@@ -139,9 +168,13 @@ Once analysis completes, present a concise summary to the developer:
 
 Wait for confirmation. Incorporate any corrections before proceeding.
 
+> **Phase complete:** once the analysis summary is confirmed, `TaskUpdate(onboard:phase:1:recon → completed)`.
+
 ---
 
 ## Phase 2: Research
+
+> **Phase transition (per `references/phase-tracking.md`):** `TaskUpdate(onboard:phase:2:research → in_progress)` now, **before** the profile-select prompt and **before** invoking `Skill(onboard:research)`. The research skill is task-blind — it never touches the list. Mark it `TaskUpdate(... → completed)` after the research engine returns the validated dossier.
 
 ### Step: profile-select
 
@@ -176,9 +209,13 @@ Inform the developer before dispatching:
 
 For `minimal` depth the engine dispatches no specialists and returns a minimal dossier quickly (the fast/cheap path).
 
+> **Phase complete:** after the research engine returns the validated dossier, `TaskUpdate(onboard:phase:2:research → completed)`.
+
 ---
 
 ## Phase 3: Grounded Wizard
+
+> **Phase transition (per `references/phase-tracking.md`):** `TaskUpdate(onboard:phase:3:wizard → in_progress)` now, **before** invoking the `wizard` skill (which is task-blind). Mark it `TaskUpdate(... → completed)` after the wizard answers are gathered and the summary below is shown.
 
 Use the `wizard` skill to run the **grounded confirm/override surface**. It reads `research.wizardInferences` from the Phase 2 Research dossier and presents confirm/override cards (workflow fields), cold asks (`autonomyLevel` + intent + pain points), and tuning/detection cards — ~2–3 exchanges. There is no preset selection here (done in the Phase 2 profile-select step) and no Custom path.
 
@@ -197,11 +234,15 @@ After all questions are answered, present a summary:
 >
 > Next I'll show you a full preview of what I'll build before anything is written.
 
+> **Phase complete:** after the wizard answers are gathered and the summary above is shown, `TaskUpdate(onboard:phase:3:wizard → completed)`.
+
 ---
 
 ---
 
 ## Phase 4: Plugin Detection & Context
+
+> **Phase transition (per `references/phase-tracking.md`):** `TaskUpdate(onboard:phase:4:context → in_progress)` now, **before** the plugin-detection probes and the build-v3-context step. Mark it `TaskUpdate(... → completed)` after the context builder's validation passes.
 
 ### Step: plugin-detection
 
@@ -267,11 +308,15 @@ The builder emits a context object per the canonical schema. Key invariants:
 
 Run the builder's validation step before proceeding to Phase 6 Generation. If validation fails, refuse to dispatch — surface the error to the user with the offending field name.
 
+> **Phase complete:** after the context builder's validation passes, `TaskUpdate(onboard:phase:4:context → completed)`.
+
 ---
 
 ---
 
 ## Phase 5: Plan → Preview → Gate
+
+> **Phase transition (per `references/phase-tracking.md` § HARD GATE):** `TaskUpdate(onboard:phase:5:plan-gate → in_progress)` now, **before** the plan step. This task is the gate: it **stays `in_progress` for the entire phase** — through plan, preview, render, and *while awaiting the user's decision* (the enum has no "awaiting" state; `in_progress` is the truthful "we are here, waiting on you"). Its `completed`/`deleted` transition is driven by the gate decision in the gate step below — do **not** mark it `completed` at plan or preview.
 
 ### Step: plan (plan mode)
 
@@ -299,10 +344,10 @@ This is the review-before-implementation gate. **Nothing has been written yet.**
      - Skip / failure → **markdown gate**: present `previewModel` inline as markdown (Overview · What I learned · What I'll build grouped by tier with each artifact's purpose+outline · Key decisions · Risks). Optionally also write `.claude/onboard-plan.md`.
    - **`walkthrough:render` present but fails at runtime** → don't abort the gate; announce the degrade and fall through to the **markdown gate** above. (Invoking the skill is itself the presence test: an uninstalled skill surfaces as *absent* above; a runtime render error lands here.)
    - This degrades the HTML render only — never the gate.
-2. **Gate.** AskUserQuestion (single-select, header `"Generate?"`):
-   - **Approve & generate (Recommended)** → proceed to Phase 6 Generation (write mode).
-   - **Adjust** → return to the Phase 3 wizard summary to revise answers/profile, then re-run the Phase 4 build-v3-context step → Phase 5 plan → preview → gate.
-   - **Cancel** → stop. Write nothing. Print: "Cancelled — no files were created."
+2. **Gate.** AskUserQuestion (single-select, header `"Generate?"`). Map each decision to a task transition per `references/phase-tracking.md` § HARD GATE (the gate task was left `in_progress` at the Phase 5 transition above):
+   - **Approve & generate (Recommended)** → the user accepted → `TaskUpdate(onboard:phase:5:plan-gate → completed)`, then proceed to Phase 6 Generation (write mode).
+   - **Adjust** → the user wants changes → **no status change** (the gate task stays `in_progress`); return to the Phase 3 wizard summary to revise answers/profile, then re-run the Phase 4 build-v3-context step → Phase 5 plan → preview → gate. The gate loops.
+   - **Cancel** → the user declined → nothing was written (the gate precedes the only write phase). Per § Cancel → `deleted`: mark the gate task **and every later phase task** `deleted` — `TaskUpdate(onboard:phase:5:plan-gate → deleted)`, `TaskUpdate(onboard:phase:6:generation → deleted)`, `TaskUpdate(onboard:phase:7:handoff → deleted)`. Leave the already-`completed` tasks 0–4 as `completed` (they really ran). Then stop. Write nothing. Print: "Cancelled — no files were created."
 3. Only **Approve** advances to Phase 6 Generation. Until then, nothing is written to disk.
 
 **Guard Usage:** the install offer and the gate both use fixed-option single-selects (≥2 options), so the single-option guard in `.claude/rules/ask-user-question-guard.md` does not apply.
@@ -310,6 +355,8 @@ This is the review-before-implementation gate. **Nothing has been written yet.**
 ---
 
 ## Phase 6: Generation (via Skill(onboard:generate))
+
+> **Phase transition (per `references/phase-tracking.md`):** `TaskUpdate(onboard:phase:6:generation → in_progress)` now (only reached on **Approve** at the gate), **before** dispatching `Skill(onboard:generate)` / the `config-generator` agent — both are task-blind. Mark it `TaskUpdate(... → completed)` after generation returns and the file list is reported (the report-results step). The ecosystem-plugin-install step below still runs inside Phase 6.
 
 ### Step: model-resolution (no separate prompt)
 
@@ -386,6 +433,8 @@ After generation completes, list every file that was created:
 > | `.claude/agents/test-writer.md` | Test generation agent |
 > | `.claude/settings.json` | Hook configuration (auto-format, lint) |
 > | `.claude/onboard-meta.json` | Setup metadata |
+
+> **Phase complete:** after generation returns and the file list above is reported, `TaskUpdate(onboard:phase:6:generation → completed)`. The ecosystem-plugin-install step below is an optional tail of Phase 6 — it does not get its own task.
 
 ---
 
@@ -501,6 +550,8 @@ If no plugins were set up (none requested or none available), skip this report e
 
 ## Phase 7: Handoff (Education & Handoff)
 
+> **Phase transition (per `references/phase-tracking.md`):** `TaskUpdate(onboard:phase:7:handoff → in_progress)` now, **before** the handoff narration below. Mark it `TaskUpdate(... → completed)` after the Closing step — that completes the last phase of the run.
+
 ### Step: Explain Key Artifacts
 
 Briefly explain the most important generated artifacts:
@@ -542,6 +593,8 @@ If ecosystem plugins were set up, add:
 
 > Your project is now set up for AI-assisted development with Claude Code. Happy coding!
 
+> **Phase complete:** after the closing line, `TaskUpdate(onboard:phase:7:handoff → completed)`. All 8 phase tasks are now `completed` — the run is done. (The `onboard-meta.json.currentPhase = "done"` write that accompanies this is added in the meta-anchor step, task B3.)
+
 ## Key Rules
 
 - **Never dispatch `config-generator` directly** — always go through `Skill(onboard:generate)`. Direct dispatch bypasses the shared validation contract and the `dispatchedAsAgent` safety net.
@@ -549,3 +602,4 @@ If ecosystem plugins were set up, add:
 - **Settings.json is always merge-aware** — never overwrite `.claude/settings.json` outright. Read it first, merge hooks, then write. The file may already contain hooks from other sources.
 - **Notify setup is inform-only when global config is already complete** — the `globalConfigured` detection (config + hook both present) means no project-local offer is made. Never re-setup what is already wired.
 - **Halt and surface on context builder validation failure** — if the Phase 4 build-v3-context validation fails, refuse to dispatch and show the offending field. Never attempt generation with an incomplete or malformed context object.
+- **The orchestrator owns every phase-task transition** — per `references/phase-tracking.md`, Step 0 creates the 8 `onboard:phase:N:*` tasks; each phase marks its own task `in_progress` before its work (and before any agent/Skill dispatch) and `completed` after. Subagents (`codebase-analyzer`, `config-generator`) and internal skills (`research`, `wizard`, `generate`) are task-blind. The enum is exactly `pending`/`in_progress`/`completed`/`deleted` — no "blocked"/"cancelled". The Phase 5 gate stays `in_progress` while awaiting the decision; Approve → `completed`, Adjust → loop (no change), Cancel → mark tasks 5/6/7 `deleted`.
