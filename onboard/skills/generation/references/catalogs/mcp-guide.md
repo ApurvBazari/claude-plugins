@@ -4,7 +4,7 @@ Rules for emitting `.mcp.json` during emission Step 1 of the generation pipeline
 
 ## Purpose
 
-`.mcp.json` tells Claude Code which Model Context Protocol servers to start alongside the project. Onboard emits it automatically when the detected stack unambiguously benefits from a known MCP server. The source of truth for signal→MCP mapping is the probe table in `plugin-detection-guide.md` (MCP columns + "MCP Auto-Emit Signals" section).
+`.mcp.json` tells Claude Code which Model Context Protocol servers to start alongside the project. Onboard emits it automatically when the detected stack unambiguously benefits from a known MCP server. The source of truth for signal→MCP mapping is the probe table in `../plugins/plugin-detection-guide.md` (MCP columns + "MCP Auto-Emit Signals" section).
 
 ## Invocation Gate
 
@@ -148,7 +148,7 @@ The rule file is the long-form reference; the stdout block is the quick-glance.
 
 ## mcp-setup.md Template
 
-Emit this file at `.claude/rules/mcp-setup.md` when any emitted server requires auth OR when a pre-existing `.mcp.json` was detected. Use standard rules frontmatter (`paths: **` — project-wide context). Include the maintenance header per § Maintenance Header in `../SKILL.md`.
+Emit this file at `.claude/rules/mcp-setup.md` when any emitted server requires auth OR when a pre-existing `.mcp.json` was detected. Use standard rules frontmatter (`paths: **` — project-wide context). Include the maintenance header per § Maintenance Header in `../../SKILL.md`.
 
 Template body (fill the `{{ ... }}` placeholders from `mcpStatus.generated` + catalog metadata):
 

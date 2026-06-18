@@ -1,10 +1,10 @@
-<!-- Extracted from ../SKILL.md via progressive-disclosure. Content is verbatim emission spec / templates. -->
+<!-- Extracted from ../../SKILL.md via progressive-disclosure. Content is verbatim emission spec / templates. -->
 
 # Skill Frontmatter Emission
 
 Every generated `SKILL.md` carries YAML frontmatter. The generator computes the full surface — `name`, `description`, `user-invocable` / `disable-model-invocation`, plus up to six additional fields (`allowed-tools`, `model`, `effort`, `paths`, `context`, `agent`) — based on archetype inference, wizard-level defaults, and a per-skill developer confirmation step.
 
-**Step 1 — Classify each candidate into an archetype.** Use the draft description + generation rationale (pain point / stack / workflow gap). Five archetypes live in `skills-guide.md` § Per-archetype defaults: `research-only`, `scaffolder`, `reviewer`, `orchestrator`, `workflow-specific`. Classification signals are documented in that table and must not be restated here.
+**Step 1 — Classify each candidate into an archetype.** Use the draft description + generation rationale (pain point / stack / workflow gap). Five archetypes live in `../guides/skills-guide.md` § Per-archetype defaults: `research-only`, `scaffolder`, `reviewer`, `orchestrator`, `workflow-specific`. Classification signals are documented in that table and must not be restated here.
 
 **Step 2 — Compose archetype defaults with wizard tuning.** Read `wizardAnswers.skillTuning` (may be absent — treat absence as `{ mode: "defaults" }`):
 

@@ -138,7 +138,7 @@ Additional guidelines:
 - **Keep short** — 30-80 lines
 - **Don't repeat root content** — Only add what's specific to this directory
 - **Focus on patterns** — What files look like here, what conventions apply here
-- **Skill recommendations block** (plugin-aware): When `callerExtras.installedPlugins` is non-empty and the directory's role maps to an installed-plugin capability, append a `## Skill recommendations` block after the conventions section. Rules in `../SKILL.md` § Per-Directory Skill Annotations.
+- **Skill recommendations block** (plugin-aware): When `callerExtras.installedPlugins` is non-empty and the directory's role maps to an installed-plugin capability, append a `## Skill recommendations` block after the conventions section. Rules in `../../SKILL.md` § Per-Directory Skill Annotations.
 
 Example subdirectory CLAUDE.md:
 ```markdown
@@ -185,13 +185,13 @@ Generated root CLAUDE.md includes an Output styles subsection inside Plugin Inte
 
 Do not re-emit built-in styles as files — they're Anthropic-provided. Only custom styles live in `.claude/output-styles/`.
 
-The Plugin Integration subsection generation rules live in `../SKILL.md` § Plugin Integration Section Generation. For the authoring schema and archetype inference, see `output-styles-guide.md`. For the 5 custom style body templates, see `output-styles-catalog.md`.
+The Plugin Integration subsection generation rules live in `../../SKILL.md` § Plugin Integration Section Generation. For the authoring schema and archetype inference, see `../catalogs/output-styles-guide.md`. For the 5 custom style body templates, see `../catalogs/output-styles-catalog.md`.
 
 ## LSP Support Reference
 
 Generated root CLAUDE.md includes an LSP support subsection inside Plugin Integration when onboard has recommended or installed one or more marketplace LSP plugins (emission Step 3). The subsection documents:
 
-- **Installed LSP plugins** (from `lspStatus.accepted`): plugin name, covered language(s), and the language-server binary that must be present on `$PATH`. Pull the binary name and install prereq from `lsp-plugin-catalog.md`.
+- **Installed LSP plugins** (from `lspStatus.accepted`): plugin name, covered language(s), and the language-server binary that must be present on `$PATH`. Pull the binary name and install prereq from `../catalogs/lsp-plugin-catalog.md`.
 - **Recommended but declined** (from `lspStatus.skipped` when `reason === "user-declined"`): listed with a short note "run `/onboard:evolve` to install".
 - **Not re-emit as files**: LSP config lives inside each plugin's own `plugin.json` under `lspServers`. Onboard never writes a project-level `.lsp.json`.
 
@@ -210,7 +210,7 @@ Plugins surface diagnostics, go-to-definition, and hover docs inside Claude Code
 
 Omit the subsection entirely when `lspStatus.accepted` and `lspStatus.skipped` are both empty (no candidates detected). Keep the subsection under 10 lines.
 
-The emission rules live in `../SKILL.md` § LSP Plugin Recommendations — emission Step 3. For the language→plugin mapping, see `lsp-plugin-catalog.md`.
+The emission rules live in `../../SKILL.md` § LSP Plugin Recommendations — emission Step 3. For the language→plugin mapping, see `../catalogs/lsp-plugin-catalog.md`.
 
 ## Built-in Skills Reference
 
@@ -239,7 +239,7 @@ These Anthropic-provided skills are available in every Claude Code session — n
 
 Omit the subsection entirely when `builtInSkillsStatus.generated` is empty (developer declined all candidates). Keep the subsection under 15 lines.
 
-The emission rules live in `../SKILL.md` § Built-in Claude Code Skills — emission Step 4. For the skill catalog, detection signals, and stack-specific example templates, see `built-in-skills-catalog.md`.
+The emission rules live in `../../SKILL.md` § Built-in Claude Code Skills — emission Step 4. For the skill catalog, detection signals, and stack-specific example templates, see `../catalogs/built-in-skills-catalog.md`.
 
 ## Tone by Autonomy Level
 

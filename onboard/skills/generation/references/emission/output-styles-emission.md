@@ -1,8 +1,8 @@
-<!-- Extracted from ../SKILL.md via progressive-disclosure. Content is verbatim emission spec / templates. -->
+<!-- Extracted from ../../SKILL.md via progressive-disclosure. Content is verbatim emission spec / templates. -->
 
 # Output Styles — emission Step 2
 
-Follow `output-styles-guide.md` for archetype inference, frontmatter schema, and `settings.local.json` merge rules. Follow `output-styles-catalog.md` for the 5 body templates.
+Follow `../catalogs/output-styles-guide.md` for archetype inference, frontmatter schema, and `settings.local.json` merge rules. Follow `../catalogs/output-styles-catalog.md` for the 5 body templates.
 
 **When to run**: After emission Step 1 (MCP) and before Hooks are merged. emission Step 2 runs once per generation; drift handling lives in `update`/`evolve`.
 
@@ -23,7 +23,7 @@ Follow `output-styles-guide.md` for archetype inference, frontmatter schema, and
 
 **Telemetry contract**: `outputStyleStatus` MUST be present in `onboard-meta.json` after every generation. The SUPPRESS-PROMPT-ONLY family (`disableOutputStyleTuning`) MUST NOT collapse to `status: "skipped"` — that's the SKIP-PHASE family's behavior, and emission Step 2 has no SKIP-PHASE flag.
 
-**Step 1 — Classify firing archetypes.** Evaluate the 5 firing conditions from `output-styles-guide.md` § Archetype inference. Record the full firing set — even archetypes that won't be chosen — in `outputStyleStatus.planned[]` for telemetry.
+**Step 1 — Classify firing archetypes.** Evaluate the 5 firing conditions from `../catalogs/output-styles-guide.md` § Archetype inference. Record the full firing set — even archetypes that won't be chosen — in `outputStyleStatus.planned[]` for telemetry.
 
 **Step 2 — Apply wizard override.** Read `wizardAnswers.outputStyleTuning.archetypeOverride`:
 
@@ -42,7 +42,7 @@ Follow `output-styles-guide.md` for archetype inference, frontmatter schema, and
 - Skip Steps 6–8 for this style
 - Continue to Step 9 (telemetry) so the skip is visible
 
-**Step 5 — Compose frontmatter.** Combine catalog defaults from `output-styles-catalog.md` with internal tracking fields:
+**Step 5 — Compose frontmatter.** Combine catalog defaults from `../catalogs/output-styles-catalog.md` with internal tracking fields:
 
 | Field | Source |
 |---|---|
@@ -60,7 +60,7 @@ Follow `output-styles-guide.md` for archetype inference, frontmatter schema, and
 
 **Step 7 — Write the style file.** Emit `.claude/output-styles/<name>.md` with the frontmatter from Step 5 followed by the catalog body template. Project-specific markers (`<angle-bracket>` placeholders) are filled from `analysis.*`; drop the parent sentence when a marker can't be filled cleanly.
 
-**Step 8 — Write drift snapshot.** Write (or create if absent) `.claude/onboard-output-style-snapshot.json` with ONE entry per emitted style. Snapshot tracks frontmatter fields only — body edits never trigger drift. Pure JSON, no maintenance header. Multi-run accumulation: append, never prune (see `output-styles-guide.md` § Snapshot contract § Multi-run accumulation).
+**Step 8 — Write drift snapshot.** Write (or create if absent) `.claude/onboard-output-style-snapshot.json` with ONE entry per emitted style. Snapshot tracks frontmatter fields only — body edits never trigger drift. Pure JSON, no maintenance header. Multi-run accumulation: append, never prune (see `../catalogs/output-styles-guide.md` § Snapshot contract § Multi-run accumulation).
 
 ```jsonc
 {
@@ -74,7 +74,7 @@ Follow `output-styles-guide.md` for archetype inference, frontmatter schema, and
 }
 ```
 
-**Step 9 — Apply `settings.local.json` merge** (only if `wizardAnswers.outputStyleTuning.activationDefault === "write-to-settings"`). Apply the 4-case merge from `output-styles-guide.md` § settings.local.json merge rules:
+**Step 9 — Apply `settings.local.json` merge** (only if `wizardAnswers.outputStyleTuning.activationDefault === "write-to-settings"`). Apply the 4-case merge from `../catalogs/output-styles-guide.md` § settings.local.json merge rules:
 
 | Case | Action | Telemetry |
 |---|---|---|

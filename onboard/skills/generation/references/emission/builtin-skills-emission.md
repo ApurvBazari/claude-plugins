@@ -1,8 +1,8 @@
-<!-- Extracted from ../SKILL.md via progressive-disclosure. Content is verbatim emission spec / templates. -->
+<!-- Extracted from ../../SKILL.md via progressive-disclosure. Content is verbatim emission spec / templates. -->
 
 # Built-in Claude Code Skills — emission Step 4
 
-Follow `built-in-skills-catalog.md` for the 9-skill catalog, tier classification (core vs extra), detection signals, and stack-specific example templates.
+Follow `../catalogs/built-in-skills-catalog.md` for the 9-skill catalog, tier classification (core vs extra), detection signals, and stack-specific example templates.
 
 **When to run**: After emission Step 3 (LSP) and before Hooks. Runs once per generation; drift handling lives in `update`/`evolve`.
 
@@ -20,7 +20,7 @@ Follow `built-in-skills-catalog.md` for the 9-skill catalog, tier classification
 - `callerExtras.builtInSkills` (optional, programmatic) — see Path A above
 - `wizardAnswers.builtInSkills` (optional) — see Path A above
 
-**Telemetry contract**: `builtInSkillsStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | documented | skipped | declined | failed`) per the Default behavior matrix in `../../generate/SKILL.md`. **Built-in skills is the primary user of the `"documented"` value** — its "artifact" is a CLAUDE.md subsection rather than a separate file + snapshot, so `"documented"` is semantically more accurate than `"emitted"` when the phase runs. See emission Step 4 below for the firing paths.
+**Telemetry contract**: `builtInSkillsStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | documented | skipped | declined | failed`) per the Default behavior matrix in `../../../generate/SKILL.md`. **Built-in skills is the primary user of the `"documented"` value** — its "artifact" is a CLAUDE.md subsection rather than a separate file + snapshot, so `"documented"` is semantically more accurate than `"emitted"` when the phase runs. See emission Step 4 below for the firing paths.
 
 **Suppression**: Skip entirely when `callerExtras.disableBuiltInSkills: true` (scaffolded projects have placeholder code so detection signals are premature). When skipped, still emit a `builtInSkillsStatus` entry in meta.json:
 

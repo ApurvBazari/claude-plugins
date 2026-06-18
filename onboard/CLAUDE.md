@@ -101,11 +101,16 @@ Internal building blocks (`user-invocable: false` — hidden from menu):
 
 ## Reference Organization
 
-`generation/references/` is the single source of truth:
+`generation/references/` is the single source of truth, organized into six functional subfolders (plus `default-prompts/` for shipped hook prompt templates):
 
-**Core guides**: claude-md-guide, rules-guide, hooks-guide, skills-guide, agents-guide, collaboration-guide
-**Catalog guides**: mcp-guide, output-styles-guide, output-styles-catalog, lsp-plugin-catalog, built-in-skills-catalog
-**Extended guides**: harness-design, ci-cd-templates, evolution-hooks-guide, sprint-contracts, agent-teams-guide, worktree-workflow
+- **`guides/`** — authoring guides: claude-md-guide, rules-guide, hooks-guide, skills-guide, agents-guide, collaboration-guide, aci-design-guide
+- **`catalogs/`** — catalogs + their authoring guides: mcp-guide, output-styles-guide, output-styles-catalog, lsp-plugin-catalog, built-in-skills-catalog
+- **`emission/`** — per-artifact emission specs: mcp-emission, output-styles-emission, lsp-emission, builtin-skills-emission, skill-frontmatter-emission, agent-frontmatter-emission, hooks-generation, plugin-integration-section, quality-checklist
+- **`extended/`** — harness/team/CI extended scope: harness-design, ci-cd-templates, evolution-hooks-guide, sprint-contracts, agent-teams-guide, worktree-workflow, tdd-workflow-and-recommended-plugins
+- **`plugins/`** — plugin detection/drift/surface: plugin-detection-guide, plugin-drift-detection, plugin-surface-probe
+- **`research/`** — v3 research consumption: research-consumption, re-research-merge, verify-backlog-seeding
+
+Path convention: the generation skill (and other skills) cite a reference as `references/<group>/<file>.md`. Between two reference files, use a bare `<file>.md` for same-subfolder siblings and `../<group>/<file>.md` across subfolders.
 
 ## Key Patterns
 

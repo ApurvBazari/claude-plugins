@@ -164,20 +164,20 @@ echo "### 7. New artifact existence (PRs #34-#40)"
 
 ARTIFACT_FILES=(
   # PR #34 — Hook expansion
-  onboard/skills/generation/references/hooks-guide.md
+  onboard/skills/generation/references/guides/hooks-guide.md
   # PR #35 — MCP generation
   onboard/scripts/install-plugins.sh
-  onboard/skills/generation/references/mcp-guide.md
+  onboard/skills/generation/references/catalogs/mcp-guide.md
   # PR #36 — Agent frontmatter
-  onboard/skills/generation/references/agents-guide.md
+  onboard/skills/generation/references/guides/agents-guide.md
   # PR #37 — Output styles
-  onboard/skills/generation/references/output-styles-catalog.md
-  onboard/skills/generation/references/output-styles-guide.md
+  onboard/skills/generation/references/catalogs/output-styles-catalog.md
+  onboard/skills/generation/references/catalogs/output-styles-guide.md
   # PR #38 — LSP
   onboard/scripts/detect-lsp-signals.sh
-  onboard/skills/generation/references/lsp-plugin-catalog.md
+  onboard/skills/generation/references/catalogs/lsp-plugin-catalog.md
   # PR #39 — Built-in skills
-  onboard/skills/generation/references/built-in-skills-catalog.md
+  onboard/skills/generation/references/catalogs/built-in-skills-catalog.md
   # PR #40 — Audit infrastructure
   .claude/audit-baseline.json
   .claude/prompts/tooling-gap-audit-analyze.md
@@ -324,7 +324,7 @@ else
   fail "4b: config-generator missing the metadata.research write"
 fi
 
-RC="onboard/skills/generation/references/research-consumption.md"
+RC="onboard/skills/generation/references/research/research-consumption.md"
 GENERATION="onboard/skills/generation/SKILL.md"
 if [[ -f "$RC" ]] && grep -q "Research-Grounded Generation (v3)" "$GENERATION" && grep -q "research-consumption.md" "$GENERATION"; then
   pass "4b: research-consumption.md exists + linked from generation/SKILL.md with the gated section"
@@ -332,7 +332,7 @@ else
   fail "4b: research-consumption.md missing or not linked/gated in generation/SKILL.md"
 fi
 
-VB="onboard/skills/generation/references/verify-backlog-seeding.md"
+VB="onboard/skills/generation/references/research/verify-backlog-seeding.md"
 if [[ -f "$VB" ]] && grep -q "seed-if-absent" "$VB" && grep -q "verifiedClaims" "$VB"; then
   pass "4b: verify-backlog-seeding.md exists with seed-if-absent + verified-only source"
 else
@@ -353,7 +353,7 @@ else
   fail "4b: synthesis-and-dossier not wired (line 131/137)"
 fi
 
-SC="onboard/skills/generation/references/sprint-contracts.md"
+SC="onboard/skills/generation/references/extended/sprint-contracts.md"
 if grep -q "Round 5" "$SC" || grep -q "featureRoadmap.sprint1" "$SC"; then
   fail "4b: sprint-contracts.md still references the deleted Round-5/featureRoadmap mechanism"
 else
@@ -451,7 +451,7 @@ else
   fail "4c: evolve missing the scoped-silent / full-defer re-research path"
 fi
 
-RRM="onboard/skills/generation/references/re-research-merge.md"
+RRM="onboard/skills/generation/references/research/re-research-merge.md"
 GENERATION="onboard/skills/generation/SKILL.md"
 if [[ -f "$RRM" ]] && grep -q "Re-Research Merge-Aware Generation (v3)" "$GENERATION" && grep -q "re-research-merge.md" "$GENERATION"; then
   pass "4c: re-research-merge.md exists + linked from generation/SKILL.md with the gated section"
@@ -474,7 +474,7 @@ if grep -q "refreshedDimensions" "$CG" && grep -q "backlogMerged" "$CG"; then
 else
   fail "4c: config-generator missing the 4c telemetry fields"
 fi
-VB="onboard/skills/generation/references/verify-backlog-seeding.md"
+VB="onboard/skills/generation/references/research/verify-backlog-seeding.md"
 OBCLAUDE="onboard/CLAUDE.md"
 if grep -q "sourceClaim" "$VB" && grep -qi "Re-research merge" "$VB"; then
   pass "4c: verify-backlog-seeding has the merge path + sourceClaim provenance"
@@ -539,7 +539,7 @@ if grep -qi "research self-audit" "$CG"; then
 else
   fail "5: config-generator missing the research self-audit (start summary alone is not subagent-visible)"
 fi
-VB="onboard/skills/generation/references/verify-backlog-seeding.md"
+VB="onboard/skills/generation/references/research/verify-backlog-seeding.md"
 if grep -qiE "sha-?256" "$VB" && grep -qi "without.*:line\|line.*stripped\|pathNoLine" "$VB"; then
   pass "5: sourceClaim algorithm pinned (SHA-256, line-stripped path)"
 else
@@ -551,7 +551,7 @@ else
   fail "5: sourceClaim preimage still hashes raw statement+evidence"
 fi
 FE="onboard/agents/feature-evaluator.md"
-VB="onboard/skills/generation/references/verify-backlog-seeding.md"
+VB="onboard/skills/generation/references/research/verify-backlog-seeding.md"
 if grep -q "test-gap" "$FE" && grep -qi "security" "$FE" && grep -qi "obsolete" "$FE"; then
   pass "5: feature-evaluator routes research categories + skips obsolete"
 else
@@ -567,8 +567,8 @@ if grep -q "PASS | FAIL | OBSOLETE" "$FE" && grep -qi "Obsolete (skipped)" "$FE"
 else
   fail "5: feature-evaluator obsolete outcome not first-class in Output Format"
 fi
-VB="onboard/skills/generation/references/verify-backlog-seeding.md"
-RC="onboard/skills/generation/references/research-consumption.md"
+VB="onboard/skills/generation/references/research/verify-backlog-seeding.md"
+RC="onboard/skills/generation/references/research/research-consumption.md"
 EVOLVE="onboard/skills/evolve/SKILL.md"
 if grep -qi "primary and only" "$VB" && ! grep -qi "fallback writer" "$VB"; then
   pass "5: A1 — stale fallback-writer prose replaced"

@@ -2,7 +2,7 @@
 
 Shared procedure for detecting drift between a project's prior plugin baseline and currently-installed plugins. Used by `onboard:update` (Step 4b), `onboard:evolve` (Step 0), and `onboard:generate` (probe fallback when `callerExtras.installedPlugins` is absent).
 
-Application rules (CLAUDE.md section markers, hook scaffolding, autonomyLevel downgrade) live in `../../evolve/references/plugin-integration-rules.md`. This document is scoped to **detection and diff** only.
+Application rules (CLAUDE.md section markers, hook scaffolding, autonomyLevel downgrade) live in `../../../evolve/references/plugin-integration-rules.md`. This document is scoped to **detection and diff** only.
 
 ## Baseline Resolution
 
@@ -70,20 +70,20 @@ For empty-baseline runs, add the label from the Baseline Resolution section abov
 
 ## Application Hand-off
 
-Once the developer approves the drift changes, the caller applies them by following `../../evolve/references/plugin-integration-rules.md`:
+Once the developer approves the drift changes, the caller applies them by following `../../../evolve/references/plugin-integration-rules.md`:
 
 - Section Marker Template — wrap / unwrap the Plugin Integration section in CLAUDE.md
 - Subsection Content Rules — which subsections render given the current plugin mix
 - qualityGates / phaseSkills / coveredCapabilities Derivation — via the pointer into `plugin-detection-guide.md`
 
-Hook script templates come from `hooks-guide.md` § Quality-Gate Hook Templates (same source used by start and evolve today — do not duplicate).
+Hook script templates come from `../guides/hooks-guide.md` § Quality-Gate Hook Templates (same source used by start and evolve today — do not duplicate).
 
 ## Post-apply Persistence
 
 After applying drift changes, update the appropriate metadata file:
 
 - `onboard:update` → write `currentPlugins` to `.claude/onboard-meta.json.detectedPlugins.installedPlugins` (create the field if missing). Also refresh `detectedPlugins.coveredCapabilities`, `detectedPlugins.qualityGates`, `detectedPlugins.phaseSkills`, and `hookStatus`.
-- `onboard:evolve` → write `currentPlugins` to `.claude/onboard-meta.json.detectedPlugins.installedPlugins` and refresh the other fields per `../../evolve/SKILL.md` Step 2b.3.
+- `onboard:evolve` → write `currentPlugins` to `.claude/onboard-meta.json.detectedPlugins.installedPlugins` and refresh the other fields per `../../../evolve/SKILL.md` Step 2b.3.
 
 Never fabricate a baseline — if there was none, do not invent one. Persist the new state so the next run has a comparison point.
 

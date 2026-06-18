@@ -26,10 +26,10 @@ If any source has drift, continue.
 
 ## Step 0: Detect Plugin Drift
 
-Plugin drift detection follows the shared procedure in `../generation/references/plugin-drift-detection.md`. Evolve-specific parameters:
+Plugin drift detection follows the shared procedure in `../generation/references/plugins/plugin-drift-detection.md`. Evolve-specific parameters:
 
 - **Baseline source** — `.claude/greenfield-meta.json.generated.toolingFlags.installedPlugins` or `.claude/onboard-meta.json.detectedPlugins.installedPlugins`. If neither file has this field, skip Step 0 entirely (evolve requires a baseline; use `/onboard:update` instead for projects without one).
-- **Probe list** — canonical list in `../generation/references/plugin-detection-guide.md` § Known Plugin Probe List. Also probe any plugin in `previousPlugins` that isn't in the known list (custom/third-party plugins).
+- **Probe list** — canonical list in `../generation/references/plugins/plugin-detection-guide.md` § Known Plugin Probe List. Also probe any plugin in `previousPlugins` that isn't in the known list (custom/third-party plugins).
 - **autonomyLevel source** — `onboard-meta.json.wizardAnswers.autonomyLevel`, falling back to `greenfield-meta.json.context.autonomyLevel` if present.
 
 Produce the `driftReport` described in `plugin-drift-detection.md` § Output Schema. If `added` and `removed` are both empty, skip to Step 1.
@@ -103,7 +103,7 @@ Read the root CLAUDE.md. Find the `<!-- onboard:plugin-integration:start -->` an
 
 Read the existing `autonomyLevel` from `greenfield-meta.json.context.autonomyLevel` (or fall back to `onboard-meta.json.wizardAnswers.autonomyLevel`).
 
-**For added plugins**: Derive new `qualityGates` and `phaseSkills` entries per `references/plugin-integration-rules.md` § qualityGates Derivation. Generate new hook scripts following the hook conventions from `../generation/references/hooks-guide.md` § Quality-Gate Hook Templates. Add corresponding entries to `.claude/settings.json` (merge-aware — read first, never overwrite existing non-plugin-integration hooks).
+**For added plugins**: Derive new `qualityGates` and `phaseSkills` entries per `references/plugin-integration-rules.md` § qualityGates Derivation. Generate new hook scripts following the hook conventions from `../generation/references/guides/hooks-guide.md` § Quality-Gate Hook Templates. Add corresponding entries to `.claude/settings.json` (merge-aware — read first, never overwrite existing non-plugin-integration hooks).
 
 **For removed plugins**: Identify hook scripts that reference removed plugins. Match by script basename against `greenfield-meta.json.generated.toolingFlags.hookStatus.generated` entries. Delete the hook script files. Remove corresponding entries from `.claude/settings.json`. If a `qualityGates` or `phaseSkills` entry references a removed plugin, drop it.
 
@@ -177,7 +177,7 @@ Run the same drift classification as `../update/SKILL.md` § 4b.6 Agent Frontmat
 
 - **user-edit** → default verb `accept-user-edit`. Update the snapshot to match the live file so subsequent runs stop flagging. Do NOT rewrite the live file. Set `frontmatterFields.<agent>.source = "user-tweaked"`. Log once.
 - **new-field** → apply by reading live `<agent>.md`, inserting only the missing field using the archetype-inferred value (composed with `wizardAnswers.agentTuning`). Update snapshot. Set `source = "user-confirmed"`.
-- **legacy-no-frontmatter** → auto-migrate. Classify the agent via `../generation/references/agents-guide.md` archetype rules using its name/description, compose with `wizardAnswers.agentTuning`, run the full validation pass from `../generation/SKILL.md` § Agent Frontmatter Emission Step 3, and prepend a YAML frontmatter block to the live file (keeping the body intact). Update snapshot. Set `source = "wizard-default"`. Append `legacy-migrated:<agent>` to `agentStatus.warnings` for audit visibility.
+- **legacy-no-frontmatter** → auto-migrate. Classify the agent via `../generation/references/guides/agents-guide.md` archetype rules using its name/description, compose with `wizardAnswers.agentTuning`, run the full validation pass from `../generation/SKILL.md` § Agent Frontmatter Emission Step 3, and prepend a YAML frontmatter block to the live file (keeping the body intact). Update snapshot. Set `source = "wizard-default"`. Append `legacy-migrated:<agent>` to `agentStatus.warnings` for audit visibility.
 - **missing-file** → invoke `onboard:generate` with `callerExtras.regenerateOnly: [".claude/agents/<agent>.md"]` and `callerExtras.disableAgentTuning: true`. The generator reuses the snapshot's frontmatter values so prior tweaks are preserved.
 - **user-tweaked** / **in-sync** → no action.
 
@@ -230,7 +230,7 @@ Update `onboard-meta.json.lspStatus` to reflect additions. The Step 2b.3 metadat
 Run the same drift classification as `../update/SKILL.md` § 4b.9 Built-in Skills Drift:
 
 1. Read `.claude/onboard-builtin-skills-snapshot.json` (`{ recommended, accepted }`). Missing file → `recommended: [], accepted: []` (pre-1.9.0 project).
-2. Re-run detection against the current codebase: check each extra skill's detection signal per `../generation/references/built-in-skills-catalog.md`. Core skills are always candidates.
+2. Re-run detection against the current codebase: check each extra skill's detection signal per `../generation/references/catalogs/built-in-skills-catalog.md`. Core skills are always candidates.
 3. Classify each candidate: `newSkill`, `newlyRelevant`, `staleCandidate`, `in-sync`.
 
 **Auto-apply rules** (evolve's "drain drift without asking" philosophy — bounded by explicit-consent floor for new built-in skill additions):
@@ -304,7 +304,7 @@ After updates are applied:
 3. **Ask for structural** — Dependency and config changes can be auto-applied. Structural changes (new CLAUDE.md files) require developer confirmation.
 4. **Preserve manual edits** — If the developer has customized CLAUDE.md beyond what onboard generated, preserve those customizations. Only touch the marker-delimited Plugin Integration section.
 5. **Show the diff** — Always show what was changed so the developer can verify.
-6. **Plugin drift is probe-based** — It does not depend on greenfield-drift.json entries. It's detected by comparing greenfield-meta.json against filesystem state at evolve-time, following `../generation/references/plugin-drift-detection.md`.
+6. **Plugin drift is probe-based** — It does not depend on greenfield-drift.json entries. It's detected by comparing greenfield-meta.json against filesystem state at evolve-time, following `../generation/references/plugins/plugin-drift-detection.md`.
 7. **Marker-delimited surgery** — Plugin Integration section updates use the `<!-- onboard:plugin-integration:start/end -->` markers. Never touch content outside the markers.
 8. **Subdirectory annotations refresh via marker + role attribute** — Plugin drift refreshes `<!-- onboard:skill-recommendations:start role="..." -->` blocks in subdirectory CLAUDE.md files without re-invoking scaffold-analyzer. Directories lacking markered blocks are not auto-created — run `/onboard:update` to surface them as new best-practice additions.
 9. **Merge-aware hook updates** — When modifying `.claude/settings.json`, read first, merge plugin-integration hooks, and preserve all other hooks (format, lint, evolution, etc.).

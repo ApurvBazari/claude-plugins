@@ -95,7 +95,7 @@ When generating the CLAUDE.md subsection, pick the example that best matches the
 
 - **Core skills have no detection signal** — they're universally useful and always pre-checked. The wizard still lets developers uncheck them.
 - **Extra skill detection is additive** — detecting a signal means the skill is pre-checked, not that it's forced. Developers can always add extras that weren't auto-detected.
-- **No new probe script needed** — all detection signals reference fields already present in the recon analysis report (native script-free recon — see `../../../agents/codebase-analyzer.md`).
+- **No new probe script needed** — all detection signals reference fields already present in the recon analysis report (native script-free recon — see `../../../../agents/codebase-analyzer.md`).
 - **Stack category for examples** is determined by the primary detected stack (highest source file count). When the analysis report identifies multiple frameworks, use the primary.
 
 ## Adding a new built-in skill
@@ -106,7 +106,7 @@ When Anthropic ships a new built-in skill worth recommending:
 2. Add stack-specific example rows to all four template tables.
 3. If the skill is an extra, add the detection signal field reference.
 4. Bump onboard minor version.
-5. No changes needed in `../../wizard/SKILL.md` or `../SKILL.md` — both consume the catalog generically via the 9-skill count and tier classification.
+5. No changes needed in `../../../wizard/SKILL.md` or `../../SKILL.md` — both consume the catalog generically via the 9-skill count and tier classification.
 
 ## Removing a built-in skill
 
@@ -114,5 +114,5 @@ If Anthropic deprecates or removes a built-in skill:
 
 1. Remove the row from the catalog table.
 2. Remove the corresponding example rows from all four template tables.
-3. The drift handler in `../../update/SKILL.md` Step 4b.9 will classify the skill as `staleCandidate` on the next run.
+3. The drift handler in `../../../update/SKILL.md` Step 4b.9 will classify the skill as `staleCandidate` on the next run.
 4. Bump onboard minor version.

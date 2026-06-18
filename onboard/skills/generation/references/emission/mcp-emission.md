@@ -1,8 +1,8 @@
-<!-- Extracted from ../SKILL.md via progressive-disclosure. Content is verbatim emission spec / templates. -->
+<!-- Extracted from ../../SKILL.md via progressive-disclosure. Content is verbatim emission spec / templates. -->
 
 # MCP Servers (.mcp.json) — emission Step 1
 
-Follow `mcp-guide.md` for emission rules, catalog, and transport shapes.
+Follow `../catalogs/mcp-guide.md` for emission rules, catalog, and transport shapes.
 
 **When to run**: After Recommended Plugins copy is resolved and before Hooks are merged. emission Step 1 runs once per generation; drift handling lives in `update`/`evolve`.
 
@@ -20,9 +20,9 @@ Follow `mcp-guide.md` for emission rules, catalog, and transport shapes.
 - `callerExtras.disableMCP` (optional, programmatic) — see Path SKIP above
 - Output of `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh" <project-root>` — canonical signal list
 
-**Telemetry contract**: `mcpStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | documented | skipped | declined | failed`) per the Default behavior matrix in `../../generate/SKILL.md`.
+**Telemetry contract**: `mcpStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | documented | skipped | declined | failed`) per the Default behavior matrix in `../../../generate/SKILL.md`.
 
-**Step 1 — Detect candidates**. Run the detection script; parse JSON output. Candidates marked `confidence: "always"` (context7) emit unconditionally. Candidates marked `confidence: "high"` emit when the signal evaluates unambiguously (see `mcp-guide.md` § Confidence Tiers). Dedupe by server name.
+**Step 1 — Detect candidates**. Run the detection script; parse JSON output. Candidates marked `confidence: "always"` (context7) emit unconditionally. Candidates marked `confidence: "high"` emit when the signal evaluates unambiguously (see `../catalogs/mcp-guide.md` § Confidence Tiers). Dedupe by server name.
 
 **Step 2 — Pre-existing file check**. If `.mcp.json` already exists at project root:
 - Do NOT overwrite
@@ -30,7 +30,7 @@ Follow `mcp-guide.md` for emission rules, catalog, and transport shapes.
 - Still emit `.claude/rules/mcp-setup.md` describing servers we *would* have emitted, so the user can reconcile manually
 - Skip the write in Step 3 and Step 4
 
-**Step 3 — Write `.mcp.json`**. Use the schema in `mcp-guide.md` § Config Shape. Secret references use the `${VAR}` substitution form — never inline real values.
+**Step 3 — Write `.mcp.json`**. Use the schema in `../catalogs/mcp-guide.md` § Config Shape. Secret references use the `${VAR}` substitution form — never inline real values.
 
 **Step 4 — Write drift snapshot**. Write `.claude/onboard-mcp-snapshot.json` with the exact contents of `.mcp.json` as written. This is the baseline that `onboard:update` / `onboard:evolve` diff against. Do not include a maintenance header — the snapshot is pure JSON consumed by tooling.
 
@@ -48,11 +48,11 @@ Follow `mcp-guide.md` for emission rules, catalog, and transport shapes.
 }
 ```
 
-**Step 6 — Write `.claude/rules/mcp-setup.md`** (conditional on at least one server requiring auth OR on `existedPreOnboard: true`). Use the template in `mcp-guide.md` § mcp-setup.md Template. Include per-server env-var requirements and OAuth steps. Omit when no auth is needed and no pre-existing file existed.
+**Step 6 — Write `.claude/rules/mcp-setup.md`** (conditional on at least one server requiring auth OR on `existedPreOnboard: true`). Use the template in `../catalogs/mcp-guide.md` § mcp-setup.md Template. Include per-server env-var requirements and OAuth steps. Omit when no auth is needed and no pre-existing file existed.
 
 **Step 7 — Auto-install matching plugins** (after the metadata-write step, see § Auto-install Plugins below). Running after metadata ensures telemetry is persisted even if install fails.
 
-**Step 8 — Post-emit stdout summary**. Print a terse block listing each emitted server and any pending auth steps. See `mcp-guide.md` § Post-emit Summary.
+**Step 8 — Post-emit stdout summary**. Print a terse block listing each emitted server and any pending auth steps. See `../catalogs/mcp-guide.md` § Post-emit Summary.
 
 #### Auto-install Plugins
 

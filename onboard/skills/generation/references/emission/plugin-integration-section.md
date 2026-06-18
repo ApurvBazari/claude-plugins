@@ -1,4 +1,4 @@
-<!-- Extracted from ../SKILL.md via progressive-disclosure. Content is verbatim emission spec / templates. -->
+<!-- Extracted from ../../SKILL.md via progressive-disclosure. Content is verbatim emission spec / templates. -->
 
 # Plugin Integration Section Generation
 
@@ -25,16 +25,16 @@ This project uses the following Claude Code plugins. Use them consistently.
 <!-- onboard:plugin-integration:end -->
 ```
 
-**Surface verification invariant** — before emitting ANY `/<plugin>:<slug>` reference in any subsection below, verify the ref via `callerExtras.pluginSurfaces[<plugin>]` per `plugin-surface-probe.md`:
+**Surface verification invariant** — before emitting ANY `/<plugin>:<slug>` reference in any subsection below, verify the ref via `callerExtras.pluginSurfaces[<plugin>]` per `../plugins/plugin-surface-probe.md`:
 
 - `surface.type === "command-or-skill"` or `"command-and-agent"` → slash refs are safe to emit from `surface.commands[]` and `surface.skills[]`
-- `surface.type === "hooks-only"` or `"hooks-and-agent"` → NEVER emit `/<plugin>:<slug>` refs. Instead emit the hook-behavior narrative per Rule R6 in `plugin-surface-probe.md`
+- `surface.type === "hooks-only"` or `"hooks-and-agent"` → NEVER emit `/<plugin>:<slug>` refs. Instead emit the hook-behavior narrative per Rule R6 in `../plugins/plugin-surface-probe.md`
 - `surface.type === "agent-only"` → emit agent refs (e.g., `subagent_type: '<plugin>:<agent>'`) only
 - `surface.type === "empty"` → skip the plugin in Plugin Integration entirely + log a warning
 
 The 2026-04-17 release-gate finding G.3 was a fabricated `/security-guidance:security-review` ref for a hooks-only plugin. This invariant prevents the regression class.
 
-**Disambiguation rules** — when multiple overlapping plugins are installed, apply the R1-R6 disambiguation rules from `plugin-surface-probe.md § Disambiguation rules` in order. Key effects:
+**Disambiguation rules** — when multiple overlapping plugins are installed, apply the R1-R6 disambiguation rules from `../plugins/plugin-surface-probe.md § Disambiguation rules` in order. Key effects:
 
 - **R1**: when `superpowers` + `feature-dev` are both installed, drop `feature-dev:feature-dev` as a top-level Per-feature workflow entry. Keep `feature-dev:code-architect` as an adjunct tool inside the superpowers flow. (Closes G.2, G.5.2.)
 - **R2**: when `code-review` + `pr-review-toolkit` are both installed, label them as `light review` vs `heavy review` so Claude picks the right one per PR context. (Closes G.5.3.)
@@ -59,7 +59,7 @@ The 2026-04-17 release-gate finding G.3 was a fabricated `/security-guidance:sec
 6. **Ecosystem** — for `hookify` (slash surface), emit slash refs normally. For `security-guidance` (hooks-only surface), apply R6: emit a narrative paragraph derived from `pluginSurfaces.security-guidance.hooks[]` describing the events fired + behaviors. Do NOT fabricate a `/security-guidance:*` slash ref.
 6.5. **UI feature work (conditional on R3)** — when `frontend-design` is installed AND a frontend framework is detected in the analysis, add a subsection declaring `frontend-design:frontend-design` owns web component / page / application generation. Non-UI feature work stays in the superpowers → feature-dev flow (subsection 3).
 7. **Output styles** (always — built-in styles are universal, emitted custom style is project-specific): Add an `### Output styles` subsection. List the three built-ins (`Default` / `Explanatory` / `Learning`) with one-line descriptions. If `outputStyleStatus.generated[]` is non-empty, also list the emitted custom style with its path and one-line purpose. State the activation path: open `/config` and pick from the menu, OR set `"outputStyle": "<name>"` in `.claude/settings.local.json`. Include the new-session caveat (changes take effect in the next new session). Do NOT reference built-in styles as files — they're Anthropic-provided. When `outputStyleStatus.generated[]` is empty, still emit the subsection to surface the built-ins.
-8. **Built-in Claude Code skills** (always — these are Anthropic-provided, not plugin-dependent): Add a `### Built-in Claude Code skills` subsection wrapped in `<!-- onboard:builtin-skills:start -->` / `<!-- onboard:builtin-skills:end -->` markers. For each skill in `builtInSkillsStatus.generated[]`, emit: skill name, one-line description, and a project-specific example from `built-in-skills-catalog.md` (matched to detected stack). Use the same narrative voice as other Plugin Integration subsections — answer "when would you use this on your project?" not just list names. Place this as the **last subsection** inside Plugin Integration, after Output styles. When `builtInSkillsStatus.generated[]` is empty, do not emit the subsection (no stub). When `effectivePlugins` is empty, emit as a standalone `## Built-in Claude Code skills` section with the same `<!-- onboard:builtin-skills:start/end -->` markers, placed after the last onboard-generated section (identified by maintenance header). See "Built-in Claude Code Skills — emission Step 4" below for the full emission spec.
+8. **Built-in Claude Code skills** (always — these are Anthropic-provided, not plugin-dependent): Add a `### Built-in Claude Code skills` subsection wrapped in `<!-- onboard:builtin-skills:start -->` / `<!-- onboard:builtin-skills:end -->` markers. For each skill in `builtInSkillsStatus.generated[]`, emit: skill name, one-line description, and a project-specific example from `../catalogs/built-in-skills-catalog.md` (matched to detected stack). Use the same narrative voice as other Plugin Integration subsections — answer "when would you use this on your project?" not just list names. Place this as the **last subsection** inside Plugin Integration, after Output styles. When `builtInSkillsStatus.generated[]` is empty, do not emit the subsection (no stub). When `effectivePlugins` is empty, emit as a standalone `## Built-in Claude Code skills` section with the same `<!-- onboard:builtin-skills:start/end -->` markers, placed after the last onboard-generated section (identified by maintenance header). See "Built-in Claude Code Skills — emission Step 4" below for the full emission spec.
 
 **Graceful degradation (EC8)**: When `superpowers` is NOT in `installedPlugins`, the "Research & brainstorming" subsection falls back to a generic version that recommends built-in `WebSearch`/`WebFetch` and a manual-discussion protocol. Do **not** reference `/superpowers:brainstorming` in the fallback — it would be a broken command. Add a note suggesting users install superpowers for the full experience.
 
@@ -98,5 +98,5 @@ The `role` attribute value must match one of the identified directory roles (`do
 - `ui/compose/CLAUDE.md` → *"For new screens, run `/superpowers:brainstorming` to explore layouts, then `frontend-design:frontend-design` to avoid generic AI aesthetics. Follow TDD via `superpowers:test-driven-development`."*
 - `data/db/CLAUDE.md` → *"Schema changes must update Room's exported schemas; run `/code-review:code-review` before committing migrations."*
 
-**Graceful degradation**: If `effectivePlugins` is empty, generate subdirectory CLAUDE.md files as usual without the Skill recommendations block. See `claude-md-guide.md` for the block format and additional examples.
+**Graceful degradation**: If `effectivePlugins` is empty, generate subdirectory CLAUDE.md files as usual without the Skill recommendations block. See `../guides/claude-md-guide.md` for the block format and additional examples.
 

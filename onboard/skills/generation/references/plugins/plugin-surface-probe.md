@@ -8,7 +8,7 @@ Before the 2026-04-18 refactor, the Plugin Integration template emitted `/<plugi
 
 ## When to invoke
 
-Called from `../../start/SKILL.md` Phase 4 (Probe Plugin Surfaces) and from `../../generate/SKILL.md` as a fallback when `callerExtras.pluginSurfaces` is absent. Outputs the `pluginSurfaces` map, which feeds the Plugin Integration template in `claude-md-guide.md`.
+Called from `../../../start/SKILL.md` Phase 4 (Probe Plugin Surfaces) and from `../../../generate/SKILL.md` as a fallback when `callerExtras.pluginSurfaces` is absent. Outputs the `pluginSurfaces` map, which feeds the Plugin Integration template in `../guides/claude-md-guide.md`.
 
 ## Inputs
 
@@ -181,7 +181,7 @@ else:
 
 ## Disambiguation rules
 
-When the assembled `installedPlugins` list triggers routing conflicts between plugins with overlapping descriptions (observed in release-gate findings G.1, G.4, G.5.2-6), apply these rules in order. Each rule outputs guidance consumed by the Plugin Integration template in `claude-md-guide.md`.
+When the assembled `installedPlugins` list triggers routing conflicts between plugins with overlapping descriptions (observed in release-gate findings G.1, G.4, G.5.2-6), apply these rules in order. Each rule outputs guidance consumed by the Plugin Integration template in `../guides/claude-md-guide.md`.
 
 ### R1 — Superpowers suppresses feature-dev top-level orchestration
 
@@ -262,11 +262,11 @@ When hook behavior cannot be resolved from `hooks.json`, fall back to filename-d
 
 ## Integration points
 
-- `../../start/SKILL.md § Phase 4` — primary caller during interactive start
-- `../../generate/SKILL.md` — fallback when `callerExtras.pluginSurfaces` is absent (programmatic path)
+- `../../../start/SKILL.md § Phase 4` — primary caller during interactive start
+- `../../../generate/SKILL.md` — fallback when `callerExtras.pluginSurfaces` is absent (programmatic path)
 - `plugin-drift-detection.md § Probe Procedure` — re-runs this procedure when drift is detected to pick up newly-surfaced or surface-changed plugins
-- `claude-md-guide.md § Plugin Integration template` — consumes the `pluginSurfaces` map and applies R1-R6 disambiguation rules
-- `../../evolve/SKILL.md` — reads `pluginSurfaces` from the meta file during drift evaluation
+- `../guides/claude-md-guide.md § Plugin Integration template` — consumes the `pluginSurfaces` map and applies R1-R6 disambiguation rules
+- `../../../evolve/SKILL.md` — reads `pluginSurfaces` from the meta file during drift evaluation
 
 ## Key rules
 

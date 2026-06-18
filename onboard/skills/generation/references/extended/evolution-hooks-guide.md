@@ -2,7 +2,7 @@
 
 Patterns for configuring FileChanged and SessionStart hooks that keep AI tooling in sync with the codebase.
 
-> **Scope note**: the base advisory templates for `FileChanged`, `TaskCreated`, and `TaskCompleted` live in [`hooks-guide.md` § Advanced Event Templates](./hooks-guide.md#advanced-event-templates). This guide owns the drift-detection-specific wiring (the `detect-*-changes.sh` scripts and the `.claude/greenfield-drift.json` format) and the team-mode overrides. When adding a new generic variant of any event, update `hooks-guide.md` — not this file — and cross-reference back here if drift-specific logic needs to layer on top.
+> **Scope note**: the base advisory templates for `FileChanged`, `TaskCreated`, and `TaskCompleted` live in [`hooks-guide.md` § Advanced Event Templates](../guides/hooks-guide.md#advanced-event-templates). This guide owns the drift-detection-specific wiring (the `detect-*-changes.sh` scripts and the `.claude/greenfield-drift.json` format) and the team-mode overrides. When adding a new generic variant of any event, update `../guides/hooks-guide.md` — not this file — and cross-reference back here if drift-specific logic needs to layer on top.
 
 ## Hook Architecture
 
@@ -158,7 +158,7 @@ AFTER (evolution hooks added):
 
 Agent-team mode upgrades the base advisory `task-created-check.sh` template to a blocking hook so vague task subjects stop task creation entirely.
 
-> **Base template**: see [`hooks-guide.md` § TaskCreated](./hooks-guide.md#taskcreated--task-is-created-via-taskcreate) for the advisory script and payload contract. The blocking override below differs only in the exit code (2 instead of 0) and the stderr message wording.
+> **Base template**: see [`hooks-guide.md` § TaskCreated](../guides/hooks-guide.md#taskcreated--task-is-created-via-taskcreate) for the advisory script and payload contract. The blocking override below differs only in the exit code (2 instead of 0) and the stderr message wording.
 
 ```json
 {
@@ -175,13 +175,13 @@ Agent-team mode upgrades the base advisory `task-created-check.sh` template to a
 }
 ```
 
-Exit code 2 blocks task creation and feeds the error message back to Claude. Generation rule: emit this blocking variant only when `enriched.enableTeams === true`. For non-team projects, use the advisory template from `hooks-guide.md`.
+Exit code 2 blocks task creation and feeds the error message back to Claude. Generation rule: emit this blocking variant only when `enriched.enableTeams === true`. For non-team projects, use the advisory template from `../guides/hooks-guide.md`.
 
 ### TaskCompleted Hook (blocking override)
 
 Agent-team mode upgrades the base advisory `task-completed-verify.sh` template to hard-require a passing test command before a task completes.
 
-> **Base template**: see [`hooks-guide.md` § TaskCompleted](./hooks-guide.md#taskcompleted--task-is-marked-completed). The blocking override below uses the detected test command directly and promotes failures to exit 2.
+> **Base template**: see [`hooks-guide.md` § TaskCompleted](../guides/hooks-guide.md#taskcompleted--task-is-marked-completed). The blocking override below uses the detected test command directly and promotes failures to exit 2.
 
 ```json
 {

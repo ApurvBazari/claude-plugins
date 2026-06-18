@@ -63,7 +63,7 @@ fi
 
 ## MCP Auto-Emit Signals
 
-The `MCP Server` column above describes what each plugin maps to. `.mcp.json` emission is driven by **stack signals**, not just plugin installation — we emit when the project's detected stack unambiguously benefits, whether or not the user has installed the corresponding plugin. When we emit and the plugin is not installed, we auto-install it (see `mcp-guide.md`).
+The `MCP Server` column above describes what each plugin maps to. `.mcp.json` emission is driven by **stack signals**, not just plugin installation — we emit when the project's detected stack unambiguously benefits, whether or not the user has installed the corresponding plugin. When we emit and the plugin is not installed, we auto-install it (see `../catalogs/mcp-guide.md`).
 
 | Stack signal | Emits MCP server | Confidence tier |
 |---|---|---|
@@ -88,7 +88,7 @@ Sequence:
 
 ## Surface Classification
 
-After building `installedPlugins`, classify each plugin's entry surface (commands / skills / hooks / agents) per `plugin-surface-probe.md`. The resulting `pluginSurfaces` map feeds the Plugin Integration template in `claude-md-guide.md` and prevents fabricated slash refs (release-gate finding G.3, 2026-04-17 — `/security-guidance:security-review` fabricated for a hooks-only plugin).
+After building `installedPlugins`, classify each plugin's entry surface (commands / skills / hooks / agents) per `plugin-surface-probe.md`. The resulting `pluginSurfaces` map feeds the Plugin Integration template in `../guides/claude-md-guide.md` and prevents fabricated slash refs (release-gate finding G.3, 2026-04-17 — `/security-guidance:security-review` fabricated for a hooks-only plugin).
 
 ## Detection Output Schema
 

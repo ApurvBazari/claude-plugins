@@ -1,10 +1,10 @@
-<!-- Extracted from ../SKILL.md via progressive-disclosure. Content is verbatim emission spec / templates. -->
+<!-- Extracted from ../../SKILL.md via progressive-disclosure. Content is verbatim emission spec / templates. -->
 
 # Agent Frontmatter Emission
 
 Every generated agent file carries YAML frontmatter. The generator computes the full surface — `name`, `description`, plus up to nine additional fields (`tools`, `disallowedTools`, `model`, `permissionMode`, `maxTurns`, `effort`, `isolation`, `color`, `background`) — based on archetype inference, wizard-level defaults, and a per-agent developer confirmation step. `proactive` is not a frontmatter field; the convention is encoded via a `description` prefix per the archetype table.
 
-**Step 1 — Classify each candidate into an archetype.** Use the agent's purpose description + generation rationale (team size, security signal, stack fit). Five archetypes live in `agents-guide.md` § Per-archetype defaults: `reviewer`, `validator`, `generator`, `architect`, `researcher`. Classification signals are documented in that table and must not be restated here. Ambiguous cases fall back to `researcher` and append an entry to `agentStatus.warnings` (`archetype-inference-fallback`).
+**Step 1 — Classify each candidate into an archetype.** Use the agent's purpose description + generation rationale (team size, security signal, stack fit). Five archetypes live in `../guides/agents-guide.md` § Per-archetype defaults: `reviewer`, `validator`, `generator`, `architect`, `researcher`. Classification signals are documented in that table and must not be restated here. Ambiguous cases fall back to `researcher` and append an entry to `agentStatus.warnings` (`archetype-inference-fallback`).
 
 **Step 2 — Compose archetype defaults with wizard tuning.** Read `wizardAnswers.agentTuning` (may be absent — treat absence as `{ mode: "defaults" }`):
 
@@ -38,7 +38,7 @@ Archetype-defined `disallowedTools` always win for semantic protection (reviewer
 
 **Step 5 — Write agent files.** Emit only fields that have concrete values — never emit empty strings or empty lists. Omitted fields preserve pre-feature-equivalent behavior exactly and keep pre-upgrade fixtures byte-identical. The description prefix convention (for encoding `proactive` intent per the archetype table) is applied inline in the final description string, not as a separate field.
 
-**Pre-write validation (HARD-FAIL)**: every agent file content MUST start with `---\n` AND contain at minimum `name:` and `description:` lines within the frontmatter block. The 2026-04-16 release-gate run produced 5 agents with 0 working frontmatter because this check did not exist. If the generated content is missing the frontmatter, **hard-fail** the generation rather than write a degraded markdown-sections-only file. See `agents-guide.md` § REQUIRED for the template.
+**Pre-write validation (HARD-FAIL)**: every agent file content MUST start with `---\n` AND contain at minimum `name:` and `description:` lines within the frontmatter block. The 2026-04-16 release-gate run produced 5 agents with 0 working frontmatter because this check did not exist. If the generated content is missing the frontmatter, **hard-fail** the generation rather than write a degraded markdown-sections-only file. See `../guides/agents-guide.md` § REQUIRED for the template.
 
 **Step 6 — Write drift snapshot (re-read pattern).** After writing each agent file, re-read it from disk, parse the actual YAML frontmatter, and use THAT for the snapshot entry. Do not trust the in-memory string — the snapshot must match what landed on disk. If re-read parse fails (no `---`, malformed YAML, missing `name`/`description`), **hard-fail** — the file failed to write what was intended. Snapshot is `.claude/onboard-agent-snapshot.json` — pure JSON, no maintenance header, consumed by `onboard:update` / `onboard:evolve` as the drift baseline.
 

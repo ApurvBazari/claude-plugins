@@ -209,7 +209,7 @@ Before generation, detect installed Claude Code plugins to enrich the output wit
 
 #### Probe Filesystem — canonical deep probe
 
-Follow the canonical procedure in `../generation/references/plugin-detection-guide.md` § Known Plugin Probe List. The probe walks **both** locations to catch sibling installs AND marketplace-installed plugins:
+Follow the canonical procedure in `../generation/references/plugins/plugin-detection-guide.md` § Known Plugin Probe List. The probe walks **both** locations to catch sibling installs AND marketplace-installed plugins:
 
 1. `${CLAUDE_PLUGIN_ROOT}/../<plugin-name>/` (dev monorepo siblings)
 2. `~/.claude/plugins/cache/*/<plugin-name>/[version/]` (marketplace installs, where `<version>` is often the literal string `"unknown"`)
@@ -220,11 +220,11 @@ Build `installedPlugins` from successful probes across the full catalog. Do not 
 
 #### Step: probe-plugin-surfaces
 
-For each entry in `installedPlugins`, run the surface-probe procedure in `../generation/references/plugin-surface-probe.md` to classify the plugin as `command-or-skill`, `hooks-only`, or `agent-only`. The resulting `pluginSurfaces` map feeds the Plugin Integration template to prevent fabricated slash refs (e.g., `/security-guidance:security-review` for a hooks-only plugin — release-gate finding G.3, 2026-04-17).
+For each entry in `installedPlugins`, run the surface-probe procedure in `../generation/references/plugins/plugin-surface-probe.md` to classify the plugin as `command-or-skill`, `hooks-only`, or `agent-only`. The resulting `pluginSurfaces` map feeds the Plugin Integration template to prevent fabricated slash refs (e.g., `/security-guidance:security-review` for a hooks-only plugin — release-gate finding G.3, 2026-04-17).
 
 #### Derive coveredCapabilities, qualityGates, phaseSkills
 
-Apply the derivation rules in `../generation/references/plugin-detection-guide.md`:
+Apply the derivation rules in `../generation/references/plugins/plugin-detection-guide.md`:
 - `coveredCapabilities` — combine per-plugin capabilities, deduplicated
 - `qualityGates` — filter defaults by `installedPlugins`, then downgrade `preCommit[].mode` per `wizardAnswers.autonomyLevel`
 - `phaseSkills` — filter defaults by `installedPlugins`; remove empty phases

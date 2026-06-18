@@ -89,7 +89,7 @@ When dispatched with `planOnly: true`, run the front half of generation — all 
 Before generating any artifacts, resolve the effective plugin list. This determines whether plugin-aware features (Plugin Integration section, per-directory skill annotations, plugin-aware agent skipping, plugin-referencing quality-gate hooks) are generated.
 
 1. If `callerExtras.installedPlugins` is present and non-empty → use it as `effectivePlugins` (programmatic mode — caller-provided data is authoritative)
-2. Else if `detectedPlugins.installedPlugins` is present and non-empty → use it as `effectivePlugins` (standalone mode — self-detected via `references/plugin-detection-guide.md`)
+2. Else if `detectedPlugins.installedPlugins` is present and non-empty → use it as `effectivePlugins` (standalone mode — self-detected via `references/plugins/plugin-detection-guide.md`)
 3. Else → `effectivePlugins` is empty (no plugins available)
 
 Similarly resolve:
@@ -103,7 +103,7 @@ Throughout this skill, **every reference to `callerExtras.installedPlugins` shou
 
 ### Root CLAUDE.md
 
-Follow `references/claude-md-guide.md` for structure and best practices.
+Follow `references/guides/claude-md-guide.md` for structure and best practices.
 
 - **100-200 lines max** — Concise but comprehensive (excluding regeneratable sections like Plugin Integration)
 - **Sections**: Project overview, tech stack summary, build/test/lint/deploy commands, key conventions, critical rules, directory structure overview
@@ -116,11 +116,11 @@ Follow `references/claude-md-guide.md` for structure and best practices.
 
 #### Plugin Integration Section + Per-Directory Skill Annotations
 
-When `effectivePlugins.length > 0`, emit a marker-delimited `## Plugin Integration` section into the root CLAUDE.md, and extend each generated subdirectory CLAUDE.md with a `## Skill recommendations` block. The full spec — the `<!-- onboard:plugin-integration:start/end -->` template, the surface-verification invariant, the R1-R6 disambiguation rules, the 8 content rules, graceful degradation (EC8), and the per-directory skill-annotation marker format — is in `references/plugin-integration-section.md`. Apply it verbatim; the emitted markers and template text are load-bearing for `/onboard:update` regeneration.
+When `effectivePlugins.length > 0`, emit a marker-delimited `## Plugin Integration` section into the root CLAUDE.md, and extend each generated subdirectory CLAUDE.md with a `## Skill recommendations` block. The full spec — the `<!-- onboard:plugin-integration:start/end -->` template, the surface-verification invariant, the R1-R6 disambiguation rules, the 8 content rules, graceful degradation (EC8), and the per-directory skill-annotation marker format — is in `references/emission/plugin-integration-section.md`. Apply it verbatim; the emitted markers and template text are load-bearing for `/onboard:update` regeneration.
 
 ### Subdirectory CLAUDE.md Files
 
-Follow `references/claude-md-guide.md` for content guidance.
+Follow `references/guides/claude-md-guide.md` for content guidance.
 - **Create when all three criteria are met**: (1) directory contains a meaningful share of source files, (2) has distinct conventions not covered by root, (3) represents an architectural boundary
 - **File share thresholds scaled by project size and profile**:
 
@@ -148,7 +148,7 @@ Follow `references/claude-md-guide.md` for content guidance.
 
 ### Path-Scoped Rules (.claude/rules/*.md)
 
-Follow `references/rules-guide.md` for patterns and YAML frontmatter.
+Follow `references/guides/rules-guide.md` for patterns and YAML frontmatter.
 
 - **YAML frontmatter** with `paths:` filter for scoping
 - **Only generate rules relevant to the detected stack**
@@ -158,21 +158,21 @@ Follow `references/rules-guide.md` for patterns and YAML frontmatter.
   - `components.md` — Component patterns, naming, structure (if frontend)
   - `security.md` — Security rules (if elevated/high security)
   - `styling.md` — Styling conventions (if specific approach detected)
-- **Config-derived rules**: When the analysis report includes a `Config & Pattern Analysis` section, use the extracted configs and observed patterns to generate rules that reflect the project's actual enforced standards. Follow the "Deriving Rules from Config Analysis" section in `references/rules-guide.md`. Never generate generic template rules when project-specific config data is available.
+- **Config-derived rules**: When the analysis report includes a `Config & Pattern Analysis` section, use the extracted configs and observed patterns to generate rules that reflect the project's actual enforced standards. Follow the "Deriving Rules from Config Analysis" section in `references/guides/rules-guide.md`. Never generate generic template rules when project-specific config data is available.
 - **Rule strictness matches `codeStyleStrictness`**: relaxed = guidelines, moderate = should, strict = must
 - **Plugin cross-references** (`allowPluginReferences` flag): When `effectivePlugins` is non-empty, rules MAY reference installed plugins instead of duplicating their guidance. For example, `testing.md` can say *"This project uses `superpowers:test-driven-development` — follow its red/green/refactor loop"* instead of restating TDD guidance inline. This is controlled by a generation flag `allowPluginReferences: true` (default `true` when `effectivePlugins` is non-empty, else `false`). Before referencing a plugin, verify it's in `effectivePlugins` — never create dangling refs. If a rule references a plugin and that plugin is later uninstalled, `/onboard:update` should refresh the rule to its standalone version.
 
 ### Research-Grounded Generation (v3)
 
-When a sanitized `research` object is present in the context, apply `references/research-consumption.md` to **sharpen** the artifacts below from **verified** claims: Root CLAUDE.md (Row 1), path-scoped rules (Row 2), Skill Selection (Row 3), agent archetypes (Row 4), and subdirectory CLAUDE.md placement (Row 5). When `research` is absent (research-absent / `regenerateOnly` mode), generate exactly as today — output is byte-identical. All rows are independently presence-gated and tolerate missing dimensions.
+When a sanitized `research` object is present in the context, apply `references/research/research-consumption.md` to **sharpen** the artifacts below from **verified** claims: Root CLAUDE.md (Row 1), path-scoped rules (Row 2), Skill Selection (Row 3), agent archetypes (Row 4), and subdirectory CLAUDE.md placement (Row 5). When `research` is absent (research-absent / `regenerateOnly` mode), generate exactly as today — output is byte-identical. All rows are independently presence-gated and tolerate missing dimensions.
 
 ### Re-Research Merge-Aware Generation (v3)
 
-When `callerExtras.reResearch` is present (a re-research regen from `update`/`evolve`), apply `references/re-research-merge.md` across the whole generation order: re-sharpen all artifacts from the **merged** dossier while honoring the **customization floor** (never clobber a user-customized file — `update` confirms, `evolve` skips+warns), marker-delimited surgery, and the **progress-preserving** verify-backlog merge. When the marker is absent (first onboard / `regenerateOnly`), generate exactly as today.
+When `callerExtras.reResearch` is present (a re-research regen from `update`/`evolve`), apply `references/research/re-research-merge.md` across the whole generation order: re-sharpen all artifacts from the **merged** dossier while honoring the **customization floor** (never clobber a user-customized file — `update` confirms, `evolve` skips+warns), marker-delimited surgery, and the **progress-preserving** verify-backlog merge. When the marker is absent (first onboard / `regenerateOnly`), generate exactly as today.
 
 ### Skills (.claude/skills/)
 
-Follow `references/skills-guide.md` for SKILL.md structure AND § Frontmatter Reference for the full field surface the generator emits.
+Follow `references/guides/skills-guide.md` for SKILL.md structure AND § Frontmatter Reference for the full field surface the generator emits.
 
 - **Stack-specific**: e.g., React component skill, Django model skill, Go package skill
 - **Workflow-specific**: Based on detected patterns and pain points
@@ -191,11 +191,11 @@ When choosing which 2-3 skills to generate, use this weighting:
 
 ### Skill Frontmatter Emission
 
-Every generated `SKILL.md` carries YAML frontmatter — `name`, `description`, `user-invocable`/`disable-model-invocation`, plus up to six optional fields (`allowed-tools`, `model`, `effort`, `paths`, `context`, `agent`). The full 7-step emission procedure (archetype classification, wizard-tuning composition, validation pass, batched confirmation, write, drift snapshot, `skillStatus` telemetry) plus the verbatim snapshot/`skillStatus` JSON shapes and `source` provenance values are in `references/skill-frontmatter-emission.md`. Follow it verbatim.
+Every generated `SKILL.md` carries YAML frontmatter — `name`, `description`, `user-invocable`/`disable-model-invocation`, plus up to six optional fields (`allowed-tools`, `model`, `effort`, `paths`, `context`, `agent`). The full 7-step emission procedure (archetype classification, wizard-tuning composition, validation pass, batched confirmation, write, drift snapshot, `skillStatus` telemetry) plus the verbatim snapshot/`skillStatus` JSON shapes and `source` provenance values are in `references/emission/skill-frontmatter-emission.md`. Follow it verbatim.
 
 ### Agents (.claude/agents/)
 
-Follow `references/agents-guide.md` for agent file structure, archetypes, and frontmatter reference.
+Follow `references/guides/agents-guide.md` for agent file structure, archetypes, and frontmatter reference.
 
 **Scale with team size**:
 - Solo + superpowers installed: 1 agent (code-reviewer only — superpowers handles TDD)
@@ -225,31 +225,31 @@ When `effectiveCoveredCapabilities` is non-empty, **skip agents whose capability
 
 ### Agent Frontmatter Emission
 
-Every generated agent file carries YAML frontmatter — `name`, `description`, plus up to nine optional fields (`tools`, `disallowedTools`, `model`, `permissionMode`, `maxTurns`, `effort`, `isolation`, `color`, `background`). The full 7-step emission procedure (archetype classification, wizard-tuning composition, validation pass incl. the HARD-FAIL frontmatter check, batched confirmation, write, re-read drift snapshot, `agentStatus` telemetry) plus the verbatim snapshot/`agentStatus` JSON shapes and `source`/`skipped.reason` values are in `references/agent-frontmatter-emission.md`. Follow it verbatim.
+Every generated agent file carries YAML frontmatter — `name`, `description`, plus up to nine optional fields (`tools`, `disallowedTools`, `model`, `permissionMode`, `maxTurns`, `effort`, `isolation`, `color`, `background`). The full 7-step emission procedure (archetype classification, wizard-tuning composition, validation pass incl. the HARD-FAIL frontmatter check, batched confirmation, write, re-read drift snapshot, `agentStatus` telemetry) plus the verbatim snapshot/`agentStatus` JSON shapes and `source`/`skipped.reason` values are in `references/emission/agent-frontmatter-emission.md`. Follow it verbatim.
 
 ### Plugin-Aware TDD Workflow + Recommended Plugins
 
-All projects use TDD (red-green-refactor); generation adapts to which workflow plugins are installed (resolve via `effectivePlugins`). The superpowers×feature-dev strategy matrix, the key principles, the plugin-recommendation message shown during generation, and the verbatim `## Recommended Plugins` CLAUDE.md template (emitted only when plugins are missing) are in `references/tdd-workflow-and-recommended-plugins.md`. Emit the `## Recommended Plugins` block verbatim.
+All projects use TDD (red-green-refactor); generation adapts to which workflow plugins are installed (resolve via `effectivePlugins`). The superpowers×feature-dev strategy matrix, the key principles, the plugin-recommendation message shown during generation, and the verbatim `## Recommended Plugins` CLAUDE.md template (emitted only when plugins are missing) are in `references/extended/tdd-workflow-and-recommended-plugins.md`. Emit the `## Recommended Plugins` block verbatim.
 
 ### MCP Servers (.mcp.json) — emission Step 1
 
-Follow `references/mcp-guide.md` for emission rules, catalog, and transport shapes. The emission-Step-1 generation contract — the 4 firing paths (A/B/C/SKIP), inputs, telemetry contract, the 8 emission steps (detect → pre-existing check → write `.mcp.json` → snapshot → `mcpStatus` → `mcp-setup.md` → auto-install → stdout summary), the verbatim `mcpStatus` JSON shape, and the Auto-install Plugins sub-procedure — is in `references/mcp-emission.md`. Apply it verbatim. Runs after Recommended Plugins copy and before Hooks.
+Follow `references/catalogs/mcp-guide.md` for emission rules, catalog, and transport shapes. The emission-Step-1 generation contract — the 4 firing paths (A/B/C/SKIP), inputs, telemetry contract, the 8 emission steps (detect → pre-existing check → write `.mcp.json` → snapshot → `mcpStatus` → `mcp-setup.md` → auto-install → stdout summary), the verbatim `mcpStatus` JSON shape, and the Auto-install Plugins sub-procedure — is in `references/emission/mcp-emission.md`. Apply it verbatim. Runs after Recommended Plugins copy and before Hooks.
 
 ### Output Styles (.claude/output-styles/) — emission Step 2
 
-Follow `references/output-styles-guide.md` (archetype inference, frontmatter schema, `settings.local.json` merge rules) and `references/output-styles-catalog.md` (5 body templates). The emission-Step-2 generation contract — the 5 firing paths, inputs, telemetry contract, the 11 emission steps, the `settings.local.json` 4-case merge table, and the verbatim snapshot/`outputStyleStatus` JSON shapes plus enum values — is in `references/output-styles-emission.md`. Apply it verbatim. Runs after emission Step 1 and before Hooks.
+Follow `references/catalogs/output-styles-guide.md` (archetype inference, frontmatter schema, `settings.local.json` merge rules) and `references/catalogs/output-styles-catalog.md` (5 body templates). The emission-Step-2 generation contract — the 5 firing paths, inputs, telemetry contract, the 11 emission steps, the `settings.local.json` 4-case merge table, and the verbatim snapshot/`outputStyleStatus` JSON shapes plus enum values — is in `references/emission/output-styles-emission.md`. Apply it verbatim. Runs after emission Step 1 and before Hooks.
 
 ### LSP Plugin Recommendations — emission Step 3
 
-Follow `references/lsp-plugin-catalog.md` for the 12-entry language→plugin mapping. The emission-Step-3 generation contract — the 5 firing paths, inputs, telemetry contract, the 7 emission steps (detect via `detect-lsp-signals.sh` → resolve selected → CLAUDE.md subsection → metadata-first install → snapshot → `lspStatus` schema → stdout summary), and the verbatim snapshot/`lspStatus` JSON shapes — is in `references/lsp-emission.md`. Apply it verbatim. Onboard emits NO project-level `.lsp.json`. Runs after emission Step 2 and before Hooks.
+Follow `references/catalogs/lsp-plugin-catalog.md` for the 12-entry language→plugin mapping. The emission-Step-3 generation contract — the 5 firing paths, inputs, telemetry contract, the 7 emission steps (detect via `detect-lsp-signals.sh` → resolve selected → CLAUDE.md subsection → metadata-first install → snapshot → `lspStatus` schema → stdout summary), and the verbatim snapshot/`lspStatus` JSON shapes — is in `references/emission/lsp-emission.md`. Apply it verbatim. Onboard emits NO project-level `.lsp.json`. Runs after emission Step 2 and before Hooks.
 
 ### Built-in Claude Code Skills — emission Step 4
 
-Follow `references/built-in-skills-catalog.md` for the 9-skill catalog, tier classification, detection signals, and stack-specific example templates. The emission-Step-4 generation contract — the 4 firing paths, inputs, telemetry contract (primary user of the `"documented"` status), the 7 emission steps (detect → resolve accepted → placement path → compose subsection → snapshot → telemetry → stdout summary), and the verbatim snapshot/`builtInSkillsStatus` JSON shapes plus `<!-- onboard:builtin-skills:start/end -->` marker rules — is in `references/builtin-skills-emission.md`. Apply it verbatim. Runs after emission Step 3 and before Hooks.
+Follow `references/catalogs/built-in-skills-catalog.md` for the 9-skill catalog, tier classification, detection signals, and stack-specific example templates. The emission-Step-4 generation contract — the 4 firing paths, inputs, telemetry contract (primary user of the `"documented"` status), the 7 emission steps (detect → resolve accepted → placement path → compose subsection → snapshot → telemetry → stdout summary), and the verbatim snapshot/`builtInSkillsStatus` JSON shapes plus `<!-- onboard:builtin-skills:start/end -->` marker rules — is in `references/emission/builtin-skills-emission.md`. Apply it verbatim. Runs after emission Step 3 and before Hooks.
 
 ### Hooks (.claude/settings.json)
 
-Follow `references/hooks-guide.md` for hook configuration.
+Follow `references/guides/hooks-guide.md` for hook configuration.
 
 - **Merge with existing settings.json** if one exists — never overwrite
 - **Common hooks**:
@@ -259,7 +259,7 @@ Follow `references/hooks-guide.md` for hook configuration.
 
 #### Quality-Gate, Standalone, Advanced-Event, and Utility Hooks
 
-When `effectiveQualityGates` is present (or, in the standalone case, derived from `selectedPreset` + `autonomyLevel`), generate boundary-enforcement hooks that reinforce the CLAUDE.md Plugin Integration discipline. The complete hook-generation spec is in `references/hooks-generation.md` — apply it verbatim. It covers:
+When `effectiveQualityGates` is present (or, in the standalone case, derived from `selectedPreset` + `autonomyLevel`), generate boundary-enforcement hooks that reinforce the CLAUDE.md Plugin Integration discipline. The complete hook-generation spec is in `references/emission/hooks-generation.md` — apply it verbatim. It covers:
 
 - **Quality-Gate Hooks** — the 4 hook categories (sessionStart / preCommit / featureStart / postFeature), mode semantics, autonomyLevel downgrade, plugin-availability checks, merge semantics, and the full `hookStatus` telemetry scope + the verbatim canonical `hookStatus` JSON shape (including the `<Event>[:<Matcher>][:<Type>]` key format and counting rules).
 - **O6 — SessionStart reminder hook** — the verbatim `plugin-integration-reminder.sh` script template (with adaptive suppression) + settings.json entry.
@@ -268,11 +268,11 @@ When `effectiveQualityGates` is present (or, in the standalone case, derived fro
 - **Advanced Event Hooks** (9 events) — input sources, per-event inference rules, per-event type defaults, the 11-rule Hook Type Validation table, artifact-per-type table, generation rules, and wizard opt-in plumbing.
 - **Utility Hooks** (non-telemetry) — the WorktreeCreate init.sh auto-runner.
 
-All script templates referenced there resolve to `references/hooks-guide.md` § templates. Preserve every emitted script and JSON shape verbatim.
+All script templates referenced there resolve to `references/guides/hooks-guide.md` § templates. Preserve every emitted script and JSON shape verbatim.
 
 ### Collaboration Artifacts
 
-Follow `references/collaboration-guide.md` for templates and conventions.
+Follow `references/guides/collaboration-guide.md` for templates and conventions.
 
 **Always generate** regardless of team size — solo developers benefit from consistency:
 
@@ -294,7 +294,7 @@ Always generate this file with:
 
 ## Quality Checklist
 
-Before finishing generation, run the full pre-exit verification checklist in `references/quality-checklist.md` — every item must pass. It ends with the **pre-exit self-audit**: all 4 emission telemetry keys (`mcpStatus`, `outputStyleStatus`, `lspStatus`, `builtInSkillsStatus`) must exist in `onboard-meta.json`, or hard-fail before returning.
+Before finishing generation, run the full pre-exit verification checklist in `references/emission/quality-checklist.md` — every item must pass. It ends with the **pre-exit self-audit**: all 4 emission telemetry keys (`mcpStatus`, `outputStyleStatus`, `lspStatus`, `builtInSkillsStatus`) must exist in `onboard-meta.json`, or hard-fail before returning.
 
 ## Extended Generation (Enriched Mode)
 
@@ -302,7 +302,7 @@ When the wizard or programmatic context includes extended preferences (CI/CD, ha
 
 ### CI/CD Pipelines (if `willDeploy` and no existing CI/CD detected)
 
-Follow `references/ci-cd-templates.md`:
+Follow `references/extended/ci-cd-templates.md`:
 - `.github/workflows/ci.yml` — application CI (lint, test, build, deploy)
 - `.github/workflows/tooling-audit.yml` — structural drift checks + semantic analysis
 - `.github/workflows/pr-review.yml` — AI-powered PR review (claude-code-action)
@@ -311,7 +311,7 @@ Follow `references/ci-cd-templates.md`:
 
 ### Harness Artifacts (if `enableHarness`)
 
-Follow `references/harness-design.md`:
+Follow `references/extended/harness-design.md`:
 - `docs/progress.md` — cross-session progress tracker
 - `docs/HARNESS-GUIDE.md` — multi-session development guide
 - `docs/verification-reports/` — directory for evaluator reports
@@ -321,7 +321,7 @@ Follow `references/harness-design.md`:
 
 ### Auto-Evolution Hooks (if `enableEvolution`)
 
-Follow `references/evolution-hooks-guide.md`:
+Follow `references/extended/evolution-hooks-guide.md`:
 - FileChanged hooks for drift detection
 - SessionStart hook for drift summary
 - Copy detection scripts to `.claude/scripts/`
@@ -329,17 +329,17 @@ Follow `references/evolution-hooks-guide.md`:
 
 ### Verify-Backlog Seeding (v3, when `research` present)
 
-When a sanitized `research` object is present, seed `docs/feature-list.json` from verified security/risk/test-gap claims following `references/verify-backlog-seeding.md`. Research is the **primary and only** programmatic writer (**seed-if-absent** — never clobber an existing list; the v2 harness/interactive decomposition path was retired in Plan 4a). Always runs regardless of `research.artifacts.location`. Empty source set → write nothing. Skip entirely in research-absent mode.
+When a sanitized `research` object is present, seed `docs/feature-list.json` from verified security/risk/test-gap claims following `references/research/verify-backlog-seeding.md`. Research is the **primary and only** programmatic writer (**seed-if-absent** — never clobber an existing list; the v2 harness/interactive decomposition path was retired in Plan 4a). Always runs regardless of `research.artifacts.location`. Empty source set → write nothing. Skip entirely in research-absent mode.
 
 ### Sprint Contracts (if `enableSprintContracts`)
 
-Follow `references/sprint-contracts.md`:
+Follow `references/extended/sprint-contracts.md`:
 - `docs/sprint-contracts/` directory
 - First sprint contract (negotiated or auto-generated)
 
 ### Agent Teams (if `enableTeams`)
 
-Follow `references/agent-teams-guide.md`:
+Follow `references/extended/agent-teams-guide.md`:
 - Team quality hooks (TaskCreated, TaskCompleted)
 - `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in settings.json
 - TDD Feature Development team composition (always included when teams enabled)
@@ -349,50 +349,50 @@ Follow `references/agent-teams-guide.md`:
 TDD is the standard testing approach for all onboarded projects. These artifacts are always generated, adapting content based on installed plugins (see Plugin-Aware TDD Workflow above):
 
 1. **CLAUDE.md "Development Workflow" section** — Describes the combined feature-dev + superpowers TDD phased approach. Adapts references based on installed plugins.
-2. **testing.md rule** — Mandates red-green-refactor with the Iron Law. Content varies by plugin availability (see `references/rules-guide.md` TDD Testing Rule section).
+2. **testing.md rule** — Mandates red-green-refactor with the Iron Law. Content varies by plugin availability (see `references/guides/rules-guide.md` TDD Testing Rule section).
 3. **Standalone TDD skill** (only if superpowers NOT installed) — Generate `.claude/skills/tdd-workflow/SKILL.md` with red-green-refactor cycle, verification checklist, and common rationalizations.
-4. **TDD test-writer agent** (only if superpowers NOT installed) — Generate `.claude/agents/tdd-test-writer.md` following `references/agents-guide.md` TDD variant.
-5. **TDD Feature Development team** (only if `enableTeams`) — Follow `references/agent-teams-guide.md` TDD team composition.
+4. **TDD test-writer agent** (only if superpowers NOT installed) — Generate `.claude/agents/tdd-test-writer.md` following `references/guides/agents-guide.md` TDD variant.
+5. **TDD Feature Development team** (only if `enableTeams`) — Follow `references/extended/agent-teams-guide.md` TDD team composition.
 6. **PR template** — Checklist includes "Tests written first (TDD), all pass".
 7. **Plugin recommendations** — If superpowers or feature-dev is missing, add "Recommended Plugins" section to CLAUDE.md with install commands.
 
 ## Reference Files
 
 ### Core (always used)
-- `references/claude-md-guide.md` — CLAUDE.md structure and best practices
-- `references/rules-guide.md` — Path-scoped rules patterns
-- `references/hooks-guide.md` — Hook configuration patterns (format, lint)
-- `references/mcp-guide.md` — MCP server emission rules, catalog, drift handling
-- `references/skills-guide.md` — Skill creation patterns
-- `references/agents-guide.md` — Agent creation patterns
-- `references/collaboration-guide.md` — PR template, commit conventions
-- `references/aci-design-guide.md` — Agent-Computer Interface best practices (tool design, error handling, ground truth)
+- `references/guides/claude-md-guide.md` — CLAUDE.md structure and best practices
+- `references/guides/rules-guide.md` — Path-scoped rules patterns
+- `references/guides/hooks-guide.md` — Hook configuration patterns (format, lint)
+- `references/catalogs/mcp-guide.md` — MCP server emission rules, catalog, drift handling
+- `references/guides/skills-guide.md` — Skill creation patterns
+- `references/guides/agents-guide.md` — Agent creation patterns
+- `references/guides/collaboration-guide.md` — PR template, commit conventions
+- `references/guides/aci-design-guide.md` — Agent-Computer Interface best practices (tool design, error handling, ground truth)
 
 ### Extended (used when enriched features enabled)
-- `references/harness-design.md` — Long-running development harness pattern
-- `references/ci-cd-templates.md` — GitHub Actions pipeline templates
-- `references/evolution-hooks-guide.md` — Auto-evolution hook patterns
-- `references/sprint-contracts.md` — Sprint contract format and negotiation
-- `references/agent-teams-guide.md` — Agent team compositions and quality hooks
-- `references/worktree-workflow.md` — Proactive worktree workflow using Claude Code native tools (EnterWorktree/ExitWorktree)
+- `references/extended/harness-design.md` — Long-running development harness pattern
+- `references/extended/ci-cd-templates.md` — GitHub Actions pipeline templates
+- `references/extended/evolution-hooks-guide.md` — Auto-evolution hook patterns
+- `references/extended/sprint-contracts.md` — Sprint contract format and negotiation
+- `references/extended/agent-teams-guide.md` — Agent team compositions and quality hooks
+- `references/extended/worktree-workflow.md` — Proactive worktree workflow using Claude Code native tools (EnterWorktree/ExitWorktree)
 
 ### v3 research consumption (used when a `research` object is present)
-- `references/research-consumption.md` — the 5 research-sharpening rows (CLAUDE.md / rules / skills / agents / subdir)
-- `references/verify-backlog-seeding.md` — verified risk/test-gap claims → `docs/feature-list.json`
-- `references/re-research-merge.md` — full merge-aware regen (customization floor + marker surgery) on a `reResearch` run
+- `references/research/research-consumption.md` — the 5 research-sharpening rows (CLAUDE.md / rules / skills / agents / subdir)
+- `references/research/verify-backlog-seeding.md` — verified risk/test-gap claims → `docs/feature-list.json`
+- `references/research/re-research-merge.md` — full merge-aware regen (customization floor + marker surgery) on a `reResearch` run
 
 ### Emission specs (verbatim — extracted from this skill)
 These carry the verbatim artifact templates and long emission enumerations for the stubbed sections above. Load the matching one when generating that artifact:
-- `references/plugin-integration-section.md` — `## Plugin Integration` section + per-directory Skill recommendations
-- `references/skill-frontmatter-emission.md` — 7-step SKILL.md frontmatter emission + `skillStatus`
-- `references/agent-frontmatter-emission.md` — 7-step agent frontmatter emission + `agentStatus`
-- `references/tdd-workflow-and-recommended-plugins.md` — plugin-aware TDD matrix + `## Recommended Plugins` template
-- `references/mcp-emission.md` — MCP `.mcp.json` emission (emission Step 1) + auto-install
-- `references/output-styles-emission.md` — output-styles emission (emission Step 2) + settings.local.json merge
-- `references/lsp-emission.md` — LSP plugin recommendations (emission Step 3)
-- `references/builtin-skills-emission.md` — built-in Claude Code skills (emission Step 4)
-- `references/hooks-generation.md` — quality-gate / O6 / O7 / standalone / advanced-event / utility hooks + `hookStatus`
-- `references/quality-checklist.md` — pre-exit generation verification checklist
+- `references/emission/plugin-integration-section.md` — `## Plugin Integration` section + per-directory Skill recommendations
+- `references/emission/skill-frontmatter-emission.md` — 7-step SKILL.md frontmatter emission + `skillStatus`
+- `references/emission/agent-frontmatter-emission.md` — 7-step agent frontmatter emission + `agentStatus`
+- `references/extended/tdd-workflow-and-recommended-plugins.md` — plugin-aware TDD matrix + `## Recommended Plugins` template
+- `references/emission/mcp-emission.md` — MCP `.mcp.json` emission (emission Step 1) + auto-install
+- `references/emission/output-styles-emission.md` — output-styles emission (emission Step 2) + settings.local.json merge
+- `references/emission/lsp-emission.md` — LSP plugin recommendations (emission Step 3)
+- `references/emission/builtin-skills-emission.md` — built-in Claude Code skills (emission Step 4)
+- `references/emission/hooks-generation.md` — quality-gate / O6 / O7 / standalone / advanced-event / utility hooks + `hookStatus`
+- `references/emission/quality-checklist.md` — pre-exit generation verification checklist
 
 ## Key Rules
 

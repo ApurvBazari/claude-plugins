@@ -2,7 +2,7 @@
 
 Output styles are project-scoped system-prompt modifiers that change how Claude Code responds session-wide. They live at `.claude/output-styles/<name>.md` (project) or `~/.claude/output-styles/<name>.md` (user). Claude Code ships three built-in styles that never need files; onboard emission Step 2 emits project-specific custom styles.
 
-This guide is the authoritative reference consumed by `../SKILL.md` § emission Step 2. For the 5 body templates, see `output-styles-catalog.md`.
+This guide is the authoritative reference consumed by `../../SKILL.md` § emission Step 2. For the 5 body templates, see `output-styles-catalog.md`.
 
 ---
 
@@ -82,7 +82,7 @@ Unknown frontmatter keys (`archetype`, `source`) are silently ignored by Claude 
 
 ## `settings.local.json` merge rules
 
-When `wizardAnswers.outputStyleTuning.activationDefault` is `"write-to-settings"`, emission Step 2 merges `outputStyle: "<emitted-name>"` into the project's `.claude/settings.local.json`. The file is strict JSON (same format as `.claude/settings.json` per `hooks-guide.md` § Settings Merge Strategy).
+When `wizardAnswers.outputStyleTuning.activationDefault` is `"write-to-settings"`, emission Step 2 merges `outputStyle: "<emitted-name>"` into the project's `.claude/settings.local.json`. The file is strict JSON (same format as `.claude/settings.json` per `../guides/hooks-guide.md` § Settings Merge Strategy).
 
 Four precise cases:
 

@@ -128,7 +128,7 @@ For each {id, reason} in droppedClaims:
 # Risk Register — <project name>
 
 > Render of security + risk-tagged claims · <date>
-> (Verify-backlog seeding into docs/feature-list.json is wired — see `../../generation/references/verify-backlog-seeding.md`.)
+> (Verify-backlog seeding into docs/feature-list.json is wired — see `../../generation/references/research/verify-backlog-seeding.md`.)
 
 | ID | Dimension | Risk | Evidence | Confidence | Status |
 |----|-----------|------|----------|-----------|--------|
