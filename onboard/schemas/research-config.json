@@ -26,7 +26,11 @@
           "prompt": { "type": "string", "maxLength": 16384, "description": "Inline specialist prompt. Provide this OR `agent`. Capped at 16 KiB (matches the untrusted-input sanitiser leaf cap); the engine re-enforces this cap at dispatch since schema validation is opportunistic." },
           "agent": { "type": "string", "maxLength": 256, "pattern": "^\\.claude/(?!.*\\.\\.)[A-Za-z0-9._/-]+\\.md$", "description": "Path to a user agent file under .claude/, e.g. .claude/agents/research-a11y.md. Provide this OR `prompt`. Must be a relative, .claude/-rooted .md path with no `..` segment (path-traversal guard); the engine additionally verifies the resolved path stays under the project root at dispatch." },
           "scopeGlobs": { "type": "array", "maxItems": 64, "items": { "type": "string", "maxLength": 256 } }
-        }
+        },
+        "oneOf": [
+          { "required": ["prompt"], "not": { "required": ["agent"] } },
+          { "required": ["agent"], "not": { "required": ["prompt"] } }
+        ]
       }
     }
   }

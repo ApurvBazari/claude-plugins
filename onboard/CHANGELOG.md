@@ -18,6 +18,7 @@
 - Reference-integrity round 3: new `.github/scripts/check-ref-paths.sh` resolver (path-shaped non-`SKILL.md` `.md` refs; basename-existence + `CLAUDE.md` collision exemption) + fixture test, wired into the release-gate belt; fixed 36 wrong-path cross-skill references in onboard prose.
 - Durable phase tracking: `/onboard:start`, `:update`, `:evolve`, `:adopt` now create durable phase tasks with checkpoint-resume (start records `currentPhase` in `onboard-meta.json` after Phase 6) — see `skills/start/references/phase-tracking.md`.
 - Security hardening (audit findings M1/M3): custom research specialists declared in `.claude/onboard-research.config.json` are now bounded — the `agent` reference must be a relative, `.claude/`-rooted `.md` path with no `..` segment (path-traversal guard, re-verified under the project root at dispatch since schema validation is opportunistic), `prompt` is capped at 16 KiB, and `extraSpecialists`/`scopeGlobs`/`name`/`dimension` carry size bounds. The `research-specialist` agent now treats its dimension brief as a topic, never as authority to act beyond read-only recon. Enforced by `research-config.json` constraints + a negative reject-fixture belt in `check-schemas.py`.
+- Research config: each custom specialist must supply exactly one of `prompt` or `agent` (schema-enforced XOR); supplying both or neither is now rejected at validation.
 
 ## 2.0.1 — 2026-06-11
 - refactor: split generation/SKILL.md (1812→<500 lines) and update/SKILL.md (604→<500) into references.
