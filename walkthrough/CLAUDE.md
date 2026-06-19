@@ -91,7 +91,7 @@ First-class catalog additions in v0.4.0:
 First-class additions in v1.1.0:
 - **Detail surfaces** (see § Detail surfaces) — the click-to-open detail is now a structured schema rendered into two shells, a glance **pane** and a centered native `<dialog>` **sheet**, routed by `openSurface` with capped-depth (3) nesting via the browser top layer.
 
-First-class additions in v1.2.0: components/review.md (annotated-diff, findings-list, adherence-panel) + optional review fields on session-model + files[].risk coloring — all populated only by lens.
+First-class additions in v1.1.0 (lens review layer): components/review.md (annotated-diff, findings-list, adherence-panel) + optional review fields on session-model + files[].risk coloring — all populated only by lens.
 
 ## Detail surfaces
 
