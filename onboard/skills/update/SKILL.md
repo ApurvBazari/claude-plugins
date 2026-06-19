@@ -18,26 +18,26 @@ Runs **first**, before the Prerequisites Check. This wires the durable phase-tas
 
 First, read the contract: `../start/references/phase-tracking.md` (the cross-skill source of truth — `start` is its worked example). It defines the task subjects, the `pending → in_progress → completed` (plus `deleted`) state machine, and the HARD GATE mapping. Follow it verbatim — do not re-derive its rules here. `update` runs on an already-onboarded project (an `onboard-meta.json` exists by the time the baseline check in Phase 0 passes), so it has no cross-session resume probe of its own; the task list here is **in-session progress visibility**, and the durable record lives in the on-disk artifacts the contract describes.
 
-Create the **8** `update` phase tasks via `TaskCreate`, all `status: "pending"`, one per ladder phase, using the `onboard:update:phase:` subject prefix from the contract's § Other entry points table:
+Create the **8** `update` phase tasks via `TaskCreate`, all `status: "pending"`, one per ladder phase, using the `update:` subject prefix from the contract's § Other entry points table:
 
 | Subject | `activeForm` |
 |---|---|
-| `onboard:update:phase:0:verify-baseline` | Verifying the onboard baseline |
-| `onboard:update:phase:1:read-artifacts` | Reading existing artifacts |
-| `onboard:update:phase:2:reanalyze` | Re-analyzing the codebase |
-| `onboard:update:phase:3:best-practices-drift` | Checking best practices & detecting drift |
-| `onboard:update:phase:4:present-preview` | Presenting findings & rendering preview |
-| `onboard:update:phase:5:approve-gate` | Awaiting approval of upgrades |
-| `onboard:update:phase:6:apply` | Applying approved updates |
-| `onboard:update:phase:7:summary` | Summarizing changes |
+| `update:verify-baseline` | Verifying the onboard baseline |
+| `update:read-artifacts` | Reading existing artifacts |
+| `update:reanalyze` | Re-analyzing the codebase |
+| `update:best-practices-drift` | Checking best practices & detecting drift |
+| `update:present-preview` | Presenting findings & rendering preview |
+| `update:approve-gate` | Awaiting approval of upgrades |
+| `update:apply` | Applying approved updates |
+| `update:summary` | Summarizing changes |
 
-Only this orchestrator touches the list. Every internal skill it later invokes (`onboard:generate`, `onboard:research`) is **task-blind** per the contract's § Ownership — when `update` invokes `generate` inside Phase 6, that does **not** create its own list; it runs inside this Phase-6 task. **Routing note (per the contract's § Routing):** if Phase 0 routes into `adopt` (missing-baseline branch), `adopt` owns its own `onboard:adopt:phase:` list and marks it complete on handoff; the two lists coexist — this `update` list never touches adopt's tasks and vice versa.
+Only this orchestrator touches the list. Every internal skill it later invokes (`onboard:generate`, `onboard:research`) is **task-blind** per the contract's § Ownership — when `update` invokes `generate` inside Phase 6, that does **not** create its own list; it runs inside this Phase-6 task. **Routing note (per the contract's § Routing):** if Phase 0 routes into `adopt` (missing-baseline branch), `adopt` owns its own `adopt:` list and marks it complete on handoff; the two lists coexist — this `update` list never touches adopt's tasks and vice versa.
 
 ---
 
 ## Prerequisites Check
 
-> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(onboard:update:phase:0:verify-baseline → in_progress)` now, **before** the baseline check below. Mark it `TaskUpdate(... → completed)` once a baseline is confirmed present (found directly, or freshly written by the adopt routing). If Phase 0 finds no tooling at all and stops, leave this task `in_progress` — the run halts there.
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(update:verify-baseline → in_progress)` now, **before** the baseline check below. Mark it `TaskUpdate(... → completed)` once a baseline is confirmed present (found directly, or freshly written by the adopt routing). If Phase 0 finds no tooling at all and stops, leave this task `in_progress` — the run halts there.
 
 ### Step 1: Verify Previous Setup
 
@@ -69,13 +69,13 @@ Read: .claude/onboard-meta.json
 > - **Artifacts generated**: [count]
 > - **Model**: [modelRecommendation]
 
-> **Phase complete:** once a baseline is confirmed present (found directly above, or freshly written by the **Adopt then update** routing), `TaskUpdate(onboard:update:phase:0:verify-baseline → completed)`.
+> **Phase complete:** once a baseline is confirmed present (found directly above, or freshly written by the **Adopt then update** routing), `TaskUpdate(update:verify-baseline → completed)`.
 
 ---
 
 ## Analysis Phase
 
-> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(onboard:update:phase:1:read-artifacts → in_progress)` now, **before** reading the existing artifacts. Mark it `TaskUpdate(... → completed)` after every tracked artifact has been read and classified at the end of Step 2.
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(update:read-artifacts → in_progress)` now, **before** reading the existing artifacts. Mark it `TaskUpdate(... → completed)` after every tracked artifact has been read and classified at the end of Step 2.
 
 ### Step 2: Read All Existing Artifacts
 
@@ -87,11 +87,11 @@ Read every file listed in `onboard-meta.json`'s `generatedArtifacts` array. For 
 
 Also read any Claude config files that may have been added manually after the initial run.
 
-> **Phase complete:** after every tracked artifact and any manually-added config has been read and classified, `TaskUpdate(onboard:update:phase:1:read-artifacts → completed)`.
+> **Phase complete:** after every tracked artifact and any manually-added config has been read and classified, `TaskUpdate(update:read-artifacts → completed)`.
 
 ### Step 3: Re-analyze the Codebase
 
-> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(onboard:update:phase:2:reanalyze → in_progress)` now, **before** the fresh analysis below. Mark it `TaskUpdate(... → completed)` after the drift comparison against `onboard-meta.json` completes at the end of this step.
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(update:reanalyze → in_progress)` now, **before** the fresh analysis below. Mark it `TaskUpdate(... → completed)` after the drift comparison against `onboard-meta.json` completes at the end of this step.
 
 Run a fresh analysis (same as start Phase 1):
 - Run the three analysis scripts
@@ -104,11 +104,11 @@ Compare the fresh analysis against what was captured in onboard-meta.json to det
 - New CI/CD pipelines?
 - Test setup changed?
 
-> **Phase complete:** after the drift comparison against `onboard-meta.json` completes, `TaskUpdate(onboard:update:phase:2:reanalyze → completed)`.
+> **Phase complete:** after the drift comparison against `onboard-meta.json` completes, `TaskUpdate(update:reanalyze → completed)`.
 
 ### Step 4: Check Latest Best Practices
 
-> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(onboard:update:phase:3:best-practices-drift → in_progress)` now, **before** the best-practices checks (Step 4) and the Step 4b drift detectors. This one task spans Steps 4 and 4b. Mark it `TaskUpdate(... → completed)` after all of Step 4b's detectors (4b.1–4b.10) have recorded their findings.
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(update:best-practices-drift → in_progress)` now, **before** the best-practices checks (Step 4) and the Step 4b drift detectors. This one task spans Steps 4 and 4b. Mark it `TaskUpdate(... → completed)` after all of Step 4b's detectors (4b.1–4b.10) have recorded their findings.
 
 Check two knowledge sources:
 
@@ -162,13 +162,13 @@ Follow `references/drift-classification.md` § 4b.9. Record as `builtInSkillsDri
 #### 4b.10: Research Staleness
 Apply `references/re-research.md` § Detection: map the Step-3 codebase drift to research dimensions, intersect with the stored-depth roster (`onboard-meta.json.research.depth`), and apply the escalation rule. Record `reResearch = { dimensions, escalatedToFull }` for Step 6 (empty `dimensions` → no offer). Read-only classification — re-research itself runs in Step 7 on approval.
 
-> **Phase complete:** after all Step 4b detectors (4b.1–4b.10) have recorded their findings, `TaskUpdate(onboard:update:phase:3:best-practices-drift → completed)`.
+> **Phase complete:** after all Step 4b detectors (4b.1–4b.10) have recorded their findings, `TaskUpdate(update:best-practices-drift → completed)`.
 
 ---
 
 ## Findings Report
 
-> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(onboard:update:phase:4:present-preview → in_progress)` now, **before** presenting the findings (Step 5). This task spans Step 5 (findings) and Step 5.5 (preview render). Mark it `TaskUpdate(... → completed)` after the preview is rendered (or its markdown fallback shown) at the end of Step 5.5. The internally-invoked `walkthrough:render` is task-blind.
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(update:present-preview → in_progress)` now, **before** presenting the findings (Step 5). This task spans Step 5 (findings) and Step 5.5 (preview render). Mark it `TaskUpdate(... → completed)` after the preview is rendered (or its markdown fallback shown) at the end of Step 5.5. The internally-invoked `walkthrough:render` is task-blind.
 
 ### Step 5: Present Findings
 
@@ -265,13 +265,13 @@ Organize findings into categories:
 
 Assemble a `previewModel` (per `../research/references/render-adapter.md` § previewModel) with `flow:"update"`: `changes[]` = the accumulated offer-set from Steps 4–4b (action `modernize`/`create`/`regenerate`; each artifact's `origin` carried from the baseline — `"generated"` for onboard-managed artifacts, `"adopted"` for artifacts brought under management via `/onboard:adopt` in a `mode:"retrofit"` baseline); `research` = the re-research delta when Step 4b.10 ran, else null; `decisions` = the current model/autonomy/profile from `onboard-meta.json`; `warnings` = user-customized-file flags + any "best-practices check unavailable" note. Render it via `walkthrough:render` to `.claude/walkthrough/<YYYY-MM-DD-HHMM>-onboard-update.html`, with the same walkthrough-absent → offer-install → markdown fallback as start Phase 5 (the gate). This is a preview only — the actual approval remains the Step 6 batched AskUserQuestion; nothing is applied until Step 7.
 
-> **Phase complete:** after the preview is rendered (or the markdown fallback shown), `TaskUpdate(onboard:update:phase:4:present-preview → completed)`.
+> **Phase complete:** after the preview is rendered (or the markdown fallback shown), `TaskUpdate(update:present-preview → completed)`.
 
 ---
 
 ## Upgrade Offers
 
-> **Phase transition (per `../start/references/phase-tracking.md` § HARD GATE):** `TaskUpdate(onboard:update:phase:5:approve-gate → in_progress)` now, **before** the Step 6 AskUserQuestion. This task is the gate: it **stays `in_progress` for the entire phase** — through offer assembly and *while awaiting the user's approval decision* (the enum has no "awaiting" state; `in_progress` is the truthful "we are here, waiting on you"). Its `completed`/`deleted` transition is driven by the gate decision below — do **not** mark it `completed` before the user approves.
+> **Phase transition (per `../start/references/phase-tracking.md` § HARD GATE):** `TaskUpdate(update:approve-gate → in_progress)` now, **before** the Step 6 AskUserQuestion. This task is the gate: it **stays `in_progress` for the entire phase** — through offer assembly and *while awaiting the user's approval decision* (the enum has no "awaiting" state; `in_progress` is the truthful "we are here, waiting on you"). Its `completed`/`deleted` transition is driven by the gate decision below — do **not** mark it `completed` before the user approves.
 
 ### Step 6: Offer Targeted Upgrades (AskUserQuestion)
 
@@ -313,9 +313,9 @@ Issue a **single AskUserQuestion call** containing the pre-question + up to 3 of
 | `Skip / dismiss` | Discard offers, do not remind again this session. (Re-running `/onboard:update` re-detects from scratch.) |
 
 > **Gate decision → task transition (per `../start/references/phase-tracking.md` § HARD GATE).** The Phase-5 task was left `in_progress` at the Upgrade Offers transition above. Map the pre-question outcome (and, when "Review and pick" is chosen, the subsequent per-group selection) to a transition:
-> - **Approve** — the user chose `Apply all`, **or** chose `Review and pick` and selected ≥1 offer → `TaskUpdate(onboard:update:phase:5:approve-gate → completed)`, then proceed to Step 7 (Phase 6 apply).
+> - **Approve** — the user chose `Apply all`, **or** chose `Review and pick` and selected ≥1 offer → `TaskUpdate(update:approve-gate → completed)`, then proceed to Step 7 (Phase 6 apply).
 > - **Adjust / no-op selection** — the user chose `Review and pick` but selected nothing (every group answered `None / Skip`) and wants to revisit → keep the gate `in_progress` (no status change) and re-present, exactly like start's Adjust loop. The gate loops; no task is completed or deleted.
-> - **Cancel** — the user chose `Apply later` (defer, nothing applied this run) **or** `Skip / dismiss` (discard) → nothing is applied (the gate precedes the only apply phase). Per § Cancel → `deleted`, mark the gate task **and every later phase task** `deleted`: `TaskUpdate(onboard:update:phase:5:approve-gate → deleted)`, `TaskUpdate(onboard:update:phase:6:apply → deleted)`, `TaskUpdate(onboard:update:phase:7:summary → deleted)`. Leave the already-`completed` tasks 0–4 as `completed` (they really ran). Then handle the chosen exit (write the `Apply later` snapshot or discard) and stop.
+> - **Cancel** — the user chose `Apply later` (defer, nothing applied this run) **or** `Skip / dismiss` (discard) → nothing is applied (the gate precedes the only apply phase). Per § Cancel → `deleted`, mark the gate task **and every later phase task** `deleted`: `TaskUpdate(update:approve-gate → deleted)`, `TaskUpdate(update:apply → deleted)`, `TaskUpdate(update:summary → deleted)`. Leave the already-`completed` tasks 0–4 as `completed` (they really ran). Then handle the chosen exit (write the `Apply later` snapshot or discard) and stop.
 
 **Questions 2–4 — Offer-group multi-selects** (each `multiSelect: true`, headers: `"ArtifactGaps"`, `"UserEdits"`, `"NewDeps"`, etc. — pick the 3 most populous groups for the first call). Only render groups that have ≥1 offer; skip empty groups.
 
@@ -368,7 +368,7 @@ For files where the maintenance header was modified or removed:
 
 ## Apply Updates
 
-> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(onboard:update:phase:6:apply → in_progress)` now (only reached on **Approve** at the Step 6 gate), **before** Step 7's first write and **before** any `Skill(onboard:generate)` / `Skill(onboard:research)` dispatch (both task-blind — they run inside this Phase-6 task, not their own list). This task spans Step 7 (apply) and Step 8 (update metadata). Mark it `TaskUpdate(... → completed)` after the metadata is written at the end of Step 8.
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(update:apply → in_progress)` now (only reached on **Approve** at the Step 6 gate), **before** Step 7's first write and **before** any `Skill(onboard:generate)` / `Skill(onboard:research)` dispatch (both task-blind — they run inside this Phase-6 task, not their own list). This task spans Step 7 (apply) and Step 8 (update metadata). Mark it `TaskUpdate(... → completed)` after the metadata is written at the end of Step 8.
 
 ### Step 7: Execute Chosen Updates
 
@@ -425,13 +425,13 @@ Update `.claude/onboard-meta.json`:
 }
 ```
 
-> **Phase complete:** after the metadata is written, `TaskUpdate(onboard:update:phase:6:apply → completed)`.
+> **Phase complete:** after the metadata is written, `TaskUpdate(update:apply → completed)`.
 
 ---
 
 ## Completion
 
-> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(onboard:update:phase:7:summary → in_progress)` now, **before** the summary below. Mark it `TaskUpdate(... → completed)` after the summary is shown — that completes the last phase of the run; all 8 `update` tasks are now `completed`.
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(update:summary → in_progress)` now, **before** the summary below. Mark it `TaskUpdate(... → completed)` after the summary is shown — that completes the last phase of the run; all 8 `update` tasks are now `completed`.
 
 ### Step 9: Summary
 
@@ -443,11 +443,11 @@ Update `.claude/onboard-meta.json`:
 >
 > Run `/onboard:check` to verify the health of your setup.
 
-> **Phase complete:** after the summary above is shown, `TaskUpdate(onboard:update:phase:7:summary → completed)`. All 8 phase tasks are now `completed` — the run is done.
+> **Phase complete:** after the summary above is shown, `TaskUpdate(update:summary → completed)`. All 8 phase tasks are now `completed` — the run is done.
 
 ## Key Rules
 
-- **Own the phase-task list end to end** — per `../start/references/phase-tracking.md`, Step 0 creates the 8 `onboard:update:phase:N:*` tasks; each phase marks its own task `in_progress` before its work (and before any `Skill(onboard:generate)`/`Skill(onboard:research)` dispatch) and `completed` after. Those internal skills are **task-blind** — invoking `generate` inside Phase 6 does NOT spawn its own list. The enum is exactly `pending`/`in_progress`/`completed`/`deleted` — no "blocked"/"cancelled". The Phase 5 approve-gate stays `in_progress` while awaiting the Step 6 decision; Approve (`Apply all`, or `Review and pick` with ≥1 offer) → `completed` then proceed; an empty `Review and pick` selection that loops → no change; `Apply later`/`Skip / dismiss` → mark tasks 5/6/7 `deleted`. The list is **in-session visibility only** — the durable record is the on-disk meta/snapshots. When Phase 0 routes into `adopt`, adopt owns its own `onboard:adopt:phase:` list; the two never touch each other's tasks.
+- **Own the phase-task list end to end** — per `../start/references/phase-tracking.md`, Step 0 creates the 8 `update:*` tasks; each phase marks its own task `in_progress` before its work (and before any `Skill(onboard:generate)`/`Skill(onboard:research)` dispatch) and `completed` after. Those internal skills are **task-blind** — invoking `generate` inside Phase 6 does NOT spawn its own list. The enum is exactly `pending`/`in_progress`/`completed`/`deleted` — no "blocked"/"cancelled". The Phase 5 approve-gate stays `in_progress` while awaiting the Step 6 decision; Approve (`Apply all`, or `Review and pick` with ≥1 offer) → `completed` then proceed; an empty `Review and pick` selection that loops → no change; `Apply later`/`Skip / dismiss` → mark tasks 5/6/7 `deleted`. The list is **in-session visibility only** — the durable record is the on-disk meta/snapshots. When Phase 0 routes into `adopt`, adopt owns its own `adopt:` list; the two never touch each other's tasks.
 - **Require a baseline before drift work** — if `onboard-meta.json` is missing, halt at Step 1. When foreign tooling is present, offer `/onboard:adopt` to synthesize the baseline (then continue); otherwise direct the developer to `/onboard:start`. Never run drift application without a baseline.
 - **All upgrades require explicit approval** — never apply a detected drift item without the developer selecting it in the Step 6 `AskUserQuestion` call. "Apply later" is a valid answer; "Apply all" still requires the pre-question selection, not a silent auto-apply.
 - **Never overwrite user-customized files without per-item choice** — files with a modified or absent maintenance header are flagged and require a merge/replace/skip decision before any change is made.

@@ -311,18 +311,18 @@ The v3 phase-tracking feature surfaces each phase as a durable `TaskCreate`/`Tas
 
 On a fresh `/onboard:start` run (use `test-nextjs` before Scenario A, or a fresh clone), watch the task list (the in-session task panel):
 
-- [ ] At Step 0, **8** tasks are created up front, all `pending`, with subjects `onboard:phase:0:guard` … `onboard:phase:7:handoff`
-- [ ] `onboard:phase:0:guard` transitions to `completed` immediately (the guard ran/was skipped)
+- [ ] At Step 0, **8** tasks are created up front, all `pending`, with bare-slug subjects `empty-repo-check` … `handoff`
+- [ ] `empty-repo-check` transitions to `completed` immediately (the guard ran/was skipped)
 - [ ] Each subsequent phase task goes `in_progress` **before** its work begins (and before any agent/Skill dispatch) and `completed` after — exactly one task `in_progress` at a time
 - [ ] The internal skills (`research`, `wizard`, `generate`) and the dispatched agents (`codebase-analyzer`, `config-generator`) create **no** tasks of their own — only the orchestrator transitions the list
 
 ### E2: HARD GATE task states
 
 During Phase 5 (Plan → Preview → gate):
-- [ ] While awaiting the gate decision, `onboard:phase:5:plan-gate` stays **`in_progress`** (the enum has no "awaiting" state)
-- [ ] **Approve** → `onboard:phase:5:plan-gate` → `completed`, then Phase 6 runs
-- [ ] **Adjust** → `onboard:phase:5:plan-gate` stays `in_progress` (no status change) while the gate loops back to the wizard summary
-- [ ] **Cancel** → `onboard:phase:5:plan-gate`, `:6:generation`, and `:7:handoff` are all marked **`deleted`**; tasks 0–4 remain `completed`; **nothing is written to disk** and the run prints "Cancelled — no files were created."
+- [ ] While awaiting the gate decision, `plan-gate` stays **`in_progress`** (the enum has no "awaiting" state)
+- [ ] **Approve** → `plan-gate` → `completed`, then Phase 6 runs
+- [ ] **Adjust** → `plan-gate` stays `in_progress` (no status change) while the gate loops back to the wizard summary
+- [ ] **Cancel** → `plan-gate`, `generation`, and `handoff` are all marked **`deleted`**; tasks 0–4 remain `completed`; **nothing is written to disk** and the run prints "Cancelled — no files were created."
 
 ### E3: `currentPhase` anchor in meta
 
@@ -345,11 +345,11 @@ The cross-session resume anchor is the **durable on-disk artifacts**, not the ta
 
 ### E5: update / evolve / adopt task lists
 
-Each user-facing entry point owns its own task list with a distinct subject prefix:
+Each user-facing entry point owns its own task list; `start` uses bare slugs, the secondary three prefix the slug with the entry-point name:
 
-- [ ] `/onboard:update` creates **8** tasks `onboard:update:phase:0:verify-baseline` … `:7:summary`; the gate task is `:5:approve-gate` (stays `in_progress` while awaiting approval; Cancel → `5/6/7` `deleted`)
-- [ ] `/onboard:evolve` creates **4** tasks `onboard:evolve:phase:0:detect-drift` … `:3:clear-entries`; **gateless** — every phase is a straight `in_progress → completed`, no `deleted`-on-cancel transition
-- [ ] `/onboard:adopt` creates **6** tasks `onboard:adopt:phase:0:detect-classify` … `:5:write-handoff`; the gate task is `:4:preview-gate`. When `adopt` is entered from `/onboard:update`'s missing-baseline guard, the two lists coexist and neither touches the other's tasks
+- [ ] `/onboard:update` creates **8** tasks `update:verify-baseline` … `update:summary`; the gate task is `update:approve-gate` (stays `in_progress` while awaiting approval; Cancel → `5/6/7` `deleted`)
+- [ ] `/onboard:evolve` creates **4** tasks `evolve:detect-drift` … `evolve:clear-entries`; **gateless** — every phase is a straight `in_progress → completed`, no `deleted`-on-cancel transition
+- [ ] `/onboard:adopt` creates **6** tasks `adopt:detect-classify` … `adopt:write-handoff`; the gate task is `adopt:preview-gate`. When `adopt` is entered from `/onboard:update`'s missing-baseline guard, the two lists coexist and neither touches the other's tasks
 
 ---
 

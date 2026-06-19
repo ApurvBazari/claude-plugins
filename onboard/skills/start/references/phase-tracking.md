@@ -51,46 +51,54 @@ surrounding task transition (§ Transitions).
 
 | Task | `subject` | `activeForm` | Phase work |
 |---|---|---|---|
-| 0 | `onboard:phase:0:guard` | Checking for an empty repository | Empty-Repo Guard |
-| 1 | `onboard:phase:1:recon` | Reconnoitering the codebase | Recon (codebase-analyzer) |
-| 2 | `onboard:phase:2:research` | Researching the codebase | Research (profile-select + research engine) |
-| 3 | `onboard:phase:3:wizard` | Confirming preferences | Grounded Wizard |
-| 4 | `onboard:phase:4:context` | Detecting plugins & building context | Plugin Detection & Context |
-| 5 | `onboard:phase:5:plan-gate` | Planning & awaiting approval | Plan → Preview → HARD GATE |
-| 6 | `onboard:phase:6:generation` | Generating tooling | Generation (config-generator write) |
-| 7 | `onboard:phase:7:handoff` | Handing off | Handoff (explain artifacts, next steps) |
+| 0 | `empty-repo-check` | Checking for an empty repository | Empty-Repo Guard |
+| 1 | `recon` | Reconnoitering the codebase | Recon (codebase-analyzer) |
+| 2 | `research` | Researching the codebase | Research (profile-select + research engine) |
+| 3 | `wizard` | Confirming preferences | Grounded Wizard |
+| 4 | `build-context` | Detecting plugins & building context | Plugin Detection & Context |
+| 5 | `plan-gate` | Planning & awaiting approval | Plan → Preview → HARD GATE |
+| 6 | `generation` | Generating tooling | Generation (config-generator write) |
+| 7 | `handoff` | Handing off | Handoff (explain artifacts, next steps) |
 
-The subject scheme is `onboard:phase:<N>:<slug>` where `<N>` is the integer phase index and
-`<slug>` is the short phase name. This scheme is **load-bearing for in-session visibility**: the
-`onboard:phase:` prefix lets a fresh *same-session* run recognize one of *its own* incomplete
-lists (versus an `update`/`evolve`/`adopt` list) without parsing descriptions, and the `:<N>:`
-segment lets the orchestrator re-create the list with completed phases marked `completed` on a
-resume. The task list is **not** the cross-session resume anchor (the harness task list may be
-session-scoped and is not guaranteed to survive a new session) — the durable on-disk artifacts in
-§ Resume are. The list corroborates and visualizes; the artifacts decide.
+The subject is a **short, human-readable label** for the phase — for `start`, the bare phase
+slug (`plan-gate`, `recon`, …). It is a *display value*: **nothing in the machinery parses the
+subject string**. `TaskUpdate` addresses tasks by their `taskId` (returned at creation), the
+cross-session resume decision keys on durable on-disk artifacts (§ Resume), and the Cancel guard
+keys on task *status* — locating the gate task by its slug (`plan-gate`). Phase **order** is
+defined by this table's row order and the `## Phase N` step headers in SKILL.md, **not** by an
+index embedded in the subject. The task list is **not** the cross-session resume anchor (the
+harness task list may be session-scoped and is not guaranteed to survive a new session) — the
+durable on-disk artifacts in § Resume are. The list corroborates and visualizes; the artifacts
+decide.
 
-### Other entry points — distinct subject prefixes, own lists
+### Other entry points — own lists, entry-point-prefixed subjects
 
-Each entry point creates its own list with a **distinct subject prefix** so the lists never
-collide and a resume probe can tell which entry point owns an incomplete run. The prefix encodes
-the entry point; the phase ladder differs per skill (read each SKILL.md for the authoritative
-step list — the phases below are the durable checkpoints, not every internal sub-step):
+Each entry point creates its own list. `start` (the primary, highest-traffic path) uses **bare
+slugs** for the cleanest labels; the three secondary entry points **prefix the slug with the
+entry-point name** (`update:`, `evolve:`, `adopt:`). This asymmetry is **intentional** — the
+secondary lists can coexist with a `start`/`adopt` list (the routing note below), so the prefix
+keeps a combined list legible at a glance (`wizard` vs `adopt:wizard`) and keeps each secondary
+task self-identifying. Like every subject here it is a **readability aid, not a parsed key** —
+nothing in the machinery reads it; a list is recognizable as a given entry point's by its
+slug-*set* (and, for the secondary three, its prefix). The phase ladder differs per skill (read
+each SKILL.md for the authoritative step list — the phases below are the durable checkpoints, not
+every internal sub-step):
 
-| Entry point | Subject prefix | Phase ladder (durable tasks) |
+| Entry point | Subject form | Phase ladder (durable tasks) |
 |---|---|---|
-| `start` | `onboard:phase:` | 0 guard · 1 recon · 2 research · 3 wizard · 4 context · 5 plan-gate · 6 generation · 7 handoff |
-| `update` | `onboard:update:phase:` | 0 verify-baseline · 1 read-artifacts · 2 reanalyze · 3 best-practices+drift · 4 present+preview · 5 approve-gate · 6 apply · 7 summary |
-| `evolve` | `onboard:evolve:phase:` | 0 detect-drift · 1 apply-updates · 2 show-diff · 3 clear-entries |
-| `adopt` | `onboard:adopt:phase:` | 0 detect-classify · 1 recon+research · 2 wizard · 3 synthesize · 4 preview-gate · 5 write+handoff |
+| `start` | bare slug (no prefix) | 0 empty-repo-check · 1 recon · 2 research · 3 wizard · 4 build-context · 5 plan-gate · 6 generation · 7 handoff |
+| `update` | `update:<slug>` | 0 verify-baseline · 1 read-artifacts · 2 reanalyze · 3 best-practices+drift · 4 present+preview · 5 approve-gate · 6 apply · 7 summary |
+| `evolve` | `evolve:<slug>` | 0 detect-drift · 1 apply-updates · 2 show-diff · 3 clear-entries |
+| `adopt` | `adopt:<slug>` | 0 detect-classify · 1 recon+research · 2 wizard · 3 synthesize · 4 preview-gate · 5 write+handoff |
 
-The subject within each is `<prefix><N>:<slug>` (e.g. `onboard:update:phase:5:approve-gate`,
-`onboard:adopt:phase:4:preview-gate`). The state machine, gate mapping, and resume procedure in
-this contract apply uniformly to all four — `start` is the worked example; the others differ only
-in their ladder and their gate phase (the gate task for `update` is `5:approve-gate`, for `adopt`
-`4:preview-gate`; `evolve` has no hard gate — it presents a diff after applying, per its SKILL.md).
+The gate task is identified by its slug: `plan-gate` for `start`, `update:approve-gate` for
+`update`, `adopt:preview-gate` for `adopt` (`evolve` has no hard gate — it presents a diff after
+applying, per its SKILL.md). The state machine, gate mapping, and resume procedure in this
+contract apply uniformly to all four — `start` is the worked example; the others differ only in
+their ladder and their gate phase.
 
 > **Routing note.** When `update` or `start` routes into `adopt` (the missing-baseline / existing-config
-> branch), `adopt` owns its own `onboard:adopt:phase:` list for the adopt run and marks it
+> branch), `adopt` owns its own `adopt:` list for the adopt run and marks it
 > complete on handoff; control then returns to the caller, which continues its own list. The two
 > lists coexist; neither entry point touches the other's tasks.
 
@@ -153,7 +161,7 @@ Rules:
 then the run halts awaiting the user's decision. The enum has no "awaiting" status, so the
 mapping is:
 
-- **While awaiting the user's decision** at the gate, the Phase-5 task (`onboard:phase:5:plan-gate`)
+- **While awaiting the user's decision** at the gate, the Phase-5 task (`plan-gate`)
   stays **`in_progress`**. It is *not* marked `completed` — nothing has been written yet, and the
   run is genuinely still in that phase. `in_progress` is the truthful state of "we are here,
   waiting on you."
@@ -163,8 +171,8 @@ mapping is:
   No status change; the gate loops.
 - **Cancel** → the user declined → see § Cancel below.
 
-The same mapping applies to `update`'s approve-gate (`onboard:update:phase:5:approve-gate`) and
-`adopt`'s preview-gate (`onboard:adopt:phase:4:preview-gate`). `evolve` has no hard gate.
+The same mapping applies to `update`'s approve-gate (`update:approve-gate`) and
+`adopt`'s preview-gate (`adopt:preview-gate`). `evolve` has no hard gate.
 
 ### Cancel → `deleted` (no "cancelled" status exists)
 
@@ -172,8 +180,8 @@ When the user selects **Cancel** at the HARD GATE, nothing has been written (the
 the only write phase). The remaining phase tasks never ran. Since there is no `cancelled` status:
 
 - Mark the gate task itself **and every later phase task** `deleted` via `TaskUpdate`. For
-  `start` that is tasks **5, 6, and 7** (`onboard:phase:5:plan-gate`, `:6:generation`,
-  `:7:handoff`). For `update`: 5, 6, 7. For `adopt`: 4, 5.
+  `start` that is tasks **5, 6, and 7** (`plan-gate`, `generation`,
+  `handoff`). For `update`: 5, 6, 7. For `adopt`: 4, 5.
 - Leave the already-`completed` earlier tasks (0–4 for start) as `completed` — they really did run.
 - Do **not** write `currentPhase` at all. The Phase-5 gate precedes Phase 6, so on a cancelled run
   `onboard-meta.json` was never created (or, on a re-run over an earlier completed setup, is left
@@ -315,9 +323,10 @@ gate — there is nothing to resume (nothing was written), and re-offering it wo
 Concretely, when the task list is still present this session, the resume probe treats it as
 **"no in-progress run"** (→ clean start, no Resume/Restart prompt) when **any** of:
 
-- the gate task (`onboard:phase:5:plan-gate` for start) is `deleted`, OR
+- the gate task (`plan-gate` for start) is `deleted`, OR
 - one or more of the post-gate tasks (6, 7 for start) are `deleted`, OR
-- there is no incomplete task list at all with the entry-point prefix.
+- there is no incomplete task list at all owned by this entry point (recognized by its
+  slug-set — and, for the secondary three, its prefix).
 
 This is the non-cancelled clause of probe 1/probe 2, restated as a guard. A Cancel at the gate
 happens **before** Phase 6, so it writes **no** `onboard-meta.json` (probe 1 finds nothing) and
