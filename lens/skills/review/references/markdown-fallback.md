@@ -12,6 +12,14 @@ this path and **announce the degrade** to the user.
 `<configured-path>/<YYYY-MM-DD-HHMM>-<slug>.md` (default `.claude/lens/`). Same naming as the HTML, `.md`
 extension. On a name collision, suffix `-2`, `-3`, … (mirror walkthrough's collision rule).
 
+## Render failure
+A **render failure** on this path is concretely any of: a **write error** (the file could not be written to
+the output path), an **empty output** (the file was written but is zero-length / has no content), or **no
+path returned** (the render step produced no usable output path). On any of these, the review skill's
+**render failure → skip the state write** guard fires: Step 5 does **not** write `review-state.json`, so the
+state never advances without an artifact, and the user is told the render failed. (The walkthrough path's
+equivalent failure is `walkthrough:render` returning no written path — same guard.)
+
 ## Structure
 Render the reconciled review-model as this document, in order:
 
@@ -45,6 +53,11 @@ A table of spec items + plan steps with their states. In the in-session path thi
 items (full coverage); in the headless/contract-only path only the gaps appear (note the limitation — see
 `review-model-assembly.md` § adherence).
 
+When the adherence model carries `groups[]` (the multi-spec case — N>1), render **one `###` sub-section per spec/plan**
+(heading = the group `source`), each with its own items table, so per-spec coverage is scannable
+("spec-A: 4/5 met"). With a single spec/plan, render the one combined table below. The markdown fallback
+groups natively regardless of the walkthrough version — grouping is lens-controlled here.
+
 ```markdown
 ## Adherence
 
@@ -57,12 +70,18 @@ items (full coverage); in the headless/contract-only path only the gaps appear (
 ```
 
 ### 5. Findings, grouped by severity
-Group findings under `## Critical` / `## High` / `## Medium` / `## Low` headings (highest first). Each
-finding shows its location, claim, suggestedFix, the **verification status** (`verified` |
-`unverified-flagged`), and the **fixed/open/new** iteration label (`fixed` | `still-open` | `new` |
-`possibly-resolved — verify`). Refuted findings (dropped by the verifier) are NOT listed in the findings
-sections — optionally note the count in the verdict header or summary line (e.g. "1 candidate refuted and
-dropped"), matching the HTML render which only narrates them, never lists them.
+Group findings under `## Critical` / `## High` / `## Medium` / `## Low` headings (highest first). **Emit a
+severity heading only when that group has at least one finding** (omit-empty — never render an empty
+`## High` with no rows). On a **clean review** (a real, non-empty diff whose `findings[]` is empty — *not*
+an empty-scope return), there are no severity groups at all: render a single line such as
+`_No findings — the diff was reviewed and nothing was flagged._` under the Findings heading, so the section
+is present but carries no empty severity sub-sections. The verdict is still `ship` and the adherence section
+(§4) still renders — a clean review is a complete artifact, not a crash. Each finding shows its location,
+claim, suggestedFix, the **verification status** (`verified` | `unverified-flagged`), and the
+**fixed/open/new** iteration label (`fixed` | `still-open` | `new` | `possibly-resolved — verify`). Refuted
+findings (dropped by the verifier) are NOT listed in the findings sections — optionally note the count in
+the verdict header or summary line (e.g. "1 candidate refuted and dropped"), matching the HTML render which
+only narrates them, never lists them.
 
 ```markdown
 ## High

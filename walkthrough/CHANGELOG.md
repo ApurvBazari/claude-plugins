@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.0 — 2026-06-19
+
+### Grouped adherence
+- feat: the review adherence-panel (`components/review.md`) renders one sub-section per source spec/plan when the model carries `adherence.groups[]` (`{ source, kind, items[] }`), so multi-spec lens reviews show per-spec coverage at a glance. Falls back to the flat two-column layout when only `specItems[]`/`planSteps[]` are given. Populated by lens ≥ 1.1.0.
+
 ## 1.3.0 — 2026-06-13
 
 ### Cowork-first-class

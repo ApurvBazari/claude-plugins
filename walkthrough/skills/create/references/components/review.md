@@ -80,6 +80,12 @@ Omit the chip and the subhead entirely on a first review.
 
 **When:** `adherence` is present — spec items + plan steps with met/partial/missing chips.
 
+`adherence` comes in two mutually-exclusive forms. When `adherence.groups[]` is present (multi-spec review),
+render **one `.adh-col` sub-section per group** — the group `source` as the `.adh-h` heading and `kind`
+(spec/plan) as a sub-label, each listing that group's `items[]` rows. When only flat
+`specItems[]`/`planSteps[]` are given (single spec/plan, or headless), **falls back** to the two-column layout
+below (spec items | plan steps). Chip roles are identical in both forms.
+
 ```html
 <section id="<id>">
   <div class="sec-label">adherence</div>
@@ -95,6 +101,26 @@ Omit the chip and the subhead entirely on a first review.
       <div class="adh-h">Plan steps</div>
       <div class="adh-row"><span class="chip ok">followed</span><span><plan step></span></div>
       <div class="adh-row"><span class="chip warn">deviated</span><span><plan step></span></div>
+    </div>
+  </div>
+</section>
+```
+
+**Grouped form** (`adherence.groups[]` present) — one column per source, reusing the same `.adh`/`.adh-col`/`.adh-row` CSS:
+
+```html
+<section id="<id>">
+  <div class="sec-label">adherence</div>
+  <h2>Did it build <em>what was asked</em>?</h2>
+  <div class="adh">
+    <div class="adh-col">
+      <div class="adh-h">spec-A.md <span class="adh-score">4 / 5 met</span></div>
+      <div class="adh-row"><span class="chip ok">met</span><span><spec item></span></div>
+      <div class="adh-row"><span class="chip danger">missing</span><span><spec item></span></div>
+    </div>
+    <div class="adh-col">
+      <div class="adh-h">spec-B.md <span class="adh-score">2 / 3 met</span></div>
+      <div class="adh-row"><span class="chip ok">met</span><span><spec item></span></div>
     </div>
   </div>
 </section>

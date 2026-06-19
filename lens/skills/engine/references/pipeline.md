@@ -30,34 +30,55 @@ The union of the working-tree diff and the `<merge-base>...HEAD` diff is the rev
 empty, the engine returns immediately:
 
 ```json
-{ "findings": [], "recommendedEscalation": "minor", "degraded": false }
+{ "findings": [], "recommendedEscalation": "minor", "degraded": false, "emptyScope": true }
 ```
 
-No error, no prompt — an empty review is a valid result.
+No error, no prompt — an empty review is a valid result. The `emptyScope: true` flag is the
+**discriminator** that tells a caller *there was nothing to review*, as opposed to *a review ran and found
+nothing*. A clean review (a real, non-empty diff whose findings all survive verify but turn out to be
+zero) returns the **same shape minus `emptyScope`** — `{ "findings": [], "recommendedEscalation": "minor",
+"degraded": false }` (no `emptyScope`, or `emptyScope: false`). Without this flag the two cases are
+byte-identical, so the caller must key on `emptyScope` — never on an empty `findings[]` — to decide whether
+to render an artifact.
 
-## 2. Intent-source priority ladder (INTENT)
+## 2. Intent-source selection (INTENT)
 
-Build the **intent record** (the list of spec items + plan steps the diff is judged against) from the
-first available source, in priority order:
+Build the **intent record** — the spec items + plan steps the diff is judged against. The intent can span
+**multiple specs and plans**: a branch routinely implements more than one (the brainstorming workflow
+decomposes large work into sub-projects, each with its own spec→plan cycle). Selection is **diff-correlated**:
 
-1. **explicit args** — an intent/spec passed by the caller wins outright.
-2. **latest `docs/superpowers/specs/*`** — the most recent spec file.
-3. **the plan** — `docs/superpowers/plans/*` (the latest), when no spec is present.
-4. **the transcript** — reconstruct intent from the session conversation.
+1. **explicit args** — an intent/spec set passed by the caller wins outright (overrides the computation
+   below). Args that resolve to paths under `docs/superpowers/specs/` or `docs/superpowers/plans/` are the
+   explicit set.
+2. **diff-correlated specs/plans** — from the SCOPE diff (`<merge-base>..HEAD` + working tree) already in
+   hand, select every file under `docs/superpowers/specs/*` and `docs/superpowers/plans/*` whose status is
+   **Added or Modified**. Those documents ARE this branch's intent. No extra git work — this filters the
+   diff SCOPE already computed.
+   - **Prefer Added.** An Added spec/plan is unambiguously this branch's intent.
+   - **Modified-only is a soft signal.** If the selected set contains *only* Modified specs/plans (no
+     Added), set `degraded: true` and note in `summary` that intent correlation was soft — this guards
+     against a trivial edit to a prior PR's spec being mistaken for full intent.
+   - **Cap the fan-out.** If the set exceeds the fan-out cap (§8), prioritize Added specs, set
+     `degraded: true`, and **name the skipped specs in `summary`** — never silently drop one.
+3. **latest-only fallback** — if the branch touched **no** spec/plan files (the diff-correlated set is
+   empty), fall back to the single most-recent `docs/superpowers/specs/*`, else the most-recent
+   `docs/superpowers/plans/*`. This is today's behavior and is **not** `degraded` — it is the normal
+   small-PR case.
+4. **the transcript** — if none of the above yields intent, reconstruct from the session conversation and
+   set `degraded: true`, noting the reconstruction in `summary`.
 
-If **none** of (1)–(3) is found and intent must be reconstructed from the transcript, set
-`degraded: true` on the result and note the reconstruction in `summary`. Reconstructed intent is lower
-fidelity, so adherence findings derived from it are flagged accordingly.
+Reconstructed intent is lower fidelity, so adherence findings derived from it are flagged accordingly.
 
 ## 3. Parallel dispatch (ANALYZE)
 
-Dispatch the **5 built-in finders concurrently** — one Task call per finder, all in a single batch — per
-`superpowers:dispatching-parallel-agents`:
+Dispatch the **built-in finders concurrently** (3 fixed + one `spec-adherence` per spec + one
+`plan-adherence` per plan; N=1 collapses to the 5-agent dispatch) — one Task call per finder, all in a
+single batch — per `superpowers:dispatching-parallel-agents`:
 
 | Finder | Dimension | Extra structured output |
 |---|---|---|
-| `spec-adherence` | `requirements` | `specItems[]` (`{label,state}`) |
-| `plan-adherence` | `requirements` | `planSteps[]` (`{label,state}`) |
+| `spec-adherence` (×N_spec) | `requirements` | `specItems[]` (`{label,state}`) |
+| `plan-adherence` (×N_plan) | `requirements` | `planSteps[]` (`{label,state}`) |
 | `correctness` | `correctness` | — |
 | `risk-classify` | `risk` | — |
 | `test-gaps` | `test` | — |
@@ -65,6 +86,15 @@ Dispatch the **5 built-in finders concurrently** — one Task call per finder, a
 Each finder returns its `findings[]` (every finding `verified:false` — the VERIFY stage owns the flip).
 `spec-adherence` and `plan-adherence` additionally return `specItems[]` / `planSteps[]` for the downstream
 adherence panel.
+
+**Per-spec/plan fan-out.** When the intent record spans multiple specs/plans (Task 1's diff-correlated
+set), dispatch **one `spec-adherence` agent per spec** and **one `plan-adherence` agent per plan** — all in
+the **same single parallel batch** as the other built-in finders (one Task call each). Each adherence agent
+judges the full diff against **one** spec/plan at full fidelity and tags its outputs with provenance:
+`sourceSpec` (spec-adherence) / `sourcePlan` (plan-adherence) on every `specItems[]`/`planSteps[]` entry and
+every `requirements` finding it emits. The engine then **merges** all `specItems[]`/`planSteps[]` and
+`findings[]` across the fan-out before dedup (§4). With a single spec/plan (N=1) this collapses to the
+one-agent dispatch unchanged.
 
 After the built-ins, run the **finder registry** (see `finder-registry.md`): the **adapter tier** (the 5
 read-only adapters, dispatched only when their source plugin is installed, skipped silently otherwise) and
@@ -129,7 +159,7 @@ the renderer can wire each diff pin to its sheet within a single document. These
 runs (a new finding renumbers the set positionally) — cross-run identity is the reconcile **fingerprint**,
 never the id (see `../../review/references/reconcile.md`).
 
-## 8. Huge-diff rule
+## 8. Huge-diff rule + the fan-out cap
 
 No silent truncation. On a diff too large to review whole:
 
@@ -138,3 +168,15 @@ No silent truncation. On a diff too large to review whole:
 - On truncation, set `degraded: true` and **LOG coverage in `summary`** — e.g.
   `"reviewed 40/120 files, prioritized by risk"`. The unreviewed remainder is named, never silently
   dropped.
+
+**The adherence fan-out cap (§2 references this).** The per-spec/plan fan-out (§2 INTENT → §3 ANALYZE) is
+bounded to **8 adherence agents per parallel batch** — specs **plus** plans combined — on top of the 3
+fixed finders (`correctness`, `risk-classify`, `test-gaps`), so the single parallel batch never exceeds
+**11 finders**. This keeps the dispatch to one bounded batch per `superpowers:dispatching-parallel-agents`.
+When the diff-correlated intent set exceeds this cap (more than 8 specs + plans):
+
+- **Prioritize Added** specs/plans over Modified-only ones (an Added doc is unambiguously this branch's
+  intent — §2 step 2).
+- Fill the 8 slots by priority (all Added first, then Modified) until the cap is reached.
+- Set `degraded: true` and **name the skipped specs/plans in `summary`** — never silently drop one (e.g.
+  `"adherence capped at 8/11 intent docs; skipped: specs/foo.md, plans/bar.md"`).

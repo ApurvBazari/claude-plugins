@@ -55,6 +55,7 @@
     "recommendedEscalation": {"type": "string", "enum": ["minor", "moderate", "major", "critical"]},
     "degraded": {"type": "boolean"},
     "summary": {"type": "string"},
+    "emptyScope": {"type": "boolean", "$comment": "true only on empty-diff/no-repo; lets a caller distinguish 'nothing to review' from a clean zero-finding review. Field-additive — vicario's validator ignores it (only the dimension enum is co-owned)."},
     "severityTrend": {
       "type": "string",
       "enum": ["improving", "same", "regressed"],

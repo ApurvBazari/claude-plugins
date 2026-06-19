@@ -39,4 +39,13 @@ grep -qE '← *F[0-9]' "$F" || fail "diff hunks lack inline finding markers (←
 grep -qE '^### 5\. Findings' "$MF" || fail "markdown-fallback: Findings must be section 5"
 grep -qE '^### 7\. Risk' "$MF" || fail "markdown-fallback: Risk table must be section 7"
 
+# === F4 — markdown-fallback.md: omit-empty severity rule + clean-review no-findings line ===
+# Real text (line 74): "severity heading only when that group has at least one finding (omit-empty — never render an empty"
+# Use the severity-specific phrase so a generic 'omit-empty' on another line cannot mask a deletion here.
+grep -qiE 'severity heading only when|never render an empty.*High|omit-empty.*never render' "$MF" || fail "markdown-fallback must omit empty severity headings (omit-empty rule)"
+# Real text (line 77): "_No findings — the diff was reviewed and nothing was flagged._"
+# Use the combined phrase "nothing was flagged" so the generic "clean review" mentions on nearby lines
+# (which describe the concept, not the output template) can't mask a deletion of the actual output line.
+grep -qiE 'nothing was flagged|_No findings[^_]*reviewed' "$MF" || fail "markdown-fallback must define the clean-review no-findings output line (e.g. 'nothing was flagged')"
+
 echo "PASS: lens fallback report"
