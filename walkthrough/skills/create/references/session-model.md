@@ -89,8 +89,12 @@ exact keys `authoring-guide.md` keys its mapping table off of — do not rename 
   "verdict": "ship|fix|block",        // → hero chip (ship=ok, fix=warn, block=danger)
   "iterationDelta": "2 fixed · 1 new · 3 still-open",  // → findings-section delta subhead; omit on a first review
   "adherence": {                      // → adherence-panel (components/review.md)
+    // Flat form — single spec/plan, or the headless/contract-only path:
     "specItems": [ { "label": "...", "state": "met|partial|missing" } ],
-    "planSteps": [ { "label": "...", "state": "followed|deviated" } ]
+    "planSteps": [ { "label": "...", "state": "followed|deviated" } ],
+    // Grouped form — multi-spec (N>1), one group per source spec/plan. Mutually exclusive with the flat form.
+    "groups": [ { "source": "<spec/plan filename>", "kind": "spec|plan",
+                  "items": [ { "label": "...", "state": "met|partial|missing|followed|deviated" } ] } ]
   },
   "findings": [                       // → findings-list + diff pins; each id also a DET sheet
     { "id": "F1", "severity": "critical|high|medium|low",  // 'info' is NOT a severity — render-only chip role for 'low' (review-model-assembly.md)

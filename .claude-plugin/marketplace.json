@@ -58,7 +58,7 @@
       "name": "walkthrough",
       "source": "./walkthrough",
       "description": "Render a session or any subject (plugin, marketplace, path) as a self-contained interactive HTML document",
-      "version": "1.3.0",
+      "version": "1.4.0",
       "keywords": [
         "session-visualization",
         "interactive-html",
