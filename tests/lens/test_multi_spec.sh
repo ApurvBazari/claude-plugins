@@ -42,4 +42,16 @@ grep -qiE 'flat .*specItems|specItems.*flat|N=1' "$ASM" || fail "assembly: flat 
 grep -q 'sourceSpec' "$ASM" || fail "assembly: groups built from sourceSpec/sourcePlan provenance"
 grep -qiE 'sub-section per spec|per spec/plan|one .* per spec' "$MDFB" || fail "markdown fallback must group adherence per spec/plan"
 
+# === lens narrative + version ===
+CLAUDEMD="$ROOT/lens/CLAUDE.md"
+PJSON="$ROOT/lens/.claude-plugin/plugin.json"
+MKT="$ROOT/.claude-plugin/marketplace.json"
+CHANGELOG="$ROOT/lens/CHANGELOG.md"
+grep -qiE 'multiple specs|multi-spec|diff-correlated' "$CLAUDEMD" || fail "lens CLAUDE.md must describe multi-spec intent"
+PV=$(python3 -c "import json;print(json.load(open('$PJSON'))['version'])")
+MV=$(python3 -c "import json;d=json.load(open('$MKT'));print([p['version'] for p in d['plugins'] if p['name']=='lens'][0])")
+[ "$PV" = "1.1.0" ] || fail "lens plugin.json must be 1.1.0 (got $PV)"
+[ "$MV" = "1.1.0" ] || fail "lens marketplace.json must be 1.1.0 (got $MV)"
+grep -q '1.1.0' "$CHANGELOG" || fail "lens CHANGELOG must have a 1.1.0 entry"
+
 echo "PASS: lens multi-spec"

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0 — 2026-06-19
+- feat: multi-spec / multi-plan intent — the INTENT stage builds the intent record from *all* specs/plans Added or Modified in the branch diff (diff-correlated), not just the latest. ANALYZE fans out one `spec-adherence` per spec and one `plan-adherence` per plan, each tagging `sourceSpec`/`sourcePlan`; the engine merges across the fan-out.
+- feat: grouped adherence — the render-model emits `adherence.groups[]` (one group per source spec/plan) when more than one spec/plan was reviewed; the markdown fallback renders one sub-section per spec/plan. Single-spec and headless renders are unchanged (flat `specItems[]`/`planSteps[]`).
+- note: `review-findings` contract unchanged — `sourceSpec`/`sourcePlan` are finder side-outputs, not schema fields. Grouped HTML adherence requires `walkthrough` ≥ 1.4.0; the markdown fallback groups at any version.
+
 ## 1.0.0 — 2026-06-09
 - feat: intent-grounded review — `/lens:review [target]` reviews the current session's diff against its spec and plan, in-session, catching a clean build of the wrong spec that diff-only review can't.
 - feat: data-only engine (`skills/engine`, internal) — scope → intent → analyze → verify → dedup → rank, emitting the vicario-aligned `review-findings` schema (a versioned field-additive superset of vicario's).

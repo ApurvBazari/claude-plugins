@@ -42,8 +42,8 @@ lens is split into a **data-only engine** and a **renderer**, so the judgment co
 ```
 
 1. **SCOPE** — resolve the diff target. Default: working tree + this branch's commits vs the merge-base with the default branch; `[target]` overrides. Empty diff or no repo → tell the user, stop.
-2. **INTENT** — locate the spec + plan and build an **intent record**. Priority: explicit args > `docs/superpowers/specs/` (latest) > the plan > the transcript. None found → reconstruct from the transcript and mark adherence `"reconstructed"`.
-3. **ANALYZE** — dispatch finder subagents in parallel (see § Finder registry). Built-in finders are spec-adherence + plan-adherence (the wedge → `requirements` dimension), correctness, risk-classify, and test-gaps. All emit the same `review-findings` contract; read-only is **enforced at the boundary**.
+2. **INTENT** — build an **intent record** that may span **multiple specs/plans**, selected **diff-correlated**: explicit args win; else every `docs/superpowers/specs/` + `docs/superpowers/plans/` file Added or Modified in the diff (prefer Added; modified-only → degraded); else the latest-only fallback; else reconstruct from the transcript (degraded).
+3. **ANALYZE** — dispatch finder subagents in parallel (see § Finder registry). Built-in finders are spec-adherence + plan-adherence (the wedge → `requirements` dimension; **fanned out one per spec/plan**, each tagging output with `sourceSpec`/`sourcePlan`), correctness, risk-classify, and test-gaps. All emit the same `review-findings` contract; read-only is **enforced at the boundary**.
 4. **VERIFY** — adversarial refute pass. Each candidate finding goes to an independent skeptic agent prompted to **refute** it against real source; only unrefuted findings survive. Dedup across finders. A finding that **errors mid-verify is kept** as `"unverified — flagged"` — never silently dropped.
 5. **ASSEMBLE** — build the review-model and invoke `walkthrough:render` (markdown fallback if absent) to an output path under `.claude/lens/`.
 
