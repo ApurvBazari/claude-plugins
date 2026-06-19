@@ -88,7 +88,7 @@ Canonical spelling matches the Claude Code subagent docs (https://code.claude.co
 | `model` | string | no | `inherit` | `sonnet` / `opus` / `haiku` / `inherit` / full ID (e.g. `claude-opus-4-6`). Pick a tier when cost/quality tradeoff differs from session defaults. |
 | `permissionMode` | string | no | `default` | `default` / `acceptEdits` / `auto` / `dontAsk` / `bypassPermissions` / `plan`. Only emit when the wizard's `preApprovalPosture` specifies a non-default mode. |
 | `maxTurns` | integer | no | — | Cap on agentic turns. Emit for validator archetype (default `2`) — keeps fast gates fast. |
-| `effort` | string | no | session effort | `low` / `medium` / `high` / `max` (Opus 4.6 only). Thinking budget override. |
+| `effort` | string | no | session effort | `low` / `medium` / `high` / `xhigh` / `max`. Thinking budget override (`xhigh`/`max` are the highest budgets, Opus-class models). |
 | `isolation` | string | no | session (default) | Only legal value: `worktree`. Runs the subagent in a temporary git worktree with isolated repo copy. Omit for default session isolation. |
 | `color` | string | no | — | Display color in task list and transcript. Must be one of: `red`, `blue`, `green`, `yellow`, `purple`, `orange`, `pink`, `cyan`. No other values accepted. |
 | `background` | boolean | no | `false` | `true` runs the subagent as a background task. Reserved — no archetype currently defaults it; only reachable via wizard tweak. |
@@ -98,7 +98,7 @@ Canonical spelling matches the Claude Code subagent docs (https://code.claude.co
 1. **Always emit `name` + `description`.** These are the only non-negotiable fields.
 2. **Encode `proactive` intent via `description` prefix**, not a frontmatter field. `proactive` is not a valid Claude Code subagent frontmatter key.
 3. **Emit other fields only when inference produces a concrete value** — never emit empty strings or empty lists. An omitted field preserves pre-feature behavior exactly.
-4. **Validate enum values before writing.** `color` must be in the 8-color set; `effort` must be in `{low, medium, high, max}`; `isolation` must be `worktree` or omitted; `model` must be in the allowed set. Invalid values are generation bugs and must be dropped with a warning rather than written.
+4. **Validate enum values before writing.** `color` must be in the 8-color set; `effort` must be in `{low, medium, high, xhigh, max}`; `isolation` must be `worktree` or omitted; `model` must be in the allowed set. Invalid values are generation bugs and must be dropped with a warning rather than written.
 5. **Skip `isolation: worktree` in non-git directories.** The harness would fail at invocation time. Detect with `git rev-parse --is-inside-work-tree` equivalent and drop the field with a warning.
 
 ### Per-archetype defaults
@@ -481,7 +481,7 @@ All agents get full tool access. Generator archetype keeps its default `isolatio
 
 4. **Validate before writing**:
    - `color` must be in `{red, blue, green, yellow, purple, orange, pink, cyan}`. Invalid → drop field, warn `invalid-color-value`.
-   - `effort` must be in `{low, medium, high, max}`. Invalid → drop field, warn `invalid-effort-value`.
+   - `effort` must be in `{low, medium, high, xhigh, max}`. Invalid → drop field, warn `invalid-effort-value`.
    - `isolation` must be `worktree` or omitted. Any other value → drop, warn `invalid-isolation-value`.
    - `model` must match the allowed set (or be a full model ID). Invalid → drop, warn `invalid-model-value`.
    - `isolation: worktree` requires a git repository. If the target is non-git → drop field, warn `isolation-non-git-dir`.
