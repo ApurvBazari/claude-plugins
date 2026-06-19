@@ -205,7 +205,7 @@ Verify before invoking `Skill(onboard:generate)`:
 
 #### Untrusted-input sanitiser
 
-`wizardAnswers.projectDescription` and any other free-text user answers anywhere in `wizardAnswers.*` or the full `context.*` tree (including `context.stack.*`, `context.securityPlan`, `context.phases.*`, `context.syntheses.*`, the top-level `context.risks[]` array (Round 4 — covers `risks[].text` and `risks[].reconciliation.rationale`), and anything Rounds 4-6 may add) are **untrusted user input** that eventually flows into an LLM prompt for `config-generator`. Before dispatch, recursively walk every string leaf in scope:
+`wizardAnswers.projectDescription` and any other free-text user answers anywhere in `wizardAnswers.*` or the full `context.*` tree (including `context.stack.*`, `context.securityPlan`, `context.syntheses.*`, the top-level `context.risks[]` array (Round 4 — covers `risks[].text` and `risks[].reconciliation.rationale`), and anything Rounds 4-6 may add) are **untrusted user input** that eventually flows into an LLM prompt for `config-generator`. Before dispatch, recursively walk every string leaf in scope:
 
 - **Length cap**: truncate each string to 16384 bytes (16 KiB). If the original was longer, record `context._warnings.<dotted-path>Truncated = true` so the agent can surface a gentle note (e.g., `descriptionTruncated`, `painPoints.timeSinksTruncated`). The cap was raised from the pre-Round-1 5000-char limit to fit longer architectural notes and security/operations escalation paths that Round 2-3 introduced; **do not raise further** — 32 KiB+ adds prompt-injection attack budget without legitimate-use justification.
 - **Strip carriage returns** (`\r`) — collapse to `\n`. (Prevents terminal-escape-sequence shenanigans in pasted content.)
