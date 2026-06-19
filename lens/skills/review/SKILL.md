@@ -64,7 +64,11 @@ actually produced an artifact, keyed on which path ran:
 map computed in Step 3 back to `.claude/lens/review-state.json` — the single state write — then mark the
 `report` task `completed`. On a **render failure → skip the state write** (the existing guard) so the state
 never advances without an artifact (no stale `fixed` labels next run); tell the user the render failed and
-do **not** write `review-state.json`. Then (on success) tell the user the path + the one-line `verdict` +
+do **not** write `review-state.json`. **Leave NO task non-terminal on this failure path** (per
+`references/task-tracking.md` — the status enum is `pending`/`in_progress`/`completed`/`deleted`, there is
+**no `failed`** status, and no task may be left `in_progress`): mark the `render` task `deleted` (it ran but
+produced no artifact, so it does not "complete") and mark the `report` task `completed` (telling the user
+the render failed **is** the report). Then (on success) tell the user the path + the one-line `verdict` +
 the iteration delta (e.g. "2 fixed · 1 new"); offer to open (never auto-open).
 
 ## Orchestrator mode (compute-only)

@@ -30,5 +30,10 @@ for k in ("fixed","new","stillOpen"):
     assert top["delta"]["properties"][k]["type"]=="integer", f"delta.{k} must be integer"
 for k in ("delta","severityTrend"):
     assert k not in s.get("required",[]), f"{k} must stay optional (field-additive superset)"
-print("PASS: schema integer-type parity + 9-value dimension enum + convergence fields")
+# F1 — emptyScope discriminator: must exist as boolean, must NOT be required
+# (field-additive — vicario's validator ignores it; only the dimension enum is co-owned)
+assert top["emptyScope"]["type"]=="boolean", "emptyScope must be a boolean property"
+assert "emptyScope" not in s.get("required",[]), \
+    "emptyScope must stay optional (field-additive; vicario must not require it)"
+print("PASS: schema integer-type parity + 9-value dimension enum + convergence fields + emptyScope")
 PY

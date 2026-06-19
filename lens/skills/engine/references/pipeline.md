@@ -159,7 +159,7 @@ the renderer can wire each diff pin to its sheet within a single document. These
 runs (a new finding renumbers the set positionally) — cross-run identity is the reconcile **fingerprint**,
 never the id (see `../../review/references/reconcile.md`).
 
-## 8. Huge-diff rule
+## 8. Huge-diff rule + the fan-out cap
 
 No silent truncation. On a diff too large to review whole:
 
@@ -168,3 +168,15 @@ No silent truncation. On a diff too large to review whole:
 - On truncation, set `degraded: true` and **LOG coverage in `summary`** — e.g.
   `"reviewed 40/120 files, prioritized by risk"`. The unreviewed remainder is named, never silently
   dropped.
+
+**The adherence fan-out cap (§2 references this).** The per-spec/plan fan-out (§2 INTENT → §3 ANALYZE) is
+bounded to **8 adherence agents per parallel batch** — specs **plus** plans combined — on top of the 3
+fixed finders (`correctness`, `risk-classify`, `test-gaps`), so the single parallel batch never exceeds
+**11 finders**. This keeps the dispatch to one bounded batch per `superpowers:dispatching-parallel-agents`.
+When the diff-correlated intent set exceeds this cap (more than 8 specs + plans):
+
+- **Prioritize Added** specs/plans over Modified-only ones (an Added doc is unambiguously this branch's
+  intent — §2 step 2).
+- Fill the 8 slots by priority (all Added first, then Modified) until the cap is reached.
+- Set `degraded: true` and **name the skipped specs/plans in `summary`** — never silently drop one (e.g.
+  `"adherence capped at 8/11 intent docs; skipped: specs/foo.md, plans/bar.md"`).

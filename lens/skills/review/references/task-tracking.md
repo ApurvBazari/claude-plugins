@@ -26,7 +26,9 @@ One task per stage, created up front as `pending` by `review` (the entry point).
 
 Exactly four values: `pending` → `in_progress` → `completed`, plus `deleted`. There is **no `failed`**
 status. One task is `in_progress` at a time. A run that aborts before a stage runs marks that stage's task
-`deleted` — never left `in_progress`.
+`deleted` — never left `in_progress`. A stage that **ran but produced no artifact** (e.g. a render failure)
+is also marked `deleted` — not `completed` — since there is no `failed` status; the run still terminates
+every task, leaving none `in_progress` (see Rule 6).
 
 ## Rules
 
@@ -44,3 +46,7 @@ status. One task is `in_progress` at a time. A run that aborts before a stage ru
    (consistent with lens's read-only finder contract).
 5. **One task per stage, never per finder.** The parallel fan-out is the single `analyze` task regardless
    of how many finders run.
+6. **Every run terminates every task.** No task may end a run `in_progress`. On the render-failure path
+   (`review` SKILL Step 5), `render` is marked `deleted` (it ran but produced no artifact) and `report` is
+   marked `completed` (telling the user the render failed *is* the report) — so even when the state write is
+   skipped, the task list still reaches a fully-terminal state with no `failed` status.

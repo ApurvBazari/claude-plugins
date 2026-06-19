@@ -45,6 +45,21 @@ grep -qiE 'absent.*orchestrator|task action.*byte-identical' "$ENGINE" || fail "
 grep -qi 'task-blind' "$ENGINE" || fail "engine must state its subagents are task-blind"
 grep -q 'deleted' "$ENGINE" || fail "engine empty-diff path must mark unreached stages deleted"
 
+# === F2 — emptyScope wiring: engine returns the discriminator; review keys its empty branch on it ===
+# The engine must emit emptyScope IN its empty-diff return object, not just mention it in prose.
+# Anchor on the return literal's `degraded:false,emptyScope:true` sequence (unique to the return JSON —
+# the surrounding prose phrases the discriminator differently), so deleting it from the return FAILs even
+# if the explanatory prose survives.
+grep -qE 'degraded:false,[[:space:]]*emptyScope:[[:space:]]*true' "$ENGINE" || fail "engine must return emptyScope:true IN its empty-diff return object (not just prose)"
+# The review skill must KEY ITS EMPTY BRANCH on result.emptyScope === true (not on empty findings[]).
+# Anchor on `emptyScope === true` — unique to the branch instruction; the clean-review line says "falsy",
+# so re-keying the branch onto empty findings[] removes "=== true" and FAILs even though prose survives.
+grep -qE 'emptyScope === true' "$REVIEW" || fail "review must key the empty branch on result.emptyScope === true, not empty findings[]"
+
+# === F3 — clean-review fall-through branch is documented in review/SKILL.md ===
+# Real text: "Clean review (real diff, zero findings): ... fall through to Steps 3–5"
+grep -qiE 'clean review|fall through to (steps?|render)|zero findings' "$REVIEW" || fail "review must document the clean-review fall-through (real diff, zero findings -> render)"
+
 # === CLAUDE.md narrative + version 1.2.0 ===
 grep -qiE 'task list|in-session task|progress task' "$CLAUDEMD" || fail "lens CLAUDE.md must describe the in-session task list"
 PV=$(python3 -c "import json;print(json.load(open('$PJSON'))['version'])")
