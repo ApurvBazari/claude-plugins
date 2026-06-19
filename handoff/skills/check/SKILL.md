@@ -29,6 +29,11 @@ Parse the frontmatter and compute progress signals.
 ## Step 2: Compute progress signals
 
 ```bash
+# Eval-safety (audit finding M2): compute-progress.sh emits every value via
+# `printf '%q'`, so re-evaluation here cannot perform command substitution even
+# when a field (e.g. retention_value) is read from caller-controlled settings.md
+# frontmatter. The contract is regression-pinned by tests/handoff/test_compute_progress.sh,
+# whose adversarial canary cases assert injected `$(...)`/backticks do NOT execute.
 eval "$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/compute-progress.sh" "$(pwd)")"
 # Exports: days_old, current_branch, commits_past, cwd_match,
 #          snooze_remaining, archive_count, retention_value
