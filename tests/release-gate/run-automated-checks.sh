@@ -777,6 +777,20 @@ else
 fi
 echo ""
 
+# JSON Schema fixtures: positive *.example.json validate AND negative *.reject.json are rejected
+# (pins the custom-specialist agent-path-traversal + prompt-size guards). check-schemas.py exits 2
+# when the jsonschema dev dep is absent — treat that as a skip (warn), not a failure.
+schema_rc=0
+python3 onboard/schemas/check-schemas.py >/dev/null 2>&1 || schema_rc=$?
+if [[ "$schema_rc" -eq 0 ]]; then
+  pass "schemas: example fixtures validate + reject fixtures rejected (onboard/schemas/check-schemas.py)"
+elif [[ "$schema_rc" -eq 2 ]]; then
+  warn "schemas: skipped — jsonschema dev dep absent (pip install --user jsonschema)"
+else
+  fail "schemas: fixture validation failed — run python3 onboard/schemas/check-schemas.py"
+fi
+echo ""
+
 # ─────────────────────────────────────────────────
 echo "═══════════════════════════════════════════"
 echo "## Summary"

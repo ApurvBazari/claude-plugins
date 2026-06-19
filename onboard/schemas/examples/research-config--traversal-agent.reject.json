@@ -1,0 +1,9 @@
+{
+  "extraSpecialists": [
+    {
+      "name": "evil",
+      "dimension": "path traversal via relative escape",
+      "agent": "../../../../etc/passwd"
+    }
+  ]
+}

@@ -29,12 +29,23 @@ Each `extraSpecialist` MUST supply **exactly one** of `prompt` or `agent`. The s
 | Custom specialist shape | Engine action |
 |---|---|
 | `prompt` only | **Use it** — fill it as the specialist's investigation brief, dispatch `research-specialist` with the custom `dimension` + `scopeGlobs`. |
-| `agent` only | **Use it** — the `agent` path points to a user agent file (e.g. `.claude/agents/research-a11y.md`). Verify the file exists, then dispatch THAT agent with the same `{dimension, scopeGlobs, prompt:""}` envelope + `dispatchedAsAgent:true`. |
+| `agent` only | **Use it** — the `agent` path points to a user agent file (e.g. `.claude/agents/research-a11y.md`). First run the **path-safety check** (below); if it passes, verify the file exists, then dispatch THAT agent with the same `{dimension, scopeGlobs, prompt:""}` envelope + `dispatchedAsAgent:true`. |
 | **neither** `prompt` nor `agent` | **Skip + warn** — `"custom specialist '<name>' supplies neither prompt nor agent; skipped."` Roster falls back to the remaining valid specialists. |
 | **both** `prompt` and `agent` | **Skip + warn** — `"custom specialist '<name>' supplies both prompt and agent (exactly one required); skipped."` |
 | `agent` points to a **missing file** | **Skip + warn** — `"custom specialist '<name>' references missing agent file <path>; skipped, falling back to built-ins."` |
+| `agent` path **escapes the project root** (absolute, contains a `..` segment, not under `.claude/`, or resolves via symlink outside the repo) | **Skip + warn** — `"custom specialist '<name>' agent path '<path>' escapes the project root; skipped, falling back to built-ins."` |
+| `prompt` **exceeds 16 KiB** (16384 bytes) | **Skip + warn** — `"custom specialist '<name>' prompt exceeds the 16 KiB cap; skipped."` |
 
 A skipped custom specialist never enters `effectiveRoster`; the run continues with whatever remains. Skipping a custom is **never fatal**.
+
+### Path-safety + size guards (authoritative — schema validation is opportunistic)
+
+Step A validates the config against `research-config.json` only *opportunistically* (when the `jsonschema` dev dep is present). The security-relevant constraints must therefore be **re-enforced here at discovery**, where they always run; the schema `pattern`/`maxLength` are a belt, this check is the load-bearing one.
+
+- **`agent` path-safety.** Before touching the file, confirm the path is repo-safe: it (a) is relative — does not begin with `/` or `~`; (b) begins with `.claude/`; (c) contains no `..` path segment; and (d) after resolving symlinks, still resolves to a location **under the project root**. Any failure → skip + warn (table rows above). This stops a hostile `.claude/onboard-research.config.json` (e.g. a fork/PR contribution) from pointing `agent` at `/etc/passwd`, `../../secrets.md`, or `/tmp/evil-agent.md`.
+- **`prompt` size cap.** Truncating a brief can silently corrupt its meaning, so an oversized `prompt` (> 16384 bytes) is **skipped + warned**, not truncated.
+
+**Residual (documented, accepted):** `.claude/onboard-research.config.json` is project-owner-authored config committed to the repo, so the trust boundary is the repo itself, and the symlink check (d) is best-effort within an LLM-run engine. An attacker who already controls the repo's `.claude/` tree has easier vectors than a research-config path — these guards harden the *fork/PR-contributed-config* case, not a fully-compromised checkout.
 
 ## Step D: Custom specialists emit the same shape
 

@@ -1,0 +1,9 @@
+{
+  "extraSpecialists": [
+    {
+      "name": "evil",
+      "dimension": "dot-dot escape after a valid .claude/ prefix",
+      "agent": ".claude/../../etc/passwd"
+    }
+  ]
+}
