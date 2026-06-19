@@ -45,6 +45,11 @@ A table of spec items + plan steps with their states. In the in-session path thi
 items (full coverage); in the headless/contract-only path only the gaps appear (note the limitation — see
 `review-model-assembly.md` § adherence).
 
+When the adherence model carries `groups[]` (the multi-spec case — N>1), render **one `###` sub-section per spec/plan**
+(heading = the group `source`), each with its own items table, so per-spec coverage is scannable
+("spec-A: 4/5 met"). With a single spec/plan, render the one combined table below. The markdown fallback
+groups natively regardless of the walkthrough version — grouping is lens-controlled here.
+
 ```markdown
 ## Adherence
 

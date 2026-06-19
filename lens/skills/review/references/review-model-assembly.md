@@ -27,6 +27,26 @@ Feeds the adherence-panel. **Two source paths — state both:**
    **plan-adherence** finder's `planSteps[]` (`{label, state: followed|deviated}`) are available directly.
    Use them verbatim — they include the `met`/`followed` items, so the panel shows full coverage, not just gaps.
 
+**Grouped when multi-spec (N>1).** When the intent record spanned **more than one spec/plan**, emit the
+grouped `adherence` shape instead of the flat arrays:
+
+```json
+"adherence": {
+  "groups": [
+    { "source": "<spec/plan filename>", "kind": "spec",
+      "items": [ { "label": "...", "state": "met|partial|missing" } ] },
+    { "source": "<plan filename>", "kind": "plan",
+      "items": [ { "label": "...", "state": "followed|deviated" } ] }
+  ]
+}
+```
+
+Build the groups by bucketing the merged `specItems[]`/`planSteps[]` on their `sourceSpec`/`sourcePlan`
+provenance (one group per distinct source; `kind` is `spec` for `sourceSpec` buckets, `plan` for
+`sourcePlan`). With a **single** spec/plan (N=1) **or** on the headless/contract-only path, emit the
+existing **flat** `specItems[]`/`planSteps[]` (byte-identical to today). The renderer reads `groups[]` when
+present, the flat arrays otherwise.
+
 2. **Headless / contract-only (e.g. vicario consuming the engine's `review-findings` JSON without the
    finders' side outputs).** Only the `findings[]` array is available — `specItems[]`/`planSteps[]` are not.
    **DERIVE** the adherence gaps from the `requirements`-dimension findings:

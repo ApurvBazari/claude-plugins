@@ -35,4 +35,11 @@ grep -q 'sourceSpec' "$SPECAG" || fail "spec-adherence must tag specItems/findin
 grep -qiE 'one plan|a single plan|exactly one plan' "$PLANAG" || fail "plan-adherence must judge against one plan"
 grep -q 'sourcePlan' "$PLANAG" || fail "plan-adherence must tag planSteps/findings with sourcePlan"
 
+# === lens render: grouped adherence + markdown fallback ===
+grep -qi 'groups' "$ASM" || fail "review-model-assembly must document grouped adherence"
+grep -qiE 'more than one spec|N>1|multiple specs' "$ASM" || fail "assembly: grouped only when N>1"
+grep -qiE 'flat .*specItems|specItems.*flat|N=1' "$ASM" || fail "assembly: flat shape when N=1 or headless"
+grep -q 'sourceSpec' "$ASM" || fail "assembly: groups built from sourceSpec/sourcePlan provenance"
+grep -qiE 'sub-section per spec|per spec/plan|one .* per spec' "$MDFB" || fail "markdown fallback must group adherence per spec/plan"
+
 echo "PASS: lens multi-spec"
