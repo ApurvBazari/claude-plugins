@@ -20,8 +20,10 @@ the SCOPE diff (prefer Added; modified-only → `degraded:true`); else the lates
 recent spec, else plan); else reconstruct from the transcript (`degraded:true`). See `references/pipeline.md` §2.
 
 ## Step 3: Analyze
-Dispatch the built-in finder agents concurrently (`spec-adherence`, `plan-adherence`, `correctness`,
-`risk-classify`, `test-gaps`). Then run the **finder registry** per `references/finder-registry.md`:
+Dispatch the built-in finder agents concurrently (`correctness`, `risk-classify`, `test-gaps`) plus the
+adherence finders **fanned out per intent doc** — one `spec-adherence` **per spec** and one `plan-adherence`
+**per plan** — all in the same parallel batch. Each adherence agent judges against one doc and tags its
+output with `sourceSpec`/`sourcePlan`; the engine merges across the fan-out. Then run the **finder registry** per `references/finder-registry.md`:
 the **adapter tier** (the 5 read-only adapters, when installed) (normalized into the finding shape per `references/adapter-dispatch.md`) + the **project tier** (custom finders
 registered in `.claude/lens/settings.md`). Read-only ENFORCED at the boundary.
 Tag every candidate with its `dimension` per the producer->dimension map.

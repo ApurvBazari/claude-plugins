@@ -80,6 +80,15 @@ Each finder returns its `findings[]` (every finding `verified:false` — the VER
 `spec-adherence` and `plan-adherence` additionally return `specItems[]` / `planSteps[]` for the downstream
 adherence panel.
 
+**Per-spec/plan fan-out.** When the intent record spans multiple specs/plans (Task 1's diff-correlated
+set), dispatch **one `spec-adherence` agent per spec** and **one `plan-adherence` agent per plan** — all in
+the **same single parallel batch** as the other built-in finders (one Task call each). Each adherence agent
+judges the full diff against **one** spec/plan at full fidelity and tags its outputs with provenance:
+`sourceSpec` (spec-adherence) / `sourcePlan` (plan-adherence) on every `specItems[]`/`planSteps[]` entry and
+every `requirements` finding it emits. The engine then **merges** all `specItems[]`/`planSteps[]` and
+`findings[]` across the fan-out before dedup (§4). With a single spec/plan (N=1) this collapses to the
+one-agent dispatch unchanged.
+
 After the built-ins, run the **finder registry** (see `finder-registry.md`): the **adapter tier** (the 5
 read-only adapters, dispatched only when their source plugin is installed, skipped silently otherwise) and
 the **project tier** (custom finders from `.claude/lens/settings.md`). Read-only is **enforced at the

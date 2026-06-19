@@ -20,4 +20,13 @@ grep -qi 'name the skipped' "$PIPE" || fail "INTENT: over-cap specs must be name
 grep -qiE 'multiple specs|more than one spec|span' "$ESKILL" || fail "INTENT: engine SKILL Step 2 must state intent can span multiple specs/plans"
 grep -qi 'diff-correlated' "$ESKILL" || fail "INTENT: engine SKILL Step 2 must reference diff-correlated selection"
 
+# === ANALYZE: per-spec/plan fan-out + provenance ===
+grep -qiE 'spec-adherence.*per spec|per spec.*spec-adherence|one .?spec-adherence.? (agent )?per spec' "$PIPE" || fail "ANALYZE: one spec-adherence per spec"
+grep -qiE 'plan-adherence.*per plan|per plan.*plan-adherence|one .?plan-adherence.? (agent )?per plan' "$PIPE" || fail "ANALYZE: one plan-adherence per plan"
+grep -qiE 'same single parallel batch|same parallel batch' "$PIPE" || fail "ANALYZE: fan-out is one parallel batch"
+grep -q 'sourceSpec' "$PIPE" || fail "ANALYZE: provenance sourceSpec documented"
+grep -q 'sourcePlan' "$PIPE" || fail "ANALYZE: provenance sourcePlan documented"
+grep -qi 'merge' "$PIPE" || fail "ANALYZE: engine merges across the fan-out"
+grep -qiE 'per spec|per plan' "$ESKILL" || fail "ANALYZE: engine SKILL Step 3 must state per-spec/plan fan-out"
+
 echo "PASS: lens multi-spec"
