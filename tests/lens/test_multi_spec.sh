@@ -29,4 +29,10 @@ grep -q 'sourcePlan' "$PIPE" || fail "ANALYZE: provenance sourcePlan documented"
 grep -qi 'merge' "$PIPE" || fail "ANALYZE: engine merges across the fan-out"
 grep -qiE 'per spec|per plan' "$ESKILL" || fail "ANALYZE: engine SKILL Step 3 must state per-spec/plan fan-out"
 
+# === Adherence agents: single-doc judgment + provenance ===
+grep -qiE 'one spec|a single spec|exactly one spec' "$SPECAG" || fail "spec-adherence must judge against one spec"
+grep -q 'sourceSpec' "$SPECAG" || fail "spec-adherence must tag specItems/findings with sourceSpec"
+grep -qiE 'one plan|a single plan|exactly one plan' "$PLANAG" || fail "plan-adherence must judge against one plan"
+grep -q 'sourcePlan' "$PLANAG" || fail "plan-adherence must tag planSteps/findings with sourcePlan"
+
 echo "PASS: lens multi-spec"
