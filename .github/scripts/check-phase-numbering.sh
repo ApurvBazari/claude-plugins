@@ -8,9 +8,9 @@
 #                          are vestiges of the old global numbering)
 # anywhere under onboard/ EXCEPT CHANGELOG.md (historical, immutable).
 # Usage: check-phase-numbering.sh [root]   (default: onboard)
-set -uo pipefail
+set -euo pipefail
 ROOT="${1:-onboard}"
-hits="$(grep -rnoE 'Phase [0-9]+\.[0-9]+|Phase [0-9]+[a-d]\b|Phase ([89]|[1-9][0-9]+)\b' \
+hits="$(grep -rnoE 'Phase [0-9]+\.[0-9]+|Phase [0-9]+[a-z]\b|Phase ([89]|[1-9][0-9]+)\b' \
           --include='*.md' "$ROOT" 2>/dev/null \
         | grep -v '/CHANGELOG.md:' || true)"
 if [ -z "$hits" ]; then

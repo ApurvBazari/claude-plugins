@@ -341,7 +341,7 @@ fi
 
 ROSTER="onboard/skills/research/references/specialist-roster.md"
 SYN="onboard/skills/research/references/synthesis-and-dossier.md"
-TAG_COUNT=$(grep -c 'category:"test-gap"\|category:"risk"' "$ROSTER" || true)
+TAG_COUNT=$(grep -cE 'category:"test-gap"|category:"risk"' "$ROSTER" || true)
 if [[ "$TAG_COUNT" -ge 3 ]]; then
   pass "4b: specialist-roster tags categories in testing/security/dependencies (${TAG_COUNT} tags)"
 else
@@ -367,7 +367,7 @@ if grep -qi "required for a full generation" "$CSV3" && grep -qi "regenerateOnly
 else
   fail "4b: context-shape-v3.json description note missing/insufficient"
 fi
-if grep -qi "consumes.*research\|research.*sharpen\|verify backlog" "$OBCLAUDE"; then
+if grep -qiE "consumes.*research|research.*sharpen|verify backlog" "$OBCLAUDE"; then
   pass "4b: onboard/CLAUDE.md notes generation consumes research (v3)"
 else
   fail "4b: onboard/CLAUDE.md missing the consumes-research note"
@@ -507,7 +507,7 @@ if grep -q "walkthrough:render" "$START" && grep -q "render-adapter.md" "$SD"; t
 else
   fail "5: pre-implementation gate missing the walkthrough:render handoff"
 fi
-if grep -qi "set by the onboard pre-implementation gate" "$RESEARCH" && ! grep -qi "HTML render.*deferred\|render.*are deferred" "$RESEARCH"; then
+if grep -qi "set by the onboard pre-implementation gate" "$RESEARCH" && ! grep -qiE "HTML render.*deferred|render.*are deferred" "$RESEARCH"; then
   pass "5: artifacts.html set by the gate (research render folded into the gate)"
 else
   fail "5: research/SKILL.md artifacts.html provenance not pinned to the gate"
@@ -518,7 +518,7 @@ if grep -q "engineUsed" "$CG" && grep -q "specialistsRun" "$CG" && grep -q "clai
 else
   fail "5: config-generator missing full-telemetry fields"
 fi
-if ! grep -qi "full telemetry block.*Plan 5\|do not add them here" "$CG"; then
+if ! grep -qiE "full telemetry block.*Plan 5|do not add them here" "$CG"; then
   pass "5: config-generator deferral guard removed"
 else
   fail "5: config-generator still defers the full block to Plan 5"
@@ -540,12 +540,12 @@ else
   fail "5: config-generator missing the research self-audit (start summary alone is not subagent-visible)"
 fi
 VB="onboard/skills/generation/references/research/verify-backlog-seeding.md"
-if grep -qiE "sha-?256" "$VB" && grep -qi "without.*:line\|line.*stripped\|pathNoLine" "$VB"; then
+if grep -qiE "sha-?256" "$VB" && grep -qiE "without.*:line|line.*stripped|pathNoLine" "$VB"; then
   pass "5: sourceClaim algorithm pinned (SHA-256, line-stripped path)"
 else
   fail "5: sourceClaim algorithm not pinned"
 fi
-if ! grep -rq "statement+evidence\|statement + evidence" onboard; then
+if ! grep -rqE "statement\+evidence|statement \+ evidence" onboard; then
   pass "5: sourceClaim preimage no longer includes raw evidence (no line-drift churn)"
 else
   fail "5: sourceClaim preimage still hashes raw statement+evidence"
@@ -557,7 +557,7 @@ if grep -q "test-gap" "$FE" && grep -qi "security" "$FE" && grep -qi "obsolete" 
 else
   fail "5: feature-evaluator missing research-category routing / obsolete-skip"
 fi
-if ! grep -q "does not validate \`category\`\|does not validate category" "$VB"; then
+if ! grep -qE "does not validate \`category\`|does not validate category" "$VB"; then
   pass "5: verify-backlog category prose corrected (evaluator routes on category)"
 else
   fail "5: verify-backlog still claims the evaluator ignores category"
@@ -580,7 +580,7 @@ if ! grep -qiw "hotspot" "$VB" && ! grep -qiw "hotspot" "$RC"; then
 else
   fail "5: A3 — hotspot enum still present"
 fi
-if grep -qi "stored depth + the prior dossier\|stored depth + prior dossier" "$EVOLVE"; then
+if grep -qiE "stored depth \+ the prior dossier|stored depth \+ prior dossier" "$EVOLVE"; then
   pass "5: 4c#1 — evolve scoped input tightened to stored depth + prior dossier"
 else
   fail "5: 4c#1 — evolve still over-specifies wizardAnswers"
@@ -599,7 +599,7 @@ if [ -z "$GEN_STALE" ]; then
 else
   fail "5: sweep#1 — generate/SKILL.md still carries stale v2/headless prose"
 fi
-if ! grep -q "string — semver\|string—semver" "$GEN"; then
+if ! grep -qE "string — semver|string—semver" "$GEN"; then
   pass "5: sweep#1 — generate version descriptor no longer 'string — semver'"
 else
   fail "5: sweep#1 — generate still describes version as a semver string"
@@ -612,7 +612,7 @@ else
 fi
 # Pre-merge cleanup (2026-06-17): onboard vocabulary is fully de-headlessed. CHANGELOGs are
 # historical and exempt. This guards against the term creeping back in new docs.
-HEADLESS_SURVIVORS=$(grep -rIl 'headless\|Headless' onboard/ | grep -vE 'CHANGELOG[^/]*$' || true)
+HEADLESS_SURVIVORS=$(grep -rIlE 'headless|Headless' onboard/ | grep -vE 'CHANGELOG[^/]*$' || true)
 if [ -z "$HEADLESS_SURVIVORS" ]; then
   pass "cleanup: onboard/ free of 'headless' vocabulary (CHANGELOG exempt)"
 else
@@ -644,7 +644,7 @@ if [[ "$(jq -r '.version' "$PJ")" == "3.0.0" ]] && [[ "$(jq -r '.plugins[]|selec
 else
   fail "5: onboard version not 3.0.0 in both manifests"
 fi
-if ! jq -r '.description' "$PJ" | grep -qi "v2 context shape\|rejects v1"; then
+if ! jq -r '.description' "$PJ" | grep -qiE "v2 context shape|rejects v1"; then
   pass "5: onboard manifest description rewritten off the v2 framing"
 else
   fail "5: onboard manifest description still references the v2 context shape"
@@ -730,26 +730,32 @@ fi
 echo ""
 
 # Audit-pipeline Tier-A: exercise open-gap-audit-pr.sh logic with a stubbed gh (no real PR).
-if bash tests/audit-pipeline/test-open-gap-audit-pr.sh >/dev/null 2>&1; then
+if out="$(bash tests/audit-pipeline/test-open-gap-audit-pr.sh 2>&1)"; then
   pass "audit: open-gap-audit-pr.sh logic (gh-stubbed) — all cases"
 else
   fail "audit: open-gap-audit-pr.sh logic (gh-stubbed) — see tests/audit-pipeline/test-open-gap-audit-pr.sh"
+  # shellcheck disable=SC2001  # sed is the clearest way to indent each diagnostic line
+  echo "$out" | sed 's/^/    /'
 fi
 echo ""
 
 # Ref integrity: every cross-skill `<path>/SKILL.md` prose ref in onboard/ must resolve.
-if bash .github/scripts/check-skill-refs.sh >/dev/null 2>&1; then
+if out="$(bash .github/scripts/check-skill-refs.sh 2>&1)"; then
   pass "refs: cross-skill SKILL.md references resolve (.github/scripts/check-skill-refs.sh)"
 else
   fail "refs: broken cross-skill SKILL.md ref — run .github/scripts/check-skill-refs.sh"
+  # shellcheck disable=SC2001  # sed is the clearest way to indent each diagnostic line
+  echo "$out" | sed 's/^/    /'
 fi
 echo ""
 
 # Ref integrity (paths): every path-shaped non-SKILL.md .md prose ref in onboard/ resolves or is exempt.
-if bash .github/scripts/check-ref-paths.sh >/dev/null 2>&1; then
+if out="$(bash .github/scripts/check-ref-paths.sh 2>&1)"; then
   pass "refs: non-SKILL.md .md path-refs resolve or are exempt (.github/scripts/check-ref-paths.sh)"
 else
   fail "refs: broken non-SKILL.md .md path-ref — run .github/scripts/check-ref-paths.sh"
+  # shellcheck disable=SC2001  # sed is the clearest way to indent each diagnostic line
+  echo "$out" | sed 's/^/    /'
 fi
 echo ""
 
@@ -762,18 +768,22 @@ fi
 echo ""
 
 # Phase numbering: onboard phase labels must be whole numbers in 0–7 (no fractional/lettered/out-of-range).
-if bash .github/scripts/check-phase-numbering.sh >/dev/null 2>&1; then
+if out="$(bash .github/scripts/check-phase-numbering.sh 2>&1)"; then
   pass "phase-numbering: onboard phase labels are whole numbers (.github/scripts/check-phase-numbering.sh)"
 else
   fail "phase-numbering: fractional/lettered phase label — run .github/scripts/check-phase-numbering.sh"
+  # shellcheck disable=SC2001  # sed is the clearest way to indent each diagnostic line
+  echo "$out" | sed 's/^/    /'
 fi
 echo ""
 
 # Phase tracking: durable task wiring in all onboard entry-point skills + contract reference exists.
-if bash .github/scripts/check-phase-tracking.sh >/dev/null 2>&1; then
+if out="$(bash .github/scripts/check-phase-tracking.sh 2>&1)"; then
   pass "phase-tracking: durable tracking wired in onboard entry points"
 else
   fail "phase-tracking: missing tracking wiring — run .github/scripts/check-phase-tracking.sh"
+  # shellcheck disable=SC2001  # sed is the clearest way to indent each diagnostic line
+  echo "$out" | sed 's/^/    /'
 fi
 echo ""
 
@@ -781,13 +791,15 @@ echo ""
 # (pins the custom-specialist agent-path-traversal + prompt-size guards). check-schemas.py exits 2
 # when the jsonschema dev dep is absent — treat that as a skip (warn), not a failure.
 schema_rc=0
-python3 onboard/schemas/check-schemas.py >/dev/null 2>&1 || schema_rc=$?
+schema_err="$(python3 onboard/schemas/check-schemas.py 2>&1 >/dev/null)" || schema_rc=$?
 if [[ "$schema_rc" -eq 0 ]]; then
   pass "schemas: example fixtures validate + reject fixtures rejected (onboard/schemas/check-schemas.py)"
 elif [[ "$schema_rc" -eq 2 ]]; then
   warn "schemas: full suite skipped — jsonschema dev dep absent; dep-free security pin still ran (pip install --user jsonschema for the full suite)"
 else
   fail "schemas: fixture validation failed — run python3 onboard/schemas/check-schemas.py"
+  # shellcheck disable=SC2001  # sed is the clearest way to indent each diagnostic line
+  echo "$schema_err" | sed 's/^/    /'
 fi
 echo ""
 
