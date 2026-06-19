@@ -9,9 +9,20 @@ user-invocable: false
 Produce a `review-findings` object (per `../../schemas/review-findings.schema.json`) and RETURN it to
 the caller. Write no files; ask no questions. Read `references/pipeline.md` + `references/finder-registry.md`.
 
+## Progress tracking (optional — only when handed `taskIds`)
+If the caller passed `taskIds` in args (the standalone `/lens:review` path hands
+`{ scope, intent, analyze, verify }`), mark each handed-in stage task `in_progress` when you enter that
+stage and `completed` when you leave it, via `TaskUpdate` keyed on the given `taskId`. If `taskIds` is
+**absent** (orchestrator/compute-only callers, vicario reuse, any non-standalone invocation), take **no
+task action** — behavior is unchanged and byte-identical to the data-only contract. Never create tasks.
+The finder and verifier **subagents you dispatch are task-blind** — they emit findings only and never touch
+the task list.
+
 ## Step 1: Scope
 Resolve the target (default: working tree + branch commits vs the merge-base with the default branch;
-caller arg overrides). No repo / empty diff → return `{findings:[],recommendedEscalation:"minor",degraded:false}`.
+caller arg overrides). No repo / empty diff → if `taskIds` was passed, mark `scope` `completed` and
+`intent`/`analyze`/`verify` `deleted` (they never run), then return
+`{findings:[],recommendedEscalation:"minor",degraded:false}`.
 
 ## Step 2: Intent
 Build the intent record — it may **span multiple specs/plans**. Selection is **diff-correlated**: explicit

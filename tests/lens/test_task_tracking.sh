@@ -32,4 +32,10 @@ grep -q 'taskIds' "$REVIEW" || fail "review must pass taskIds to the engine"
 grep -q 'task-tracking' "$REVIEW" || fail "review must reference references/task-tracking.md"
 grep -qiE 'create no tasks|no .?taskIds|no task list' "$REVIEW" || fail "review orchestrator mode must skip tracking"
 
+# === engine wiring: flips handed-in taskIds, no-op when absent ===
+grep -q 'taskIds' "$ENGINE" || fail "engine must read args.taskIds"
+grep -qiE 'absent|no task action|task-silent|unchanged' "$ENGINE" || fail "engine must no-op when taskIds absent"
+grep -qi 'task-blind' "$ENGINE" || fail "engine must state its subagents are task-blind"
+grep -q 'deleted' "$ENGINE" || fail "engine empty-diff path must mark unreached stages deleted"
+
 echo "PASS: lens task-tracking"
