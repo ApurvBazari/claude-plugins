@@ -26,4 +26,10 @@ grep -qi 'task-blind' "$TT" || fail "task-tracking.md must state subagents are t
 grep -qiE 'standalone only|orchestrator' "$TT" || fail "task-tracking.md must state standalone-only / orchestrator skip"
 grep -q 'taskIds' "$TT" || fail "task-tracking.md must document the handed-in taskIds"
 
+# === review wiring: owns the list + passes taskIds ===
+grep -q 'TaskCreate' "$REVIEW" || fail "review must create the task list via TaskCreate"
+grep -q 'taskIds' "$REVIEW" || fail "review must pass taskIds to the engine"
+grep -q 'task-tracking' "$REVIEW" || fail "review must reference references/task-tracking.md"
+grep -qiE 'create no tasks|no .?taskIds|no task list' "$REVIEW" || fail "review orchestrator mode must skip tracking"
+
 echo "PASS: lens task-tracking"
