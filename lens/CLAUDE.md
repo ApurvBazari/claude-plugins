@@ -47,6 +47,17 @@ lens is split into a **data-only engine** and a **renderer**, so the judgment co
 4. **VERIFY** — adversarial refute pass. Each candidate finding goes to an independent skeptic agent prompted to **refute** it against real source; only unrefuted findings survive. Dedup across finders. A finding that **errors mid-verify is kept** as `"unverified — flagged"` — never silently dropped.
 5. **ASSEMBLE** — build the review-model and invoke `walkthrough:render` (markdown fallback if absent) to an output path under `.claude/lens/`.
 
+## In-session task list
+
+`/lens:review` surfaces its progress as a harness task list (the same mechanism `/onboard:start` uses):
+one `TaskCreate` per pipeline stage — `setup`\* · `scope` · `intent` · `analyze` · `verify` · `reconcile` ·
+`render` · `report` (`setup` only on the first review in a repo). `review` owns the list and transitions
+its own stages; it hands the engine `taskIds = { scope, intent, analyze, verify }` so the engine flips
+those four as it runs (handed none, the engine is task-silent — its data-only contract is preserved). The
+dispatched finder/verifier subagents are task-blind. It is **in-session visibility only** — no durable
+run-progress, no cross-session resume (a review is single-shot). Only the standalone path tracks;
+orchestrator/compute-only mode creates no list. See `skills/review/references/task-tracking.md`.
+
 ## Brain / eyes boundary
 
 lens = the brain (judges); `walkthrough` = the eyes (renders). **Neither imports the other.** Per `.claude/rules/plugin-structure.md` (§ Self-Contained Plugins), lens checks for walkthrough at runtime and skips silently if absent:
