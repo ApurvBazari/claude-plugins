@@ -1,0 +1,36 @@
+{
+  "engineUsed": "subagent",
+  "depth": "standard",
+  "roster": {
+    "builtins": ["architecture", "data-model", "testing", "security"],
+    "disabledBuiltins": [],
+    "customSpecialists": []
+  },
+  "findings": {
+    "architecture": {
+      "dimension": "architecture",
+      "status": "assessed",
+      "claims": [
+        {
+          "id": "C1",
+          "statement": "Layered controllers/services/repositories.",
+          "evidence": ["src/api/users.controller.ts:14"],
+          "confidence": 0.9
+        }
+      ]
+    }
+  },
+  "verifiedClaims": ["architecture:C1"],
+  "droppedClaims": [
+    { "id": "security:C3", "reason": "refuted: no evidence of the claimed CSRF guard" }
+  ],
+  "artifacts": {
+    "location": "committed",
+    "written": ["docs/onboard/research-dossier.md", "docs/onboard/architecture.md"],
+    "html": ".claude/walkthrough/2026-06-14-onboard-research.html"
+  },
+  "wizardInferences": {
+    "teamSize": { "value": "small", "evidence": ["git shortlog: 4 contributors"], "confidence": 0.8 },
+    "securitySensitivity": { "value": "elevated", "evidence": ["src/auth/", "stripe SDK present"], "confidence": 0.7 }
+  }
+}

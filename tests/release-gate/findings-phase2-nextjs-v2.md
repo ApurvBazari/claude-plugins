@@ -16,14 +16,14 @@
 |---|---|---|---|
 | A1 | `/onboard:` autocomplete exposes only 5 user-facing skills | ✅ PASS | Transcript opens with `/onboard:init` resolving cleanly; no internal skills offered |
 | A2 | Preset selector uses AskUserQuestion chips (not numbered text) | ✅ PASS | `User answered Claude's questions: · Which setup preset fits this project best? → Custom` |
-| A3 | Phase 5.0 Custom-preset escape hatch fires once | ✅ PASS | `Keep customizing or use Quick Mode defaults from here? → Continue customizing (Recommended)` |
-| A4 | Phase 5.1 advanced-hook opt-in question appeared | ✅ PASS | `Configure advanced Claude Code hook events? → Yes` |
+| A3 | wizard Step 0 (v2-only) — Custom-preset escape hatch fires once *(v2-only behavior; v3 removed the mid-wizard escape hatch and the Custom preset — v3 uses the Minimal/Standard/Comprehensive profile selected at the profile step)* | ✅ PASS | v2 transcript: `Keep customizing or use [Standard-profile] defaults from here? → Continue customizing (Recommended)` *(v2 escape-hatch offered the preset-shortcut label; that label maps to Standard profile in v3)* |
+| A4 | wizard Step 1 advanced-hook opt-in question appeared | ✅ PASS | `Configure advanced Claude Code hook events? → Yes` |
 | A5 | 9 events arrived as 3 multi-selects in ONE AskUserQuestion call | ✅ PASS | Single exchange contained `Lifecycle events`, `User events`, `Tool events` multi-selects |
 | A6 | Cost-table preamble shown before execution-type selection | ✅ PASS | `shell / prompt / agent / http` table rendered inline |
-| A7 | Phase 5.2 skill-tuning gate appeared; model captured | ✅ PASS | `Default model tier for generated skills? → inherit` |
-| A8 | Phase 5.3 agent-tuning gate appeared | ✅ PASS | 4 sub-questions including `Default isolation → Worktree for generators` |
-| A9 | Phase 5.4 output-style: archetype inference mentions `production-ops` | ⚠️ UNCLEAR | User chose archetype `inherit`; transcript does not surface the inferred archetype label. `production-ops` is never printed |
-| A10 | Phase 5.6 + 5.7: LSP + built-in skills in ONE AskUserQuestion call | ⚠️ DEGRADED | Wizard attempted combined call, schema rejected it (see B1). Fell back to sequential. `typescript-lsp` appeared pre-checked. `/loop` offered but user declined. `/schedule` **not visible** in transcript despite `.github/workflows/` presence |
+| A7 | wizard Step 2 skill-tuning gate appeared; model captured | ✅ PASS | `Default model tier for generated skills? → inherit` |
+| A8 | wizard Step 3 agent-tuning gate appeared | ✅ PASS | 4 sub-questions including `Default isolation → Worktree for generators` |
+| A9 | wizard Step 4 output-style: archetype inference mentions `production-ops` | ⚠️ UNCLEAR | User chose archetype `inherit`; transcript does not surface the inferred archetype label. `production-ops` is never printed |
+| A10 | wizard Step 6 + Step 7: LSP + built-in skills in ONE AskUserQuestion call | ⚠️ DEGRADED | Wizard attempted combined call, schema rejected it (see B1). Fell back to sequential. `typescript-lsp` appeared pre-checked. `/loop` offered but user declined. `/schedule` **not visible** in transcript despite `.github/workflows/` presence |
 | A11 | Phase 6 summary shows `Model: <id> (<source>)` | ✅ PASS | `Model: claude-opus-4-7[1m] (fallback default — your skill-tuning chose inherit, Custom has no preset default)` |
 | A12 | No separate post-summary model prompt | ✅ PASS | Wizard proceeded directly to `Ready to generate, or tweak first?` |
 | A13 | No hard 6-exchange cap | ✅ PASS | 15+ AskUserQuestion exchanges; wizard pre-announced `roughly 7 more exchanges` (adaptive sizing confirmed) |
@@ -70,7 +70,7 @@
 
 - 38m 48s wall-clock inside `onboard:config-generator` agent on a 17-file scaffold at Opus xhigh.
 - Session cost: ~$12 on this run (`📐 1M tokens · 💰 $12.25` shown in transcript).
-- Suggests Custom preset + all-advanced-hooks may over-exercise the generator. Worth measuring Minimal/Standard presets for comparison.
+- Suggests Comprehensive profile + all-advanced-hooks may over-exercise the generator. Worth measuring Minimal/Standard profiles for comparison. *(v2 recorded "Custom preset"; renamed to Comprehensive in v3)*
 
 ---
 

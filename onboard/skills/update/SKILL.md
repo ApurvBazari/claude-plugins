@@ -12,7 +12,32 @@ This is NOT a snapshot diff. It's a forward-looking check against current best p
 
 ---
 
+## Step 0: Initialize Phase Tracking
+
+Runs **first**, before the Prerequisites Check. This wires the durable phase-task list that the rest of the flow transitions for in-session visibility.
+
+First, read the contract: `../start/references/phase-tracking.md` (the cross-skill source of truth — `start` is its worked example). It defines the task subjects, the `pending → in_progress → completed` (plus `deleted`) state machine, and the HARD GATE mapping. Follow it verbatim — do not re-derive its rules here. `update` runs on an already-onboarded project (an `onboard-meta.json` exists by the time the baseline check in Phase 0 passes), so it has no cross-session resume probe of its own; the task list here is **in-session progress visibility**, and the durable record lives in the on-disk artifacts the contract describes.
+
+Create the **8** `update` phase tasks via `TaskCreate`, all `status: "pending"`, one per ladder phase, using the `update:` subject prefix from the contract's § Other entry points table:
+
+| Subject | `activeForm` |
+|---|---|
+| `update:verify-baseline` | Verifying the onboard baseline |
+| `update:read-artifacts` | Reading existing artifacts |
+| `update:reanalyze` | Re-analyzing the codebase |
+| `update:best-practices-drift` | Checking best practices & detecting drift |
+| `update:present-preview` | Presenting findings & rendering preview |
+| `update:approve-gate` | Awaiting approval of upgrades |
+| `update:apply` | Applying approved updates |
+| `update:summary` | Summarizing changes |
+
+Only this orchestrator touches the list. Every internal skill it later invokes (`onboard:generate`, `onboard:research`) is **task-blind** per the contract's § Ownership — when `update` invokes `generate` inside Phase 6, that does **not** create its own list; it runs inside this Phase-6 task. **Routing note (per the contract's § Routing):** if Phase 0 routes into `adopt` (missing-baseline branch), `adopt` owns its own `adopt:` list and marks it complete on handoff; the two lists coexist — this `update` list never touches adopt's tasks and vice versa.
+
+---
+
 ## Prerequisites Check
+
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(update:verify-baseline → in_progress)` now, **before** the baseline check below. Mark it `TaskUpdate(... → completed)` once a baseline is confirmed present (found directly, or freshly written by the adopt routing). If Phase 0 finds no tooling at all and stops, leave this task `in_progress` — the run halts there.
 
 ### Step 1: Verify Previous Setup
 
@@ -22,11 +47,19 @@ Check for `.claude/onboard-meta.json`:
 Read: .claude/onboard-meta.json
 ```
 
-**If not found**:
+**If not found**, probe for pre-existing tooling (native Glob): `CLAUDE.md` (root) or any `.claude/` rules/skills/agents/output-styles, `.mcp.json`, or hooks in `.claude/settings.json`.
 
-> This project hasn't been set up with onboard yet. Run `/onboard:start` first to generate your Claude tooling.
+- **Existing tooling detected** (foreign — not onboard-managed) → offer to adopt it via `AskUserQuestion` (single-select, header `"No baseline"`):
+  - **Adopt then update (Recommended)** — "Bring the existing tooling under management (`/onboard:adopt`), then continue this update."
+  - **Cancel** — "Do nothing."
 
-Stop here.
+  On **Adopt then update**: run `Skill(onboard:adopt)`. Adopt synthesizes the baseline (it never modifies your files) and, because it was entered from here, hands control straight back — continue into Step 2 with the freshly written `.claude/onboard-meta.json`. On **Cancel**: stop.
+
+  **Guard Usage:** two fixed options (≥2), so the single-option guard in `.claude/rules/ask-user-question-guard.md` does not apply.
+
+- **No tooling at all** → there is nothing to update or adopt:
+  > This project hasn't been set up with onboard yet. Run `/onboard:start` first to generate your Claude tooling.
+  Stop here.
 
 **If found**, parse and display:
 
@@ -36,9 +69,13 @@ Stop here.
 > - **Artifacts generated**: [count]
 > - **Model**: [modelRecommendation]
 
+> **Phase complete:** once a baseline is confirmed present (found directly above, or freshly written by the **Adopt then update** routing), `TaskUpdate(update:verify-baseline → completed)`.
+
 ---
 
 ## Analysis Phase
+
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(update:read-artifacts → in_progress)` now, **before** reading the existing artifacts. Mark it `TaskUpdate(... → completed)` after every tracked artifact has been read and classified at the end of Step 2.
 
 ### Step 2: Read All Existing Artifacts
 
@@ -46,12 +83,17 @@ Read every file listed in `onboard-meta.json`'s `generatedArtifacts` array. For 
 - Check if file still exists
 - Check if maintenance header is intact (indicates no manual override)
 - If maintenance header is missing or modified, flag as "user-customized" — extra caution needed
+- **Provenance:** before flagging, consult `onboard-meta.json`'s `mode` + `artifactProvenance` per `references/drift-classification.md` § 4b.0. An `origin:"adopted"` artifact (or any artifact in a `mode:"retrofit"` baseline) has an **expected** absent header — do not flag it "user-customized" on that basis; it is diffable-with-caution and its first modernization offer is "add maintenance header / migrate to conventions".
 
 Also read any Claude config files that may have been added manually after the initial run.
 
+> **Phase complete:** after every tracked artifact and any manually-added config has been read and classified, `TaskUpdate(update:read-artifacts → completed)`.
+
 ### Step 3: Re-analyze the Codebase
 
-Run a fresh analysis (same as init Phase 1):
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(update:reanalyze → in_progress)` now, **before** the fresh analysis below. Mark it `TaskUpdate(... → completed)` after the drift comparison against `onboard-meta.json` completes at the end of this step.
+
+Run a fresh analysis (same as start Phase 1):
 - Run the three analysis scripts
 - Perform deep codebase exploration
 
@@ -62,7 +104,11 @@ Compare the fresh analysis against what was captured in onboard-meta.json to det
 - New CI/CD pipelines?
 - Test setup changed?
 
+> **Phase complete:** after the drift comparison against `onboard-meta.json` completes, `TaskUpdate(update:reanalyze → completed)`.
+
 ### Step 4: Check Latest Best Practices
+
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(update:best-practices-drift → in_progress)` now, **before** the best-practices checks (Step 4) and the Step 4b drift detectors. This one task spans Steps 4 and 4b. Mark it `TaskUpdate(... → completed)` after all of Step 4b's detectors (4b.1–4b.10) have recorded their findings.
 
 Check two knowledge sources:
 
@@ -113,9 +159,16 @@ Follow `references/drift-classification.md` § 4b.8. Record as `lspDrift.{newLan
 #### 4b.9: Built-in Skills Drift
 Follow `references/drift-classification.md` § 4b.9. Record as `builtInSkillsDrift.{newSkills, newlyRelevant, staleCandidates}[]` for Step 7.
 
+#### 4b.10: Research Staleness
+Apply `references/re-research.md` § Detection: map the Step-3 codebase drift to research dimensions, intersect with the stored-depth roster (`onboard-meta.json.research.depth`), and apply the escalation rule. Record `reResearch = { dimensions, escalatedToFull }` for Step 6 (empty `dimensions` → no offer). Read-only classification — re-research itself runs in Step 7 on approval.
+
+> **Phase complete:** after all Step 4b detectors (4b.1–4b.10) have recorded their findings, `TaskUpdate(update:best-practices-drift → completed)`.
+
 ---
 
 ## Findings Report
+
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(update:present-preview → in_progress)` now, **before** presenting the findings (Step 5). This task spans Step 5 (findings) and Step 5.5 (preview render). Mark it `TaskUpdate(... → completed)` after the preview is rendered (or its markdown fallback shown) at the end of Step 5.5. The internally-invoked `walkthrough:render` is task-blind.
 
 ### Step 5: Present Findings
 
@@ -194,6 +247,11 @@ Organize findings into categories:
 > - **Stale candidates**: [list or "none"] — skills whose detection signals no longer fire. Informational only.
 > - Impact: new skills can be added to CLAUDE.md on approval.
 >
+> ### Research Staleness (from Step 4b.10)
+> - **Stale dimensions**: [list or "none"] — research dimensions invalidated by codebase drift (intersected with your stored depth).
+> - **Scope**: [scoped: N dimensions / full re-research (broad drift)].
+> - Impact: re-grounds the dossier and re-sharpens CLAUDE.md / rules / agents + merges the verify backlog. You approve the re-research before it runs.
+>
 > ### Deprecated Patterns
 > - [Anything in current setup that's outdated]
 >
@@ -203,7 +261,17 @@ Organize findings into categories:
 
 ---
 
+### Step 5.5: Render the change preview (before approval)
+
+Assemble a `previewModel` (per `../research/references/render-adapter.md` § previewModel) with `flow:"update"`: `changes[]` = the accumulated offer-set from Steps 4–4b (action `modernize`/`create`/`regenerate`; each artifact's `origin` carried from the baseline — `"generated"` for onboard-managed artifacts, `"adopted"` for artifacts brought under management via `/onboard:adopt` in a `mode:"retrofit"` baseline); `research` = the re-research delta when Step 4b.10 ran, else null; `decisions` = the current model/autonomy/profile from `onboard-meta.json`; `warnings` = user-customized-file flags + any "best-practices check unavailable" note. Render it via `walkthrough:render` to `.claude/walkthrough/<YYYY-MM-DD-HHMM>-onboard-update.html`, with the same walkthrough-absent → offer-install → markdown fallback as start Phase 5 (the gate). This is a preview only — the actual approval remains the Step 6 batched AskUserQuestion; nothing is applied until Step 7.
+
+> **Phase complete:** after the preview is rendered (or the markdown fallback shown), `TaskUpdate(update:present-preview → completed)`.
+
+---
+
 ## Upgrade Offers
+
+> **Phase transition (per `../start/references/phase-tracking.md` § HARD GATE):** `TaskUpdate(update:approve-gate → in_progress)` now, **before** the Step 6 AskUserQuestion. This task is the gate: it **stays `in_progress` for the entire phase** — through offer assembly and *while awaiting the user's approval decision* (the enum has no "awaiting" state; `in_progress` is the truthful "we are here, waiting on you"). Its `completed`/`deleted` transition is driven by the gate decision below — do **not** mark it `completed` before the user approves.
 
 ### Step 6: Offer Targeted Upgrades (AskUserQuestion)
 
@@ -224,11 +292,12 @@ Group offers into these categories (each becomes one `multiSelect: true` questio
 | Group | What goes here |
 |---|---|
 | `artifact-gaps` | Files in `generatedArtifacts` missing from disk; user-customized files that need merge/replace decision |
-| `user-edit-detections` | Files where the maintenance header was modified or other edits detected |
-| `new-dependencies-or-languages` | New dep additions (e.g., `@anthropic-ai/sdk`), new languages (Rust → `rust-analyzer-lsp`), built-in skills newly relevant. **LSP plugins for newly detected languages are `autoChecked: true` by default**, matching wizard Phase 5.6 pre-check behavior. |
+| `user-edit-detections` | Files where the maintenance header was modified, an adopted artifact awaiting its first maintenance header, or other edits detected |
+| `new-dependencies-or-languages` | New dep additions (e.g., `@anthropic-ai/sdk`), new languages (Rust → `rust-analyzer-lsp`), built-in skills newly relevant. **LSP plugins for newly detected languages are `autoChecked: true` by default**, matching wizard Step 6 pre-check behavior. |
 | `best-practice-suggestions` | Reference guide recommendations (e.g., `observability.md` rule for the detected stack) |
 | `enriched-capabilities` | CI/CD, harness, evolution, sprint contracts, verification |
 | `plugin-drift` | Wire-in / remove offers from Step 4b.1 |
+| `research-staleness` | Re-ground offer from Step 4b.10 — "Re-ground research (N dimensions)" or "Full re-research" when escalated. One offer; pad with `None / Skip` per the single-option guard. |
 
 ### Combined AskUserQuestion call
 
@@ -242,6 +311,11 @@ Issue a **single AskUserQuestion call** containing the pre-question + up to 3 of
 | `Apply all` | Skip per-group selection, apply every offer accumulated. |
 | `Apply later` | Write `.claude/onboard-pending-updates.json` snapshot of all offers (with their `id` and metadata) and exit. The next `/onboard:update` re-presents pending items + any newly detected drift. |
 | `Skip / dismiss` | Discard offers, do not remind again this session. (Re-running `/onboard:update` re-detects from scratch.) |
+
+> **Gate decision → task transition (per `../start/references/phase-tracking.md` § HARD GATE).** The Phase-5 task was left `in_progress` at the Upgrade Offers transition above. Map the pre-question outcome (and, when "Review and pick" is chosen, the subsequent per-group selection) to a transition:
+> - **Approve** — the user chose `Apply all`, **or** chose `Review and pick` and selected ≥1 offer → `TaskUpdate(update:approve-gate → completed)`, then proceed to Step 7 (Phase 6 apply).
+> - **Adjust / no-op selection** — the user chose `Review and pick` but selected nothing (every group answered `None / Skip`) and wants to revisit → keep the gate `in_progress` (no status change) and re-present, exactly like start's Adjust loop. The gate loops; no task is completed or deleted.
+> - **Cancel** — the user chose `Apply later` (defer, nothing applied this run) **or** `Skip / dismiss` (discard) → nothing is applied (the gate precedes the only apply phase). Per § Cancel → `deleted`, mark the gate task **and every later phase task** `deleted`: `TaskUpdate(update:approve-gate → deleted)`, `TaskUpdate(update:apply → deleted)`, `TaskUpdate(update:summary → deleted)`. Leave the already-`completed` tasks 0–4 as `completed` (they really ran). Then handle the chosen exit (write the `Apply later` snapshot or discard) and stop.
 
 **Questions 2–4 — Offer-group multi-selects** (each `multiSelect: true`, headers: `"ArtifactGaps"`, `"UserEdits"`, `"NewDeps"`, etc. — pick the 3 most populous groups for the first call). Only render groups that have ≥1 offer; skip empty groups.
 
@@ -294,6 +368,8 @@ For files where the maintenance header was modified or removed:
 
 ## Apply Updates
 
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(update:apply → in_progress)` now (only reached on **Approve** at the Step 6 gate), **before** Step 7's first write and **before** any `Skill(onboard:generate)` / `Skill(onboard:research)` dispatch (both task-blind — they run inside this Phase-6 task, not their own list). This task spans Step 7 (apply) and Step 8 (update metadata). Mark it `TaskUpdate(... → completed)` after the metadata is written at the end of Step 8.
+
 ### Step 7: Execute Chosen Updates
 
 For each approved update:
@@ -319,6 +395,7 @@ Apply the full application procedure for each approved drift type — verbatim f
 - **Built-in skills drift** (4b.9): Follow `references/drift-application.md` § Built-in skills drift application (including placement migration).
 - **Artifact gap regeneration** (4b.2): Follow `references/drift-application.md` § Artifact gap regeneration.
 - **New best-practice additions** (4b.3): Follow `references/drift-application.md` § New best-practice additions.
+- **Research staleness** (4b.10): if the developer approved the re-ground, follow `references/re-research.md` § Orchestration — invoke `onboard:research` in scoped/merge mode, build the `version:3` context with the merged dossier + `callerExtras.reResearch` (NO `regenerateOnly`), and invoke `onboard:generate`. The merge-aware regen honors the user-customized-file merge/replace/skip choices already gathered in Step 6. On the atomic-abort fallback, report the failure and leave tooling untouched.
 
 ### Step 8: Update Metadata
 
@@ -327,7 +404,7 @@ Update `.claude/onboard-meta.json`:
 - Update `pluginVersion`
 - Update `generatedArtifacts` list (add any new files, drop any whose deletion was explicitly approved)
 - Preserve `wizardAnswers` (don't re-ask wizard questions during update)
-- **If plugin drift was applied in Step 7** — refresh `detectedPlugins.installedPlugins` to `driftReport.currentPlugins`, and recompute `detectedPlugins.coveredCapabilities`, `detectedPlugins.qualityGates`, `detectedPlugins.phaseSkills` per `../generation/references/plugin-detection-guide.md`. Update the top-level `hookStatus` to reflect added/removed hook scripts.
+- **If plugin drift was applied in Step 7** — refresh `detectedPlugins.installedPlugins` to `driftReport.currentPlugins`, and recompute `detectedPlugins.coveredCapabilities`, `detectedPlugins.qualityGates`, `detectedPlugins.phaseSkills` per `../generation/references/plugins/plugin-detection-guide.md`. Update the top-level `hookStatus` to reflect added/removed hook scripts.
 - **If MCP drift was applied in Step 7** — refresh top-level `mcpStatus`: add newly-applied servers to `mcpStatus.generated[]`, drop removed servers. Re-run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh"` for any newly-applied server with a `plugin` field; merge results into `mcpStatus.autoInstalled[]` and `mcpStatus.autoInstallFailed[]`. Always keep `mcpStatus.existedPreOnboard` sticky — once true, it stays true for the life of the project.
 - **If skill frontmatter drift was applied in Step 7** — refresh top-level `skillStatus.frontmatterFields[<skill>]` to match the applied state, including the refreshed `source` value (`user-confirmed` / `user-tweaked`). Update `.claude/onboard-skill-snapshot.json` to reflect the new baseline. Keep `skillStatus.existedPreOnboard[]` sticky.
 - **If agent frontmatter drift was applied in Step 7** — refresh top-level `agentStatus.frontmatterFields[<agent>]` to match the applied state, including the refreshed `source` value (`user-confirmed` / `user-tweaked` / `wizard-default` for legacy migrations). Update `.claude/onboard-agent-snapshot.json` to reflect the new baseline. Keep `agentStatus.existedPreOnboard[]` sticky. Append `legacy-skipped:<agent>` entries to `agentStatus.warnings` for any `legacyNoFrontmatter` declined by the developer.
@@ -348,9 +425,13 @@ Update `.claude/onboard-meta.json`:
 }
 ```
 
+> **Phase complete:** after the metadata is written, `TaskUpdate(update:apply → completed)`.
+
 ---
 
 ## Completion
+
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(update:summary → in_progress)` now, **before** the summary below. Mark it `TaskUpdate(... → completed)` after the summary is shown — that completes the last phase of the run; all 8 `update` tasks are now `completed`.
 
 ### Step 9: Summary
 
@@ -362,9 +443,12 @@ Update `.claude/onboard-meta.json`:
 >
 > Run `/onboard:check` to verify the health of your setup.
 
+> **Phase complete:** after the summary above is shown, `TaskUpdate(update:summary → completed)`. All 8 phase tasks are now `completed` — the run is done.
+
 ## Key Rules
 
-- **Require `onboard-meta.json` before any work** — if the file is missing, halt at Step 1 with a message to run `/onboard:start`. Never run fresh analysis or apply updates without a baseline.
+- **Own the phase-task list end to end** — per `../start/references/phase-tracking.md`, Step 0 creates the 8 `update:*` tasks; each phase marks its own task `in_progress` before its work (and before any `Skill(onboard:generate)`/`Skill(onboard:research)` dispatch) and `completed` after. Those internal skills are **task-blind** — invoking `generate` inside Phase 6 does NOT spawn its own list. The enum is exactly `pending`/`in_progress`/`completed`/`deleted` — no "blocked"/"cancelled". The Phase 5 approve-gate stays `in_progress` while awaiting the Step 6 decision; Approve (`Apply all`, or `Review and pick` with ≥1 offer) → `completed` then proceed; an empty `Review and pick` selection that loops → no change; `Apply later`/`Skip / dismiss` → mark tasks 5/6/7 `deleted`. The list is **in-session visibility only** — the durable record is the on-disk meta/snapshots. When Phase 0 routes into `adopt`, adopt owns its own `adopt:` list; the two never touch each other's tasks.
+- **Require a baseline before drift work** — if `onboard-meta.json` is missing, halt at Step 1. When foreign tooling is present, offer `/onboard:adopt` to synthesize the baseline (then continue); otherwise direct the developer to `/onboard:start`. Never run drift application without a baseline.
 - **All upgrades require explicit approval** — never apply a detected drift item without the developer selecting it in the Step 6 `AskUserQuestion` call. "Apply later" is a valid answer; "Apply all" still requires the pre-question selection, not a silent auto-apply.
 - **Never overwrite user-customized files without per-item choice** — files with a modified or absent maintenance header are flagged and require a merge/replace/skip decision before any change is made.
 - **User-edits in frontmatter are display-only, never rewritten** — for skill, agent, and output-style frontmatter drift, `userEdit` items are shown for awareness only. Onboard updates the snapshot to accept the edit but never overwrites the hand-edited value.

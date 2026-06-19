@@ -15,9 +15,10 @@ Read `.claude/onboard-meta.json`:
 
 **If not found**:
 
-> This project hasn't been set up with onboard yet.
+> This project hasn't been set up with onboard yet — there's no `onboard-meta.json` baseline to health-check.
 >
-> Run `/onboard:start` to analyze your codebase and generate Claude tooling.
+> - **No Claude tooling yet?** Run `/onboard:start` to analyze your codebase and generate it.
+> - **Already have hand-crafted tooling** (foreign — not onboard-managed: a root `CLAUDE.md`, `.claude/` rules/skills/agents/output-styles, `.mcp.json`, or hooks in `.claude/settings.json`)? Run `/onboard:adopt` to bring it under management — adopt synthesizes the baseline and never modifies your files. Then `/onboard:check` and `/onboard:update` will work against it.
 
 Stop here.
 
@@ -77,6 +78,10 @@ Do a lightweight check for drift against the state captured in `onboard-meta.jso
 - **Manual CLAUDE.md**: New CLAUDE.md files were added manually
 
 **"Significant drift"** = 2 or more of the above detected simultaneously.
+
+### Research staleness (read-only)
+
+Map the drift signals above to the research dimensions they invalidate, per `../update/references/re-research.md` § Detection (drift→dimension map + depth-cap intersection against `onboard-meta.json.research.depth`). This is **read-only** — `check` never re-researches. If the intersected set is non-empty, list the stale dimensions and recommend a re-ground; if the drift would escalate to full (≥3 dims / framework bump / ≥2 new modules), say so.
 
 **Always confirm** drift findings with the developer before recommending action — false positives are possible.
 
@@ -149,6 +154,12 @@ Based on the status, provide targeted recommendations:
 >
 > Run `/onboard:update` to incorporate these changes into your Claude tooling.
 
+### If research looks stale (dimensions invalidated):
+
+> Recent changes may have invalidated the research dossier in: [list stale dimensions].
+>
+> Run `/onboard:update` to re-ground research and refresh the affected tooling (you'll approve the re-research first), or `/onboard:evolve` for a scoped auto-refresh. [If escalation would fire:] This looks like broad drift — prefer `/onboard:update` (a full re-research).
+
 ---
 
 ## Key Preferences Summary
@@ -165,7 +176,7 @@ Also display a quick reminder of the developer's preferences:
 ## Key Rules
 
 - **Never write to any file** — this skill is fully read-only. All Steps are observation and reporting; no files are created, modified, or deleted.
-- **Halt at Step 1 if `onboard-meta.json` is missing** — do not continue to artifact checks or drift detection without a metadata baseline. The user must run `/onboard:start` first.
+- **Halt at Step 1 if `onboard-meta.json` is missing** — do not continue to artifact checks or drift detection without a metadata baseline. The user must run `/onboard:start` first (or `/onboard:adopt` if they have existing hand-crafted tooling to bring under management).
 - **Parse error requires explicit user choice** — if `onboard-meta.json` is malformed, surface the two options (re-initialize or metadata-free check) via `AskUserQuestion` and wait. Never silently skip drift detection.
 - **Drift findings are always confirmed before acting** — the check reports drift; it never auto-applies or recommends immediate edits. Direct the user to `/onboard:update` for any changes.
 - **Drift thresholds are concrete, not vague** — use the exact numeric thresholds defined in Step 4 (3+ new deps, >20% test file delta, major version bump, etc.). Do not flag drift on noise below these thresholds.

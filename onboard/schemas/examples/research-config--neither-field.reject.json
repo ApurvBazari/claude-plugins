@@ -1,0 +1,8 @@
+{
+  "extraSpecialists": [
+    {
+      "name": "empty",
+      "dimension": "supplies neither prompt nor agent (must be exactly one)"
+    }
+  ]
+}

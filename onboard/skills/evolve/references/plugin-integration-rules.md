@@ -3,13 +3,13 @@
 Distilled rules for regenerating the Plugin Integration section in CLAUDE.md and quality-gate hooks during `/onboard:evolve` and `/onboard:update`.
 
 **Related references**:
-- `../../generation/references/plugin-drift-detection.md` — shared probe + diff procedure (baseline resolution, output schema, presentation). Used by update, evolve, and generate.
-- `../../generation/references/plugin-detection-guide.md` — canonical probe list, capability mappings, and derivation rules for `coveredCapabilities`, `qualityGates`, `phaseSkills`.
+- `../../generation/references/plugins/plugin-drift-detection.md` — shared probe + diff procedure (baseline resolution, output schema, presentation). Used by update, evolve, and generate.
+- `../../generation/references/plugins/plugin-detection-guide.md` — canonical probe list, capability mappings, and derivation rules for `coveredCapabilities`, `qualityGates`, `phaseSkills`.
 - This document — **application** rules: CLAUDE.md section markers, subsection content, tone.
 
 ## Known Plugin Probe List
 
-See `../../generation/references/plugin-detection-guide.md` for the canonical probe list, probe command, capability mappings, and derivation rules for `coveredCapabilities`, `qualityGates`, and `phaseSkills`.
+See `../../generation/references/plugins/plugin-detection-guide.md` for the canonical probe list, probe command, capability mappings, and derivation rules for `coveredCapabilities`, `qualityGates`, and `phaseSkills`.
 
 Also probe any plugin in `previousPlugins` that isn't in the known list (custom/third-party plugins).
 
@@ -97,6 +97,6 @@ Rich narrative voice, not a bulleted list of plugin names. Every subsection shou
 
 ## qualityGates, phaseSkills, and coveredCapabilities Derivation
 
-See `../../generation/references/plugin-detection-guide.md` for derivation rules, default templates, and autonomyLevel downgrade logic.
+See `../../generation/references/plugins/plugin-detection-guide.md` for derivation rules, default templates, and autonomyLevel downgrade logic.
 
 **Evolve-specific note**: When deriving `featureStart.criticalDirs` during evolve, preserve existing `criticalDirs` from `onboard-meta.json` — evolve does not re-derive directory roles. Read `autonomyLevel` from `onboard-meta.json.wizardAnswers.autonomyLevel`.

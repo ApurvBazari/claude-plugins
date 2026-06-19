@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/ApurvBazari/claude-plugins/onboard/schemas/research-config.json",
+  "title": "Onboard Research — Project Config",
+  "description": "Optional target-repo config at .claude/onboard-research.config.json that tunes the research roster: disable built-in dimensions and/or add custom specialists. Each custom specialist supplies a prompt or an agent reference and emits research-findings.json-shaped output so it flows through the same verifier and synthesizer.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "disabledBuiltins": {
+      "type": "array",
+      "items": {
+        "enum": ["architecture", "data-model", "testing", "security", "conventions", "domain", "dependencies"]
+      },
+      "description": "Built-in dimensions to turn off for this project."
+    },
+    "extraSpecialists": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "required": ["name", "dimension"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z0-9-]+$", "maxLength": 64 },
+          "dimension": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "prompt": { "type": "string", "maxLength": 16384, "description": "Inline specialist prompt. Provide this OR `agent`. Capped at 16 KiB (matches the untrusted-input sanitiser leaf cap); the engine re-enforces this cap at dispatch since schema validation is opportunistic." },
+          "agent": { "type": "string", "maxLength": 256, "pattern": "^\\.claude/(?!.*\\.\\.)[A-Za-z0-9._/-]+\\.md$", "description": "Path to a user agent file under .claude/, e.g. .claude/agents/research-a11y.md. Provide this OR `prompt`. Must be a relative, .claude/-rooted .md path with no `..` segment (path-traversal guard); the engine additionally verifies the resolved path stays under the project root at dispatch." },
+          "scopeGlobs": { "type": "array", "maxItems": 64, "items": { "type": "string", "maxLength": 256 } }
+        },
+        "oneOf": [
+          { "required": ["prompt"], "not": { "required": ["agent"] } },
+          { "required": ["agent"], "not": { "required": ["prompt"] } }
+        ]
+      }
+    }
+  }
+}

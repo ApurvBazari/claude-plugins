@@ -6,7 +6,7 @@ Verbatim application procedures for each drift type approved in Step 6. Each sec
 
 ## Plugin drift application (for items surfaced by Step 4b.1)
 
-Follow `../evolve/references/plugin-integration-rules.md` for content rules and `../generation/references/hooks-guide.md` § Quality-Gate Hook Templates for hook scripts — the same sources evolve Step 2b uses. Do not reimplement logic here.
+Follow `../../evolve/references/plugin-integration-rules.md` for content rules and `../../generation/references/guides/hooks-guide.md` § Quality-Gate Hook Templates for hook scripts — the same sources evolve Step 2b uses. Do not reimplement logic here.
 
 For each approved **addition**:
 1. Refresh the `<!-- onboard:plugin-integration:start -->` / `end` region in the root CLAUDE.md. If markers are absent but `currentPlugins` is non-empty, insert the delimited region after the last generated section (same path as evolve Step 2b.1 first-time-add).
@@ -20,15 +20,15 @@ For each approved **removal**:
 
 **Subdirectory skill-annotation refresh** (runs when `driftReport.added` or `driftReport.removed` is non-empty):
 
-Per-directory `## Skill recommendations` blocks are wrapped in `<!-- onboard:skill-recommendations:start role="..." -->` / `end` markers (see `../generation/SKILL.md` § Per-Directory Skill Annotations). The `role` attribute encodes the directory's classified role (`parser`, `api`, `tests`, etc.), so refresh does not require re-running scaffold-analyzer.
+Per-directory `## Skill recommendations` blocks are wrapped in `<!-- onboard:skill-recommendations:start role="..." -->` / `end` markers (see `../../generation/SKILL.md` § Per-Directory Skill Annotations). The `role` attribute encodes the directory's classified role (`parser`, `api`, `tests`, etc.), so refresh does not require re-running scaffold-analyzer.
 
 1. Enumerate all subdirectory `CLAUDE.md` files under the project root (glob `**/CLAUDE.md` excluding the root).
 2. For each file containing the start/end markers:
    - Read the `role` attribute from the start marker.
-   - Regenerate the block body using the new `driftReport.currentPlugins` + `effectiveCoveredCapabilities` per the derivation rules in `../generation/SKILL.md` § Per-Directory Skill Annotations.
+   - Regenerate the block body using the new `driftReport.currentPlugins` + `effectiveCoveredCapabilities` per the derivation rules in `../../generation/SKILL.md` § Per-Directory Skill Annotations.
    - Replace the delimited region (inclusive of markers) with the regenerated block. Preserve all file content outside the markers verbatim.
 3. **Block removal**: if `currentPlugins` is now empty, OR the role no longer has any matching plugin capability, remove the entire marker-delimited region (markers included) — do not leave a stub.
-4. **Block creation on empty baseline**: if markers are absent but `currentPlugins` is non-empty AND the file has a role hint (e.g., a prior generation comment or the file sits under a path that matches a known role from `../skills/analysis/references/tech-stack-patterns.md` § Subdirectory CLAUDE.md), skip auto-creation in this release. Surface a note in the findings report: "Subdirectory `<path>` could benefit from a Skill recommendations block — create during the next full regeneration."
+4. **Block creation on empty baseline**: if markers are absent but `currentPlugins` is non-empty AND the file has a role hint (e.g., a prior generation comment or the file sits under a path that matches a known role from `../../analysis/references/tech-stack-patterns.md` § Subdirectory CLAUDE.md), skip auto-creation in this release. Surface a note in the findings report: "Subdirectory `<path>` could benefit from a Skill recommendations block — create during the next full regeneration."
 5. Record refreshed files in `updateHistory[*].changes` as `"Refreshed skill annotations in src/parser/CLAUDE.md"`.
 
 This reconciliation is non-blocking. If a subdirectory file fails to parse (e.g., corrupted markers), log a warning to `onboard-meta.json.warnings[]` and skip that file — never abort the whole update.
@@ -41,7 +41,7 @@ Each of these standalone artifacts is only appropriate when the corresponding pl
 |---|---|---|---|
 | `.claude/skills/tdd-workflow/SKILL.md` | `superpowers` NOT installed | If `superpowers` in `driftReport.added`: delete this file (it would shadow `superpowers:test-driven-development`). Drop the entry from `generatedArtifacts`. | If `superpowers` in `driftReport.removed` AND file is absent: invoke `generate` with `callerExtras.regenerateOnly` scoped to this path. |
 | `.claude/agents/tdd-test-writer.md` | `superpowers` NOT installed | If `superpowers` in `driftReport.added`: delete file, drop from `generatedArtifacts`. | If `superpowers` in `driftReport.removed`: regenerate via `generate`. |
-| Standalone preCommit / sessionStart hooks (no plugin refs) | Any profile generates them in absence of plugin qualityGates | If any plugin that provides `qualityGates` coverage is in `driftReport.added` (e.g., `code-review`, `superpowers`): delete the standalone hook scripts whose basenames match `onboard-meta.json.hookStatus.generated` AND whose content carries no plugin references. Their replacements are the plugin-referencing hooks added above. | If a plugin providing coverage is in `driftReport.removed` AND `currentPlugins` has no alternate coverage: invoke `generate` to regenerate the standalone hooks per the profile + autonomyLevel matrix in `../generation/SKILL.md` § Standalone Quality-Gate Hooks. |
+| Standalone preCommit / sessionStart hooks (no plugin refs) | Any profile generates them in absence of plugin qualityGates | If any plugin that provides `qualityGates` coverage is in `driftReport.added` (e.g., `code-review`, `superpowers`): delete the standalone hook scripts whose basenames match `onboard-meta.json.hookStatus.generated` AND whose content carries no plugin references. Their replacements are the plugin-referencing hooks added above. | If a plugin providing coverage is in `driftReport.removed` AND `currentPlugins` has no alternate coverage: invoke `generate` to regenerate the standalone hooks per the profile + autonomyLevel matrix in `../../generation/SKILL.md` § Standalone Quality-Gate Hooks. |
 
 Before deleting any standalone artifact, present it in the findings report as a sub-item of the plugin-add approval ("Adding superpowers will remove the now-redundant standalone TDD skill at `.claude/skills/tdd-workflow/SKILL.md` — OK?"). Never auto-delete without per-item approval.
 
@@ -53,7 +53,7 @@ Only **additions** are applied automatically on user approval. Removals and user
 
 1. For each approved `newlySuggested` server:
    - Read the current `.mcp.json` (if absent, create it with `{"mcpServers":{}}`).
-   - Merge the new server entry into `mcpServers` per the schema in `../generation/references/mcp-guide.md` § Config Shape. Preserve every other key verbatim.
+   - Merge the new server entry into `mcpServers` per the schema in `../../generation/references/catalogs/mcp-guide.md` § Config Shape. Preserve every other key verbatim.
    - Append the server to `.claude/onboard-mcp-snapshot.json` as well so subsequent drift checks use the new baseline.
    - If the server's catalog entry has a `plugin` field, append to the auto-install queue for Step 7's plugin section (reuse `${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh`).
 2. For each `staleCandidate`: display the removal suggestion but do NOT auto-apply. If the user explicitly says "yes remove X", delete the entry from `.mcp.json` AND the snapshot.
@@ -81,7 +81,7 @@ Only **additions** and **legacy migrations** are applied on user approval. User-
 3. For each `missingFile`: invoke `generate` via the Skill tool with `callerExtras.regenerateOnly: [".claude/agents/<agent>.md"]` and `callerExtras.disableAgentTuning: true`. The generator re-emits the agent using the snapshot's frontmatter values (preserving prior tweaks). Append to `generatedArtifacts` if previously dropped.
 4. For each `legacyNoFrontmatter`: prompt the developer with a preview:
    > Agent `<name>` has no YAML frontmatter (pre-1.6.0 format). Apply archetype-inferred defaults (`model: sonnet`, `color: blue`, `effort: medium`) as a migration? [yes/no/skip]
-   On yes: classify the agent via `generation/references/agents-guide.md` archetype rules using its name/description, compose with `wizardAnswers.agentTuning`, run the full validation pass from `generation/SKILL.md` § Agent Frontmatter Emission Step 3, and prepend a YAML frontmatter block to the live file (keeping the body intact). Update the snapshot and set `frontmatterFields.<agent>.source = "wizard-default"`. On no/skip: leave the file as-is; record `agentStatus.warnings[] = "legacy-skipped:<agent>"`.
+   On yes: classify the agent via `../../generation/references/guides/agents-guide.md` archetype rules using its name/description, compose with `wizardAnswers.agentTuning`, run the full validation pass from `../../generation/SKILL.md` § Agent Frontmatter Emission Step 3, and prepend a YAML frontmatter block to the live file (keeping the body intact). Update the snapshot and set `frontmatterFields.<agent>.source = "wizard-default"`. On no/skip: leave the file as-is; record `agentStatus.warnings[] = "legacy-skipped:<agent>"`.
 
 ---
 
@@ -117,7 +117,7 @@ Only **newSkill additions** are applied on user approval. Stale candidates and n
 
 1. For each approved `newSkill` candidate:
    - Add the skill to `builtInSkillsStatus.generated[]`.
-   - Find the `<!-- onboard:builtin-skills:start -->` / `<!-- onboard:builtin-skills:end -->` markers in CLAUDE.md and regenerate the content between them, including the new skill with its stack-specific example from `generation/references/built-in-skills-catalog.md`.
+   - Find the `<!-- onboard:builtin-skills:start -->` / `<!-- onboard:builtin-skills:end -->` markers in CLAUDE.md and regenerate the content between them, including the new skill with its stack-specific example from `../../generation/references/catalogs/built-in-skills-catalog.md`.
    - Update `.claude/onboard-builtin-skills-snapshot.json` — append to both `recommended[]` and `accepted[]`, preserving alphabetical sort.
 2. For `newlyRelevant` suggestions: no action. Log once as informational.
 3. For `staleCandidate` findings: no action. Log once.
@@ -131,7 +131,9 @@ Only **newSkill additions** are applied on user approval. Stale candidates and n
 
 ## Artifact gap regeneration (for items surfaced by Step 4b.2)
 
-Invoke the `generate` skill via the Skill tool with a narrow `callerExtras.regenerateOnly` payload listing the missing artifact paths. Generate honors this scope and only writes the listed files. After regeneration, verify each file is present on disk and carries a fresh maintenance header.
+Invoke the `generate` skill via the Skill tool with a narrow `callerExtras.regenerateOnly` payload listing the missing artifact paths. **Construct the context with top-level `version: 3`** — `generate` is v3-only as of 3.0.0 and rejects a missing/other `version`. Carry `source`, `projectPath`, and `callerExtras` (with `regenerateOnly`), plus the `wizardAnswers` recorded in `onboard-meta.json`; this is a snapshot re-emit, so no `research` object is needed. Generate honors the `regenerateOnly` scope and only writes the listed files. After regeneration, verify each file is present on disk and carries a fresh maintenance header.
+
+> This `version: 3` + `regenerateOnly` construction is the single authoritative shape for every `onboard:generate` call made by `update` and `evolve` — the per-component missing-file steps elsewhere in this file (skills / agents / output-styles / standalone hooks / MCP) and the equivalent steps in `../../evolve/SKILL.md` all use it.
 
 ---
 

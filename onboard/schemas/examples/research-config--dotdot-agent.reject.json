@@ -1,0 +1,9 @@
+{
+  "extraSpecialists": [
+    {
+      "name": "evil",
+      "dimension": "dot-dot escape inside a valid .claude/ .md path",
+      "agent": ".claude/agents/../secrets.md"
+    }
+  ]
+}

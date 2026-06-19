@@ -24,12 +24,31 @@ Stop and do not proceed.
 
 If any source has drift, continue.
 
+## Initialize Phase Tracking
+
+Runs **after** the Guard confirms there is drift to drain, **before** Step 0 below. This wires the durable phase-task list that the rest of the flow transitions for in-session visibility.
+
+First, read the contract: `../start/references/phase-tracking.md` (the cross-skill source of truth — `start` is its worked example). It defines the task subjects and the `pending → in_progress → completed` (plus `deleted`) state machine. Follow it verbatim. `evolve` runs on an already-onboarded project (a meta + snapshots exist by the time the Guard passes), so it has no cross-session resume probe of its own; the task list here is **in-session progress visibility**, and the durable record lives in the on-disk artifacts the contract describes.
+
+`evolve` has a **short, gateless ladder** (per the contract's § Other entry points: `evolve` presents a diff *after* applying — it has **no hard gate**, so no gate task and no `deleted`-on-cancel transition; it runs straight through). Create the **4** `evolve` phase tasks via `TaskCreate`, all `status: "pending"`, one per ladder phase, using the `evolve:` subject prefix:
+
+| Subject | `activeForm` |
+|---|---|
+| `evolve:detect-drift` | Detecting accumulated drift |
+| `evolve:apply-updates` | Applying drift updates |
+| `evolve:show-diff` | Showing the diff |
+| `evolve:clear-entries` | Clearing processed entries |
+
+Only this orchestrator touches the list. Every internal skill it later invokes (`onboard:generate`, `onboard:research`) is **task-blind** per the contract's § Ownership — when `evolve` invokes `generate` inside the apply phase, that does **not** create its own list; it runs inside this Phase-1 task.
+
 ## Step 0: Detect Plugin Drift
 
-Plugin drift detection follows the shared procedure in `../generation/references/plugin-drift-detection.md`. Evolve-specific parameters:
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(evolve:detect-drift → in_progress)` now, **before** the plugin-drift detection below. This task spans Step 0 (plugin drift) and Step 1 (FileChanged drift entries). Mark it `TaskUpdate(... → completed)` after Step 1 has read and summarized the FileChanged drift entries.
+
+Plugin drift detection follows the shared procedure in `../generation/references/plugins/plugin-drift-detection.md`. Evolve-specific parameters:
 
 - **Baseline source** — `.claude/greenfield-meta.json.generated.toolingFlags.installedPlugins` or `.claude/onboard-meta.json.detectedPlugins.installedPlugins`. If neither file has this field, skip Step 0 entirely (evolve requires a baseline; use `/onboard:update` instead for projects without one).
-- **Probe list** — canonical list in `../generation/references/plugin-detection-guide.md` § Known Plugin Probe List. Also probe any plugin in `previousPlugins` that isn't in the known list (custom/third-party plugins).
+- **Probe list** — canonical list in `../generation/references/plugins/plugin-detection-guide.md` § Known Plugin Probe List. Also probe any plugin in `previousPlugins` that isn't in the known list (custom/third-party plugins).
 - **autonomyLevel source** — `onboard-meta.json.wizardAnswers.autonomyLevel`, falling back to `greenfield-meta.json.context.autonomyLevel` if present.
 
 Produce the `driftReport` described in `plugin-drift-detection.md` § Output Schema. If `added` and `removed` are both empty, skip to Step 1.
@@ -64,7 +83,11 @@ Present a summary when entries exist:
 >
 > I'll update your CLAUDE.md, rules, and skills to reflect these changes.
 
+> **Phase complete:** after Step 0's plugin drift is detected and Step 1's FileChanged drift entries are read and summarized, `TaskUpdate(evolve:detect-drift → completed)`.
+
 ## Step 2: Apply FileChanged Updates
+
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(evolve:apply-updates → in_progress)` now, **before** the first write in Step 2 and **before** any `Skill(onboard:generate)`/`Skill(onboard:research)` dispatch (both task-blind — they run inside this Phase-1 task, not their own list). This one task spans the entire apply span — Steps 2, 2b, 2c, 2d, 2e, 2f, 2g, 2h, and 2i. Mark it `TaskUpdate(... → completed)` after the last apply sub-step (Step 2i research staleness) finishes.
 
 For each category of FileChanged drift:
 
@@ -103,7 +126,7 @@ Read the root CLAUDE.md. Find the `<!-- onboard:plugin-integration:start -->` an
 
 Read the existing `autonomyLevel` from `greenfield-meta.json.context.autonomyLevel` (or fall back to `onboard-meta.json.wizardAnswers.autonomyLevel`).
 
-**For added plugins**: Derive new `qualityGates` and `phaseSkills` entries per `references/plugin-integration-rules.md` § qualityGates Derivation. Generate new hook scripts following the hook conventions from `../generation/references/hooks-guide.md` § Quality-Gate Hook Templates. Add corresponding entries to `.claude/settings.json` (merge-aware — read first, never overwrite existing non-plugin-integration hooks).
+**For added plugins**: Derive new `qualityGates` and `phaseSkills` entries per `references/plugin-integration-rules.md` § qualityGates Derivation. Generate new hook scripts following the hook conventions from `../generation/references/guides/hooks-guide.md` § Quality-Gate Hook Templates. Add corresponding entries to `.claude/settings.json` (merge-aware — read first, never overwrite existing non-plugin-integration hooks).
 
 **For removed plugins**: Identify hook scripts that reference removed plugins. Match by script basename against `greenfield-meta.json.generated.toolingFlags.hookStatus.generated` entries. Delete the hook script files. Remove corresponding entries from `.claude/settings.json`. If a `qualityGates` or `phaseSkills` entry references a removed plugin, drop it.
 
@@ -148,6 +171,8 @@ Update `onboard-meta.json.mcpStatus` to reflect additions.
 
 ## Step 2d: Apply Skill Frontmatter Drift
 
+> Every `onboard:generate` invocation in this skill constructs a `version: 3` context (generate is v3-only) — see `../update/references/drift-application.md` § Artifact gap regeneration for the authoritative construction shape.
+
 Run the same drift classification as `../update/SKILL.md` § 4b.5 Skill Frontmatter Drift:
 
 1. Read `onboard-meta.json.skillStatus.generated`, `.claude/onboard-skill-snapshot.json`, and each live `.claude/skills/<skill>/SKILL.md`.
@@ -175,7 +200,7 @@ Run the same drift classification as `../update/SKILL.md` § 4b.6 Agent Frontmat
 
 - **user-edit** → default verb `accept-user-edit`. Update the snapshot to match the live file so subsequent runs stop flagging. Do NOT rewrite the live file. Set `frontmatterFields.<agent>.source = "user-tweaked"`. Log once.
 - **new-field** → apply by reading live `<agent>.md`, inserting only the missing field using the archetype-inferred value (composed with `wizardAnswers.agentTuning`). Update snapshot. Set `source = "user-confirmed"`.
-- **legacy-no-frontmatter** → auto-migrate. Classify the agent via `../generation/references/agents-guide.md` archetype rules using its name/description, compose with `wizardAnswers.agentTuning`, run the full validation pass from `../generation/SKILL.md` § Agent Frontmatter Emission Step 3, and prepend a YAML frontmatter block to the live file (keeping the body intact). Update snapshot. Set `source = "wizard-default"`. Append `legacy-migrated:<agent>` to `agentStatus.warnings` for audit visibility.
+- **legacy-no-frontmatter** → auto-migrate. Classify the agent via `../generation/references/guides/agents-guide.md` archetype rules using its name/description, compose with `wizardAnswers.agentTuning`, run the full validation pass from `../generation/SKILL.md` § Agent Frontmatter Emission Step 3, and prepend a YAML frontmatter block to the live file (keeping the body intact). Update snapshot. Set `source = "wizard-default"`. Append `legacy-migrated:<agent>` to `agentStatus.warnings` for audit visibility.
 - **missing-file** → invoke `onboard:generate` with `callerExtras.regenerateOnly: [".claude/agents/<agent>.md"]` and `callerExtras.disableAgentTuning: true`. The generator reuses the snapshot's frontmatter values so prior tweaks are preserved.
 - **user-tweaked** / **in-sync** → no action.
 
@@ -210,16 +235,16 @@ Run the same drift classification as `../update/SKILL.md` § 4b.8 LSP Plugin Dri
 
 **Auto-apply rules** (evolve's "drain drift without asking" philosophy — bounded by explicit-consent floor for new plugin installs):
 
-- **newLanguage** → **re-prompt** via a single `AskUserQuestion` multiSelect (reuse wizard Phase 5.6 phrasing): "Detected new languages since last run: `<list>`. Install these LSP plugins?". Pre-check entries with `fileCount ≥ 10`, unchecked below. User accepts → invoke `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugins>`, append to `onboard-lsp-snapshot.json.recommended[]` AND `accepted[]` (preserve alphabetical sort), and merge install results into `lspStatus.autoInstalled[]` / `lspStatus.autoInstallFailed[]`. User declines individual entries → still append to `recommended[]` so subsequent drift runs don't re-surface (but omit from `accepted[]`). This respects the user's earlier choice: "prompt during wizard" posture carries through to evolve — never silent install of net-new plugins.
+- **newLanguage** → **re-prompt** via a single `AskUserQuestion` multiSelect (reuse wizard Step 6 phrasing): "Detected new languages since last run: `<list>`. Install these LSP plugins?". Pre-check entries with `fileCount ≥ 10`, unchecked below. User accepts → invoke `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugins>`, append to `onboard-lsp-snapshot.json.recommended[]` AND `accepted[]` (preserve alphabetical sort), and merge install results into `lspStatus.autoInstalled[]` / `lspStatus.autoInstallFailed[]`. User declines individual entries → still append to `recommended[]` so subsequent drift runs don't re-surface (but omit from `accepted[]`). This respects the user's earlier choice: "prompt during wizard" posture carries through to evolve — never silent install of net-new plugins.
 - **uninstalled** → no action. Log once: "LSP plugin `<name>` was uninstalled since last run — leaving it out of snapshot.accepted on next update." Do NOT reinstall.
 - **stillValid** → no action.
 - **staleCandidate** → no action. Log once.
 
 **Snapshot-missing migration** (pre-1.8.0 projects running evolve on 1.8.0+):
 
-When `.claude/onboard-lsp-snapshot.json` is absent, fire a one-time initial prompt just like `/onboard:start` Phase 5.6. After the user's response, write the snapshot with `recommended` = full detected list, `accepted` = user's selected subset. Subsequent evolve runs follow the normal drift flow.
+When `.claude/onboard-lsp-snapshot.json` is absent, fire a one-time initial prompt just like `/onboard:start` wizard Step 6. After the user's response, write the snapshot with `recommended` = full detected list, `accepted` = user's selected subset. Subsequent evolve runs follow the normal drift flow.
 
-**Headless mode** (when called via `generate` with `callerExtras.lspPlugins` set): evolve delegates to the caller's explicit list — no prompt fires. An empty array means "declined all"; an absent caller value falls through to interactive prompting.
+**Programmatic mode** (when called via `generate` with `callerExtras.lspPlugins` set): evolve delegates to the caller's explicit list — no prompt fires. An empty array means "declined all"; an absent caller value falls through to interactive prompting.
 
 Update `onboard-meta.json.lspStatus` to reflect additions. The Step 2b.3 metadata mirror path picks up the refreshed `lspStatus` via the read-modify-write pattern.
 
@@ -228,12 +253,12 @@ Update `onboard-meta.json.lspStatus` to reflect additions. The Step 2b.3 metadat
 Run the same drift classification as `../update/SKILL.md` § 4b.9 Built-in Skills Drift:
 
 1. Read `.claude/onboard-builtin-skills-snapshot.json` (`{ recommended, accepted }`). Missing file → `recommended: [], accepted: []` (pre-1.9.0 project).
-2. Re-run detection against the current codebase: check each extra skill's detection signal per `../generation/references/built-in-skills-catalog.md`. Core skills are always candidates.
+2. Re-run detection against the current codebase: check each extra skill's detection signal per `../generation/references/catalogs/built-in-skills-catalog.md`. Core skills are always candidates.
 3. Classify each candidate: `newSkill`, `newlyRelevant`, `staleCandidate`, `in-sync`.
 
 **Auto-apply rules** (evolve's "drain drift without asking" philosophy — bounded by explicit-consent floor for new built-in skill additions):
 
-- **newSkill** → **re-prompt** (not silent-add). Batch all `newSkill` entries into **one `AskUserQuestion` multiSelect** (same format as wizard Phase 5.7). Present each new skill with its description and detection signal. The developer selects which to accept.
+- **newSkill** → **re-prompt** (not silent-add). Batch all `newSkill` entries into **one `AskUserQuestion` multiSelect** (same format as wizard Step 7). Present each new skill with its description and detection signal. The developer selects which to accept.
   - For each accepted skill: add to `builtInSkillsStatus.generated[]`. Find the `<!-- onboard:builtin-skills:start/end -->` markers in CLAUDE.md and regenerate the content between them, including the new skill with its stack-specific example. Update `.claude/onboard-builtin-skills-snapshot.json` — append to both `recommended[]` and `accepted[]`.
   - For each declined skill: add to `builtInSkillsStatus.skipped[]` with `reason: "user-declined"`. Append to `snapshot.recommended[]` only (not `accepted[]`).
 - **staleCandidate** → no action. Log once: "Built-in skill `<name>` detection signal no longer fires — informational only."
@@ -244,11 +269,23 @@ Run the same drift classification as `../update/SKILL.md` § 4b.9 Built-in Skill
 - **Plugin Integration → standalone**: If `effectivePlugins` becomes empty, migrate the content out to a standalone section.
 - **Empty accepted list**: Strip markers entirely when `builtInSkillsStatus.generated[]` is empty.
 
-**Headless mode** (when called via `generate` with `callerExtras.builtInSkills` set): evolve delegates to the caller's explicit list — no prompt fires. An empty array means "declined all"; an absent caller value falls through to interactive prompting.
+**Programmatic mode** (when called via `generate` with `callerExtras.builtInSkills` set): evolve delegates to the caller's explicit list — no prompt fires. An empty array means "declined all"; an absent caller value falls through to interactive prompting.
 
 Update `onboard-meta.json.builtInSkillsStatus` to reflect additions. The Step 2b.3 metadata mirror path picks up the refreshed `builtInSkillsStatus` via the read-modify-write pattern.
 
+## Step 2i: Apply Research Staleness (re-research)
+
+Apply `../update/references/re-research.md` (both sections):
+1. **Detect** (§ Detection): map the Step-1 FileChanged drift (Dependency / Config / Structural categories) to research dimensions, intersect with the stored-depth roster (`onboard-meta.json.research.depth`), apply the escalation rule → `{ dimensions, escalatedToFull }`. Empty set → no action.
+2. **Scoped (not escalated)** → run **silently** (evolve's drain-without-asking philosophy): invoke `onboard:research` in scoped/merge mode (stored depth + the prior dossier, no prompts), then follow § Orchestration steps 3–5 to build the `version:3` + `reResearch` (no `regenerateOnly`) context and regenerate merge-aware.
+3. **Escalated to full** → do **NOT** run silently. Log once: "Significant drift detected — run `/onboard:update` to re-ground research (full re-research is too large to auto-apply)." Leave the pass for the interactive surface (defer to `/onboard:update`). This mirrors evolve's explicit-consent floors for net-new installs.
+4. **Atomic abort** → on a research-engine failure, leave the prior dossier + tooling untouched, warn, and fall back to the snapshot-replay path.
+
+> **Phase complete:** after the last apply sub-step (Step 2i) finishes, `TaskUpdate(evolve:apply-updates → completed)`.
+
 ## Step 3: Show Diff
+
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(evolve:show-diff → in_progress)` now, **before** showing the diff. `evolve` presents this diff **after** applying — there is **no hard gate** here (per the contract's § Other entry points, `evolve` has no gate phase), so this is a plain transition, not a gate. Mark it `TaskUpdate(... → completed)` after the diff is shown.
 
 After applying all updates (both FileChanged and plugin integration), show what changed:
 
@@ -271,13 +308,19 @@ After applying all updates (both FileChanged and plugin integration), show what 
 > - .claude/onboard-lsp-snapshot.json: Updated baseline
 > - CLAUDE.md: Added `/claude-api` to built-in skills subsection (Anthropic SDK detected)
 > - .claude/onboard-builtin-skills-snapshot.json: Updated baseline
+> - .claude/onboard-research.json: Re-grounded [N] dimension(s) ([list]) and re-sharpened affected tooling; merged verify backlog
 >
 > **Not auto-applied** (needs your input):
 > - New directory src/services/ — want me to create a CLAUDE.md for it?
+> - Significant research drift (would need a full re-research) — run `/onboard:update` to re-ground
 >
 > **Note**: Subdirectory skill-annotation blocks (wrapped in `<!-- onboard:skill-recommendations:start/end -->` markers) are refreshed automatically via the role-attribute strategy. Subdirectory files that predate markered blocks are not auto-created — run `/onboard:update` to have those offered as new best-practice additions.
 
+> **Phase complete:** after the diff above is shown, `TaskUpdate(evolve:show-diff → completed)`.
+
 ## Step 4: Clear Processed Entries
+
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(evolve:clear-entries → in_progress)` now, **before** clearing the processed entries. Mark it `TaskUpdate(... → completed)` after the entries are cleared — that completes the last phase of the run; all 4 `evolve` tasks are now `completed`.
 
 After updates are applied:
 1. Update `lastAuditedAt` in greenfield-drift.json to current timestamp
@@ -285,14 +328,17 @@ After updates are applied:
 3. Keep any entries that were NOT processed (e.g., structural changes that need developer input)
 4. Plugin drift state is persisted in greenfield-meta.json (updated in Step 2b.3) — there is no separate "clear" action for plugin drift.
 
+> **Phase complete:** after the processed entries are cleared, `TaskUpdate(evolve:clear-entries → completed)`. All 4 phase tasks are now `completed` — the run is done.
+
 ## Key Rules
 
+0. **Own the gateless phase-task list end to end** — per `../start/references/phase-tracking.md`, the Initialize Phase Tracking step creates the 4 `evolve:*` tasks; each phase marks its own task `in_progress` before its work (and before any `Skill(onboard:generate)`/`Skill(onboard:research)` dispatch) and `completed` after. Those internal skills are **task-blind** — invoking `generate` inside the apply phase does NOT spawn its own list. The enum is exactly `pending`/`in_progress`/`completed`/`deleted` — no "blocked"/"cancelled". `evolve` has **no hard gate**: it shows the diff *after* applying, so there is no `in_progress`-while-awaiting gate task and no `deleted`-on-cancel transition — every phase is a straight `in_progress → completed`. The list is **in-session visibility only** — the durable record is the on-disk meta/snapshots.
 1. **Read before writing** — Always read the current state of CLAUDE.md, rules, settings.json, and greenfield-meta.json before making changes.
 2. **Surgical updates** — Only change the specific sections affected by the drift. Don't rewrite entire files.
 3. **Ask for structural** — Dependency and config changes can be auto-applied. Structural changes (new CLAUDE.md files) require developer confirmation.
 4. **Preserve manual edits** — If the developer has customized CLAUDE.md beyond what onboard generated, preserve those customizations. Only touch the marker-delimited Plugin Integration section.
 5. **Show the diff** — Always show what was changed so the developer can verify.
-6. **Plugin drift is probe-based** — It does not depend on greenfield-drift.json entries. It's detected by comparing greenfield-meta.json against filesystem state at evolve-time, following `../generation/references/plugin-drift-detection.md`.
+6. **Plugin drift is probe-based** — It does not depend on greenfield-drift.json entries. It's detected by comparing greenfield-meta.json against filesystem state at evolve-time, following `../generation/references/plugins/plugin-drift-detection.md`.
 7. **Marker-delimited surgery** — Plugin Integration section updates use the `<!-- onboard:plugin-integration:start/end -->` markers. Never touch content outside the markers.
 8. **Subdirectory annotations refresh via marker + role attribute** — Plugin drift refreshes `<!-- onboard:skill-recommendations:start role="..." -->` blocks in subdirectory CLAUDE.md files without re-invoking scaffold-analyzer. Directories lacking markered blocks are not auto-created — run `/onboard:update` to surface them as new best-practice additions.
 9. **Merge-aware hook updates** — When modifying `.claude/settings.json`, read first, merge plugin-integration hooks, and preserve all other hooks (format, lint, evolution, etc.).

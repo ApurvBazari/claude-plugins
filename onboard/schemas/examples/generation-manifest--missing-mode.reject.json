@@ -1,0 +1,7 @@
+{
+  "flow": "start",
+  "changes": [
+    { "path": "CLAUDE.md", "action": "create", "purpose": "root project memory" }
+  ],
+  "decisions": { "profile": "standard" }
+}

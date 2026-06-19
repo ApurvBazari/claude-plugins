@@ -1,0 +1,9 @@
+{
+  "extraSpecialists": [
+    {
+      "name": "evil",
+      "dimension": "absolute path outside the repo",
+      "agent": "/tmp/malicious-agent.md"
+    }
+  ]
+}

@@ -16,7 +16,7 @@
 | # | Check | Result | Evidence |
 |---|---|---|---|
 | M1 | Subdirectory CLAUDE.md for apps/web, apps/api, packages/* | ✅ PASS | 5 files generated: root + apps/{api,web}/CLAUDE.md + packages/{shared,ui}/CLAUDE.md |
-| M2 | `/codebase-visualizer` offered in Phase 5.7 | ❌ FAIL | Summary shows "core set (/loop, /simplify, /debug, /pr-summary)" — `/codebase-visualizer` not offered despite multi-package signal (4 workspaces). Root cause: `builtInSkillsStatus.status = "skipped"` — the Phase 5.7 candidate list was never materialized. |
+| M2 | `/codebase-visualizer` offered in wizard Step 7 | ❌ FAIL | Summary shows "core set (/loop, /simplify, /debug, /pr-summary)" — `/codebase-visualizer` not offered despite multi-package signal (4 workspaces). Root cause: `builtInSkillsStatus.status = "skipped"` — the wizard Step 7 candidate list was never materialized. |
 | M3 | `typescript-lsp` offered, pre-checked | ✅ PASS (offered + accepted) · ❌ FAIL (not wired) | Summary mentions it; user accepted. But `lspStatus: {status: "skipped", reason: "no-project-level-lsp-install-path"}` — the wizard promised it, the generator dropped it. See B10. |
 | M4 | Complexity inferred as medium or higher | ⚠️ CALIBRATION MISS | Analysis reported "Small (20/100 — 16 files, 16 LOC)". Plan expected medium+ from multi-workspace structure; actual scorer weights LOC (16 is tiny). Not a bug in the scorer — a disagreement with the plan checklist. |
 | M5 | Session returns cleanly after init | ✅ PASS | Prompt returned; no hook or schema errors on next input |

@@ -14,51 +14,43 @@ Perform deep, read-only analysis of a project to produce a structured report tha
 
 ## Analysis Process
 
-### Step 1: Run Shell Scripts
+### Step 1: Recon — native, script-free
 
-Execute the three analysis scripts against the project root to gather baseline metrics:
+Gather baseline facts with the native tools only (NO shell scripts — recon is script-free in v3):
 
-```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/analyze-structure.sh" <project-root>
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh" <project-root>
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/measure-complexity.sh" <project-root>
-```
+- **Stack** — Glob for manifest/lockfiles (`package.json`, `go.mod`, `Cargo.toml`, `pyproject.toml`, `pom.xml`, `Gemfile`, …) and Read them for languages, frameworks, and exact versions. Apply the matching logic in `references/tech-stack-patterns.md`.
+- **Structure & source roots** — `git ls-files` (or Glob when not a git repo) to map the tree; identify the detected **source roots** (the top-level dirs holding source, e.g. `src/`, `lib/`, `cmd/`, `pkg/`). Record them as `detectedRoots`.
+- **Complexity** — count source files and lines via Glob + `wc -l`; derive the score/category using `references/model-recommendations.md` logic.
+- **Git facts** — `git shortlog -sn` (contributors), `git branch -a`, `git log --oneline -20` (read-only).
 
-Capture and parse all output from these scripts.
+You are read-only: only Read/Glob/Grep and read-only Bash (`git`, `wc`, `ls`).
 
 ### Step 2: Deep Codebase Exploration
 
-Go beyond what the scripts detect. Use Read, Glob, and Grep to:
+Go beyond recon. Use Read, Glob, and Grep to:
 
 1. **Examine configuration files** — Follow `references/config-extraction-guide.md` for detailed config file extraction. Read every detected linter, formatter, type checker, and style config file. Extract enforced rules, severity levels, and settings that affect how code should be written. Distinguish between formatter settings (auto-fixed, document in CLAUDE.md) and linter rules (enforced, generate path-scoped rules). Also read `package.json`, `tsconfig.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, etc. for exact versions, compiler options, and settings that affect development patterns.
 
-2. **Identify project conventions** — Look for:
-   - Naming patterns (camelCase, snake_case, kebab-case for files/directories)
-   - Import style (absolute vs relative, barrel exports)
-   - Code organization (by feature, by type, by layer)
-   - Error handling patterns
-   - Logging patterns
-
-3. **Map the architecture** — Determine:
+2. **Map the architecture** — Determine:
    - Entry points (main files, route definitions, API handlers)
    - Layer structure (controllers → services → repositories, etc.)
    - Component hierarchy (for frontend projects)
    - Module boundaries
 
-4. **Assess testing maturity** — Check:
+3. **Assess testing maturity** — Check:
    - Test-to-source ratio
    - Test patterns (unit, integration, e2e)
    - Test file co-location vs separate directory
    - Coverage configuration
    - Testing utilities and helpers
 
-5. **Scan codebase usage patterns** — Beyond detecting tools, understand HOW they're used. Sample 5-10 representative source files to identify: component/module patterns, import conventions, styling usage, error handling style, naming conventions, architectural layer boundaries. Follow Section 3 of `references/config-extraction-guide.md`. Report observed patterns with evidence (file paths, line counts, ratios).
-
-6. **Check existing Claude config** — If CLAUDE.md or `.claude/` directory exists:
+4. **Check existing Claude config** — If CLAUDE.md or `.claude/` directory exists:
    - Read every existing file
    - Note what's already configured
    - Identify gaps vs. what a full setup would include
    - Flag this to the user — they may want `/onboard:update` instead
+
+> Deep convention / pattern / error-handling / logging discovery is **out of scope for recon in v3** — the research `conventions` specialist owns it. Recon reports structural + stack facts only.
 
 ### Step 3: Determine Model Recommendation
 
@@ -104,24 +96,16 @@ Compile everything into a clear, organized report with these sections:
 - Branch strategy (inferred from branch names)
 - Commit frequency, contributor count
 
-## Conventions Detected
-- Naming, imports, code organization, error handling
-
-## Config & Pattern Analysis
-### Tooling Configs Found
-### Enforced Rules
-### Observed Patterns
-### Formatter Settings
-### Rule Generation Hints
-
 ## Complexity Assessment
-- Score and category from measure-complexity.sh
+- Score and category from the native complexity count (references/model-recommendations.md logic)
 - Model recommendation with reasoning
 
 ## Stack-Specific Insights
 - Framework-specific patterns and conventions
 - Known best practices for detected stack
 ```
+
+Convention / pattern / error-handling / logging findings now come from the research `conventions` specialist, not recon — the recon report ends at the structural + stack facts above.
 
 ## Key Principles
 
@@ -135,12 +119,12 @@ Compile everything into a clear, organized report with these sections:
 
 - `references/tech-stack-patterns.md` — Maps detected stacks to optimal configurations
 - `references/model-recommendations.md` — Project complexity → model recommendation logic
-- `references/config-extraction-guide.md` — Config file extraction and pattern scanning guide
+- `references/config-extraction-guide.md` — Config file extraction guide
 
 ## Key Rules
 
 - **Never write or modify any file** — this skill is strictly read-only. All output is a structured report returned to the caller; no files are created or changed.
-- **Script failure is non-blocking** — if any of the three analysis scripts fail, log the failure and continue with deep codebase exploration only. Never abort because a script timed out or hit a permission error.
+- **Recon is best-effort, non-blocking** — recon uses native tools only (no shell scripts in v3). If a recon probe yields nothing (e.g. no git history, no recognizable manifest), log the gap and continue with deep codebase exploration. Never abort because one probe came back empty.
 - **Only report what is actually found** — do not infer or guess framework versions, conventions, or CI setups. Flag ambiguity as "uncertain" rather than fabricating a value that flows into generation.
 - **Complexity score drives model recommendation via the reference, not ad-hoc** — always use `references/model-recommendations.md` to map the score to a model. Never override the recommendation based on other subjective factors not in the reference.
 - **Existing Claude config is flagged, not silently accepted** — if a substantial CLAUDE.md or `.claude/` directory is present, surface it explicitly in the report and note that the developer may want `/onboard:update` instead of a fresh start.

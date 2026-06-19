@@ -4,12 +4,28 @@ Verbatim classification procedures for each drift detector in Step 4b. Each sect
 
 ---
 
+## 4b.0: Artifact provenance (applies to every detector below)
+
+Before classifying any artifact, read `onboard-meta.json`'s optional `mode` and `artifactProvenance` map:
+
+- **`artifactProvenance[path]` absent or `"generated"`** — standard managed artifact. Classify exactly as each detector describes below. (Absent map ⇒ all-generated: the backward-compatible default for every pre-retrofit baseline.)
+- **`artifactProvenance[path] === "adopted"`** (or top-level `mode === "retrofit"` for a path with no explicit entry) — the artifact was brought under management by `/onboard:adopt` from pre-existing hand-crafted tooling. It is **diffable-with-caution**, NOT `existedPreOnboard`-suppressed:
+  - Its **absent maintenance header is the expected adopted baseline**, not a user customization. Do NOT route it through the Step-2 "maintenance header missing → user-customized, extra caution" branch on that basis alone.
+  - Field diffs use the adopt-time snapshot as the in-sync baseline (adopt captured current state, so a freshly-adopted artifact shows zero drift).
+  - The **first** modernization offer for an adopted artifact is always **"add maintenance header / migrate to onboard conventions"** (group `user-edit-detections`), surfaced with the note "adopted — not yet modernized". Subsequent offers (new fields, regeneration) follow the per-detector rules below.
+  - A genuine post-adopt hand-edit (live frontmatter differs from the adopt-time snapshot) is still surfaced as a `user-edit` — informational, never auto-rewritten — exactly as for generated artifacts.
+- **`artifactProvenance[path] === "user"`** — reserved for the future hands-off/hybrid stances (not produced in v1). Treat as `existedPreOnboard` (additions-only, never diffed) if ever encountered.
+
+This is the only provenance-specific logic update needs; everything else in the per-detector sections is unchanged.
+
+---
+
 ## 4b.1: Plugin Drift
 
-Follow `../generation/references/plugin-drift-detection.md` for the full procedure. Summary for update:
+Follow `../../generation/references/plugins/plugin-drift-detection.md` for the full procedure. Summary for update:
 
 1. **Resolve baseline** using the caller order for `update`: first `.claude/onboard-meta.json.detectedPlugins.installedPlugins`, then `.claude/onboard-meta.json.callerExtras.installedPlugins`, else empty.
-2. **Probe current state** against the Known Plugin Probe List in `../generation/references/plugin-detection-guide.md`. Also probe any plugin in the baseline that isn't in the known list.
+2. **Probe current state** against the Known Plugin Probe List in `../../generation/references/plugins/plugin-detection-guide.md`. Also probe any plugin in the baseline that isn't in the known list.
 3. **Compute diff** — produce the `driftReport` object described in `plugin-drift-detection.md` § Output Schema.
 4. **Note the baseline source**. If the baseline was empty, flag the findings section with "Plugin Integration not tracked before — all detected plugins offered as new additions."
 
@@ -31,7 +47,7 @@ This complements the existing "maintenance header removed" detection in Step 2: 
 
 ## 4b.3: New Best-Practice Additions
 
-Compare the current project against the built-in generation reference guides (`../generation/references/claude-md-guide.md`, `rules-guide.md`, `hooks-guide.md`, `skills-guide.md`, `agents-guide.md`). Surface only items that:
+Compare the current project against the built-in generation reference guides (`../../generation/references/guides/claude-md-guide.md`, `rules-guide.md`, `hooks-guide.md`, `skills-guide.md`, `agents-guide.md`). Surface only items that:
 
 - Appear in the reference guides as a recommended artifact for the project's stack/complexity, AND
 - Are not present in `onboard-meta.json.generatedArtifacts`, AND
@@ -43,7 +59,7 @@ Keep this narrow — do not parse the live WebFetch output to infer new recommen
 
 ## 4b.4: MCP Drift
 
-Compare `.mcp.json`, the drift snapshot `.claude/onboard-mcp-snapshot.json`, and a fresh signal scan (`bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh"`). Follow `../generation/references/mcp-guide.md` for emission rules — this step only classifies drift; applying is deferred to Step 7.
+Compare `.mcp.json`, the drift snapshot `.claude/onboard-mcp-snapshot.json`, and a fresh signal scan (`bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh"`). Follow `../../generation/references/catalogs/mcp-guide.md` for emission rules — this step only classifies drift; applying is deferred to Step 7.
 
 1. **Read the three sources**:
    - `.mcp.json` at project root (if absent and `mcpStatus.existedPreOnboard` is false, record `mcpDrift.status: "file-missing"`)
@@ -55,7 +71,7 @@ Compare `.mcp.json`, the drift snapshot `.claude/onboard-mcp-snapshot.json`, and
    - **newly-suggested** — in the fresh candidate list but neither in snapshot nor `.mcp.json`. Surface as a suggested addition.
    - **stale-candidate** — in snapshot/`.mcp.json` but the underlying signal no longer fires (e.g., `vercel.json` was deleted). Surface as a suggested removal.
    - **in-sync** — present in all three and unchanged. No action.
-3. **Pre-existing guard** — if `mcpStatus.existedPreOnboard: true`, onboard treats the whole file as user-owned. Suggest only additions (`newly-suggested`), never removals or edits.
+3. **Pre-existing guard** — if `mcpStatus.existedPreOnboard: true`, onboard treats the whole file as user-owned. Suggest only additions (`newly-suggested`), never removals or edits. In `mode:"retrofit"` repos, `.mcp.json` is always treated as user-owned regardless of `mcpStatus.existedPreOnboard` — adopt only catalogs it; update suggests additions only, never rewrites or removals.
 
 Record the classification as `mcpDrift.{userEdited, userRemoved, newlySuggested, staleCandidate}[]` for Step 7.
 
@@ -164,7 +180,7 @@ Re-run detection against the current codebase analysis to identify which built-i
 
 1. **Read the inputs**:
    - `.claude/onboard-builtin-skills-snapshot.json` — `{ recommended, accepted }`. Missing file → treat as `recommended: [], accepted: []` (pre-1.9.0 project).
-   - Fresh detection against the current codebase: check each extra skill's detection signal per `generation/references/built-in-skills-catalog.md`. Core skills (`/loop`, `/simplify`, `/debug`, `/pr-summary`) are always candidates.
+   - Fresh detection against the current codebase: check each extra skill's detection signal per `../../generation/references/catalogs/built-in-skills-catalog.md`. Core skills (`/loop`, `/simplify`, `/debug`, `/pr-summary`) are always candidates.
 
 2. **Classify** per candidate skill from the fresh detection:
    - **newSkill** — skill name in fresh candidates but not in `snapshot.recommended`. A new detection signal fired since last onboard/evolve run (e.g., `@anthropic-ai/sdk` added to dependencies → `/claude-api` detected). Surface as a suggested addition.
