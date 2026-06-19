@@ -20,6 +20,10 @@ for s in start update evolve adopt; do
   fi
 done
 grep -q 'currentPhase' "${ROOT}/start/SKILL.md" || { echo "start missing currentPhase anchor"; fail=1; }
+PT="${ROOT}/start/references/phase-tracking.md"
+if ! grep -q 'plan-gate' "$PT" || ! grep -qE 'display (value|label)' "$PT"; then
+  echo "phase-tracking.md no longer documents the display-only slug scheme"; fail=1
+fi
 if [ "$fail" -eq 0 ]; then
   echo "phase-tracking: wired in all entry points + contract present"
   exit 0

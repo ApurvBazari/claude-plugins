@@ -787,6 +787,44 @@ else
 fi
 echo ""
 
+# F10: pin that phase-tracking.md states there is no 'failed' status AND no enum table row defines it.
+PT="onboard/skills/start/references/phase-tracking.md"
+# shellcheck disable=SC2016  # backticks in the grep pattern are literal regex chars, not subshell
+if grep -qiE 'no\b[^.]*failed[^.]*status' "$PT" && ! grep -qE '^\| *`?failed`? *\|' "$PT"; then
+  pass "phase-tracking: TaskUpdate status enum documents no 'failed' state"
+else
+  fail "phase-tracking: 'failed' invariant unpinned — enum must list pending/in_progress/completed/deleted only"
+fi
+echo ""
+
+# F16: pin the dispatchedAsAgent hard-fail guard on all three dispatched agents.
+DISPATCH_OK=1
+for a in config-generator research-specialist research-verifier; do
+  af="onboard/agents/${a}.md"
+  if ! grep -q 'dispatchedAsAgent' "$af" || ! grep -q 'HARD-FAIL' "$af"; then
+    DISPATCH_OK=0
+    echo "    ${a}.md missing dispatchedAsAgent hard-fail guard"
+  fi
+done
+if [ "$DISPATCH_OK" -eq 1 ]; then
+  pass "agents: config-generator/research-specialist/research-verifier carry the dispatchedAsAgent hard-fail guard"
+else
+  fail "agents: a dispatched agent is missing its dispatchedAsAgent hard-fail guard"
+fi
+echo ""
+
+# F15: strengthen adopt's no-mutation pins — prose (never modifies hand-crafted file; does not call
+# generate) PLUS a structural grep that adopt/SKILL.md contains no Skill(onboard:generate invocation.
+ADOPT="onboard/skills/adopt/SKILL.md"
+if grep -qiE 'never modif(y|ies) a hand-crafted file' "$ADOPT" \
+   && grep -qiE 'does not call .?generate|never invokes the generation pipeline' "$ADOPT" \
+   && ! grep -qE 'Skill\(\s*(onboard:)?generate' "$ADOPT"; then
+  pass "adopt: no-mutation + never-calls-generate pinned (prose + structural)"
+else
+  fail "adopt: safety property unpinned — must state no hand-crafted mutation, never call generate, and contain no Skill(onboard:generate)"
+fi
+echo ""
+
 # JSON Schema fixtures: positive *.example.json validate AND negative *.reject.json are rejected
 # (pins the custom-specialist agent-path-traversal + prompt-size guards). check-schemas.py exits 2
 # when the jsonschema dev dep is absent — treat that as a skip (warn), not a failure.
