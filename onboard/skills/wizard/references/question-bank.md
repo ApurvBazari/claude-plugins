@@ -207,12 +207,12 @@ These cannot be inferred from research; they are cold free-form asks (or "skip" 
 ### Q8.1: Notifications
 **Ask**: "Would you like system notifications when Claude finishes tasks or needs your attention? This uses the **notify** plugin — works on macOS and Linux."
 **Options**: Yes (recommended) / No
-**Purpose**: Sets up the notify plugin with default config during onboarding.
+**Purpose**: Offers notifications during onboarding by ensuring the notify plugin is installed and directing the developer to `/notify:setup`.
 **Map to**: `ecosystemPlugins.notify`
 **Default**: `true`
 **Skip if**: notify plugin is not installed in Claude Code.
 **Probe install status**: `ls "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh" 2>/dev/null`; present each plugin with an `[installed]` / `[not installed]` marker. Selected-but-missing plugins install in /onboard:start Phase 6 (ecosystem-plugin-install step).
-**Note**: If accepted, the start command will run notify's install script, write a default `notify-config.json`, and merge hooks into `settings.json`.
+**Note**: If accepted, `/onboard:start` ensures the notify plugin is installed and prompts you to run `/notify:setup` to configure notifications. onboard does not write notify config or hooks itself — `/notify:setup` owns that (and chooses global vs per-project scope).
 
 ---
 

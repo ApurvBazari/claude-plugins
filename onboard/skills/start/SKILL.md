@@ -491,7 +491,7 @@ ls "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh" 2>/dev/null
 Characteristic files per plugin:
 - `notify` → `scripts/notify.sh`
 
-**If the probe finds the file**, the plugin is installed — proceed to the notify setup sub-step below (for notify).
+**If the probe finds the file**, the plugin is installed — proceed to the notify delegation sub-step below (for notify).
 
 **If the probe returns nothing**, the plugin is missing. Tell the developer:
 
@@ -519,65 +519,23 @@ Then continue to the next requested plugin. Repeat for each entry in `ecosystemP
 
 #### Set Up Notify (if requested and available)
 
-If `ecosystemPlugins.notify` is `true` and notify is available, **first probe for pre-existing global configuration** before offering any project-local setup:
+If `ecosystemPlugins.notify` is `true` and notify is installed, **delegate configuration to the notify plugin** — `/notify:setup` owns notify wiring and already handles global-vs-per-project scope and detects any pre-existing global config. onboard does **not** copy `notify.sh`, write a `notify-config.json`, run `install-notifier.sh`, or merge notify hooks into this project's `settings.json` — doing so would duplicate (and silently diverge from) whatever `/notify:setup` manages.
 
-#### Detection probe (strict — both must match to count as configured)
+Tell the developer:
 
-```bash
-HAS_GLOBAL_CONFIG=$( [ -f "$HOME/.claude/notify-config.json" ] && echo 1 || echo 0 )
-HAS_GLOBAL_HOOK=$(jq -e '.hooks // {} | tostring | test("notify\\.sh") and test("notify-config\\.json")' "$HOME/.claude/settings.json" 2>/dev/null && echo 1 || echo 0)
-```
+> The **notify** plugin is installed. Run `/notify:setup` to turn on system notifications — it lets you pick global (all projects) or this-project-only scope and skips anything already configured globally.
 
-Three states result:
-
-| State | Condition | Action |
-|---|---|---|
-| `globalConfigured` | `HAS_GLOBAL_CONFIG=1` AND `HAS_GLOBAL_HOOK=1` | **Inform-only, no offer.** Print: "Global notify config detected at `~/.claude/notify-config.json` — your hooks will fire for this project automatically. No project-local setup needed." Skip steps 1-4 below. |
-| `globalPartial` | One of the two probes is positive but not both | Print: "Global notify hooks detected but config is incomplete. Project-local setup will install the full config; consider running `/notify:setup` in a fresh session to repair the global install." Then proceed with steps 1-4 (default = no via AskUserQuestion). |
-| `notConfigured` | Both probes are 0 | Proceed with steps 1-4 below as the original flow (default = yes). |
-
-#### Project-local setup steps (only when `notConfigured` or developer accepts `globalPartial` offer)
-
-1. Run notify's install script to check dependencies:
-   ```bash
-   bash "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/install-notifier.sh"
-   ```
-2. Copy the notification script to the config scope:
-   ```bash
-   mkdir -p "$BASE_DIR/hooks"
-   cp "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh" "$BASE_DIR/hooks/notify.sh"
-   chmod +x "$BASE_DIR/hooks/notify.sh"
-   ```
-3. Write `notify-config.json` to `$BASE_DIR/` — applying **inherit + override** precedence when global config exists:
-   - Read `~/.claude/notify-config.json` (if present) as the base.
-   - Layer the project-local default on top: only specified keys override the global; missing keys inherit the global value.
-   - Example: if global has `events.stop.sound = "Glass"` and project-local doesn't override `sound`, the merged result keeps `"Glass"`.
-   - Default project-local body (used when no global exists, or as the override layer):
-     ```json
-     {
-       "version": "1.0.0",
-       "events": {
-         "stop": { "enabled": true, "message": "Task completed", "sound": "Hero", "minDurationSeconds": 0 },
-         "notification": { "enabled": true, "matcher": "permission_prompt|idle_prompt", "message": "Needs your attention", "sound": "Glass" },
-         "subagentStop": { "enabled": false, "message": "Subagent task completed", "sound": "Ping" }
-       }
-     }
-     ```
-4. Merge notify hooks into `$BASE_DIR/settings.json` (Stop, Notification, SubagentStop events)
-
-Where `$BASE_DIR` is the same scope used for the generated Claude tooling (typically `$PWD/.claude` for per-project or `~/.claude` for global).
-
-Report: `Notify plugin configured — you'll get system notifications when Claude finishes tasks.` (or, when `globalConfigured`, the inform-only line above.)
+If notify was just installed in this step and its scripts aren't on disk yet, the same `/notify:setup` instruction applies once the session is restarted.
 
 #### Report Ecosystem Setup
 
-> **Ecosystem plugins set up:**
-> - [list what was configured]
+> **Ecosystem plugins:**
+> - [list each requested plugin and whether it's installed / was just installed / skipped]
 >
-> You can customize these later:
-> - Notify: edit `notify-config.json` or run `/notify:setup`
+> To finish configuring:
+> - Notify: run `/notify:setup`
 
-If no plugins were set up (none requested or none available), skip this report entirely.
+If no plugins were requested or available, skip this report entirely.
 
 ---
 
@@ -644,7 +602,7 @@ If ecosystem plugins were set up, add:
 - **Never dispatch `config-generator` directly** — always go through `Skill(onboard:generate)`. Direct dispatch bypasses the shared validation contract and the `dispatchedAsAgent` safety net.
 - **Empty-repo guard always runs first** — Phase 0 fires before Phase 1 Recon, even if the user explicitly says "just analyze". A zero-source-count repo must hit the 3-option menu, not the wizard.
 - **Settings.json is always merge-aware** — never overwrite `.claude/settings.json` outright. Read it first, merge hooks, then write. The file may already contain hooks from other sources.
-- **Notify setup is inform-only when global config is already complete** — the `globalConfigured` detection (config + hook both present) means no project-local offer is made. Never re-setup what is already wired.
+- **Notify is delegated to `/notify:setup`, never wired per-repo** — onboard ensures the notify plugin is installed (if requested) and points the developer at `/notify:setup`; it never copies `notify.sh`, writes a project `notify-config.json`, runs `install-notifier.sh`, or merges notify hooks. `/notify:setup` owns scope selection and global-config detection.
 - **Halt and surface on context builder validation failure** — if the Phase 4 build-v3-context validation fails, refuse to dispatch and show the offending field. Never attempt generation with an incomplete or malformed context object.
 - **The orchestrator owns every phase-task transition** — per `references/phase-tracking.md`, Step 0 creates the 8 bare-slug phase tasks (`empty-repo-check` … `handoff`); each phase marks its own task `in_progress` before its work (and before any agent/Skill dispatch) and `completed` after. Subagents (`codebase-analyzer`, `config-generator`) and internal skills (`research`, `wizard`, `generate`) are task-blind. The enum is exactly `pending`/`in_progress`/`completed`/`deleted` — no "blocked"/"cancelled". The Phase 5 gate stays `in_progress` while awaiting the decision; Approve → `completed`, Adjust → loop (no change), Cancel → mark tasks 5/6/7 `deleted`.
 - **The resume anchor is on-disk artifacts, not the task list** — Step 0's resume probe (per `references/phase-tracking.md` § Resume) keys on durable files: `onboard-meta.json` with an integer `currentPhase` (probe 1, generation-era) → research dossier with no meta (probe 2, post-research) → neither (clean start). The harness task list is in-session visibility only. `currentPhase` is **orchestrator-owned and written from Phase 6 onward only** (the meta's first existence): set `= 6` after Phase 6 returns, then `= "done"` at Phase 7 completion. Phases 0–5 write no `currentPhase` (no meta exists) — their durable progress is the research dossier. Do **not** move these writes into the config-generator agent; the orchestrator updates the meta after generation returns. Absent `currentPhase` ⇒ no resume offered (back-compat).

@@ -787,6 +787,16 @@ else
 fi
 echo ""
 
+# Notify delegation: onboard delegates notify setup to /notify:setup; no per-repo notify emission.
+if out="$(bash .github/scripts/check-notify-delegation.sh 2>&1)"; then
+  pass "notify-delegation: start + generate delegate to /notify:setup (no per-repo notify emission)"
+else
+  fail "notify-delegation: per-repo notify emission detected — run .github/scripts/check-notify-delegation.sh"
+  # shellcheck disable=SC2001  # sed is the clearest way to indent each diagnostic line
+  echo "$out" | sed 's/^/    /'
+fi
+echo ""
+
 # F10: pin that phase-tracking.md states there is no 'failed' status AND no enum table row defines it.
 PT="onboard/skills/start/references/phase-tracking.md"
 # shellcheck disable=SC2016  # backticks in the grep pattern are literal regex chars, not subshell

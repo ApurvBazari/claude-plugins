@@ -111,7 +111,7 @@ Follow `references/guides/claude-md-guide.md` for structure and best practices.
 - **Tone matches autonomy level**: "always-ask" = more guardrails and "check with developer" language; "autonomous" = more empowering and "go ahead" language; "balanced" = mix
 - **Formatter conventions**: Include formatter settings (from Prettier/Black/rustfmt configs) as explicit conventions in Key Conventions section rather than as path-scoped rules
 - **Commands section**: List every discovered build/test/lint/deploy command with brief descriptions
-- **Ecosystem plugins section** (if any were set up): If `ecosystemPlugins` is present in wizard answers, add a brief "Ecosystem Plugins" section noting which plugins are active (e.g., "notify: system notifications on task completion"). Include relevant commands (`/notify:check`).
+- **Ecosystem plugins section** (if any were requested): If `ecosystemPlugins` is present in wizard answers, add a brief "Ecosystem Plugins" section noting which plugins are available and how to enable them (e.g., "notify: system notifications — run `/notify:setup` to configure, `/notify:check` to verify").
 - **Plugin Integration section** (if `effectivePlugins` is non-empty): Generate a dedicated `## Plugin Integration` section that documents the installed Claude Code plugins and how to use them on this specific project. See "Plugin Integration Section + Per-Directory Skill Annotations" below for the full spec.
 
 #### Plugin Integration Section + Per-Directory Skill Annotations

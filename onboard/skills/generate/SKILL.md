@@ -427,7 +427,7 @@ The v3 context uses the same field names and values as the standard wizard outpu
 
 3. **Model choice**: Map `modelChoice` to the model recommendation format.
 
-4. **Ecosystem plugins**: Pass `ecosystemPlugins` through for Phase 6 (ecosystem-plugin-install step) setup.
+4. **Ecosystem plugins**: Pass `ecosystemPlugins` through — if `notify: true`, Step 4 checks install status and directs the developer to `/notify:setup` (no per-repo notify files are written).
 
 ---
 
@@ -470,10 +470,10 @@ The config-generator agent follows the `generation` skill as usual. In internal 
 
 ## Step 4: Ecosystem Setup
 
-If `ecosystemPlugins` is present in the context, set up the requested plugins following the same process as Phase 6 (ecosystem-plugin-install step) in `/onboard:start`:
+If `ecosystemPlugins` is present in the context, follow the same process as Phase 6 (ecosystem-plugin-install step) in `/onboard:start`:
 
-- Check plugin availability
-- Set up notify (if requested and available)
+- Check plugin availability; offer to install a requested-but-missing plugin.
+- For notify (if requested and installed), **delegate to `/notify:setup`** — direct the developer to run it. Do not copy `notify.sh`, write a `notify-config.json`, run `install-notifier.sh`, or merge notify hooks; `/notify:setup` owns notify configuration and scope.
 
 ---
 
