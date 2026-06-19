@@ -30,10 +30,16 @@ The union of the working-tree diff and the `<merge-base>...HEAD` diff is the rev
 empty, the engine returns immediately:
 
 ```json
-{ "findings": [], "recommendedEscalation": "minor", "degraded": false }
+{ "findings": [], "recommendedEscalation": "minor", "degraded": false, "emptyScope": true }
 ```
 
-No error, no prompt — an empty review is a valid result.
+No error, no prompt — an empty review is a valid result. The `emptyScope: true` flag is the
+**discriminator** that tells a caller *there was nothing to review*, as opposed to *a review ran and found
+nothing*. A clean review (a real, non-empty diff whose findings all survive verify but turn out to be
+zero) returns the **same shape minus `emptyScope`** — `{ "findings": [], "recommendedEscalation": "minor",
+"degraded": false }` (no `emptyScope`, or `emptyScope: false`). Without this flag the two cases are
+byte-identical, so the caller must key on `emptyScope` — never on an empty `findings[]` — to decide whether
+to render an artifact.
 
 ## 2. Intent-source selection (INTENT)
 
@@ -65,13 +71,14 @@ Reconstructed intent is lower fidelity, so adherence findings derived from it ar
 
 ## 3. Parallel dispatch (ANALYZE)
 
-Dispatch the **5 built-in finders concurrently** — one Task call per finder, all in a single batch — per
-`superpowers:dispatching-parallel-agents`:
+Dispatch the **built-in finders concurrently** (3 fixed + one `spec-adherence` per spec + one
+`plan-adherence` per plan; N=1 collapses to the 5-agent dispatch) — one Task call per finder, all in a
+single batch — per `superpowers:dispatching-parallel-agents`:
 
 | Finder | Dimension | Extra structured output |
 |---|---|---|
-| `spec-adherence` | `requirements` | `specItems[]` (`{label,state}`) |
-| `plan-adherence` | `requirements` | `planSteps[]` (`{label,state}`) |
+| `spec-adherence` (×N_spec) | `requirements` | `specItems[]` (`{label,state}`) |
+| `plan-adherence` (×N_plan) | `requirements` | `planSteps[]` (`{label,state}`) |
 | `correctness` | `correctness` | — |
 | `risk-classify` | `risk` | — |
 | `test-gaps` | `test` | — |

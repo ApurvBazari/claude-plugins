@@ -18,17 +18,24 @@ step begins and `completed` when it ends; the four **engine-owned** tasks (`scop
 compute-only mode** (see below) **skip this step entirely — create no tasks and pass no `taskIds`.**
 
 ## Step 1: First-run setup (guard)
-If `.claude/lens/settings.md` is absent, run `references/setup.md`: ask via AskUserQuestion (1) gitignore
-the `.claude/lens/` dir? (offer "artifacts only — track the registry" so teams can share finders) and
-(2) the default output path; persist to `settings.md`. On later runs, just read settings.
+If `.claude/lens/settings.md` is absent, mark the `setup` task `in_progress`, run `references/setup.md`: ask
+via AskUserQuestion (1) gitignore the `.claude/lens/` dir? (offer "artifacts only — track the registry" so
+teams can share finders) and (2) the default output path; persist to `settings.md`, then mark `setup`
+`completed`. On later runs, just read settings (no `setup` task exists — see Step 0).
 
 ## Step 2: Run the engine
 Invoke `lens:engine` (Skill tool), passing the target + the project finders registered in settings + (on
 the standalone path) `taskIds = { scope, intent, analyze, verify }` so the engine transitions those four
 stages as it runs. It returns a `review-findings` object in context.
-**Empty result (empty diff / no repo):** when the engine returns an empty result, mark the review-owned
-`reconcile` and `render` tasks `deleted`, mark `report` `completed` with a one-line "nothing to review",
-and skip Steps 3–5 — there is nothing to reconcile, render, or write.
+**Empty scope (empty diff / no repo):** key the empty-scope branch on `result.emptyScope === true` — the
+engine's discriminator — **not** on an empty `findings[]`. When `result.emptyScope` is true, mark the
+review-owned `reconcile` and `render` tasks `deleted`, mark `report` `completed` with a one-line
+"nothing to review", and skip Steps 3–5 — there is nothing to reconcile, render, or write. (The engine
+already marked `scope` `completed` and `intent`/`analyze`/`verify` `deleted`, so every stage is accounted
+for once, with no double-transition and no stranded stage.)
+**Clean review (real diff, zero findings):** when `result.emptyScope` is falsy but `findings[]` is empty, a
+review *did* run and simply found nothing — **fall through to Steps 3–5** and render a normal ship /
+no-findings artifact (verdict `ship`, adherence still shown). Do **not** take the empty-scope branch.
 
 ## Step 3: Reconcile (state-aware)
 Read `.claude/lens/review-state.json` for this target (if present). Match each engine finding to a prior
@@ -46,11 +53,19 @@ invoke `walkthrough:render` with the model in context and output path
 report per `references/markdown-fallback.md`.
 
 ## Step 5: Write state, then report
-**Write-back (after a successful render only).** Now that Step 4 produced an artifact, write the state map
-computed in Step 3 back to `.claude/lens/review-state.json` — the single state write. On a render failure,
-**skip the write** so the state never advances without an artifact (no stale `fixed` labels next run).
-Then tell the user the path + the one-line `verdict` + the iteration delta (e.g. "2 fixed · 1 new"); offer
-to open (never auto-open).
+**Confirm the render succeeded first (per-path success check).** Before writing any state, verify Step 4
+actually produced an artifact, keyed on which path ran:
+- **walkthrough path** → confirm `walkthrough:render` **returned a written path** (a non-empty path string,
+  and the file it names exists).
+- **markdown path** → confirm the markdown file **exists and is non-empty** (per
+  `references/markdown-fallback.md` § Render failure).
+
+**Write-back (after a confirmed-successful render only).** Once the per-path check passes, write the state
+map computed in Step 3 back to `.claude/lens/review-state.json` — the single state write — then mark the
+`report` task `completed`. On a **render failure → skip the state write** (the existing guard) so the state
+never advances without an artifact (no stale `fixed` labels next run); tell the user the render failed and
+do **not** write `review-state.json`. Then (on success) tell the user the path + the one-line `verdict` +
+the iteration delta (e.g. "2 fixed · 1 new"); offer to open (never auto-open).
 
 ## Orchestrator mode (compute-only)
 When invoked by an **orchestrator** (not `/lens:review`), run Steps 2–3 only, then **return** the

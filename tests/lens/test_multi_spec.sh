@@ -26,7 +26,7 @@ grep -qiE 'plan-adherence.*per plan|per plan.*plan-adherence|one .?plan-adherenc
 grep -qiE 'same single parallel batch|same parallel batch' "$PIPE" || fail "ANALYZE: fan-out is one parallel batch"
 grep -q 'sourceSpec' "$PIPE" || fail "ANALYZE: provenance sourceSpec documented"
 grep -q 'sourcePlan' "$PIPE" || fail "ANALYZE: provenance sourcePlan documented"
-grep -qi 'merge' "$PIPE" || fail "ANALYZE: engine merges across the fan-out"
+grep -qiE 'merges? (all )?(specItems|planSteps|findings).*(across|fan-out)|across the fan-out' "$PIPE" || fail "ANALYZE: engine merges across the fan-out"
 grep -qiE 'per spec|per plan' "$ESKILL" || fail "ANALYZE: engine SKILL Step 3 must state per-spec/plan fan-out"
 
 # === Adherence agents: single-doc judgment + provenance ===

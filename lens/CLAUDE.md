@@ -32,7 +32,7 @@ lens is split into a **data-only engine** and a **renderer**, so the judgment co
 - **`lens-engine`** (`skills/engine`, internal, `user-invocable: false`, data-only): runs scope → intent → analyze → verify → dedup → rank and **returns** a `review-findings` JSON object. It writes nothing and never prompts the user. This is the reusable judgment core.
 - **`lens-render`** (inside `skills/review`): consumes that JSON, builds a review-model (narrative + adherence + findings + risk + annotated hunks + overall verdict), and invokes `walkthrough:render` to produce the artifact — with a markdown fallback when walkthrough is absent.
 
-## The pipeline (`/lens:review [target]`, 5 stages, all in-session)
+## The pipeline (`/lens:review [target]`, 5 engine stages + 3 review stages, all in-session)
 
 ```
 1 SCOPE  →  2 INTENT  →  3 ANALYZE  →  4 VERIFY  →  5 ASSEMBLE
@@ -41,7 +41,7 @@ lens is split into a **data-only engine** and a **renderer**, so the judgment co
             record       (parallel)    (dedup)        → .claude/lens/
 ```
 
-1. **SCOPE** — resolve the diff target. Default: working tree + this branch's commits vs the merge-base with the default branch; `[target]` overrides. Empty diff or no repo → tell the user, stop.
+1. **SCOPE** — resolve the diff target. Default: working tree + this branch's commits vs the merge-base with the default branch; `[target]` overrides. Empty diff or no repo → the engine returns `{ "findings": [], "emptyScope": true }` (no error, no prompt); `review` keys on `emptyScope: true` to report "nothing to review" and exit gracefully after Step 2, marking unreached stages `deleted`.
 2. **INTENT** — build an **intent record** that may span **multiple specs/plans**, selected **diff-correlated**: explicit args win; else every `docs/superpowers/specs/` + `docs/superpowers/plans/` file Added or Modified in the diff (prefer Added; modified-only → degraded); else the latest-only fallback; else reconstruct from the transcript (degraded).
 3. **ANALYZE** — dispatch finder subagents in parallel (see § Finder registry). Built-in finders are spec-adherence + plan-adherence (the wedge → `requirements` dimension; **fanned out one per spec/plan**, each tagging output with `sourceSpec`/`sourcePlan`), correctness, risk-classify, and test-gaps. All emit the same `review-findings` contract; read-only is **enforced at the boundary**.
 4. **VERIFY** — adversarial refute pass. Each candidate finding goes to an independent skeptic agent prompted to **refute** it against real source; only unrefuted findings survive. Dedup across finders. A finding that **errors mid-verify is kept** as `"unverified — flagged"` — never silently dropped.
@@ -140,8 +140,8 @@ lens has **exactly two skills**: `review` (user-facing, `/lens:review`) and `eng
 `user-invocable: false`). There is no separate `render` skill in lens — "lens-render" names the **render
 half inside `skills/review`**, and rendering itself is delegated to walkthrough's `render` skill.
 
-- `review/SKILL.md` — the one user-facing skill (`/lens:review [target]`). Runs the 5-stage pipeline: delegates the judgment half to `engine`, then does the render half (`lens-render`: review-model → `walkthrough:render` / markdown fallback).
+- `review/SKILL.md` — the one user-facing skill (`/lens:review [target]`). Runs the full pipeline: delegates the 5-stage engine judgment (SCOPE→INTENT→ANALYZE→VERIFY→ASSEMBLE) to `engine`, then owns the remaining 3 stages — `reconcile` → `render` → `report` (the `lens-render` half: review-model → `walkthrough:render` / markdown fallback). 8 harness tasks total (see § In-session task list).
 - `engine/SKILL.md` — **internal** (`user-invocable: false`), data-only judgment core: scope → intent → analyze → verify → dedup → rank → return `review-findings` JSON. Writes nothing, never prompts.
-- `agents/` — six finder/verifier agents: the **five built-in finders** (`spec-adherence`, `plan-adherence`, `correctness`, `risk-classify`, `test-gaps`) that each emit `review-findings` tagged with their `dimension`, plus the **`verifier`** (the adversarial skeptic used by the VERIFY stage, emitting a per-finding refute **vote** `{id, refuted, reason, status}`; the engine aggregates these votes into the schema's `votes{total,couldNotRefute,refuted}` and resolves each finding's `verified` bool). `test-gaps` owns the `test` / missing-test dimension; the `pr-test-analyzer` adapter only covers brittle/overfit.
+- `agents/` — six finder/verifier agent definitions: the **five built-in finder types** (`spec-adherence`, `plan-adherence`, `correctness`, `risk-classify`, `test-gaps`) that each emit `review-findings` tagged with their `dimension` — at runtime the 3 fixed finders run once while `spec-adherence`/`plan-adherence` fan out to one agent per spec / per plan (pipeline §3), plus the **`verifier`** (the adversarial skeptic used by the VERIFY stage, emitting a per-finding refute **vote** `{id, refuted, reason, status}`; the engine aggregates these votes into the schema's `votes{total,couldNotRefute,refuted}` and resolves each finding's `verified` bool). `test-gaps` owns the `test` / missing-test dimension; the `pr-test-analyzer` adapter only covers brittle/overfit.
 
 No hooks, no scripts, no compiled code — consistent with the marketplace's all-markdown + JSON convention.

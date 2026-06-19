@@ -2,7 +2,8 @@
 
 ## 1.2.0 — 2026-06-19
 - feat: in-session review task list — `/lens:review` surfaces its progress as a harness task list (one task per stage: `scope`/`intent`/`analyze`/`verify`/`reconcile`/`render`/`report`, plus `setup` on first run), the way `/onboard:start` shows its phases. The `review` skill owns the list and hands the engine `taskIds` for the four engine-owned stages; handed none (orchestrator/compute-only callers), the engine stays task-silent — its data-only contract is unchanged.
-- note: in-session visibility only — no durable run-progress and no cross-session resume (a review is single-shot). No `review-findings` schema change; no walkthrough change.
+- fix: disambiguate empty-diff from clean review — the engine now returns an `emptyScope` discriminator (optional, field-additive) so a clean review that genuinely found nothing renders a ship / no-findings artifact instead of looking identical to "nothing to review". The standalone path keys its empty branch on `result.emptyScope`, not on an empty `findings[]`; the markdown fallback defines "render failure" concretely and renders empty `findings[]` gracefully (no empty severity sections).
+- note: in-session visibility only — no durable run-progress and no cross-session resume (a review is single-shot). No walkthrough change; the `emptyScope` schema addition is field-additive (vicario's validator ignores it — only the dimension enum is co-owned).
 
 ## 1.1.0 — 2026-06-19
 - feat: multi-spec / multi-plan intent — the INTENT stage builds the intent record from *all* specs/plans Added or Modified in the branch diff (diff-correlated), not just the latest. ANALYZE fans out one `spec-adherence` per spec and one `plan-adherence` per plan, each tagging `sourceSpec`/`sourcePlan`; the engine merges across the fan-out.

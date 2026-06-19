@@ -10,7 +10,8 @@ fail(){ echo "FAIL: $1"; exit 1; }
 for f in "$SM" "$REV" "$PJSON" "$MKT" "$CHANGELOG"; do [ -s "$f" ] || fail "missing $f"; done
 
 grep -qi 'groups' "$SM" || fail "session-model adherence must document the optional groups[] form"
-grep -qiE '"kind"|kind.*spec.*plan' "$SM" || fail "session-model groups must carry kind spec|plan"
+grep -qiE 'groups.*kind|"kind":[[:space:]]*"spec\|plan"' "$SM" || fail "session-model groups must carry kind spec|plan"
+grep -qiE 'mutually exclusive|never coexist' "$SM" || fail "session-model must state groups[] and flat adherence are mutually exclusive"
 grep -qi 'groups' "$REV" || fail "review component must render adherence groups"
 grep -qiE 'per-group|per group|sub-section' "$REV" || fail "review component must render a per-group sub-section"
 grep -qiE 'falls back|fallback|otherwise' "$REV" || fail "review component must fall back to the flat panel"

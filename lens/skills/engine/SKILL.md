@@ -22,7 +22,11 @@ the task list.
 Resolve the target (default: working tree + branch commits vs the merge-base with the default branch;
 caller arg overrides). No repo / empty diff → if `taskIds` was passed, mark `scope` `completed` and
 `intent`/`analyze`/`verify` `deleted` (they never run), then return
-`{findings:[],recommendedEscalation:"minor",degraded:false}`.
+`{findings:[],recommendedEscalation:"minor",degraded:false,emptyScope:true}`. The `emptyScope:true`
+discriminator is the **only** thing that distinguishes this empty-diff/no-repo return from a clean review
+that genuinely found nothing — a normal (non-empty) run omits `emptyScope` (or sets it `false`). Return it
+on **both** the standalone (`taskIds`-bearing) and the compute-only paths; it is a data-return field,
+independent of `taskIds`.
 
 ## Step 2: Intent
 Build the intent record — it may **span multiple specs/plans**. Selection is **diff-correlated**: explicit
