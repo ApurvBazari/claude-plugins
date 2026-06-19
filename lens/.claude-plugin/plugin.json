@@ -1,6 +1,6 @@
 {
   "name": "lens",
-  "version": "1.2.0",
+  "version": "1.1.0",
   "description": "Intent-grounded review companion — checks the session diff against spec & plan, verifies findings, renders a review.",
   "author": { "name": "Apurv Bazari" },
   "repository": "https://github.com/ApurvBazari/claude-plugins",

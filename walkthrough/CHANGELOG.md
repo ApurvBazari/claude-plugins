@@ -1,25 +1,23 @@
 # Changelog
 
-## 1.4.0 — 2026-06-19
+## 1.1.0 — 2026-06-19
+
+First marketplace release after 1.0.0 — consolidates the detail-surfaces, lens review-render layer, Cowork support, and grouped-adherence work. (These landed as internal 1.2.0–1.4.0 increments on the integration branch and were never published; folded into a single public minor bump.)
 
 ### Grouped adherence
 - feat: the review adherence-panel (`components/review.md`) renders one sub-section per source spec/plan when the model carries `adherence.groups[]` (`{ source, kind, items[] }`), so multi-spec lens reviews show per-spec coverage at a glance. Falls back to the flat two-column layout when only `specItems[]`/`planSteps[]` are given. Populated by lens ≥ 1.1.0.
-
-## 1.3.0 — 2026-06-13
 
 ### Cowork-first-class
 - `create` now resolves its output directory on first run: in a non-git folder (the Cowork knowledge-work case) it asks whether to write to a visible `walkthroughs/` folder or the hidden `.claude/walkthrough/`, and remembers the choice in `<base>/settings.md`. Git repositories are unaffected — they keep writing to `.claude/walkthrough/` with no new prompt.
 - Documented Cowork compatibility: walkthrough is a pure-skill plugin (no hooks, no scripts), so it installs and runs in Claude Cowork and emits the same portable HTML deliverable. Added `cowork` / `claude-cowork` keywords and a "Works in Cowork" README section.
 - No change to `update` / `document` (the location prompt is create-only) and no change to the synthesis model.
 
-## 1.2.0 — 2026-06-09
+### Review render layer (for lens)
 - feat: internal `render` skill (render a supplied model → HTML; reused by the lens plugin)
 - feat: `components/review.md` — annotated-diff, findings-list, adherence-panel
 - feat: optional review fields on session-model (`verdict`, `adherence`, `findings`, `diffHunks`) + `files[].risk` coloring
 - fix: repoint render's session-model.md reference to ../create/references (broken cross-skill path).
 - feat: review session-model gains optional `iteration` + `iterationDelta`; findings-list renders an iteration chip + delta subhead (populated only by lens).
-
-## 1.1.0 — 2026-06-08
 
 ### Detail surfaces
 - Replaced the unstructured detail-panel blob (`DET{k,h,b}`) with a structured detail schema — `{kicker, heading, summary, where[], code[], points[], related[], surface?, components[]}` — rendered by a shared `renderSurface`.
