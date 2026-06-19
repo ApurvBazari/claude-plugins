@@ -20,6 +20,7 @@ PASSED=0
 FAILED=0
 WARNINGS=0
 TOTAL=0
+IS_CANONICAL_STUB=0   # default; section 8 overrides to 1 when meta says stub-empty-repo
 
 pass() { PASSED=$((PASSED + 1)); TOTAL=$((TOTAL + 1)); echo "  PASS: $1"; }
 fail() { FAILED=$((FAILED + 1)); TOTAL=$((TOTAL + 1)); echo "  FAIL: $1"; }

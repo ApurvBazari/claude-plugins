@@ -785,7 +785,7 @@ python3 onboard/schemas/check-schemas.py >/dev/null 2>&1 || schema_rc=$?
 if [[ "$schema_rc" -eq 0 ]]; then
   pass "schemas: example fixtures validate + reject fixtures rejected (onboard/schemas/check-schemas.py)"
 elif [[ "$schema_rc" -eq 2 ]]; then
-  warn "schemas: skipped — jsonschema dev dep absent (pip install --user jsonschema)"
+  warn "schemas: full suite skipped — jsonschema dev dep absent; dep-free security pin still ran (pip install --user jsonschema for the full suite)"
 else
   fail "schemas: fixture validation failed — run python3 onboard/schemas/check-schemas.py"
 fi

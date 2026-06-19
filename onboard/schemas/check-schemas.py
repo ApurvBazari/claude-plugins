@@ -27,10 +27,9 @@ import sys
 
 try:
     import jsonschema
+    HAVE_JSONSCHEMA = True
 except ImportError:
-    print("ERROR: missing dev dependency — run: python3 -m pip install --user jsonschema",
-          file=sys.stderr)
-    sys.exit(2)
+    HAVE_JSONSCHEMA = False
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # -> onboard/
 EXAMPLES_DIR = os.path.join(ROOT, "schemas", "examples")
@@ -51,7 +50,61 @@ def load_schema(schema_name):
         return json.load(f), None
 
 
+def security_pin_fallback():
+    """Dependency-free pin of the research-config SECURITY reject fixtures.
+
+    Reads the agent-path pattern + prompt size cap from research-config.json and
+    asserts each known security reject fixture still violates its constraint, so a
+    loosened guard fails the gate even when jsonschema is absent. Shape-only reject
+    fixtures (oneOf XOR) are NOT covered here — they need jsonschema.
+    Returns the failure count.
+    """
+    import re
+    schema, err = load_schema("research-config")
+    if err:
+        print(f"FAIL pin: {err}", file=sys.stderr)
+        return 1
+    props = schema["properties"]["extraSpecialists"]["items"]["properties"]
+    agent_re = re.compile(props["agent"]["pattern"])
+    prompt_max = props["prompt"]["maxLength"]
+    # Keyed by filename so a loosened pattern that now ACCEPTS a bad agent is caught.
+    security = {
+        "research-config--absolute-agent.reject.json": "agent",
+        "research-config--dotdot-agent.reject.json": "agent",
+        "research-config--traversal-agent.reject.json": "agent",
+        "research-config--oversized-prompt.reject.json": "prompt",
+    }
+    failures = 0
+    for fname, kind in security.items():
+        path = os.path.join(EXAMPLES_DIR, fname)
+        if not os.path.isfile(path):
+            print(f"FAIL pin {fname}: security fixture missing", file=sys.stderr)
+            failures += 1
+            continue
+        with open(path) as f:
+            inst = json.load(f)
+        rejected = False
+        for sp in inst.get("extraSpecialists", []):
+            if kind == "agent" and "agent" in sp and not agent_re.match(sp["agent"]):
+                rejected = True
+            if kind == "prompt" and "prompt" in sp and len(sp["prompt"]) > prompt_max:
+                rejected = True
+        if rejected:
+            print(f"OK pin   {fname}")
+        else:
+            print(f"FAIL pin {fname}: security constraint no longer rejects it", file=sys.stderr)
+            failures += 1
+    return failures
+
+
 def main():
+    if not HAVE_JSONSCHEMA:
+        fails = security_pin_fallback()
+        if fails:
+            print(f"{fails} security pin failure(s)", file=sys.stderr)
+            return 1
+        print("jsonschema absent — ran dep-free security pin (full suite skipped)")
+        return 2
     examples = sorted(glob.glob(os.path.join(EXAMPLES_DIR, "*.example.json")))
     rejects = sorted(glob.glob(os.path.join(EXAMPLES_DIR, "*.reject.json")))
     if not examples and not rejects:

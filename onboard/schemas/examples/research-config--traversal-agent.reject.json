@@ -2,8 +2,8 @@
   "extraSpecialists": [
     {
       "name": "evil",
-      "dimension": "path traversal via relative escape",
-      "agent": "../../../../etc/passwd"
+      "dimension": "non-.md extension under .claude/",
+      "agent": ".claude/agents/research.txt"
     }
   ]
 }
