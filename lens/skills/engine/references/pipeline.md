@@ -35,19 +35,33 @@ empty, the engine returns immediately:
 
 No error, no prompt — an empty review is a valid result.
 
-## 2. Intent-source priority ladder (INTENT)
+## 2. Intent-source selection (INTENT)
 
-Build the **intent record** (the list of spec items + plan steps the diff is judged against) from the
-first available source, in priority order:
+Build the **intent record** — the spec items + plan steps the diff is judged against. The intent can span
+**multiple specs and plans**: a branch routinely implements more than one (the brainstorming workflow
+decomposes large work into sub-projects, each with its own spec→plan cycle). Selection is **diff-correlated**:
 
-1. **explicit args** — an intent/spec passed by the caller wins outright.
-2. **latest `docs/superpowers/specs/*`** — the most recent spec file.
-3. **the plan** — `docs/superpowers/plans/*` (the latest), when no spec is present.
-4. **the transcript** — reconstruct intent from the session conversation.
+1. **explicit args** — an intent/spec set passed by the caller wins outright (overrides the computation
+   below). Args that resolve to paths under `docs/superpowers/specs/` or `docs/superpowers/plans/` are the
+   explicit set.
+2. **diff-correlated specs/plans** — from the SCOPE diff (`<merge-base>..HEAD` + working tree) already in
+   hand, select every file under `docs/superpowers/specs/*` and `docs/superpowers/plans/*` whose status is
+   **Added or Modified**. Those documents ARE this branch's intent. No extra git work — this filters the
+   diff SCOPE already computed.
+   - **Prefer Added.** An Added spec/plan is unambiguously this branch's intent.
+   - **Modified-only is a soft signal.** If the selected set contains *only* Modified specs/plans (no
+     Added), set `degraded: true` and note in `summary` that intent correlation was soft — this guards
+     against a trivial edit to a prior PR's spec being mistaken for full intent.
+   - **Cap the fan-out.** If the set exceeds the fan-out cap (§8), prioritize Added specs, set
+     `degraded: true`, and **name the skipped specs in `summary`** — never silently drop one.
+3. **latest-only fallback** — if the branch touched **no** spec/plan files (the diff-correlated set is
+   empty), fall back to the single most-recent `docs/superpowers/specs/*`, else the most-recent
+   `docs/superpowers/plans/*`. This is today's behavior and is **not** `degraded` — it is the normal
+   small-PR case.
+4. **the transcript** — if none of the above yields intent, reconstruct from the session conversation and
+   set `degraded: true`, noting the reconstruction in `summary`.
 
-If **none** of (1)–(3) is found and intent must be reconstructed from the transcript, set
-`degraded: true` on the result and note the reconstruction in `summary`. Reconstructed intent is lower
-fidelity, so adherence findings derived from it are flagged accordingly.
+Reconstructed intent is lower fidelity, so adherence findings derived from it are flagged accordingly.
 
 ## 3. Parallel dispatch (ANALYZE)
 

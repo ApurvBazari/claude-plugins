@@ -14,8 +14,10 @@ Resolve the target (default: working tree + branch commits vs the merge-base wit
 caller arg overrides). No repo / empty diff → return `{findings:[],recommendedEscalation:"minor",degraded:false}`.
 
 ## Step 2: Intent
-Build the intent record: explicit args > latest `docs/superpowers/specs/*` > the plan > transcript.
-None found → reconstruct from the transcript and set `degraded:true`.
+Build the intent record — it may **span multiple specs/plans**. Selection is **diff-correlated**: explicit
+args win; else every `docs/superpowers/specs/*` and `docs/superpowers/plans/*` file **Added or Modified** in
+the SCOPE diff (prefer Added; modified-only → `degraded:true`); else the latest-only fallback (single most
+recent spec, else plan); else reconstruct from the transcript (`degraded:true`). See `references/pipeline.md` §2.
 
 ## Step 3: Analyze
 Dispatch the built-in finder agents concurrently (`spec-adherence`, `plan-adherence`, `correctness`,
