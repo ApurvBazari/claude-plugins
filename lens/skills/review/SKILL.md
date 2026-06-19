@@ -26,6 +26,9 @@ the `.claude/lens/` dir? (offer "artifacts only — track the registry" so teams
 Invoke `lens:engine` (Skill tool), passing the target + the project finders registered in settings + (on
 the standalone path) `taskIds = { scope, intent, analyze, verify }` so the engine transitions those four
 stages as it runs. It returns a `review-findings` object in context.
+**Empty result (empty diff / no repo):** when the engine returns an empty result, mark the review-owned
+`reconcile` and `render` tasks `deleted`, mark `report` `completed` with a one-line "nothing to review",
+and skip Steps 3–5 — there is nothing to reconcile, render, or write.
 
 ## Step 3: Reconcile (state-aware)
 Read `.claude/lens/review-state.json` for this target (if present). Match each engine finding to a prior

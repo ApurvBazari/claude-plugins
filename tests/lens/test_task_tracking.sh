@@ -31,6 +31,7 @@ grep -q 'TaskCreate' "$REVIEW" || fail "review must create the task list via Tas
 grep -q 'taskIds' "$REVIEW" || fail "review must pass taskIds to the engine"
 grep -q 'task-tracking' "$REVIEW" || fail "review must reference references/task-tracking.md"
 grep -qiE 'create no tasks|no .?taskIds|no task list' "$REVIEW" || fail "review orchestrator mode must skip tracking"
+grep -qiE 'nothing to review' "$REVIEW" || fail "review must handle the empty-diff path (mark reconcile/render deleted, report completed)"
 
 # === engine wiring: flips handed-in taskIds, no-op when absent ===
 grep -q 'taskIds' "$ENGINE" || fail "engine must read args.taskIds"
