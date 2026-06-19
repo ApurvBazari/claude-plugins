@@ -72,7 +72,7 @@ Every generated `SKILL.md` opens with YAML frontmatter between `---` markers. Ca
 | `disable-model-invocation` | boolean | no | `false` | `true` means only the user can trigger — Claude won't auto-invoke (destructive / setup skills) |
 | `allowed-tools` | list | no | — | **pre-approval** list — Claude can use these tools without per-call permission prompts while the skill is active. Omitting the field preserves default session permissions; it does NOT restrict tool access |
 | `model` | string | no | session model | `sonnet` / `opus` / `haiku` / `inherit` — pick a tier when the skill's cost/quality tradeoff differs from session defaults |
-| `effort` | string | no | session effort | `low` / `medium` / `high` — thinking budget override |
+| `effort` | string | no | session effort | `low` / `medium` / `high` / `xhigh` / `max` — thinking budget override (`xhigh`/`max` are the highest budgets, Opus-class models) |
 | `paths` | list | no | — | glob patterns; when set, the skill auto-activates only when the active file path matches |
 | `context` | string | no | — | set to `fork` to run the skill in an isolated subagent (fresh context, no conversation history). Requires `agent` |
 | `agent` | string | no | `general-purpose` | subagent type to use when `context: fork` — must reference an agent that exists in `.claude/agents/` or an installed plugin |

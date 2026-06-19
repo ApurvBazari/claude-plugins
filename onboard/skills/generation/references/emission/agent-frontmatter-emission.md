@@ -20,7 +20,7 @@ Archetype-defined `disallowedTools` always win for semantic protection (reviewer
 | Check | Action on fail |
 |---|---|
 | `color` in `{red, blue, green, yellow, purple, orange, pink, cyan}` | Drop field; warn `invalid-color-value` |
-| `effort` in `{low, medium, high, max}` | Drop field; warn `invalid-effort-value` |
+| `effort` in `{low, medium, high, xhigh, max}` | Drop field; warn `invalid-effort-value` |
 | `isolation` equals `worktree` or omitted (no other values accepted) | Drop field; warn `invalid-isolation-value` |
 | `model` in `{sonnet, opus, haiku, inherit}` or a full model ID | Drop field; warn `invalid-model-value` |
 | `permissionMode` in `{default, acceptEdits, auto, dontAsk, bypassPermissions, plan}` | Drop field; warn `invalid-permissionMode-value` |
