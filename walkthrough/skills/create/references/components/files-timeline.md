@@ -9,9 +9,9 @@
   <div class="sec-label"><files></div>
   <h2>File <em>tree</em></h2>
   <div class="tree"><span class="dir"><root>/</span>            <span class="nw"><N new></span>
-├── <span class="fl" data-d="<id1>" onclick="openD('<id1>')"><file-a></span> <span class="nw">new</span>
+├── <span class="fl" data-d="<id1>" onclick="openSurface('<id1>')"><file-a></span> <span class="nw">new</span>
 ├── <span class="dir"><subdir>/</span>
-│   └── <span class="fl" data-d="<id2>" onclick="openD('<id2>')"><file-b></span> <span class="ed">edited</span>
+│   └── <span class="fl" data-d="<id2>" onclick="openSurface('<id2>')"><file-b></span> <span class="ed">edited</span>
 └── <span class="fl"><file-c></span></div>
 </section>
 ```
@@ -23,9 +23,20 @@
 .tree .fl:hover{color:var(--tp);}
 .tree .nw{color:var(--green);font-size:.58rem;}
 .tree .ed{color:var(--amber);font-size:.58rem;}
+.tree .rk-auth{color:var(--rose);}
+.tree .rk-data{color:var(--amber);}
+.tree .rk-money{color:var(--purple);}
+.tree .rk-migration{color:var(--blue);}
+.tree .rk-concurrency{color:var(--accent);}
+.tree .rk-public-api{color:var(--green);}
 ```
 
-**Wiring:** click on a `.fl` → `openD('<id>')` (add a `DET` key per clickable file). Non-clickable files use a plain `.fl` with no handler.
+**Risk coloring (review docs only).** When a file carries `risk`, append a risk class to its `.fl`
+span (`rk-auth`, `rk-data`, `rk-money`, `rk-migration`, `rk-concurrency`, `rk-public-api`) and add a
+trailing `<span class="chip warn">risk: auth</span>`-style chip. `risk:"none"` adds no class/chip.
+Render a one-row legend above the tree mapping each risk to its color. Tokens only.
+
+**Wiring:** click on a `.fl` → `openSurface('<id>')` (add a `DET` key per clickable file). Non-clickable files use a plain `.fl` with no handler.
 
 ## Filterable cards + pills
 
@@ -60,7 +71,7 @@
 .tcard .td{font-size:.8rem;color:var(--ts);}
 ```
 
-**Wiring:** pills → `tog(this)` (rebuilds the active `data-f` set and hides `.tcard`s whose `data-cat` isn't active). For a card detail panel, add `data-t`/`data-desc` and `onclick="openCard(this)"`.
+**Wiring:** pills → `tog(this)` (rebuilds the active `data-f` set and hides `.tcard`s whose `data-cat` isn't active). For a card detail surface, add `data-id="<id>"` + `onclick="openCard(this)"` and a matching `details{}`/`DET` entry — the card's content comes from the structured detail, not inline `data-*` text.
 
 ## Timeline
 

@@ -1,0 +1,9 @@
+{
+  "extraSpecialists": [
+    {
+      "name": "evil",
+      "dimension": "non-.md extension under .claude/",
+      "agent": ".claude/agents/research.txt"
+    }
+  ]
+}

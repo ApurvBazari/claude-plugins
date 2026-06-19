@@ -1,5 +1,39 @@
 # Changelog
 
+## 1.1.0 — 2026-06-19
+
+First marketplace release after 1.0.0 — consolidates the detail-surfaces, lens review-render layer, Cowork support, and grouped-adherence work. (These landed as internal 1.2.0–1.4.0 increments on the integration branch and were never published; folded into a single public minor bump.)
+
+### Grouped adherence
+- feat: the review adherence-panel (`components/review.md`) renders one sub-section per source spec/plan when the model carries `adherence.groups[]` (`{ source, kind, items[] }`), so multi-spec lens reviews show per-spec coverage at a glance. Falls back to the flat two-column layout when only `specItems[]`/`planSteps[]` are given. Populated by lens ≥ 1.1.0.
+
+### Cowork-first-class
+- `create` now resolves its output directory on first run: in a non-git folder (the Cowork knowledge-work case) it asks whether to write to a visible `walkthroughs/` folder or the hidden `.claude/walkthrough/`, and remembers the choice in `<base>/settings.md`. Git repositories are unaffected — they keep writing to `.claude/walkthrough/` with no new prompt.
+- Documented Cowork compatibility: walkthrough is a pure-skill plugin (no hooks, no scripts), so it installs and runs in Claude Cowork and emits the same portable HTML deliverable. Added `cowork` / `claude-cowork` keywords and a "Works in Cowork" README section.
+- No change to `update` / `document` (the location prompt is create-only) and no change to the synthesis model.
+
+### Review render layer (for lens)
+- feat: internal `render` skill (render a supplied model → HTML; reused by the lens plugin)
+- feat: `components/review.md` — annotated-diff, findings-list, adherence-panel
+- feat: optional review fields on session-model (`verdict`, `adherence`, `findings`, `diffHunks`) + `files[].risk` coloring
+- fix: repoint render's session-model.md reference to ../create/references (broken cross-skill path).
+- feat: review session-model gains optional `iteration` + `iterationDelta`; findings-list renders an iteration chip + delta subhead (populated only by lens).
+
+### Detail surfaces
+- Replaced the unstructured detail-panel blob (`DET{k,h,b}`) with a structured detail schema — `{kicker, heading, summary, where[], code[], points[], related[], surface?, components[]}` — rendered by a shared `renderSurface`.
+- Added a centered native `<dialog>` **sheet** surface (~900px, token `::backdrop`, internal scroll) for rich details that host full catalog components, alongside the existing lightweight glance **pane**.
+- Hybrid routing via `openSurface` + a `SURF` kind map: an explicit `surface` override wins, else the kind is inferred from content (hosted components, a code block, or long text → sheet).
+- Capped-depth (3) nesting through the browser top layer: sheets and a reusable right-edge `paneDialog` stack via `showModal()` (free focus-trap, top-down Escape, `::backdrop`), with replace-topmost beyond the cap and an acyclic reference-graph requirement.
+- Per-surface id-suffixing keeps hosted-component ids globally unique; new self-check gates enforce routing, sheet presence, id-uniqueness, acyclicity, and depth ≤ 3.
+- Back-compat: `openD`/`openCard` remain as aliases; `update` reconstructs the structured store and upgrades pre-feature documents (flat `DET`, no `SURF`) on re-render.
+- Lands entirely in the shared `create/references/` visual layer, so `create`, `update`, and `document` all inherit it.
+
+### Representation fidelity + completeness gates
+- New first-class catalog diagrams — **state / transition** (cyclic + guarded transitions) and **sequence / swimlane** (timed multi-actor messages) — so the two most common "no catalog entry fits" cases no longer depend on the bespoke escape hatch firing.
+- Diagram-fidelity gate in `select`: a `nodes[]`+`edges[]` graph with cycles / back-edges / self-loops / guard labels routes to a state diagram, and an ordered multi-actor message exchange to a sequence diagram, instead of being force-fit into a flow / architecture map (which silently drops the cycle, guards, and lanes). Backed by a new self-check row.
+- Completeness critic now derives the salient-item checklist from the source *before* comparing it to the model (so dropped detail can't be reclassified as "intentionally omitted" by the same pass), checks detail **depth** not just presence, and treats every in-session `path:line` as non-droppable — enforced by a new self-check row that no in-session code anchor is silently dropped.
+- `update` reconstructs the two new diagram types; all changes land in the shared visual layer, so `create`, `update`, and `document` inherit them.
+
 ## 1.0.0 — 2026-06-05
 - First stable release. Commits to a stable skill set (`create` / `update` / `document`), house style, and component-authoring API; breaking changes from here bump the major version.
 - Consolidates the previously unreleased 0.3.0 and 0.4.0 cycles (the `document` skill, interactive explorer + data-timeline components, the `.chip` primitive, CSS-counter section kickers, and the shared self-check + completeness pre-write gates) into the first marketplace-stable version. See the 0.3.0 / 0.4.0 entries below for details.

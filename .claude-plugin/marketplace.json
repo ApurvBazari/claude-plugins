@@ -11,8 +11,8 @@
     {
       "name": "onboard",
       "source": "./onboard",
-      "description": "Analyze codebases and generate tailored Claude tooling — v2 context shape; rejects v1 input (use onboard@1.10.0 for v1)",
-      "version": "2.0.0",
+      "description": "Analyze codebases with deep, verified research and generate evidence-grounded Claude tooling — CLAUDE.md, path-scoped rules, skills, agents, hooks, and a verify backlog.",
+      "version": "3.0.0",
       "keywords": [
         "onboarding",
         "setup",
@@ -29,7 +29,7 @@
       "name": "notify",
       "source": "./notify",
       "description": "Cross-platform system notifications for Claude Code — macOS and Linux with duration filtering",
-      "version": "2.0.0",
+      "version": "2.0.1",
       "keywords": [
         "notifications",
         "macos",
@@ -44,7 +44,7 @@
       "name": "handoff",
       "source": "./handoff",
       "description": "Save and resume session handoffs — capture intent at session end, surface it at the next SessionStart",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "keywords": [
         "handoff",
         "session-continuity",
@@ -58,14 +58,30 @@
       "name": "walkthrough",
       "source": "./walkthrough",
       "description": "Render a session or any subject (plugin, marketplace, path) as a self-contained interactive HTML document",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "keywords": [
         "session-visualization",
         "interactive-html",
         "documentation",
         "diagrams",
         "walkthrough",
-        "session-recap"
+        "session-recap",
+        "cowork",
+        "claude-cowork"
+      ],
+      "license": "MIT"
+    },
+    {
+      "name": "lens",
+      "source": "./lens",
+      "description": "Intent-grounded review companion — checks the session diff against spec & plan, verifies findings, renders a review.",
+      "version": "1.1.0",
+      "keywords": [
+        "code-review",
+        "pr-review",
+        "intent-grounded",
+        "adversarial-verification",
+        "interactive-html"
       ],
       "license": "MIT"
     }

@@ -1,14 +1,23 @@
-# Workflow Presets
+# Workflow Profiles
 
-Pre-configured profiles for common development setups. Presets provide sensible defaults so developers can skip the full wizard flow. The developer still provides their project description (always project-specific) and confirms the summary before generation.
+Three pre-configured profiles for common development setups. The profile is chosen in `/onboard:start` Phase 2 profile-select step — it does **two** things:
+
+1. **Bounds research depth** — how deep the research engine reads before the wizard runs (recon-only → core-4 → all-7).
+2. **Pre-fills the generation scope** — sensible autonomy / strictness / agent-count / hook defaults the wizard then presents as overridable.
+
+The profile no longer changes how *much* the wizard asks: the grounded confirm/override wizard runs ~2–3 exchanges for **all** profiles. The developer still provides their project description (always project-specific) and confirms the summary before generation. There are exactly three profiles — fine-grained control happens by overriding any pre-filled value inside the grounded wizard, not by selecting a free-form profile.
 
 ---
 
-## Preset Definitions
+## Profile Definitions
+
+Each profile maps to a **research depth** (consumed by `/onboard:start` Phase 2 (Research) / the research engine — see `../../research/references/depth-profiles.md`) plus a **generation-scope pre-fill** (the autonomy / strictness / agent / hook defaults the wizard seeds as recommended, overridable options).
 
 ### Minimal
 
 Best for: Solo developers, side projects, prototypes, or developers who prefer Claude to stay out of the way.
+
+**Research depth:** `minimal` — recon-only research (no specialists dispatched; produces a valid dossier with an empty roster).
 
 | Setting | Value |
 |---------|-------|
@@ -23,6 +32,7 @@ Best for: Solo developers, side projects, prototypes, or developers who prefer C
 ```json
 {
   "selectedPreset": "minimal",
+  "researchDepth": "minimal",
   "autonomyLevel": "autonomous",
   "codeStyleStrictness": "relaxed",
   "testingPhilosophy": "tdd",
@@ -37,6 +47,8 @@ Best for: Solo developers, side projects, prototypes, or developers who prefer C
 
 Best for: Small teams, active projects with established workflows, balanced oversight.
 
+**Research depth:** `standard` — core-4 specialists (`architecture`, `data-model`, `testing`, `security`) + a single adversarial verify pass.
+
 | Setting | Value |
 |---------|-------|
 | Autonomy | Balanced |
@@ -50,6 +62,7 @@ Best for: Small teams, active projects with established workflows, balanced over
 ```json
 {
   "selectedPreset": "standard",
+  "researchDepth": "standard",
   "autonomyLevel": "balanced",
   "codeStyleStrictness": "moderate",
   "testingPhilosophy": "tdd",
@@ -64,6 +77,8 @@ Best for: Small teams, active projects with established workflows, balanced over
 
 Best for: Larger teams, enterprise projects, regulated environments, or developers who want maximum guardrails.
 
+**Research depth:** `comprehensive` — all 7 specialists (`architecture`, `data-model`, `testing`, `security`, `conventions`, `domain`, `dependencies`) + any enabled custom specialists + a single adversarial verify pass.
+
 | Setting | Value |
 |---------|-------|
 | Autonomy | Always-ask |
@@ -77,6 +92,7 @@ Best for: Larger teams, enterprise projects, regulated environments, or develope
 ```json
 {
   "selectedPreset": "comprehensive",
+  "researchDepth": "comprehensive",
   "autonomyLevel": "always-ask",
   "codeStyleStrictness": "strict",
   "testingPhilosophy": "tdd",
@@ -87,52 +103,51 @@ Best for: Larger teams, enterprise projects, regulated environments, or develope
 }
 ```
 
-### Custom
+---
 
-Full wizard flow — every question whose entry condition has signal is asked. Choose this when no preset fits or when you want fine-grained control over every setting. Custom mode also exposes a mid-wizard escape hatch (Phase 5.0 in `wizard/SKILL.md`) so developers can opt into Quick Mode defaults at any point in Phase 5 without restarting.
+## Profile → research depth at a glance
+
+| Profile | Research depth | What research does |
+|---|---|---|
+| Minimal | `minimal` | Recon only — no specialists, empty roster, valid dossier. |
+| Standard | `standard` | Core-4 specialists + single adversarial verify pass. |
+| Comprehensive | `comprehensive` | All 7 specialists + customs + single adversarial verify pass. |
+
+The depth profile is the primary cost dial on large repos. See `../../research/references/depth-profiles.md` for how depth caps the specialist roster and per-specialist scope.
 
 ---
 
-## Per-preset exchange targets (no hard cap)
+## Exchange target (uniform across profiles)
 
-There is **no hard 6-exchange cap**. Each preset has a target based on what it actually needs to ask:
+The grounded confirm/override wizard runs **~2–3 `AskUserQuestion` exchanges for every profile**. There is no hard exchange cap and the profile does **not** change exchange count — it only sets research depth + the generation-scope pre-fills the wizard presents as overridable. (The old per-preset exchange-count table and the fourth free-form profile are gone: the inference-driven fast path and the step-by-step interrogation both converged into this single grounded surface.)
 
-| Preset | Exchange target | Notes |
-|---|---|---|
-| Minimal | 2 | Preset selection + project description. Everything else pre-filled per the table above. |
-| Standard | 3 | Preset + description + autonomy confirmation. |
-| Comprehensive | 4 | Preset + description + autonomy + advanced hook events confirmation. |
-| Custom | N (typically 5–8) | Phase 0 + 1 + 2 + 4 + 5 (with multi-block AskUserQuestion folding LSP+built-ins together) + 5.1 (advanced events) + 6 (summary). Phases with no signal (Phase 3 tech-stack-specific, Phase 5.6 LSP when no candidates) are skipped automatically. The escape hatch (Phase 5.0) lets the developer opt out of remaining customizations. |
+**Default model** (used when the wizard's model question is skipped):
 
-**Default models per preset** (used when wizard's Phase 5.2 model question is skipped — i.e., for non-Custom presets):
-
-| Preset | Default model |
+| Profile | Default model |
 |---|---|
 | Minimal | `claude-opus-4-7[1m]` (Opus 4.7 1M context) |
 | Standard | `claude-opus-4-7[1m]` (Opus 4.7 1M context) |
 | Comprehensive | `claude-opus-4-7[1m]` (Opus 4.7 1M context) |
-| Custom | Asked explicitly in Phase 5.2; defaults to `claude-opus-4-7[1m]` if skipped |
 
-The high-tier default reflects: Claude tooling generation is a one-time-per-project investment; the model strength makes a measurable difference in the quality of the artifacts produced. Users can downgrade per-project by editing `.claude/settings.json` after init.
+The high-tier default reflects: Claude tooling generation is a one-time-per-project investment; the model strength makes a measurable difference in the quality of the artifacts produced. Users can downgrade per-project by editing `.claude/settings.json` after start.
 
 ---
 
-## How Presets Work
+## How Profiles Work
 
-1. Developer is presented with preset options at the start of the wizard (Phase 0)
-2. If a preset is chosen, its values are loaded into the wizard answers
-3. The wizard still asks Q1.1 (project description) — this is always project-specific
-4. The wizard skips directly to the summary phase (Phase 6) for confirmation
-5. The developer can tweak any pre-filled value during the summary review
-6. If Custom is chosen, the full wizard flow runs as normal — adaptive, no cap, escape hatch available at Phase 5.0
+1. The developer picks a profile (Minimal / Standard / Comprehensive) in `/onboard:start` Phase 2 profile-select step — before research runs.
+2. The profile's `researchDepth` bounds the research engine in Phase 2 (Research).
+3. The profile's generation-scope values are loaded as the **recommended (overridable) defaults** for the grounded wizard.
+4. The grounded wizard confirms or overrides those values (~2–3 exchanges) — the developer still provides Q1.1 (project description, always project-specific).
+5. The developer can tweak any pre-filled value during the wizard or at the summary review before generation.
 
-## Preset Values Not Covered
+## Profile Values Not Covered
 
-Presets do not set these fields (they come from analysis or are always asked):
+Profiles do not set these fields (they come from analysis/research or are always asked):
 - `projectDescription` — Always asked (Q1.1)
-- `teamSize` — Inferred from analysis or asked
+- `teamSize` — Inferred from analysis/research or confirmed
 - `sharedStandards` — Conditional follow-up from team size
-- `projectMaturity` — Inferred from analysis or asked
+- `projectMaturity` — Inferred from analysis/research or confirmed
 - `primaryTasks` — Developer-specific
-- `frontendPatterns` / `backendPatterns` / `devopsPatterns` — Stack-specific, from analysis
+- `frontendPatterns` / `backendPatterns` / `devopsPatterns` — Stack-specific, from analysis/research
 - `painPoints` — Developer-specific, cannot be preset

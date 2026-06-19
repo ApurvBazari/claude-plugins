@@ -1,8 +1,8 @@
 # walkthrough — Internal Conventions
 
-Render an explorable, self-contained interactive HTML document — from one of **two input modes**: a *session* (`create` renders from scratch, `update` refreshes in place) or a *subject* (`document` renders a plugin, the marketplace, or any path). Three skills, one shared visual layer, one output artifact per run, no hooks. Closest existing plugin in shape is `handoff/` (skills + optional in-repo settings file, no scripts), but the heavy lifting lives in the skills' `references/`, which together form the renderer.
+Render an explorable, self-contained interactive HTML document — from one of **two input modes**: a *session* (`create` renders from scratch, `update` refreshes in place) or a *subject* (`document` renders a plugin, the marketplace, or any path). Three user-facing skills, one shared visual layer, one output artifact per run, no hooks. Closest existing plugin in shape is `handoff/` (skills + optional in-repo settings file, no scripts), but the heavy lifting lives in the skills' `references/`, which together form the renderer.
 
-The visual layer (`create/references/`: `design-system.md`, `interactivity.md`, `page-scaffold.md`, `authoring-guide.md`, `components/`, `self-check.md`, `completeness.md`) is shared across all three skills. `update` and `document` reuse it unchanged and bring only what differs: `update` adds `reconstruct-and-merge.md`; `document` swaps the model — its own `subject-model.md` + `gather-subject.md` + `adapters/` replace `create`'s session model.
+The visual layer (`create/references/`: `design-system.md`, `interactivity.md`, `page-scaffold.md`, `authoring-guide.md`, `components/`, `self-check.md`, `completeness.md`) is shared across all three user-facing skills. `update` and `document` reuse it unchanged and bring only what differs: `update` adds `reconstruct-and-merge.md`; `document` swaps the model — its own `subject-model.md` + `gather-subject.md` + `adapters/` replace `create`'s session model.
 
 ## Locked design dimensions
 
@@ -15,7 +15,7 @@ The visual layer (`create/references/`: `design-system.md`, `interactivity.md`, 
 | **Themes** | Dark + warm-light, in-document toggle | Two `:root` blocks; viewer picks per-view, no rebuild |
 | **Component system** | Open — catalog is a floor, not a ceiling | Bespoke components composed from primitives when content fits no catalog entry |
 | **Rendering** | Inline everything (CSS/JS/SVG); only external is a Google Fonts `@import` | Self-containment is the core promise — no CDN scripts, no `<img>`, no `<script src>` |
-| **Storage** | `.claude/walkthrough/<ts>-<slug>.html`, in-repo, gitignore prompt on first run | Mirrors handoff's in-repo + gitignore-by-default privacy model |
+| **Storage** | `<base>/<ts>-<slug>.html`; `<base>` = `.claude/walkthrough/` in a git repo (gitignore prompt on first run) or a first-run-chosen `walkthroughs/` ∣ `.claude/walkthrough/` in a non-git folder | Git-repo behavior unchanged; non-git (Cowork) folders pick a visible-or-hidden base, remembered in `<base>/settings.md` |
 
 ## The 5-stage pipeline
 
@@ -88,6 +88,30 @@ First-class catalog additions in v0.4.0:
 - **`components/interactive.md`** — two new components: interactive explorer (selector-driven diagram + detail pane) and data-driven step timeline.
 - **`.chip` primitive** — five status roles: `ok`, `info`, `warn`, `danger`, `neutral`. Use inline within any component for status badges.
 
+First-class additions in v1.1.0:
+- **Detail surfaces** (see § Detail surfaces) — the click-to-open detail is now a structured schema rendered into two shells, a glance **pane** and a centered native `<dialog>` **sheet**, routed by `openSurface` with capped-depth (3) nesting via the browser top layer.
+
+First-class additions in v1.1.0 (lens review layer): components/review.md (annotated-diff, findings-list, adherence-panel) + optional review fields on session-model + files[].risk coloring — all populated only by lens.
+
+## Detail surfaces
+
+Clicking an interactive node, card, or cross-link chip opens its detail through **one router**, `openSurface(id)`, which routes to one of two shells rendered from a single structured schema:
+
+- **pane** — the lightweight right glance panel (`.panel`, `z-index:200`), for light details.
+- **sheet** — a centered native `<dialog class="sheet">` (~900px, token `::backdrop`, internal scroll), for rich details that host full catalog components.
+
+**One structured schema.** A detail is `{kicker, heading, summary, where[], code[], points[], related[], surface?, components[]}` — replacing the old `{k,h,b}` innerHTML blob. The shared `renderSurface(d,host)` builds the pane DOM from those fields on click; a sheet is **pre-rendered** into the `{{SHEETS}}` slot with the same `sf-*` markup. "Omit empty per sub-field."
+
+**Hybrid routing.** At assemble time each detail gets a kind: an explicit `surface` override wins, else it is inferred — `components`, a `code[]` block, or a `summary`+`points` over ~320 chars → `sheet`, otherwise `pane`. A `const SURF={id:'pane'|'sheet'}` map (the `{{SURFACE_MAP}}` slot) drives the runtime router.
+
+**Native `<dialog>` nesting, capped.** Sheets open via `showModal()`, so the browser **top layer** gives stacking, focus-trap, top-down Escape, and a stylable `::backdrop` with no library. A pane reached from *inside* a sheet can't use the non-modal `.panel` (it would render behind the modal), so it renders via `renderSurface` into a shared right-edge `<dialog class="sheet pane-dialog" id="paneDialog">`. The shared `_capPush(el)` caps depth at **3** (replace-topmost beyond) and carries an `el.open` no-op guard so a bidirectional `related[]` chip (A↔B) can't double-push the stack. The `openSurface` reference graph must be acyclic.
+
+**Id-uniqueness.** A catalog component hosted in a sheet suffixes its internal ids with the surface id (`xpTabs` → `xpTabs-rich`) so global ids stay unique; the self-check enforces it.
+
+**Back-compat.** `openD`/`openCard` remain as thin aliases of `openSurface`/the pane opener, so hand-authored or pre-feature docs keep working. `update` reconstructs the structured `DET` + `SURF` + sheet dialogs, and detects the old flat `DET{k,h,b}` (no `SURF`) to upgrade a pre-feature doc to the structured schema on re-render.
+
+The whole system lives in the shared `create/references/` visual layer (`session-model.md`, `page-scaffold.md`, `interactivity.md`, `authoring-guide.md` § 3, `design-system.md`, `self-check.md`, `components/`), so `create`, `update`, and `document` all inherit it — `document` gains rich sheets on the live docs site for free.
+
 ## Skills
 
 Three user-facing skills (all show in `/walkthrough:` autocomplete; all default frontmatter — user- and model-invocable, no `disable-model-invocation`):
@@ -95,9 +119,13 @@ Three user-facing skills (all show in `/walkthrough:` autocomplete; all default 
 - `create/SKILL.md` — renders the current session from scratch. The renderer is five `references/` files plus the `references/components/` catalog (`index.md` + per-group recipes loaded on demand).
 - `update/SKILL.md` — refreshes an EXISTING walkthrough in place: reconstructs the prior model from the rendered HTML, merges in explicitly-named files, and overwrites the same file. Reuses `create`'s renderer references unchanged for the render half (five `references/` files + the `components/` catalog); its own `references/reconstruct-and-merge.md` covers the reconstruct + merge stages.
 - `document/SKILL.md` — renders a *subject* (a plugin, the marketplace, or any path) instead of a session. Reuses `create`'s visual-layer references unchanged; brings its own `references/subject-model.md`, `references/gather-subject.md`, and `references/adapters/` (plugin + marketplace). README + manifest are canonical; the output path is an argument (the docs site passes `site/<plugin>/index.html`). No gitignore prompt — output is a published/derived artifact, not private session content.
+- `render/SKILL.md` — **internal** (`user-invocable: false`): renders a model already in context to a
+  caller-supplied output path; skips gather+synthesize, reuses create's renderer references. The
+  walkthrough plugin's first internal building block (programmatic-API category, like `onboard:generate`);
+  consumed by the `lens` plugin. "Render the session" for users remains `create`.
 
-No internal building blocks (no `user-invocable: false` skills), no agents, no hooks, no scripts.
+One internal building block: `render/SKILL.md` (`user-invocable: false`) — invoked by external plugins (e.g. lens) that supply a pre-synthesized model. The user-facing skills (`create`, `update`, `document`) handle synthesis themselves and do not call `render` directly. No agents, no hooks, no scripts.
 
 ## AskUserQuestion usage
 
-`create` makes up to three `AskUserQuestion` calls: the thin-session prompt (2 options), the first-run gitignore prompt (3 options), and — conditionally — a proliferation-guard prompt (3 options) triggered when a same-subject slug already exists in `.claude/walkthrough/`. `update` adds the target picker, whose options are built **dynamically** from the `.claude/walkthrough/` listing — kept fixed-length per the guard: a yes/no confirm when a single doc exists, and a 2–4-option list (plus the tool's built-in "Other") otherwise. Because the list is dynamic, the guard's single-option case is handled by the yes/no form. Both skills reference `.claude/rules/ask-user-question-guard.md` per the convention for any skill that uses the tool.
+`create` makes up to four `AskUserQuestion` calls: the thin-session prompt (2 options), the first-run output-location prompt (2 options, non-git folder only), the first-run gitignore prompt (3 options), and — conditionally — a proliferation-guard prompt (3 options) triggered when a same-subject slug already exists in `<base>`. `update` adds the target picker, whose options are built **dynamically** from the `.claude/walkthrough/` listing — kept fixed-length per the guard: a yes/no confirm when a single doc exists, and a 2–4-option list (plus the tool's built-in "Other") otherwise. Because the list is dynamic, the guard's single-option case is handled by the yes/no form. Both skills reference `.claude/rules/ask-user-question-guard.md` per the convention for any skill that uses the tool.

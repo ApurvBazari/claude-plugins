@@ -1,0 +1,19 @@
+{
+  "mode": "plan",
+  "flow": "start",
+  "changes": [
+    { "path": "CLAUDE.md", "action": "create", "purpose": "Root project context", "outline": "Overview, Stack, Conventions, Testing, Git", "tier": "core", "origin": "generated" },
+    { "path": ".claude/rules/testing.md", "action": "create", "purpose": "Testing rules for *.test.*", "tier": "core", "origin": "generated" },
+    { "path": ".claude/settings.json", "action": "merge", "purpose": "Add format + lint hooks", "tier": "core", "origin": "generated" }
+  ],
+  "decisions": {
+    "model": "claude-opus-4-7[1m]",
+    "autonomy": "balanced",
+    "profile": "comprehensive",
+    "hooks": ["format", "lint"],
+    "mcp": [],
+    "lsp": ["typescript"],
+    "pluginIntegration": ["notify", "walkthrough"]
+  },
+  "warnings": []
+}

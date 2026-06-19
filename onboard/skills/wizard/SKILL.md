@@ -1,6 +1,6 @@
 ---
 name: wizard
-description: Adaptive Q&A flow for gathering developer preferences during /onboard:start. Internal building block invoked by the init skill — not user-invocable.
+description: Adaptive Q&A flow for gathering developer preferences during /onboard:start. Internal building block invoked by the start skill — not user-invocable.
 user-invocable: false
 ---
 
@@ -21,126 +21,56 @@ Free-form text inputs (project name, description, paths) are NOT choices and sta
 ## Conversation Style
 
 - **Conversational, not interrogative** — This is a dialogue, not a form. Acknowledge each answer before asking the next question.
-- **Connect answers to analysis** — Reference what the codebase analyzer found. "I see you're using Next.js with the App Router — that's great for server components. Let me ask about..."
+- **Connect answers to analysis** — Reference what the codebase analyzer found, and to the research findings. "I see you're using Next.js with the App Router — that's great for server components. Let me ask about..."
 - **Adapt dynamically** — Skip questions that the analysis already answered clearly. Add follow-ups when answers reveal complexity.
 - **Be concise** — Each question exchange should be brief. Don't over-explain.
 - **Group related questions** — Ask 2-3 related questions together when they naturally cluster, rather than one at a time.
 
-## Wizard Flow
+## Wizard Flow — grounded confirm/override
 
-Follow this sequence, adapting based on analysis results and prior answers. See `references/question-bank.md` for the full question catalog with branching logic. See `references/workflow-presets.md` for preset definitions and pre-filled values.
+The profile and research depth were chosen in `/onboard:start` Phase 2 profile-select step, and the research dossier already exists from Phase 2 (Research). (`/onboard:adopt` is the same: it runs recon + research at Full depth in its Step A2, then dispatches this wizard in A3 with the dossier in context.) **This wizard does NOT interrogate** — it confirms or overrides what research inferred, in ~2–3 `AskUserQuestion` exchanges. Quick Mode and the old full/Custom wizard have **converged** into this single surface; there is no preset selection here (it happened in `start`) and no Custom path.
 
-### Phase 0: Preset Selection (Always)
+The wizard receives the `research` dossier in context. It reads `research.wizardInferences` (per `../research/references/wizard-inference-map.md`) to seed recommended options.
 
-Use **`AskUserQuestion`** with a single-select question (header: `"Preset"`, no `multiSelect`):
+### Exchange 1 — Workflow & preferences (confirm/override)
 
-| Label | Description |
-|---|---|
-| `Minimal` | Solo / prototype / stay-out-of-the-way. Autonomous, relaxed style, 1 agent, format-only hooks. |
-| `Standard (Recommended)` | Small teams / active projects. Balanced autonomy, moderate strictness, 3 agents, lint + SessionStart hooks. |
-| `Comprehensive` | Larger teams / regulated environments. Always-ask autonomy, strict style, all quality-gate hooks. |
-| `Custom` | Full adaptive wizard. Choose this when no preset fits or you want fine-grained control. |
+Build `AskUserQuestion` call(s) (≤4 questions each) covering: `teamSize`, `projectMaturity`, `codeStyleStrictness`, `securitySensitivity`, `codeReviewProcess`, `branchingStrategy`, `deployFrequency`. For each field:
 
-See `references/workflow-presets.md` for full per-preset value tables.
+- If a `research.wizardInferences[field]` exists, its `value` is the **recommended (first) option**, and the option description cites the inference's `evidence`.
+- If the field is **absent** from `wizardInferences` (signal-or-omit), use the **static default** from § Static Defaults as the recommended option — never a blank.
 
-- If a preset is selected → load pre-filled values, ask Q1.1 (project description is always project-specific) as a free-form text prompt, then skip directly to Phase 6 summary for confirmation.
-- If Custom is selected → proceed with the full wizard flow starting at Phase 1.
+`primaryTasks` is a separate `multiSelect` question; pre-check options per § primaryWork → primaryTasks mapping using `research.wizardInferences.primaryWork`.
 
-**Preset path is fast** — only project description + summary if a preset is selected.
+### Exchange 2 — Cold asks (never inferred)
 
-**FORBIDDEN**: Do NOT render the preset list as inline numbered text ("1. Minimal / 2. Standard / ..."). Use `AskUserQuestion` so the developer clicks an option (see Guard § interactive choice convention).
+- **`autonomyLevel`** — ALWAYS asked cold (single-select: `always-ask` / `balanced` / `autonomous`). Never pre-filled from research (`wizard-inference-map.md` forbids inferring it).
+- **Project intent / description** — research drafts a one-line description from the `architecture` + `domain` findings; present it as **editable free-form text** for the developer to ratify or rewrite.
+- **`painPoints`** — research cannot infer these; ask the three free-form prompts (`timeSinks` / `errorProne` / `automationWishes`), or accept "skip" (→ recorded empty + flagged per § Skip Behavior).
 
-### Phase 1: Project Context (Always)
-Establish what this project is and who works on it.
-- Project description
-- Solo or team, team size
-- New project or existing codebase
+### Exchange 3 — Tuning cards + detection
 
-### Phase 2: Development Workflow (Always)
-Understand how they work day-to-day.
-- Primary work types (feature dev, bug fixes, maintenance)
-- Code review process
-- Branching strategy
-- Deploy frequency
+Present each as an **overridable card with its static/preset default pre-selected** (these are NOT research-inferable):
 
-### Phase 3: Tech-Stack Specific (Conditional)
-Only ask questions relevant to the detected stack. Skip entirely if the stack is simple.
-- Frontend-specific (if frontend detected)
-- Backend-specific (if backend detected)
-- DevOps-specific (if CI/CD detected)
+- Advanced hook events + per-event type (Step 1) — default: none beyond inference.
+- Skill tuning / agent tuning / output-style tuning (Steps 2 / 3 / 4) — default: `{ mode: "defaults" }` each.
 
-### Phase 4: Pain Points (Always)
-Understand where Claude can help most.
-- Biggest time sinks
-- Error-prone areas
-- Automation wishes
+Then the **detection prompts** (unchanged detection logic, folded into this exchange):
 
-### Phase 5: Preferences (Always)
-Calibrate the generated tooling.
-- Code style strictness
-- Security sensitivity
-- Claude autonomy level
-- Advanced hook events (optional — see Phase 5.1 below)
+- Ecosystem plugins (Step 5), LSP plugins (Step 6), built-in skills (Step 7). The single-option guard in `.claude/rules/ask-user-question-guard.md` still applies to each dynamically-built group.
 
-#### Phase 5.0 — Mid-wizard escape hatch (Custom preset only)
+A developer who accepts all defaults clears Exchange 3 in one pass.
 
-When the **Custom** preset is selected, fire a single `AskUserQuestion` at the start of Phase 5 (after summarizing how many sub-phases remain based on detected signals):
+### Summary & Confirmation
 
-> You're in Custom mode. Based on your project I have N more questions to ask (autonomy + style + security + skill tuning + agent tuning + output style + LSP/built-ins). Want to keep customizing, or use Quick Mode defaults from here?
+Present everything gathered (recon `analysis` + `research` inferences + confirmed/overridden answers + the chosen model line) and confirm before control returns to `/onboard:start`, which proceeds to Phase 4 (Plugin Detection). **Always include the model line** as before: `Model: <model-id> (<source>)`.
 
-Options:
-- **Continue customizing** (default) — full Phase 5 flow as written below.
-- **Use Quick Mode defaults from here** — wizard wraps up Phase 5 with detected defaults for all remaining sub-phases. Sets `wizardStatus.escapeHatchTriggered = true` and populates every Phase 5 field with its Quick Mode default per § Skip Behavior + § Quick Mode Inference Rules.
+## Exchange 3 detail — recorded field shapes
 
-This step does NOT fire for Minimal/Standard/Comprehensive presets (they already use pre-filled values per `references/workflow-presets.md`).
+Exchange 3's tuning cards and detection prompts use the same recording shapes as before; only the front-of-house presentation changed (cards with pre-selected defaults instead of yes/no opt-in gates). The full field-recording mechanics live in § Output; this is the condensed pointer.
 
-### Phase 5.1: Advanced Hook Events (Optional, Default No)
+**Advanced hook events + per-event type** — when the developer overrides the "none beyond inference" default and selects advanced events, present the 9 events thematically (lifecycle / user / tool) as `multiSelect` groups and record the merged selection verbatim in `wizardAnswers.advancedHookEvents` (e.g. `["SessionEnd", "PreCompact", "TaskCompleted"]`). The default is `[]` (inference only) — never inferred as "wanted" without an explicit decision.
 
-After capturing `autonomyLevel`, ask **one** yes/no question:
-
-> Do you want to configure advanced Claude Code hook events? (optional — default is no, and onboard will pick sensible defaults for you)
-
-If the developer answers **no** (or skips): record `wizardAnswers.advancedHookEvents = []` and move on. The generation skill's per-event inference rules fire instead — the empty array is an intentional "no, do not add advanced hooks on top of inference", documented in `generation/SKILL.md` § Advanced Event Hooks § Input sources.
-
-If the developer answers **yes**: use a **single `AskUserQuestion` call** containing **three thematic `multiSelect: true` questions** (AskUserQuestion supports up to 4 questions per call, each up to 4 options). Group the 9 events thematically so the developer can scan one category at a time:
-
-**Question 1 — Lifecycle events** (`multiSelect: true`, header: `"Lifecycle"`):
-
-| Label | Description |
-|---|---|
-| `SessionEnd` | Run a cleanup script when the session ends (rotate task markers, flush state). |
-| `PreCompact` | Save a checkpoint just before Claude compacts context (large projects). |
-| `SubagentStart` | Audit-log every subagent spawn (agent-team workflows). |
-
-**Question 2 — User events** (`multiSelect: true`, header: `"User"`):
-
-| Label | Description |
-|---|---|
-| `UserPromptSubmit` | Preflight every user prompt (e.g., warn on apparent secret literals). |
-| `TaskCreated` | Nudge when a `TaskCreate` subject looks too vague. |
-| `TaskCompleted` | Run the project's test command before a task can be marked done. |
-| `Elicitation` | Audit-log prompts from MCP servers (compliance / security review). |
-
-**Question 3 — Tool events** (`multiSelect: true`, header: `"Tool"`):
-
-| Label | Description |
-|---|---|
-| `FileChanged` | Notice when a watched file (lockfiles, configs) changes on disk. |
-| `ConfigChange` | Warn when `.claude/` configuration changes mid-session. |
-
-Record the developer's selection verbatim as an array of strings in `wizardAnswers.advancedHookEvents`, merging the three `multiSelect` answers (e.g., `["SessionEnd", "PreCompact", "TaskCompleted"]`). The generation skill maps these to event keys per the mapping table in `generation/SKILL.md` § Advanced Event Hooks § Wizard opt-in plumbing.
-
-**Three questions = one exchange** (single `AskUserQuestion` call). Do not split across multiple exchanges — that would degrade the UX into back-to-back single-select prompts.
-
-**Quick Mode**: default `advancedHookEvents` to `[]` (inference only) and skip the prompt — advanced events are never inferred as "wanted" without an explicit developer decision.
-
-### Phase 5.1.1: Execution Type Per Event (Conditional, After 5.1 Selections)
-
-**Fires only when** Phase 5.1 returned a non-empty `advancedHookEvents` AND at least one of those events is **judgment-capable**: `UserPromptSubmit`, `Stop`, `TaskCreated`, `TaskCompleted`, `Elicitation`. If none of the selected events are judgment-capable, skip 5.1.1 entirely.
-
-Claude Code hooks can run as one of four types — `command` (shell script, fast, no LLM cost), `prompt` (LLM guardrail with judgment), `agent` (spawn a named subagent), or `http` (POST to an external URL). Most events default to `command`. For the five judgment-capable events above, a non-command type can be a significant upgrade — but has real latency and token costs.
-
-Present this cost table verbatim before asking (one message, no question):
+For judgment-capable events (`UserPromptSubmit`, `Stop`, `TaskCreated`, `TaskCompleted`, `Elicitation`) the developer can pick a non-`command` execution type per event. Before asking, show the cost table:
 
 > | Type    | Latency | Cost/fire | Best for |
 > |---------|---------|-----------|----------|
@@ -149,258 +79,76 @@ Present this cost table verbatim before asking (one message, no question):
 > | agent   | 10-60s  | ~5-30k    | heavy verification at boundaries (code-reviewer on TaskCompleted) |
 > | http    | network | none local| compliance / SIEM / pager integration |
 
-Then issue **one consolidated `AskUserQuestion` call** with one question per selected judgment-capable event, up to the tool's 4-question limit. If the developer selected all 5 judgment-capable events, split into two exchanges: first 4 events, then the 5th.
+Record per-event type in `wizardAnswers.advancedHookTypes[<eventName>]` (`"command" | "prompt" | "agent" | "http"`); the auxiliary field (`agentRef` / `httpUrl` / `promptRef` / `promptInline`) in `wizardAnswers.advancedHookTypeExtras[<eventName>]`. Before accepting any `http` type, present the data-leaves-the-machine confirmation and set `wizardAnswers.allowHttpHooks = true` only on explicit accept; on decline, drop the `http` selection and fall back to inference for that event.
 
-**Question shape per event** (single-select, exactly these 4 options — order matters for familiarity):
+**Skill / agent / output-style tuning** — default `{ mode: "defaults" }` each (archetype inference only). When overridden, record `wizardAnswers.skillTuning` / `agentTuning` / `outputStyleTuning` with `mode: "tuned"` and the per-mode settings documented in § Output. Per-skill / per-agent / per-style tweaks happen in the generation-time confirmation step, not here.
 
-```
-Q: How should the <Event> hook run?
-  - Shell script (fast, no LLM cost)
-  - Prompt (LLM-evaluated guardrail)
-  - Agent (spawn a named subagent)
-  - External URL (POST event to https endpoint)
-```
+**Detection prompts** — ecosystem plugins, LSP plugins, built-in skills (Steps 5 / 6 / 7):
 
-**Follow-up exchange** (fires only when needed — skip entirely if every event picked `Shell script`):
+- Ecosystem plugins: probe install status with `ls "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh" 2>/dev/null` and present each with an `[installed]` / `[not installed]` marker; selected-but-missing plugins are offered for install in /onboard:start Phase 6 (ecosystem-plugin-install step), which then directs you to `/notify:setup` for configuration (onboard does not wire notify itself).
+- LSP plugins: run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"`; empty array → skip and record `wizardAnswers.lspPlugins = []`; otherwise present detected plugins (pre-checked when `fileCount ≥ 10`) in fileCount-descending order and record the accepted names in `wizardAnswers.lspPlugins`.
+- Built-in skills: detect candidates from the analysis report (4 core always; extras when their signal fires) and record the accepted names in `wizardAnswers.builtInSkills`.
+- LSP plugins and built-in skills are issued together as **two `multiSelect` questions in one `AskUserQuestion` call** (the canonical two-block pattern). The single-option guard in `.claude/rules/ask-user-question-guard.md` applies to each dynamically-built group: a standalone group that collapses to 1 candidate becomes a yes/no; a group inside the combined call is padded with an explicit `None / Skip` (envelope intact); a zero-candidate group is dropped.
+- **Programmatic mode** (`callerExtras.lspPlugins` / `callerExtras.disableLSP` / `callerExtras.builtInSkills` / `callerExtras.disableBuiltInSkills`): the detection prompt never fires — generation reads the caller-supplied value directly.
 
-For every event where the developer picked a non-shell type, gather the auxiliary field in a **second consolidated `AskUserQuestion` call** (still one question per event, up to 4 per call):
+## Static Defaults
 
-| Selected type | Follow-up question | Field captured |
-|---|---|---|
-| Prompt | "Paste the prompt text (one line) or provide a file path (e.g., `.claude/hooks/my-prompt.md`). For `UserPromptSubmit` with `securitySensitivity: high`, leave blank to use the shipped default secret-scan prompt." | `promptInline` (if no leading `./` or `/`), else `promptRef` |
-| Agent | "Which agent should evaluate this hook? (e.g., `code-reviewer`, `verification-before-completion`)" | `agentRef` |
-| External URL | "Paste the https URL to POST events to (must be https-only; http:// is refused)." | `httpUrl` |
+Used as the recommended option when `research.wizardInferences` omits a field (no signal):
 
-**HTTP confirmation** — before accepting any `External URL` selection, present:
+| Field | Static default |
+|---|---|
+| `teamSize` | `small (2-5)` |
+| `projectMaturity` | `early` |
+| `codeStyleStrictness` | `moderate` |
+| `securitySensitivity` | `standard` |
+| `codeReviewProcess` | `informal` |
+| `branchingStrategy` | `feature-branches` |
+| `deployFrequency` | `manual` |
 
-> Heads up: `http` hooks POST event payloads (including prompt text, file paths, and MCP elicitations) to your URL. This data leaves the machine. Continue only if your endpoint is internal/audited.
->
-> Confirm: set `allowHttpHooks: true` for this project? (yes/no)
+Note: a `research.wizardInferences` value may be an enum *stem* (e.g. `teamSize: small`) — match it to the canonical `wizardAnswers` enum string (`small (2-5)`) when seeding the recommended option.
 
-If the developer declines, drop the `External URL` selection(s) and record as inference fallback for that event. If accepted, set `wizardAnswers.allowHttpHooks = true` (which the init command then maps to `callerExtras.allowHttpHooks` for the generator).
+## primaryWork → primaryTasks mapping
 
-**Recording the answers**:
+`research.wizardInferences.primaryWork` is a free-form characterization; map it to the pre-checked `primaryTasks` enum options (the developer can adjust the multi-select):
 
-- `wizardAnswers.advancedHookTypes[<eventName>]` = one of `"command" | "prompt" | "agent" | "http"`. Example: `{ "taskCompleted": "agent", "elicitation": "http" }`. Events that weren't asked about don't appear in this map (they fall through to defaults).
-- `wizardAnswers.advancedHookTypeExtras[<eventName>]` = `{ agentRef?, httpUrl?, promptRef?, promptInline? }` — only the field relevant to that event's chosen type. Events that picked `command` don't appear here.
-- `wizardAnswers.allowHttpHooks` = boolean — set to `true` only when the developer accepted at least one HTTP confirmation.
-
-**Exchange notes**: 5.1.1 typically fits in ≤3 exchanges total (cost-table preamble → type-pick question → follow-up aux question). The wizard is adaptive (no hard cap — see Key Rules § Adaptive exchange sizing) so Phase 5.1.1 runs to completion when triggered, with the Custom-preset escape hatch (Phase 5.0) as the bail-out option for developers who change their mind.
-
-**Quick Mode behavior**: 5.1.1 is skipped entirely in Quick Mode — per-event type defaults from `generation/SKILL.md` § Per-event defaults apply automatically.
-
-### Phase 5.2: Skill Tuning (Optional, Default No)
-
-After Phase 5.1/5.1.1, ask **one** yes/no question:
-
-> Tune generated skills (model, effort, pre-approved tools, auto-activation paths)? Default: no — sensible defaults per archetype.
-
-If the developer answers **no** (or skips): record `wizardAnswers.skillTuning = { mode: "defaults" }` and move on. Inference still runs in `generation/SKILL.md` § Skills — the archetype table produces per-skill frontmatter, and the confirmation step in generation Phase 4 still fires with default-answer "Accept all" so headless / Quick Mode paths pass through cleanly.
-
-If the developer answers **yes**: issue **one consolidated `AskUserQuestion` call** with three single-select questions (three questions fits within the 4-question cap):
-
-1. **Default model tier** — single-select: `inherit` (use session model) / `sonnet` / `opus` / `haiku`. Describe: "Acts as a hint — Claude Code uses the session model if the requested model is unavailable in your plan."
-2. **Default effort** — single-select: `inherit` / `low` / `medium` / `high`. Describe: "Per-skill thinking budget override. `inherit` uses the session's effort level."
-3. **Pre-approval posture** — single-select: `minimal` (read-surface tools only) / `standard` (read + essential writes, recommended) / `permissive` (read + write + narrowed runner Bash). Describe: "Controls `allowed-tools`: a pre-approval allowlist that reduces permission prompts for listed tools. Omitting it preserves default session permissions — it does NOT restrict access."
-
-Record the full selection as:
-
-```json
-{
-  "skillTuning": {
-    "mode": "tuned",
-    "defaultModel": "inherit | sonnet | opus | haiku",
-    "defaultEffort": "inherit | low | medium | high",
-    "preApprovalPosture": "minimal | standard | permissive"
-  }
-}
-```
-
-The generation skill reads `wizardAnswers.skillTuning` and refines the archetype defaults in `generation/references/skills-guide.md` § Frontmatter Emission Rules. Per-skill user tweaks happen in the generation-time confirmation step, not here.
-
-**Quick Mode behavior**: 5.2 is skipped entirely in Quick Mode — `skillTuning` defaults to `{ mode: "defaults" }` and inference runs with archetype defaults only. The generation-time confirmation step still fires with default answer "Accept all" so Quick Mode remains frictionless.
-
-### Phase 5.3: Agent Tuning (Optional, Default No)
-
-After Phase 5.2, ask **one** yes/no question:
-
-> Tune generated agents (model, effort, pre-approval posture, default isolation)? Default: no — sensible defaults per archetype.
-
-If the developer answers **no** (or skips): record `wizardAnswers.agentTuning = { mode: "defaults" }` and move on. Inference still runs in `generation/SKILL.md` § Agent Frontmatter Emission — the archetype table produces per-agent frontmatter, and the confirmation step in generation Step 4 still fires with default-answer "Accept all" so headless / Quick Mode paths pass through cleanly.
-
-If the developer answers **yes**: issue **one consolidated `AskUserQuestion` call** with four single-select questions (four fits within the 4-question cap):
-
-1. **Default model tier** — single-select: `inherit` (use session model) / `sonnet` / `opus` / `haiku`. Describe: "Applied to archetype defaults that resolve to `inherit`. Claude Code falls back to the session model if the requested model is unavailable in your plan."
-2. **Default effort** — single-select: `inherit` / `low` / `medium` / `high`. Describe: "Per-agent thinking budget override. `inherit` uses the session's effort level."
-3. **Pre-approval posture** — single-select: `minimal` (keep archetype write restrictions; force `permissionMode: default`) / `standard` (recommended — archetype defaults untouched) / `permissive` (add `permissionMode: acceptEdits` to generator archetype). Describe: "Archetype-defined `disallowedTools` always win — `minimal` cannot loosen semantic protection (reviewers/validators/architects/researchers never get `Write`/`Edit`)."
-4. **Default isolation** — single-select: `worktree-for-generators` (recommended — generators work on a throwaway git worktree; skipped in non-git dirs) / `off` (never emit `isolation`; use session defaults). Describe: "Isolation is a subagent frontmatter field — only `worktree` is accepted. Generators modify files, so worktree isolation keeps your working tree clean if a generation misbehaves."
-
-Record the full selection as:
-
-```json
-{
-  "agentTuning": {
-    "mode": "tuned",
-    "defaultModel": "inherit | sonnet | opus | haiku",
-    "defaultEffort": "inherit | low | medium | high",
-    "preApprovalPosture": "minimal | standard | permissive",
-    "defaultIsolation": "worktree-for-generators | off"
-  }
-}
-```
-
-The generation skill reads `wizardAnswers.agentTuning` and refines the archetype defaults in `generation/references/agents-guide.md` § Frontmatter Emission Rules. Per-agent user tweaks happen in the generation-time confirmation step, not here.
-
-**Quick Mode behavior**: 5.3 is skipped entirely in Quick Mode — `agentTuning` defaults to `{ mode: "defaults" }` and inference runs with archetype defaults only. The generation-time confirmation step still fires with default answer "Accept all" so Quick Mode remains frictionless.
-
-### Phase 5.4: Output Style Tuning (Optional, Default No)
-
-After Phase 5.3, ask **one** yes/no question:
-
-> Tune the generated output style? Default: no — an archetype is inferred from your project and emitted with sensible defaults.
-
-If the developer answers **no** (or skips): record `wizardAnswers.outputStyleTuning = { mode: "defaults" }` and move on. Inference still runs in `generation/SKILL.md` § Output Styles — the archetype table (onboarding / teaching / production-ops / research / solo) produces the emitted style's frontmatter, and the batched confirmation in generation Phase 7b Step 6 still fires with default-answer "Accept" so headless / Quick Mode paths pass through cleanly.
-
-If the developer answers **yes**: issue **one consolidated `AskUserQuestion` call** with two single-select questions (two fits comfortably within the 4-question cap):
-
-1. **Archetype override** — single-select: `inherit` (use the inferred archetype) / `onboarding` / `teaching` / `production-ops` / `research` / `solo` / `skip-emit`. Describe: "Controls which `.claude/output-styles/<name>.md` is emitted. `skip-emit` prevents any file from being written — use when you prefer to rely solely on Claude Code's three built-in styles."
-2. **Activation default** — single-select: `none` (emit the file but don't activate it; the developer can pick it via `/config` when ready) / `write-to-settings` (write `"outputStyle": "<emitted-name>"` to `.claude/settings.local.json` so the style is active in new sessions). Describe: "`settings.local.json` is typically git-ignored and per-machine. Onboard never creates the file and never overwrites an existing `outputStyle` value — pre-existing values surface as a warning instead."
-
-Record the full selection as:
-
-```json
-{
-  "outputStyleTuning": {
-    "mode": "tuned",
-    "archetypeOverride": "inherit | onboarding | teaching | production-ops | research | solo | skip-emit",
-    "activationDefault": "none | write-to-settings"
-  }
-}
-```
-
-**Exchange notes**: Phase 5.4 is one gate (yes/no) + optionally one two-question `AskUserQuestion` call. With the no-cap adaptive sizing rule, Phase 5.4 always runs when its entry condition fires; the Custom-preset escape hatch (Phase 5.0) is the bail-out path if the developer wants to take Quick Mode defaults from this point.
-
-The generation skill reads `wizardAnswers.outputStyleTuning` and refines the archetype output in `generation/references/output-styles-guide.md` § Archetype inference and § settings.local.json merge rules. Per-style developer tweaks happen in the generation-time batched confirmation step, not here.
-
-**Quick Mode behavior**: 5.4 is skipped entirely in Quick Mode — `outputStyleTuning` defaults to `{ mode: "defaults" }` and inference runs with archetype defaults only. The generation-time batched confirmation still fires with default answer "Accept" so Quick Mode remains frictionless.
-
-### Phase 5.5: Ecosystem Plugins (Always)
-Offer complementary plugins from the ecosystem.
-- Notifications (notify plugin) — get alerted when Claude finishes tasks or needs attention
-
-**Offer all ecosystem plugins regardless of install status.** For each one, probe the filesystem and include an install-status marker in the presentation so the developer knows up front what's already installed vs. what will need to be installed later:
-
-```bash
-ls "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh" 2>/dev/null
-```
-
-Present each plugin with:
-- A one-line capability description
-- `[installed]` or `[not installed]` marker based on the probe result
-- For `[not installed]`, a note: "Selecting this will prompt you to install it in Phase 3.5."
-
-The developer can select any plugin regardless of install status. Phase 3.5 (`Resolve Requested Ecosystem Plugins` in the init command) handles the inline install for anything selected but missing — the wizard never hides options just because they aren't installed yet.
-
-**Single-option guard** (per `.claude/rules/ask-user-question-guard.md`): the ecosystem roster today offers one plugin (`notify`). When the candidate list has only 1 entry, convert the multiSelect to a single-select yes/no ("Configure notify?") rather than padding with a synthetic "None" — the ecosystem step is a standalone question, not part of a batched approval, so yes/no is the better UX. Release-gate finding B3 (2026-04-17) reproduced the schema violation here on first try.
-
-### Phase 5.6: LSP Plugins (When Any Detected)
-
-Run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"`. If the output is an empty array (`[]`), skip this phase entirely and record `wizardAnswers.lspPlugins = []`.
-
-Otherwise, issue **one `AskUserQuestion` multiSelect** presenting each detected plugin as an option, pre-checked when `fileCount ≥ 10` and unchecked when lower (quiet nudge against noise in polyglot projects). Preserve the script's fileCount-descending order — the primary language shows up first.
-
-> Detected source files in multiple languages. Which LSP plugins would you like to install?
->
-> - `typescript-lsp` (1247 typescript files) **[checked]**
-> - `rust-analyzer-lsp` (312 rust files) **[checked]**
-> - `pyright-lsp` (8 python files) **[unchecked]**
-
-Describe each option: plugin name, detected language label, file count, and a one-line capability description (e.g., "Adds typescript-language-server via Claude Code LSP"). Refer to `generation/references/lsp-plugin-catalog.md` for the copy.
-
-Record the user's selection verbatim as `wizardAnswers.lspPlugins` (a string array of accepted plugin names). An empty array means "detected candidates but developer declined all of them" — distinct from "no detection" (absent field in headless mode).
-
-**Quick Mode behavior**: 5.6 is skipped in Quick Mode — `lspPlugins` defaults to the full detected list (all candidates accepted). The wizard still writes the array to `wizardAnswers.lspPlugins` so downstream generation knows to install them without re-asking.
-
-**Combined exchange with Phase 5.7**: Phase 5.6 (LSP) and Phase 5.7 (built-in skills) are issued together in a **single `AskUserQuestion` call** with two `multiSelect` questions (one for LSP plugins, one for built-in skills). This keeps the wizard tight without artificial caps. See the canonical example pattern in `references/question-bank.md` (or generation skill) for the two-multiSelect-blocks-in-one-call structure.
-
-**Single-option guard for the combined call** (per `.claude/rules/ask-user-question-guard.md`): when one of the two groups (LSP or built-in skills) yields only 1 candidate, pad **that group** with an explicit `None / Skip` option — keep the combined two-question envelope intact. Do NOT demote to sequential single-selects; that breaks the M1 single-call contract and was the fallback mode observed in release-gate findings B3 / B9 (2026-04-17). When BOTH groups have candidate-count 1, treat each independently: pad each with None. If a group has zero candidates, drop that group from the call entirely.
-
-**Headless mode** (`callerExtras.lspPlugins` or `callerExtras.disableLSP` present): the wizard never fires — generation reads the caller-supplied value directly.
-
-### Phase 5.7: Built-in Skills (When Candidates Exist) — combined with Phase 5.6
-
-Run detection against the codebase analysis report to identify which built-in Claude Code skills are relevant. Core skills (`/loop`, `/simplify`, `/debug`, `/pr-summary`) are always candidates. Extra skills (`/schedule`, `/claude-api`, `/explain-code`, `/codebase-visualizer`, `/batch`) are candidates only when their detection signal fires. Refer to `generation/references/built-in-skills-catalog.md` for the full tier/signal mapping.
-
-If no extra skills fire AND the project has no special characteristics, the candidate list is the 4 core skills. This still produces a non-empty list — skip this phase only when `callerExtras.disableBuiltInSkills: true` is set (headless suppression).
-
-Issue **one `AskUserQuestion` multiSelect** presenting each candidate skill as an option. Core skills are always pre-checked. Extra skills are pre-checked when their detection signal fires and unchecked otherwise (developers can manually add extras that weren't auto-detected).
-
-> Which built-in Claude Code skills would you like documented in your project's CLAUDE.md?
->
-> - `/loop` — run a prompt on a recurring interval **(core)** **[checked]**
-> - `/simplify` — review and simplify changed code **(core)** **[checked]**
-> - `/debug` — systematic debugging **(core)** **[checked]**
-> - `/pr-summary` — summarize PR changes **(core)** **[checked]**
-> - `/schedule` — create scheduled remote agents **(detected: CI/CD present)** **[checked]**
-> - `/batch` — batch operations across files **(detected: 247 source files)** **[checked]**
-> - `/explain-code` — deep code explanation **[unchecked]**
-
-Describe each option: skill name, one-line description, tier label (core or detected signal), and checked/unchecked state. Present core skills first (alphabetical), then extras sorted by detection confidence (signal-present first, then absent).
-
-Record the user's selection verbatim as `wizardAnswers.builtInSkills` (a string array of accepted skill names, e.g., `["/loop", "/simplify", "/debug", "/pr-summary", "/schedule"]`). An empty array means "candidates existed but developer declined all of them" — distinct from "no detection" (absent field in headless mode).
-
-**Quick Mode behavior**: 5.7 is skipped in Quick Mode — `builtInSkills` defaults to the full candidate list (all core + fired extras accepted). The wizard still writes the array to `wizardAnswers.builtInSkills` so downstream generation knows which skills to document without re-asking.
-
-**Combined exchange with Phase 5.6**: Phase 5.7 is the second `multiSelect` question inside the single `AskUserQuestion` call from Phase 5.6 — one exchange covers both LSP plugins and built-in skills. This is the canonical "two multiSelect blocks in one AskUserQuestion call" pattern, referenced from M1 (wizard AskUserQuestion consistency).
-
-**Headless mode** (`callerExtras.builtInSkills` or `callerExtras.disableBuiltInSkills` present): the wizard never fires — generation reads the caller-supplied value directly.
-
-### Phase 6: Summary & Confirmation
-
-Present everything gathered (analysis + wizard answers) and ask for confirmation before generation.
-
-**Always include the chosen model** in the summary — one labeled line near the top so the developer sees what model will run during generation. Use the format:
-
-```
-Model: <model-id> (<source>)
-```
-
-Where `<source>` is one of:
-- `your selection` — explicitly chosen in Phase 5.2 (Custom preset)
-- `preset default` — derived from `wizardAnswers.selectedPreset` per `references/workflow-presets.md` § Per-preset exchange targets (Minimal/Standard/Comprehensive default to `claude-opus-4-7[1m]`)
-- `fallback default` — wizardAnswers.model resolution fell through to the global fallback (`claude-opus-4-7[1m]`) because no preset/Phase 5.2 answer is present
-
-If the developer wants to change the model, they tweak it from the summary edit step rather than via a separate post-summary prompt — init/SKILL.md Step 3.1 no longer asks "Which model would you like to use?" (the duplicate prompt was findings A4 in the 2026-04-16 release-gate test).
+| `primaryWork` (research) | pre-checked `primaryTasks` |
+|---|---|
+| library / SDK | `feature-dev`, `refactoring` |
+| API service / backend | `feature-dev`, `bug-fixes` |
+| frontend app / SPA | `feature-dev`, `bug-fixes` |
+| CLI tool | `feature-dev`, `maintenance` |
+| data pipeline | `feature-dev`, `maintenance` |
+| (absent / unknown) | `feature-dev` |
 
 ## Key Rules
 
 1. **Never skip the summary** — Always show the developer what you've gathered before proceeding to generation.
 2. **Respect "skip"** — If a developer says they want to skip a section, move on. Don't push.
-3. **Adaptive exchange sizing** — There is **no hard exchange cap**. The wizard asks every question whose entry condition has signal, skipping phases with no applicable signal (e.g., no LSP candidates → no LSP exchange). Each preset has a target (Minimal=2, Standard=3, Comprehensive=4, Custom=N where N varies with project complexity, typically 5–8). The Custom preset adds a mid-wizard escape hatch at the start of Phase 5 so developers can opt into "Quick Mode defaults from here" if they don't want to keep customizing.
+3. **Three-exchange shape** — the grounded wizard runs Exchange 1 (workflow/preferences) + Exchange 2 (cold asks) + Exchange 3 (tuning + detection), skipping any detection group with no candidates. No preset selection, no Custom path, no mid-wizard escape hatch (those were the v2 model).
 4. **Reference the analysis** — Always connect questions to what the analyzer found. This demonstrates value and reduces redundant questions.
 5. **Capture autonomy preference carefully** — This determines how much Claude asks vs acts independently. Get this right.
-6. **Always populate fields explicitly** — When the wizard chooses to skip a phase (no signal, escape hatch chosen, headless mode), populate the corresponding field in `wizardAnswers` with the Quick Mode default value (full detected list, archetype default, etc.) rather than leaving the field `undefined`. This means downstream generation always receives explicit Path A data and never has to fall back to Path B (which is just the C1-introduced safety net).
-7. **Canonical wizardStatus telemetry — Finalize step** — Before the Phase 6 Summary, emit `wizardStatus` to `onboard-meta.json` with **exactly** these 5 subkeys. Emission runs IN EVERY preset path (Custom / Standard / Minimal / Comprehensive / Quick Mode); no preset-specific shape variant is allowed.
+6. **Always populate fields explicitly** — When the wizard skips a detection group (no signal, programmatic mode) or the developer accepts a default, populate the corresponding field in `wizardAnswers` with the explicit default value (full detected list, archetype default, etc.) rather than leaving the field `undefined`. This means downstream generation always receives explicit Path A data and never has to fall back to Path B (which is just the C1-introduced safety net).
+7. **Canonical wizardStatus telemetry — Finalize step** — Before the Summary, emit `wizardStatus` to `onboard-meta.json` with **exactly** these 5 subkeys. Emission runs for every profile; no profile-specific shape variant is allowed.
 
    Track state throughout the wizard run:
 
    | State field | Updated when |
    |---|---|
-   | `state.presetUsed` | Set once at Phase 1 preset selection (`minimal | standard | comprehensive | custom | quick-mode`) |
+   | `state.presetUsed` | Set once from the profile chosen in `/onboard:start` Phase 2 profile-select step (`minimal | standard | comprehensive`) |
    | `state.exchangesUsed` | Incremented on every `AskUserQuestion` call the wizard makes |
-   | `state.phasesAsked` | Pushed when a phase presents questions to the developer |
-   | `state.phasesSkipped` | Pushed when a phase is gated off (no signal, preset-skipped, headless path, escape hatch) |
-   | `state.escapeHatchTriggered` | Set `true` the first time the Phase 5.0 Custom escape hatch fires; stays `true` (monotonic) |
+   | `state.phasesAsked` | Pushed when an exchange presents questions to the developer |
+   | `state.phasesSkipped` | Pushed when an exchange (or detection group) is gated off (no signal, programmatic path) |
+   | `state.escapeHatchTriggered` | Always `false` — the feature is gone, but the key stays in the canonical shape (see spec §4.3) |
 
-   Emit as the penultimate wizard action (before Phase 6 Summary renders):
+   Emit as the penultimate wizard action (before the Summary renders):
 
    ```json
    {
      "wizardStatus": {
-       "presetUsed": "custom",
-       "exchangesUsed": 6,
-       "phasesAsked": ["phase0", "phase1", "phase2", "phase4", "phase5", "phase5.1", "phase5.6+5.7"],
-       "phasesSkipped": ["phase3", "phase5.1.1"],
+       "presetUsed": "standard",
+       "exchangesUsed": 3,
+       "phasesAsked": ["exchange1", "exchange2", "exchange3"],
+       "phasesSkipped": [],
        "escapeHatchTriggered": false
      }
    }
@@ -408,9 +156,9 @@ If the developer wants to change the model, they tweak it from the summary edit 
 
    **Hard emission rules** (load-bearing; verified by `tests/release-gate/verify-init-output.sh`):
    - Every key present. `phasesAsked` / `phasesSkipped` empty arrays are valid; missing keys are not.
-   - `presetUsed` values drawn only from the enum above. Never emit `"mode: interactive"` or `"completed: true"` or `"answersPresent: true"` — those were the three distinct legacy shapes observed on Custom/Standard/Minimal in the 2026-04-17 release-gate (findings B2 / B11).
-   - `escapeHatchTriggered` defaults to `false` in every preset; set `true` only when Phase 5.0's bail-out fires.
-   - `exchangesUsed` defaults to `0` for Quick Mode / stub-mode paths that bypass the wizard entirely. Do not emit `null`.
+   - `presetUsed` values drawn only from the enum above. Never emit `"mode: interactive"` or `"completed: true"` or `"answersPresent: true"` — those were the three distinct legacy shapes observed on the 2026-04-17 release-gate (findings B2 / B11).
+   - `escapeHatchTriggered` is **always `false`** (the escape hatch is gone). Keep the key present anyway — dropping it breaks the canonical 5-key shape contract (spec §4.3).
+   - `exchangesUsed` defaults to `0` for stub-mode paths that bypass the wizard entirely. Do not emit `null`.
    - No extra keys beyond the 5 canonical. Adding fields creates drift for downstream consumers.
 
 ## Skip Behavior
@@ -421,7 +169,7 @@ When a developer skips a question or section:
    - `autonomyLevel` → `"balanced"`
    - `codeStyleStrictness` → `"moderate"`
    - `securitySensitivity` → `"standard"`
-   - `lspPlugins` → full detected list from `${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh` (Quick Mode default)
+   - `lspPlugins` → full detected list from `${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh` (accept-all default)
    - `builtInSkills` → full candidate list (4 core + fired extras)
    - `outputStyleTuning` → `{ mode: "defaults" }`
    - `skillTuning` → `{ mode: "defaults" }`
@@ -430,48 +178,15 @@ When a developer skips a question or section:
 2. **Record skipped fields** — Add a `skippedFields` array in `onboard-meta.json` listing every field that was skipped (e.g., `["testingPhilosophy", "securitySensitivity"]`)
 3. **Flag in generated artifacts** — Add `<!-- TODO: Developer skipped this preference during setup. Review and adjust if needed. -->` comments in generated artifacts where a skipped field affects the output content
 
-## Quick Mode
-
-Quick Mode infers most wizard fields from the codebase analysis, asks only what cannot be inferred, and presents a summary for tweaking.
-
-### Inference Rules
-
-From analysis data, infer:
-
-| Field | Inference Rule |
-|-------|---------------|
-| `teamSize` | Git contributor count: 1 = solo, 2-5 = small, 6-15 = medium, 15+ = large |
-| `projectMaturity` | Source file count: <10 = new, 10-100 = early, 100-500 = established, >500 = legacy |
-| `testingPhilosophy` | Always `"tdd"` — hard-wired, not inferred |
-| `codeStyleStrictness` | Linter config: none found = relaxed, linter present = moderate, linter + strict config (e.g., `"strict": true` in tsconfig, strict ESLint rules) = strict |
-| `securitySensitivity` | Code detection: auth/payment/session code found = elevated, HIPAA/PCI/compliance patterns = high, otherwise = standard |
-| `codeReviewProcess` | PR-related CI detected = formal-pr, team >1 = informal, solo = none |
-| `branchingStrategy` | Git branch patterns: many feature branches = feature-branches, develop + release branches = gitflow, only main = trunk-based |
-| `deployFrequency` | CI/CD with auto-deploy = continuous, CI without auto-deploy = manual, no CI = none |
-| `painPoints` | **Cannot infer** — left empty, flagged as `<!-- TODO: ask developer about pain points -->` in generated artifacts |
-| `autonomyLevel` | **NEVER infer — always ask explicitly** |
-
-### Quick Mode Flow
-
-1. **Infer** — Apply inference rules to analysis data, fill wizard answers
-2. **Ask autonomy** — Always ask the developer their autonomy preference (Q7.3)
-3. **Ask project description** — Always ask Q1.1
-4. **Present summary** — Show all inferred + asked values with clear "[inferred]" labels
-5. **Allow tweaks** — Developer can adjust any value before confirming
-
-### Combining with Presets
-
-Quick mode inference can refine preset defaults. If a developer chose Quick setup after seeing the analysis summary, inference runs first. If any inferred value differs from what a preset would provide, the inferred (more accurate) value wins.
-
 ## Output
 
-**Canonical shape invariant** — every preset path (Minimal / Standard / Comprehensive / Custom / Quick Mode / stub) emits **the same** top-level `wizardAnswers` structure. Missing fields MUST be populated with defaults per § Skip Behavior; never leave a field `undefined` or emit a preset-specific subset. The 2026-04-17 release-gate found three distinct preset-subset shapes in the wild (findings B2 / B11 / B5 / B6) — all caused by presets skipping field emission. The canonical full shape below is the reference; downstream consumers (`onboard:generate` validator, `init/references/onboard-context-builder.md`, `tests/release-gate/verify-init-output.sh`) assume this shape uniformly.
+**Canonical shape invariant** — every profile (Minimal / Standard / Comprehensive) and the stub path emits **the same** top-level `wizardAnswers` structure. Missing fields MUST be populated with defaults per § Skip Behavior; never leave a field `undefined` or emit a profile-specific subset. The 2026-04-17 release-gate found three distinct preset-subset shapes in the wild (findings B2 / B11 / B5 / B6) — all caused by paths skipping field emission. The canonical full shape below is the reference; downstream consumers (`onboard:generate` validator, `../start/references/onboard-context-builder.md`, `tests/release-gate/verify-init-output.sh`) assume this shape uniformly.
 
 After the wizard completes, compile all answers into the following structured JSON format:
 
 ```json
 {
-  "selectedPreset": "minimal | standard | comprehensive | custom",
+  "selectedPreset": "minimal | standard | comprehensive",
   "projectDescription": "...",
   "teamSize": "solo | small (2-5) | medium (6-15) | large (15+)",
   "sharedStandards": "none | informal | documented | enforced",
@@ -541,16 +256,18 @@ After the wizard completes, compile all answers into the following structured JS
 }
 ```
 
-The `ecosystemPlugins` field captures which ecosystem plugins the developer wants set up. This gets passed to the config-generator agent along with the analysis report. The init command acts on these choices in Phase 3.5.
+The `ecosystemPlugins` field captures which ecosystem plugins the developer wants set up. This gets passed to the config-generator agent along with the analysis report. The start command acts on these choices in Phase 6 (ecosystem-plugin-install step).
 
-The `advancedHookEvents` field is an array of event names the developer explicitly selected in Phase 5.1. An empty array (`[]`) means "the developer answered no to the opt-in prompt" — generation suppresses advanced event inference for that run. An absent field (omitted entirely) means "Quick Mode or preset path" — inference runs normally. See `generation/SKILL.md` § Advanced Event Hooks for the full mapping.
+The `advancedHookEvents` field is an array of event names the developer explicitly selected in Exchange 3 (advanced hook events card). An empty array (`[]`) means "the developer kept the default — no advanced events beyond inference" — generation suppresses advanced event inference for that run. An absent field (omitted entirely) means "the grounded confirm/override surface didn't run this card (programmatic path)" — inference runs normally. See `../generation/SKILL.md` § Advanced Event Hooks for the full mapping.
 
-The `advancedHookTypes` / `advancedHookTypeExtras` / `allowHttpHooks` fields come from Phase 5.1.1 (execution type per event). `advancedHookTypes` only contains entries for judgment-capable events the developer explicitly picked a non-default type for; events defaulting to `command` are omitted. `advancedHookTypeExtras` carries the auxiliary field (`agentRef` / `httpUrl` / `promptRef` / `promptInline`) required by the chosen type. `allowHttpHooks` is `true` only when the developer confirmed the HTTP data-leaves-machine prompt for at least one event. See `generation/SKILL.md` § Advanced Event Hooks § Per-event defaults and § Hook Type Validation for how these are consumed.
+The `advancedHookTypes` / `advancedHookTypeExtras` / `allowHttpHooks` fields come from Exchange 3 (per-event execution type). `advancedHookTypes` only contains entries for judgment-capable events the developer explicitly picked a non-default type for; events defaulting to `command` are omitted. `advancedHookTypeExtras` carries the auxiliary field (`agentRef` / `httpUrl` / `promptRef` / `promptInline`) required by the chosen type. `allowHttpHooks` is `true` only when the developer confirmed the HTTP data-leaves-machine prompt for at least one event. See `../generation/SKILL.md` § Advanced Event Hooks § Per-event defaults and § Hook Type Validation for how these are consumed.
 
-The `lspPlugins` field is the developer-accepted list of marketplace LSP plugins from Phase 5.6. An empty array means "detected candidates but developer declined all"; an absent field means "Quick Mode / headless path — full detected list is the implicit accept". `generation/SKILL.md` § LSP Plugin Recommendations consumes this alongside `callerExtras.lspPlugins` and `callerExtras.disableLSP`. See `generation/references/lsp-plugin-catalog.md` for the plugin→language mapping.
+The `lspPlugins` field is the developer-accepted list of marketplace LSP plugins from Exchange 3 (LSP detection prompt). An empty array means "detected candidates but developer declined all"; an absent field means "programmatic path — full detected list is the implicit accept". `../generation/SKILL.md` § LSP Plugin Recommendations consumes this alongside `callerExtras.lspPlugins` and `callerExtras.disableLSP`. See `../generation/references/catalogs/lsp-plugin-catalog.md` for the plugin→language mapping.
 
-The `builtInSkills` field is the developer-accepted list of built-in Claude Code skills from Phase 5.7. An empty array means "candidates existed but developer declined all"; an absent field means "Quick Mode / headless path — full candidate list (core + fired extras) is the implicit accept". `generation/SKILL.md` § Built-in Claude Code Skills — Phase 7d consumes this alongside `callerExtras.builtInSkills` and `callerExtras.disableBuiltInSkills`. See `generation/references/built-in-skills-catalog.md` for the skill tiers and detection signals.
+The `builtInSkills` field is the developer-accepted list of built-in Claude Code skills from Exchange 3 (built-in skills detection prompt). An empty array means "candidates existed but developer declined all"; an absent field means "programmatic path — full candidate list (core + fired extras) is the implicit accept". `../generation/SKILL.md` § Built-in Claude Code Skills — emission Step 4 consumes this alongside `callerExtras.builtInSkills` and `callerExtras.disableBuiltInSkills`. See `../generation/references/catalogs/built-in-skills-catalog.md` for the skill tiers and detection signals.
 
-The `skillTuning` field comes from Phase 5.2. `mode: "defaults"` (or the field being absent entirely) means "archetype inference only — no project-level override". `mode: "tuned"` carries the three project-level settings: `defaultModel` (model tier hint for generated skills), `defaultEffort` (thinking budget hint), `preApprovalPosture` (how aggressively the `allowed-tools` field is populated). These three settings refine the archetype output in `generation/SKILL.md` § Skills § Frontmatter emission. Per-skill overrides happen in the generation-time batched confirmation step, not here.
+The `skillTuning` field comes from Exchange 3 (skill tuning card). `mode: "defaults"` (or the field being absent entirely) means "archetype inference only — no project-level override". `mode: "tuned"` carries the three project-level settings: `defaultModel` (model tier hint for generated skills), `defaultEffort` (thinking budget hint), `preApprovalPosture` (how aggressively the `allowed-tools` field is populated). These three settings refine the archetype output in `../generation/SKILL.md` § Skills § Frontmatter emission. Per-skill overrides happen in the generation-time batched confirmation step, not here.
 
-The `outputStyleTuning` field comes from Phase 5.4. `mode: "defaults"` (or the field being absent entirely) means "archetype inference only — the generation skill picks the top-priority archetype match and emits with catalog defaults". `mode: "tuned"` carries two project-level settings: `archetypeOverride` (`inherit` keeps inference; a named archetype forces that one regardless of firing conditions; `skip-emit` prevents emission entirely) and `activationDefault` (`none` emits the file without touching settings; `write-to-settings` merges `"outputStyle": "<name>"` into `.claude/settings.local.json` following the 4-case merge safety rules in `generation/references/output-styles-guide.md` § settings.local.json merge rules). Per-style developer tweaks happen in the generation-time batched confirmation step, not here.
+The `outputStyleTuning` field comes from Exchange 3 (output-style tuning card). `mode: "defaults"` (or the field being absent entirely) means "archetype inference only — the generation skill picks the top-priority archetype match and emits with catalog defaults". `mode: "tuned"` carries two project-level settings: `archetypeOverride` (`inherit` keeps inference; a named archetype forces that one regardless of firing conditions; `skip-emit` prevents emission entirely) and `activationDefault` (`none` emits the file without touching settings; `write-to-settings` merges `"outputStyle": "<name>"` into `.claude/settings.local.json` following the 4-case merge safety rules in `../generation/references/catalogs/output-styles-guide.md` § settings.local.json merge rules). Per-style developer tweaks happen in the generation-time batched confirmation step, not here.
+
+The `agentTuning` field comes from Exchange 3 (agent tuning card). `mode: "defaults"` (or the field being absent entirely) means "archetype inference only — no project-level override". `mode: "tuned"` carries `defaultModel` / `defaultEffort` / `preApprovalPosture` / `defaultIsolation`, refining the archetype output in `../generation/SKILL.md` § Agent Frontmatter Emission. Per-agent overrides happen in the generation-time batched confirmation step, not here.

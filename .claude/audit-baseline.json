@@ -1,0 +1,11 @@
+{
+  "_comment": "Baseline snapshot for the tooling-gap audit pipeline (onboard/scripts/audit-tooling.sh + .github/workflows/tooling-gap-audit.yml). The audit diffs the live tooling inventory against this baseline; drift opens a dated report under docs/tooling-gap-reports/. Regenerate when the tooling surface intentionally changes.",
+  "schemaVersion": 1,
+  "generatedAt": "2026-06-15",
+  "tooling": {
+    "claudeMd": ["CLAUDE.md", "onboard/CLAUDE.md", "notify/CLAUDE.md", "handoff/CLAUDE.md", "walkthrough/CLAUDE.md", "lens/CLAUDE.md"],
+    "rules": [".claude/rules"],
+    "skills": ["onboard/skills", "notify/skills", "handoff/skills", "walkthrough/skills", "lens/skills"],
+    "hooks": []
+  }
+}

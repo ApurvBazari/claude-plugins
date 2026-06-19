@@ -16,7 +16,7 @@
 |---|---|---|---|
 | P1 | Solo archetype detected | ✅ PASS | `wizardAnswers`: preset=`minimal`, team=`solo`, autonomy=`autonomous`. No production/security/team signals surfaced. |
 | P2 | Python-only stack; no Next.js / Prisma / Supabase flags | ✅ PASS | CLAUDE.md Plugin Integration section mentions only `forge` (installed sibling). No stack-plugin references. Analysis correctly classified Click CLI scaffold. |
-| P3 | `pyright-lsp` offered in Phase 5.6 | ✅ PASS | User accepted. `lspStatus: {status: "emitted", plugins: ["pyright-lsp"], wiredIn: ".claude/settings.json"}` |
+| P3 | `pyright-lsp` offered in wizard Step 6 | ✅ PASS | User accepted. `lspStatus: {status: "emitted", plugins: ["pyright-lsp"], wiredIn: ".claude/settings.json"}` |
 | P4 | Minimal hook set (fewer events than nextjs 11-event rich preset) | ✅ PASS (functional) · ⚠️ WARN (calibration) | Only `PostToolUse` format-only hook generated — correct for Minimal preset. Verify script's `≥5` threshold FAILs because it's calibrated for non-Minimal. Not a real regression. |
 | P5 | Output style maps to solo archetype (NOT production-ops) | ✅ PASS | `outputStyleStatus: {status: "skipped", reason: "defaults-only", notes: "Wizard answered outputStyleTuning.mode=defaults; no candidates emerged for a scaffold-stage solo project."}` — clean skip, not production-ops. |
 | P6 | Session returns cleanly after init | ✅ PASS | Prompt returned after the Phase 4 handoff; no crash, no hook error, no schema error. |
@@ -122,7 +122,7 @@ Fired when the wizard tried to present a single-candidate multiSelect (only 1 LS
 }
 ```
 
-All 5 C4-required sub-keys present. Phase 2 Custom FAILED this (shape drift). **B2 in Phase 2 is preset-specific — Custom path has the drift, Minimal doesn't.** Narrows the fix surface.
+All 5 C4-required sub-keys present. *(Note: the `phasesAsked`/`phasesSkipped` values above are v2-era telemetry keys recorded verbatim from the run; v3 replaced this internal phase-numbering scheme with named wizard steps.)* Phase 2 Comprehensive profile (v2: Custom) FAILED this (shape drift). **B2 in Phase 2 is preset-specific — Comprehensive path has the drift, Minimal doesn't.** Narrows the fix surface.
 
 ### C2 — `hookStatus` carries rich descriptive notes
 

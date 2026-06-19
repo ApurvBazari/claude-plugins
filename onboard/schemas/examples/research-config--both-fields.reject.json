@@ -1,0 +1,10 @@
+{
+  "extraSpecialists": [
+    {
+      "name": "ambiguous",
+      "dimension": "supplies both prompt and agent (must be exactly one)",
+      "prompt": "Assess something.",
+      "agent": ".claude/agents/research-x.md"
+    }
+  ]
+}

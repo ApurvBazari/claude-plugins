@@ -14,6 +14,14 @@ claude plugin install walkthrough@apurvbazari-plugins
 
 That's it. No setup step, no configuration file required.
 
+## Skills
+
+- `/walkthrough:create [focus]` — render the current session as a self-contained interactive HTML document. See [Usage](#usage).
+- `/walkthrough:update [changed-file-paths…]` — refresh an existing walkthrough in place. See [Updating an existing walkthrough](#updating-an-existing-walkthrough).
+- `/walkthrough:document <subject> [output-path]` — render a plugin, the marketplace, or any path as a docs page. See [Documenting a subject](#documenting-a-subject).
+
+> `render` is an internal building block (`user-invocable: false`) used by other plugins (e.g. lens) — see [The internal `render` skill](#the-internal-render-skill).
+
 ## Usage
 
 ```
@@ -39,7 +47,7 @@ One HTML file. Open it in any browser and you get a composed document — not a 
 - a timeline and metrics where the session has them
 - an **interactive explorer** — a selector that drives a live diagram region and a detail pane from one shared data model, useful for multi-component architectures where you want to navigate relationships rather than read a static diagram
 - a **data-driven step timeline** — phases of parallel and sequential steps with source pills and micro-cycles, useful when the session covers a pipeline, workflow, or multi-phase build
-- clickable detail — expand a node or a decision to see the supporting context
+- **rich detail surfaces** — click a node, card, or cross-link and its detail opens in a structured glance **pane**, or a centered **sheet** for richer content (a hosted diagram, code) that can itself open further detail, nested
 
 Components adapt to the session. The catalog is a floor, not a ceiling: when content fits no off-the-shelf component, a bespoke one is composed from the same design-system primitives so it still looks native. Empty sections are omitted rather than stubbed.
 
@@ -79,6 +87,10 @@ A walkthrough is a snapshot — but you can refresh one in place as the work evo
 
 `document` is both user- and intent-invokable: the slash form works, and so does *"document this plugin"* or *"make a docs page for notify"*.
 
+## The internal `render` skill
+
+Alongside the three user-facing skills, walkthrough ships one **internal** skill — `render` (`user-invocable: false`). It renders a model that's already in context straight to HTML, skipping the gather + synthesize stages, and reuses the same visual layer. It exists for *other plugins* to call programmatically — the [`lens`](../lens/) review companion uses it to render its findings. You never invoke it directly; "render the session" for users is `/walkthrough:create`.
+
 ## Where files go
 
 Walkthroughs are written to:
@@ -89,9 +101,17 @@ Walkthroughs are written to:
 
 `<slug>` is a kebab-case version of the document title. If a walkthrough on the same subject (same slug) already exists, `create` asks whether to **update it in place**, **write a new versioned file**, or **overwrite** — rather than silently adding a `-2`/`-3` suffix. The directory is created on first run.
 
+In a **non-git folder** (common in Cowork), `create` instead asks on first run whether to use a visible `walkthroughs/` folder or the hidden `.claude/walkthrough/`, and records the choice in `<chosen-dir>/settings.md`. In a git repository it uses `.claude/walkthrough/` as described above.
+
 On the first run in a repo (when `.gitignore` exists and doesn't already cover the path), `create` offers to add `.claude/walkthrough/` to `.gitignore` and remembers your choice in `.claude/walkthrough/settings.md`.
 
 > A walkthrough can contain session content — code snippets, file paths, decisions, prose you and Claude exchanged. Treat it like any other session artifact. Gitignoring the directory (the default offer) keeps walkthroughs out of commits and code review.
+
+## Works in Cowork
+
+walkthrough is a **pure-skill plugin** — no hooks, no shell scripts, no agents — so it installs and runs in [Claude Cowork](https://claude.com/product/cowork) exactly as it does in Claude Code. Its output is a single portable HTML file, which makes it a natural fit for a Cowork working session: run it and you get an explorable deliverable you can email, drop in a wiki, or open offline.
+
+Because a Cowork folder is often not a git repository, `create` asks **on first run in a non-git folder** where to write — a visible `walkthroughs/` folder (easy to find) or the hidden `.claude/walkthrough/` — and remembers the choice. In a git repository (the typical Claude Code case) nothing changes: walkthroughs go to `.claude/walkthrough/` with no prompt.
 
 ## What it is / isn't
 

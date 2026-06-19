@@ -12,7 +12,32 @@ This is NOT a snapshot diff. It's a forward-looking check against current best p
 
 ---
 
+## Step 0: Initialize Phase Tracking
+
+Runs **first**, before the Prerequisites Check. This wires the durable phase-task list that the rest of the flow transitions for in-session visibility.
+
+First, read the contract: `../start/references/phase-tracking.md` (the cross-skill source of truth — `start` is its worked example). It defines the task subjects, the `pending → in_progress → completed` (plus `deleted`) state machine, and the HARD GATE mapping. Follow it verbatim — do not re-derive its rules here. `update` runs on an already-onboarded project (an `onboard-meta.json` exists by the time the baseline check in Phase 0 passes), so it has no cross-session resume probe of its own; the task list here is **in-session progress visibility**, and the durable record lives in the on-disk artifacts the contract describes.
+
+Create the **8** `update` phase tasks via `TaskCreate`, all `status: "pending"`, one per ladder phase, using the `update:` subject prefix from the contract's § Other entry points table:
+
+| Subject | `activeForm` |
+|---|---|
+| `update:verify-baseline` | Verifying the onboard baseline |
+| `update:read-artifacts` | Reading existing artifacts |
+| `update:reanalyze` | Re-analyzing the codebase |
+| `update:best-practices-drift` | Checking best practices & detecting drift |
+| `update:present-preview` | Presenting findings & rendering preview |
+| `update:approve-gate` | Awaiting approval of upgrades |
+| `update:apply` | Applying approved updates |
+| `update:summary` | Summarizing changes |
+
+Only this orchestrator touches the list. Every internal skill it later invokes (`onboard:generate`, `onboard:research`) is **task-blind** per the contract's § Ownership — when `update` invokes `generate` inside Phase 6, that does **not** create its own list; it runs inside this Phase-6 task. **Routing note (per the contract's § Routing):** if Phase 0 routes into `adopt` (missing-baseline branch), `adopt` owns its own `adopt:` list and marks it complete on handoff; the two lists coexist — this `update` list never touches adopt's tasks and vice versa.
+
+---
+
 ## Prerequisites Check
+
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(update:verify-baseline → in_progress)` now, **before** the baseline check below. Mark it `TaskUpdate(... → completed)` once a baseline is confirmed present (found directly, or freshly written by the adopt routing). If Phase 0 finds no tooling at all and stops, leave this task `in_progress` — the run halts there.
 
 ### Step 1: Verify Previous Setup
 
@@ -22,11 +47,19 @@ Check for `.claude/onboard-meta.json`:
 Read: .claude/onboard-meta.json
 ```
 
-**If not found**:
+**If not found**, probe for pre-existing tooling (native Glob): `CLAUDE.md` (root) or any `.claude/` rules/skills/agents/output-styles, `.mcp.json`, or hooks in `.claude/settings.json`.
 
-> This project hasn't been set up with onboard yet. Run `/onboard:start` first to generate your Claude tooling.
+- **Existing tooling detected** (foreign — not onboard-managed) → offer to adopt it via `AskUserQuestion` (single-select, header `"No baseline"`):
+  - **Adopt then update (Recommended)** — "Bring the existing tooling under management (`/onboard:adopt`), then continue this update."
+  - **Cancel** — "Do nothing."
 
-Stop here.
+  On **Adopt then update**: run `Skill(onboard:adopt)`. Adopt synthesizes the baseline (it never modifies your files) and, because it was entered from here, hands control straight back — continue into Step 2 with the freshly written `.claude/onboard-meta.json`. On **Cancel**: stop.
+
+  **Guard Usage:** two fixed options (≥2), so the single-option guard in `.claude/rules/ask-user-question-guard.md` does not apply.
+
+- **No tooling at all** → there is nothing to update or adopt:
+  > This project hasn't been set up with onboard yet. Run `/onboard:start` first to generate your Claude tooling.
+  Stop here.
 
 **If found**, parse and display:
 
@@ -36,9 +69,13 @@ Stop here.
 > - **Artifacts generated**: [count]
 > - **Model**: [modelRecommendation]
 
+> **Phase complete:** once a baseline is confirmed present (found directly above, or freshly written by the **Adopt then update** routing), `TaskUpdate(update:verify-baseline → completed)`.
+
 ---
 
 ## Analysis Phase
+
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(update:read-artifacts → in_progress)` now, **before** reading the existing artifacts. Mark it `TaskUpdate(... → completed)` after every tracked artifact has been read and classified at the end of Step 2.
 
 ### Step 2: Read All Existing Artifacts
 
@@ -46,12 +83,17 @@ Read every file listed in `onboard-meta.json`'s `generatedArtifacts` array. For 
 - Check if file still exists
 - Check if maintenance header is intact (indicates no manual override)
 - If maintenance header is missing or modified, flag as "user-customized" — extra caution needed
+- **Provenance:** before flagging, consult `onboard-meta.json`'s `mode` + `artifactProvenance` per `references/drift-classification.md` § 4b.0. An `origin:"adopted"` artifact (or any artifact in a `mode:"retrofit"` baseline) has an **expected** absent header — do not flag it "user-customized" on that basis; it is diffable-with-caution and its first modernization offer is "add maintenance header / migrate to conventions".
 
 Also read any Claude config files that may have been added manually after the initial run.
 
+> **Phase complete:** after every tracked artifact and any manually-added config has been read and classified, `TaskUpdate(update:read-artifacts → completed)`.
+
 ### Step 3: Re-analyze the Codebase
 
-Run a fresh analysis (same as init Phase 1):
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(update:reanalyze → in_progress)` now, **before** the fresh analysis below. Mark it `TaskUpdate(... → completed)` after the drift comparison against `onboard-meta.json` completes at the end of this step.
+
+Run a fresh analysis (same as start Phase 1):
 - Run the three analysis scripts
 - Perform deep codebase exploration
 
@@ -62,7 +104,11 @@ Compare the fresh analysis against what was captured in onboard-meta.json to det
 - New CI/CD pipelines?
 - Test setup changed?
 
+> **Phase complete:** after the drift comparison against `onboard-meta.json` completes, `TaskUpdate(update:reanalyze → completed)`.
+
 ### Step 4: Check Latest Best Practices
+
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(update:best-practices-drift → in_progress)` now, **before** the best-practices checks (Step 4) and the Step 4b drift detectors. This one task spans Steps 4 and 4b. Mark it `TaskUpdate(... → completed)` after all of Step 4b's detectors (4b.1–4b.10) have recorded their findings.
 
 Check two knowledge sources:
 
@@ -84,165 +130,45 @@ Check two knowledge sources:
 
 Detect three classes of drift that the preceding steps don't cover. Each class feeds new sections into the findings report (Step 5).
 
+Apply the full read-inputs, classify, and record procedure for each detector — verbatim from `references/drift-classification.md`. Each section there is authoritative; do not paraphrase the classification rules or field semantics.
+
 #### 4b.1: Plugin Drift
-
-Follow `../generation/references/plugin-drift-detection.md` for the full procedure. Summary for update:
-
-1. **Resolve baseline** using the caller order for `update`: first `.claude/onboard-meta.json.detectedPlugins.installedPlugins`, then `.claude/onboard-meta.json.callerExtras.installedPlugins`, else empty.
-2. **Probe current state** against the Known Plugin Probe List in `../generation/references/plugin-detection-guide.md`. Also probe any plugin in the baseline that isn't in the known list.
-3. **Compute diff** — produce the `driftReport` object described in `plugin-drift-detection.md` § Output Schema.
-4. **Note the baseline source**. If the baseline was empty, flag the findings section with "Plugin Integration not tracked before — all detected plugins offered as new additions."
-
-Record `driftReport.added`, `driftReport.removed`, and the derived `qualityGatesNext` / `phaseSkillsNext` / `coveredCapabilitiesNext` for Step 7.
+Follow `references/drift-classification.md` § 4b.1. Record `driftReport.added`, `driftReport.removed`, and the derived `qualityGatesNext` / `phaseSkillsNext` / `coveredCapabilitiesNext` for Step 7.
 
 #### 4b.2: Artifact Gaps
-
-Re-walk `onboard-meta.json.generatedArtifacts`. For each entry:
-
-1. Check that the file still exists on disk.
-2. If missing and the entry does **not** have a `deletedByUser: true` flag, mark it as a gap candidate.
-3. If missing and `deletedByUser: true` is set, skip silently — the developer opted out.
-
-This complements the existing "maintenance header removed" detection in Step 2: Step 2 flags user-customized files, 4b.2 flags user-deleted / lost files. No overlap.
+Follow `references/drift-classification.md` § 4b.2. Record gap candidates (missing, not `deletedByUser`) for Step 7.
 
 #### 4b.3: New Best-Practice Additions
-
-Compare the current project against the built-in generation reference guides (`../generation/references/claude-md-guide.md`, `rules-guide.md`, `hooks-guide.md`, `skills-guide.md`, `agents-guide.md`). Surface only items that:
-
-- Appear in the reference guides as a recommended artifact for the project's stack/complexity, AND
-- Are not present in `onboard-meta.json.generatedArtifacts`, AND
-- Are not present on disk under `.claude/`
-
-Keep this narrow — do not parse the live WebFetch output to infer new recommendations. The reference guides are the stable source. WebFetch continues to drive wording/pattern updates as before.
+Follow `references/drift-classification.md` § 4b.3. Surface only items that match stack/complexity, are absent from `generatedArtifacts`, and are absent from disk under `.claude/`.
 
 #### 4b.4: MCP Drift
-
-Compare `.mcp.json`, the drift snapshot `.claude/onboard-mcp-snapshot.json`, and a fresh signal scan (`bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh"`). Follow `../generation/references/mcp-guide.md` for emission rules — this step only classifies drift; applying is deferred to Step 7.
-
-1. **Read the three sources**:
-   - `.mcp.json` at project root (if absent and `mcpStatus.existedPreOnboard` is false, record `mcpDrift.status: "file-missing"`)
-   - `.claude/onboard-mcp-snapshot.json` (if absent, treat snapshot as empty)
-   - Fresh candidate list from `detect-mcp-signals.sh`
-2. **Classify each server**:
-   - **user-edited** — present in `.mcp.json` but mismatched against snapshot (fields differ or entry was added by user). Never propose changes; inform only.
-   - **user-removed** — in snapshot but missing from `.mcp.json`. Inform only ("you removed X"); never re-add without explicit user instruction.
-   - **newly-suggested** — in the fresh candidate list but neither in snapshot nor `.mcp.json`. Surface as a suggested addition.
-   - **stale-candidate** — in snapshot/`.mcp.json` but the underlying signal no longer fires (e.g., `vercel.json` was deleted). Surface as a suggested removal.
-   - **in-sync** — present in all three and unchanged. No action.
-3. **Pre-existing guard** — if `mcpStatus.existedPreOnboard: true`, onboard treats the whole file as user-owned. Suggest only additions (`newly-suggested`), never removals or edits.
-
-Record the classification as `mcpDrift.{userEdited, userRemoved, newlySuggested, staleCandidate}[]` for Step 7.
+Follow `references/drift-classification.md` § 4b.4. Record as `mcpDrift.{userEdited, userRemoved, newlySuggested, staleCandidate}[]` for Step 7.
 
 #### 4b.5: Skill Frontmatter Drift
-
-Compare the live `SKILL.md` frontmatter for every skill in `onboard-meta.json.skillStatus.generated` against the baseline in `.claude/onboard-skill-snapshot.json`. This step only classifies — applying is deferred to Step 7.
-
-1. **Read the inputs**:
-   - `onboard-meta.json.skillStatus.generated` — list of skill names onboard authored in this project.
-   - `.claude/onboard-skill-snapshot.json` — per-skill frontmatter baseline (the exact fields onboard wrote in the last run).
-   - Live `.claude/skills/<skill>/SKILL.md` files on disk.
-
-2. **For each skill in `skillStatus.generated`**: parse the YAML frontmatter from the live file and diff against the snapshot entry field-by-field.
-
-3. **Classify per field**:
-   - **user-edit** — field value in live differs from snapshot, and the skill's `frontmatterFields.<skill>.source` in `onboard-meta.json` is NOT `user-tweaked`. The developer hand-edited it after generation. Informational by default; never auto-rewrite.
-   - **user-tweaked** — field value in live differs from snapshot AND `source === "user-tweaked"`. Expected drift — do not flag.
-   - **missing-file** — `SKILL.md` is absent from disk but present in `skillStatus.generated` and not tagged `deletedByUser`. Offer to regenerate via `onboard:generate` with `callerExtras.regenerateOnly`.
-   - **new-field** — snapshot omitted a field that the current generator would now emit (e.g., `model` was never inferred for this skill but is now part of the archetype default). Surface as a suggested addition.
-   - **in-sync** — live frontmatter equals snapshot for every field. No action.
-
-4. **Pre-existing guard**: skills in `skillStatus.existedPreOnboard` are never diffed — they predate the generator and are treated as user-owned.
-
-Record as `skillDrift.{userEdited, missingFiles, newFieldCandidates}[]` for Step 7.
+Follow `references/drift-classification.md` § 4b.5. Record as `skillDrift.{userEdited, missingFiles, newFieldCandidates}[]` for Step 7.
 
 #### 4b.6: Agent Frontmatter Drift
-
-Compare the live agent frontmatter for every agent in `onboard-meta.json.agentStatus.generated` against the baseline in `.claude/onboard-agent-snapshot.json`. This step only classifies — applying is deferred to Step 7.
-
-1. **Read the inputs**:
-   - `onboard-meta.json.agentStatus.generated` — list of agent names onboard authored in this project.
-   - `.claude/onboard-agent-snapshot.json` — per-agent frontmatter baseline (the exact fields onboard wrote in the last run).
-   - Live `.claude/agents/<agent>.md` files on disk.
-
-2. **For each agent in `agentStatus.generated`**: parse the YAML frontmatter from the live file and diff against the snapshot entry field-by-field.
-
-3. **Classify per field**:
-   - **user-edit** — field value in live differs from snapshot, and the agent's `frontmatterFields.<agent>.source` in `onboard-meta.json` is NOT `user-tweaked`. The developer hand-edited it after generation. Informational by default; never auto-rewrite.
-   - **user-tweaked** — field value in live differs from snapshot AND `source === "user-tweaked"`. Expected drift — do not flag.
-   - **missing-file** — `<agent>.md` is absent from disk but present in `agentStatus.generated` and not tagged `deletedByUser`. Offer to regenerate via `onboard:generate` with `callerExtras.regenerateOnly`.
-   - **new-field** — snapshot omitted a field that the current generator would now emit (e.g., `maxTurns` was never inferred for this agent but is now part of the archetype default). Surface as a suggested addition.
-   - **legacy-no-frontmatter** — live file exists, but the frontmatter block is absent entirely (agent was generated by a pre-1.6.0 onboard version that used markdown sections instead of YAML frontmatter). Classify + prompt for migration; never auto-rewrite in `update`.
-   - **in-sync** — live frontmatter equals snapshot for every field. No action.
-
-4. **Pre-existing guard**: agents in `agentStatus.existedPreOnboard` are never diffed — they predate the generator and are treated as user-owned.
-
-Record as `agentDrift.{userEdited, missingFiles, newFieldCandidates, legacyNoFrontmatter}[]` for Step 7.
+Follow `references/drift-classification.md` § 4b.6. Record as `agentDrift.{userEdited, missingFiles, newFieldCandidates, legacyNoFrontmatter}[]` for Step 7.
 
 #### 4b.7: Output Style Drift
-
-Compare the live output-style frontmatter for every style in `onboard-meta.json.outputStyleStatus.generated` against the baseline in `.claude/onboard-output-style-snapshot.json`. This step only classifies — applying is deferred to Step 7.
-
-1. **Read the inputs**:
-   - `onboard-meta.json.outputStyleStatus.generated` — list of style filename stems onboard authored in this project.
-   - `.claude/onboard-output-style-snapshot.json` — per-style frontmatter baseline (the 5 fields onboard wrote in the last run).
-   - Live `.claude/output-styles/<name>.md` files on disk.
-
-2. **For each style in `outputStyleStatus.generated`**: parse the YAML frontmatter from the live file and diff against the snapshot entry field-by-field.
-
-3. **Scope reminder**: snapshot tracks **frontmatter only** (`name`, `description`, `keep-coding-instructions`, `archetype`, `source`). Body edits (system-prompt prose) are intentionally outside snapshot scope and never classified as drift. Developers can freely revise the body voice without triggering any state.
-
-4. **Classify per field**:
-   - **user-edit** — frontmatter field value in live differs from snapshot, and the style's `frontmatterFields.<style>.source` in `onboard-meta.json` is NOT `user-tweaked`. The developer hand-edited it after generation. Informational by default; never auto-rewrite.
-   - **user-tweaked** — frontmatter field value in live differs from snapshot AND `source === "user-tweaked"`. Expected drift — do not flag.
-   - **missing-file** — the `.md` file is absent from disk but present in `outputStyleStatus.generated` and not tagged `deletedByUser`. Offer to regenerate via `onboard:generate` with `callerExtras.regenerateOnly` and `callerExtras.disableOutputStyleTuning: true` (reuse snapshot values).
-   - **new-field** — snapshot omitted a field that the current generator would now emit (e.g., a future release adds a new internal tracking field). Surface as a suggested addition.
-   - **legacy-no-frontmatter** — live file exists, but the YAML frontmatter block is absent entirely (style was hand-authored before 1.7.0 or frontmatter was stripped). Classify + prompt for migration; never auto-rewrite in `update`.
-   - **in-sync** — live frontmatter equals snapshot for every field. No action.
-
-5. **Pre-existing guard**: styles in `outputStyleStatus.existedPreOnboard` are never diffed — they predate the generator and are treated as user-owned.
-
-Record as `outputStyleDrift.{userEdited, missingFiles, newFieldCandidates, legacyNoFrontmatter}[]` for Step 7.
+Follow `references/drift-classification.md` § 4b.7. Record as `outputStyleDrift.{userEdited, missingFiles, newFieldCandidates, legacyNoFrontmatter}[]` for Step 7.
 
 #### 4b.8: LSP Plugin Drift
-
-Compare the fresh `detect-lsp-signals.sh` output against the `onboard-lsp-snapshot.json` baseline and the set of currently-installed marketplace plugins. Classification only — Step 7 applies.
-
-1. **Read the inputs**:
-   - `.claude/onboard-lsp-snapshot.json` — `{ recommended, accepted }`. Missing file → treat as `recommended: [], accepted: []` (pre-1.8.0 project).
-   - `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"` — fresh JSON array.
-   - `claude plugin list --json` (via `install-plugins.sh`'s probe, or direct call) — current install state.
-
-2. **Classify** per candidate plugin from the fresh scan:
-   - **newLanguage** — plugin name in fresh scan but not in `snapshot.recommended`. A new language was added to the project since last onboard/evolve run. Surface as a suggested addition.
-   - **uninstalled** — plugin in `snapshot.accepted` but not currently installed (user ran `claude plugin uninstall`). Informational; do NOT auto-reinstall.
-   - **stillValid** — plugin in both `snapshot.accepted` and installed list. No action.
-   - **staleCandidate** — plugin in `snapshot.recommended` but fresh scan no longer detects any files for that language (e.g., a language was removed). Informational — do NOT auto-suggest removal.
-
-3. **Pre-1.8.0 projects** (snapshot missing) — surface every fresh-scan candidate as `newLanguage`. First update run acts like an initial 1.8.0 prompt.
-
-Record as `lspDrift.{newLanguages, uninstalled, staleCandidates}[]` for Step 7. Findings report emits a "LSP Plugin Drift" section when any of these are non-empty; see Step 5 template additions below.
+Follow `references/drift-classification.md` § 4b.8. Record as `lspDrift.{newLanguages, uninstalled, staleCandidates}[]` for Step 7.
 
 #### 4b.9: Built-in Skills Drift
+Follow `references/drift-classification.md` § 4b.9. Record as `builtInSkillsDrift.{newSkills, newlyRelevant, staleCandidates}[]` for Step 7.
 
-Re-run detection against the current codebase analysis to identify which built-in Claude Code skills are relevant. Compare against the `onboard-builtin-skills-snapshot.json` baseline. Classification only — Step 7 applies.
+#### 4b.10: Research Staleness
+Apply `references/re-research.md` § Detection: map the Step-3 codebase drift to research dimensions, intersect with the stored-depth roster (`onboard-meta.json.research.depth`), and apply the escalation rule. Record `reResearch = { dimensions, escalatedToFull }` for Step 6 (empty `dimensions` → no offer). Read-only classification — re-research itself runs in Step 7 on approval.
 
-1. **Read the inputs**:
-   - `.claude/onboard-builtin-skills-snapshot.json` — `{ recommended, accepted }`. Missing file → treat as `recommended: [], accepted: []` (pre-1.9.0 project).
-   - Fresh detection against the current codebase: check each extra skill's detection signal per `generation/references/built-in-skills-catalog.md`. Core skills (`/loop`, `/simplify`, `/debug`, `/pr-summary`) are always candidates.
-
-2. **Classify** per candidate skill from the fresh detection:
-   - **newSkill** — skill name in fresh candidates but not in `snapshot.recommended`. A new detection signal fired since last onboard/evolve run (e.g., `@anthropic-ai/sdk` added to dependencies → `/claude-api` detected). Surface as a suggested addition.
-   - **newlyRelevant** — skill in `snapshot.recommended` but not in `snapshot.accepted` (developer previously declined), and the detection signal now has a stronger basis (e.g., file count grew from 30 to 200 → `/codebase-visualizer` crosses threshold). Surface as a suggestion, not an action.
-   - **staleCandidate** — skill in `snapshot.recommended` but fresh detection no longer fires the signal (e.g., `@anthropic-ai/sdk` removed from dependencies). Informational — do NOT auto-suggest removal.
-   - **in-sync** — no changes between snapshot and fresh detection. No action.
-
-3. **Pre-1.9.0 projects** (snapshot missing) — surface every fresh candidate (core + fired extras) as `newSkill`. First update run acts like an initial 1.9.0 prompt.
-
-Record as `builtInSkillsDrift.{newSkills, newlyRelevant, staleCandidates}[]` for Step 7. Findings report emits a "Built-in Skills Drift" section when any of these are non-empty; see Step 5 template additions below.
+> **Phase complete:** after all Step 4b detectors (4b.1–4b.10) have recorded their findings, `TaskUpdate(update:best-practices-drift → completed)`.
 
 ---
 
 ## Findings Report
+
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(update:present-preview → in_progress)` now, **before** presenting the findings (Step 5). This task spans Step 5 (findings) and Step 5.5 (preview render). Mark it `TaskUpdate(... → completed)` after the preview is rendered (or its markdown fallback shown) at the end of Step 5.5. The internally-invoked `walkthrough:render` is task-blind.
 
 ### Step 5: Present Findings
 
@@ -321,6 +247,11 @@ Organize findings into categories:
 > - **Stale candidates**: [list or "none"] — skills whose detection signals no longer fire. Informational only.
 > - Impact: new skills can be added to CLAUDE.md on approval.
 >
+> ### Research Staleness (from Step 4b.10)
+> - **Stale dimensions**: [list or "none"] — research dimensions invalidated by codebase drift (intersected with your stored depth).
+> - **Scope**: [scoped: N dimensions / full re-research (broad drift)].
+> - Impact: re-grounds the dossier and re-sharpens CLAUDE.md / rules / agents + merges the verify backlog. You approve the re-research before it runs.
+>
 > ### Deprecated Patterns
 > - [Anything in current setup that's outdated]
 >
@@ -330,7 +261,17 @@ Organize findings into categories:
 
 ---
 
+### Step 5.5: Render the change preview (before approval)
+
+Assemble a `previewModel` (per `../research/references/render-adapter.md` § previewModel) with `flow:"update"`: `changes[]` = the accumulated offer-set from Steps 4–4b (action `modernize`/`create`/`regenerate`; each artifact's `origin` carried from the baseline — `"generated"` for onboard-managed artifacts, `"adopted"` for artifacts brought under management via `/onboard:adopt` in a `mode:"retrofit"` baseline); `research` = the re-research delta when Step 4b.10 ran, else null; `decisions` = the current model/autonomy/profile from `onboard-meta.json`; `warnings` = user-customized-file flags + any "best-practices check unavailable" note. Render it via `walkthrough:render` to `.claude/walkthrough/<YYYY-MM-DD-HHMM>-onboard-update.html`, with the same walkthrough-absent → offer-install → markdown fallback as start Phase 5 (the gate). This is a preview only — the actual approval remains the Step 6 batched AskUserQuestion; nothing is applied until Step 7.
+
+> **Phase complete:** after the preview is rendered (or the markdown fallback shown), `TaskUpdate(update:present-preview → completed)`.
+
+---
+
 ## Upgrade Offers
+
+> **Phase transition (per `../start/references/phase-tracking.md` § HARD GATE):** `TaskUpdate(update:approve-gate → in_progress)` now, **before** the Step 6 AskUserQuestion. This task is the gate: it **stays `in_progress` for the entire phase** — through offer assembly and *while awaiting the user's approval decision* (the enum has no "awaiting" state; `in_progress` is the truthful "we are here, waiting on you"). Its `completed`/`deleted` transition is driven by the gate decision below — do **not** mark it `completed` before the user approves.
 
 ### Step 6: Offer Targeted Upgrades (AskUserQuestion)
 
@@ -351,11 +292,12 @@ Group offers into these categories (each becomes one `multiSelect: true` questio
 | Group | What goes here |
 |---|---|
 | `artifact-gaps` | Files in `generatedArtifacts` missing from disk; user-customized files that need merge/replace decision |
-| `user-edit-detections` | Files where the maintenance header was modified or other edits detected |
-| `new-dependencies-or-languages` | New dep additions (e.g., `@anthropic-ai/sdk`), new languages (Rust → `rust-analyzer-lsp`), built-in skills newly relevant. **LSP plugins for newly detected languages are `autoChecked: true` by default**, matching wizard Phase 5.6 pre-check behavior. |
+| `user-edit-detections` | Files where the maintenance header was modified, an adopted artifact awaiting its first maintenance header, or other edits detected |
+| `new-dependencies-or-languages` | New dep additions (e.g., `@anthropic-ai/sdk`), new languages (Rust → `rust-analyzer-lsp`), built-in skills newly relevant. **LSP plugins for newly detected languages are `autoChecked: true` by default**, matching wizard Step 6 pre-check behavior. |
 | `best-practice-suggestions` | Reference guide recommendations (e.g., `observability.md` rule for the detected stack) |
 | `enriched-capabilities` | CI/CD, harness, evolution, sprint contracts, verification |
 | `plugin-drift` | Wire-in / remove offers from Step 4b.1 |
+| `research-staleness` | Re-ground offer from Step 4b.10 — "Re-ground research (N dimensions)" or "Full re-research" when escalated. One offer; pad with `None / Skip` per the single-option guard. |
 
 ### Combined AskUserQuestion call
 
@@ -369,6 +311,11 @@ Issue a **single AskUserQuestion call** containing the pre-question + up to 3 of
 | `Apply all` | Skip per-group selection, apply every offer accumulated. |
 | `Apply later` | Write `.claude/onboard-pending-updates.json` snapshot of all offers (with their `id` and metadata) and exit. The next `/onboard:update` re-presents pending items + any newly detected drift. |
 | `Skip / dismiss` | Discard offers, do not remind again this session. (Re-running `/onboard:update` re-detects from scratch.) |
+
+> **Gate decision → task transition (per `../start/references/phase-tracking.md` § HARD GATE).** The Phase-5 task was left `in_progress` at the Upgrade Offers transition above. Map the pre-question outcome (and, when "Review and pick" is chosen, the subsequent per-group selection) to a transition:
+> - **Approve** — the user chose `Apply all`, **or** chose `Review and pick` and selected ≥1 offer → `TaskUpdate(update:approve-gate → completed)`, then proceed to Step 7 (Phase 6 apply).
+> - **Adjust / no-op selection** — the user chose `Review and pick` but selected nothing (every group answered `None / Skip`) and wants to revisit → keep the gate `in_progress` (no status change) and re-present, exactly like start's Adjust loop. The gate loops; no task is completed or deleted.
+> - **Cancel** — the user chose `Apply later` (defer, nothing applied this run) **or** `Skip / dismiss` (discard) → nothing is applied (the gate precedes the only apply phase). Per § Cancel → `deleted`, mark the gate task **and every later phase task** `deleted`: `TaskUpdate(update:approve-gate → deleted)`, `TaskUpdate(update:apply → deleted)`, `TaskUpdate(update:summary → deleted)`. Leave the already-`completed` tasks 0–4 as `completed` (they really ran). Then handle the chosen exit (write the `Apply later` snapshot or discard) and stop.
 
 **Questions 2–4 — Offer-group multi-selects** (each `multiSelect: true`, headers: `"ArtifactGaps"`, `"UserEdits"`, `"NewDeps"`, etc. — pick the 3 most populous groups for the first call). Only render groups that have ≥1 offer; skip empty groups.
 
@@ -421,6 +368,8 @@ For files where the maintenance header was modified or removed:
 
 ## Apply Updates
 
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(update:apply → in_progress)` now (only reached on **Approve** at the Step 6 gate), **before** Step 7's first write and **before** any `Skill(onboard:generate)` / `Skill(onboard:research)` dispatch (both task-blind — they run inside this Phase-6 task, not their own list). This task spans Step 7 (apply) and Step 8 (update metadata). Mark it `TaskUpdate(... → completed)` after the metadata is written at the end of Step 8.
+
 ### Step 7: Execute Chosen Updates
 
 For each approved update:
@@ -435,124 +384,18 @@ For each approved update:
 - **New sections** — append after the last generated section, before any user-added trailing sections
 - **Deleted sections** — do not re-add sections the user explicitly removed (check onboard-meta.json for previously generated sections)
 
-**Plugin drift application** (for items surfaced by Step 4b.1):
+Apply the full application procedure for each approved drift type — verbatim from `references/drift-application.md`. Each section there is authoritative; do not paraphrase the step-by-step instructions, guard rules, or snapshot update contracts.
 
-Follow `../evolve/references/plugin-integration-rules.md` for content rules and `../generation/references/hooks-guide.md` § Quality-Gate Hook Templates for hook scripts — the same sources evolve Step 2b uses. Do not reimplement logic here.
-
-For each approved **addition**:
-1. Refresh the `<!-- onboard:plugin-integration:start -->` / `end` region in the root CLAUDE.md. If markers are absent but `currentPlugins` is non-empty, insert the delimited region after the last generated section (same path as evolve Step 2b.1 first-time-add).
-2. Derive new `qualityGates` / `phaseSkills` entries from `driftReport.qualityGatesNext` / `phaseSkillsNext`. Generate hook scripts and merge entries into `.claude/settings.json` merge-aware (read first, preserve all non-plugin-integration hooks).
-3. Apply autonomyLevel downgrade to `preCommit[].mode` if `wizardAnswers.autonomyLevel` is `always-ask`.
-
-For each approved **removal**:
-1. Identify hook scripts that reference the removed plugin by matching basenames against `onboard-meta.json.hookStatus.generated`. Delete those files. Remove their entries from `.claude/settings.json`.
-2. Drop any `qualityGates` / `phaseSkills` entries referencing the removed plugin.
-3. If all plugins were removed (`currentPlugins` is empty), strip the entire marker-delimited Plugin Integration region from CLAUDE.md — markers included, no placeholder.
-
-**Subdirectory skill-annotation refresh** (runs when `driftReport.added` or `driftReport.removed` is non-empty):
-
-Per-directory `## Skill recommendations` blocks are wrapped in `<!-- onboard:skill-recommendations:start role="..." -->` / `end` markers (see `../generation/SKILL.md` § Per-Directory Skill Annotations). The `role` attribute encodes the directory's classified role (`parser`, `api`, `tests`, etc.), so refresh does not require re-running scaffold-analyzer.
-
-1. Enumerate all subdirectory `CLAUDE.md` files under the project root (glob `**/CLAUDE.md` excluding the root).
-2. For each file containing the start/end markers:
-   - Read the `role` attribute from the start marker.
-   - Regenerate the block body using the new `driftReport.currentPlugins` + `effectiveCoveredCapabilities` per the derivation rules in `../generation/SKILL.md` § Per-Directory Skill Annotations.
-   - Replace the delimited region (inclusive of markers) with the regenerated block. Preserve all file content outside the markers verbatim.
-3. **Block removal**: if `currentPlugins` is now empty, OR the role no longer has any matching plugin capability, remove the entire marker-delimited region (markers included) — do not leave a stub.
-4. **Block creation on empty baseline**: if markers are absent but `currentPlugins` is non-empty AND the file has a role hint (e.g., a prior generation comment or the file sits under a path that matches a known role from `../skills/analysis/references/tech-stack-patterns.md` § Subdirectory CLAUDE.md), skip auto-creation in this release. Surface a note in the findings report: "Subdirectory `<path>` could benefit from a Skill recommendations block — create during the next full regeneration."
-5. Record refreshed files in `updateHistory[*].changes` as `"Refreshed skill annotations in src/parser/CLAUDE.md"`.
-
-This reconciliation is non-blocking. If a subdirectory file fails to parse (e.g., corrupted markers), log a warning to `onboard-meta.json.warnings[]` and skip that file — never abort the whole update.
-
-**Standalone ↔ plugin reconciliation** (runs once per update, after all add/remove items are applied):
-
-Each of these standalone artifacts is only appropriate when the corresponding plugin is absent. On plugin drift, reconcile them:
-
-| Artifact | Present when | Action on add | Action on remove |
-|---|---|---|---|
-| `.claude/skills/tdd-workflow/SKILL.md` | `superpowers` NOT installed | If `superpowers` in `driftReport.added`: delete this file (it would shadow `superpowers:test-driven-development`). Drop the entry from `generatedArtifacts`. | If `superpowers` in `driftReport.removed` AND file is absent: invoke `generate` with `callerExtras.regenerateOnly` scoped to this path. |
-| `.claude/agents/tdd-test-writer.md` | `superpowers` NOT installed | If `superpowers` in `driftReport.added`: delete file, drop from `generatedArtifacts`. | If `superpowers` in `driftReport.removed`: regenerate via `generate`. |
-| Standalone preCommit / sessionStart hooks (no plugin refs) | Any profile generates them in absence of plugin qualityGates | If any plugin that provides `qualityGates` coverage is in `driftReport.added` (e.g., `code-review`, `superpowers`): delete the standalone hook scripts whose basenames match `onboard-meta.json.hookStatus.generated` AND whose content carries no plugin references. Their replacements are the plugin-referencing hooks added above. | If a plugin providing coverage is in `driftReport.removed` AND `currentPlugins` has no alternate coverage: invoke `generate` to regenerate the standalone hooks per the profile + autonomyLevel matrix in `../generation/SKILL.md` § Standalone Quality-Gate Hooks. |
-
-Before deleting any standalone artifact, present it in the findings report as a sub-item of the plugin-add approval ("Adding superpowers will remove the now-redundant standalone TDD skill at `.claude/skills/tdd-workflow/SKILL.md` — OK?"). Never auto-delete without per-item approval.
-
-**MCP drift application** (for items surfaced by Step 4b.4):
-
-Only **additions** are applied automatically on user approval. Removals and user-edits are never written.
-
-1. For each approved `newlySuggested` server:
-   - Read the current `.mcp.json` (if absent, create it with `{"mcpServers":{}}`).
-   - Merge the new server entry into `mcpServers` per the schema in `../generation/references/mcp-guide.md` § Config Shape. Preserve every other key verbatim.
-   - Append the server to `.claude/onboard-mcp-snapshot.json` as well so subsequent drift checks use the new baseline.
-   - If the server's catalog entry has a `plugin` field, append to the auto-install queue for Step 7's plugin section (reuse `${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh`).
-2. For each `staleCandidate`: display the removal suggestion but do NOT auto-apply. If the user explicitly says "yes remove X", delete the entry from `.mcp.json` AND the snapshot.
-3. For `userEdited` / `userRemoved`: no action. The findings report already informed the user.
-4. If `.claude/rules/mcp-setup.md` needs regeneration (new server added needing auth), invoke `generate` with `callerExtras.regenerateOnly` scoped to `.claude/rules/mcp-setup.md`.
-
-**Skill frontmatter drift application** (for items surfaced by Step 4b.5):
-
-Only **additions** are applied automatically on user approval. User-edits are never overwritten.
-
-1. For each approved `newFieldCandidate`: read the live `SKILL.md`, add only the missing field using the archetype-inferred value (wizard defaults from `onboard-meta.json.wizardAnswers.skillTuning` still apply). Do not touch existing fields. Update `.claude/onboard-skill-snapshot.json` to include the new field in the baseline. Set `frontmatterFields.<skill>.source = "user-confirmed"`.
-2. For each `userEdit`: display only — never apply. The developer's hand-edit stays. Update the snapshot to match the live file so subsequent runs stop flagging this drift (equivalent to evolve's `accept-user-edit` verb). Set `frontmatterFields.<skill>.source = "user-tweaked"`.
-3. For each `missingFile`: invoke `generate` via the Skill tool with `callerExtras.regenerateOnly: [".claude/skills/<skill>/SKILL.md"]` and `callerExtras.disableSkillTuning: true`. The generator re-emits the skill using the snapshot's frontmatter values (preserving prior tweaks). Append to `generatedArtifacts` if previously dropped.
-
-**Agent frontmatter drift application** (for items surfaced by Step 4b.6):
-
-Only **additions** and **legacy migrations** are applied on user approval. User-edits are never overwritten.
-
-1. For each approved `newFieldCandidate`: read the live agent `.md`, add only the missing field using the archetype-inferred value (wizard defaults from `onboard-meta.json.wizardAnswers.agentTuning` still apply). Do not touch existing fields. Update `.claude/onboard-agent-snapshot.json` to include the new field in the baseline. Set `frontmatterFields.<agent>.source = "user-confirmed"`.
-2. For each `userEdit`: display only — never apply. The developer's hand-edit stays. Update the snapshot to match the live file so subsequent runs stop flagging this drift. Set `frontmatterFields.<agent>.source = "user-tweaked"`.
-3. For each `missingFile`: invoke `generate` via the Skill tool with `callerExtras.regenerateOnly: [".claude/agents/<agent>.md"]` and `callerExtras.disableAgentTuning: true`. The generator re-emits the agent using the snapshot's frontmatter values (preserving prior tweaks). Append to `generatedArtifacts` if previously dropped.
-4. For each `legacyNoFrontmatter`: prompt the developer with a preview:
-   > Agent `<name>` has no YAML frontmatter (pre-1.6.0 format). Apply archetype-inferred defaults (`model: sonnet`, `color: blue`, `effort: medium`) as a migration? [yes/no/skip]
-   On yes: classify the agent via `generation/references/agents-guide.md` archetype rules using its name/description, compose with `wizardAnswers.agentTuning`, run the full validation pass from `generation/SKILL.md` § Agent Frontmatter Emission Step 3, and prepend a YAML frontmatter block to the live file (keeping the body intact). Update the snapshot and set `frontmatterFields.<agent>.source = "wizard-default"`. On no/skip: leave the file as-is; record `agentStatus.warnings[] = "legacy-skipped:<agent>"`.
-
-**Output style drift application** (for items surfaced by Step 4b.7):
-
-Only **additions** and **legacy migrations** are applied on user approval. User-edits are never overwritten, and body prose is outside snapshot scope (no body-related apply logic).
-
-1. For each approved `newFieldCandidate`: read the live style `.md`, add only the missing frontmatter field using the catalog default for the style's archetype. Do not touch body content. Update `.claude/onboard-output-style-snapshot.json` to include the new field in the baseline. Set `frontmatterFields.<style>.source = "user-confirmed"`.
-2. For each `userEdit`: display only — never apply. The developer's hand-edit stays. Update the snapshot to match the live file so subsequent runs stop flagging this drift. Set `frontmatterFields.<style>.source = "user-tweaked"`.
-3. For each `missingFile`: invoke `generate` via the Skill tool with `callerExtras.regenerateOnly: [".claude/output-styles/<name>.md"]` and `callerExtras.disableOutputStyleTuning: true`. The generator re-emits the style using the snapshot's frontmatter values and the catalog body template (preserving prior tweaks). Append to `generatedArtifacts` if previously dropped.
-4. For each `legacyNoFrontmatter`: prompt the developer with a preview:
-   > Output style `<name>` has no YAML frontmatter. Apply archetype-inferred defaults (matching the filename stem to the 5-archetype catalog) as a migration? [yes/no/skip]
-   On yes: match the filename stem against the catalog (`onboarding-mentor`, `tutorial-guide`, `operator`, `explorer-notes`, `solo-minimal`) to determine the archetype, compose catalog-default frontmatter (`name`, `description`, `keep-coding-instructions: true`, `archetype`, `source: "wizard-default"`), and prepend a YAML frontmatter block to the live file (keeping the body intact). If the filename stem doesn't match any catalog entry, skip with warning `legacy-no-archetype-match:<style>`. Update the snapshot. On no/skip: leave the file as-is; record `outputStyleStatus.warnings[] = "legacy-skipped:<style>"`.
-
-**LSP plugin drift application** (for items surfaced by Step 4b.8):
-
-Only **new-language additions** are applied on user approval. Uninstalls and stale candidates are informational only — onboard never auto-reinstalls or auto-removes LSP plugins.
-
-1. For each approved `newLanguage` candidate:
-   - Invoke `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugin-name>`. Merge results into `lspStatus.autoInstalled[]` and `lspStatus.autoInstallFailed[]`.
-   - Append the plugin to `.claude/onboard-lsp-snapshot.json` `recommended[]` AND `accepted[]`, preserving alphabetical sort.
-   - Append the plugin to `lspStatus.generated[]`.
-2. For `uninstalled` findings: no action. Log once: "LSP plugin `<name>` was uninstalled since last run — rerun `/onboard:evolve` if you want to reinstall."
-3. For `staleCandidate` findings: no action. Log once.
-
-**Built-in skills drift application** (for items surfaced by Step 4b.9):
-
-Only **newSkill additions** are applied on user approval. Stale candidates and newly-relevant suggestions are informational only.
-
-1. For each approved `newSkill` candidate:
-   - Add the skill to `builtInSkillsStatus.generated[]`.
-   - Find the `<!-- onboard:builtin-skills:start -->` / `<!-- onboard:builtin-skills:end -->` markers in CLAUDE.md and regenerate the content between them, including the new skill with its stack-specific example from `generation/references/built-in-skills-catalog.md`.
-   - Update `.claude/onboard-builtin-skills-snapshot.json` — append to both `recommended[]` and `accepted[]`, preserving alphabetical sort.
-2. For `newlyRelevant` suggestions: no action. Log once as informational.
-3. For `staleCandidate` findings: no action. Log once.
-
-**Placement migration** (handled alongside built-in skills application):
-- **Standalone → Plugin Integration**: If `<!-- onboard:builtin-skills:start/end -->` markers exist as a top-level section AND `effectivePlugins` is now non-empty (e.g., plugins were installed since last run), remove the standalone region and regenerate the built-in skills content as the last subsection inside `<!-- onboard:plugin-integration:start/end -->`. Surface as a named migration action in the Step 6 upgrade offer menu.
-- **Plugin Integration → standalone**: If `effectivePlugins` becomes empty (all plugins removed) and built-in skills content is inside Plugin Integration markers, migrate the content out to a standalone section before stripping the Plugin Integration markers.
-- **Empty accepted list**: If `builtInSkillsStatus.generated[]` becomes empty (all skills declined), strip the `<!-- onboard:builtin-skills:start/end -->` markers and their content entirely.
-
-**Artifact gap regeneration** (for items surfaced by Step 4b.2):
-
-Invoke the `generate` skill via the Skill tool with a narrow `callerExtras.regenerateOnly` payload listing the missing artifact paths. Generate honors this scope and only writes the listed files. After regeneration, verify each file is present on disk and carries a fresh maintenance header.
-
-**New best-practice additions** (for items surfaced by Step 4b.3):
-
-Invoke the `generate` skill with `callerExtras.regenerateOnly` scoped to the new artifact paths. Same flow as artifact gap regeneration — the difference is only in how the candidate list was computed.
+- **Plugin drift** (4b.1): Follow `references/drift-application.md` § Plugin drift application (additions, removals, subdirectory skill-annotation refresh, standalone ↔ plugin reconciliation — including pre-item-approval guard before any deletion).
+- **MCP drift** (4b.4): Follow `references/drift-application.md` § MCP drift application.
+- **Skill frontmatter drift** (4b.5): Follow `references/drift-application.md` § Skill frontmatter drift application.
+- **Agent frontmatter drift** (4b.6): Follow `references/drift-application.md` § Agent frontmatter drift application.
+- **Output style drift** (4b.7): Follow `references/drift-application.md` § Output style drift application.
+- **LSP plugin drift** (4b.8): Follow `references/drift-application.md` § LSP plugin drift application.
+- **Built-in skills drift** (4b.9): Follow `references/drift-application.md` § Built-in skills drift application (including placement migration).
+- **Artifact gap regeneration** (4b.2): Follow `references/drift-application.md` § Artifact gap regeneration.
+- **New best-practice additions** (4b.3): Follow `references/drift-application.md` § New best-practice additions.
+- **Research staleness** (4b.10): if the developer approved the re-ground, follow `references/re-research.md` § Orchestration — invoke `onboard:research` in scoped/merge mode, build the `version:3` context with the merged dossier + `callerExtras.reResearch` (NO `regenerateOnly`), and invoke `onboard:generate`. The merge-aware regen honors the user-customized-file merge/replace/skip choices already gathered in Step 6. On the atomic-abort fallback, report the failure and leave tooling untouched.
 
 ### Step 8: Update Metadata
 
@@ -561,7 +404,7 @@ Update `.claude/onboard-meta.json`:
 - Update `pluginVersion`
 - Update `generatedArtifacts` list (add any new files, drop any whose deletion was explicitly approved)
 - Preserve `wizardAnswers` (don't re-ask wizard questions during update)
-- **If plugin drift was applied in Step 7** — refresh `detectedPlugins.installedPlugins` to `driftReport.currentPlugins`, and recompute `detectedPlugins.coveredCapabilities`, `detectedPlugins.qualityGates`, `detectedPlugins.phaseSkills` per `../generation/references/plugin-detection-guide.md`. Update the top-level `hookStatus` to reflect added/removed hook scripts.
+- **If plugin drift was applied in Step 7** — refresh `detectedPlugins.installedPlugins` to `driftReport.currentPlugins`, and recompute `detectedPlugins.coveredCapabilities`, `detectedPlugins.qualityGates`, `detectedPlugins.phaseSkills` per `../generation/references/plugins/plugin-detection-guide.md`. Update the top-level `hookStatus` to reflect added/removed hook scripts.
 - **If MCP drift was applied in Step 7** — refresh top-level `mcpStatus`: add newly-applied servers to `mcpStatus.generated[]`, drop removed servers. Re-run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh"` for any newly-applied server with a `plugin` field; merge results into `mcpStatus.autoInstalled[]` and `mcpStatus.autoInstallFailed[]`. Always keep `mcpStatus.existedPreOnboard` sticky — once true, it stays true for the life of the project.
 - **If skill frontmatter drift was applied in Step 7** — refresh top-level `skillStatus.frontmatterFields[<skill>]` to match the applied state, including the refreshed `source` value (`user-confirmed` / `user-tweaked`). Update `.claude/onboard-skill-snapshot.json` to reflect the new baseline. Keep `skillStatus.existedPreOnboard[]` sticky.
 - **If agent frontmatter drift was applied in Step 7** — refresh top-level `agentStatus.frontmatterFields[<agent>]` to match the applied state, including the refreshed `source` value (`user-confirmed` / `user-tweaked` / `wizard-default` for legacy migrations). Update `.claude/onboard-agent-snapshot.json` to reflect the new baseline. Keep `agentStatus.existedPreOnboard[]` sticky. Append `legacy-skipped:<agent>` entries to `agentStatus.warnings` for any `legacyNoFrontmatter` declined by the developer.
@@ -582,9 +425,13 @@ Update `.claude/onboard-meta.json`:
 }
 ```
 
+> **Phase complete:** after the metadata is written, `TaskUpdate(update:apply → completed)`.
+
 ---
 
 ## Completion
+
+> **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(update:summary → in_progress)` now, **before** the summary below. Mark it `TaskUpdate(... → completed)` after the summary is shown — that completes the last phase of the run; all 8 `update` tasks are now `completed`.
 
 ### Step 9: Summary
 
@@ -596,9 +443,12 @@ Update `.claude/onboard-meta.json`:
 >
 > Run `/onboard:check` to verify the health of your setup.
 
+> **Phase complete:** after the summary above is shown, `TaskUpdate(update:summary → completed)`. All 8 phase tasks are now `completed` — the run is done.
+
 ## Key Rules
 
-- **Require `onboard-meta.json` before any work** — if the file is missing, halt at Step 1 with a message to run `/onboard:start`. Never run fresh analysis or apply updates without a baseline.
+- **Own the phase-task list end to end** — per `../start/references/phase-tracking.md`, Step 0 creates the 8 `update:*` tasks; each phase marks its own task `in_progress` before its work (and before any `Skill(onboard:generate)`/`Skill(onboard:research)` dispatch) and `completed` after. Those internal skills are **task-blind** — invoking `generate` inside Phase 6 does NOT spawn its own list. The enum is exactly `pending`/`in_progress`/`completed`/`deleted` — no "blocked"/"cancelled". The Phase 5 approve-gate stays `in_progress` while awaiting the Step 6 decision; Approve (`Apply all`, or `Review and pick` with ≥1 offer) → `completed` then proceed; an empty `Review and pick` selection that loops → no change; `Apply later`/`Skip / dismiss` → mark tasks 5/6/7 `deleted`. The list is **in-session visibility only** — the durable record is the on-disk meta/snapshots. When Phase 0 routes into `adopt`, adopt owns its own `adopt:` list; the two never touch each other's tasks.
+- **Require a baseline before drift work** — if `onboard-meta.json` is missing, halt at Step 1. When foreign tooling is present, offer `/onboard:adopt` to synthesize the baseline (then continue); otherwise direct the developer to `/onboard:start`. Never run drift application without a baseline.
 - **All upgrades require explicit approval** — never apply a detected drift item without the developer selecting it in the Step 6 `AskUserQuestion` call. "Apply later" is a valid answer; "Apply all" still requires the pre-question selection, not a silent auto-apply.
 - **Never overwrite user-customized files without per-item choice** — files with a modified or absent maintenance header are flagged and require a merge/replace/skip decision before any change is made.
 - **User-edits in frontmatter are display-only, never rewritten** — for skill, agent, and output-style frontmatter drift, `userEdit` items are shown for awareness only. Onboard updates the snapshot to accept the edit but never overwrites the hand-edited value.

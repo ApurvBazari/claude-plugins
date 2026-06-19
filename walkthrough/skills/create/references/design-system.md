@@ -52,6 +52,8 @@ html[data-theme="light"]{
   `.sec-label::before` prints `counter(sec,decimal-leading-zero) " \2014 "`. Authors write only the
   label text — never a hand-typed number. The hero has no `.sec-label`, so numbering starts at the
   first real section.
+- **Sheet (detail modal):** a centered native `<dialog class="sheet">` (`max-width:min(900px,92vw)`, `max-height:86vh`, internal scroll) opened with `showModal()` so it lives in the browser top layer (free focus-trap, top-down Escape, stacking). Its `::backdrop` is a token dim — `color-mix(in srgb,var(--bg-deep) …,transparent)` — plus `backdrop-filter:blur(6px) saturate(140%)`, with the solid dim as the no-`backdrop-filter` fallback; entrance via the `sheetIn` keyframe on `var(--ease)`, disabled under `prefers-reduced-motion`. Tokens only — the backdrop never uses raw hex.
+- **Structured detail (`sf-*`):** the glance pane and the sheet render ONE structured-content vocabulary — `sf-h` heading, `sf-summary`, `sf-where`/`sf-loc` location chips, `sf-code` annotated blocks, `sf-points`, `sf-related` chips — built by the shared `renderSurface` for the pane and pre-rendered for the sheet. Omit-empty per field; tokens only.
 
 ```css
 /* grain overlay — copy the exact body::after rule from seed.html */

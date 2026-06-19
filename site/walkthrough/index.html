@@ -36,7 +36,7 @@ nav{position:fixed;top:0;left:0;right:0;height:54px;z-index:100;backdrop-filter:
 .dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2.5s infinite;}
 .theme-btn{cursor:pointer;font-family:var(--mono);font-size:.62rem;color:var(--ts);border:1px solid var(--border);padding:.28rem .6rem;border-radius:6px;background:none;}
 .progress{position:fixed;top:54px;left:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--blue));z-index:101;width:0;box-shadow:0 0 8px var(--accent-glow);}
-main{max-width:1180px;margin:0 auto;padding:0 1.6rem;padding-top:78px;}
+main{max-width:1180px;margin:0 auto;padding:0 1.6rem;padding-top:78px;counter-reset:sec;}
 .eyebrow{font-family:var(--mono);font-size:.68rem;color:var(--accent);text-transform:uppercase;letter-spacing:.18em;display:inline-flex;align-items:center;gap:.6rem;margin-bottom:.8rem;}
 .eyebrow::before{content:'';width:26px;height:1px;background:var(--accent);}
 h1{font-family:var(--serif);font-size:clamp(2.4rem,6vw,4rem);font-weight:400;line-height:1.04;letter-spacing:-.025em;margin:.2rem 0;max-width:880px;}
@@ -47,7 +47,8 @@ p{color:var(--ts);font-size:.92rem;line-height:1.7;max-width:720px;}
 p code,li code{font-family:var(--mono);font-size:.8rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
 section{padding:4rem 0 2rem;scroll-margin-top:70px;opacity:0;transform:translateY(24px);transition:opacity .7s var(--ease),transform .7s var(--ease);}
 section.vis{opacity:1;transform:none;}
-.sec-label{font-family:var(--mono);font-size:.65rem;color:var(--tm);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.5rem;}
+.sec-label{counter-increment:sec;font-family:var(--mono);font-size:.65rem;color:var(--tm);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.5rem;}
+.sec-label::before{content:counter(sec,decimal-leading-zero) " \2014 ";}
 /* hero stats */
 .hstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:1.8rem;}
 .hstat{background:var(--bg-card);padding:1.1rem 1.2rem;}
@@ -84,29 +85,27 @@ section.vis{opacity:1;transform:none;}
 .cb-body code{color:var(--tp);}
 /* flow / pipeline diagram */
 .flow{display:flex;align-items:center;flex-wrap:wrap;gap:.4rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1.2rem 0;}
-.fnode{flex:1;min-width:110px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:.8rem .9rem;font-family:var(--mono);font-size:.7rem;cursor:pointer;transition:all .3s var(--ease);}
-.fnode:hover{border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow);transform:scale(1.03);}
+.fnode{flex:1;min-width:104px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:.8rem .9rem;font-family:var(--mono);font-size:.7rem;cursor:pointer;transition:all .3s var(--ease);}
+.fnode:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 8px 32px -8px var(--accent-glow);transform:scale(1.03);}
 .fnode .nl{font-size:.55rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;}
 .fnode.accent{border-color:color-mix(in srgb,var(--accent) 40%,transparent);background:linear-gradient(135deg,var(--bg-elevated),var(--accent-soft));}
-.fnode.gate{border-style:dashed;border-color:var(--border-strong);background:var(--bg-card);}
-.fnode.gate .nl{color:var(--accent);}
+.fnode.gate{border-color:color-mix(in srgb,var(--purple) 35%,transparent);background:linear-gradient(135deg,var(--bg-elevated),var(--purple-soft));}
+.fnode.gate .nl{color:var(--purple);}
 .farr{color:var(--border-strong);font-size:1.1rem;}
-/* converge diagram — two input lanes merging into the shared visual layer */
-.converge{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1.2rem 0;display:flex;align-items:center;gap:.9rem;flex-wrap:wrap;}
-.conv-lanes{display:flex;flex-direction:column;gap:.7rem;flex:1;min-width:200px;}
-.conv-lane{background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:.8rem .95rem;cursor:pointer;transition:all .3s var(--ease);}
-.conv-lane:hover{border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow);}
-.conv-lane .nl{font-size:.55rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);}
-.conv-lane .lt{font-family:var(--mono);font-size:.74rem;color:var(--tp);margin-top:.15rem;}
-.conv-lane .ld{font-size:.72rem;color:var(--ts);margin-top:.2rem;line-height:1.5;}
-.conv-merge{color:var(--border-strong);font-size:1.4rem;}
-.conv-core{flex:1;min-width:150px;background:linear-gradient(135deg,var(--bg-elevated),var(--accent-soft));border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);border-radius:10px;padding:1rem;cursor:pointer;transition:all .3s var(--ease);}
-.conv-core:hover{box-shadow:0 0 24px var(--accent-glow);transform:scale(1.02);}
-.conv-core .nl{font-size:.55rem;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);}
-.conv-core .ct{font-family:var(--serif);font-size:1.15rem;color:var(--tp);margin-top:.2rem;line-height:1.2;}
-.conv-out{flex:0 0 auto;text-align:center;}
-.conv-out .nl{font-size:.55rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);margin-bottom:.3rem;}
-.conv-artifact{font-family:var(--mono);font-size:.7rem;color:var(--accent);background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);padding:.55rem .7rem;border-radius:8px;}
+/* converge: two input lanes -> shared layer -> artifact (bespoke, primitives only) */
+.converge{display:flex;align-items:stretch;flex-wrap:wrap;gap:.6rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1.2rem 0;}
+.conv-lanes{display:flex;flex-direction:column;gap:.6rem;flex:1.4;min-width:230px;}
+.conv-lane{background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:.8rem .9rem;cursor:pointer;transition:all .3s var(--ease);}
+.conv-lane:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 8px 32px -8px var(--accent-glow);}
+.conv-lane .nl,.conv-core .nl,.conv-out .nl{font-family:var(--mono);font-size:.55rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;}
+.conv-lane .lt{font-family:var(--mono);font-size:.78rem;color:var(--accent);margin:.2rem 0 .25rem;}
+.conv-lane .ld{font-size:.74rem;color:var(--ts);line-height:1.5;}
+.conv-merge{align-self:center;color:var(--border-strong);font-size:1.2rem;}
+.conv-core{flex:1;min-width:150px;display:flex;flex-direction:column;justify-content:center;background:linear-gradient(135deg,var(--bg-elevated),var(--accent-soft));border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);border-radius:10px;padding:.9rem;cursor:pointer;transition:all .3s var(--ease);}
+.conv-core:hover{box-shadow:0 0 0 1px var(--accent),0 8px 32px -8px var(--accent-glow);}
+.conv-core .ct{font-family:var(--mono);font-size:.72rem;color:var(--tp);margin-top:.25rem;line-height:1.5;}
+.conv-out{display:flex;flex-direction:column;justify-content:center;min-width:120px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:.9rem;}
+.conv-out .conv-artifact{font-family:var(--serif);font-size:1.1rem;color:var(--tp);margin-top:.2rem;}
 /* skills reference table — same primitives as compare-table */
 .ref-table{width:100%;border-collapse:separate;border-spacing:0;font-size:.82rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:1.2rem 0;}
 .ref-table th{font-family:var(--mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);padding:.85rem 1.25rem;text-align:left;background:var(--bg-elevated);border-bottom:1px solid var(--border);font-weight:500;}
@@ -114,9 +113,10 @@ section.vis{opacity:1;transform:none;}
 .ref-table tr:last-child td{border-bottom:none;}
 .ref-table tr:hover td{background:var(--bg-card-hover);}
 .ref-table .slash{font-family:var(--mono);font-size:.76rem;color:var(--accent);white-space:nowrap;}
+.ref-table .cell-mode{font-family:var(--mono);font-size:.7rem;color:var(--ts);white-space:nowrap;}
 .ref-table .tag{font-family:var(--mono);font-size:.58rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);border:1px solid var(--border);padding:.12rem .4rem;border-radius:4px;display:inline-block;}
 .ref-table .tag.auto{color:var(--green);border-color:color-mix(in srgb,var(--green) 35%,transparent);background:var(--green-soft);}
-.ref-table .cell-mode{font-family:var(--mono);font-size:.7rem;color:var(--ts);white-space:nowrap;}
+.ref-table .tag.hidden-int{color:var(--purple);border-color:color-mix(in srgb,var(--purple) 35%,transparent);background:var(--purple-soft);}
 .cell-mono{font-family:var(--mono);font-size:.74rem;color:var(--accent);}
 /* key–value metadata grid */
 .edge-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:.7rem;margin-top:1rem;}
@@ -143,13 +143,15 @@ section.vis{opacity:1;transform:none;}
       <a href="#what">What it does</a>
       <a href="#modes">Two inputs</a>
       <a href="#pipeline">Pipeline</a>
+      <a href="#surfaces">Detail surfaces</a>
       <a href="#skills">Skills</a>
       <a href="#contained">Self-contained</a>
+      <a href="#cowork">In Cowork</a>
       <a href="#example">Example</a>
       <a href="#isnt">Is / isn't</a>
     </div>
     <div style="display:flex;align-items:center;gap:.8rem">
-      <div class="nav-meta"><span class="dot"></span> PLUGIN · v1.0.0</div>
+      <div class="nav-meta"><span class="dot"></span> PLUGIN · v1.1.0</div>
       <button class="theme-btn" onclick="tgl()">◑ THEME</button></div>
   </div></nav>
   <div class="progress" id="prog"></div>
@@ -157,7 +159,7 @@ section.vis{opacity:1;transform:none;}
     <section id="top" class="vis" style="padding-top:2.4rem">
       <div class="eyebrow">claude-plugins · walkthrough</div>
       <h1>Render a session — or any subject — as <em>explorable HTML</em>.</h1>
-      <p class="lede">walkthrough turns "what did we just do" into a self-contained interactive page — prose, architecture diagrams, decision records, and a file/timeline view — instead of a scroll back through the transcript. It works from <strong>two kinds of input</strong>: a <em>session</em> or a <em>subject</em>. Both render to the same house style.</p>
+      <p class="lede">walkthrough turns "what did we just do" into a self-contained interactive page — prose, architecture diagrams, decision records, and a file/timeline view — instead of a scroll back through the transcript. It works from <strong>two kinds of input</strong>: a <em>session</em> or a <em>subject</em> (a plugin, the marketplace, any path). Both render to the same house style.</p>
       <div class="chips">
         <span class="chip accent">interactive-html</span>
         <span class="chip">session-visualization</span>
@@ -168,6 +170,7 @@ section.vis{opacity:1;transform:none;}
         <div class="cb-head"><span class="cb-file">install</span><span class="cb-lang">bash</span></div>
         <pre class="cb-body"><code>claude plugin install walkthrough@apurvbazari-plugins</code></pre>
       </div>
+      <p style="margin-top:.9rem;font-size:.82rem;color:var(--tm)">That's it. No setup step, no configuration file required.</p>
       <div class="hstats">
         <div class="hstat"><div class="v"><em>3</em></div><div class="l">user skills</div></div>
         <div class="hstat"><div class="v">2</div><div class="l">input modes</div></div>
@@ -178,36 +181,36 @@ section.vis{opacity:1;transform:none;}
     </section>
 
     <section id="what">
-      <div class="sec-label">01 — what it does</div>
+      <div class="sec-label">what it does</div>
       <h2>A composed document, <em>not</em> a transcript dump</h2>
-      <p class="lede">Open the file in any browser and you get a synthesized document — a summary and type tags, architecture and flow diagrams as inline SVG, decision records (what was chosen, what was rejected, why), a file-touch list with real <code>path:line</code> references, and a timeline where the work has one.</p>
-      <p>For richer surfaces there are two interactive components: an <strong>interactive explorer</strong> — a selector that drives a live diagram region and a detail pane from one shared data model, for navigating relationships in a multi-component architecture rather than reading a static diagram — and a <strong>data-driven step timeline</strong> — phases of parallel and sequential steps with source pills and micro-cycles, for sessions that cover a pipeline, workflow, or multi-phase build.</p>
-      <p>Detail is clickable: expand a node or a decision to see the supporting context. Components adapt to the content — the catalog is a floor, not a ceiling. When something fits no off-the-shelf component, a bespoke one is composed from the same design-system primitives so it still looks native, and empty sections are omitted rather than stubbed. After writing the file, <code>create</code> surfaces a short <strong>coverage summary</strong> — what made it into the document and what was intentionally omitted — so you can spot anything left out before you close the session.</p>
+      <p class="lede">Open the file in any browser and you get a synthesized document — a summary and type tags for the session, architecture and flow diagrams rendered as inline SVG, decision records (what was chosen, what was rejected, why), a file-touch list with real <code>path:line</code> references, and a timeline and metrics where the session has them.</p>
+      <p>For richer surfaces there are two interactive components: an <strong>interactive explorer</strong> — a selector that drives a live diagram region and a detail pane from one shared data model, useful for multi-component architectures where you want to navigate relationships rather than read a static diagram — and a <strong>data-driven step timeline</strong> — phases of parallel and sequential steps with source pills and micro-cycles, useful when the session covers a pipeline, workflow, or multi-phase build.</p>
+      <p>Components adapt to the session — the catalog is a floor, not a ceiling. When content fits no off-the-shelf component, a bespoke one is composed from the same design-system primitives so it still looks native, and empty sections are omitted rather than stubbed. After writing the file, <code>create</code> surfaces a short <strong>coverage summary</strong> — what made it into the document and what was intentionally omitted — so you can spot anything left out before you close the session.</p>
       <div class="callout">
         <h4>No setup, no config</h4>
-        <p>Install and run. There is no setup step and no configuration file required — <code>/walkthrough:create [focus]</code> produces a readable artifact of the session whenever you want one: after a debugging marathon, at the end of a feature, before a handoff, or to share with someone who wasn't in the room.</p>
+        <p>Install and run. There is no setup step and no configuration file required — <code>/walkthrough:create [focus]</code> produces a readable artifact of the session whenever you want one: after a debugging marathon, at the end of a feature, before a handoff, or to share with someone who wasn't in the room. With no argument it covers the whole session.</p>
       </div>
     </section>
 
     <section id="modes">
-      <div class="sec-label">02 — the core idea</div>
+      <div class="sec-label">the core idea</div>
       <h2>Two inputs, <em>one</em> visual layer</h2>
       <p class="lede">Everything walkthrough renders comes from one of two input modes. A <strong>session</strong> drives <code>create</code> and <code>update</code>; a <strong>subject</strong> drives <code>document</code>. The two lanes converge on the same shared renderer and emit one portable HTML file. Click a lane for detail.</p>
       <div class="converge" aria-label="Two input modes converging on the shared visual layer">
         <div class="conv-lanes">
-          <div class="conv-lane" data-d="mode-session" onclick="openD('mode-session')" tabindex="0" role="button" aria-label="Session input mode — create and update">
+          <div class="conv-lane" onclick="openD('mode-session')" tabindex="0" role="button" aria-label="Session input mode — create and update">
             <div class="nl">input · session</div>
             <div class="lt">create · update</div>
             <div class="ld">The current conversation — synthesized into a session model (sections, nodes, decisions, files, timeline).</div>
           </div>
-          <div class="conv-lane" data-d="mode-subject" onclick="openD('mode-subject')" tabindex="0" role="button" aria-label="Subject input mode — document">
+          <div class="conv-lane" onclick="openD('mode-subject')" tabindex="0" role="button" aria-label="Subject input mode — document">
             <div class="nl">input · subject</div>
             <div class="lt">document</div>
             <div class="ld">A plugin, the marketplace, or any path — README + manifest are canonical, synthesized into a subject model.</div>
           </div>
         </div>
         <span class="conv-merge">→</span>
-        <div class="conv-core" data-d="visual-layer" onclick="openD('visual-layer')" tabindex="0" role="button" aria-label="Shared visual layer">
+        <div class="conv-core" onclick="openD('visual-layer')" tabindex="0" role="button" aria-label="Shared visual layer">
           <div class="nl">shared visual layer</div>
           <div class="ct">design system · components · scaffold · JS</div>
         </div>
@@ -217,41 +220,58 @@ section.vis{opacity:1;transform:none;}
           <div class="conv-artifact">one .html file</div>
         </div>
       </div>
-      <p>The visual layer is reused <strong>verbatim</strong> across all three skills — one house style, two themes, an open component system, everything inlined. Only the <em>model</em> and the <em>gathering</em> differ: <code>document</code> swaps in its own <code>subject-model</code> and <code>gather-subject</code> where <code>create</code> uses the session model. That shared layer is why a session recap and a plugin docs page are recognizably the same artifact.</p>
+      <p>The visual layer is reused <strong>verbatim</strong> across all three skills — one house style, two themes, an open component system, everything inlined. Only the <em>model</em> and the <em>gathering</em> differ: <code>document</code> swaps in its own subject model where <code>create</code> uses the session model. That shared layer is why a session recap and a plugin docs page are recognizably the same artifact.</p>
     </section>
 
     <section id="pipeline">
-      <div class="sec-label">03 — architecture</div>
+      <div class="sec-label">architecture</div>
       <h2>The <em>model-before-markup</em> pipeline</h2>
-      <p class="lede">Every skill runs a fixed pipeline: the full structured model is built before a single HTML tag is written, and two quality gates bracket the render. <strong>This page was produced by <code>/walkthrough:document</code> running exactly this flow</strong> over the plugin's README and manifest. Click any step for detail.</p>
+      <p class="lede"><code>create</code> runs a fixed five-stage pipeline: the full structured model is built before a single HTML tag is written, and two quality gates bracket the render. <strong>This page was produced by <code>/walkthrough:document</code> running this same flow</strong> over the plugin's README and manifest. Click any step for detail.</p>
       <div class="flow" aria-label="walkthrough pipeline — five stages bracketed by two gates">
-        <div class="fnode" data-d="gather" onclick="openD('gather')" tabindex="0" role="button" aria-label="Stage 1 gather"><div class="nl">stage 1</div>gather</div>
+        <div class="fnode" onclick="openD('gather')" tabindex="0" role="button" aria-label="Stage 1 gather"><div class="nl">stage 1</div>gather</div>
         <span class="farr">→</span>
-        <div class="fnode" data-d="synthesize" onclick="openD('synthesize')" tabindex="0" role="button" aria-label="Stage 2 synthesize"><div class="nl">stage 2</div>synthesize</div>
+        <div class="fnode" onclick="openD('synthesize')" tabindex="0" role="button" aria-label="Stage 2 synthesize"><div class="nl">stage 2</div>synthesize</div>
         <span class="farr">→</span>
-        <div class="fnode gate" data-d="coverage" onclick="openD('coverage')" tabindex="0" role="button" aria-label="Gate coverage critic"><div class="nl">gate</div>coverage critic</div>
+        <div class="fnode gate" onclick="openD('coverage')" tabindex="0" role="button" aria-label="Gate coverage critic"><div class="nl">gate</div>coverage critic</div>
         <span class="farr">→</span>
-        <div class="fnode" data-d="select" onclick="openD('select')" tabindex="0" role="button" aria-label="Stage 3 select"><div class="nl">stage 3</div>select</div>
+        <div class="fnode" onclick="openD('select')" tabindex="0" role="button" aria-label="Stage 3 select"><div class="nl">stage 3</div>select</div>
         <span class="farr">→</span>
-        <div class="fnode accent" data-d="assemble" onclick="openD('assemble')" tabindex="0" role="button" aria-label="Stage 4 assemble"><div class="nl">stage 4</div>assemble</div>
+        <div class="fnode accent" onclick="openD('assemble')" tabindex="0" role="button" aria-label="Stage 4 assemble"><div class="nl">stage 4</div>assemble</div>
         <span class="farr">→</span>
-        <div class="fnode gate" data-d="selfcheck" onclick="openD('selfcheck')" tabindex="0" role="button" aria-label="Gate self-check"><div class="nl">gate</div>self-check</div>
+        <div class="fnode gate" onclick="openD('selfcheck')" tabindex="0" role="button" aria-label="Gate self-check"><div class="nl">gate</div>self-check</div>
         <span class="farr">→</span>
-        <div class="fnode" data-d="write" onclick="openD('write')" tabindex="0" role="button" aria-label="Stage 5 write"><div class="nl">stage 5</div>write</div>
+        <div class="fnode" onclick="openD('write')" tabindex="0" role="button" aria-label="Stage 5 write"><div class="nl">stage 5</div>write</div>
       </div>
-      <p>The diagram is exactly what <code>/walkthrough:document</code> runs to build a page — gather reads the subject's README + manifest, synthesize builds the subject model, and the two gates and the renderer are shared. <code>create</code> runs the same flow over a session instead of a subject; <code>update</code> adds two stages in front — <em>reconstruct</em> the prior model from the rendered HTML and <em>merge</em> in explicitly-named files — before re-entering it. The gates also back the <strong>coverage summary</strong> surfaced after every run.</p>
+      <p><code>create</code> runs this flow over a session: <em>gather</em> reads cited source files so <code>path:line</code> refs are real, <em>synthesize</em> builds the session model, <em>select</em> maps it to components, <em>assemble</em> inlines the scaffold, and <em>write</em> emits the file. Rendering never starts from the raw transcript — the full model is built first. <code>document</code> runs the same flow over a subject instead; <code>update</code> adds two stages in front — <em>reconstruct</em> the prior model from the rendered HTML and <em>merge</em> in explicitly-named files — before re-entering it.</p>
+    </section>
+
+    <section id="surfaces">
+      <div class="sec-label">interactivity</div>
+      <h2>Rich <em>detail surfaces</em></h2>
+      <p class="lede">Click a node, card, or cross-link and its detail opens. Light detail opens in a structured glance <strong>pane</strong>; richer content — a hosted diagram, code — opens in a centered <strong>sheet</strong> that can itself open further detail, nested. Click a surface for detail.</p>
+      <div class="flow" aria-label="A click routes to a glance pane or a centered sheet, which can open further detail nested">
+        <div class="fnode" onclick="openD('surf-trigger')" tabindex="0" role="button" aria-label="Click a node, card, or cross-link"><div class="nl">trigger</div>node · card · link</div>
+        <span class="farr">→</span>
+        <div class="fnode" onclick="openD('surf-pane')" tabindex="0" role="button" aria-label="Light detail opens in a glance pane"><div class="nl">light</div>glance pane</div>
+        <span class="farr">→</span>
+        <div class="fnode accent" onclick="openD('surf-sheet')" tabindex="0" role="button" aria-label="Rich detail opens in a centered sheet"><div class="nl">rich</div>centered sheet</div>
+        <span class="farr">→</span>
+        <div class="fnode" onclick="openD('surf-nested')" tabindex="0" role="button" aria-label="A sheet can open further detail, nested"><div class="nl">deeper</div>nested detail</div>
+      </div>
+      <p>The pane is the lightweight right-edge glance; the sheet is a centered surface roomy enough to host a full diagram or code block. A surface can itself open another — so a node opens a sheet, and a cross-link inside that sheet opens the next detail — letting you navigate relationships in a multi-component architecture rather than read one static diagram. Empty fields are omitted rather than stubbed, so each surface shows only what it actually has.</p>
     </section>
 
     <section id="skills">
-      <div class="sec-label">04 — reference</div>
+      <div class="sec-label">reference</div>
       <h2>Three skills, one <em>shared</em> renderer</h2>
-      <p class="lede">All three are <code>/walkthrough:&lt;name&gt;</code>, all default frontmatter — user- <em>and</em> intent-invocable. Typing the slash form works; so does asking in plain language. There are no hidden building blocks, no agents, no hooks, no scripts.</p>
+      <p class="lede">The three user-facing skills are <code>/walkthrough:&lt;name&gt;</code>, all default frontmatter — user- <em>and</em> intent-invocable. Typing the slash form works; so does asking in plain language. Alongside them sits one <strong>internal</strong> building block — <code>render</code> (<code>user-invocable: false</code>), consumed by the <code>lens</code> plugin. No agents, no hooks, no scripts.</p>
       <table class="ref-table">
         <thead><tr><th>Skill</th><th>Input</th><th>What it does</th></tr></thead>
         <tbody>
           <tr><td class="slash">/walkthrough:create</td><td class="cell-mode">session <span class="tag auto">auto</span></td><td>Renders the current session from scratch through the five-stage pipeline. The optional <span class="cell-mono">[focus]</span> argument scopes the synthesis. Also fires on plain-language intent — "visualize this session", "walk me through what we did", "walk me through it" (or "this" / "that"), or "make a session recap".</td></tr>
-          <tr><td class="slash">/walkthrough:update</td><td class="cell-mode">session <span class="tag auto">auto</span></td><td>Refreshes an existing walkthrough in place — reconstructs the prior model from the rendered HTML, folds in the spec/source files you name, and overwrites the <strong>same file</strong>. Always asks which document first.</td></tr>
+          <tr><td class="slash">/walkthrough:update</td><td class="cell-mode">session <span class="tag auto">auto</span></td><td>Refreshes an existing walkthrough in place — reconstructs the prior model from the rendered HTML, folds in the spec/source files you name, and overwrites the <strong>same file</strong>. It always asks which document to refresh first; nothing is overwritten silently.</td></tr>
           <tr><td class="slash">/walkthrough:document</td><td class="cell-mode">subject <span class="tag auto">auto</span></td><td>Renders a subject — a plugin, the marketplace, or any path — instead of a session. README + manifest are canonical. This is what builds every page under <span class="cell-mono">site/</span>, including this one.</td></tr>
+          <tr><td class="slash">render</td><td class="cell-mode">internal</td><td>Renders a model already in context straight to HTML (skips gather + synthesize), reusing the same visual layer. Internal (<span class="cell-mono">user-invocable: false</span>) — not a user command; it exists for other plugins to call, and the <code>lens</code> review companion uses it to render its findings.</td></tr>
         </tbody>
       </table>
       <div class="callout">
@@ -261,20 +281,34 @@ section.vis{opacity:1;transform:none;}
     </section>
 
     <section id="contained">
-      <div class="sec-label">05 — the core promise</div>
+      <div class="sec-label">the core promise</div>
       <h2>Self-contained, <em>tokens only</em></h2>
       <p class="lede">Two invariants make every walkthrough recognizably the same artifact and portable anywhere. They are non-negotiable.</p>
       <div class="edge-grid">
         <div class="edge"><div class="n">self-contained</div><div class="t">Everything inlined</div><p>All CSS, JS, and SVG live in the single HTML file. The <strong>only</strong> external resource is one Google Fonts <span class="cell-mono">@import</span> — no <span class="cell-mono">&lt;script src&gt;</span>, no <span class="cell-mono">&lt;link rel=stylesheet&gt;</span>, no <span class="cell-mono">&lt;img&gt;</span>, no CDN.</p></div>
         <div class="edge"><div class="n">tokens only</div><div class="t">One house style</div><p>Never a raw hex, font, or spacing literal — everything goes through CSS custom properties. Both themes are <span class="cell-mono">:root</span> token blocks; the toggle swaps token sets, not stylesheets.</p></div>
         <div class="edge"><div class="n">two themes</div><div class="t">Dark + warm-light</div><p>One in-document toggle, viewer's choice per-view. Nothing about it requires a server or a build step.</p></div>
-        <div class="edge"><div class="n">open components</div><div class="t">Floor, not ceiling</div><p>Catalog entries used verbatim where they fit; bespoke components composed from the same primitives where they don't — passing a looks-native checklist. A <span class="cell-mono">.chip</span> primitive (five status roles: <span class="cell-mono">ok</span>, <span class="cell-mono">info</span>, <span class="cell-mono">warn</span>, <span class="cell-mono">danger</span>, <span class="cell-mono">neutral</span>) drops a status badge inline in any component.</p></div>
+        <div class="edge"><div class="n">open components</div><div class="t">Floor, not ceiling</div><p>Catalog entries used verbatim where they fit; bespoke components composed from the same primitives where they don't — passing a looks-native checklist. Empty sections are omitted rather than stubbed.</p></div>
       </div>
-      <p style="margin-top:1.4rem">The result renders with no network beyond that one font fetch — copy the file anywhere, email it, drop it in a wiki, and it works without the plugin, without a server, and without a connection. Walkthroughs are written to <code>.claude/walkthrough/&lt;YYYY-MM-DD-HHMM&gt;-&lt;slug&gt;.html</code>; on first run <code>create</code> offers to add that directory to <code>.gitignore</code>, since a session artifact can contain code and prose you exchanged. When a walkthrough on the same subject already exists, a <strong>proliferation guard</strong> kicks in — <code>create</code> asks whether to update it in place, write a new versioned file, or overwrite, rather than silently piling up <code>-2</code>/<code>-3</code> copies.</p>
+      <p style="margin-top:1.4rem">The result renders with no network beyond that one font fetch — copy the file anywhere, email it, drop it in a wiki, and it works without the plugin, without a server, and without a connection. Walkthroughs are written to <code>.claude/walkthrough/&lt;YYYY-MM-DD-HHMM&gt;-&lt;slug&gt;.html</code>. When a walkthrough on the same subject already exists, <code>create</code> asks whether to update it in place, write a new versioned file, or overwrite — rather than silently adding a <code>-2</code>/<code>-3</code> suffix. On the first run in a repo, it offers to add the directory to <code>.gitignore</code> (a session artifact can contain code and prose you exchanged) and remembers your choice in <code>settings.md</code>.</p>
+    </section>
+
+    <section id="cowork">
+      <div class="sec-label">in cowork</div>
+      <h2>Works in <em>Claude Cowork</em></h2>
+      <p class="lede">walkthrough is a <strong>pure-skill plugin</strong> — no hooks, no shell scripts, no agents — so it installs and runs in <a href="https://claude.com/product/cowork">Claude Cowork</a> exactly as it does in Claude Code. Its one portable HTML file is a natural Cowork deliverable: run it and you get an explorable page you can email, drop in a wiki, or open offline.</p>
+      <div class="edge-grid">
+        <div class="edge"><div class="n">runs anywhere skills run</div><div class="t">No hooks, no scripts</div><p>Nothing in walkthrough depends on plugin hooks — it's skills over a shared visual layer, so it loads and runs as a first-class citizen in Cowork, not just Claude Code.</p></div>
+        <div class="edge"><div class="n">adaptive output</div><div class="t">Finds a visible home</div><p>A Cowork folder is often not a git repo, so on first run there <code>create</code> asks where to write — a visible <span class="cell-mono">walkthroughs/</span> folder or the hidden <span class="cell-mono">.claude/walkthrough/</span> — and remembers the choice in <span class="cell-mono">settings.md</span>.</p></div>
+      </div>
+      <div class="callout">
+        <h4>Git repos are unchanged</h4>
+        <p>In a git repository — the typical Claude Code case — nothing changes: walkthroughs go to <code>.claude/walkthrough/</code> with no new prompt. The location question appears only in a non-git folder.</p>
+      </div>
     </section>
 
     <section id="example">
-      <div class="sec-label">06 — example</div>
+      <div class="sec-label">example</div>
       <h2>Create, then <em>refresh</em> in place</h2>
       <p class="lede"><code>/walkthrough:create architecture decisions</code> scopes a session recap to the decisions you made; <code>/walkthrough:update</code> later folds in a new spec and overwrites the same file.</p>
       <div class="codeblock">
@@ -303,7 +337,7 @@ write        overwrite the SAME file — no new file, no backup
 
 → same path, now its up-to-date self.</code></pre>
       </div>
-      <div class="legend" aria-label="Pipeline stage legend">
+      <div class="legend" aria-label="Pipeline lane legend">
         <span class="lg"><i style="background:var(--accent)"></i>shared renderer stage</span>
         <span class="lg"><i style="background:var(--green)"></i>session input (create / update)</span>
         <span class="lg"><i style="background:var(--blue)"></i>subject input (document)</span>
@@ -311,7 +345,7 @@ write        overwrite the SAME file — no new file, no backup
     </section>
 
     <section id="isnt">
-      <div class="sec-label">07 — boundaries</div>
+      <div class="sec-label">boundaries</div>
       <h2>What it <em>is</em> — and isn't</h2>
       <p class="lede">A walkthrough is a snapshot, not a live view. Knowing the boundary keeps expectations honest.</p>
       <div class="edge-grid">
@@ -327,7 +361,7 @@ write        overwrite the SAME file — no new file, no backup
         <a href="../">← marketplace</a>
         <a href="https://github.com/ApurvBazari/claude-plugins/tree/main/walkthrough">source on GitHub</a>
       </div>
-      <div class="meta">walkthrough · v1.0.0 · MIT · by Apurv Bazari</div>
+      <div class="meta">walkthrough · v1.1.0 · MIT · by Apurv Bazari</div>
     </div>
   </main>
   <aside class="panel" id="panel"><span class="x" onclick="closeD()">✕</span>
@@ -336,24 +370,27 @@ write        overwrite the SAME file — no new file, no backup
 const DET={
  'mode-session':{k:"Input mode",h:"Session",b:"The current conversation is the source of record — there is no repository scan. <code>create</code> renders it from scratch; <code>update</code> refreshes an existing document by reconstructing its model from the rendered HTML, then merging in named files. Both produce the session model: sections, nodes, edges, decisions, files, timeline."},
  'mode-subject':{k:"Input mode",h:"Subject",b:"A plugin, the whole marketplace, or any path. <code>document</code> reads the subject's own files — <code>README</code> + manifest are canonical, plus the <code>skills/</code> surface — and synthesizes the subject model. The page is a rendering of those sources, not a separately-maintained doc."},
- 'visual-layer':{k:"Shared",h:"Visual layer",b:"Reused verbatim across all three skills: the design system (tokens + both <code>:root</code> theme blocks), the interactivity JS (theme toggle, detail panel), the page scaffold, and the open component catalog. Only the model and the gathering differ between session and subject."},
+ 'visual-layer':{k:"Shared",h:"Visual layer",b:"Reused verbatim across all three skills: the design system (tokens + both <code>:root</code> theme blocks), the interactivity JS (theme toggle, detail surfaces), the page scaffold, and the open component catalog. Only the model and the gathering differ between session and subject."},
  gather:{k:"Stage 1",h:"gather",b:"Read any source file you intend to cite so <code>path:line</code> refs are real. For a session, the transcript is the source of record — no repo scan. For a subject, gather reads the README + manifest (canonical) and the skills surface."},
- synthesize:{k:"Stage 2",h:"synthesize",b:"Build the structured model BEFORE any HTML — for a session: <code>title</code>, <code>summary</code>, <code>typeTags</code>, <code>sections</code>, <code>nodes</code>, <code>edges</code>, <code>decisions</code>, <code>files</code>, <code>timeline</code>, <code>metrics</code>, <code>details</code>. The model is fully synthesized before a single tag is written."},
- coverage:{k:"Gate",h:"coverage critic",b:"After the model is synthesized, a salient-item coverage critic re-scans the source (for a subject, the README + manifest) so every important item is either in the model or deliberately out of scope. Omitted items are folded back in; intentional omissions feed the coverage note surfaced after the run. Shared by all three skills."},
+ synthesize:{k:"Stage 2",h:"synthesize",b:"Build the structured model BEFORE any HTML — for a session: <code>sections</code>, diagram <code>nodes</code>, <code>decisions</code>, <code>files</code>, <code>timeline</code>. The model is fully synthesized before a single tag is written — rendering never starts from the raw transcript."},
+ coverage:{k:"Gate",h:"coverage critic",b:"After the model is synthesized, a salient-item coverage critic re-scans the source (for a subject, the README + manifest) so every important item is either in the model or deliberately out of scope. Omitted items are folded back in; intentional omissions feed the coverage summary surfaced after the run."},
  select:{k:"Stage 3",h:"select",b:"Map the model to components via the authoring guide and the catalog. Apply “omit empty, never stub” — a component renders only when the model has real content. Where no catalog entry fits, compose a bespoke component from the same primitives."},
- assemble:{k:"Stage 4",h:"assemble",b:"Start from the page scaffold; inline the Google Fonts <code>@import</code> + both <code>:root</code> blocks, the shared JS, and the CSS/HTML for each chosen component plus its detail (<code>DET</code>) data. Read only the component group files for components you actually selected."},
- selfcheck:{k:"Gate",h:"self-check",b:"Before the file is written, a structural self-check runs on the assembled HTML — verifying self-containment, token-only CSS, ASCII-only styles, nav-to-section-id alignment, and detail-store key integrity. Failures are fixed and re-checked before write. Shared by all three skills."},
- write:{k:"Stage 5",h:"write",b:"Compute <code>.claude/walkthrough/&lt;YYYY-MM-DD-HHMM&gt;-&lt;slug&gt;.html</code>, create the dir if missing, handle the first-run gitignore prompt, then write and offer to open — never auto-open. A same-subject slug triggers the proliferation guard (update in place / new versioned file / overwrite) instead of a silent <code>-2</code>/<code>-3</code> suffix. For the docs site, <code>document</code> writes to the path given (e.g. <code>site/&lt;plugin&gt;/index.html</code>)."}
+ assemble:{k:"Stage 4",h:"assemble",b:"Start from the page scaffold; inline the Google Fonts <code>@import</code> + both <code>:root</code> blocks, the shared JS, and the CSS/HTML for each chosen component plus its detail data. Everything — CSS, JS, SVG — is inlined into the one file."},
+ selfcheck:{k:"Gate",h:"self-check",b:"Before the file is written, a structural self-check runs on the assembled HTML — verifying self-containment, token-only CSS, nav-to-section-id alignment, and detail-store integrity. Failures are fixed and re-checked before write."},
+ write:{k:"Stage 5",h:"write",b:"Write the file. For a session, that is <code>.claude/walkthrough/&lt;YYYY-MM-DD-HHMM&gt;-&lt;slug&gt;.html</code>, then offer to open — never auto-open. A same-subject slug prompts update-in-place / new versioned file / overwrite instead of a silent <code>-2</code>/<code>-3</code> suffix. For the docs site, <code>document</code> writes to the path given (e.g. <code>site/&lt;plugin&gt;/index.html</code>)."},
+ 'surf-trigger':{k:"Detail surfaces",h:"The trigger",b:"Any interactive node, card, or cross-link is clickable. The click routes its detail to the right surface — a light glance pane or a richer centered sheet — from one shared data model. Related: <code>surf-pane</code>, <code>surf-sheet</code>."},
+ 'surf-pane':{k:"Detail surfaces",h:"Glance pane",b:"The lightweight right-edge panel, for light details. Its structured glance shows only the fields the detail actually has — empty fields are omitted, never stubbed. Related: <code>surf-sheet</code>."},
+ 'surf-sheet':{k:"Detail surfaces",h:"Centered sheet",b:"A centered surface for richer content that the narrow pane can't hold — a hosted diagram, a code block. It is roomy enough to host a full catalog component. A sheet can itself open further detail. Related: <code>surf-nested</code>."},
+ 'surf-nested':{k:"Detail surfaces",h:"Nested detail",b:"A surface reached from inside a sheet opens further detail, nested — so you can follow a cross-link from one component to the next, navigating relationships in a multi-component architecture rather than reading one static diagram."}
 };
 const panel=document.getElementById('panel');
 function openD(id){const d=DET[id];if(!d)return;pk.textContent=d.k;ph.textContent=d.h;pbd.innerHTML=d.b;panel.classList.add('open');}
 function openCard(el){if(!el)return;pk.textContent=el.dataset.k||'Detail';ph.textContent=el.dataset.t||'';pbd.innerHTML=el.dataset.desc||'';panel.classList.add('open');}
 function closeD(){panel.classList.remove('open');}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeD();});
-function animate(scope){scope.querySelectorAll('.fil').forEach(f=>{f.style.width='0';requestAnimationFrame(()=>requestAnimationFrame(()=>{f.style.width=f.dataset.w+'%';}));});}
 function tgl(){const h=document.documentElement;const t=h.getAttribute('data-theme')==='dark'?'light':'dark';h.setAttribute('data-theme',t);try{localStorage.setItem('wt-theme',t);}catch(e){}}
 (function(){try{const t=localStorage.getItem('wt-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
-const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vis');const d=e.target.querySelector('.detail.show');if(d)animate(d);}}),{threshold:.1});
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vis');}}),{threshold:.1});
 document.querySelectorAll('section').forEach(s=>io.observe(s));
 addEventListener('scroll',()=>{const sc=scrollY/(document.body.scrollHeight-innerHeight)*100;if(prog)prog.style.width=sc+'%';
  let cur='';document.querySelectorAll('section[id]').forEach(s=>{if(scrollY>=s.offsetTop-120)cur=s.id;});

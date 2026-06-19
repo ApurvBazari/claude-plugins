@@ -1,6 +1,6 @@
 ---
 name: pickup
-description: Present a saved handoff to the user via AskUserQuestion (Execute / Edit / Discard / Save-for-later) and dispatch on their choice. Auto-invokes when the SessionStart hook has surfaced a handoff in additionalContext — that surfacing includes a routing instruction directing you here. Also invokable explicitly via /handoff:pickup.
+description: Use when a saved handoff is surfaced at SessionStart, or when the user runs /handoff:pickup, to resume prior work — presents the saved directive and dispatches on the user's choice.
 ---
 
 # Pickup Skill — Surface and Dispatch a Saved Handoff

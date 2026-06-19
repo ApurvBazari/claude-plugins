@@ -20,6 +20,7 @@ PASSED=0
 FAILED=0
 WARNINGS=0
 TOTAL=0
+IS_CANONICAL_STUB=0   # default; section 8 overrides to 1 when meta says stub-empty-repo
 
 pass() { PASSED=$((PASSED + 1)); TOTAL=$((TOTAL + 1)); echo "  PASS: $1"; }
 fail() { FAILED=$((FAILED + 1)); TOTAL=$((TOTAL + 1)); echo "  FAIL: $1"; }
@@ -494,35 +495,129 @@ fi
 echo ""
 
 # ─────────────────────────────────────────────────
-echo "### 12. Wizard telemetry (C4 release-gate sweep — wizardStatus added)"
+echo "### 12. Wizard telemetry (v3 collapsed wizard — canonical 5-key wizardStatus)"
 # ─────────────────────────────────────────────────
+# v3 dropped the "Choose Wizard Mode" / Quick-Mode-vs-Guided step and the Custom
+# preset. The canonical wizardStatus shape (wizard/SKILL.md Key Rule 7) has EXACTLY
+# 5 keys: presetUsed, exchangesUsed, phasesAsked, phasesSkipped, escapeHatchTriggered.
+#   - presetUsed enum: minimal | standard | comprehensive (NO custom/quick-mode/interactive)
+#   - escapeHatchTriggered: always false (escape hatch removed; key retained for shape stability)
 if [[ -f "$META" ]]; then
   HAS_WIZ=$(jq 'has("wizardStatus")' "$META" 2>/dev/null || echo "false")
   if [[ "$HAS_WIZ" == "true" ]]; then
     pass "telemetry: wizardStatus present"
-    # Expected sub-fields: presetUsed, exchangesUsed, phasesAsked, phasesSkipped, escapeHatchTriggered
+    # Canonical 5-key shape — every key MUST be present (empty arrays valid; missing keys not).
     for sub in presetUsed exchangesUsed phasesAsked phasesSkipped escapeHatchTriggered; do
       HAS_SUB=$(jq ".wizardStatus | has(\"${sub}\")" "$META" 2>/dev/null || echo "false")
       if [[ "$HAS_SUB" == "true" ]]; then
         pass "wizardStatus.${sub} present"
       else
-        warn "wizardStatus.${sub} missing"
+        fail "wizardStatus.${sub} missing — v3 canonical shape requires all 5 keys"
       fi
     done
+
+    # presetUsed enum: minimal | standard | comprehensive only.
+    PRESET_USED=$(jq -r '.wizardStatus.presetUsed // empty' "$META" 2>/dev/null)
+    case "$PRESET_USED" in
+      minimal|standard|comprehensive)
+        pass "wizardStatus.presetUsed=\"${PRESET_USED}\" (valid v3 enum)"
+        ;;
+      custom|quick-mode|interactive)
+        fail "wizardStatus.presetUsed=\"${PRESET_USED}\" is a dropped v2 value — must be minimal|standard|comprehensive"
+        ;;
+      "")
+        fail "wizardStatus.presetUsed missing or empty"
+        ;;
+      *)
+        fail "wizardStatus.presetUsed=\"${PRESET_USED}\" is not in {minimal|standard|comprehensive}"
+        ;;
+    esac
+
+    # escapeHatchTriggered: always false in v3 (escape hatch removed, key retained).
+    ESCAPE_HATCH=$(jq -r '.wizardStatus.escapeHatchTriggered' "$META" 2>/dev/null)
+    if [[ "$ESCAPE_HATCH" == "false" ]]; then
+      pass "wizardStatus.escapeHatchTriggered=false (v3 escape hatch removed; key retained)"
+    else
+      fail "wizardStatus.escapeHatchTriggered=\"${ESCAPE_HATCH}\" — v3 requires it to always be false"
+    fi
   else
     if [[ "$PROFILE" == "empty" ]]; then
       warn "wizardStatus missing (empty profile may skip)"
     else
-      fail "telemetry: wizardStatus missing — C4 requires per-run wizard telemetry"
+      fail "telemetry: wizardStatus missing — v3 requires per-run wizard telemetry"
     fi
+  fi
+
+  # wizardAnswers.selectedPreset enum: minimal | standard | comprehensive (dropped custom).
+  HAS_ANSWERS=$(jq 'has("wizardAnswers")' "$META" 2>/dev/null || echo "false")
+  if [[ "$HAS_ANSWERS" == "true" ]]; then
+    SELECTED_PRESET=$(jq -r '.wizardAnswers.selectedPreset // empty' "$META" 2>/dev/null)
+    case "$SELECTED_PRESET" in
+      minimal|standard|comprehensive)
+        pass "wizardAnswers.selectedPreset=\"${SELECTED_PRESET}\" (valid v3 enum)"
+        ;;
+      custom|quick-mode|interactive)
+        fail "wizardAnswers.selectedPreset=\"${SELECTED_PRESET}\" is a dropped v2 value — must be minimal|standard|comprehensive"
+        ;;
+      "")
+        # Stub-mode paths emit wizardAnswers:{} (no selectedPreset). Acceptable.
+        if [[ "$STUB_MODE" == "stub-empty-repo" || "$PROFILE" == "empty" ]]; then
+          pass "wizardAnswers.selectedPreset absent (acceptable for stub/empty path)"
+        else
+          fail "wizardAnswers.selectedPreset missing — v3 canonical shape requires it"
+        fi
+        ;;
+      *)
+        fail "wizardAnswers.selectedPreset=\"${SELECTED_PRESET}\" is not in {minimal|standard|comprehensive}"
+        ;;
+    esac
   fi
 fi
 echo ""
 
+# ─────────────────────────────────────────────────
+echo "### 13. v3 research artifacts (recon → profile → research spine)"
+# ─────────────────────────────────────────────────
+# The v3 flow runs onboard:research between profile-select and the grounded wizard.
+# The research engine ALWAYS writes .claude/onboard-research.json (every location
+# choice, including "none"); it writes docs/onboard/{research-dossier,architecture,
+# risk-register,glossary}.md ONLY when the per-run location choice is "committed".
+# The test harness runs /onboard:start manually and does not control that choice,
+# so the docs/onboard/ files are CONDITIONAL — present them as informational, never
+# a hard fail. (research/SKILL.md Step 7.)
+RESEARCH=".claude/onboard-research.json"
+if [[ -f "$RESEARCH" ]]; then
+  if jq empty "$RESEARCH" 2>/dev/null; then
+    pass "research: ${RESEARCH} exists and is valid JSON"
+  else
+    fail "research: ${RESEARCH} exists but is invalid JSON"
+  fi
+else
+  if [[ "$STUB_MODE" == "stub-empty-repo" || "$PROFILE" == "empty" ]]; then
+    warn "research: ${RESEARCH} absent (acceptable for stub/empty path)"
+  else
+    fail "research: ${RESEARCH} missing — v3 research engine always writes it"
+  fi
+fi
+
+# docs/onboard/ render artifacts — only when the run chose "committed". Conditional.
+DOCS_PRESENT=0
+for doc in research-dossier architecture risk-register glossary; do
+  if [[ -f "docs/onboard/${doc}.md" ]]; then
+    DOCS_PRESENT=$((DOCS_PRESENT + 1))
+  fi
+done
+if [[ "$DOCS_PRESENT" -eq 4 ]]; then
+  pass "research docs: all 4 docs/onboard/*.md present (run chose 'committed')"
+elif [[ "$DOCS_PRESENT" -eq 0 ]]; then
+  pass "research docs: docs/onboard/*.md absent (run chose 'local'/'none' — conditional, not required)"
+else
+  warn "research docs: ${DOCS_PRESENT}/4 docs/onboard/*.md present — expected all 4 or none"
+fi
 echo ""
 
 # ─────────────────────────────────────────────────
-echo "### 11. Plugin Integration slash-ref existence — no fabrications (Cluster 3)"
+echo "### 14. Plugin Integration slash-ref existence — no fabrications (Cluster 3)"
 # ─────────────────────────────────────────────────
 # Every /<plugin>:<slug> in the generated CLAUDE.md MUST correspond to an
 # actual file at <plugin>/commands/<slug>.md OR <plugin>/skills/<slug>/SKILL.md.
@@ -569,6 +664,147 @@ if [[ -f "CLAUDE.md" && "$IS_CANONICAL_STUB" -ne 1 ]]; then
   elif [ $TOTAL_REFS -eq 0 ]; then
     pass "Plugin Integration slash refs: none emitted (acceptable when no plugins installed)"
   fi
+fi
+echo ""
+
+# ─────────────────────────────────────────────────
+echo "### 15. v3 research consumption + verify-backlog (Plan 4b)"
+# ─────────────────────────────────────────────────
+# When a real /onboard:start run consumed research, generation records a minimal
+# metadata.research block and (when verified risk/test-gap claims existed) seeds
+# docs/feature-list.json in the evaluator-readable harness shape. Both are
+# CONDITIONAL on the run actually having research + findings, so absence is not a
+# hard fail here — this section is the dogfood gate, not a unit test.
+
+if [[ -f "$META" ]]; then
+  HAS_RESEARCH_META=$(jq 'has("research")' "$META" 2>/dev/null || echo "false")
+  if [[ "$HAS_RESEARCH_META" == "true" ]]; then
+    CONSUMED=$(jq -r '.research.consumed | if . == null then empty else tostring end' "$META" 2>/dev/null)
+    if [[ "$CONSUMED" == "true" ]]; then
+      # Minimal-useful block: all 5 keys must be present when consumed.
+      for sub in consumed depth claimsVerified backlogSeeded backlogItemCount; do
+        if [[ "$(jq ".research | has(\"${sub}\")" "$META" 2>/dev/null)" == "true" ]]; then
+          pass "metadata.research.${sub} present"
+        else
+          fail "metadata.research.${sub} missing — 4b minimal-useful block requires all 5 keys"
+        fi
+      done
+    elif [[ "$CONSUMED" == "false" ]]; then
+      pass "metadata.research.consumed=false (research-absent / regenerateOnly mode)"
+    else
+      fail "metadata.research present but .consumed is not a boolean"
+    fi
+  else
+    warn "metadata.research absent (run had no research, or pre-4b output — informational)"
+  fi
+fi
+
+# Verify-backlog: when seeded, docs/feature-list.json must be evaluator-readable.
+if [[ -f "docs/feature-list.json" ]]; then
+  if jq empty docs/feature-list.json 2>/dev/null; then
+    HAS_SPRINTS=$(jq 'has("sprints")' docs/feature-list.json 2>/dev/null || echo "false")
+    HAS_FEATURE_SHAPE=$(jq '[.sprints[]?.features[]? | has("id") and has("steps") and has("passes")] | (length > 0) and all' docs/feature-list.json 2>/dev/null || echo "false")
+    if [[ "$HAS_SPRINTS" == "true" && "$HAS_FEATURE_SHAPE" == "true" ]]; then
+      pass "feature-list: evaluator-readable harness shape (sprints[].features[].{id,steps,passes})"
+    elif [[ "$HAS_SPRINTS" == "true" ]]; then
+      warn "feature-list: sprints present but features missing id/steps/passes (or empty)"
+    else
+      warn "feature-list: present but not in sprints[] harness shape (may be a non-research list)"
+    fi
+  else
+    fail "feature-list: docs/feature-list.json is invalid JSON"
+  fi
+fi
+echo ""
+
+# ─────────────────────────────────────────────────
+echo "### 16. v3 re-research on update/evolve (Plan 4c)"
+# ─────────────────────────────────────────────────
+# When a real /onboard:update or /onboard:evolve re-grounded research, generation
+# records 4c re-research telemetry under metadata.research and merges the verify
+# backlog (features may carry a sourceClaim provenance). All assertions are
+# CONDITIONAL on a re-research having actually run — absence is not a hard fail.
+if [[ -f "$META" ]]; then
+  IS_RERESEARCH=$(jq -r '.research.reResearch // empty' "$META" 2>/dev/null)
+  if [[ "$IS_RERESEARCH" == "true" ]]; then
+    if [[ "$(jq '.research | has("refreshedDimensions")' "$META" 2>/dev/null)" == "true" ]]; then
+      pass "metadata.research.refreshedDimensions present (4c re-research run)"
+    else
+      fail "metadata.research.reResearch=true but refreshedDimensions missing"
+    fi
+    if [[ "$(jq -r '.research.escalatedToFull | type' "$META" 2>/dev/null)" == "boolean" ]]; then
+      pass "metadata.research.escalatedToFull is boolean"
+    else
+      fail "metadata.research.escalatedToFull missing or not boolean"
+    fi
+    if [[ "$(jq '.research.backlogMerged | has("added") and has("kept") and has("flaggedObsolete")' "$META" 2>/dev/null)" == "true" ]]; then
+      pass "metadata.research.backlogMerged has {added,kept,flaggedObsolete}"
+    else
+      fail "metadata.research.backlogMerged missing required counts"
+    fi
+  else
+    warn "metadata.research.reResearch not set (no re-research run, or first onboard — informational)"
+  fi
+fi
+# Re-research backlog merge may carry sourceClaim provenance on seeded/merged features.
+if [[ -f "docs/feature-list.json" ]] && jq empty docs/feature-list.json 2>/dev/null; then
+  HAS_SRC=$(jq '[.sprints[]?.features[]? | select(has("sourceClaim"))] | length' docs/feature-list.json 2>/dev/null || echo 0)
+  if [[ "${HAS_SRC:-0}" -gt 0 ]]; then
+    pass "feature-list: ${HAS_SRC} feature(s) carry sourceClaim provenance (4c-seeded/merged)"
+  else
+    warn "feature-list: no sourceClaim provenance (pre-4c list or non-research list — informational)"
+  fi
+fi
+echo ""
+
+# ─────────────────────────────────────────────────
+echo "### 17. v3 render + full research telemetry (Plan 5)"
+# ─────────────────────────────────────────────────
+# When a real /onboard:start ran research, metadata.research carries the FULL
+# telemetry block and (walkthrough present) an HTML render path. All assertions
+# are CONDITIONAL on research having actually run — absence is not a hard fail.
+if [[ -f "$META" ]]; then
+  CONSUMED=$(jq -r '.research.consumed // empty' "$META" 2>/dev/null)
+  if [[ "$CONSUMED" == "true" ]]; then
+    if [[ "$(jq '.research | has("engineUsed") and has("specialistsRun") and has("claimsVerified") and has("claimsDropped") and has("artifactLocation") and has("artifactsWritten")' "$META" 2>/dev/null)" == "true" ]]; then
+      pass "metadata.research full telemetry block present (engineUsed/specialistsRun/claimsVerified/claimsDropped/artifactLocation/artifactsWritten)"
+    else
+      fail "metadata.research.consumed=true but the full telemetry block is incomplete"
+    fi
+    if [[ "$(jq '.research | has("htmlRendered")' "$META" 2>/dev/null)" == "true" ]]; then
+      HTML=$(jq -r '.research.htmlRendered // "null"' "$META" 2>/dev/null)
+      if [[ "$HTML" == "null" ]]; then
+        warn "metadata.research.htmlRendered is null (walkthrough absent or location=none — informational)"
+      else
+        pass "metadata.research.htmlRendered set ($HTML)"
+      fi
+    else
+      fail "metadata.research.consumed=true but htmlRendered key missing"
+    fi
+    if [[ "$(jq -r '.research | has("verifiedClaimCount")' "$META" 2>/dev/null)" == "false" ]]; then
+      pass "metadata.research uses claimsVerified (legacy verifiedClaimCount removed)"
+    else
+      fail "metadata.research still carries the legacy verifiedClaimCount field"
+    fi
+  else
+    warn "metadata.research.consumed not true (research-absent / stub — informational)"
+  fi
+fi
+echo ""
+
+# ─────────────────────────────────────────────────
+echo "### 18. Pre-implementation gate artifact (Step 2.9 — optional)"
+# ─────────────────────────────────────────────────
+# /onboard:start Step 2.9 renders a previewModel walkthrough to
+# .claude/walkthrough/<YYYY-MM-DD-HHMM>-onboard-plan.html, or falls back to
+# an inline markdown gate (optionally persisting .claude/onboard-plan.md).
+# The artifact is optional — walkthrough may be absent and markdown not persisted.
+if compgen -G ".claude/walkthrough/*-onboard-plan.html" >/dev/null; then
+  pass "pre-implementation plan walkthrough rendered"
+elif [[ -f ".claude/onboard-plan.md" ]]; then
+  pass "pre-implementation plan rendered (markdown fallback)"
+else
+  warn "no pre-implementation plan artifact (walkthrough may be absent and markdown not persisted)"
 fi
 echo ""
 

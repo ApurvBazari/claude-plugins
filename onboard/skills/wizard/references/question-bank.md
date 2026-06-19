@@ -1,75 +1,73 @@
 # Wizard Question Bank
 
-Complete catalog of questions with branching logic. The wizard skill selects and adapts questions based on codebase analysis results and prior answers.
+Catalog of questions for the grounded confirm/override wizard. The profile (Minimal / Standard / Comprehensive) is already chosen in `/onboard:start` Phase 2 profile-select step and the research dossier already exists from Phase 2 (Research) — so this wizard does **not** interrogate. It runs ~2–3 `AskUserQuestion` exchanges that **confirm or override** what research inferred.
+
+Two question shapes appear below:
+
+- **Confirm/override** — the research-inferred value (from `research.wizardInferences`, per `../../research/references/wizard-inference-map.md`) is presented as the **recommended (first) option**; the developer can accept it or pick a different enum value. When research omits a field (no signal), the **static default** from `SKILL.md § Static Defaults` is the recommended option — never a blank. The `Map to` field and enum options are unchanged; only the framing is confirm/override.
+- **Cold ask** — never inferred, always asked fresh. Only `autonomyLevel` (Q7.3) and the free-form project description / pain points are cold asks.
+
+Detection questions (ecosystem plugins / LSP / built-in skills) keep their detection logic and are issued in Exchange 3.
 
 ---
 
-## Category 0: Preset Selection (Always Ask First)
+## Category 1: Project Context
 
-### Q0.1: Workflow Preset
-**Ask**: "Before we dive in, I have a few preset configurations that might save time. Which sounds closest to your setup?"
-**Options**:
-- **Minimal** — Lightweight setup, autonomous Claude, relaxed style. Great for solo work or prototypes.
-- **Standard** — Balanced setup with code review, testing, and moderate guardrails. Good for most teams.
-- **Comprehensive** — Full guardrails, strict conventions, TDD, and security checks. Best for larger teams or regulated projects.
-- **Custom** — Walk through everything step by step.
-**Purpose**: Fast-tracks the wizard by pre-filling sensible defaults. Reduces wizard to 2 exchanges (project description + confirmation) for non-Custom choices.
-**Map to**: `selectedPreset`
-**Branching**: If Minimal/Standard/Comprehensive chosen → load preset values from `references/workflow-presets.md`, ask Q1.1 (project description), skip to Phase 6 summary. If Custom → proceed with full wizard flow.
-
----
-
-## Category 1: Project Context (Always Ask)
-
-### Q1.1: Project Description
+### Q1.1: Project Description (cold ask — free-form)
 **Ask**: "In a sentence or two, what does this project do?"
+**Note**: Research drafts a one-line description from the `architecture` + `domain` findings; present that draft as **editable free-form text** for the developer to ratify or rewrite.
 **Purpose**: Sets context for everything else. Used in root CLAUDE.md project overview.
 **Map to**: `projectDescription`
-**Inference rule**: Cannot infer — always ask.
+**Inference rule**: Cannot infer a final value — always present for ratification (the research draft is a starting point, not an answer).
 
-### Q1.2: Team Structure
-**Ask**: "Are you the sole developer, or do you work with a team?"
-**Follow-up if team**: "Roughly how many developers? (2-5 / 6-15 / 15+)"
+### Q1.2: Team Structure (confirm/override)
+**Ask**: "Confirm or override: team size — research inferred **<value>**."
+**Recommended option**: `research.wizardInferences.teamSize` value (or `small (2-5)` static default if absent), with the description citing the inference's evidence (e.g. git contributor count).
+**Other options**: `solo` / `small (2-5)` / `medium (6-15)` / `large (15+)`.
 **Follow-up if team >5**: "Do you have shared coding standards or a style guide?"
 **Purpose**: Determines agent complexity (solo = fewer agents, team = collaboration agents), rule strictness.
 **Map to**: `teamSize`, and conditionally `sharedStandards`
 **Inference rule**: Git contributor count — 1 = solo, 2-5 = small, 6-15 = medium, 15+ = large.
 
-### Q1.3: Project Maturity
-**Ask**: "Would you describe this as a new project, something in active early development, an established codebase, or legacy code?"
-**Skip if**: Analysis shows <10 source files (auto-classify as "new/early")
+### Q1.3: Project Maturity (confirm/override)
+**Ask**: "Confirm or override: project maturity — research inferred **<value>**."
+**Recommended option**: `research.wizardInferences.projectMaturity` value (or `early` static default if absent).
+**Other options**: `new` / `early` / `established` / `legacy`.
 **Purpose**: Affects rule strictness, convention documentation depth.
 **Map to**: `projectMaturity`
 **Inference rule**: Source file count — <10 = new, 10-100 = early, 100-500 = established, >500 = legacy.
 
 ---
 
-## Category 2: Development Workflow (Always Ask)
+## Category 2: Development Workflow (confirm/override)
 
-### Q2.1: Primary Work Types
-**Ask**: "What kind of work do you primarily do here? Feature development, bug fixes, maintenance/refactoring, or a mix?"
+### Q2.1: Primary Work Types (confirm/override — multiSelect)
+**Ask**: "Confirm or override: the kind of work you primarily do here."
+**Pre-checked options**: derived from `research.wizardInferences.primaryWork` per `SKILL.md § primaryWork → primaryTasks mapping`; the developer can add/remove.
+**Options**: `feature-dev` / `bug-fixes` / `maintenance` / `refactoring`.
 **Purpose**: Determines which skills and agents are most valuable.
 **Map to**: `primaryTasks`
-**Inference rule**: Cannot infer — developer-specific.
 
-### Q2.2: Code Review Process
-**Ask**: "How do code reviews work? No formal process, informal peer review, or formal PR reviews?"
-**Skip if**: Solo developer + analysis shows no PR-related CI
+### Q2.2: Code Review Process (confirm/override)
+**Ask**: "Confirm or override: how code reviews work — research inferred **<value>**."
+**Recommended option**: `research.wizardInferences.codeReviewProcess` value (or `informal` static default if absent).
+**Other options**: `none` / `informal` / `formal-pr`.
 **Purpose**: Determines whether to generate review-focused agents and rules.
 **Map to**: `codeReviewProcess`
 **Inference rule**: PR-related CI detected = formal-pr, team >1 = informal, solo = none.
 
-### Q2.3: Branching Strategy
-**Ask**: "What's your branching approach? Trunk-based, gitflow, feature branches, or something else?"
-**Skip if**: Not a git repo, or analysis shows only main/master branch
-**Infer from**: Git branch patterns detected in analysis
+### Q2.3: Branching Strategy (confirm/override)
+**Ask**: "Confirm or override: your branching approach — research inferred **<value>**."
+**Recommended option**: `research.wizardInferences.branchingStrategy` value (or `feature-branches` static default if absent).
+**Other options**: `trunk-based` / `gitflow` / `feature-branches`.
 **Purpose**: Affects hook configurations and commit-related rules.
 **Map to**: `branchingStrategy`
 **Inference rule**: Git branch patterns — many feature/* branches = feature-branches, develop + release branches = gitflow, only main/master = trunk-based.
 
-### Q2.4: Deploy Frequency
-**Ask**: "How often do you deploy? Continuous, daily, weekly, manual, or not yet set up?"
-**Skip if**: No CI/CD detected AND no deployment config found
+### Q2.4: Deploy Frequency (confirm/override)
+**Ask**: "Confirm or override: how often you deploy — research inferred **<value>**."
+**Recommended option**: `research.wizardInferences.deployFrequency` value (or `manual` static default if absent).
+**Other options**: `continuous` / `daily` / `weekly` / `manual` / `none`.
 **Purpose**: Affects CI/CD rules and deployment-related skills.
 **Map to**: `deployFrequency`
 **Inference rule**: CI/CD with auto-deploy config = continuous, CI without auto-deploy = manual, no CI detected = none.
@@ -78,26 +76,26 @@ Complete catalog of questions with branching logic. The wizard skill selects and
 
 ## Category 3: Frontend-Specific (If Frontend Detected)
 
-**Trigger**: Analysis detected React, Vue, Svelte, Angular, or significant HTML/CSS/JS frontend code.
+**Trigger**: Research/analysis detected React, Vue, Svelte, Angular, or significant HTML/CSS/JS frontend code. These are confirm/override when the research finding is present; framed as a confirmation of the detected pattern.
 
-### Q3.1: Component Patterns
-**Ask**: "How do you organize your components? Atomic design, feature-based grouping, flat structure, or something else?"
-**Skip if**: Analysis clearly shows the pattern (e.g., `atoms/`, `molecules/`, `organisms/` directories)
+### Q3.1: Component Patterns (confirm/override)
+**Ask**: "Confirm or override: how you organize components."
+**Recommended option**: the detected pattern (e.g. atomic / feature-based / flat) from research, when present.
 **Purpose**: Drives component-related rules and skills.
 **Map to**: `frontendPatterns.componentOrganization`
 **Inference rule**: Directory names — atoms/molecules/organisms = atomic, features/ = feature-based, flat components/ = flat.
 
-### Q3.2: Styling Approach
-**Ask**: "What's your styling approach?"
-**Skip if**: Analysis detected a single clear styling solution (e.g., only Tailwind found)
+### Q3.2: Styling Approach (confirm/override)
+**Ask**: "Confirm or override: your styling approach."
+**Recommended option**: the detected styling solution (e.g. Tailwind), when research found one.
 **Offer choices based on detected tools**: Tailwind / CSS Modules / styled-components / Sass / other
 **Purpose**: Styling-specific rules.
 **Map to**: `frontendPatterns.styling`
 **Inference rule**: Detected styling library — tailwindcss found = Tailwind, styled-components found = styled-components, sass found = Sass, etc.
 
-### Q3.3: State Management
-**Ask**: "How do you handle state management?"
-**Skip if**: Analysis found a clear state management library
+### Q3.3: State Management (confirm/override)
+**Ask**: "Confirm or override: how you handle state management."
+**Recommended option**: the detected state library, when research found one.
 **Only ask if**: React or Vue detected (Svelte has built-in stores)
 **Purpose**: State management conventions and rules.
 **Map to**: `frontendPatterns.stateManagement`
@@ -107,24 +105,25 @@ Complete catalog of questions with branching logic. The wizard skill selects and
 
 ## Category 4: Backend-Specific (If Backend Detected)
 
-**Trigger**: Analysis detected Express, FastAPI, Django, Go server, Rust server, NestJS, or API routes.
+**Trigger**: Research/analysis detected Express, FastAPI, Django, Go server, Rust server, NestJS, or API routes. Confirm/override the detected value.
 
-### Q4.1: API Style
-**Ask**: "What's your API style? REST, GraphQL, gRPC, or a mix?"
-**Skip if**: Analysis clearly shows the style (e.g., GraphQL schema files found)
+### Q4.1: API Style (confirm/override)
+**Ask**: "Confirm or override: your API style."
+**Recommended option**: the detected style (REST / GraphQL / gRPC), when present.
 **Purpose**: API-specific rules and patterns.
 **Map to**: `backendPatterns.apiStyle`
 **Inference rule**: GraphQL schema files = GraphQL, protobuf files = gRPC, REST route patterns = REST.
 
-### Q4.2: Database Patterns
-**Ask**: "How do you interact with your database? ORM, raw SQL, document store, or something else?"
-**Skip if**: Analysis detected a specific ORM (Prisma, SQLAlchemy, etc.)
+### Q4.2: Database Patterns (confirm/override)
+**Ask**: "Confirm or override: how you interact with your database."
+**Recommended option**: the detected ORM / approach, when present.
 **Purpose**: Database interaction rules.
 **Map to**: `backendPatterns.databaseApproach`
 **Inference rule**: Detected ORM/database library — Prisma/SQLAlchemy/Drizzle = ORM, mongoose = document store.
 
-### Q4.3: Auth Approach
-**Ask**: "What's your authentication approach? JWT, sessions, OAuth, or something else?"
+### Q4.3: Auth Approach (confirm/override)
+**Ask**: "Confirm or override: your authentication approach."
+**Recommended option**: the detected auth approach, when present.
 **Only ask if**: Backend appears to have auth-related code
 **Purpose**: Security rules and auth-related conventions.
 **Map to**: `backendPatterns.authApproach`
@@ -134,124 +133,161 @@ Complete catalog of questions with branching logic. The wizard skill selects and
 
 ## Category 5: DevOps-Specific (If CI/CD Detected)
 
-**Trigger**: Analysis detected GitHub Actions, GitLab CI, CircleCI, Jenkins, or deployment configs.
+**Trigger**: Research/analysis detected GitHub Actions, GitLab CI, CircleCI, Jenkins, or deployment configs. Confirm/override the detected value.
 
-### Q5.1: Deployment Target
-**Ask**: "Where does this deploy? Cloud provider, self-hosted, serverless, or multiple targets?"
+### Q5.1: Deployment Target (confirm/override)
+**Ask**: "Confirm or override: where this deploys."
+**Recommended option**: the detected target (cloud / serverless / container), when present.
 **Purpose**: Deployment-related rules and skills.
 **Map to**: `devopsPatterns.deployTarget`
 **Inference rule**: Vercel config = Vercel/serverless, Dockerfile = container-based, AWS/GCP/Azure config files = cloud provider.
 
-### Q5.2: Infrastructure as Code
-**Ask**: "Do you use infrastructure as code? Terraform, Pulumi, CloudFormation, Docker Compose, or none?"
-**Skip if**: Analysis didn't find any IaC files
+### Q5.2: Infrastructure as Code (confirm/override)
+**Ask**: "Confirm or override: your infrastructure-as-code tooling."
+**Recommended option**: the detected IaC tool, when present (else `none`).
 **Purpose**: IaC-specific rules.
 **Map to**: `devopsPatterns.iacTool`
 **Inference rule**: Terraform files = Terraform, Pulumi files = Pulumi, CloudFormation templates = CloudFormation, docker-compose = Docker Compose.
 
 ---
 
-## Category 6: Pain Points (Always Ask)
+## Category 6: Pain Points (cold asks — free-form)
+
+These cannot be inferred from research; they are cold free-form asks (or "skip" → recorded empty + flagged per `SKILL.md § Skip Behavior`).
 
 ### Q6.1: Time Sinks
 **Ask**: "What part of your development workflow takes the most time or feels most tedious?"
 **Purpose**: Identifies highest-value automation opportunities. Directly influences which skills and agents to prioritize.
 **Map to**: `painPoints.timeSinks`
-**Inference rule**: Cannot infer — developer-specific. Left empty, flagged as TODO.
+**Inference rule**: Cannot infer — developer-specific. Left empty, flagged as TODO if skipped.
 
 ### Q6.2: Error-Prone Areas
 **Ask**: "What areas of the codebase or workflow are most error-prone?"
 **Purpose**: Identifies where stricter rules and review agents would help most.
 **Map to**: `painPoints.errorProne`
-**Inference rule**: Cannot infer — developer-specific. Left empty, flagged as TODO.
+**Inference rule**: Cannot infer — developer-specific. Left empty, flagged as TODO if skipped.
 
 ### Q6.3: Automation Wishes
 **Ask**: "If Claude could automate one thing in your workflow, what would it be?"
 **Purpose**: Direct input for skill and agent generation priorities.
 **Map to**: `painPoints.automationWishes`
-**Inference rule**: Cannot infer — developer-specific. Left empty, flagged as TODO.
+**Inference rule**: Cannot infer — developer-specific. Left empty, flagged as TODO if skipped.
 
 ---
 
-## Category 7: Preferences (Always Ask)
+## Category 7: Preferences
 
-### Q7.1: Code Style Strictness
-**Ask**: "How strict should Claude be about code style and conventions? Relaxed (just make it work), moderate (follow conventions but don't nitpick), or strict (enforce everything)?"
+### Q7.1: Code Style Strictness (confirm/override)
+**Ask**: "Confirm or override: how strict Claude should be about code style — research inferred **<value>**."
+**Recommended option**: `research.wizardInferences.codeStyleStrictness` value (or `moderate` static default if absent).
+**Other options**: `relaxed` (just make it work) / `moderate` (follow conventions, don't nitpick) / `strict` (enforce everything).
 **Purpose**: Calibrates rule strictness across all generated rules.
 **Map to**: `codeStyleStrictness`
 **Inference rule**: Linter config — none = relaxed, linter present = moderate, linter + strict config (e.g., `"strict": true` in tsconfig) = strict.
 
-### Q7.2: Security Sensitivity
-**Ask**: "How security-sensitive is this project? Standard (typical web app), elevated (handles user data/payments), or high (financial/healthcare/compliance)?"
+### Q7.2: Security Sensitivity (confirm/override)
+**Ask**: "Confirm or override: how security-sensitive this project is — research inferred **<value>**."
+**Recommended option**: `research.wizardInferences.securitySensitivity` value (or `standard` static default if absent).
+**Other options**: `standard` (typical web app) / `elevated` (user data/payments) / `high` (financial/healthcare/compliance).
 **Purpose**: Determines whether to generate security-focused rules and agents.
 **Map to**: `securitySensitivity`
 **Inference rule**: Auth/payment/session code found = elevated, HIPAA/PCI/compliance patterns = high, otherwise = standard.
 
-### Q7.3: Claude Autonomy Level
+### Q7.3: Claude Autonomy Level (COLD ASK — never inferred)
 **Ask**: "When working with Claude, do you prefer it to always ask before acting, take a balanced approach (ask for big decisions, act on small ones), or be as autonomous as possible?"
+**Options**: `always-ask` / `balanced` / `autonomous` (single-select).
 **Purpose**: This is the single most important preference. It shapes the tone and assertiveness of all generated CLAUDE.md content and rules.
 **Map to**: `autonomyLevel`
-**Inference rule**: **NEVER INFER.** Always ask the developer explicitly. This is the most important preference and must come from direct input.
+**Inference rule**: **NEVER INFER.** Always ask the developer explicitly — this is a cold ask in every profile. `wizard-inference-map.md` forbids inferring it. This is the most important preference and must come from direct input. It is NOT pre-filled from the profile's generation-scope default; the profile's autonomy value is a fallback only if the developer explicitly skips this question (see `SKILL.md § Skip Behavior`).
 
 ---
 
-## Category 8: Ecosystem Plugins (Always Ask)
+## Category 8: Ecosystem Plugins (detection — Exchange 3)
 
 ### Q8.1: Notifications
 **Ask**: "Would you like system notifications when Claude finishes tasks or needs your attention? This uses the **notify** plugin — works on macOS and Linux."
 **Options**: Yes (recommended) / No
-**Purpose**: Sets up the notify plugin with default config during onboarding.
+**Purpose**: Offers notifications during onboarding by ensuring the notify plugin is installed and directing the developer to `/notify:setup`.
 **Map to**: `ecosystemPlugins.notify`
 **Default**: `true`
 **Skip if**: notify plugin is not installed in Claude Code.
-**Note**: If accepted, the init command will run notify's install script, write a default `notify-config.json`, and merge hooks into `settings.json`.
+**Probe install status**: `ls "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh" 2>/dev/null`; present each plugin with an `[installed]` / `[not installed]` marker. Selected-but-missing plugins install in /onboard:start Phase 6 (ecosystem-plugin-install step).
+**Note**: If accepted, `/onboard:start` ensures the notify plugin is installed and prompts you to run `/notify:setup` to configure notifications. onboard does not write notify config or hooks itself — `/notify:setup` owns that (and chooses global vs per-project scope).
 
 ---
 
-## Branching Logic Summary
+## Category 9: Detection Prompts — LSP & Built-in Skills (Exchange 3)
+
+These two detection groups are issued **together as two `multiSelect` questions in one `AskUserQuestion` call** — the canonical two-block pattern. The single-option guard in `.claude/rules/ask-user-question-guard.md` applies to each dynamically-built group.
+
+### Q9.1: LSP Plugins
+- Run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"`.
+- Empty array → drop this group and record `wizardAnswers.lspPlugins = []`.
+- Otherwise present detected plugins (pre-checked when `fileCount ≥ 10`) in fileCount-descending order; record accepted names in `wizardAnswers.lspPlugins`.
+
+### Q9.2: Built-in Skills
+- Detect candidates from the analysis report (4 core always; extras when their signal fires); record accepted names in `wizardAnswers.builtInSkills`.
+
+### Canonical two-multiSelect-in-one-call example
+
+Issue both groups in a single `AskUserQuestion` call (one user interaction, two grouped multi-selects). Apply the single-option guard per group: a standalone group that collapses to 1 candidate becomes a yes/no; a group inside this combined call is padded with an explicit `None / Skip` (envelope intact); a zero-candidate group is dropped.
+
+```jsonc
+AskUserQuestion({
+  questions: [
+    {
+      header: "LSP Plugins",
+      question: "Detected language servers — which should I wire up? (override as needed)",
+      multiSelect: true,
+      options: [
+        { label: "typescript-lsp",   description: "TypeScript/JS — 240 source files detected" },
+        { label: "rust-analyzer-lsp", description: "Rust — 38 source files detected" }
+        // if this list collapsed to ONE candidate, pad with { label: "None / Skip", ... }
+      ]
+    },
+    {
+      header: "Built-in Skills",
+      question: "Built-in Claude Code skills to enable for this project?",
+      multiSelect: true,
+      options: [
+        { label: "/loop",       description: "Core — recurring interval runner" },
+        { label: "/simplify",   description: "Core — quality-only cleanup pass" },
+        { label: "/debug",      description: "Core — systematic debugging" },
+        { label: "/pr-summary", description: "Core — PR description generator" },
+        { label: "/schedule",   description: "Extra — fired: CI/CD detected" }
+      ]
+    }
+  ]
+})
+```
+
+**Programmatic mode** (`callerExtras.lspPlugins` / `callerExtras.disableLSP` / `callerExtras.builtInSkills` / `callerExtras.disableBuiltInSkills`): the detection prompt never fires — generation reads the caller-supplied value directly.
+
+---
+
+## Exchange Grouping (uniform — ~2–3 exchanges, all profiles)
+
+The grounded wizard does not branch on profile. It runs the same ~2–3 exchanges regardless of which profile was chosen in `/onboard:start` Phase 2 profile-select step, skipping any group with no candidates or no signal.
 
 ```
-Preset Selection (Q0.1) →
-  preset chosen (Minimal/Standard/Comprehensive)?
-    YES → Load preset values, ask Q1.1 only, skip to Phase 6 summary
-    NO (Custom) → Continue with full wizard flow below
+Exchange 1 — Workflow & preferences (confirm/override):
+  Q1.2 + Q1.3 (context) + Q2.1–Q2.4 (workflow) + Q7.1 + Q7.2 (preferences)
+  Tech-specific confirm/overrides (Category 3/4/5) fold in when research detected the stack.
+  Each field: research-inferred value = recommended option; static default when no signal.
 
-Analysis Results → Question Selection (Custom path only):
+Exchange 2 — Cold asks (never inferred):
+  Q7.3 autonomyLevel (cold single-select)
+  Q1.1 project description (editable free-form; research draft pre-filled)
+  Q6.1 + Q6.2 + Q6.3 pain points (free-form; "skip" allowed)
 
-  frontend detected?
-    YES → Ask Category 3 (skip questions answered by analysis)
-    NO  → Skip Category 3
+Exchange 3 — Tuning cards + detection:
+  Tuning cards (advanced hooks / skill / agent / output-style) — static/preset defaults pre-selected.
+  Q8.1 ecosystem plugins; Q9.1 + Q9.2 LSP + built-in skills (two multiSelects in one call).
+  Skip any detection group with zero candidates. Accepting all defaults clears this in one pass.
 
-  backend detected?
-    YES → Ask Category 4 (skip questions answered by analysis)
-    NO  → Skip Category 4
-
-  CI/CD detected?
-    YES → Ask Category 5
-    NO  → Skip Category 5
-
-  solo developer?
-    YES → Skip Q2.2 (code review), simplify Q2.3 (branching)
-    NO  → Ask all Category 2
-
-  <10 source files?
-    YES → Auto-classify as "new", skip Q1.3
-    NO  → Ask Q1.3
+Summary & confirmation:
+  Present everything gathered (recon analysis + research inferences + confirmed/overridden
+  answers + the model line); confirm before control returns to /onboard:start Phase 4 (Plugin Detection).
 ```
 
-## Grouping Strategy
-
-### Preset Path (2 exchanges)
-
-1. **Exchange 1**: Q0.1 (Preset selection) + Q1.1 (Project description)
-2. **Exchange 2**: Summary & confirmation (with option to tweak any pre-filled value)
-
-### Custom Path (6-7 exchanges)
-
-1. **Exchange 1**: Q0.1 (Preset — developer chooses Custom)
-2. **Exchange 2**: Q1.1 + Q1.2 + Q1.3 (Project Context — grouped together)
-3. **Exchange 3**: Q2.1 + Q2.2 + Q2.3 + Q2.4 (Workflow — grouped together)
-4. **Exchange 4**: Conditional tech-specific questions (Category 3/4/5 — only what applies)
-5. **Exchange 5**: Q6.1 + Q6.2 + Q6.3 (Pain Points — grouped together)
-6. **Exchange 6**: Q7.1 + Q7.2 + Q7.3 (Preferences — grouped together)
-7. **Exchange 7**: Summary & confirmation
+Question selection within an exchange is still **signal-gated**: skip a confirm/override question entirely when analysis/research already answers it unambiguously (the recommended option would be the only sensible answer), skip Category 3/4/5 when the stack isn't detected, and skip Q1.3 when the repo has <10 source files (auto-classify as "new").

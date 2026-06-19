@@ -10,7 +10,7 @@
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$HERE/../.." && pwd)"
 SCRIPT="$REPO_ROOT/handoff/scripts/compute-progress.sh"
-# shellcheck source=./lib.sh
+# shellcheck disable=SC1091
 . "$HERE/lib.sh"
 
 trap cleanup EXIT
@@ -33,6 +33,22 @@ EOF
 # shellcheck disable=SC2154
 run_eval() {
   ( eval "$(bash "$SCRIPT" "$FIXTURE_ROOT")"; echo "$retention_value" )
+}
+
+# Write an active.md carrying a saved-at, so iso_to_epoch runs (days_old is derived from it).
+write_active_saved_at() {
+  mkdir -p "$FIXTURE_ROOT/.claude/handoff"
+  cat > "$FIXTURE_ROOT/.claude/handoff/active.md" <<EOF
+---
+saved-at: $1
+---
+EOF
+}
+# Echo days_old from the eval'd output. days_old is assigned dynamically by the eval'd
+# script — the SC2154 "referenced but not assigned" warning is the same false positive.
+# shellcheck disable=SC2154
+run_eval_days() {
+  ( eval "$(bash "$SCRIPT" "$FIXTURE_ROOT")"; echo "$days_old" )
 }
 
 canary_dir="$(mktemp -d)"
@@ -84,6 +100,17 @@ assert_eq "10" "$(run_eval)" "empty value defaults to 10"
 # Case 9: no settings file at all defaults to 10
 rm -f "$FIXTURE_ROOT/.claude/handoff/settings.md"
 assert_eq "10" "$(run_eval)" "absent settings.md defaults to 10"
+
+# Case 10: a tz-offset ISO saved-at parses through iso_to_epoch — exercises the BSD
+# `date -j -f "...%z"` fallback (macOS) added for hand-edited offset timestamps. The only
+# previously-covered surface was retention parsing; iso_to_epoch was never run by any case.
+write_active_saved_at "2020-06-01T12:00:00-0500"
+days_got="$(run_eval_days)"
+if [[ "$days_got" =~ ^[0-9]+$ ]] && [[ "$days_got" -gt 0 ]]; then
+  PASS_COUNT=$((PASS_COUNT + 1)); echo "  ok: tz-offset saved-at parsed via iso_to_epoch (days_old=$days_got)"
+else
+  FAIL_COUNT=$((FAIL_COUNT + 1)); echo "  FAIL: tz-offset saved-at did not parse (days_old=$days_got)"
+fi
 
 rm -rf "$canary_dir"
 

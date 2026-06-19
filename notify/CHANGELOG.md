@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.1 — 2026-06-11
+- fix: use ${CLAUDE_PLUGIN_ROOT} for the install-notifier.sh path (exit-127 guard); SK-04 setup/uninstall descriptions.
+- fix: hook-standard `set -uo pipefail` on notify.sh; remove dead exit-code check in test-notification.sh.
+- fix: guard a non-numeric `minDurationSeconds` before the arithmetic duration test — under `set -u` a malformed config value was evaluated as a variable in arithmetic context, aborting the hook and silently dropping the notification. Adds `tests/notify/` with a regression case.
+
 ## [2.0.0](https://github.com/ApurvBazari/claude-plugins/compare/notify-v1.1.0...notify-v2.0.0) (2026-05-26)
 
 

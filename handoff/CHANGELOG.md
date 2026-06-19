@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1 — 2026-06-11
+- fix: quote ${CLAUDE_PLUGIN_ROOT} in the SessionStart hook command (OR-01 exit-127 guard).
+- fix: SK-04 save/pickup/discard descriptions; set -euo pipefail on merge-fm-key.sh; widen compute-progress.sh BSD-date fallback.
+
 ## 1.0.0
 - Stability milestone — handoff is promoted to 1.0.0. The public surface (the four skills `save` / `pickup` / `check` / `discard`, the SessionStart resume hook, and the `.claude/handoff/` folder layout) is now considered stable; breaking changes from here bump the major version. No functional changes since 0.2.0.
 

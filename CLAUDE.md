@@ -1,6 +1,6 @@
 # claude-plugins
 
-Claude Code plugin marketplace by Apurv Bazari. Four plugins — all markdown + shell + JSON, no compiled code. (onboard, notify, handoff, walkthrough.)
+Claude Code plugin marketplace by Apurv Bazari. Five plugins — all markdown + shell + JSON, no compiled code. (onboard, notify, handoff, walkthrough, lens.)
 
 ## Repository
 
@@ -25,8 +25,15 @@ Claude Code plugin marketplace by Apurv Bazari. Four plugins — all markdown + 
          ├──→ handoff/                   ← session handoff continuity
          │      └── skills/ (save, pickup, check, discard)
          │
-         └──→ walkthrough/               ← session → self-contained interactive HTML
-                └── skills/ (create, update, document)
+         ├──→ walkthrough/               ← session → self-contained interactive HTML
+         │      └── skills/ (create, update, document)
+         │
+         └──→ lens/                      ← intent-grounded review companion (brain; renders via walkthrough)
+                ├── skills/ (review, engine)
+                ├── agents/ (spec-adherence, plan-adherence, correctness,
+                │           risk-classify, test-gaps, verifier)
+                └── schemas/ (review-findings)
+                    (runtime: hands off to walkthrough:render; markdown fallback if absent)
 ```
 
 ## Plugin Structure Convention

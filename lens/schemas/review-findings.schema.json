@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$comment": "version 1. FIELD-additive superset of vicario review-findings: extra optional fields are ignored by vicario's validator. The dimension enum is the canonical 9-value SHARED contract (vicario's six + lens's test/risk/comment); vicario adopts the same enum so all dimensions validate both ways — no mapping layer. Until the vicario repo widens its enum to match (tracked), only the 6 shared dimensions round-trip to an un-updated vicario; coordinate enum changes across both repos.",
+  "title": "lens review-findings",
+  "type": "object",
+  "required": ["findings", "recommendedEscalation", "degraded"],
+  "properties": {
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "severity", "dimension", "verified"],
+        "properties": {
+          "id": {"type": "string"},
+          "title": {"type": "string"},
+          "severity": {"type": "string", "enum": ["critical", "high", "medium", "low"]},
+          "dimension": {
+            "type": "string",
+            "enum": [
+              "requirements",
+              "correctness",
+              "security",
+              "types",
+              "silent-failure",
+              "simplify",
+              "test",
+              "risk",
+              "comment"
+            ]
+          },
+          "verified": {"type": "boolean"},
+          "file": {"type": "string"},
+          "line": {"type": "integer"},
+          "votes": {
+            "type": "object",
+            "properties": {
+              "total": {"type": "integer"},
+              "couldNotRefute": {"type": "integer"},
+              "refuted": {"type": "integer"}
+            }
+          },
+          "voteDegraded": {"type": "boolean", "$comment": "carried for vicario parity; lens v1 does not set it"},
+          "claim": {"type": "string"},
+          "detail": {"type": "string"},
+          "suggestedFix": {"type": "string"},
+          "source": {"type": "string"},
+          "label": {"type": "string"},
+          "tags": {
+            "type": "array",
+            "items": {"type": "string"}
+          }
+        }
+      }
+    },
+    "recommendedEscalation": {"type": "string", "enum": ["minor", "moderate", "major", "critical"]},
+    "degraded": {"type": "boolean"},
+    "summary": {"type": "string"},
+    "emptyScope": {"type": "boolean", "$comment": "true only on empty-diff/no-repo; lets a caller distinguish 'nothing to review' from a clean zero-finding review. Field-additive — vicario's validator ignores it (only the dimension enum is co-owned)."},
+    "severityTrend": {
+      "type": "string",
+      "enum": ["improving", "same", "regressed"],
+      "$comment": "this run's recommendedEscalation vs the prior run's, keyed on the 4-value escalation not the 3-value verdict (per skills/review/references/reconcile.md). Optional — set by reconcile/compute-only, never by the engine; vicario's validator ignores it."
+    },
+    "delta": {
+      "type": "object",
+      "$comment": "aggregate iteration delta vs the prior run; read by an orchestrator's convergence decision and surfaced as the human-facing iteration delta. Optional — set by reconcile/compute-only, never by the engine.",
+      "properties": {
+        "fixed": {"type": "integer"},
+        "new": {"type": "integer"},
+        "stillOpen": {"type": "integer"}
+      }
+    }
+  }
+}

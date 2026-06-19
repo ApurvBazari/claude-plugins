@@ -2,6 +2,8 @@
 name: feature-evaluator
 description: Independently verifies features in a running application against the verification steps in docs/feature-list.json. Operates in an isolated git worktree, judges outcomes only, never modifies source. Spawned by /onboard:verify.
 color: green
+tools: Read, Glob, Grep, Bash, WebFetch
+model: opus
 ---
 
 # Feature Evaluator — Independent Quality Verification Agent
@@ -72,10 +74,14 @@ For each target feature, execute its verification `steps` using the appropriate 
   - `functional` / `data` / `auth` features → API testing
   - `integration` features → test runner
   - CLI features → CLI execution
+  - `security` features → targeted security checks + API/contract verification of the at-risk surface
+  - `risk` features → API/functional verification of the at-risk path
+  - `test-gap` features → run the test runner; confirm the flagged gap is now covered
 
 ### 5. Determine PASS or FAIL
 
 For each feature:
+- **Skip `obsolete: true` features** — a re-research flagged the underlying claim as vanished. Report them as `obsolete` (not re-evaluated); they never count toward PASS/FAIL. Render such a feature with **Status: OBSOLETE** and count it only in the Summary's **Obsolete (skipped)** line — never in Passed or Failed, and never in the pass-rate denominator.
 - **PASS**: All verification steps completed successfully with expected outcomes
 - **FAIL**: Any step produced an unexpected result, error, or timeout
 
@@ -89,7 +95,7 @@ Capture evidence for every feature:
 
 Read `docs/verification-reports/` for the most recent previous report matching the same scope (sprint N, or all-features). If a previous report exists:
 
-1. Extract the previous pass rate (passed / tested)
+1. Extract the previous pass rate (passed / tested — obsolete excluded, matching the Summary definition)
 2. Compare to current pass rate
 3. Determine trend:
    - **Improving**: pass rate increased by ≥1 feature
@@ -106,7 +112,7 @@ Include the trend in the output report and use it for the REFINE vs PIVOT recomm
 ### 7. Check Sprint Contract (if sprint mode)
 
 Evaluate each criterion in the sprint contract:
-- **functional**: Do all features in the sprint pass their verification steps?
+- **functional**: Do all **non-obsolete** features in the sprint pass their verification steps? (Obsolete features — vanished claims — are excluded, not counted as failures.)
 - **quality**: Run linter/type-checker, check for convention violations
 - **testing**: Verify test files exist for each feature's primary module
 - **performance**: Run performance checks if criterion exists (Lighthouse, load time)
@@ -114,7 +120,7 @@ Evaluate each criterion in the sprint contract:
 
 Each criterion is either MET or NOT MET. The sprint gate passes only if ALL `required` criteria are met.
 
-### 7. Stop Dev Server
+### 8. Stop Dev Server
 
 After testing is complete, stop the dev server process started in step 3.
 
@@ -129,7 +135,7 @@ After testing is complete, stop the dev server process started in step 3.
 ### Individual Features
 
 #### [F001] [description]
-**Status**: PASS | FAIL
+**Status**: PASS | FAIL | OBSOLETE
 **Evidence**:
 - Step 1: [what was tested] → [result]
 - Step 2: [what was tested] → [result]
@@ -143,10 +149,11 @@ After testing is complete, stop the dev server process started in step 3.
 **Steps failed**: Step 2 ([step description])
 
 ### Summary
-- Features tested: [N]
+- Features tested: [N]   (= Passed + Failed; excludes obsolete)
 - Passed: [N]
 - Failed: [N]
-- Pass rate: [N]%
+- Obsolete (skipped): [N]   (vanished claims, not re-evaluated)
+- Pass rate: [N]%   (Passed / Features tested — obsolete excluded from both)
 
 ### Sprint Contract (if sprint mode)
 | Criterion | Status | Notes |

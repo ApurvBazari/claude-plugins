@@ -75,6 +75,6 @@ if gh pr create \
   --body-file "$BODY_FILE"; then
   echo "PR created successfully"
 else
-  echo "WARN: PR creation failed — continuing without PR"
-  exit 0
+  echo "ERROR: gh pr create failed for ${BRANCH}" >&2
+  exit 1
 fi

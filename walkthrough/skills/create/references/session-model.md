@@ -28,13 +28,16 @@ exact keys `authoring-guide.md` keys its mapping table off of — do not rename 
     { "id": "goal", "heading": "...", "prose": "...", "components": ["tabs"] }
   ],
 
-  // nodes[] + edges[] together drive a diagram. Topology picks which one:
-  //   linear staged pipeline      → flow diagram
-  //   non-linear services/layers  → architecture map
-  //   module/package imports      → dependency graph (inline SVG)
-  // `kind` hints intent; nodes with a matching details[] entry are clickable (openD).
-  "nodes": [ { "id": "...", "label": "...", "kind": "component|step|concept" } ], // → diagram nodes
-  "edges": [ { "from": "<id>", "to": "<id>", "label": "" } ],                     // → diagram edges
+  // nodes[] + edges[] together drive a diagram. The graph's SHAPE picks which one — run the
+  // diagram-fidelity check in authoring-guide.md § 1 before defaulting to a box-and-arrow form:
+  //   linear staged pipeline            → flow diagram
+  //   non-linear services/layers        → architecture map
+  //   module/package imports            → dependency graph (inline SVG)
+  //   cyclic / guarded transitions      → state / transition diagram (nodes kind:"state"; set edge.guard)
+  //   timed messages between actors     → sequence / swimlane diagram (nodes kind:"actor"; set edge.seq)
+  // `kind` hints intent; nodes with a matching details[] entry are clickable (openSurface).
+  "nodes": [ { "id": "...", "label": "...", "kind": "component|step|concept|state|actor" } ], // → diagram nodes
+  "edges": [ { "from": "<id>", "to": "<id>", "label": "", "guard": "", "seq": 0 } ], // guard → state-edge condition; seq → sequence order
 
   // decisions[] → Tabs + tradeoff bars WHEN tradeoffs[] carry scored axes (bars use data-w);
   // with no scores, fall back to the Accordion checklist (one <details> per decision).
@@ -50,7 +53,7 @@ exact keys `authoring-guide.md` keys its mapping table off of — do not rename 
 
   // files[] → file tree; a handful renders a plain tree, many that group by category
   // add filterable cards + pills (narrow by data-cat). `change` colors the row.
-  "files": [ { "path": "...", "change": "added|modified|deleted", "note": "..." } ], // → file tree / cards
+  "files": [ { "path": "...", "change": "added|modified|deleted", "risk": "auth|data|money|migration|concurrency|public-api|none", "note": "..." } ], // → file tree / cards
 
   // timeline[] → Timeline (read top-to-bottom) OR Stepper/playback (a replayable sequence).
   // `ref` links a timeline entry back to a section id for scroll-to.
@@ -63,14 +66,52 @@ exact keys `authoring-guide.md` keys its mapping table off of — do not rename 
   // openQuestions[] → callout(s) at the tail of the doc (honest unknowns / follow-ups).
   "openQuestions": [ "..." ],         // → callouts
 
-  // details{} → the detail-panel content store. Keyed by node/card id; openD('<id>')
-  // pulls {body, where, related} into the side panel. `where` is a path:line anchor;
-  // `related` cross-links to other detail ids. Emit only ids actually wired to openD.
-  "details": {                        // → detail panel (openD / closeD); becomes DET in {{DETAIL_DATA}}
-    "<id>": { "body": "...", "where": "path:line", "related": ["<id>"] }
-  }
+  // details{} → the detail-surface content store. Keyed by node/card id; openSurface('<id>')
+  // routes to the pane (light) or a sheet (rich). Fields are structured (not a blob):
+  //   kicker, heading        short label + title (was k/h)
+  //   summary                one-paragraph plain recap
+  //   where[]                path:line anchors → chips/links
+  //   code[]                 optional {file,lang,snippet} annotated blocks
+  //   points[]               optional structured bullets
+  //   related[]              cross-links → chips that call openSurface
+  //   surface                OPTIONAL override "pane"|"sheet" (else inferred, see authoring-guide.md § 3)
+  //   components[]           sheet-only: catalog component refs to host (e.g. "flow:inner")
+  "details": {
+    "<id>": {
+      "kicker": "...", "heading": "...", "summary": "...",
+      "where": ["path:line"], "code": [{ "file": "...", "lang": "...", "snippet": "..." }],
+      "points": ["..."], "related": ["<id>"], "surface": "pane", "components": []
+    }
+  },
+
+  // --- review fields (optional; populated only by lens via walkthrough:render) ---
+  // Omit-empty governs all of these: a normal session walkthrough never sets them.
+  "verdict": "ship|fix|block",        // → hero chip (ship=ok, fix=warn, block=danger)
+  "iterationDelta": "2 fixed · 1 new · 3 still-open",  // → findings-section delta subhead; omit on a first review
+  "adherence": {                      // → adherence-panel (components/review.md)
+    // Flat form — single spec/plan, or the headless/contract-only path:
+    "specItems": [ { "label": "...", "state": "met|partial|missing" } ],
+    "planSteps": [ { "label": "...", "state": "followed|deviated" } ],
+    // Grouped form — multi-spec (N>1), one group per source spec/plan. Mutually exclusive with the flat form.
+    "groups": [ { "source": "<spec/plan filename>", "kind": "spec|plan",
+                  "items": [ { "label": "...", "state": "met|partial|missing|followed|deviated" } ] } ]
+  },
+  "findings": [                       // → findings-list + diff pins; each id also a DET sheet
+    { "id": "F1", "severity": "critical|high|medium|low",  // 'info' is NOT a severity — render-only chip role for 'low' (review-model-assembly.md)
+      "category": "spec-gap|plan-deviation|bug|silent-failure|security|risk|test-gap|quality",
+      "location": "path:line", "claim": "...", "detail": "...",
+      "suggestedFix": "...", "status": "verified|unverified-flagged",
+      "iteration": "fixed|still-open|new|possibly-resolved" }  // → iteration chip; omit on a first review (set only by lens)
+  ],
+  "diffHunks": [                      // → annotated-diff (components/review.md)
+    { "path": "...", "lines": [ { "k": "ctx|add|del", "n": 0, "text": "...", "finding": "F1" } ] }
+  ]
 }
 ```
+
+A detail with `components`, `code`, or a long `summary`+`points` is inferred `sheet`; otherwise it is inferred `pane`. An explicit `surface` field overrides the inference in either direction. See `authoring-guide.md` § 3 for the full inference rule. Nesting depth and acyclicity rules for nested surfaces are spelled out in the **Nesting** note below.
+
+**Nesting.** A sheet's hosted `components[]` may contain nodes that reference other `details{}` ids via `openSurface`, so one detail can open another. Two hard limits keep this bounded: the reference graph must be **acyclic** — a detail must never transitively open itself (an `A → B → A` chain is a build failure) — and the open depth is capped at **3** (a 4th nested open replaces the topmost surface rather than deepening). Author chains deeper than 3 are flattened at synthesis time. The self-check enforces both the acyclic and depth-≤-3 rules.
 
 ## Part B — Worked example: "Adding the HDFC SMS parser"
 
@@ -181,23 +222,27 @@ structured `Txn` records, with a fail-soft strategy and one-pattern-per-format d
 
   "details": {
     "matcher": {
-      "body": "RegexMatcher holds the compiled HDFC pattern with named groups (amount, merchant, date, direction). `test()` returns the capture map on a hit or null on a miss — the null is what powers fail-soft downstream.",
-      "where": "parsers/hdfc.ts:24",
+      "kicker": "Component", "heading": "RegexMatcher",
+      "summary": "Holds the compiled HDFC pattern with named groups; test() returns the capture map on a hit or null on a miss — the null powers fail-soft downstream.",
+      "where": ["parsers/hdfc.ts:24"],
       "related": ["extractor", "failsoft"]
     },
     "extractor": {
-      "body": "TxnExtractor maps the raw capture map onto a typed Txn: parses the amount to a number, trims the merchant, converts the DD/MM/YY date to ISO, and derives direction from the debit/credit keyword.",
-      "where": "parsers/hdfc.ts:58",
+      "kicker": "Component", "heading": "TxnExtractor",
+      "summary": "Maps the raw capture map onto a typed Txn: parses amount, trims merchant, converts DD/MM/YY to ISO, derives direction.",
+      "where": ["parsers/hdfc.ts:58"],
       "related": ["matcher", "txn"]
     },
     "txn": {
-      "body": "The normalized Txn record { amount, merchant, date, direction } returned to the importer. On a matcher miss this is null, which the importer skips.",
-      "where": "parsers/types.ts:7",
+      "kicker": "Type", "heading": "Txn record",
+      "summary": "The normalized { amount, merchant, date, direction } returned to the importer. On a matcher miss this is null, which the importer skips.",
+      "where": ["parsers/types.ts:7"],
       "related": ["extractor", "failsoft"]
     },
     "failsoft": {
-      "body": "The fail-soft contract: a no-match returns null rather than throwing, so one unknown SMS format never aborts the batch. Misses are counted into the import metrics for visibility.",
-      "where": "parsers/hdfc.ts:24",
+      "kicker": "Decision", "heading": "Fail soft on unrecognized SMS",
+      "summary": "A no-match returns null rather than throwing, so one unknown SMS format never aborts the batch. Misses are counted into import metrics for visibility.",
+      "where": ["parsers/hdfc.ts:24"],
       "related": ["matcher", "txn"]
     }
   }
@@ -208,3 +253,17 @@ structured `Txn` records, with a fail-soft strategy and one-pattern-per-format d
 
 This model is synthesized in-memory before any HTML and drives component selection (see
 `authoring-guide.md`). It is NOT written to disk in v1.
+
+## Review fields (lens)
+
+The review fields (`verdict`, `adherence`, `findings`, `diffHunks`, `files[].risk`) are optional and
+populated **only** by the `lens` plugin, which assembles the model in context and hands it to
+`walkthrough:render`. `create`/`document`/`update` never set them; omit-empty keeps them inert. Each
+`findings[]` id maps to a `DET` sheet entry (`SURF[id]='sheet'`), and both its findings-list card and
+its annotated-diff pin call `openSurface('<id>')`.
+
+`iteration` (`fixed|still-open|new|possibly-resolved`) and `iterationDelta` are the **state-aware**
+fields: lens sets them from its reconcile step. `iteration` renders as a second chip on each findings-list
+card (role: `fixed`=ok, `still-open`/`possibly-resolved`=warn, `new`=info); `iterationDelta` renders as a
+subhead under the findings heading. On a **first review** there is no prior state — both are omitted
+(omit-empty), so no iteration chip or delta appears.

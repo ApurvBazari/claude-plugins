@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/ApurvBazari/claude-plugins/onboard/skills/generate/references/context-shape-v3.json",
+  "title": "Onboard Generate — v3 Context Shape",
+  "description": "Input schema for onboard:generate in onboard 3.x. v3 is the ONLY accepted shape (the v2 external-caller API was removed in 3.0.0). The context is the internal object built by onboard:start (version:3 + analysis + wizardAnswers + an OPTIONAL top-level `research` object, canonical shape: onboard/schemas/research-dossier.json). There is no `phases` block and no inheritance from a v2 schema. v1 and v2 are rejected. NOTE: `research` is OPTIONAL here; generate makes it required for a full generation (and exempt for callerExtras.regenerateOnly re-emits) at runtime — see generate/SKILL.md Step 0.1.",
+  "type": "object",
+  "required": ["version", "source", "projectPath", "callerExtras"],
+  "additionalProperties": true,
+  "properties": {
+    "version": {
+      "const": 3,
+      "description": "Schema version. HARD-REQUIRED and the only accepted value. v1 and v2 are rejected."
+    },
+    "source": { "type": "string", "minLength": 1 },
+    "projectPath": { "type": "string" },
+    "callerExtras": {
+      "type": "object",
+      "properties": {
+        "reResearch": {
+          "type": "object",
+          "description": "v3 re-research marker. Present ONLY on a re-research regen built by onboard:update / onboard:evolve — signals config-generator to run the merge-aware regen path (customization floor + marker surgery + progress-preserving backlog merge). Absent on first onboard and on regenerateOnly snapshot replays. Does NOT change generate Step 0.1 validation.",
+          "properties": {
+            "dimensions": { "type": "array", "items": { "type": "string" }, "description": "the research dimensions refreshed this run (scoped set), or all in-roster dims when escalated" },
+            "escalatedToFull": { "type": "boolean", "description": "true when the tiered escalation rule promoted a scoped re-research to full" }
+          }
+        }
+      }
+    },
+    "research": {
+      "type": "object",
+      "description": "Optional synthesized research object. Canonical shape: onboard/schemas/research-dossier.json."
+    }
+  }
+}
