@@ -295,7 +295,7 @@ section.vis{opacity:1;transform:none;}
           <tr>
             <td class="slash">engine</td>
             <td><span class="tag hidden-int">internal</span></td>
-            <td>The core review executor (<span class="cell-mono">user-invocable: false</span>). Accepts the structured review context from <code>/lens:review</code> — scope, intent, task IDs — and runs stages 2–5: intent resolution, finder fan-out, adversarial verification, and render hand-off. Writes nothing, never prompts.</td>
+            <td>The core review executor (<span class="cell-mono">user-invocable: false</span>). Accepts the structured review context from <code>/lens:review</code> — scope, intent, task IDs — and runs the judgment pipeline: scope → intent → analyze → verify → dedup → rank. Returns a <code>review-findings</code> JSON object. Writes nothing, never prompts, never renders.</td>
           </tr>
         </tbody>
       </table>

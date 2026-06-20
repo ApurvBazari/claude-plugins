@@ -281,7 +281,7 @@ dialog.sheet::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
         <div class="edge">
           <div class="n">walkthrough</div>
           <div class="t">Explorable session docs</div>
-          <p>Renders any session, plugin, or path into a self-contained interactive HTML document with diagrams, detail surfaces, and a dark/light theme. Feeds lens for review.</p>
+          <p>Renders any session, plugin, or path into a self-contained interactive HTML document with diagrams, detail surfaces, and a dark/light theme. lens renders its review documents through it.</p>
         </div>
         <div class="edge">
           <div class="n">lens</div>
@@ -292,7 +292,7 @@ dialog.sheet::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
 
       <div class="callout" style="margin-top:1.6rem">
         <h4>The composed loop</h4>
-        <p><code>onboard</code> generates the spec. <code>handoff</code> keeps intent alive. <code>walkthrough</code> documents the work. <code>lens</code> checks it against the spec. <code>notify</code> tells you when any of them finishes. Five tools, one coherent workflow.</p>
+        <p><code>onboard</code> generates your CLAUDE.md, rules, skills, agents, and hooks. <code>handoff</code> keeps intent alive. <code>walkthrough</code> documents the work. <code>lens</code> checks it against the spec. <code>notify</code> tells you when any of them finishes. Five tools, one coherent workflow.</p>
       </div>
     </section>
 
@@ -303,7 +303,7 @@ dialog.sheet::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
 
       <div class="codeblock" style="max-width:680px;margin-top:1.4rem">
         <div class="cb-head"><span class="cb-file">add the marketplace</span><span class="cb-lang">bash</span></div>
-        <pre class="cb-body"><code>claude plugin add apurvbazari-plugins</code></pre>
+        <pre class="cb-body"><code>claude plugin marketplace add apurvbazari/claude-plugins</code></pre>
       </div>
 
       <div class="codeblock" style="max-width:680px">
