@@ -124,8 +124,8 @@ The whole system lives in the shared `create/references/` visual layer (`session
 
 Three user-facing skills (all show in `/walkthrough:` autocomplete; all default frontmatter — user- and model-invocable, no `disable-model-invocation`):
 
-- `create/SKILL.md` — renders the current session from scratch. The renderer is five `references/` files plus the `references/components/` catalog (`index.md` + per-group recipes loaded on demand).
-- `update/SKILL.md` — refreshes an EXISTING walkthrough in place: reconstructs the prior model from the rendered HTML, merges in explicitly-named files, and overwrites the same file. Reuses `create`'s renderer references unchanged for the render half (five `references/` files + the `components/` catalog); its own `references/reconstruct-and-merge.md` covers the reconstruct + merge stages.
+- `create/SKILL.md` — renders the current session from scratch. The renderer is six `references/` files (including `concept-coverage.md`) plus the `references/components/` catalog (`index.md` + per-group recipes loaded on demand).
+- `update/SKILL.md` — refreshes an EXISTING walkthrough in place: reconstructs the prior model from the rendered HTML, merges in explicitly-named files, and overwrites the same file. Reuses `create`'s renderer references unchanged for the render half (six `references/` files + the `components/` catalog); its own `references/reconstruct-and-merge.md` covers the reconstruct + merge stages.
 - `document/SKILL.md` — renders a *subject* (a plugin, the marketplace, or any path) instead of a session. Reuses `create`'s visual-layer references unchanged; brings its own `references/subject-model.md`, `references/gather-subject.md`, and `references/adapters/` (plugin + marketplace). README + manifest are canonical; the output path is an argument (the docs site passes `site/<plugin>/index.html`). No gitignore prompt — output is a published/derived artifact, not private session content.
 - `render/SKILL.md` — **internal** (`user-invocable: false`): renders a model already in context to a
   caller-supplied output path; skips gather+synthesize, reuses create's renderer references. The
