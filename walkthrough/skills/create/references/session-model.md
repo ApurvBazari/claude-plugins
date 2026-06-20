@@ -17,6 +17,22 @@ exact keys `authoring-guide.md` keys its mapping table off of — do not rename 
   "title":   "...",                  // doc <title> + hero <h1>; page-scaffold hero slot
   "summary": "...",                  // hero lede / one-paragraph plain recap under the h1
 
+  // concepts[] — the legibility LEDGER: every concept this doc explains + how it renders.
+  // Synthesis classifies each concept into a `type` from concept-coverage.md, then the
+  // concept-fidelity gate (authoring-guide.md § 1) binds it to a renderer. Omit-empty governs:
+  // list only concepts actually conveyed. The completeness critic walks this array (completeness.md).
+  "concepts": [
+    {
+      "id": "router-branch",          // stable key
+      "type": "branching-logic",       // a concept-type from concept-coverage.md
+      "label": "How the router picks a handler",
+      "renderedBy": "decision-tree",   // component key (as in sections[].components[]), or null when bespoke
+      "surface": "routing",            // the section id it renders in, or the literal "sheet"
+      "bespoke": false,                // true → composed via authoring-guide § 4
+      "bespokeReason": null            // required string when bespoke:true (what was composed + why)
+    }
+  ],
+
   // typeTags drive the hero chip row. Special-case: if it includes "research",
   // the page LEADS with a concept/mind map + callouts instead of a code-change layout.
   "typeTags": ["feature", "parsing"], // → hero chips; "research" → concept map + callouts
@@ -124,6 +140,11 @@ structured `Txn` records, with a fail-soft strategy and one-pattern-per-format d
   "title": "Adding the HDFC SMS parser",
   "summary": "Wired up a parser that turns raw HDFC bank transaction SMS into structured Txn records. A RegexMatcher pulls the amount, merchant, and date out of the message; a TxnExtractor normalizes them into a Txn. Unrecognized messages fail soft to null instead of throwing, so a new SMS format never crashes the import pipeline.",
   "typeTags": ["feature", "parsing", "tests"],
+
+  "concepts": [
+    { "id": "pipeline", "type": "linear-process", "label": "How a message becomes a Txn", "renderedBy": "flow", "surface": "pipeline", "bespoke": false, "bespokeReason": null },
+    { "id": "failsoft", "type": "scored-decision", "label": "Fail soft on unrecognized SMS", "renderedBy": "tabs", "surface": "decisions", "bespoke": false, "bespokeReason": null }
+  ],
 
   "sections": [
     {
