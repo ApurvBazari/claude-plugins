@@ -46,6 +46,8 @@ connection. PK/FK use the `.chip` primitive. Clickable entity → `openSurface`.
 **Wiring:** click an entity → `openSurface('<id>')` (add a `details{}` entry per entity — full field
 list / notes live there). Place one `.erd-rel` cardinality chip between each related pair; mark keys
 with `.chip info` (PK) / `.chip warn` (FK). No JS required (reveal via the shared IntersectionObserver).
+Sibling `related[]` cross-links between entities are fine for pane-kind details; if an entity is
+sheet-kind, keep the reference graph acyclic (self-check).
 
 **Hostable in a sheet:** suffix any internal `id=` with the surface id so global ids stay unique
 (authoring-guide § 3).
