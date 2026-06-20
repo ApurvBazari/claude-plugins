@@ -26,3 +26,18 @@ every test to where the rule applies. If any fails, fix the HTML and re-run.
 | 19 | No in-session `path:line` silently dropped | Every code anchor the session provided appears in some rendered `where[]` (`sf-loc`) chip or `code[]` block — or is named in the coverage note with a **content** reason (out-of-scope / redundant), never "not read / unverified." An anchor handed to you in-session is first-class detail, not optional. |
 
 Failure on any row -> revise the assembled HTML (or the model, then re-assemble) and re-run before write.
+
+## Ledger + new-component assertions
+
+These extend the table above; reason about each the same way (scope to where it applies, fix and re-run on failure).
+
+- **Ledger cross-reference (when `concepts[]` is present):**
+  - every `concepts[].renderedBy` (when non-null) names a component key that actually appears in the
+    assembled HTML;
+  - every rendered structural component (`.dtree`, `.erd`, `.htree`, `.lstack`, `.ladder`, and the
+    existing diagrams) traces back to a `concepts[]` entry;
+  - no `concepts[]` entry has `bespoke:true` without a `bespokeReason`.
+- **New-component structural checks:**
+  - decision-tree guard `<text>` escapes `<`/`>` as `&lt;`/`&gt;`;
+  - ERD/causal/tree style blocks contain no raw hex (tokens only) and glyphs use CSS/HTML escapes;
+  - any component hosted in a sheet has its internal `id=` suffixed with the surface id.
