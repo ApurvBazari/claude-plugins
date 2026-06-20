@@ -63,7 +63,7 @@ section.vis{opacity:1;transform:none;}
 .panel h3{font-family:var(--serif);font-weight:400;font-size:1.4rem;margin:.2rem 0 .6rem;}
 .panel .pb{font-size:.86rem;color:var(--ts);line-height:1.6;}
 .panel code{font-family:var(--mono);font-size:.72rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
-.panel .sf-h{font-family:var(--serif);font-weight:400;font-size:1.4rem;margin:.2rem 0 .5rem;}
+.panel .sf-h,dialog.sheet .sf-h{font-family:var(--serif);font-weight:400;font-size:1.4rem;margin:.2rem 0 .5rem;}
 .sf-summary{font-size:.86rem;color:var(--ts);line-height:1.6;margin:0 0 .8rem;}
 .sf-where{display:flex;flex-wrap:wrap;gap:.35rem;margin:.2rem 0 .8rem;}
 .sf-loc{font-family:var(--mono);font-size:.7rem;background:var(--accent-soft);color:var(--accent);padding:1px 6px;border-radius:4px;}
@@ -161,6 +161,14 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
 .cov-table .cov-renderer{font-family:var(--mono);font-size:.68rem;color:var(--accent);}
 .cov-new{background:color-mix(in srgb,var(--accent-soft) 60%,transparent);}
 .cov-new td{border-bottom-color:var(--border);}
+/* mini-ERD demo (hosted in the cov-erd sheet) */
+.erd-demo{display:flex;align-items:stretch;gap:.55rem;flex-wrap:wrap;margin:.5rem 0 .2rem;}
+.erd-ent{flex:1;min-width:170px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--bg-card);}
+.erd-ent h4{margin:0;font-family:var(--mono);font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);background:var(--bg-inset);padding:.4rem .6rem;border-bottom:1px solid var(--border);}
+.erd-ent ul{list-style:none;margin:0;padding:.4rem .6rem;}
+.erd-ent li{display:flex;align-items:center;justify-content:space-between;gap:.5rem;font-family:var(--mono);font-size:.72rem;color:var(--ts);padding:.18rem 0;}
+.erd-rel{display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--tm);font-family:var(--mono);font-size:.62rem;gap:.2rem;min-width:46px;}
+.erd-rel span{font-size:1.1rem;line-height:1;color:var(--border-active);}
 /* legend */
 .legend{display:flex;gap:.6rem;flex-wrap:wrap;margin:1rem 0;}
 .lg{font-family:var(--mono);font-size:.6rem;color:var(--tp);padding:.5rem .7rem;border-radius:8px;border:1px solid var(--border);display:flex;align-items:center;gap:.5rem;background:var(--bg-card);}
@@ -452,7 +460,54 @@ write        overwrite the SAME file — no new file, no backup
   <aside class="panel" id="panel"><span class="x" onclick="closeD()">✕</span>
     <div class="pk" id="panelKicker">Detail</div>
     <div class="pb" id="panelBody"></div></aside>
-  <div id="sheets"></div>
+  <div id="sheets">
+    <dialog class="sheet" id="sheet-surf-sheet">
+      <button class="x" onclick="this.closest('dialog').close()">✕</button>
+      <div class="sf-body">
+        <div class="sf-kicker">Detail surfaces</div>
+        <h3 class="sf-h">Centered sheet</h3>
+        <p class="sf-summary">You are looking at one. A centered native <code>&lt;dialog&gt;</code> surface for richer content the narrow pane can't hold — a hosted diagram, a code block. It opens with <code>showModal()</code> for a free focus-trap and top-layer stacking, and it can itself open further detail: the chips below nest <em>inside</em> this sheet, capped at three levels.</p>
+        <figure class="sf-code"><figcaption>openSurface routing — site/walkthrough/index.html</figcaption><pre><code>const SURF = { 'surf-sheet':'sheet', 'cov-erd':'sheet' };
+
+function openSurface(id){
+  const k = SURF[id] || 'pane';            // route by id
+  if(k==='sheet') return _capPush(         // push a native &lt;dialog&gt;
+    document.getElementById('sheet-'+id)); // showModal() → top layer
+  openPane(id);                            // else: the glance pane
+}
+
+const MAX_DEPTH = 3;                        // sheets nest, capped at 3</code></pre></figure>
+        <div class="sf-related"><button class="chip neutral" onclick="openSurface('surf-pane')">surf-pane</button><button class="chip neutral" onclick="openSurface('surf-nested')">surf-nested</button></div>
+      </div>
+    </dialog>
+    <dialog class="sheet" id="sheet-cov-erd">
+      <button class="x" onclick="this.closest('dialog').close()">✕</button>
+      <div class="sf-body">
+        <div class="sf-kicker">v1.2.0 renderer</div>
+        <h3 class="sf-h">ERD</h3>
+        <p class="sf-summary">For data-model concepts — entities with field lists joined by cardinality. HTML entity cards, PK/FK on the <code>.chip</code> primitive, no fragile SVG edges. This sheet is roomy enough to host the renderer itself: the concept-coverage model maps many <code>concept</code> rows to one <code>renderer</code>.</p>
+        <div class="erd-demo">
+          <div class="erd-ent">
+            <h4>concept</h4>
+            <ul>
+              <li>id <span class="chip accent">PK</span></li>
+              <li>type</li>
+              <li>renderer <span class="chip neutral">FK</span></li>
+            </ul>
+          </div>
+          <div class="erd-rel"><span>→</span>N:1</div>
+          <div class="erd-ent">
+            <h4>renderer</h4>
+            <ul>
+              <li>id <span class="chip accent">PK</span></li>
+              <li>name</li>
+            </ul>
+          </div>
+        </div>
+        <div class="sf-related"><button class="chip neutral" onclick="openSurface('cov-htree')">cov-htree</button><button class="chip neutral" onclick="openSurface('cov-ladder')">cov-ladder</button></div>
+      </div>
+    </dialog>
+  </div>
   <dialog class="sheet pane-dialog" id="paneDialog"><button class="x" onclick="this.closest('dialog').close()">✕</button><div class="sf-body" id="paneDialogBody"></div></dialog>
   <script>
 // renderSurface — build a structured detail DOM from a DET record into `host`
@@ -512,6 +567,6 @@ const DET={
  'cov-erd':{k:"v1.2.0 renderer",h:"ERD",summary:"For data-model concepts — entities with field lists and relationships carrying cardinality (1:N, N:M). HTML entity cards joined by cardinality connector chips — no fragile SVG edges. PK/FK use the .chip primitive. Clickable entities open detail via openSurface. Distinct from the architecture map (services, no fields/cardinality)."},
  'cov-ladder':{k:"v1.2.0 renderer",h:"Causal hypothesis ladder",summary:"For causal-chain concepts — a debugging trace: symptom, candidate causes each ruled in or out by evidence, converging to a root cause and fix. HTML rows with .chip status (ruled-in = ok, ruled-out = danger) plus a root-cause→fix callout. Distinct from the flow (neutral processing stages, no evidence semantics)."}
 };
-const SURF={};
+const SURF={'surf-sheet':'sheet','cov-erd':'sheet'};
   </script>
 </body></html>
