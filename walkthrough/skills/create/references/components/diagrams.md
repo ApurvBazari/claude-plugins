@@ -263,3 +263,56 @@ document.querySelectorAll('#mode button').forEach(b=>b.addEventListener('click',
 
 **Hostable in a sheet:** embeddable via a detail's `components[]`; suffix any internal `id=` with the surface id so global ids stay unique (authoring-guide § 3).
 
+## Decision tree
+
+**When:** The session described **branching decision logic** — a tree of conditions with **labeled
+yes/no/condition edges and no cycles** (a router choosing a handler, a classifier, a guard ladder).
+This is NOT a flow (which has no branches) and NOT a state machine (which has cycles/back-edges).
+Inline SVG; decision nodes are accent-bordered, outcome leaves use the green `.leaf` tint; reuses the
+state diagram's arrowhead marker + guard-label idiom for the branch labels. Clickable → `openSurface`.
+
+```html
+<section id="<id>">
+  <div class="sec-label"><decision tree></div>
+  <h2>How it <em>decides</em></h2>
+  <div class="dtree">
+    <svg viewBox="0 0 660 300" role="img" aria-label="<decision tree description>">
+      <defs><marker id="dt-arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path class="dt-arrhead" d="M0,0 L8,4 L0,8 z"/></marker></defs>
+      <g class="dt-edges">
+        <path class="dt-edge" d="M330,76 L165,128" marker-end="url(#dt-arr)"/><text class="dt-guard" x="235" y="96">yes</text>
+        <path class="dt-edge" d="M330,76 L500,128" marker-end="url(#dt-arr)"/><text class="dt-guard" x="430" y="96">no</text>
+        <path class="dt-edge" d="M500,164 L420,216" marker-end="url(#dt-arr)"/><text class="dt-guard" x="476" y="186">yes</text>
+        <path class="dt-edge" d="M500,164 L580,216" marker-end="url(#dt-arr)"/><text class="dt-guard" x="556" y="186">no</text>
+      </g>
+      <g class="dt-node decision" role="button" tabindex="0" aria-label="<is X?>" data-d="d1" onclick="openSurface('d1')"><rect x="250" y="44" width="160" height="34" rx="8"/><text x="330" y="66" text-anchor="middle"><is X?></text></g>
+      <g class="dt-node leaf" role="button" tabindex="0" aria-label="<outcome A>" data-d="d2" onclick="openSurface('d2')"><rect x="95" y="126" width="140" height="34" rx="8"/><text x="165" y="148" text-anchor="middle"><outcome A></text></g>
+      <g class="dt-node decision" role="button" tabindex="0" aria-label="<is Y?>" data-d="d3" onclick="openSurface('d3')"><rect x="420" y="126" width="160" height="34" rx="8"/><text x="500" y="148" text-anchor="middle"><is Y?></text></g>
+      <g class="dt-node leaf" role="button" tabindex="0" aria-label="<outcome B>" data-d="d4" onclick="openSurface('d4')"><rect x="350" y="214" width="140" height="34" rx="8"/><text x="420" y="236" text-anchor="middle"><outcome B></text></g>
+      <g class="dt-node leaf" role="button" tabindex="0" aria-label="<outcome C>" data-d="d5" onclick="openSurface('d5')"><rect x="510" y="214" width="140" height="34" rx="8"/><text x="580" y="236" text-anchor="middle"><outcome C></text></g>
+    </svg>
+  </div>
+</section>
+```
+
+```css
+.dtree{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1.2rem 0;overflow-x:auto;}
+.dtree svg{display:block;min-width:600px;max-width:100%;height:auto;}
+.dt-edge{fill:none;stroke:var(--border-strong);stroke-width:1.5;transition:stroke .3s var(--ease);}
+.dtree:hover .dt-edge{stroke:var(--accent);}
+.dt-arrhead{fill:var(--border-strong);}
+.dt-guard{font-family:var(--mono);font-size:10px;fill:var(--ts);text-anchor:middle;}
+.dt-node{cursor:pointer;}
+.dt-node rect{fill:var(--bg-elevated);stroke:var(--border);transition:all .3s var(--ease);}
+.dt-node:hover rect{stroke:var(--accent);}
+.dt-node.decision rect{stroke:var(--accent);fill:color-mix(in srgb,var(--bg-elevated),var(--accent-soft));}
+.dt-node.leaf rect{fill:color-mix(in srgb,var(--bg-elevated),var(--green-soft));stroke:color-mix(in srgb,var(--green) 30%,transparent);}
+.dt-node text{font-family:var(--mono);font-size:11px;fill:var(--tp);}
+```
+
+**Wiring:** click → `openSurface('<id>')` (add a `details{}` entry per node). Lay nodes out by hand —
+one `<path>` per branch, a `.dt-guard` `<text>` on each. Mark condition nodes `.decision`, terminal
+outcomes `.leaf`. **Escape `<`/`>` in guard text as `&lt;`/`&gt;`** (e.g. `[n &lt; 5]`).
+
+**Hostable in a sheet:** suffix internal ids (`#dt-arr`, any `id=`) with the surface id (e.g.
+`dt-arr-rich`) so global ids stay unique (authoring-guide § 3).
+
