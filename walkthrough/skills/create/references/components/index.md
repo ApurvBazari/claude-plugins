@@ -42,5 +42,6 @@ read **only** the group files for the components you actually select. Paths are 
 | Annotated diff | A reviewed change — `diffHunks[]` with inline finding pins | `review.md` |
 | Findings list | Review `findings[]`, severity-ranked + filterable by category | `review.md` |
 | Adherence panel | `adherence` — spec items + plan steps marked met/partial/missing | `review.md` |
+| Cause→effect (hypothesis ladder) | A debugging trace — symptom → causes ruled in/out by evidence → root cause + fix | `reasoning.md` |
 
 ## Composing beyond the catalog — see `authoring-guide.md`.
