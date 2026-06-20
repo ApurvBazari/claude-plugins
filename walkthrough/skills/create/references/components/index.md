@@ -15,6 +15,7 @@ read **only** the group files for the components you actually select. Paths are 
 | Tabs + tradeoff bars | Decisions with scored trade-off axes | `decisions.md` |
 | Flow / pipeline diagram | A linear staged sequence | `diagrams.md` |
 | Architecture map | Non-linear services / layers | `diagrams.md` |
+| Layer stack | Ordered vertical layers, each touching only neighbors — tech / protocol / middleware stack | `diagrams.md` |
 | Dependency graph | Module / package imports | `diagrams.md` |
 | Recursive tree | A deep parent→child hierarchy (AST, component tree, taxonomy) — strict one-parent, n levels | `diagrams.md` |
 | Morphing-mode diagram | One structure shown in multiple modes | `diagrams.md` |

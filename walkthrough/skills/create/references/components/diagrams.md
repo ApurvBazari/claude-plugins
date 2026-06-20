@@ -366,3 +366,34 @@ mono tree styling. Internal nodes collapse; **leaf nodes are clickable → `open
 internal `<summary>` nodes toggle only. The disclosure caret is a CSS escape (`\25B8`); the bullet is
 `\2022` — the style block stays ASCII.
 
+## Layer stack
+
+**When:** An **ordered set of vertical layers where each layer talks only to its neighbors** — a tech
+stack, a network/protocol stack, a middleware chain. Distinct from the **architecture map** (free-form
+horizontal connections). Pure HTML/CSS full-width bands; top band = outermost, bottom = innermost.
+Clickable band → `openSurface`.
+
+```html
+<section id="<id>">
+  <div class="sec-label"><layers></div>
+  <h2>The <em>stack</em></h2>
+  <div class="lstack">
+    <div class="lstack-band" data-d="l1" onclick="openSurface('l1')"><span class="lstack-name"><UI></span><span class="lstack-role"><React components></span></div>
+    <div class="lstack-band" data-d="l2" onclick="openSurface('l2')"><span class="lstack-name"><API></span><span class="lstack-role"><tRPC handlers></span></div>
+    <div class="lstack-band" data-d="l3" onclick="openSurface('l3')"><span class="lstack-name"><Domain></span><span class="lstack-role"><services></span></div>
+    <div class="lstack-band" data-d="l4" onclick="openSurface('l4')"><span class="lstack-name"><Data></span><span class="lstack-role"><Postgres></span></div>
+  </div>
+</section>
+```
+
+```css
+.lstack{display:flex;flex-direction:column;gap:3px;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1rem;margin:1.2rem 0;}
+.lstack-band{display:flex;align-items:baseline;gap:.8rem;background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:.85rem 1.1rem;cursor:pointer;transition:all .3s var(--ease);}
+.lstack-band:hover{border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow);transform:translateX(3px);}
+.lstack-name{font-family:var(--mono);font-size:.74rem;font-weight:600;color:var(--tp);min-width:90px;}
+.lstack-role{font-family:var(--mono);font-size:.64rem;color:var(--ts);}
+```
+
+**Wiring:** click band → `openSurface('<id>')` (add a `details{}` entry per layer). Order bands
+top→bottom as outermost→innermost; no JS required (reveal via the shared IntersectionObserver).
+
