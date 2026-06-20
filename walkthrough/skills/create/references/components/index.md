@@ -15,9 +15,13 @@ read **only** the group files for the components you actually select. Paths are 
 | Tabs + tradeoff bars | Decisions with scored trade-off axes | `decisions.md` |
 | Flow / pipeline diagram | A linear staged sequence | `diagrams.md` |
 | Architecture map | Non-linear services / layers | `diagrams.md` |
+| Layer stack | Ordered vertical layers, each touching only neighbors — tech / protocol / middleware stack | `diagrams.md` |
 | Dependency graph | Module / package imports | `diagrams.md` |
+| Recursive tree | A deep parent→child hierarchy (AST, component tree, taxonomy) — strict one-parent, n levels | `diagrams.md` |
 | Morphing-mode diagram | One structure shown in multiple modes | `diagrams.md` |
+| ERD / schema | Entities with fields + relationships carrying cardinality (DB schema, types) | `data.md` |
 | State / transition diagram | States with guarded or cyclic transitions (back-edges, retry loops, self-loops) | `diagrams.md` |
+| Decision tree | Branching if/else logic — labeled yes/no/condition edges, a tree with no cycles | `diagrams.md` |
 | Sequence / swimlane diagram | Time-ordered messages exchanged between multiple actors | `diagrams.md` |
 | File tree | A handful of changed files | `files-timeline.md` |
 | Filterable cards + pills | Many discrete items grouped by category | `files-timeline.md` |
@@ -38,5 +42,6 @@ read **only** the group files for the components you actually select. Paths are 
 | Annotated diff | A reviewed change — `diffHunks[]` with inline finding pins | `review.md` |
 | Findings list | Review `findings[]`, severity-ranked + filterable by category | `review.md` |
 | Adherence panel | `adherence` — spec items + plan steps marked met/partial/missing | `review.md` |
+| Cause→effect (hypothesis ladder) | A debugging trace — symptom → causes ruled in/out by evidence → root cause + fix | `reasoning.md` |
 
 ## Composing beyond the catalog — see `authoring-guide.md`.

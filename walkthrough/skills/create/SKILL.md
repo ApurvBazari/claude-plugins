@@ -7,8 +7,9 @@ description: Generate an interactive HTML walkthrough of the current session —
 
 You are invoked via `/walkthrough:create [optional focus]`, or auto-invoked when the user asks
 to visualize/recap the session. Produce ONE self-contained interactive HTML file in the house
-style, then offer to open it. The renderer is five `references/` files plus the `references/components/`
-catalog (its `index.md` routes to per-group recipe files you read on demand). Load them as the steps direct.
+style, then offer to open it. The renderer is six `references/` files (including `concept-coverage.md`)
+plus the `references/components/` catalog (its `index.md` routes to per-group recipe files you read on
+demand). Load them as the steps direct.
 
 ## Step 1: Scope
 If an argument was given (e.g. `architecture decisions`), scope synthesis to that focus.
@@ -22,7 +23,7 @@ never invent a line number; if unverified, cite `path` only or omit.
 
 ## Step 3: Synthesize the session model
 Build the structured model per `references/session-model.md` (title, summary, typeTags,
-sections[], nodes[], edges[], decisions[], files[], timeline[], metrics[], openQuestions[],
+sections[], concepts[], nodes[], edges[], decisions[], files[], timeline[], metrics[], openQuestions[],
 details{}) BEFORE writing any HTML.
 
 ## Step 4: Coverage critic
@@ -37,6 +38,11 @@ Before accepting a catalog **diagram**, run the authoring-guide § 1 diagram-fid
 guarded `nodes[]`+`edges[]` → state / transition diagram; timed messages between actors → sequence /
 swimlane diagram; a shape the catalog still cannot draw faithfully → compose a bespoke diagram. Never
 force-fit a state machine or a message trace into a flow / architecture map.
+
+Run the **concept-fidelity gate** (`references/authoring-guide.md` § 1, routed by
+`references/concept-coverage.md`): classify each `concepts[]` entry into a concept-type, bind it to the
+registered renderer, and never force-fit an uncovered concept (compose bespoke instead). The
+mechanical concept-coverage assertion (`references/completeness.md` Part 1b) must pass before assemble.
 
 ## Step 6: Assemble the HTML
 Start from `references/page-scaffold.md`. Inline: the `@import` + both `:root` blocks from
