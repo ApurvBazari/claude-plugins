@@ -316,3 +316,53 @@ outcomes `.leaf`. **Escape `<`/`>` in guard text as `&lt;`/`&gt;`** (e.g. `[n &l
 **Hostable in a sheet:** suffix internal ids (`#dt-arr`, any `id=`) with the surface id (e.g.
 `dt-arr-rich`) so global ids stay unique (authoring-guide § 3).
 
+## Recursive tree
+
+**When:** A deep **parent→child hierarchy** with strict one-parent containment over n levels — an AST,
+a component tree, a taxonomy, a directory of concepts. Distinct from the **dependency graph** (import
+edges, shared leaves → a DAG) and the **mind map** (single-level radial). An **indented collapsible
+tree** via native `<details>` (the accordion's no-JS collapse) handles arbitrary depth and reuses the
+mono tree styling. Internal nodes collapse; **leaf nodes are clickable → `openSurface`**.
+
+```html
+<section id="<id>">
+  <div class="sec-label"><hierarchy></div>
+  <h2>The <em>tree</em></h2>
+  <div class="htree">
+    <details open class="ht-node">
+      <summary class="ht-row"><span class="ht-label"><App></span></summary>
+      <div class="ht-children">
+        <details open class="ht-node">
+          <summary class="ht-row"><span class="ht-label"><Router></span></summary>
+          <div class="ht-children">
+            <div class="ht-row ht-leaf" data-d="r1" onclick="openSurface('r1')"><span class="ht-label"><Route /></span></div>
+            <div class="ht-row ht-leaf" data-d="r2" onclick="openSurface('r2')"><span class="ht-label"><Route /x></span></div>
+          </div>
+        </details>
+        <details class="ht-node">
+          <summary class="ht-row"><span class="ht-label"><Store></span></summary>
+          <div class="ht-children"><div class="ht-row ht-leaf" data-d="s1" onclick="openSurface('s1')"><span class="ht-label"><slice></span></div></div>
+        </details>
+      </div>
+    </details>
+  </div>
+</section>
+```
+
+```css
+.htree{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.2rem 1.4rem;margin:1.2rem 0;font-family:var(--mono);font-size:.72rem;}
+.ht-row{display:flex;align-items:center;gap:.4rem;padding:.22rem .3rem;border-radius:6px;color:var(--tp);}
+.ht-children{padding-left:1.1rem;border-left:1px solid var(--border);margin-left:.35rem;}
+.ht-node>summary{list-style:none;cursor:pointer;}
+.ht-node>summary::-webkit-details-marker{display:none;}
+.ht-node>summary::before{content:"\25B8";color:var(--tm);font-size:.6rem;margin-right:.15rem;transition:transform .2s var(--ease);display:inline-block;}
+.ht-node[open]>summary::before{transform:rotate(90deg);}
+.ht-leaf{cursor:pointer;color:var(--ts);}
+.ht-leaf::before{content:"\2022";color:var(--tm);margin-right:.35rem;}
+.ht-leaf:hover,.ht-node>summary:hover{background:var(--bg-card-hover);color:var(--accent);}
+```
+
+**Wiring:** native `<details>` collapse — no JS. Leaf rows carry `data-d` + `onclick="openSurface('<id>')"`;
+internal `<summary>` nodes toggle only. The disclosure caret is a CSS escape (`\25B8`); the bullet is
+`\2022` — the style block stays ASCII.
+

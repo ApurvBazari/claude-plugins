@@ -16,6 +16,7 @@ read **only** the group files for the components you actually select. Paths are 
 | Flow / pipeline diagram | A linear staged sequence | `diagrams.md` |
 | Architecture map | Non-linear services / layers | `diagrams.md` |
 | Dependency graph | Module / package imports | `diagrams.md` |
+| Recursive tree | A deep parent→child hierarchy (AST, component tree, taxonomy) — strict one-parent, n levels | `diagrams.md` |
 | Morphing-mode diagram | One structure shown in multiple modes | `diagrams.md` |
 | State / transition diagram | States with guarded or cyclic transitions (back-edges, retry loops, self-loops) | `diagrams.md` |
 | Decision tree | Branching if/else logic — labeled yes/no/condition edges, a tree with no cycles | `diagrams.md` |
