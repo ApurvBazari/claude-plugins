@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.2.0 — 2026-06-20
+
+### Concept-coverage layer
+- feat: `concept-coverage.md` — an auditable map of every concept-type the walkthrough can explain,
+  routing each to its renderer (or a logged bespoke). Answers "what can we explain, and what's missing?"
+  from one file.
+- feat: `concepts[]` ledger on the session model — each concept a doc explains + how it renders.
+- feat: the diagram-fidelity check is generalized into a universal **concept-fidelity gate** with an
+  anti-force-fit invariant (a concept is never rendered by a component not registered for its type).
+- feat: `completeness.md` gains a mechanical concept-coverage assertion + a coverage-note summary line.
+
+### Five new renderers (concept map ships at zero uncovered rows)
+- feat: **decision tree** (`branching-logic`) — labeled yes/no/condition edges, a tree, no cycles.
+- feat: **ERD / schema** (`data-model`) — entity cards + cardinality connector chips.
+- feat: **recursive tree** (`hierarchy`) — indented collapsible tree for deep parent→child structures.
+- feat: **layer stack** (`layering`) — ordered vertical bands (tech / protocol / middleware stacks).
+- feat: **cause→effect hypothesis ladder** (`causal-chain`) — debugging traces (symptom → ruled in/out → fix).
+- New group files: `components/data.md`, `components/reasoning.md`. `update` reconstructs all five + the ledger.
+
+All additive and inert-by-omission — sessions that don't need the new concepts render exactly as before.
+
 ## 1.1.0 — 2026-06-19
 
 First marketplace release after 1.0.0 — consolidates the detail-surfaces, lens review-render layer, Cowork support, and grouped-adherence work. (These landed as internal 1.2.0–1.4.0 increments on the integration branch and were never published; folded into a single public minor bump.)

@@ -93,6 +93,14 @@ First-class additions in v1.1.0:
 
 First-class additions in v1.1.0 (lens review layer): components/review.md (annotated-diff, findings-list, adherence-panel) + optional review fields on session-model + files[].risk coloring — all populated only by lens.
 
+First-class additions in v1.2.0 (concept-coverage layer):
+- **`concept-coverage.md`** — the concept→renderer map + disambiguation rules; the auditable answer to
+  "what can we explain?". The `concepts[]` session-model ledger records each concept + its renderer.
+- **Concept-fidelity gate** (`authoring-guide.md` § 1) — generalizes the diagram-fidelity check to every
+  concept-type with an anti-force-fit invariant.
+- **Five new renderers** — decision tree + recursive tree + layer stack (`components/diagrams.md`),
+  ERD (`components/data.md`), causal hypothesis ladder (`components/reasoning.md`).
+
 ## Detail surfaces
 
 Clicking an interactive node, card, or cross-link chip opens its detail through **one router**, `openSurface(id)`, which routes to one of two shells rendered from a single structured schema:
