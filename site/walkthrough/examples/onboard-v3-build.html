@@ -1,0 +1,401 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>onboard v3 — Research-Grounded Onboarding — walkthrough</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root{
+  --bg-deep:#08090c; --bg-card:#0f1117; --bg-card-hover:#151821; --bg-elevated:#1a1d28; --bg-inset:#060709;
+  --border:#1e2230; --border-active:#2d3348; --border-strong:#3a4159;
+  --tp:#e8eaf0; --ts:#7d8399; --tm:#4a5068; --tf:#2e3349;
+  --blue:#3b82f6; --green:#22c55e; --amber:#f59e0b; --rose:#f43f5e; --purple:#a78bfa;
+  --accent:#22d3ee; --accent-glow:rgba(34,211,238,.16); --accent-soft:rgba(34,211,238,.08);
+  --blue-soft:rgba(59,130,246,.1); --green-soft:rgba(34,197,94,.1); --amber-soft:rgba(245,158,11,.1); --rose-soft:rgba(244,63,94,.1); --purple-soft:rgba(167,139,250,.1);
+  --mono:'JetBrains Mono',monospace; --serif:'Instrument Serif',serif; --sans:'DM Sans',sans-serif;
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+html[data-theme="light"]{
+  --bg-deep:#faf8f4; --bg-card:#fff; --bg-card-hover:#f5f1ea; --bg-elevated:#fff; --bg-inset:#f5f1ea;
+  --border:#e5dfd6; --border-active:#d8cfc1; --border-strong:#c9c0b3;
+  --tp:#2a2520; --ts:#6b6157; --tm:#9e9486; --tf:#c9c0b3;
+  --blue:#2d5fa0; --green:#2d7a3a; --amber:#b87333; --rose:#b83a3a; --purple:#7a3b8f;
+  --accent:#c05e2b; --accent-glow:rgba(192,94,43,.16); --accent-soft:rgba(192,94,43,.09);
+  --blue-soft:rgba(45,95,160,.1); --green-soft:rgba(45,122,58,.1); --amber-soft:rgba(184,115,51,.1); --rose-soft:rgba(184,58,58,.1); --purple-soft:rgba(122,59,143,.1);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg-deep);color:var(--tp);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .3s,color .3s;}
+body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+nav{position:fixed;top:0;left:0;right:0;height:54px;z-index:100;backdrop-filter:blur(20px) saturate(180%);background:color-mix(in srgb,var(--bg-deep) 82%,transparent);border-bottom:1px solid var(--border);}
+.nav-in{max-width:1180px;margin:0 auto;height:100%;display:flex;align-items:center;justify-content:space-between;padding:0 1.6rem;}
+.logo{font-family:var(--mono);font-size:.82rem;font-weight:600;letter-spacing:.02em;}
+.logo span{color:var(--accent);}
+.nav-links{display:flex;gap:.3rem;font-family:var(--mono);font-size:.68rem;}
+.nav-links a{color:var(--ts);text-decoration:none;padding:.3rem .55rem;border-radius:6px;transition:.2s;}
+.nav-links a:hover,.nav-links a.on{color:var(--tp);background:var(--accent-soft);}
+.nav-meta{display:flex;align-items:center;gap:.45rem;font-family:var(--mono);font-size:.62rem;color:var(--tm);text-transform:uppercase;letter-spacing:.12em;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2.5s infinite;}
+.theme-btn{cursor:pointer;font-family:var(--mono);font-size:.62rem;color:var(--ts);border:1px solid var(--border);padding:.28rem .6rem;border-radius:6px;background:none;}
+.progress{position:fixed;top:54px;left:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--blue));z-index:101;width:0;box-shadow:0 0 8px var(--accent-glow);}
+main{max-width:1180px;margin:0 auto;padding:0 1.6rem;padding-top:78px;counter-reset:sec;}
+.eyebrow{font-family:var(--mono);font-size:.68rem;color:var(--accent);text-transform:uppercase;letter-spacing:.18em;display:inline-flex;align-items:center;gap:.6rem;margin-bottom:.8rem;}
+.eyebrow::before{content:'';width:26px;height:1px;background:var(--accent);}
+h1{font-family:var(--serif);font-size:clamp(2.4rem,6vw,4rem);font-weight:400;line-height:1.04;letter-spacing:-.025em;margin:.2rem 0;max-width:880px;}
+h1 em,h2 em{font-style:italic;color:var(--accent);}
+h2{font-family:var(--serif);font-size:clamp(1.7rem,3.5vw,2.4rem);font-weight:400;line-height:1.15;margin:.2rem 0 .3rem;}
+.lede{color:var(--ts);font-size:1.08rem;line-height:1.7;max-width:720px;margin:.6rem 0 0;}
+p{color:var(--ts);font-size:.92rem;line-height:1.7;max-width:720px;}
+p code,li code{font-family:var(--mono);font-size:.8rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
+section{padding:4rem 0 2rem;scroll-margin-top:70px;opacity:0;transform:translateY(24px);transition:opacity .7s var(--ease),transform .7s var(--ease);}
+section.vis{opacity:1;transform:none;}
+.sec-label{counter-increment:sec;font-family:var(--mono);font-size:.65rem;color:var(--tm);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.5rem;}
+.sec-label::before{content:counter(sec,decimal-leading-zero) " \2014 ";}
+.hstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:1.8rem;}
+.hstat{background:var(--bg-card);padding:1.1rem 1.2rem;}
+.hstat .v{font-family:var(--serif);font-size:1.9rem;color:var(--tp);line-height:1;}
+.hstat .v em{font-style:italic;color:var(--accent);}
+.hstat .l{font-family:var(--mono);font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;margin-top:.4rem;}
+.panel{position:fixed;top:0;right:0;width:300px;height:100vh;background:var(--bg-card);border-left:1px solid var(--border-active);padding:24px 20px;overflow:auto;transform:translateX(100%);transition:transform .25s var(--ease);box-shadow:-20px 0 50px rgba(0,0,0,.3);z-index:200;}
+.panel.open{transform:none;}
+.panel .x{position:absolute;top:14px;right:16px;color:var(--tm);cursor:pointer;font-size:18px;}
+.panel .pk{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);}
+.panel h3{font-family:var(--serif);font-weight:400;font-size:1.4rem;margin:.2rem 0 .6rem;}
+.panel .pb{font-size:.86rem;color:var(--ts);line-height:1.6;}
+.panel code{font-family:var(--mono);font-size:.72rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
+.panel .sf-h{font-family:var(--serif);font-weight:400;font-size:1.4rem;margin:.2rem 0 .5rem;}
+.sf-summary{font-size:.86rem;color:var(--ts);line-height:1.6;margin:0 0 .8rem;}
+.sf-where{display:flex;flex-wrap:wrap;gap:.35rem;margin:.2rem 0 .8rem;}
+.sf-loc{font-family:var(--mono);font-size:.7rem;background:var(--accent-soft);color:var(--accent);padding:1px 6px;border-radius:4px;}
+.sf-code{margin:.2rem 0 .8rem;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.sf-code figcaption{font-family:var(--mono);font-size:.6rem;color:var(--tm);background:var(--bg-inset);padding:.3rem .6rem;}
+.sf-code pre{margin:0;padding:.6rem;overflow:auto;font-family:var(--mono);font-size:.72rem;color:var(--tp);}
+.sf-points{margin:.2rem 0 .8rem;padding-left:1.1rem;}
+.sf-points li{font-size:.84rem;color:var(--ts);margin:.25rem 0;}
+.sf-related{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.6rem;}
+.sf-related .chip{cursor:pointer;border:none;}
+dialog.sheet{max-width:min(900px,92vw);width:100%;max-height:86vh;border:1px solid var(--border-active);border-radius:14px;background:var(--bg-card);color:var(--tp);padding:0;overflow:hidden;box-shadow:0 30px 80px -20px rgba(0,0,0,.5);}
+dialog.sheet::backdrop{background:color-mix(in srgb,var(--bg-deep) 70%,transparent);backdrop-filter:blur(6px) saturate(140%);}
+dialog.sheet>.x{position:absolute;top:12px;right:14px;color:var(--tm);cursor:pointer;font-size:18px;background:none;border:none;z-index:1;}
+dialog.sheet .sf-body{padding:26px 24px;overflow:auto;flex:1;min-height:0;}
+dialog.sheet .sf-kicker{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);}
+dialog.sheet[open]{display:flex;flex-direction:column;animation:sheetIn .26s var(--ease);}
+@keyframes sheetIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){dialog.sheet[open]{animation:none;}}
+dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;height:100vh;max-height:100vh;border-radius:0;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@media(max-width:780px){.nav-links{display:none}}
+.chip{display:inline-flex;align-items:center;gap:.35rem;font-family:var(--mono);font-size:.6rem;font-weight:500;text-transform:uppercase;letter-spacing:.06em;padding:.2rem .55rem;border-radius:20px;border:1px solid var(--border);background:var(--bg-card);color:var(--ts);}
+.chip::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;}
+.chip.ok{color:var(--green);background:var(--green-soft);border-color:color-mix(in srgb,var(--green) 30%,transparent);}
+.chip.info{color:var(--blue);background:var(--blue-soft);border-color:color-mix(in srgb,var(--blue) 30%,transparent);}
+.chip.warn{color:var(--amber);background:var(--amber-soft);border-color:color-mix(in srgb,var(--amber) 30%,transparent);}
+.chip.danger{color:var(--rose);background:var(--rose-soft);border-color:color-mix(in srgb,var(--rose) 30%,transparent);}
+.chip.neutral{color:var(--ts);background:var(--bg-elevated);border-color:var(--border);}
+/* callout */
+.callout{background:var(--accent-soft);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:.9rem 1.2rem;margin:1.1rem 0;}
+.callout h4{font-family:var(--serif);font-weight:400;color:var(--accent);margin:0 0 .3rem;font-size:1.1rem;}
+.callout p{margin:0;font-size:.86rem;color:var(--ts);}
+.callout code{font-family:var(--mono);font-size:.78rem;background:var(--bg-card);color:var(--accent);padding:1px 5px;border-radius:4px;}
+/* key-value / edge grid + open questions */
+.edge-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:.7rem;margin-top:1rem;}
+.edge{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:.85rem 1rem;}
+.edge .n{font-family:var(--mono);font-size:.62rem;color:var(--accent);}
+.edge .t{font-weight:600;margin:.2rem 0;font-size:.88rem;color:var(--tp);}
+.edge p{font-size:.78rem;margin:0;color:var(--ts);}
+.oq{display:flex;gap:.8rem;align-items:flex-start;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:.8rem 1.1rem;margin-bottom:.6rem;}
+.oq .q{font-family:var(--serif);font-style:italic;color:var(--accent);font-size:1.3rem;line-height:1;}
+.oq div{font-size:.86rem;color:var(--ts);}
+/* tabs + tradeoff bars */
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;margin:1.4rem 0;}
+.tab{position:relative;text-align:left;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1rem 1.1rem;cursor:pointer;transition:all .25s var(--ease);}
+.tab:hover{border-color:var(--border-strong);}
+.tab.active{border-color:var(--accent);background:var(--bg-card-hover);box-shadow:0 0 0 1px var(--accent),0 8px 32px -8px var(--accent-glow);}
+.tab .letter{font-family:var(--serif);font-style:italic;font-size:1.5rem;color:var(--accent);}
+.tab .tt{font-weight:600;margin:.2rem 0;}
+.tab .tb{font-size:.8rem;color:var(--ts);}
+.rec{position:absolute;top:-9px;right:12px;font-family:var(--mono);font-size:.58rem;text-transform:uppercase;letter-spacing:.1em;background:var(--accent);color:var(--bg-deep);padding:.2rem .5rem;border-radius:20px;opacity:0;transition:opacity .3s;}
+.tab.chosen .rec{opacity:1;}
+.detail{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.3rem;display:none;}
+.detail.show{display:grid;grid-template-columns:1.3fr 1fr;gap:1.6rem;animation:fadeUp .4s var(--ease);}
+.proscons{display:flex;gap:1.4rem;margin-top:.7rem;font-size:.82rem;}
+.proscons .p b,.proscons .c b{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.1em;display:block;margin-bottom:.3rem;}
+.proscons .p li{color:var(--green);} .proscons .c li{color:var(--rose);}
+.proscons ul{margin:0;padding-left:1rem;}
+.bar{display:grid;grid-template-columns:90px 1fr 28px;gap:.7rem;align-items:center;margin-bottom:.6rem;font-family:var(--mono);font-size:.66rem;}
+.bar .trk{height:9px;background:var(--border);border-radius:5px;overflow:hidden;}
+.bar .fil{height:100%;border-radius:5px;width:0;transition:width .8s var(--ease);}
+@media(max-width:780px){.tabs{grid-template-columns:1fr}.detail.show{grid-template-columns:1fr}}
+/* flow diagram */
+.flow{display:flex;align-items:center;flex-wrap:wrap;gap:.4rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1.2rem 0;}
+.fnode{flex:1;min-width:110px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:.8rem .9rem;font-family:var(--mono);font-size:.7rem;cursor:pointer;transition:all .3s var(--ease);}
+.fnode:hover{border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow);transform:scale(1.03);}
+.fnode .nl{font-size:.55rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;}
+.fnode.accent{border-color:color-mix(in srgb,var(--accent) 40%,transparent);background:linear-gradient(135deg,var(--bg-elevated),var(--accent-soft));}
+.farr{color:var(--border-strong);font-size:1.1rem;}
+/* accordion checklist */
+.acc{border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:1rem;}
+.acc details{border-bottom:1px solid var(--border);}
+.acc details:last-child{border-bottom:none;}
+.acc summary{list-style:none;padding:.85rem 1.1rem;cursor:pointer;display:flex;align-items:center;gap:.7rem;background:var(--bg-card);font-size:.9rem;}
+.acc summary::-webkit-details-marker{display:none;}
+.acc summary .badge{width:18px;height:18px;border-radius:5px;font-size:.7rem;display:flex;align-items:center;justify-content:center;font-family:var(--mono);}
+.acc summary .chev{margin-left:auto;color:var(--tm);transition:transform .2s;}
+.acc details[open] summary .chev{transform:rotate(90deg);}
+.acc .ac-body{padding:.4rem 1.1rem 1rem 2.7rem;font-size:.84rem;color:var(--ts);background:var(--bg-card);}
+.acc .ref{font-family:var(--mono);font-size:.66rem;color:var(--accent);margin-top:.4rem;}
+/* file tree */
+.tree{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.3rem;font-family:var(--mono);font-size:.72rem;line-height:1.75;color:var(--ts);white-space:pre;overflow-x:auto;margin-top:1rem;}
+.tree .dir{color:var(--accent);}
+.tree .fl{color:var(--blue);}
+.tree .nw{color:var(--green);font-size:.58rem;}
+.tree .ed{color:var(--amber);font-size:.58rem;}
+.tree .rm{color:var(--rose);font-size:.58rem;}
+.tree .fl.gone{color:var(--tm);text-decoration:line-through;}
+</style></head>
+<body>
+  <nav><div class="nav-in">
+    <div class="logo">◆ walk<span>through</span></div>
+    <div class="nav-links"><a href="#problem" class="on">problem</a><a href="#approaches">approaches</a><a href="#flow">flow</a><a href="#engine">engine</a><a href="#decisions">decisions</a><a href="#artifacts">artifacts</a><a href="#changes">changes</a><a href="#roadmap">roadmap</a></div>
+    <div style="display:flex;align-items:center;gap:.8rem">
+      <div class="nav-meta"><span class="dot"></span> DESIGN · 2026-06-13 · ONBOARD v3</div>
+      <button class="theme-btn" onclick="tgl()">◑ THEME</button></div>
+  </div></nav>
+  <div class="progress" id="prog"></div>
+  <main>
+    <section id="top" class="vis" style="padding-top:2.4rem">
+      <div class="eyebrow">Session walkthrough · brainstorm</div>
+      <h1>onboard v3 — <em>research-grounded</em> onboarding</h1>
+      <p class="lede">A design session that rearchitects the <code>onboard</code> plugin so understanding a repo is driven by a deep, parallel, adversarially-verified <em>research phase</em> — not a single-pass analyzer. Research runs first and deep: it collapses the wizard into a confirm/override surface, grounds richer generation, and emits four new foundational artifacts. The engine is portable-first on subagents (Workflow tool as a power-up), the roster is <em>extensible</em>, recon is <em>script-free</em>, and every artifact is a render of one model — markdown always, interactive HTML when the walkthrough plugin is present.</p>
+      <div class="hstats">
+        <div class="hstat"><div class="v"><em>7+</em></div><div class="l">Research specialists</div></div>
+        <div class="hstat"><div class="v">4</div><div class="l">New artifacts</div></div>
+        <div class="hstat"><div class="v">2</div><div class="l">Engine backends</div></div>
+        <div class="hstat"><div class="v">3.0</div><div class="l">Target version</div></div>
+      </div>
+    </section>
+
+    <section id="problem">
+      <div class="sec-label">the gap</div>
+      <h2>Why single-pass analysis <em>falls short</em></h2>
+      <p class="lede">Today onboard understands a repo in one pass: the <code>codebase-analyzer</code> agent runs three scripts and skims files into one flat report, which — with wizard answers — feeds generation.</p>
+      <p>A single context window can only skim a large repo, nobody cross-checks the analyzer's claims, and the 6-phase wizard then asks the developer questions the codebase could already answer. Plausible-but-wrong findings flow straight into the rules and CLAUDE.md the tool writes.</p>
+      <div class="callout"><h4>The core insight</h4><p>The analysis is <strong>breadth-first and self-attested</strong> — one agent skims everything and grades its own work. The newer Claude Code primitives (the Workflow tool, parallel subagents, the deep-research fan-out then verify then synthesize pattern) are built precisely for deep, parallel, <em>verified</em> investigation.</p></div>
+    </section>
+
+    <section id="approaches">
+      <div class="sec-label">three approaches</div>
+      <h2>Three altitudes, one <em>chosen</em></h2>
+      <p class="lede">All three share the same heart — a portable research panel. They differ in how much of onboard gets rearchitected around it. We designed to <strong>B</strong>.</p>
+      <div class="tabs">
+        <div class="tab" data-app="a" onclick="setTab('a')"><span class="letter">A</span><div class="tt">Research Panel</div><div class="tb">Bolt-on beside today's pipeline</div></div>
+        <div class="tab chosen active" data-app="b" onclick="setTab('b')"><span class="rec">Chosen</span><span class="letter">B</span><div class="tt">Research-Grounded v3</div><div class="tb">Research becomes the spine</div></div>
+        <div class="tab" data-app="c" onclick="setTab('c')"><span class="letter">C</span><div class="tt">Dual-Engine Platform</div><div class="tb">B + re-runnable research</div></div>
+      </div>
+      <div class="detail" data-app="a">
+        <div><h3 style="font-family:var(--serif);font-weight:400;margin:.1rem 0 .4rem">A · Research Panel (bolt-on)</h3><p style="font-size:.86rem;color:var(--ts)">Add the panel beside today's pipeline; keep the wizard and the v2 context shape intact.</p>
+          <div class="proscons"><div class="p"><b>Pros</b><ul><li>Lower risk, ships fast (2.1)</li><li>No reorder of the flow</li></ul></div><div class="c"><b>Cons</b><ul><li>Research and wizard duplicate effort</li><li>Wizard stays a cold interrogation</li></ul></div></div></div>
+        <div class="chart">
+          <div class="bar"><span>payoff</span><div class="trk"><div class="fil" style="background:var(--green)" data-w="50"></div></div><span>50</span></div>
+          <div class="bar"><span>effort</span><div class="trk"><div class="fil" style="background:var(--amber)" data-w="35"></div></div><span>35</span></div>
+          <div class="bar"><span>risk</span><div class="trk"><div class="fil" style="background:var(--rose)" data-w="30"></div></div><span>30</span></div>
+        </div>
+      </div>
+      <div class="detail show" data-app="b">
+        <div><h3 style="font-family:var(--serif);font-weight:400;margin:.1rem 0 .4rem">B · Research-Grounded v3</h3><p style="font-size:.86rem;color:var(--ts)">Reorder onboard around research: Recon then Research then Dossier then a grounded Wizard then Generation. v3 context shape, dual-backend engine, all four artifacts first-class.</p>
+          <div class="proscons"><div class="p"><b>Pros</b><ul><li>Wizard collapses to confirm/override</li><li>Generation is evidence-grounded</li><li>Four artifacts first-class</li></ul></div><div class="c"><b>Cons</b><ul><li>Major redesign</li><li>3.0 version bump</li></ul></div></div></div>
+        <div class="chart">
+          <div class="bar"><span>payoff</span><div class="trk"><div class="fil" style="background:var(--green)" data-w="90"></div></div><span>90</span></div>
+          <div class="bar"><span>effort</span><div class="trk"><div class="fil" style="background:var(--amber)" data-w="65"></div></div><span>65</span></div>
+          <div class="bar"><span>risk</span><div class="trk"><div class="fil" style="background:var(--rose)" data-w="55"></div></div><span>55</span></div>
+        </div>
+      </div>
+      <div class="detail" data-app="c">
+        <div><h3 style="font-family:var(--serif);font-weight:400;margin:.1rem 0 .4rem">C · Dual-Engine Platform</h3><p style="font-size:.86rem;color:var(--ts)">B plus a standalone <code>/onboard:research</code>, drift-aware re-research wired into evolve, and Workflow-native multi-vote verification as the default.</p>
+          <div class="proscons"><div class="p"><b>Pros</b><ul><li>Re-runnable and self-maintaining</li><li>Deepest verification</li></ul></div><div class="c"><b>Cons</b><ul><li>Largest scope</li><li>Best as a follow-on to B</li></ul></div></div></div>
+        <div class="chart">
+          <div class="bar"><span>payoff</span><div class="trk"><div class="fil" style="background:var(--green)" data-w="95"></div></div><span>95</span></div>
+          <div class="bar"><span>effort</span><div class="trk"><div class="fil" style="background:var(--amber)" data-w="90"></div></div><span>90</span></div>
+          <div class="bar"><span>risk</span><div class="trk"><div class="fil" style="background:var(--rose)" data-w="75"></div></div><span>75</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="flow">
+      <div class="sec-label">the spine</div>
+      <h2>The research-grounded <em>pipeline</em></h2>
+      <p class="lede">Research runs first and deep, so everything downstream is grounded in evidence instead of asking the developer cold. Click a stage for detail.</p>
+      <div class="flow">
+        <div class="fnode" onclick="openSurface('recon')"><div class="nl">stage 1</div>Recon — scope &amp; route</div>
+        <span class="farr">→</span>
+        <div class="fnode accent" onclick="openSurface('research')"><div class="nl">stage 2</div>Deep Research panel</div>
+        <span class="farr">→</span>
+        <div class="fnode" onclick="openSurface('artifacts')"><div class="nl">stage 3</div>Dossier + 4 artifacts</div>
+        <span class="farr">→</span>
+        <div class="fnode" onclick="openSurface('wizard')"><div class="nl">stage 4</div>Grounded Wizard</div>
+        <span class="farr">→</span>
+        <div class="fnode" onclick="openSurface('generation')"><div class="nl">stage 5</div>Generation</div>
+      </div>
+      <p>The empty-repo guard still fires <strong>before</strong> research — a zero-source repo skips straight to the existing stub path, untouched.</p>
+    </section>
+
+    <section id="engine">
+      <div class="sec-label">the engine</div>
+      <h2>Inside the research <em>engine</em></h2>
+      <p class="lede">One internal orchestrator, two interchangeable backends behind the same roster and verification logic. Specialist subagents each go deep on one dimension; an adversarial verifier refutes weak claims; a synthesizer merges what survives.</p>
+      <div class="callout"><h4>Portable by design</h4><p>The Workflow tool is not guaranteed in every user's environment, so <strong>subagents are the default substrate</strong>. The engine detects the Workflow tool at runtime and uses it only as a power-up — deeper fan-out and multi-vote verification — degrading gracefully where it is absent.</p></div>
+      <div class="callout"><h4>A floor, not a fixed set</h4><p>Teams add custom specialists (accessibility, i18n, a GraphQL-schema audit) and enable/disable built-ins via <code>.claude/onboard-research.config.json</code>. Custom findings follow the same schema, so they flow through the <em>same</em> verifier and synthesizer — extension never lowers the quality bar.</p></div>
+      <p>Depth is dialed by the existing presets, so the expensive part stays opt-in:</p>
+      <div class="edge-grid">
+        <div class="edge"><div class="n">Minimal</div><div class="t">Recon only</div><p>Essentially today's fast, cheap path — now script-free.</p></div>
+        <div class="edge"><div class="n">Standard</div><div class="t">~4 specialists + verify</div><p>Core dimensions, single adversarial pass.</p></div>
+        <div class="edge"><div class="n">Comprehensive</div><div class="t">Full 7 + multi-vote</div><p>Whole roster + any custom specialists; Workflow multi-vote when available.</p></div>
+      </div>
+    </section>
+
+    <section id="decisions">
+      <div class="sec-label">decisions</div>
+      <h2>The choices that <em>shaped</em> it</h2>
+      <p class="lede">Beyond picking approach B, nine decisions were ratified across the brainstorm.</p>
+      <div class="acc">
+        <details open><summary><span class="badge" style="background:var(--green-soft);color:var(--green)">✓</span> Scope — both, integrated (v3)<span class="chev">›</span></summary>
+          <div class="ac-body">Research and generation improve together as one coherent v3, rather than patching either half alone. Appetite: a bold redesign shipping as 3.0.</div></details>
+        <details><summary><span class="badge" style="background:var(--green-soft);color:var(--green)">✓</span> Portability — portable-first, optional power-up<span class="chev">›</span></summary>
+          <div class="ac-body">Subagents are universal; the Workflow tool is detected and used only as a power-up. The core research phase degrades gracefully where newer primitives are absent.</div></details>
+        <details><summary><span class="badge" style="background:var(--green-soft);color:var(--green)">✓</span> Recon — script-free (native tools)<span class="chev">›</span></summary>
+          <div class="ac-body">Retire <code>analyze-structure</code> / <code>detect-stack</code> / <code>measure-complexity</code>; recon uses native Glob/Grep/Read plus the odd inline <code>git ls-files</code>. Pure markdown+JSON, cross-platform, no shellcheck/path-bug surface. The generated target-repo drift hooks are unaffected.</div></details>
+        <details><summary><span class="badge" style="background:var(--green-soft);color:var(--green)">✓</span> Roster — extensible + tunable<span class="chev">›</span></summary>
+          <div class="ac-body">Users add custom research specialists and enable/disable built-in dimensions via <code>.claude/onboard-research.config.json</code>. Custom findings follow the same schema and flow through the same verifier + synthesizer.</div></details>
+        <details><summary><span class="badge" style="background:var(--green-soft);color:var(--green)">✓</span> Artifacts — markdown + optional interactive HTML<span class="chev">›</span></summary>
+          <div class="ac-body">Markdown stays canonical; when the walkthrough plugin is present, <code>onboard-research.json</code> also renders to self-contained interactive HTML via <code>walkthrough:render</code>, markdown fallback if absent. Mirrors the lens pattern.</div></details>
+        <details><summary><span class="badge" style="background:var(--amber-soft);color:var(--amber)">±</span> Artifact location — ask per-run, no default<span class="chev">›</span></summary>
+          <div class="ac-body">No baked-in default — teams differ, so synthesis prompts committed <code>docs/onboard/</code>, local <code>.claude/</code> only, or none. This overrode the recommended committed-by-default.<div class="ref">overrode recommendation</div></div></details>
+        <details><summary><span class="badge" style="background:var(--green-soft);color:var(--green)">✓</span> Verify backlog — seed feature-list.json<span class="chev">›</span></summary>
+          <div class="ac-body">The risk / test-gap register seeds <code>docs/feature-list.json</code> so findings become checkable items <code>onboard:verify</code> can act on — staying within the register's scope, no new subsystem.</div></details>
+        <details><summary><span class="badge" style="background:var(--green-soft);color:var(--green)">✓</span> Research depth — tied to existing presets<span class="chev">›</span></summary>
+          <div class="ac-body">Minimal / Standard / Comprehensive gate research depth, bounding cost — consistent with how presets already gate scope.</div></details>
+        <details><summary><span class="badge" style="background:var(--green-soft);color:var(--green)">✓</span> Context shape — v3 primary, v2 via adapter<span class="chev">›</span></summary>
+          <div class="ac-body"><code>generate</code> accepts v3 (primary) and v2 through an adapter (research-absent mode = today's behavior); v1 is still rejected. Keeps the internal contract migratable.</div></details>
+      </div>
+    </section>
+
+    <section id="artifacts">
+      <div class="sec-label">new artifacts</div>
+      <h2>Four new foundational <em>artifacts</em></h2>
+      <p class="lede">Human-readable docs plus one machine-readable companion — and every doc is a render of that one model. Location is chosen per run, but the research object always flows to the wizard and generation regardless.</p>
+      <div class="edge-grid">
+        <div class="edge"><div class="n">docs/onboard/research-dossier.md</div><div class="t">Research dossier</div><p>Per-dimension findings, each with file:line evidence + confidence. The re-runnable evidence base.</p></div>
+        <div class="edge"><div class="n">docs/onboard/architecture.md</div><div class="t">Architecture + data-flow map</div><p>Layers, entry points, persistence, external deps.</p></div>
+        <div class="edge"><div class="n">docs/onboard/risk-register.md</div><div class="t">Risk &amp; test-gap register</div><p>Fragile / under-tested / security hotspots — seeds the verify backlog.</p></div>
+        <div class="edge"><div class="n">docs/onboard/glossary.md + adr/</div><div class="t">Glossary + ADR seeds</div><p>Domain terms + ADRs seeded as <code>proposed</code> for the team to ratify.</p></div>
+        <div class="edge"><div class="n">.claude/onboard-research.json</div><div class="t">Canonical research data</div><p>What the wizard + generation actually read; the docs render from it.</p></div>
+      </div>
+      <div class="callout"><h4>One model, many renders</h4><p><code>.claude/onboard-research.json</code> is the single source of truth. Markdown stays canonical — diffable, committable, ADRs ratifiable. When the <strong>walkthrough</strong> plugin is present, the same model also renders to a self-contained interactive HTML (architecture → live diagram, risk register → filterable cards, findings → clickable evidence) via <code>walkthrough:render</code>; markdown-only if it is absent.</p></div>
+    </section>
+
+    <section id="changes">
+      <div class="sec-label">plugin changes</div>
+      <h2>What changes in the <em>plugin</em></h2>
+      <p class="lede">A new research skill, two specialist agents, three schemas (incl. the custom-roster config), and the v3 context shape — plus reorders to the existing skills and the retirement of the three recon scripts. Writes are additive, so rollback is clean.</p>
+      <div class="tree"><span class="dir">onboard/</span>
+├── <span class="fl">skills/research/SKILL.md</span>                      <span class="nw">new · orchestrator</span>
+├── <span class="fl">agents/research-specialist.md</span>                 <span class="nw">new · parameterized</span>
+├── <span class="fl">agents/research-verifier.md</span>                   <span class="nw">new · adversarial</span>
+├── <span class="fl">schemas/research-findings.json</span>                <span class="nw">new</span>
+├── <span class="fl">schemas/research-dossier.json</span>                 <span class="nw">new</span>
+├── <span class="fl">schemas/research-config.json</span>                  <span class="nw">new · custom roster</span>
+├── <span class="fl">skills/generate/references/context-shape-v3.json</span>  <span class="nw">new</span>
+├── <span class="fl">skills/start/SKILL.md</span>                          <span class="ed">edited · reorder phases</span>
+├── <span class="fl">skills/wizard/SKILL.md</span>                         <span class="ed">edited · confirm/override</span>
+├── <span class="fl">skills/generate/SKILL.md</span>                       <span class="ed">edited · accept v3</span>
+├── <span class="fl">skills/generation/SKILL.md</span>                     <span class="ed">edited · consume research</span>
+├── <span class="fl">agents/codebase-analyzer.md</span>                    <span class="ed">edited · recon, script-free</span>
+├── <span class="fl gone">scripts/analyze-structure.sh</span>                   <span class="rm">removed</span>
+├── <span class="fl gone">scripts/detect-stack.sh</span>                        <span class="rm">removed</span>
+├── <span class="fl gone">scripts/measure-complexity.sh</span>                  <span class="rm">removed</span>
+└── <span class="fl">.claude-plugin/plugin.json</span>                     <span class="ed">edited · 3.0.0</span></div>
+      <p>The marketplace entry (<code>.claude-plugin/marketplace.json</code>) bumps to <code>3.0.0</code> in lockstep. The retired recon scripts go script-free; the generated <em>target-repo</em> drift hooks (<code>detect-*-changes.sh</code>) are unaffected. Rollback = delete the additive <code>docs/onboard/</code> + <code>.claude/onboard-research.json</code> and restore the existing <code>CLAUDE.md.pre-onboard</code> backup, or pin <code>onboard@2.0.1</code> for the old single-pass flow.</p>
+    </section>
+
+    <section id="roadmap">
+      <div class="sec-label">deferred</div>
+      <h2>What we <em>deferred</em> — the C roadmap</h2>
+      <p class="lede">Three capabilities are explicitly out of scope for 3.0; each is a natural follow-on once the spine is proven.</p>
+      <div class="oq"><span class="q">1</span><div>A standalone, re-runnable <strong><code>/onboard:research</code></strong> decoupled from setup.</div></div>
+      <div class="oq"><span class="q">2</span><div><strong>Drift-aware incremental re-research</strong> wired into <code>onboard:evolve</code>, so the dossier stays live.</div></div>
+      <div class="oq"><span class="q">3</span><div>Promoting <strong>Workflow-native multi-vote verification</strong> from a power-up to a first-class deep mode.</div></div>
+    </section>
+  </main>
+  <aside class="panel" id="panel"><span class="x" onclick="closeD()">✕</span>
+    <div class="pk" id="panelKicker">Detail</div>
+    <div class="pb" id="panelBody"></div></aside>
+  <div id="sheets">
+    <dialog class="sheet" id="sheet-research">
+      <button class="x" onclick="this.closest('dialog').close()">✕</button>
+      <div class="sf-body">
+        <div class="sf-kicker">Engine · portable-first</div>
+        <h2 class="sf-h">Inside the research engine</h2>
+        <p class="sf-summary">One internal orchestrator with two interchangeable backends behind the same roster and verification logic. Subagents are the default substrate; if the Workflow tool is detected, it is used for deeper fan-out and multi-vote verification.</p>
+        <div class="sf-where"><code class="sf-loc">docs/superpowers/specs/2026-06-13-onboard-research-grounded-v3-design.md</code></div>
+        <ul class="sf-points">
+          <li><strong>Roster</strong> — 7 built-in specialists, each deep on one dimension: architecture, data model, testing, security, conventions, domain, dependencies/risk.</li>
+          <li><strong>Extensible</strong> — a floor, not a fixed set: users add custom specialists and toggle built-ins via <code>.claude/onboard-research.config.json</code>; custom findings flow through the same verifier.</li>
+          <li>Each specialist returns schema-validated findings: claims + file:line evidence + confidence.</li>
+          <li><strong>Verifier</strong> — an adversarial pass that tries to refute each claim; unsupported claims are dropped or down-confidence-ed and recorded in droppedClaims for transparency.</li>
+          <li><strong>Synthesizer</strong> — merges verified findings into the four artifacts and the research object; it runs in the skill's own context because it needs all findings at once.</li>
+          <li>A specialist that fails leaves its dimension marked <em>not assessed</em> — never fabricated.</li>
+        </ul>
+        <div class="sf-related"><button class="chip neutral" onclick="openSurface('wizard')">grounded wizard</button><button class="chip neutral" onclick="openSurface('generation')">generation</button></div>
+      </div>
+    </dialog>
+  </div>
+  <dialog class="sheet pane-dialog" id="paneDialog"><button class="x" onclick="this.closest('dialog').close()">✕</button><div class="sf-body" id="paneDialogBody"></div></dialog>
+  <script>
+// renderSurface — build a structured detail DOM from a DET record into `host`
+function renderSurface(d,host){if(!d||!host)return;let h='';
+ if(d.h)h+=`<h3 class="sf-h">${d.h}</h3>`;
+ if(d.summary)h+=`<p class="sf-summary">${d.summary}</p>`;
+ if(d.where&&d.where.length)h+=`<div class="sf-where">${d.where.map(w=>`<code class="sf-loc">${w}</code>`).join('')}</div>`;
+ if(d.code&&d.code.length)h+=d.code.map(c=>`<figure class="sf-code"><figcaption>${c.file||''}</figcaption><pre><code>${c.snippet||''}</code></pre></figure>`).join('');
+ if(d.points&&d.points.length)h+=`<ul class="sf-points">${d.points.map(p=>`<li>${p}</li>`).join('')}</ul>`;
+ if(d.components)h+=d.components;
+ if(d.related&&d.related.length)h+=`<div class="sf-related">${d.related.map(r=>`<button class="chip neutral" onclick="openSurface('${r}')">${r}</button>`).join('')}</div>`;
+ host.innerHTML=h;}
+const panel=document.getElementById('panel');
+function openPane(id){const d=DET[id];if(!d)return;
+ const k=document.getElementById('panelKicker');if(k)k.textContent=d.k||'Detail';
+ renderSurface(d,document.getElementById('panelBody'));panel.classList.add('open');}
+const _stack=[]; const MAX_DEPTH=3;
+function _capPush(el){if(!el||el.open)return;if(_stack.length>=MAX_DEPTH){const t=_stack.pop();if(t)t.close();}el.showModal();_stack.push(el);}
+function openSurface(id){const k=(typeof SURF!=='undefined'&&SURF[id])||'pane';
+ if(k==='sheet'){const el=document.getElementById('sheet-'+id);_capPush(el);return;}
+ if(_stack.length){const pd=document.getElementById('paneDialog'),d=DET[id],b=document.getElementById('paneDialogBody');
+  renderSurface(d,b);if(d&&d.k)b.insertAdjacentHTML('afterbegin',`<div class="sf-kicker">${d.k}</div>`);_capPush(pd);}
+ else openPane(id);}
+document.querySelectorAll('dialog.sheet').forEach(dlg=>{
+ dlg.addEventListener('close',()=>{const i=_stack.indexOf(dlg);if(i>-1)_stack.splice(i,1);});
+ dlg.addEventListener('click',e=>{if(e.target===dlg)dlg.close();});});
+function openCard(el){if(!el)return;openPane(el.dataset.id||'');}
+function openD(id){openSurface(id);}
+function closeD(){panel.classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!_stack.length)closeD();});
+function setTab(app){document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.app===app));
+ document.querySelectorAll('.detail').forEach(d=>{const on=d.dataset.app===app;d.classList.toggle('show',on);if(on)animate(d);});}
+function animate(scope){scope.querySelectorAll('.fil').forEach(f=>{f.style.width='0';requestAnimationFrame(()=>requestAnimationFrame(()=>{f.style.width=f.dataset.w+'%';}));});}
+function tog(el){el.classList.toggle('on');const set=new Set([...document.querySelectorAll('.pill.on')].map(p=>p.dataset.f));
+ document.querySelectorAll('.tcard').forEach(c=>c.classList.toggle('hidden',!set.has(c.dataset.cat)));}
+function tgl(){const h=document.documentElement;const t=h.getAttribute('data-theme')==='dark'?'light':'dark';h.setAttribute('data-theme',t);try{localStorage.setItem('wt-theme',t);}catch(e){}}
+(function(){try{const t=localStorage.getItem('wt-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vis');const d=e.target.querySelector('.detail.show');if(d)animate(d);}}),{threshold:.1});
+document.querySelectorAll('section').forEach(s=>io.observe(s));
+addEventListener('scroll',()=>{const sc=scrollY/(document.body.scrollHeight-innerHeight)*100;if(prog)prog.style.width=sc+'%';
+ let cur='';document.querySelectorAll('section[id]').forEach(s=>{if(scrollY>=s.offsetTop-120)cur=s.id;});
+ document.querySelectorAll('.nav-links a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+cur));},{passive:true});
+setTimeout(()=>{const d=document.querySelector('.detail.show');if(d)animate(d);},300);
+const DET={
+ recon:{k:"Phase · recon",h:"Recon — scope &amp; route",summary:"The existing analyzer, lightened and now script-free. It uses the native Glob / Grep / Read tools (plus the odd inline git ls-files) instead of shipped shell scripts. Its new job is to scope and route — decide which specialists run, over which subtrees, at what depth — so cost stays bounded on large repos instead of reading everything.",where:["onboard/agents/codebase-analyzer.md"],points:["Script-free: the 3 recon scripts are retired in favor of native tools","Routes the research panel; the empty-repo guard still fires before it"]},
+ artifacts:{k:"Output",h:"Four artifacts + canonical data",summary:"Synthesis writes four human-readable docs plus one machine-readable companion. Location is chosen per run — committed, local, or none — but the research object always flows to the wizard and generation regardless. Every doc is a render of that one model.",where:["docs/superpowers/specs/2026-06-13-onboard-research-grounded-v3-design.md"],points:["dossier · architecture · risk-register · glossary + ADR seeds","ADRs seeded as 'proposed' for the team to ratify",".claude/onboard-research.json is the source of truth; markdown is canonical, interactive HTML is an optional render"]},
+ wizard:{k:"Phase · grounded wizard",h:"Wizard collapses to confirm/override",summary:"Research already infers nearly everything the 6-phase wizard used to ask — team size, maturity, conventions, security posture, pain points. The wizard becomes a single grounded review: confirm or override the findings.",where:["onboard/skills/wizard/SKILL.md"],points:["Reuses the existing Quick-Mode inference path, powered by real research","autonomyLevel is still asked cold — never inferred","wizardAnswers shape unchanged, so generation stays backward-compatible"]},
+ generation:{k:"Phase · generation",h:"Generation reads the dossier",summary:"Generation gains the research object as a third input. Rules derive from verified conventions / security / testing findings rather than guesses; subdir CLAUDE.md placement follows architecture boundaries; the risk register seeds the verify backlog.",where:["onboard/skills/generation/SKILL.md"],points:["context v3 primary; v2 via adapter (research-absent mode); v1 rejected","Rules, skills, and agents are now evidence-grounded"]}
+};
+const SURF={recon:"pane",research:"sheet",artifacts:"pane",wizard:"pane",generation:"pane"};
+</script>
+</body></html>
