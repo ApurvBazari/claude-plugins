@@ -203,3 +203,10 @@ When the diff-correlated intent set exceeds this cap (more than 8 specs + plans)
 - Fill the 8 slots by priority (all Added first, then Modified) until the cap is reached.
 - Set `degraded: true` and **name the skipped specs/plans in `summary`** — never silently drop one (e.g.
   `"adherence capped at 8/11 intent docs; skipped: specs/foo.md, plans/bar.md"`).
+
+**The cap is source-agnostic.** This same ≤8-adherence / ≤11-finder bound applies to **injectedIntent**
+(§2 rule 0) exactly as it does to the diff-correlated set: if `injectedIntent` carries more than 8
+spec+plan entries, fill the 8 slots by priority (treat injected `role:"spec"` entries as Added-equivalent
+— unambiguous intent — ahead of any `role:"plan"` entries only if you must choose), set `degraded: true`,
+and **name the skipped injected docs in `summary`** by their `name` provenance tag — never silently drop
+one. Within the cap, an injected set does **not** set `degraded` (Task-1 rule 0).

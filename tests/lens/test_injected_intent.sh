@@ -19,4 +19,11 @@ grep -q 'sourcePlan' "$PIPE" || fail "INTENT: role plan maps to sourcePlan prove
 grep -qiE 'skip rules 1.4|skip .*rule 1|skip the (docs/superpowers|correlation)|skip rules 1 through 4' "$PIPE" || fail "INTENT: rule 0 must skip rules 1-4 (correlation/latest/transcript)"
 grep -qiE 'not .*degraded|never .*degraded|NOT set .?degraded|do not set .?degraded' "$PIPE" || fail "INTENT: injected (explicit, full-fidelity) intent must NOT set degraded"
 
+# === §8 cap applies to the injected path too ===
+grep -qiE 'injected.*cap|cap.*injected|injectedIntent .*(cap|exceed)' "$PIPE" || fail "CAP: §8 must state the cap applies to injectedIntent"
+grep -qiE 'name the skipped|named .*summary|skipped: ' "$PIPE" || fail "CAP: over-cap injected docs must be named, not silently dropped"
+# strengthening (controller-added): gate the §8 source-agnostic paragraph specifically — the two assertions
+# above pass against Task 1's §2 rule-0 text, so only this one proves the §8 edit was made.
+grep -qi 'source-agnostic' "$PIPE" || fail "CAP: §8 must add the source-agnostic paragraph covering injectedIntent"
+
 echo "PASS: lens injected intent"
