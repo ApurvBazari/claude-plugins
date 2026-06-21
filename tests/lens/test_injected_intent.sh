@@ -26,4 +26,8 @@ grep -qiE 'name the skipped|named .*summary|skipped: ' "$PIPE" || fail "CAP: ove
 # above pass against Task 1's §2 rule-0 text, so only this one proves the §8 edit was made.
 grep -qi 'source-agnostic' "$PIPE" || fail "CAP: §8 must add the source-agnostic paragraph covering injectedIntent"
 
+# === engine SKILL Step 2 mentions the injected override ===
+grep -q 'injectedIntent' "$ESKILL" || fail "SKILL: engine Step 2 must name injectedIntent"
+grep -qiE 'override|wins|highest|before .*docs/superpowers|skip' "$ESKILL" || fail "SKILL: Step 2 must say injectedIntent overrides the docs/superpowers correlation"
+
 echo "PASS: lens injected intent"

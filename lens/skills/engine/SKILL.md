@@ -29,10 +29,15 @@ on **both** the standalone (`taskIds`-bearing) and the compute-only paths; it is
 independent of `taskIds`.
 
 ## Step 2: Intent
-Build the intent record — it may **span multiple specs/plans**. Selection is **diff-correlated**: explicit
-args win; else every `docs/superpowers/specs/*` and `docs/superpowers/plans/*` file **Added or Modified** in
-the SCOPE diff (prefer Added; modified-only → `degraded:true`); else the latest-only fallback (single most
-recent spec, else plan); else reconstruct from the transcript (`degraded:true`). See `references/pipeline.md` §2.
+Build the intent record — it may **span multiple specs/plans**. **If the caller passed a non-empty
+`injectedIntent` array (a programmatic caller such as matali), it wins outright** — build the record
+**verbatim** from each entry's `content`, tag provenance from `name` (`sourceSpec`/`sourcePlan`), select the
+fan-out agent from `role` (`spec`/`plan`), do **not** set `degraded`, and **skip** the docs/superpowers
+correlation, the latest-only fallback, and transcript reconstruction (pipeline §2 rule 0). Otherwise selection
+is **diff-correlated**: explicit args win; else every `docs/superpowers/specs/*` and `docs/superpowers/plans/*`
+file **Added or Modified** in the SCOPE diff (prefer Added; modified-only → `degraded:true`); else the
+latest-only fallback (single most recent spec, else plan); else reconstruct from the transcript
+(`degraded:true`). See `references/pipeline.md` §2.
 
 ## Step 3: Analyze
 Dispatch the built-in finder agents concurrently (`correctness`, `risk-classify`, `test-gaps`) plus the
