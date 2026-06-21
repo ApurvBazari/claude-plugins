@@ -63,13 +63,39 @@ section.vis{opacity:1;transform:none;}
 .panel h3{font-family:var(--serif);font-weight:400;font-size:1.4rem;margin:.2rem 0 .6rem;}
 .panel .pb{font-size:.86rem;color:var(--ts);line-height:1.6;}
 .panel code{font-family:var(--mono);font-size:.72rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
+.panel .sf-h,dialog.sheet .sf-h{font-family:var(--serif);font-weight:400;font-size:1.4rem;margin:.2rem 0 .5rem;}
+.sf-summary{font-size:.86rem;color:var(--ts);line-height:1.6;margin:0 0 .8rem;}
+.sf-where{display:flex;flex-wrap:wrap;gap:.35rem;margin:.2rem 0 .8rem;}
+.sf-loc{font-family:var(--mono);font-size:.7rem;background:var(--accent-soft);color:var(--accent);padding:1px 6px;border-radius:4px;}
+.sf-code{margin:.2rem 0 .8rem;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.sf-code figcaption{font-family:var(--mono);font-size:.6rem;color:var(--tm);background:var(--bg-inset);padding:.3rem .6rem;}
+.sf-code pre{margin:0;padding:.6rem;overflow:auto;font-family:var(--mono);font-size:.72rem;color:var(--tp);}
+.sf-points{margin:.2rem 0 .8rem;padding-left:1.1rem;}
+.sf-points li{font-size:.84rem;color:var(--ts);margin:.25rem 0;}
+.sf-related{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.6rem;}
+.sf-related .chip{cursor:pointer;border:none;}
+dialog.sheet{max-width:min(900px,92vw);width:100%;max-height:86vh;border:1px solid var(--border-active);border-radius:14px;background:var(--bg-card);color:var(--tp);padding:0;overflow:hidden;box-shadow:0 30px 80px -20px rgba(0,0,0,.5);}
+dialog.sheet::backdrop{background:color-mix(in srgb,var(--bg-deep) 70%,transparent);backdrop-filter:blur(6px) saturate(140%);}
+dialog.sheet>.x{position:absolute;top:12px;right:14px;color:var(--tm);cursor:pointer;font-size:18px;background:none;border:none;z-index:1;}
+dialog.sheet .sf-body{padding:26px 24px;overflow:auto;flex:1;min-height:0;}
+dialog.sheet .sf-kicker{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);}
+dialog.sheet[open]{display:flex;flex-direction:column;animation:sheetIn .26s var(--ease);}
+@keyframes sheetIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){dialog.sheet[open]{animation:none;}}
+dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;height:100vh;max-height:100vh;border-radius:0;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 @media(max-width:780px){.nav-links{display:none}}
-/* === component CSS (only the selected components) === */
+.chip{display:inline-flex;align-items:center;gap:.35rem;font-family:var(--mono);font-size:.6rem;font-weight:500;text-transform:uppercase;letter-spacing:.06em;padding:.2rem .55rem;border-radius:20px;border:1px solid var(--border);background:var(--bg-card);color:var(--ts);}
+.chip::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;}
+.chip.ok{color:var(--green);background:var(--green-soft);border-color:color-mix(in srgb,var(--green) 30%,transparent);}
+.chip.info{color:var(--blue);background:var(--blue-soft);border-color:color-mix(in srgb,var(--blue) 30%,transparent);}
+.chip.warn{color:var(--amber);background:var(--amber-soft);border-color:color-mix(in srgb,var(--amber) 30%,transparent);}
+.chip.danger{color:var(--rose);background:var(--rose-soft);border-color:color-mix(in srgb,var(--rose) 30%,transparent);}
+.chip.neutral{color:var(--ts);background:var(--bg-elevated);border-color:var(--border);}
+/* === component CSS === */
 /* hero chips (typeTags) */
 .chips{display:flex;flex-wrap:wrap;gap:.5rem;margin:1.2rem 0 .2rem;}
-.chip{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ts);background:var(--bg-card);border:1px solid var(--border);padding:.32rem .65rem;border-radius:20px;}
 .chip.accent{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 30%,transparent);background:var(--accent-soft);}
 /* callout */
 .callout{background:var(--accent-soft);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:.9rem 1.2rem;margin:1.1rem 0;}
@@ -92,7 +118,7 @@ section.vis{opacity:1;transform:none;}
 .fnode.gate{border-color:color-mix(in srgb,var(--purple) 35%,transparent);background:linear-gradient(135deg,var(--bg-elevated),var(--purple-soft));}
 .fnode.gate .nl{color:var(--purple);}
 .farr{color:var(--border-strong);font-size:1.1rem;}
-/* converge: two input lanes -> shared layer -> artifact (bespoke, primitives only) */
+/* converge: two input lanes -> shared layer -> artifact (bespoke) */
 .converge{display:flex;align-items:stretch;flex-wrap:wrap;gap:.6rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1.2rem 0;}
 .conv-lanes{display:flex;flex-direction:column;gap:.6rem;flex:1.4;min-width:230px;}
 .conv-lane{background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:.8rem .9rem;cursor:pointer;transition:all .3s var(--ease);}
@@ -106,7 +132,7 @@ section.vis{opacity:1;transform:none;}
 .conv-core .ct{font-family:var(--mono);font-size:.72rem;color:var(--tp);margin-top:.25rem;line-height:1.5;}
 .conv-out{display:flex;flex-direction:column;justify-content:center;min-width:120px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:.9rem;}
 .conv-out .conv-artifact{font-family:var(--serif);font-size:1.1rem;color:var(--tp);margin-top:.2rem;}
-/* skills reference table — same primitives as compare-table */
+/* skills reference table */
 .ref-table{width:100%;border-collapse:separate;border-spacing:0;font-size:.82rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:1.2rem 0;}
 .ref-table th{font-family:var(--mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);padding:.85rem 1.25rem;text-align:left;background:var(--bg-elevated);border-bottom:1px solid var(--border);font-weight:500;}
 .ref-table td{padding:.75rem 1.25rem;border-bottom:1px solid var(--border);color:var(--ts);vertical-align:top;}
@@ -124,6 +150,25 @@ section.vis{opacity:1;transform:none;}
 .edge .n{font-family:var(--mono);font-size:.62rem;color:var(--accent);}
 .edge .t{font-weight:600;margin:.2rem 0;font-size:.88rem;color:var(--tp);}
 .edge p{font-size:.78rem;margin:0;color:var(--ts);}
+/* concept-coverage table (bespoke, primitives only) */
+.cov-table{width:100%;border-collapse:separate;border-spacing:0;font-size:.8rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:1.2rem 0;}
+.cov-table th{font-family:var(--mono);font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);padding:.75rem 1rem;text-align:left;background:var(--bg-elevated);border-bottom:1px solid var(--border);font-weight:500;}
+.cov-table td{padding:.62rem 1rem;border-bottom:1px solid var(--border);color:var(--ts);vertical-align:middle;}
+.cov-table tr:last-child td{border-bottom:none;}
+.cov-table tr:hover td{background:var(--bg-card-hover);}
+.cov-table .cov-family{font-family:var(--mono);font-size:.62rem;color:var(--tm);text-transform:uppercase;letter-spacing:.08em;}
+.cov-table .cov-type{font-family:var(--mono);font-size:.72rem;color:var(--tp);}
+.cov-table .cov-renderer{font-family:var(--mono);font-size:.68rem;color:var(--accent);}
+.cov-new{background:color-mix(in srgb,var(--accent-soft) 60%,transparent);}
+.cov-new td{border-bottom-color:var(--border);}
+/* mini-ERD demo (hosted in the cov-erd sheet) */
+.erd-demo{display:flex;align-items:stretch;gap:.55rem;flex-wrap:wrap;margin:.5rem 0 .2rem;}
+.erd-ent{flex:1;min-width:170px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--bg-card);}
+.erd-ent h4{margin:0;font-family:var(--mono);font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);background:var(--bg-inset);padding:.4rem .6rem;border-bottom:1px solid var(--border);}
+.erd-ent ul{list-style:none;margin:0;padding:.4rem .6rem;}
+.erd-ent li{display:flex;align-items:center;justify-content:space-between;gap:.5rem;font-family:var(--mono);font-size:.72rem;color:var(--ts);padding:.18rem 0;}
+.erd-rel{display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--tm);font-family:var(--mono);font-size:.62rem;gap:.2rem;min-width:46px;}
+.erd-rel span{font-size:1.1rem;line-height:1;color:var(--border-active);}
 /* legend */
 .legend{display:flex;gap:.6rem;flex-wrap:wrap;margin:1rem 0;}
 .lg{font-family:var(--mono);font-size:.6rem;color:var(--tp);padding:.5rem .7rem;border-radius:8px;border:1px solid var(--border);display:flex;align-items:center;gap:.5rem;background:var(--bg-card);}
@@ -144,6 +189,7 @@ section.vis{opacity:1;transform:none;}
       <a href="#modes">Two inputs</a>
       <a href="#pipeline">Pipeline</a>
       <a href="#surfaces">Detail surfaces</a>
+      <a href="#concepts">Concept coverage</a>
       <a href="#skills">Skills</a>
       <a href="#contained">Self-contained</a>
       <a href="#cowork">In Cowork</a>
@@ -151,7 +197,7 @@ section.vis{opacity:1;transform:none;}
       <a href="#isnt">Is / isn't</a>
     </div>
     <div style="display:flex;align-items:center;gap:.8rem">
-      <div class="nav-meta"><span class="dot"></span> PLUGIN · v1.1.0</div>
+      <div class="nav-meta"><span class="dot"></span> PLUGIN · v1.2.0</div>
       <button class="theme-btn" onclick="tgl()">◑ THEME</button></div>
   </div></nav>
   <div class="progress" id="prog"></div>
@@ -165,6 +211,7 @@ section.vis{opacity:1;transform:none;}
         <span class="chip">session-visualization</span>
         <span class="chip">documentation</span>
         <span class="chip">diagrams</span>
+        <span class="chip">cowork</span>
       </div>
       <div class="codeblock" style="max-width:560px">
         <div class="cb-head"><span class="cb-file">install</span><span class="cb-lang">bash</span></div>
@@ -175,6 +222,7 @@ section.vis{opacity:1;transform:none;}
         <div class="hstat"><div class="v"><em>3</em></div><div class="l">user skills</div></div>
         <div class="hstat"><div class="v">2</div><div class="l">input modes</div></div>
         <div class="hstat"><div class="v">5</div><div class="l">pipeline stages</div></div>
+        <div class="hstat"><div class="v"><em>5</em></div><div class="l">new v1.2.0 renderers</div></div>
         <div class="hstat"><div class="v">2</div><div class="l">themes, 1 toggle</div></div>
         <div class="hstat"><div class="v"><em>1</em></div><div class="l">HTML file out</div></div>
       </div>
@@ -185,6 +233,7 @@ section.vis{opacity:1;transform:none;}
       <h2>A composed document, <em>not</em> a transcript dump</h2>
       <p class="lede">Open the file in any browser and you get a synthesized document — a summary and type tags for the session, architecture and flow diagrams rendered as inline SVG, decision records (what was chosen, what was rejected, why), a file-touch list with real <code>path:line</code> references, and a timeline and metrics where the session has them.</p>
       <p>For richer surfaces there are two interactive components: an <strong>interactive explorer</strong> — a selector that drives a live diagram region and a detail pane from one shared data model, useful for multi-component architectures where you want to navigate relationships rather than read a static diagram — and a <strong>data-driven step timeline</strong> — phases of parallel and sequential steps with source pills and micro-cycles, useful when the session covers a pipeline, workflow, or multi-phase build.</p>
+      <p>v1.2.0 adds a <strong>concept-coverage layer</strong>: a <code>concepts[]</code> ledger in the session model, a concept-fidelity gate that routes each concept to the renderer best-shaped for it, and five new concept-shaped renderers — a <strong>decision tree</strong>, a <strong>recursive tree</strong>, a <strong>layer stack</strong>, an <strong>ERD</strong>, and a <strong>causal hypothesis ladder</strong> — so branching logic, hierarchies, layered stacks, data models, and debugging traces each render in the shape that fits them.</p>
       <p>Components adapt to the session — the catalog is a floor, not a ceiling. When content fits no off-the-shelf component, a bespoke one is composed from the same design-system primitives so it still looks native, and empty sections are omitted rather than stubbed. After writing the file, <code>create</code> surfaces a short <strong>coverage summary</strong> — what made it into the document and what was intentionally omitted — so you can spot anything left out before you close the session.</p>
       <div class="callout">
         <h4>No setup, no config</h4>
@@ -198,19 +247,19 @@ section.vis{opacity:1;transform:none;}
       <p class="lede">Everything walkthrough renders comes from one of two input modes. A <strong>session</strong> drives <code>create</code> and <code>update</code>; a <strong>subject</strong> drives <code>document</code>. The two lanes converge on the same shared renderer and emit one portable HTML file. Click a lane for detail.</p>
       <div class="converge" aria-label="Two input modes converging on the shared visual layer">
         <div class="conv-lanes">
-          <div class="conv-lane" onclick="openD('mode-session')" tabindex="0" role="button" aria-label="Session input mode — create and update">
+          <div class="conv-lane" onclick="openSurface('mode-session')" tabindex="0" role="button" aria-label="Session input mode — create and update">
             <div class="nl">input · session</div>
             <div class="lt">create · update</div>
-            <div class="ld">The current conversation — synthesized into a session model (sections, nodes, decisions, files, timeline).</div>
+            <div class="ld">The current conversation — synthesized into a session model (sections, nodes, decisions, files, timeline, concepts).</div>
           </div>
-          <div class="conv-lane" onclick="openD('mode-subject')" tabindex="0" role="button" aria-label="Subject input mode — document">
+          <div class="conv-lane" onclick="openSurface('mode-subject')" tabindex="0" role="button" aria-label="Subject input mode — document">
             <div class="nl">input · subject</div>
             <div class="lt">document</div>
             <div class="ld">A plugin, the marketplace, or any path — README + manifest are canonical, synthesized into a subject model.</div>
           </div>
         </div>
         <span class="conv-merge">→</span>
-        <div class="conv-core" onclick="openD('visual-layer')" tabindex="0" role="button" aria-label="Shared visual layer">
+        <div class="conv-core" onclick="openSurface('visual-layer')" tabindex="0" role="button" aria-label="Shared visual layer">
           <div class="nl">shared visual layer</div>
           <div class="ct">design system · components · scaffold · JS</div>
         </div>
@@ -228,21 +277,21 @@ section.vis{opacity:1;transform:none;}
       <h2>The <em>model-before-markup</em> pipeline</h2>
       <p class="lede"><code>create</code> runs a fixed five-stage pipeline: the full structured model is built before a single HTML tag is written, and two quality gates bracket the render. <strong>This page was produced by <code>/walkthrough:document</code> running this same flow</strong> over the plugin's README and manifest. Click any step for detail.</p>
       <div class="flow" aria-label="walkthrough pipeline — five stages bracketed by two gates">
-        <div class="fnode" onclick="openD('gather')" tabindex="0" role="button" aria-label="Stage 1 gather"><div class="nl">stage 1</div>gather</div>
+        <div class="fnode" onclick="openSurface('gather')" tabindex="0" role="button" aria-label="Stage 1 gather"><div class="nl">stage 1</div>gather</div>
         <span class="farr">→</span>
-        <div class="fnode" onclick="openD('synthesize')" tabindex="0" role="button" aria-label="Stage 2 synthesize"><div class="nl">stage 2</div>synthesize</div>
+        <div class="fnode" onclick="openSurface('synthesize')" tabindex="0" role="button" aria-label="Stage 2 synthesize"><div class="nl">stage 2</div>synthesize</div>
         <span class="farr">→</span>
-        <div class="fnode gate" onclick="openD('coverage')" tabindex="0" role="button" aria-label="Gate coverage critic"><div class="nl">gate</div>coverage critic</div>
+        <div class="fnode gate" onclick="openSurface('coverage')" tabindex="0" role="button" aria-label="Gate coverage critic"><div class="nl">gate</div>coverage critic</div>
         <span class="farr">→</span>
-        <div class="fnode" onclick="openD('select')" tabindex="0" role="button" aria-label="Stage 3 select"><div class="nl">stage 3</div>select</div>
+        <div class="fnode" onclick="openSurface('select')" tabindex="0" role="button" aria-label="Stage 3 select"><div class="nl">stage 3</div>select</div>
         <span class="farr">→</span>
-        <div class="fnode accent" onclick="openD('assemble')" tabindex="0" role="button" aria-label="Stage 4 assemble"><div class="nl">stage 4</div>assemble</div>
+        <div class="fnode accent" onclick="openSurface('assemble')" tabindex="0" role="button" aria-label="Stage 4 assemble"><div class="nl">stage 4</div>assemble</div>
         <span class="farr">→</span>
-        <div class="fnode gate" onclick="openD('selfcheck')" tabindex="0" role="button" aria-label="Gate self-check"><div class="nl">gate</div>self-check</div>
+        <div class="fnode gate" onclick="openSurface('selfcheck')" tabindex="0" role="button" aria-label="Gate self-check"><div class="nl">gate</div>self-check</div>
         <span class="farr">→</span>
-        <div class="fnode" onclick="openD('write')" tabindex="0" role="button" aria-label="Stage 5 write"><div class="nl">stage 5</div>write</div>
+        <div class="fnode" onclick="openSurface('write')" tabindex="0" role="button" aria-label="Stage 5 write"><div class="nl">stage 5</div>write</div>
       </div>
-      <p><code>create</code> runs this flow over a session: <em>gather</em> reads cited source files so <code>path:line</code> refs are real, <em>synthesize</em> builds the session model, <em>select</em> maps it to components, <em>assemble</em> inlines the scaffold, and <em>write</em> emits the file. Rendering never starts from the raw transcript — the full model is built first. <code>document</code> runs the same flow over a subject instead; <code>update</code> adds two stages in front — <em>reconstruct</em> the prior model from the rendered HTML and <em>merge</em> in explicitly-named files — before re-entering it.</p>
+      <p><code>create</code> runs this flow over a session: <em>gather</em> reads cited source files so <code>path:line</code> refs are real, <em>synthesize</em> builds the session model (including the <code>concepts[]</code> ledger), <em>select</em> maps it to components via the concept-fidelity gate, <em>assemble</em> inlines the scaffold, and <em>write</em> emits the file. Rendering never starts from the raw transcript — the full model is built first. <code>document</code> runs the same flow over a subject instead; <code>update</code> adds two stages in front — <em>reconstruct</em> the prior model from the rendered HTML and <em>merge</em> in explicitly-named files — before re-entering it.</p>
     </section>
 
     <section id="surfaces">
@@ -250,21 +299,64 @@ section.vis{opacity:1;transform:none;}
       <h2>Rich <em>detail surfaces</em></h2>
       <p class="lede">Click a node, card, or cross-link and its detail opens. Light detail opens in a structured glance <strong>pane</strong>; richer content — a hosted diagram, code — opens in a centered <strong>sheet</strong> that can itself open further detail, nested. Click a surface for detail.</p>
       <div class="flow" aria-label="A click routes to a glance pane or a centered sheet, which can open further detail nested">
-        <div class="fnode" onclick="openD('surf-trigger')" tabindex="0" role="button" aria-label="Click a node, card, or cross-link"><div class="nl">trigger</div>node · card · link</div>
+        <div class="fnode" onclick="openSurface('surf-trigger')" tabindex="0" role="button" aria-label="Click a node, card, or cross-link"><div class="nl">trigger</div>node · card · link</div>
         <span class="farr">→</span>
-        <div class="fnode" onclick="openD('surf-pane')" tabindex="0" role="button" aria-label="Light detail opens in a glance pane"><div class="nl">light</div>glance pane</div>
+        <div class="fnode" onclick="openSurface('surf-pane')" tabindex="0" role="button" aria-label="Light detail opens in a glance pane"><div class="nl">light</div>glance pane</div>
         <span class="farr">→</span>
-        <div class="fnode accent" onclick="openD('surf-sheet')" tabindex="0" role="button" aria-label="Rich detail opens in a centered sheet"><div class="nl">rich</div>centered sheet</div>
+        <div class="fnode accent" onclick="openSurface('surf-sheet')" tabindex="0" role="button" aria-label="Rich detail opens in a centered sheet"><div class="nl">rich</div>centered sheet</div>
         <span class="farr">→</span>
-        <div class="fnode" onclick="openD('surf-nested')" tabindex="0" role="button" aria-label="A sheet can open further detail, nested"><div class="nl">deeper</div>nested detail</div>
+        <div class="fnode" onclick="openSurface('surf-nested')" tabindex="0" role="button" aria-label="A sheet can open further detail, nested"><div class="nl">deeper</div>nested detail</div>
       </div>
       <p>The pane is the lightweight right-edge glance; the sheet is a centered surface roomy enough to host a full diagram or code block. A surface can itself open another — so a node opens a sheet, and a cross-link inside that sheet opens the next detail — letting you navigate relationships in a multi-component architecture rather than read one static diagram. Empty fields are omitted rather than stubbed, so each surface shows only what it actually has.</p>
+      <p>The shared <code>openSurface(id)</code> router uses a <code>SURF</code> map to decide whether to open the pane or push a native <code>&lt;dialog&gt;</code> sheet. Sheets stack in the browser top layer via <code>showModal()</code> — free focus-trap, top-down Escape, and a token <code>::backdrop</code> blur — capped at three levels of nesting.</p>
+    </section>
+
+    <section id="concepts">
+      <div class="sec-label">v1.2.0 addition</div>
+      <h2>Concept coverage — <em>the right renderer for every concept</em></h2>
+      <p class="lede">The concept-coverage layer ensures each kind of idea renders in the shape that fits it. Synthesis classifies each concept it wants to convey into a type, records it in the session model's <code>concepts[]</code> ledger, and the <strong>concept-fidelity gate</strong> routes it to the registered renderer — or, for an uncovered type, to a logged bespoke component. The gate never force-fits a concept into a component not registered for its type.</p>
+      <p>v1.2.0 adds five new concept-shaped renderers, bringing coverage to zero uncovered concept-types in the built-in map. Click any renderer name below for detail.</p>
+      <table class="cov-table" aria-label="Selected v1.2.0 concept-coverage additions">
+        <thead><tr><th>Concept-type</th><th>Trigger</th><th>Renderer (v1.2.0 new)</th></tr></thead>
+        <tbody>
+          <tr class="cov-new">
+            <td><span class="cov-type" role="button" tabindex="0" onclick="openSurface('cov-dtree')" style="cursor:pointer">branching-logic</span></td>
+            <td>Labeled yes/no/condition edges, a tree with no cycles</td>
+            <td><span class="cov-renderer" role="button" tabindex="0" onclick="openSurface('cov-dtree')" style="cursor:pointer">decision tree</span></td>
+          </tr>
+          <tr class="cov-new">
+            <td><span class="cov-type" role="button" tabindex="0" onclick="openSurface('cov-htree')" style="cursor:pointer">hierarchy</span></td>
+            <td>Strict one-parent containment, n levels deep</td>
+            <td><span class="cov-renderer" role="button" tabindex="0" onclick="openSurface('cov-htree')" style="cursor:pointer">recursive tree</span></td>
+          </tr>
+          <tr class="cov-new">
+            <td><span class="cov-type" role="button" tabindex="0" onclick="openSurface('cov-lstack')" style="cursor:pointer">layering</span></td>
+            <td>Ordered vertical bands, each touching only neighbors</td>
+            <td><span class="cov-renderer" role="button" tabindex="0" onclick="openSurface('cov-lstack')" style="cursor:pointer">layer stack</span></td>
+          </tr>
+          <tr class="cov-new">
+            <td><span class="cov-type" role="button" tabindex="0" onclick="openSurface('cov-erd')" style="cursor:pointer">data-model</span></td>
+            <td>Entities with field lists, edges carry cardinality (1:N, N:M)</td>
+            <td><span class="cov-renderer" role="button" tabindex="0" onclick="openSurface('cov-erd')" style="cursor:pointer">ERD</span></td>
+          </tr>
+          <tr class="cov-new">
+            <td><span class="cov-type" role="button" tabindex="0" onclick="openSurface('cov-ladder')" style="cursor:pointer">causal-chain</span></td>
+            <td>Symptom → causes ruled in/out by evidence → root cause</td>
+            <td><span class="cov-renderer" role="button" tabindex="0" onclick="openSurface('cov-ladder')" style="cursor:pointer">causal hypothesis ladder</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The concept-coverage map (<code>concept-coverage.md</code>) is the single source of truth for which concept-types are covered and which renderer each routes to. Disambiguation rules handle close neighbors: for instance, any cycle or back-edge routes to a state machine, not a decision tree; strict one-parent containment routes to the recursive tree, not the dependency graph (which allows shared leaves). An uncovered concept-type gets a bespoke component and a new ⚠️ row in the map — the hole stays visible rather than being silently force-fit.</p>
+      <div class="callout">
+        <h4>Concept-fidelity gate — the anti-force-fit invariant</h4>
+        <p>The gate generalizes the pre-existing diagram-fidelity check to every concept-type. It routes each concept to its registered renderer, never fitting a branching-logic concept into a linear flow or a data-model concept into an architecture map. The gate is part of the <code>authoring-guide.md</code> Step 1 and runs in the same select stage as the component-selection pass.</p>
+      </div>
     </section>
 
     <section id="skills">
       <div class="sec-label">reference</div>
       <h2>Three skills, one <em>shared</em> renderer</h2>
-      <p class="lede">The three user-facing skills are <code>/walkthrough:&lt;name&gt;</code>, all default frontmatter — user- <em>and</em> intent-invocable. Typing the slash form works; so does asking in plain language. Alongside them sits one <strong>internal</strong> building block — <code>render</code> (<code>user-invocable: false</code>), consumed by the <code>lens</code> plugin. No agents, no hooks, no scripts.</p>
+      <p class="lede">The three user-facing skills are <code>/walkthrough:&lt;name&gt;</code>, all default frontmatter — user- <em>and</em> intent-invokable. Typing the slash form works; so does asking in plain language. Alongside them sits one <strong>internal</strong> building block — <code>render</code> (<code>user-invocable: false</code>), consumed by the <code>lens</code> plugin. No agents, no hooks, no scripts.</p>
       <table class="ref-table">
         <thead><tr><th>Skill</th><th>Input</th><th>What it does</th></tr></thead>
         <tbody>
@@ -316,8 +408,8 @@ section.vis{opacity:1;transform:none;}
         <pre class="cb-body"><code>&gt; /walkthrough:create architecture decisions
 
 gather      read cited source files (path:line refs are real)
-synthesize  session model — sections, nodes, edges, decisions, files
-select      map model → components (omit empty, never stub)
+synthesize  session model — sections, nodes, edges, decisions, files, concepts[]
+select      concept-fidelity gate → map model → components (omit empty, never stub)
 assemble    inline scaffold + tokens + JS + SVG + detail data
 write       .claude/walkthrough/2026-06-04-1430-architecture.html
 
@@ -341,6 +433,7 @@ write        overwrite the SAME file — no new file, no backup
         <span class="lg"><i style="background:var(--accent)"></i>shared renderer stage</span>
         <span class="lg"><i style="background:var(--green)"></i>session input (create / update)</span>
         <span class="lg"><i style="background:var(--blue)"></i>subject input (document)</span>
+        <span class="lg"><i style="background:var(--purple)"></i>concept-fidelity gate (v1.2.0)</span>
       </div>
     </section>
 
@@ -361,33 +454,90 @@ write        overwrite the SAME file — no new file, no backup
         <a href="../">← marketplace</a>
         <a href="https://github.com/ApurvBazari/claude-plugins/tree/main/walkthrough">source on GitHub</a>
       </div>
-      <div class="meta">walkthrough · v1.1.0 · MIT · by Apurv Bazari</div>
+      <div class="meta">walkthrough · v1.2.0 · MIT · by Apurv Bazari</div>
     </div>
   </main>
   <aside class="panel" id="panel"><span class="x" onclick="closeD()">✕</span>
-    <div class="pk" id="pk">Detail</div><h3 id="ph">—</h3><div class="pb" id="pbd"></div></aside>
+    <div class="pk" id="panelKicker">Detail</div>
+    <div class="pb" id="panelBody"></div></aside>
+  <div id="sheets">
+    <dialog class="sheet" id="sheet-surf-sheet">
+      <button class="x" onclick="this.closest('dialog').close()">✕</button>
+      <div class="sf-body">
+        <div class="sf-kicker">Detail surfaces</div>
+        <h3 class="sf-h">Centered sheet</h3>
+        <p class="sf-summary">You are looking at one. A centered native <code>&lt;dialog&gt;</code> surface for richer content the narrow pane can't hold — a hosted diagram, a code block. It opens with <code>showModal()</code> for a free focus-trap and top-layer stacking, and it can itself open further detail: the chips below nest <em>inside</em> this sheet, capped at three levels.</p>
+        <figure class="sf-code"><figcaption>openSurface routing — site/walkthrough/index.html</figcaption><pre><code>const SURF = { 'surf-sheet':'sheet', 'cov-erd':'sheet' };
+
+function openSurface(id){
+  const k = SURF[id] || 'pane';            // route by id
+  if(k==='sheet') return _capPush(         // push a native &lt;dialog&gt;
+    document.getElementById('sheet-'+id)); // showModal() → top layer
+  openPane(id);                            // else: the glance pane
+}
+
+const MAX_DEPTH = 3;                        // sheets nest, capped at 3</code></pre></figure>
+        <div class="sf-related"><button class="chip neutral" onclick="openSurface('surf-pane')">surf-pane</button><button class="chip neutral" onclick="openSurface('surf-nested')">surf-nested</button></div>
+      </div>
+    </dialog>
+    <dialog class="sheet" id="sheet-cov-erd">
+      <button class="x" onclick="this.closest('dialog').close()">✕</button>
+      <div class="sf-body">
+        <div class="sf-kicker">v1.2.0 renderer</div>
+        <h3 class="sf-h">ERD</h3>
+        <p class="sf-summary">For data-model concepts — entities with field lists joined by cardinality. HTML entity cards, PK/FK on the <code>.chip</code> primitive, no fragile SVG edges. This sheet is roomy enough to host the renderer itself: the concept-coverage model maps many <code>concept</code> rows to one <code>renderer</code>.</p>
+        <div class="erd-demo">
+          <div class="erd-ent">
+            <h4>concept</h4>
+            <ul>
+              <li>id <span class="chip accent">PK</span></li>
+              <li>type</li>
+              <li>renderer <span class="chip neutral">FK</span></li>
+            </ul>
+          </div>
+          <div class="erd-rel"><span>→</span>N:1</div>
+          <div class="erd-ent">
+            <h4>renderer</h4>
+            <ul>
+              <li>id <span class="chip accent">PK</span></li>
+              <li>name</li>
+            </ul>
+          </div>
+        </div>
+        <div class="sf-related"><button class="chip neutral" onclick="openSurface('cov-htree')">cov-htree</button><button class="chip neutral" onclick="openSurface('cov-ladder')">cov-ladder</button></div>
+      </div>
+    </dialog>
+  </div>
+  <dialog class="sheet pane-dialog" id="paneDialog"><button class="x" onclick="this.closest('dialog').close()">✕</button><div class="sf-body" id="paneDialogBody"></div></dialog>
   <script>
-const DET={
- 'mode-session':{k:"Input mode",h:"Session",b:"The current conversation is the source of record — there is no repository scan. <code>create</code> renders it from scratch; <code>update</code> refreshes an existing document by reconstructing its model from the rendered HTML, then merging in named files. Both produce the session model: sections, nodes, edges, decisions, files, timeline."},
- 'mode-subject':{k:"Input mode",h:"Subject",b:"A plugin, the whole marketplace, or any path. <code>document</code> reads the subject's own files — <code>README</code> + manifest are canonical, plus the <code>skills/</code> surface — and synthesizes the subject model. The page is a rendering of those sources, not a separately-maintained doc."},
- 'visual-layer':{k:"Shared",h:"Visual layer",b:"Reused verbatim across all three skills: the design system (tokens + both <code>:root</code> theme blocks), the interactivity JS (theme toggle, detail surfaces), the page scaffold, and the open component catalog. Only the model and the gathering differ between session and subject."},
- gather:{k:"Stage 1",h:"gather",b:"Read any source file you intend to cite so <code>path:line</code> refs are real. For a session, the transcript is the source of record — no repo scan. For a subject, gather reads the README + manifest (canonical) and the skills surface."},
- synthesize:{k:"Stage 2",h:"synthesize",b:"Build the structured model BEFORE any HTML — for a session: <code>sections</code>, diagram <code>nodes</code>, <code>decisions</code>, <code>files</code>, <code>timeline</code>. The model is fully synthesized before a single tag is written — rendering never starts from the raw transcript."},
- coverage:{k:"Gate",h:"coverage critic",b:"After the model is synthesized, a salient-item coverage critic re-scans the source (for a subject, the README + manifest) so every important item is either in the model or deliberately out of scope. Omitted items are folded back in; intentional omissions feed the coverage summary surfaced after the run."},
- select:{k:"Stage 3",h:"select",b:"Map the model to components via the authoring guide and the catalog. Apply “omit empty, never stub” — a component renders only when the model has real content. Where no catalog entry fits, compose a bespoke component from the same primitives."},
- assemble:{k:"Stage 4",h:"assemble",b:"Start from the page scaffold; inline the Google Fonts <code>@import</code> + both <code>:root</code> blocks, the shared JS, and the CSS/HTML for each chosen component plus its detail data. Everything — CSS, JS, SVG — is inlined into the one file."},
- selfcheck:{k:"Gate",h:"self-check",b:"Before the file is written, a structural self-check runs on the assembled HTML — verifying self-containment, token-only CSS, nav-to-section-id alignment, and detail-store integrity. Failures are fixed and re-checked before write."},
- write:{k:"Stage 5",h:"write",b:"Write the file. For a session, that is <code>.claude/walkthrough/&lt;YYYY-MM-DD-HHMM&gt;-&lt;slug&gt;.html</code>, then offer to open — never auto-open. A same-subject slug prompts update-in-place / new versioned file / overwrite instead of a silent <code>-2</code>/<code>-3</code> suffix. For the docs site, <code>document</code> writes to the path given (e.g. <code>site/&lt;plugin&gt;/index.html</code>)."},
- 'surf-trigger':{k:"Detail surfaces",h:"The trigger",b:"Any interactive node, card, or cross-link is clickable. The click routes its detail to the right surface — a light glance pane or a richer centered sheet — from one shared data model. Related: <code>surf-pane</code>, <code>surf-sheet</code>."},
- 'surf-pane':{k:"Detail surfaces",h:"Glance pane",b:"The lightweight right-edge panel, for light details. Its structured glance shows only the fields the detail actually has — empty fields are omitted, never stubbed. Related: <code>surf-sheet</code>."},
- 'surf-sheet':{k:"Detail surfaces",h:"Centered sheet",b:"A centered surface for richer content that the narrow pane can't hold — a hosted diagram, a code block. It is roomy enough to host a full catalog component. A sheet can itself open further detail. Related: <code>surf-nested</code>."},
- 'surf-nested':{k:"Detail surfaces",h:"Nested detail",b:"A surface reached from inside a sheet opens further detail, nested — so you can follow a cross-link from one component to the next, navigating relationships in a multi-component architecture rather than reading one static diagram."}
-};
+// renderSurface — build a structured detail DOM from a DET record into `host`
+function renderSurface(d,host){if(!d||!host)return;let h='';
+ if(d.h)h+=`<h3 class="sf-h">${d.h}</h3>`;
+ if(d.summary)h+=`<p class="sf-summary">${d.summary}</p>`;
+ if(d.where&&d.where.length)h+=`<div class="sf-where">${d.where.map(w=>`<code class="sf-loc">${w}</code>`).join('')}</div>`;
+ if(d.code&&d.code.length)h+=d.code.map(c=>`<figure class="sf-code"><figcaption>${c.file||''}</figcaption><pre><code>${c.snippet||''}</code></pre></figure>`).join('');
+ if(d.points&&d.points.length)h+=`<ul class="sf-points">${d.points.map(p=>`<li>${p}</li>`).join('')}</ul>`;
+ if(d.components)h+=d.components;
+ if(d.related&&d.related.length)h+=`<div class="sf-related">${d.related.map(r=>`<button class="chip neutral" onclick="openSurface('${r}')">${r}</button>`).join('')}</div>`;
+ host.innerHTML=h;}
 const panel=document.getElementById('panel');
-function openD(id){const d=DET[id];if(!d)return;pk.textContent=d.k;ph.textContent=d.h;pbd.innerHTML=d.b;panel.classList.add('open');}
-function openCard(el){if(!el)return;pk.textContent=el.dataset.k||'Detail';ph.textContent=el.dataset.t||'';pbd.innerHTML=el.dataset.desc||'';panel.classList.add('open');}
+function openPane(id){const d=DET[id];if(!d)return;
+ const k=document.getElementById('panelKicker');if(k)k.textContent=d.k||'Detail';
+ renderSurface(d,document.getElementById('panelBody'));panel.classList.add('open');}
+const _stack=[]; const MAX_DEPTH=3;
+function _capPush(el){if(!el||el.open)return;if(_stack.length>=MAX_DEPTH){const t=_stack.pop();if(t)t.close();}el.showModal();_stack.push(el);}
+function openSurface(id){const k=(typeof SURF!=='undefined'&&SURF[id])||'pane';
+ if(k==='sheet'){const el=document.getElementById('sheet-'+id);_capPush(el);return;}
+ if(_stack.length){const pd=document.getElementById('paneDialog'),d=DET[id],b=document.getElementById('paneDialogBody');
+  renderSurface(d,b);if(d&&d.k)b.insertAdjacentHTML('afterbegin',`<div class="sf-kicker">${d.k}</div>`);_capPush(pd);}
+ else openPane(id);}
+document.querySelectorAll('dialog.sheet').forEach(dlg=>{
+ dlg.addEventListener('close',()=>{const i=_stack.indexOf(dlg);if(i>-1)_stack.splice(i,1);});
+ dlg.addEventListener('click',e=>{if(e.target===dlg)dlg.close();});});
+function openCard(el){if(!el)return;openPane(el.dataset.id||'');}
+function openD(id){openSurface(id);}
 function closeD(){panel.classList.remove('open');}
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeD();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!_stack.length)closeD();});
 function tgl(){const h=document.documentElement;const t=h.getAttribute('data-theme')==='dark'?'light':'dark';h.setAttribute('data-theme',t);try{localStorage.setItem('wt-theme',t);}catch(e){}}
 (function(){try{const t=localStorage.getItem('wt-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vis');}}),{threshold:.1});
@@ -396,5 +546,27 @@ addEventListener('scroll',()=>{const sc=scrollY/(document.body.scrollHeight-inne
  let cur='';document.querySelectorAll('section[id]').forEach(s=>{if(scrollY>=s.offsetTop-120)cur=s.id;});
  document.querySelectorAll('.nav-links a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+cur));},{passive:true});
 document.querySelectorAll('[role="button"]').forEach(n=>n.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();n.click();}}));
+const DET={
+ 'mode-session':{k:"Input mode",h:"Session",summary:"The current conversation is the source of record — there is no repository scan. <code>create</code> renders it from scratch; <code>update</code> refreshes an existing document by reconstructing its model from the rendered HTML, then merging in named files. Both produce the session model: sections, nodes, edges, decisions, files, timeline, and the v1.2.0 concepts[] ledger."},
+ 'mode-subject':{k:"Input mode",h:"Subject",summary:"A plugin, the whole marketplace, or any path. <code>document</code> reads the subject's own files — README + manifest are canonical, plus the skills/ surface — and synthesizes the subject model. The page is a rendering of those sources, not a separately-maintained doc."},
+ 'visual-layer':{k:"Shared",h:"Visual layer",summary:"Reused verbatim across all three skills: the design system (tokens + both :root theme blocks), the interactivity JS (theme toggle, detail surfaces), the page scaffold, and the open component catalog. Only the model and the gathering differ between session and subject."},
+ gather:{k:"Stage 1",h:"gather",summary:"Read any source file you intend to cite so path:line refs are real. For a session, the transcript is the source of record — no repo scan. For a subject, gather reads the README + manifest (canonical) and the skills surface."},
+ synthesize:{k:"Stage 2",h:"synthesize",summary:"Build the structured model BEFORE any HTML — for a session: sections, diagram nodes, decisions, files, timeline, and the v1.2.0 concepts[] ledger (each concept classified by type, routed to a renderer). The model is fully synthesized before a single tag is written — rendering never starts from the raw transcript."},
+ coverage:{k:"Gate",h:"coverage critic",summary:"After the model is synthesized, a salient-item coverage critic re-scans the source so every important item is either in the model or deliberately out of scope. Omitted items are folded back in; intentional omissions feed the coverage summary surfaced after the run."},
+ select:{k:"Stage 3",h:"select",summary:"Map the model to components via the authoring guide and the catalog. The concept-fidelity gate (v1.2.0) routes each concepts[] entry to its registered renderer — never force-fitting a concept into a component not registered for its type. Apply "omit empty, never stub" — a component renders only when the model has real content. Where no catalog entry fits, compose a bespoke component from the same primitives."},
+ assemble:{k:"Stage 4",h:"assemble",summary:"Start from the page scaffold; inline the Google Fonts @import + both :root blocks, the shared JS, and the CSS/HTML for each chosen component plus its detail data. Everything — CSS, JS, SVG — is inlined into the one file."},
+ selfcheck:{k:"Gate",h:"self-check",summary:"Before the file is written, a structural self-check runs on the assembled HTML — verifying self-containment, token-only CSS, nav-to-section-id alignment, and detail-store integrity. Failures are fixed and re-checked before write."},
+ write:{k:"Stage 5",h:"write",summary:"Write the file. For a session, that is .claude/walkthrough/<YYYY-MM-DD-HHMM>-<slug>.html, then offer to open — never auto-open. A same-subject slug prompts update-in-place / new versioned file / overwrite instead of a silent -2/-3 suffix. For the docs site, document writes to the path given (e.g. site/<plugin>/index.html)."},
+ 'surf-trigger':{k:"Detail surfaces",h:"The trigger",summary:"Any interactive node, card, or cross-link is clickable. The click routes its detail to the right surface — a light glance pane or a richer centered sheet — from one shared data model via openSurface(id)."},
+ 'surf-pane':{k:"Detail surfaces",h:"Glance pane",summary:"The lightweight right-edge panel, for light details. Its structured glance shows only the fields the detail actually has — empty fields are omitted, never stubbed. Built at click time by renderSurface from the DET record."},
+ 'surf-sheet':{k:"Detail surfaces",h:"Centered sheet",summary:"A centered native <dialog> surface for richer content that the narrow pane can't hold — a hosted diagram, a code block. It is roomy enough to host a full catalog component. A sheet can itself open further detail. Opened with showModal() for free focus-trap and top-layer stacking."},
+ 'surf-nested':{k:"Detail surfaces",h:"Nested detail",summary:"A surface reached from inside a sheet opens further detail, nested — so you can follow a cross-link from one component to the next, navigating relationships in a multi-component architecture rather than reading one static diagram. Capped at 3 levels; replace-topmost beyond that."},
+ 'cov-dtree':{k:"v1.2.0 renderer",h:"Decision tree",summary:"For branching-logic concepts — labeled yes/no/condition edges, a tree with no cycles. Inline SVG with accent-bordered decision nodes and green leaf nodes. Distinct from the flow (no branches) and the state diagram (cycles/back-edges). Clickable nodes open detail via openSurface."},
+ 'cov-htree':{k:"v1.2.0 renderer",h:"Recursive tree",summary:"For hierarchy concepts — strict one-parent containment over n levels (an AST, a component tree, a taxonomy). An indented collapsible tree via native <details> (no JS for collapse). Internal nodes collapse; leaf nodes open detail via openSurface. Distinct from the dependency graph (shared leaves → a DAG)."},
+ 'cov-lstack':{k:"v1.2.0 renderer",h:"Layer stack",summary:"For layering concepts — ordered vertical bands where each layer touches only its neighbors (a tech stack, a network/protocol stack, a middleware chain). Full-width HTML bands, top = outermost, bottom = innermost. Clickable bands open detail via openSurface. Distinct from the architecture map (free-form connections)."},
+ 'cov-erd':{k:"v1.2.0 renderer",h:"ERD",summary:"For data-model concepts — entities with field lists and relationships carrying cardinality (1:N, N:M). HTML entity cards joined by cardinality connector chips — no fragile SVG edges. PK/FK use the .chip primitive. Clickable entities open detail via openSurface. Distinct from the architecture map (services, no fields/cardinality)."},
+ 'cov-ladder':{k:"v1.2.0 renderer",h:"Causal hypothesis ladder",summary:"For causal-chain concepts — a debugging trace: symptom, candidate causes each ruled in or out by evidence, converging to a root cause and fix. HTML rows with .chip status (ruled-in = ok, ruled-out = danger) plus a root-cause→fix callout. Distinct from the flow (neutral processing stages, no evidence semantics)."}
+};
+const SURF={'surf-sheet':'sheet','cov-erd':'sheet'};
   </script>
 </body></html>

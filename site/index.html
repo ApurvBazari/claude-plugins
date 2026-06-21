@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="en" data-theme="dark"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>claude-plugins — Claude Code plugins</title>
+<title>claude-plugins — marketplace</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
 :root{
@@ -36,7 +36,7 @@ nav{position:fixed;top:0;left:0;right:0;height:54px;z-index:100;backdrop-filter:
 .dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2.5s infinite;}
 .theme-btn{cursor:pointer;font-family:var(--mono);font-size:.62rem;color:var(--ts);border:1px solid var(--border);padding:.28rem .6rem;border-radius:6px;background:none;}
 .progress{position:fixed;top:54px;left:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--blue));z-index:101;width:0;box-shadow:0 0 8px var(--accent-glow);}
-main{max-width:1180px;margin:0 auto;padding:0 1.6rem;padding-top:78px;}
+main{max-width:1180px;margin:0 auto;padding:0 1.6rem;padding-top:78px;counter-reset:sec;}
 .eyebrow{font-family:var(--mono);font-size:.68rem;color:var(--accent);text-transform:uppercase;letter-spacing:.18em;display:inline-flex;align-items:center;gap:.6rem;margin-bottom:.8rem;}
 .eyebrow::before{content:'';width:26px;height:1px;background:var(--accent);}
 h1{font-family:var(--serif);font-size:clamp(2.4rem,6vw,4rem);font-weight:400;line-height:1.04;letter-spacing:-.025em;margin:.2rem 0;max-width:880px;}
@@ -62,14 +62,33 @@ section.vis{opacity:1;transform:none;}
 .panel h3{font-family:var(--serif);font-weight:400;font-size:1.4rem;margin:.2rem 0 .6rem;}
 .panel .pb{font-size:.86rem;color:var(--ts);line-height:1.6;}
 .panel code{font-family:var(--mono);font-size:.72rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
+/* surface detail components */
+.sf-h{font-family:var(--serif);font-weight:400;font-size:1.2rem;margin:.2rem 0 .5rem;}
+.sf-summary{font-size:.86rem;color:var(--ts);line-height:1.6;margin:.3rem 0;}
+.sf-where{display:flex;flex-wrap:wrap;gap:.3rem;margin:.5rem 0;}
+.sf-loc{font-family:var(--mono);font-size:.7rem;background:var(--accent-soft);color:var(--accent);padding:2px 6px;border-radius:4px;}
+.sf-code{margin:.6rem 0;}
+.sf-code figcaption{font-family:var(--mono);font-size:.58rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.3rem;}
+.sf-code pre{margin:0;background:var(--bg-inset);border:1px solid var(--border);border-radius:6px;padding:.6rem .8rem;overflow-x:auto;}
+.sf-code pre code{font-family:var(--mono);font-size:.74rem;color:var(--ts);}
+.sf-points{margin:.5rem 0 0;padding-left:1.1rem;}
+.sf-points li{font-size:.84rem;color:var(--ts);line-height:1.55;margin:.25rem 0;}
+.sf-related{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.8rem;}
+.sf-kicker{font-family:var(--mono);font-size:.58rem;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);margin-bottom:.4rem;}
+/* pane dialog */
+dialog.pane-dialog{position:fixed;top:0;right:0;width:340px;height:100vh;background:var(--bg-card);border:none;border-left:1px solid var(--border-active);padding:1.5rem;overflow:auto;box-shadow:-20px 0 50px rgba(0,0,0,.3);margin:0;}
+dialog.pane-dialog::backdrop{background:transparent;}
+/* sheet dialog */
+dialog.sheet{position:fixed;inset:0;width:min(96vw,600px);max-height:80vh;background:var(--bg-card);border:1px solid var(--border-active);border-radius:14px;padding:2rem;overflow:auto;box-shadow:0 24px 80px rgba(0,0,0,.45);margin:auto;}
+dialog.sheet::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 @media(max-width:780px){.nav-links{display:none}}
-/* === component CSS (only the selected components) === */
-/* hero chips (typeTags) */
+/* chips */
 .chips{display:flex;flex-wrap:wrap;gap:.5rem;margin:1.2rem 0 .2rem;}
 .chip{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ts);background:var(--bg-card);border:1px solid var(--border);padding:.32rem .65rem;border-radius:20px;}
 .chip.accent{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 30%,transparent);background:var(--accent-soft);}
+.chip.neutral{color:var(--ts);background:var(--bg-inset);border:1px solid var(--border);cursor:pointer;padding:.28rem .6rem;border-radius:20px;}
 /* annotated code block */
 .codeblock{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:1.1rem 0;}
 .cb-head{display:flex;justify-content:space-between;align-items:center;padding:.5rem .9rem;background:var(--bg-elevated);border-bottom:1px solid var(--border);font-family:var(--mono);font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;}
@@ -82,28 +101,23 @@ section.vis{opacity:1;transform:none;}
 .callout h4{font-family:var(--serif);font-weight:400;color:var(--accent);margin:0 0 .3rem;font-size:1.1rem;}
 .callout p{margin:0;font-size:.86rem;color:var(--ts);}
 .callout code{font-family:var(--mono);font-size:.78rem;background:var(--bg-card);color:var(--accent);padding:1px 5px;border-radius:4px;}
-/* bespoke: plugin-card grid (composed from design-system primitives) */
-.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:1rem;margin:1.4rem 0 .4rem;}
-.pcard{position:relative;display:flex;flex-direction:column;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.3rem 1.4rem 1.2rem;text-decoration:none;color:inherit;transition:border-color .3s var(--ease),box-shadow .3s var(--ease),transform .3s var(--ease),background .3s var(--ease);}
-.pcard:hover,.pcard:focus-visible{border-color:var(--accent);background:var(--bg-card-hover);box-shadow:0 0 0 1px var(--accent),0 8px 32px -8px var(--accent-glow);transform:translateY(-2px);outline:none;}
-.pcard-top{display:flex;align-items:baseline;justify-content:space-between;gap:.8rem;}
-.pcard h3{font-family:var(--serif);font-weight:400;font-size:1.5rem;line-height:1;margin:0;color:var(--tp);}
-.pcard .ver{font-family:var(--mono);font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;}
-.pcard .pdesc{font-size:.86rem;color:var(--ts);line-height:1.6;margin:.6rem 0 0;}
-.pcard .pkeys{display:flex;flex-wrap:wrap;gap:.4rem;margin:.9rem 0 0;}
-.pcard .pkey{font-family:var(--mono);font-size:.56rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ts);background:var(--bg-inset);border:1px solid var(--border);padding:.22rem .5rem;border-radius:5px;}
-.pcard .pgo{display:inline-flex;align-items:center;gap:.4rem;font-family:var(--mono);font-size:.64rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;margin:1rem 0 0;padding-top:.9rem;border-top:1px solid var(--border);transition:color .25s var(--ease);}
-.pcard .pgo .arr{transition:transform .25s var(--ease);}
-.pcard:hover .pgo,.pcard:focus-visible .pgo{color:var(--accent);}
-.pcard:hover .pgo .arr,.pcard:focus-visible .pgo .arr{transform:translateX(4px);}
-/* flow / pipeline diagram */
+/* plugin card grid */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.2rem;margin-top:1.4rem;}
+.pcard{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:1.4rem 1.5rem;display:flex;flex-direction:column;gap:.6rem;transition:all .3s var(--ease);text-decoration:none;color:inherit;}
+.pcard:hover,.pcard:focus-visible{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 8px 32px -8px var(--accent-glow);transform:translateY(-2px);outline:none;}
+.pcard-name{font-family:var(--mono);font-size:.78rem;font-weight:600;color:var(--tp);display:flex;align-items:center;gap:.6rem;}
+.pcard-ver{font-family:var(--mono);font-size:.6rem;color:var(--tm);border:1px solid var(--border);padding:.1rem .45rem;border-radius:4px;}
+.pcard-desc{font-size:.84rem;color:var(--ts);line-height:1.55;flex:1;}
+.pcard-chips{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.2rem;}
+.pcard-key{font-family:var(--mono);font-size:.56rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ts);background:var(--bg-inset);border:1px solid var(--border);padding:.22rem .5rem;border-radius:5px;}
+.pcard-link{font-family:var(--mono);font-size:.62rem;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;margin-top:.4rem;}
+/* flow diagram */
 .flow{display:flex;align-items:center;flex-wrap:wrap;gap:.4rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1.2rem 0;}
-.fnode{flex:1;min-width:110px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:.8rem .9rem;font-family:var(--mono);font-size:.7rem;cursor:pointer;transition:all .3s var(--ease);}
-.fnode:hover{border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow);transform:scale(1.03);}
+.fnode{flex:1;min-width:110px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:.8rem .9rem;font-family:var(--mono);font-size:.7rem;transition:all .3s var(--ease);}
 .fnode .nl{font-size:.55rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;}
 .fnode.accent{border-color:color-mix(in srgb,var(--accent) 40%,transparent);background:linear-gradient(135deg,var(--bg-elevated),var(--accent-soft));}
 .farr{color:var(--border-strong);font-size:1.1rem;}
-/* key–value metadata grid */
+/* edge grid */
 .edge-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:.7rem;margin-top:1rem;}
 .edge{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:.85rem 1rem;}
 .edge .n{font-family:var(--mono);font-size:.62rem;color:var(--accent);}
@@ -122,137 +136,237 @@ section.vis{opacity:1;transform:none;}
     <div class="nav-links">
       <a href="#top" class="on">Overview</a>
       <a href="#plugins">Plugins</a>
+      <a href="#compose">Compose</a>
       <a href="#install">Install</a>
     </div>
     <div style="display:flex;align-items:center;gap:.8rem">
       <div class="nav-meta"><span class="dot"></span> MARKETPLACE · 5 PLUGINS</div>
-      <button class="theme-btn" onclick="tgl()">◑ THEME</button></div>
+      <button class="theme-btn" onclick="tgl()">◑ THEME</button>
+    </div>
   </div></nav>
   <div class="progress" id="prog"></div>
   <main>
+
     <section id="top" class="vis" style="padding-top:2.4rem">
       <div class="eyebrow">claude-plugins · marketplace</div>
-      <h1>Five plugins for the <em>project lifecycle</em>.</h1>
-      <p class="lede"><code>onboard</code> keeps AI configs aligned as your code evolves, <code>notify</code> closes the loop, <code>handoff</code> carries session intent across context boundaries, <code>walkthrough</code> turns a session into an explorable document, and <code>lens</code> reviews work against its spec before it ships. Five plugins that work on their own and <strong>compose together</strong>.</p>
+      <h1>Sharp, honest tooling that makes Claude Code's <em>work visible and verifiable</em>.</h1>
+      <p class="lede">Five Claude Code plugins for the project lifecycle — <code>onboard</code> keeps AI configs aligned as your code evolves, <code>notify</code> closes the loop, <code>handoff</code> carries session intent across context boundaries, <code>walkthrough</code> turns a session into an explorable document, and <code>lens</code> reviews work against its spec before it ships. They work on their own and compose together.</p>
       <div class="chips">
         <span class="chip accent">marketplace</span>
         <span class="chip">claude-code</span>
-        <span class="chip">plugins</span>
         <span class="chip">MIT</span>
-      </div>
-      <div class="codeblock" style="max-width:620px">
-        <div class="cb-head"><span class="cb-file">add this marketplace</span><span class="cb-lang">bash</span></div>
-        <pre class="cb-body"><code>claude plugin marketplace add apurvbazari/claude-plugins</code></pre>
+        <span class="chip">free</span>
       </div>
       <div class="hstats">
         <div class="hstat"><div class="v"><em>5</em></div><div class="l">plugins</div></div>
-        <div class="hstat"><div class="v">2</div><div class="l">install routes</div></div>
         <div class="hstat"><div class="v"><em>MIT</em></div><div class="l">licensed</div></div>
+        <div class="hstat"><div class="v"><em>2026</em></div><div class="l">vintage</div></div>
+        <div class="hstat"><div class="v"><em>free</em></div><div class="l">forever</div></div>
       </div>
     </section>
 
     <section id="plugins">
       <div class="sec-label">01 — the collection</div>
-      <h2>Plugins at a <em>glance</em></h2>
-      <p class="lede">Each plugin stands on its own. Pick one card to open its page — full skill reference, architecture, and a runnable example.</p>
+      <h2>Five plugins, <em>one lifecycle</em></h2>
+      <p class="lede">Each plugin stands on its own. Pick a card to open its page — full skill reference, architecture notes, and runnable examples.</p>
+
       <div class="pgrid" aria-label="Plugin card grid">
 
         <a class="pcard" href="./onboard/" aria-label="onboard — open plugin page">
-          <div class="pcard-top"><h3>onboard</h3><span class="ver">v2.0.0</span></div>
-          <p class="pdesc">Analyze codebases and generate tailored Claude tooling — v2 context shape; rejects v1 input (use onboard@1.10.0 for v1).</p>
-          <div class="pkeys">
-            <span class="pkey">onboarding</span><span class="pkey">setup</span><span class="pkey">wizard</span>
-            <span class="pkey">claude-md</span><span class="pkey">codebase-analysis</span><span class="pkey">quality-gates</span>
+          <div class="pcard-name">onboard <span class="pcard-ver">v3.0.0</span></div>
+          <p class="pcard-desc">Analyze codebases with deep, verified research and generate evidence-grounded Claude tooling — CLAUDE.md, path-scoped rules, skills, agents, hooks, and a verify backlog.</p>
+          <div class="pcard-chips">
+            <span class="pcard-key">onboarding</span>
+            <span class="pcard-key">codebase-analysis</span>
+            <span class="pcard-key">quality-gates</span>
           </div>
-          <span class="pgo">open page <span class="arr">→</span></span>
+          <span class="pcard-link">open page →</span>
         </a>
 
         <a class="pcard" href="./notify/" aria-label="notify — open plugin page">
-          <div class="pcard-top"><h3>notify</h3><span class="ver">v2.0.0</span></div>
-          <p class="pdesc">Cross-platform system notifications for Claude Code — macOS and Linux with duration filtering.</p>
-          <div class="pkeys">
-            <span class="pkey">notifications</span><span class="pkey">macos</span><span class="pkey">linux</span>
-            <span class="pkey">hooks</span><span class="pkey">terminal-notifier</span><span class="pkey">notify-send</span>
+          <div class="pcard-name">notify <span class="pcard-ver">v2.0.1</span></div>
+          <p class="pcard-desc">Cross-platform system notifications for Claude Code — macOS and Linux with duration filtering</p>
+          <div class="pcard-chips">
+            <span class="pcard-key">notifications</span>
+            <span class="pcard-key">macos</span>
+            <span class="pcard-key">linux</span>
           </div>
-          <span class="pgo">open page <span class="arr">→</span></span>
+          <span class="pcard-link">open page →</span>
         </a>
 
         <a class="pcard" href="./handoff/" aria-label="handoff — open plugin page">
-          <div class="pcard-top"><h3>handoff</h3><span class="ver">v1.0.0</span></div>
-          <p class="pdesc">Save and resume session handoffs — capture intent at session end, surface it at the next SessionStart.</p>
-          <div class="pkeys">
-            <span class="pkey">handoff</span><span class="pkey">session-continuity</span><span class="pkey">context-transfer</span>
-            <span class="pkey">session-start-hook</span><span class="pkey">workflow-automation</span>
+          <div class="pcard-name">handoff <span class="pcard-ver">v1.0.1</span></div>
+          <p class="pcard-desc">Save and resume session handoffs — capture intent at session end, surface it at the next SessionStart</p>
+          <div class="pcard-chips">
+            <span class="pcard-key">handoff</span>
+            <span class="pcard-key">session-continuity</span>
+            <span class="pcard-key">context-transfer</span>
           </div>
-          <span class="pgo">open page <span class="arr">→</span></span>
+          <span class="pcard-link">open page →</span>
         </a>
 
         <a class="pcard" href="./walkthrough/" aria-label="walkthrough — open plugin page">
-          <div class="pcard-top"><h3>walkthrough</h3><span class="ver">v1.0.0</span></div>
-          <p class="pdesc">Render a session or any subject (plugin, marketplace, path) as a self-contained interactive HTML document.</p>
-          <div class="pkeys">
-            <span class="pkey">session-visualization</span><span class="pkey">interactive-html</span><span class="pkey">documentation</span>
-            <span class="pkey">diagrams</span><span class="pkey">walkthrough</span><span class="pkey">session-recap</span>
+          <div class="pcard-name">walkthrough <span class="pcard-ver">v1.2.0</span></div>
+          <p class="pcard-desc">Render a session or any subject (plugin, marketplace, path) as a self-contained interactive HTML document</p>
+          <div class="pcard-chips">
+            <span class="pcard-key">session-visualization</span>
+            <span class="pcard-key">interactive-html</span>
+            <span class="pcard-key">documentation</span>
           </div>
-          <span class="pgo">open page <span class="arr">→</span></span>
+          <span class="pcard-link">open page →</span>
         </a>
 
         <a class="pcard" href="./lens/" aria-label="lens — open plugin page">
-          <div class="pcard-top"><h3>lens</h3><span class="ver">v1.0.0</span></div>
-          <p class="pdesc">Intent-grounded review companion — reviews the session diff against its spec and plan, adversarially verifies findings, and renders an interactive review.</p>
-          <div class="pkeys">
-            <span class="pkey">code-review</span><span class="pkey">pr-review</span><span class="pkey">intent-grounded</span>
-            <span class="pkey">adversarial-verification</span><span class="pkey">interactive-html</span>
+          <div class="pcard-name">lens <span class="pcard-ver">v1.1.0</span></div>
+          <p class="pcard-desc">Intent-grounded review companion — checks the session diff against spec &amp; plan, verifies findings, renders a review.</p>
+          <div class="pcard-chips">
+            <span class="pcard-key">code-review</span>
+            <span class="pcard-key">intent-grounded</span>
+            <span class="pcard-key">adversarial-verification</span>
           </div>
-          <span class="pgo">open page <span class="arr">→</span></span>
+          <span class="pcard-link">open page →</span>
         </a>
 
       </div>
     </section>
 
-    <section id="install">
-      <div class="sec-label">02 — getting started</div>
-      <h2>Two <em>install routes</em></h2>
-      <p class="lede">Install from Anthropic's reviewed community directory, or add this marketplace directly for the latest commit and all five plugins.</p>
+    <section id="compose">
+      <div class="sec-label">02 — composability</div>
+      <h2>Compose <em>together</em></h2>
+      <p class="lede">The five plugins are designed to interlock across the project lifecycle. Use any one standalone — or wire them together for an end-to-end verified workflow.</p>
 
-      <p style="margin-top:1.4rem"><strong>Route A — Anthropic's community marketplace</strong> (<code>onboard</code>, <code>notify</code>). Snapshots that passed Anthropic's automated security scan, with auto-update on by default. Discoverable via <code>/plugin → Discover</code>.</p>
-      <div class="codeblock">
-        <div class="cb-head"><span class="cb-file">community marketplace</span><span class="cb-lang">bash</span></div>
-        <pre class="cb-body"><code>claude plugin marketplace add anthropics/claude-plugins-community
-claude plugin install onboard@claude-community
-claude plugin install notify@claude-community</code></pre>
+      <div class="flow" aria-label="Plugin lifecycle flow">
+        <div class="fnode accent">
+          <div class="nl">day-one</div>
+          onboard
+        </div>
+        <div class="farr">→</div>
+        <div class="fnode">
+          <div class="nl">close-the-loop</div>
+          notify
+        </div>
+        <div class="farr">→</div>
+        <div class="fnode">
+          <div class="nl">between sessions</div>
+          handoff
+        </div>
+        <div class="farr">→</div>
+        <div class="fnode">
+          <div class="nl">document it</div>
+          walkthrough
+        </div>
+        <div class="farr">→</div>
+        <div class="fnode">
+          <div class="nl">before ship</div>
+          lens
+        </div>
       </div>
 
-      <p style="margin-top:1.6rem"><strong>Route B — this marketplace</strong> (all five plugins, latest commit). The only route for <code>handoff</code>, <code>walkthrough</code>, and <code>lens</code>, and the way to get changes ahead of the nightly community snapshot.</p>
-      <div class="codeblock">
-        <div class="cb-head"><span class="cb-file">apurvbazari-plugins</span><span class="cb-lang">bash</span></div>
-        <pre class="cb-body"><code>claude plugin marketplace add apurvbazari/claude-plugins
-claude plugin install onboard@apurvbazari-plugins
+      <div class="edge-grid">
+        <div class="edge">
+          <div class="n">onboard</div>
+          <div class="t">Day-one + drift detection</div>
+          <p>Deep-researches the codebase, then generates CLAUDE.md, path-scoped rules, skills, hooks, and a verify backlog. Re-runs on drift to keep Claude's context honest as the code evolves.</p>
+        </div>
+        <div class="edge">
+          <div class="n">notify</div>
+          <div class="t">Close the loop</div>
+          <p>Fires a native system notification when Claude finishes a long task — so you can look away while Claude works and get pulled back the moment it stops.</p>
+        </div>
+        <div class="edge">
+          <div class="n">handoff</div>
+          <div class="t">Session continuity</div>
+          <p>Captures intent at session end and surfaces it at the next SessionStart. No more re-explaining what you were doing. Works silently via hooks — zero ceremony.</p>
+        </div>
+        <div class="edge">
+          <div class="n">walkthrough</div>
+          <div class="t">Explorable session docs</div>
+          <p>Renders any session, plugin, or path into a self-contained interactive HTML document with diagrams, detail surfaces, and a dark/light theme. lens renders its review documents through it.</p>
+        </div>
+        <div class="edge">
+          <div class="n">lens</div>
+          <div class="t">Review before ship</div>
+          <p>Compares the session diff against its spec and plan, adversarially verifies each finding, and renders an interactive review via walkthrough. The final gate before you push.</p>
+        </div>
+      </div>
+
+      <div class="callout" style="margin-top:1.6rem">
+        <h4>The composed loop</h4>
+        <p><code>onboard</code> generates your CLAUDE.md, rules, skills, agents, and hooks. <code>handoff</code> keeps intent alive. <code>walkthrough</code> documents the work. <code>lens</code> checks it against the spec. <code>notify</code> tells you when any of them finishes. Five tools, one coherent workflow.</p>
+      </div>
+    </section>
+
+    <section id="install">
+      <div class="sec-label">03 — getting started</div>
+      <h2>Quick <em>start</em></h2>
+      <p class="lede">Add the marketplace once, then install whichever plugins you want. All five are available; pick one or take the set.</p>
+
+      <div class="codeblock" style="max-width:680px;margin-top:1.4rem">
+        <div class="cb-head"><span class="cb-file">add the marketplace</span><span class="cb-lang">bash</span></div>
+        <pre class="cb-body"><code>claude plugin marketplace add apurvbazari/claude-plugins</code></pre>
+      </div>
+
+      <div class="codeblock" style="max-width:680px">
+        <div class="cb-head"><span class="cb-file">then install any plugin</span><span class="cb-lang">bash</span></div>
+        <pre class="cb-body"><code>claude plugin install onboard@apurvbazari-plugins
 claude plugin install notify@apurvbazari-plugins
 claude plugin install handoff@apurvbazari-plugins
 claude plugin install walkthrough@apurvbazari-plugins
 claude plugin install lens@apurvbazari-plugins</code></pre>
       </div>
-      <p style="margin-top:1.4rem">Built on top of <a href="https://code.claude.com/docs/en" style="color:var(--accent);text-decoration:none">Claude Code</a> by Anthropic. Distributed under MIT.</p>
+
+      <p style="margin-top:1.2rem">Built on <a href="https://code.claude.com/docs/en" style="color:var(--accent);text-decoration:none">Claude Code</a> by Anthropic. Distributed under MIT.</p>
     </section>
 
     <div class="foot">
       <div class="foot-links">
-        <a href="https://github.com/ApurvBazari/claude-plugins">repository</a>
+        <a href="https://github.com/ApurvBazari/claude-plugins">Source on GitHub</a>
         <a href="https://code.claude.com/docs/en">Claude Code docs</a>
         <a href="https://code.claude.com/docs/en/plugin-marketplaces">marketplaces guide</a>
-        <a href="https://github.com/anthropics/claude-plugins-community">community marketplace</a>
       </div>
-      <div class="meta">claude-plugins · 5 plugins · MIT · by Apurv Bazari</div>
+      <div class="meta">claude-plugins · marketplace · MIT · by Apurv Bazari</div>
     </div>
   </main>
-  <aside class="panel" id="panel"><span class="x" onclick="closeD()">✕</span>
-    <div class="pk" id="pk">Detail</div><h3 id="ph">—</h3><div class="pb" id="pbd"></div></aside>
+
+  <aside class="panel" id="panel">
+    <span class="x" onclick="closeD()">✕</span>
+    <div class="pk" id="panelKicker">Detail</div>
+    <div class="pb" id="panelBody"></div>
+  </aside>
+
+  <dialog class="pane-dialog" id="paneDialog">
+    <span style="position:absolute;top:14px;right:16px;color:var(--tm);cursor:pointer;font-size:18px" onclick="document.getElementById('paneDialog').close()">✕</span>
+    <div id="paneDialogBody" style="font-size:.86rem;color:var(--ts);line-height:1.6;margin-top:1rem;"></div>
+  </dialog>
+
   <script>
+function renderSurface(d,host){if(!d||!host)return;let h='';
+ if(d.h)h+=`<h3 class="sf-h">${d.h}</h3>`;
+ if(d.summary)h+=`<p class="sf-summary">${d.summary}</p>`;
+ if(d.where&&d.where.length)h+=`<div class="sf-where">${d.where.map(w=>`<code class="sf-loc">${w}</code>`).join('')}</div>`;
+ if(d.code&&d.code.length)h+=d.code.map(c=>`<figure class="sf-code"><figcaption>${c.file||''}</figcaption><pre><code>${c.snippet||''}</code></pre></figure>`).join('');
+ if(d.points&&d.points.length)h+=`<ul class="sf-points">${d.points.map(p=>`<li>${p}</li>`).join('')}</ul>`;
+ if(d.components)h+=d.components;
+ if(d.related&&d.related.length)h+=`<div class="sf-related">${d.related.map(r=>`<button class="chip neutral" onclick="openSurface('${r}')">${r}</button>`).join('')}</div>`;
+ host.innerHTML=h;}
 const panel=document.getElementById('panel');
-function openCard(el){if(!el)return;pk.textContent=el.dataset.k||'Detail';ph.textContent=el.dataset.t||'';pbd.innerHTML=el.dataset.desc||'';panel.classList.add('open');}
+function openPane(id){const d=DET[id];if(!d)return;
+ const k=document.getElementById('panelKicker');if(k)k.textContent=d.k||'Detail';
+ renderSurface(d,document.getElementById('panelBody'));panel.classList.add('open');}
+const _stack=[]; const MAX_DEPTH=3;
+function _capPush(el){if(!el||el.open)return;if(_stack.length>=MAX_DEPTH){const t=_stack.pop();if(t)t.close();}el.showModal();_stack.push(el);}
+function openSurface(id){const k=(typeof SURF!=='undefined'&&SURF[id])||'pane';
+ if(k==='sheet'){const el=document.getElementById('sheet-'+id);_capPush(el);return;}
+ if(_stack.length){const pd=document.getElementById('paneDialog'),d=DET[id],b=document.getElementById('paneDialogBody');
+  renderSurface(d,b);if(d&&d.k)b.insertAdjacentHTML('afterbegin',`<div class="sf-kicker">${d.k}</div>`);_capPush(pd);}
+ else openPane(id);}
+document.querySelectorAll('dialog.sheet').forEach(dlg=>{
+ dlg.addEventListener('close',()=>{const i=_stack.indexOf(dlg);if(i>-1)_stack.splice(i,1);});
+ dlg.addEventListener('click',e=>{if(e.target===dlg)dlg.close();});});
+function openCard(el){if(!el)return;openPane(el.dataset.id||'');}
+function openD(id){openSurface(id);}
 function closeD(){panel.classList.remove('open');}
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeD();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!_stack.length)closeD();});
 function tgl(){const h=document.documentElement;const t=h.getAttribute('data-theme')==='dark'?'light':'dark';h.setAttribute('data-theme',t);try{localStorage.setItem('wt-theme',t);}catch(e){}}
 (function(){try{const t=localStorage.getItem('wt-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vis');}}),{threshold:.1});
@@ -260,6 +374,7 @@ document.querySelectorAll('section').forEach(s=>io.observe(s));
 addEventListener('scroll',()=>{const sc=scrollY/(document.body.scrollHeight-innerHeight)*100;if(prog)prog.style.width=sc+'%';
  let cur='';document.querySelectorAll('section[id]').forEach(s=>{if(scrollY>=s.offsetTop-120)cur=s.id;});
  document.querySelectorAll('.nav-links a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+cur));},{passive:true});
-document.querySelectorAll('.fnode[role="button"]').forEach(n=>n.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();n.click();}}));
+const DET={};
+const SURF={};
   </script>
 </body></html>

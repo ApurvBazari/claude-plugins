@@ -1,6 +1,6 @@
 # claude-plugins
 
-> Claude Code plugins for the project lifecycle — `onboard` keeps AI configs aligned as your code evolves, `notify` closes the loop, `handoff` carries session intent across context boundaries, `walkthrough` turns a session into an explorable document, and `lens` reviews work against its spec before it ships. Five plugins that work on their own and **compose together**.
+> Sharp, honest tooling that makes Claude Code's work visible and verifiable. Claude Code plugins for the project lifecycle — `onboard` keeps AI configs aligned as your code evolves, `notify` closes the loop, `handoff` carries session intent across context boundaries, `walkthrough` turns a session into an explorable document, and `lens` reviews work against its spec before it ships. Five plugins that work on their own and **compose together**.
 
 Built on top of [Claude Code](https://code.claude.com/docs/en) by Anthropic. Distributed under [MIT](./LICENSE).
 
