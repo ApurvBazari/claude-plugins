@@ -47,6 +47,29 @@ Build the **intent record** — the spec items + plan steps the diff is judged a
 **multiple specs and plans**: a branch routinely implements more than one (the brainstorming workflow
 decomposes large work into sub-projects, each with its own spec→plan cycle). Selection is **diff-correlated**:
 
+0. **injected intent (programmatic caller)** — the **highest-priority** rule (it runs **before rule 1**):
+   if the caller passed a non-empty `injectedIntent` array, it wins outright over **everything** below:
+   build the intent record **verbatim** from it and **skip rules 1–4 entirely** (no `docs/superpowers/`
+   diff-correlation, no latest-only fallback, no transcript reconstruction). The arg is the FROZEN matali
+   contract:
+
+   ```
+   injectedIntent?: Array<{ role: "spec" | "plan", name: string, content: string }>
+   ```
+
+   For each entry: its `content` is the **full spec/plan markdown** used as the intent doc body verbatim
+   (never summarized, never re-fetched); its `name` is the **provenance tag** carried onto every
+   `specItems[]`/`planSteps[]` entry and every `requirements` finding derived from it —
+   `sourceSpec` for `role:"spec"`, `sourcePlan` for `role:"plan"`; its `role` selects the fan-out agent in
+   §3 (`spec` → `spec-adherence`, `plan` → `plan-adherence`). This intent is **explicit and
+   full-fidelity, so it is NOT `degraded`** — unlike transcript reconstruction (rule 4) or modified-only
+   correlation (rule 2). The §8 adherence fan-out cap still applies (see §3 and §8): if the injected set
+   exceeds the cap, prioritize/cap/set `degraded`/name the skipped docs exactly as rules 2–3 do.
+
+   The arg arrives through the same Skill-tool invocation channel as `scope`/`finders`/`taskIds`; treat a
+   missing or empty `injectedIntent` as "not provided" and fall through to rule 1 (behavior byte-identical
+   to v1.1.0). If the arg is delivered as a JSON string rather than an array, parse it defensively before
+   the emptiness check.
 1. **explicit args** — an intent/spec set passed by the caller wins outright (overrides the computation
    below). Args that resolve to paths under `docs/superpowers/specs/` or `docs/superpowers/plans/` are the
    explicit set.

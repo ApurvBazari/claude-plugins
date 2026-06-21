@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+PIPE="$ROOT/lens/skills/engine/references/pipeline.md"
+ESKILL="$ROOT/lens/skills/engine/SKILL.md"
+PJSON="$ROOT/lens/.claude-plugin/plugin.json"
+MKT="$ROOT/.claude-plugin/marketplace.json"
+CHANGELOG="$ROOT/lens/CHANGELOG.md"
+fail(){ echo "FAIL: $1"; exit 1; }
+for f in "$PIPE" "$ESKILL" "$PJSON" "$MKT" "$CHANGELOG"; do [ -s "$f" ] || fail "missing $f"; done
+
+# === INTENT rule 0: injectedIntent override (pipeline §2) ===
+grep -q 'injectedIntent' "$PIPE" || fail "INTENT: pipeline §2 must name the injectedIntent arg"
+grep -qiE 'rule 0|highest priority|before .*rule 1|highest-priority' "$PIPE" || fail "INTENT: injectedIntent must be the highest-priority rule (rule 0, before rule 1)"
+grep -qi 'verbatim' "$PIPE" || fail "INTENT: injected content must be used verbatim"
+grep -qiE 'role.*spec.*plan|"spec" . "plan"|spec . plan' "$PIPE" || fail "INTENT: rule 0 must document the role enum (spec|plan)"
+grep -q 'sourceSpec' "$PIPE" || fail "INTENT: role spec maps to sourceSpec provenance"
+grep -q 'sourcePlan' "$PIPE" || fail "INTENT: role plan maps to sourcePlan provenance"
+grep -qiE 'skip rules 1.4|skip .*rule 1|skip the (docs/superpowers|correlation)|skip rules 1 through 4' "$PIPE" || fail "INTENT: rule 0 must skip rules 1-4 (correlation/latest/transcript)"
+grep -qiE 'not .*degraded|never .*degraded|NOT set .?degraded|do not set .?degraded' "$PIPE" || fail "INTENT: injected (explicit, full-fidelity) intent must NOT set degraded"
+
+echo "PASS: lens injected intent"
