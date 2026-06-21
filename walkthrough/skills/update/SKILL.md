@@ -103,7 +103,7 @@ above the open offer. It is a passive summary, not an `AskUserQuestion`.
 - **Reconstruct, don't fabricate.** Recover only what the HTML actually contains; the `DET` store is the reliable source for details. Note partial fidelity on degraded input.
 - **Named files drive; conversation frames.** No automatic git discovery of changes. No paths → ask which files changed.
 - **One coherent doc.** Revise/merge/add into a single narrative; keep ids stable; never staple old + new.
-- **Same look, reused renderer.** Render via create's renderer references unchanged — five `references/` files plus the `components/` catalog (index + on-demand group recipes); tokens only, self-contained, one Google Fonts `@import`.
+- **Same look, reused renderer.** Render via create's renderer references unchanged — six `references/` files plus the `components/` catalog (index + on-demand group recipes); tokens only, self-contained, one Google Fonts `@import`.
 - **In place, seamless.** Overwrite the same file; no new file, no backup, no update chrome.
 - **Read-only except the final write.** Never execute session-derived code; only read the named and cited files.
 - **AskUserQuestion guard.** The target picker uses fixed-length option lists per `.claude/rules/ask-user-question-guard.md`.

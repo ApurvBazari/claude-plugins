@@ -37,6 +37,18 @@ deliberately out of scope, then:
   valid reason to omit something present in the source is **content-based**: genuinely out of scope, or
   redundant with another rendered item. Record each such omission with that one-line content reason.
 
+## Part 1b — Concept-coverage assertion (mechanical)
+
+After component selection, walk `concepts[]` and assert every entry rendered faithfully:
+
+- Each entry has either `renderedBy` set to the component **registered for its `type`** in
+  `concept-coverage.md`, OR `bespoke:true` with a non-empty `bespokeReason`.
+- No entry is rendered by a component NOT registered for its type (a **force-fit** — a defect).
+- No `concepts[]` entry is left unrendered (no `renderedBy` and not `bespoke`).
+
+Any force-fit or unrendered concept is a defect to FIX before assemble — same discipline as the
+structural self-check. This is a mechanical walk, not a judgment call.
+
 ## Part 2 -- coverage note (in the offer step, after write)
 
 In the offer-to-open message, include a short passive summary:
@@ -47,3 +59,6 @@ In the offer-to-open message, include a short passive summary:
 Every "intentionally omitted" reason must be **content-based** (out of scope / redundant) -- never a
 process excuse like "file not read" for material the session already contained. It is a display, NOT an
 AskUserQuestion. The user can ask to fold any omission back in.
+
+Also include a concept-coverage line in the note: **"Explained N concepts across M types · F force-fits
+· K bespoke."** (F must be 0 — a non-zero F means Part 1b was not honored.)

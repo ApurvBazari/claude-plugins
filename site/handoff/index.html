@@ -36,7 +36,7 @@ nav{position:fixed;top:0;left:0;right:0;height:54px;z-index:100;backdrop-filter:
 .dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2.5s infinite;}
 .theme-btn{cursor:pointer;font-family:var(--mono);font-size:.62rem;color:var(--ts);border:1px solid var(--border);padding:.28rem .6rem;border-radius:6px;background:none;}
 .progress{position:fixed;top:54px;left:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--blue));z-index:101;width:0;box-shadow:0 0 8px var(--accent-glow);}
-main{max-width:1180px;margin:0 auto;padding:0 1.6rem;padding-top:78px;}
+main{max-width:1180px;margin:0 auto;padding:0 1.6rem;padding-top:78px;counter-reset:sec;}
 .eyebrow{font-family:var(--mono);font-size:.68rem;color:var(--accent);text-transform:uppercase;letter-spacing:.18em;display:inline-flex;align-items:center;gap:.6rem;margin-bottom:.8rem;}
 .eyebrow::before{content:'';width:26px;height:1px;background:var(--accent);}
 h1{font-family:var(--serif);font-size:clamp(2.4rem,6vw,4rem);font-weight:400;line-height:1.04;letter-spacing:-.025em;margin:.2rem 0;max-width:880px;}
@@ -62,19 +62,33 @@ section.vis{opacity:1;transform:none;}
 .panel h3{font-family:var(--serif);font-weight:400;font-size:1.4rem;margin:.2rem 0 .6rem;}
 .panel .pb{font-size:.86rem;color:var(--ts);line-height:1.6;}
 .panel code{font-family:var(--mono);font-size:.72rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
+/* surface detail components */
+.sf-h{font-family:var(--serif);font-weight:400;font-size:1.2rem;margin:.2rem 0 .5rem;}
+.sf-summary{font-size:.86rem;color:var(--ts);line-height:1.6;margin:.3rem 0;}
+.sf-where{display:flex;flex-wrap:wrap;gap:.3rem;margin:.5rem 0;}
+.sf-loc{font-family:var(--mono);font-size:.7rem;background:var(--accent-soft);color:var(--accent);padding:2px 6px;border-radius:4px;}
+.sf-code{margin:.6rem 0;}
+.sf-code figcaption{font-family:var(--mono);font-size:.58rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.3rem;}
+.sf-code pre{margin:0;background:var(--bg-inset);border:1px solid var(--border);border-radius:6px;padding:.6rem .8rem;overflow-x:auto;}
+.sf-code pre code{font-family:var(--mono);font-size:.74rem;color:var(--ts);}
+.sf-points{margin:.5rem 0 0;padding-left:1.1rem;}
+.sf-points li{font-size:.84rem;color:var(--ts);line-height:1.55;margin:.25rem 0;}
+.sf-related{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.8rem;}
+.sf-kicker{font-family:var(--mono);font-size:.58rem;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);margin-bottom:.4rem;}
+/* pane dialog */
+dialog.pane-dialog{position:fixed;top:0;right:0;width:340px;height:100vh;background:var(--bg-card);border:none;border-left:1px solid var(--border-active);padding:1.5rem;overflow:auto;box-shadow:-20px 0 50px rgba(0,0,0,.3);margin:0;}
+dialog.pane-dialog::backdrop{background:transparent;}
+/* sheet dialog */
+dialog.sheet{position:fixed;inset:0;width:min(96vw,600px);max-height:80vh;background:var(--bg-card);border:1px solid var(--border-active);border-radius:14px;padding:2rem;overflow:auto;box-shadow:0 24px 80px rgba(0,0,0,.45);margin:auto;}
+dialog.sheet::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 @media(max-width:780px){.nav-links{display:none}}
-/* === component CSS (only the selected components) === */
-/* hero chips (typeTags) */
+/* chips */
 .chips{display:flex;flex-wrap:wrap;gap:.5rem;margin:1.2rem 0 .2rem;}
 .chip{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ts);background:var(--bg-card);border:1px solid var(--border);padding:.32rem .65rem;border-radius:20px;}
 .chip.accent{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 30%,transparent);background:var(--accent-soft);}
-/* callout */
-.callout{background:var(--accent-soft);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:.9rem 1.2rem;margin:1.1rem 0;}
-.callout h4{font-family:var(--serif);font-weight:400;color:var(--accent);margin:0 0 .3rem;font-size:1.1rem;}
-.callout p{margin:0;font-size:.86rem;color:var(--ts);}
-.callout code{font-family:var(--mono);font-size:.78rem;background:var(--bg-card);color:var(--accent);padding:1px 5px;border-radius:4px;}
+.chip.neutral{color:var(--ts);background:var(--bg-inset);border:1px solid var(--border);cursor:pointer;padding:.28rem .6rem;border-radius:20px;}
 /* annotated code block */
 .codeblock{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:1.1rem 0;}
 .cb-head{display:flex;justify-content:space-between;align-items:center;padding:.5rem .9rem;background:var(--bg-elevated);border-bottom:1px solid var(--border);font-family:var(--mono);font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;}
@@ -82,35 +96,19 @@ section.vis{opacity:1;transform:none;}
 .cb-lang{color:var(--tm);}
 .cb-body{margin:0;padding:.9rem 1.1rem;font-family:var(--mono);font-size:.78rem;line-height:1.65;color:var(--ts);white-space:pre;overflow-x:auto;}
 .cb-body code{color:var(--tp);}
+/* callout */
+.callout{background:var(--accent-soft);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:.9rem 1.2rem;margin:1.1rem 0;}
+.callout h4{font-family:var(--serif);font-weight:400;color:var(--accent);margin:0 0 .3rem;font-size:1.1rem;}
+.callout p{margin:0;font-size:.86rem;color:var(--ts);}
+.callout code{font-family:var(--mono);font-size:.78rem;background:var(--bg-card);color:var(--accent);padding:1px 5px;border-radius:4px;}
 /* flow / pipeline diagram */
 .flow{display:flex;align-items:center;flex-wrap:wrap;gap:.4rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1.2rem 0;}
-.fnode{flex:1;min-width:110px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:.8rem .9rem;font-family:var(--mono);font-size:.7rem;cursor:pointer;transition:all .3s var(--ease);}
-.fnode:hover{border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow);transform:scale(1.03);}
+.fnode{flex:1;min-width:104px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:.8rem .9rem;font-family:var(--mono);font-size:.7rem;cursor:pointer;transition:all .3s var(--ease);}
+.fnode:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 8px 32px -8px var(--accent-glow);transform:scale(1.03);}
 .fnode .nl{font-size:.55rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;}
 .fnode.accent{border-color:color-mix(in srgb,var(--accent) 40%,transparent);background:linear-gradient(135deg,var(--bg-elevated),var(--accent-soft));}
 .farr{color:var(--border-strong);font-size:1.1rem;}
-/* option grid (four-option pickup) */
-.opt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:.8rem;margin:1.2rem 0;}
-.opt{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.2rem;cursor:pointer;transition:all .3s var(--ease);}
-.opt:hover{border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow);transform:translateY(-2px);}
-.opt .ok{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);}
-.opt .ot{font-family:var(--serif);font-size:1.3rem;color:var(--tp);margin:.25rem 0 .35rem;line-height:1.1;}
-.opt p{font-size:.8rem;margin:0;color:var(--ts);}
-.opt.rec{border-color:color-mix(in srgb,var(--accent) 40%,transparent);background:linear-gradient(135deg,var(--bg-card),var(--accent-soft));}
-.opt .pill{display:inline-block;font-family:var(--mono);font-size:.55rem;text-transform:uppercase;letter-spacing:.08em;color:var(--green);background:var(--green-soft);padding:.12rem .4rem;border-radius:4px;margin-bottom:.4rem;}
-/* trust split (two-column trusted vs untrusted) */
-.trust{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin:1.2rem 0;}
-.trust .col{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.2rem;}
-.trust .col.trusted{border-color:color-mix(in srgb,var(--green) 30%,transparent);}
-.trust .col.untrusted{border-color:color-mix(in srgb,var(--rose) 30%,transparent);}
-.trust .ch{font-family:var(--mono);font-size:.62rem;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:.4rem;margin-bottom:.5rem;}
-.trust .trusted .ch{color:var(--green);}
-.trust .untrusted .ch{color:var(--rose);}
-.trust .col ul{margin:.3rem 0 0;padding-left:1.1rem;}
-.trust .col li{font-size:.82rem;color:var(--ts);margin:.25rem 0;line-height:1.55;}
-.trust .col li code{font-family:var(--mono);font-size:.74rem;background:var(--bg-inset);color:var(--tp);padding:1px 5px;border-radius:4px;}
-@media(max-width:680px){.trust{grid-template-columns:1fr;}}
-/* skills reference table — same primitives as compare-table */
+/* ref table */
 .ref-table{width:100%;border-collapse:separate;border-spacing:0;font-size:.82rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:1.2rem 0;}
 .ref-table th{font-family:var(--mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);padding:.85rem 1.25rem;text-align:left;background:var(--bg-elevated);border-bottom:1px solid var(--border);font-weight:500;}
 .ref-table td{padding:.75rem 1.25rem;border-bottom:1px solid var(--border);color:var(--ts);vertical-align:top;}
@@ -118,10 +116,10 @@ section.vis{opacity:1;transform:none;}
 .ref-table tr:hover td{background:var(--bg-card-hover);}
 .ref-table .slash{font-family:var(--mono);font-size:.76rem;color:var(--accent);white-space:nowrap;}
 .ref-table .tag{font-family:var(--mono);font-size:.58rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);border:1px solid var(--border);padding:.12rem .4rem;border-radius:4px;display:inline-block;}
-.ref-table .tag.lock{color:var(--rose);border-color:color-mix(in srgb,var(--rose) 35%,transparent);background:var(--rose-soft);}
 .ref-table .tag.auto{color:var(--green);border-color:color-mix(in srgb,var(--green) 35%,transparent);background:var(--green-soft);}
-.ref-table .cell-mono{font-family:var(--mono);font-size:.74rem;color:var(--accent);}
-/* key–value metadata grid */
+.ref-table .tag.lock{color:var(--rose);border-color:color-mix(in srgb,var(--rose) 35%,transparent);background:var(--rose-soft);}
+.cell-mono{font-family:var(--mono);font-size:.74rem;color:var(--accent);}
+/* edge grid */
 .edge-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:.7rem;margin-top:1rem;}
 .edge{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:.85rem 1rem;}
 .edge .n{font-family:var(--mono);font-size:.62rem;color:var(--accent);}
@@ -139,166 +137,166 @@ section.vis{opacity:1;transform:none;}
     <div class="logo">◆ claude<span>-plugins</span></div>
     <div class="nav-links">
       <a href="#top" class="on">Overview</a>
-      <a href="#what">What it does</a>
-      <a href="#loop">Save → resume</a>
-      <a href="#pickup">Four-option pickup</a>
-      <a href="#trust">Trust model</a>
+      <a href="#flow">Flow</a>
       <a href="#skills">Skills</a>
+      <a href="#config">Config</a>
       <a href="#storage">Storage</a>
     </div>
     <div style="display:flex;align-items:center;gap:.8rem">
-      <div class="nav-meta"><span class="dot"></span> PLUGIN · v1.0.0</div>
-      <button class="theme-btn" onclick="tgl()">◑ THEME</button></div>
+      <div class="nav-meta"><span class="dot"></span> PLUGIN · v1.0.1</div>
+      <button class="theme-btn" onclick="tgl()">◑ THEME</button>
+    </div>
   </div></nav>
   <div class="progress" id="prog"></div>
   <main>
+
     <section id="top" class="vis" style="padding-top:2.4rem">
       <div class="eyebrow">claude-plugins · handoff</div>
-      <h1>Carry the thread <em>across sessions</em>.</h1>
-      <p class="lede">handoff saves the directive of a wrap-up session, then <strong>surfaces it at the start of the next one</strong>. It replaces the manual "paste a prompt into the new window" workflow with an auto-save-with-confirm loop and a surface-and-confirm resume.</p>
+      <h1>Session continuity — <em>without</em> the copy-paste.</h1>
+      <p class="lede">Save the directive of a wrap-up session and surface it at the start of the next one. Replaces the manual "paste a prompt into the new window" workflow with an auto-save + confirm-on-resume loop.</p>
       <div class="chips">
-        <span class="chip accent">plugin</span>
+        <span class="chip accent">handoff</span>
         <span class="chip">session-continuity</span>
-        <span class="chip">context-transfer</span>
         <span class="chip">session-start-hook</span>
+        <span class="chip">workflow-automation</span>
       </div>
       <div class="codeblock" style="max-width:560px">
         <div class="cb-head"><span class="cb-file">install</span><span class="cb-lang">bash</span></div>
         <pre class="cb-body"><code>claude plugin install handoff@apurvbazari-plugins</code></pre>
       </div>
-      <p style="margin-top:.9rem;font-size:.82rem;color:var(--tm)">That's it — nothing to configure. The SessionStart hook ships inside the plugin and activates automatically.</p>
+      <p style="margin-top:.7rem;font-size:.86rem;color:var(--ts)">That's it. The SessionStart hook activates automatically — no setup step required.</p>
       <div class="hstats">
         <div class="hstat"><div class="v"><em>4</em></div><div class="l">skills</div></div>
-        <div class="hstat"><div class="v">1</div><div class="l">SessionStart hook</div></div>
+        <div class="hstat"><div class="v">1</div><div class="l">active slot</div></div>
         <div class="hstat"><div class="v"><em>4</em></div><div class="l">resume options</div></div>
-        <div class="hstat"><div class="v">1</div><div class="l">active slot per repo</div></div>
-        <div class="hstat"><div class="v">v1.0.0</div><div class="l">folder layout</div></div>
+        <div class="hstat"><div class="v">90d</div><div class="l">auto-archive</div></div>
       </div>
     </section>
 
-    <section id="what">
-      <div class="sec-label">01 — what it does</div>
-      <h2>Stop <em>copy-pasting</em> a prompt into the next window</h2>
-      <p class="lede">Long Claude Code sessions often end with you typing a paragraph into the <em>next</em> window to continue. That paragraph is reproducible — it's just "the directive of where we left off". handoff captures it at end-of-session and surfaces it at the start of the next.</p>
-      <p>Saying a wrap-up phrase like <code>"save handoff"</code>, <code>"pick this up later"</code>, or <code>"I'll come back to this"</code> auto-invokes <code>/handoff:save</code>. It drafts a directive — what the next session should pick up, pointers worth reading first, constraints, and open questions — and confirms via an AskUserQuestion before writing to <code>.claude/handoff/active.md</code>. The directive is <strong>intent only</strong>; current commits, branch, and working-tree state are derivable at resume time, so they are deliberately not embedded.</p>
+    <section id="flow">
+      <div class="sec-label">01 — how a handoff works</div>
+      <h2>The <em>save → resume</em> loop</h2>
+      <p class="lede">One save, one active slot, one confirmed resume. Click a stage to see detail in the side panel.</p>
+      <div class="flow" aria-label="Handoff save to resume loop">
+        <div class="fnode" onclick="openSurface('save')" tabindex="0" role="button" aria-label="Save handoff captures intent on wrap-up phrase"><div class="nl">/handoff:save</div>save handoff</div>
+        <span class="farr">→</span>
+        <div class="fnode" onclick="openSurface('store')" tabindex="0" role="button" aria-label="Written to active.md single slot"><div class="nl">write</div>.claude/handoff/active.md</div>
+        <span class="farr">→</span>
+        <div class="fnode" onclick="openSurface('hook')" tabindex="0" role="button" aria-label="SessionStart hook reads it next session"><div class="nl">next session</div>SessionStart hook</div>
+        <span class="farr">→</span>
+        <div class="fnode accent" onclick="openSurface('pickup')" tabindex="0" role="button" aria-label="Pickup presents four-option flow"><div class="nl">/handoff:pickup</div>pickup → confirm</div>
+      </div>
+      <p>Wrap-up phrases like "pick this up later", "continue in new session", or "save handoff" auto-invoke <code>/handoff:save</code>. It presents a confirm before writing — false positives cost one click. The SessionStart hook on the next session reads <code>active.md</code>, runs stale and snooze checks, and routes Claude to the four-option pickup flow. Handoff never auto-executes a directive — you always confirm.</p>
       <div class="callout">
-        <h4>The continuity loop</h4>
-        <p>Save at the end of one session → the SessionStart hook surfaces it at the start of the next → you pick one of four ways to resume. Intent crosses the session boundary; nothing else has to.</p>
+        <h4>Trust model</h4>
+        <p>The SessionStart hook wraps directive content in <code>&lt;untrusted-source&gt;</code> tags. Routing instructions and metadata are trusted; the saved directive is data you review, not commands Claude runs automatically. The four-option <code>AskUserQuestion</code> ensures confirmation before any action.</p>
       </div>
-    </section>
-
-    <section id="loop">
-      <div class="sec-label">02 — the loop</div>
-      <h2>The <em>save → resume</em> pipeline</h2>
-      <p class="lede">One save writes a single-slot directive. At the next session start, the bundled hook reads it, computes progress signals, and routes Claude to the pickup flow. Click a stage for detail.</p>
-      <div class="flow" aria-label="handoff save to resume loop">
-        <div class="fnode" data-d="save" onclick="openD('save')" tabindex="0" role="button" aria-label="Save captures intent on a wrap-up phrase"><div class="nl">/handoff:save</div>capture intent</div>
-        <span class="farr">→</span>
-        <div class="fnode" data-d="active" onclick="openD('active')" tabindex="0" role="button" aria-label="Directive written to active.md"><div class="nl">write</div>active.md</div>
-        <span class="farr">→</span>
-        <div class="fnode" data-d="hook" onclick="openD('hook')" tabindex="0" role="button" aria-label="SessionStart hook reads it next session"><div class="nl">next session</div>SessionStart hook</div>
-        <span class="farr">→</span>
-        <div class="fnode" data-d="surface" onclick="openD('surface')" tabindex="0" role="button" aria-label="Hook surfaces routing, metadata and directive"><div class="nl">surface</div>additionalContext</div>
-        <span class="farr">→</span>
-        <div class="fnode accent" data-d="pickup-node" onclick="openD('pickup-node')" tabindex="0" role="button" aria-label="Pickup presents the four-option flow"><div class="nl">/handoff:pickup</div>4-option resume</div>
-      </div>
-      <p>On every session start the hook reads <code>.claude/handoff/active.md</code> (exiting silently if absent), parses its frontmatter, and computes three progress signals: <strong>age in days</strong>, <strong>commits past <code>saved-at-sha</code></strong>, and <strong>branch change</strong>. Two short-circuits run first — a <em>snooze</em> check (suppress re-surface for <code>deferral-snooze-hours</code>, default 24h, after a "Save for later") and a <em>stale</em> backstop (auto-archive anything older than <code>stale-day-threshold</code>, default 90 days). Otherwise it emits <code>additionalContext</code> and Claude invokes <code>/handoff:pickup</code>.</p>
-    </section>
-
-    <section id="pickup">
-      <div class="sec-label">03 — resume</div>
-      <h2>The <em>four-option</em> pickup</h2>
-      <p class="lede"><code>/handoff:pickup</code> re-reads the file from disk (the surfaced content is treated as a stale snapshot), shows the directive plus progress, runs a cwd guard, then asks via AskUserQuestion. You stay in control — handoff never auto-executes a directive.</p>
-      <div class="opt-grid">
-        <div class="opt rec" data-d="o-execute" onclick="openD('o-execute')" tabindex="0" role="button" aria-label="Execute option">
-          <span class="pill">recommended when it still applies</span>
-          <div class="ok">option 1</div><div class="ot">Execute</div>
-          <p>Act on the directive in this session, then archive to <code>archive/consumed-&lt;ts&gt;.md</code>.</p>
-        </div>
-        <div class="opt" data-d="o-edit" onclick="openD('o-edit')" tabindex="0" role="button" aria-label="Edit option">
-          <div class="ok">option 2</div><div class="ot">Edit</div>
-          <p>Open the directive in <code>$EDITOR</code>, revise, then re-surface for another confirm.</p>
-        </div>
-        <div class="opt" data-d="o-discard" onclick="openD('o-discard')" tabindex="0" role="button" aria-label="Discard option">
-          <div class="ok">option 3</div><div class="ot">Discard</div>
-          <p>Archive to <code>archive/discarded-&lt;ts&gt;.md</code> without acting.</p>
-        </div>
-        <div class="opt" data-d="o-later" onclick="openD('o-later')" tabindex="0" role="button" aria-label="Save for later option">
-          <div class="ok">option 4</div><div class="ot">Save for later</div>
-          <p>Leave it in place; snooze for 24h so the next start doesn't re-surface immediately.</p>
-        </div>
-      </div>
-      <p>Before the four options, a <strong>cwd guard</strong> compares <code>pwd</code> against the saved <code>saved-from-cwd</code>. If you <code>cd</code>'d into a different project mid-session, the surfaced handoff was captured elsewhere — pickup asks you to reconfirm before resuming here.</p>
-    </section>
-
-    <section id="trust">
-      <div class="sec-label">04 — security</div>
-      <h2>Trusted routing, <em>untrusted</em> directive</h2>
-      <p class="lede">A saved handoff is an installable, possibly-shared file — so handoff treats the directive as untrusted data. The SessionStart hook splits its output: the routing instruction and metadata are trusted; the directive content is wrapped in <code>&lt;untrusted-source&gt;</code> framing.</p>
-      <div class="trust">
-        <div class="col trusted">
-          <div class="ch">● trusted — emitted by the hook</div>
-          <ul>
-            <li><strong>Routing instruction</strong> — plain text telling Claude to invoke <code>/handoff:pickup</code>. Not inside the untrusted wrapper.</li>
-            <li><strong>Metadata</strong> — <code>saved-at</code>, <code>saved-at-sha</code>, branch, cwd, progress tags, snooze status.</li>
-          </ul>
-        </div>
-        <div class="col untrusted">
-          <div class="ch">● untrusted — wrapped as data</div>
-          <ul>
-            <li><strong>Directive content</strong> — wrapped in <code>&lt;untrusted-source&gt;</code>, presented as data describing user intent, <em>not</em> instructions to act on.</li>
-            <li>Even on <strong>Execute</strong>, the directive is guidance for Claude to apply judgement to — never commands to mechanically run.</li>
-          </ul>
-        </div>
-      </div>
-      <p>The split matters: an attacker who lands a malicious <code>active.md</code> can only influence directive content, not the routing instruction. The four-option AskUserQuestion ensures you confirm any action. If you don't recognize a saved handoff in your repo, pick <strong>Discard</strong> and investigate — though with <code>.claude/handoff/</code> in <code>.gitignore</code> (the first save offers this), that's unlikely. Defense-in-depth for a publicly-installable plugin.</p>
     </section>
 
     <section id="skills">
-      <div class="sec-label">05 — reference</div>
-      <h2>Skills &amp; <em>the hook</em></h2>
-      <p class="lede">Four skills, all <code>/handoff:&lt;name&gt;</code>. <code>save</code> and <code>pickup</code> auto-invoke on intent; <code>check</code> auto-invokes but is read-only; <code>discard</code> is destructive and user-invoked only.</p>
+      <div class="sec-label">02 — skills</div>
+      <h2>Four skills — <em>save, pickup, check, discard</em></h2>
+      <p class="lede">All under <code>/handoff:&lt;name&gt;</code>. <code>save</code> and <code>pickup</code> auto-invoke on intent; <code>check</code> auto-invokes but is read-only; <code>discard</code> is destructive and user-invoked only.</p>
       <table class="ref-table">
         <thead><tr><th>Skill</th><th>Invocation</th><th>What it does</th></tr></thead>
         <tbody>
-          <tr><td class="slash">/handoff:save</td><td><span class="tag auto">auto</span></td><td>Auto-invokes on a wrap-up phrase; drafts a directive and confirms via AskUserQuestion before writing <span class="cell-mono">active.md</span>. The slash form is the no-confirm fallback.</td></tr>
-          <tr><td class="slash">/handoff:pickup</td><td><span class="tag auto">auto</span></td><td>Auto-invokes after the hook surfaces a handoff. Re-reads from disk, runs the cwd guard, presents the four-option flow (Execute / Edit / Discard / Save&nbsp;for&nbsp;later).</td></tr>
-          <tr><td class="slash">/handoff:check</td><td><span class="tag auto">auto · read-only</span></td><td>Reports whether a handoff exists, its age, saved-at SHA/branch, how far the repo has moved past it, and snooze status. A sanity check for "why isn't this surfacing?".</td></tr>
-          <tr><td class="slash">/handoff:discard</td><td><span class="tag lock">user-only</span></td><td>Archive the active handoff without acting — the same effect as picking Discard in pickup, but invocable from anywhere. <span class="cell-mono">disable-model-invocation</span>.</td></tr>
+          <tr>
+            <td class="slash">/handoff:save</td>
+            <td><span class="tag auto">auto</span></td>
+            <td>Auto-invokes on a wrap-up phrase. Drafts a directive (next step, pointers, constraints, open questions) and confirms via AskUserQuestion before writing. Captures <code>saved-at</code>, <code>saved-at-sha</code>, <code>saved-at-branch</code>, <code>saved-from-cwd</code> frontmatter.</td>
+          </tr>
+          <tr>
+            <td class="slash">/handoff:pickup</td>
+            <td><span class="tag auto">auto — after hook</span></td>
+            <td>Auto-invokes after the hook surfaces a handoff. Re-reads from disk (surfaced content is treated as stale), runs cwd guard, then presents four options via AskUserQuestion: Execute / Edit / Discard / Save for later.</td>
+          </tr>
+          <tr>
+            <td class="slash">/handoff:check</td>
+            <td><span class="tag auto">auto · read-only</span></td>
+            <td>Reports whether an active handoff exists, its age, saved-at SHA and branch, how far the repo has moved past the saved SHA, and snooze status. Useful for "why isn't this surfacing?".</td>
+          </tr>
+          <tr>
+            <td class="slash">/handoff:discard</td>
+            <td><span class="tag lock">user-only</span></td>
+            <td>Archives the active handoff without acting — same effect as Discard in pickup, invocable from anywhere. <span class="cell-mono">disable-model-invocation</span> prevents accidental auto-invocation.</td>
+          </tr>
         </tbody>
       </table>
+      <div class="sec-label" style="margin-top:1.6rem">the four resume options</div>
       <table class="ref-table">
-        <thead><tr><th>Hook</th><th>Event</th><th>Role</th></tr></thead>
+        <thead><tr><th>Option</th><th>Effect</th></tr></thead>
         <tbody>
-          <tr><td class="slash">session-start.sh</td><td><span class="tag">SessionStart</span></td><td>Auto-registered (no setup). Reads <span class="cell-mono">active.md</span>, runs snooze + stale checks, computes git progress, and emits <span class="cell-mono">additionalContext</span> routing Claude to pickup. Exits silent on the common no-handoff path.</td></tr>
+          <tr><td class="slash">Execute</td><td>Act on the directive in this session (guidance for judgement, not commands to run), then archive to <span class="cell-mono">archive/consumed-&lt;ts&gt;.md</span>.</td></tr>
+          <tr><td class="slash">Edit</td><td>Open <span class="cell-mono">active.md</span> in <span class="cell-mono">$EDITOR</span>, revise the directive, then re-present for another confirm round-trip.</td></tr>
+          <tr><td class="slash">Discard</td><td>Archive to <span class="cell-mono">archive/discarded-&lt;ts&gt;.md</span> without acting. Use when the saved work is no longer relevant.</td></tr>
+          <tr><td class="slash">Save for later</td><td>Leave in place, snooze for 24h (configurable) so the next session start doesn't re-surface immediately.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="config">
+      <div class="sec-label">03 — configuration</div>
+      <h2>Optional <em>settings.md</em> — defaults work out of the box</h2>
+      <p class="lede">Configuration is optional. Create <code>.claude/handoff/settings.md</code> to override any threshold. Settings are read as frontmatter by the hook and pickup skill on every invocation.</p>
+      <div class="callout">
+        <h4>Zero-config default</h4>
+        <p>Install and walk away. The built-in defaults (90-day stale threshold, 24-hour snooze, archive retention cap of 10) work for most workflows. Override only what you want to tune.</p>
+      </div>
+      <div class="codeblock">
+        <div class="cb-head"><span class="cb-file">.claude/handoff/settings.md</span><span class="cb-lang">yaml frontmatter</span></div>
+        <pre class="cb-body"><code>---
+stale-commit-threshold: 3
+stale-day-threshold: 90
+deferral-snooze-hours: 24
+gitignore-prompt: ask
+archive-retention: 10
+trigger-phrases: []
+---</code></pre>
+      </div>
+      <table class="ref-table">
+        <thead><tr><th>Key</th><th>Default</th><th>Effect</th></tr></thead>
+        <tbody>
+          <tr><td class="slash">stale-commit-threshold</td><td class="cell-mono">3</td><td>Commits past <span class="cell-mono">saved-at-sha</span> before the handoff is tagged "progress made" — a surface signal, not a behavior change.</td></tr>
+          <tr><td class="slash">stale-day-threshold</td><td class="cell-mono">90</td><td>Days past <span class="cell-mono">saved-at</span> before the hook silently auto-archives to <span class="cell-mono">expired-&lt;ts&gt;.md</span>.</td></tr>
+          <tr><td class="slash">deferral-snooze-hours</td><td class="cell-mono">24</td><td>Hours to suppress re-surface after "Save for later". No permanent suppression — re-surfaces after the window.</td></tr>
+          <tr><td class="slash">gitignore-prompt</td><td class="cell-mono">ask</td><td><span class="cell-mono">ask</span> or <span class="cell-mono">never</span> — whether the first save offers to add <span class="cell-mono">.claude/handoff/</span> to <span class="cell-mono">.gitignore</span>.</td></tr>
+          <tr><td class="slash">archive-retention</td><td class="cell-mono">10</td><td>Cap on archive file count (shared across consumed/discarded/expired). <span class="cell-mono">0</span>, <span class="cell-mono">unlimited</span>, or <span class="cell-mono">-1</span> for no cap.</td></tr>
+          <tr><td class="slash">trigger-phrases</td><td class="cell-mono">(built-in list)</td><td>Additions or overrides for the wrap-up phrase NL trigger list that auto-invokes <span class="cell-mono">/handoff:save</span>.</td></tr>
         </tbody>
       </table>
     </section>
 
     <section id="storage">
-      <div class="sec-label">06 — storage &amp; config</div>
-      <h2>One <em>active slot</em>, an archive, and a few knobs</h2>
-      <p class="lede">Everything lives under <code>.claude/handoff/</code> (the v0.2.0 folder layout): a single active handoff plus a timestamped archive. Settings are optional — defaults apply if absent.</p>
+      <div class="sec-label">04 — storage model</div>
+      <h2>One <em>active slot</em>, a timestamped archive</h2>
+      <p class="lede">Everything lives under <code>.claude/handoff/</code>. A single active file, an archive directory for consumed/discarded/expired handoffs, and an optional settings file. The first save offers to add the folder to <code>.gitignore</code>.</p>
       <div class="edge-grid">
-        <div class="edge"><div class="n">active.md</div><div class="t">The active handoff</div><p>One per repo (single-slot). Frontmatter holds <span class="cell-mono">saved-at</span>, <span class="cell-mono">saved-at-sha</span>, <span class="cell-mono">saved-at-branch</span>, <span class="cell-mono">saved-from-cwd</span>.</p></div>
-        <div class="edge"><div class="n">archive/consumed-&lt;ts&gt;.md</div><div class="t">After Execute</div><p>The directive that was acted on, kept (renamed, not deleted) so it stays recoverable.</p></div>
-        <div class="edge"><div class="n">archive/discarded-&lt;ts&gt;.md</div><div class="t">After Discard</div><p>Archived without acting — from the pickup flow or <span class="cell-mono">/handoff:discard</span>.</p></div>
-        <div class="edge"><div class="n">archive/expired-&lt;ts&gt;.md</div><div class="t">Stale auto-archive</div><p>Moved here once older than <span class="cell-mono">stale-day-threshold</span> (default 90 days).</p></div>
-        <div class="edge"><div class="n">settings.md</div><div class="t">Optional config</div><p>Override thresholds, snooze window, gitignore behavior, archive retention, and trigger phrases. Edit directly.</p></div>
+        <div class="edge">
+          <div class="n">active.md</div>
+          <div class="t">The active handoff</div>
+          <p>Single slot per repo. Frontmatter holds <code>saved-at</code>, <code>saved-at-sha</code>, <code>saved-at-branch</code>, <code>saved-from-cwd</code>. An existing handoff prompts before overwrite.</p>
+        </div>
+        <div class="edge">
+          <div class="n">archive/consumed-&lt;ts&gt;.md</div>
+          <div class="t">After Execute</div>
+          <p>The directive that was acted on, renamed (not deleted) — stays recoverable if you need to look back.</p>
+        </div>
+        <div class="edge">
+          <div class="n">archive/discarded-&lt;ts&gt;.md</div>
+          <div class="t">After Discard</div>
+          <p>Archived without acting — from the pickup flow or <code>/handoff:discard</code>. No action taken on the directive.</p>
+        </div>
+        <div class="edge">
+          <div class="n">archive/expired-&lt;ts&gt;.md</div>
+          <div class="t">Stale auto-archive</div>
+          <p>Moved here automatically once older than <code>stale-day-threshold</code> (default 90 days). No user action required.</p>
+        </div>
+        <div class="edge">
+          <div class="n">settings.md</div>
+          <div class="t">Optional config</div>
+          <p>Override thresholds, snooze window, gitignore behavior, archive retention, and trigger phrases. Edit directly — no re-install needed.</p>
+        </div>
       </div>
-      <div class="sec-label" style="margin-top:1.6rem">configurable knobs (settings.md frontmatter)</div>
-      <table class="ref-table">
-        <thead><tr><th>Key</th><th>Default</th><th>Effect</th></tr></thead>
-        <tbody>
-          <tr><td class="slash">stale-commit-threshold</td><td class="cell-mono">3</td><td>Commits past <span class="cell-mono">saved-at-sha</span> before the handoff is tagged "progress made" (a surface tag, not a behavior change).</td></tr>
-          <tr><td class="slash">stale-day-threshold</td><td class="cell-mono">90</td><td>Days past <span class="cell-mono">saved-at</span> before the hook silently auto-archives to <span class="cell-mono">expired-&lt;ts&gt;.md</span>.</td></tr>
-          <tr><td class="slash">deferral-snooze-hours</td><td class="cell-mono">24</td><td>Hours to suppress re-surface after "Save for later".</td></tr>
-          <tr><td class="slash">gitignore-prompt</td><td class="cell-mono">ask</td><td><span class="cell-mono">ask</span> or <span class="cell-mono">never</span> — whether the first save offers to add <span class="cell-mono">.claude/handoff/</span> to <span class="cell-mono">.gitignore</span>.</td></tr>
-          <tr><td class="slash">archive-retention</td><td class="cell-mono">10</td><td>Cap on archive file count (shared across consumed / discarded / expired). Special: <span class="cell-mono">0</span>, <span class="cell-mono">unlimited</span>, <span class="cell-mono">-1</span>.</td></tr>
-          <tr><td class="slash">trigger-phrases</td><td class="cell-mono">(built-in list)</td><td>Additions/overrides for the save NL trigger whitelist.</td></tr>
-        </tbody>
-      </table>
-      <p style="margin-top:1.2rem">Upgrading from 0.1.x? v0.2.0 moves every artifact into <code>.claude/handoff/</code>. There is no automatic detection of 0.1.x files — the README ships a one-liner to migrate the flat <code>.claude/handoff.md</code> layout and update the <code>.gitignore</code> pattern from <code>.claude/handoff*.md</code> to <code>.claude/handoff/</code>.</p>
     </section>
 
     <div class="foot">
@@ -306,28 +304,61 @@ section.vis{opacity:1;transform:none;}
         <a href="../">← marketplace</a>
         <a href="https://github.com/ApurvBazari/claude-plugins/tree/main/handoff">source on GitHub</a>
       </div>
-      <div class="meta">handoff · v1.0.0 · MIT · by Apurv Bazari</div>
+      <div class="meta">handoff · v1.0.1 · MIT · by Apurv Bazari</div>
     </div>
   </main>
-  <aside class="panel" id="panel"><span class="x" onclick="closeD()">✕</span>
-    <div class="pk" id="pk">Detail</div><h3 id="ph">—</h3><div class="pb" id="pbd"></div></aside>
+
+  <aside class="panel" id="panel">
+    <span class="x" onclick="closeD()">✕</span>
+    <div class="pk" id="panelKicker">Detail</div>
+    <div id="panelBody"></div>
+  </aside>
+
+  <dialog class="pane-dialog" id="paneDialog">
+    <span class="x" onclick="document.getElementById('paneDialog').close()">✕</span>
+    <div id="paneDialogBody"></div>
+  </dialog>
+
   <script>
 const DET={
- save:{k:"Save → resume",h:"/handoff:save",b:"Auto-invokes on a wrap-up phrase (or runs explicitly). Drafts a directive — next step, pointers, constraints, open questions — under 400 words, and confirms via AskUserQuestion before writing. The slash form skips the confirm. Captures intent only; commits/branch/working-tree are derivable at resume."},
- active:{k:"Save → resume",h:"active.md",b:"Written to <code>.claude/handoff/active.md</code> with frontmatter: <code>saved-at</code>, <code>saved-at-sha</code>, <code>saved-at-branch</code>, <code>saved-from-cwd</code>. One active slot per repo — an existing handoff prompts before overwrite. The first save offers to add the folder to <code>.gitignore</code>."},
- hook:{k:"Save → resume",h:"SessionStart hook",b:"<code>hooks/session-start.sh</code>, auto-registered when the plugin installs. On every session start it reads <code>active.md</code> (exits silent if absent), parses frontmatter, and computes age, commits-past-sha, and branch-change. Runs snooze + stale checks before surfacing."},
- surface:{k:"Save → resume",h:"additionalContext",b:"The hook emits a single JSON object per the Claude Code <code>additionalContext</code> contract. Order: routing instruction (trusted) → metadata (trusted) → directive wrapped in <code>&lt;untrusted-source&gt;</code>. jq when available, plain-text fallback otherwise."},
- 'pickup-node':{k:"Save → resume",h:"/handoff:pickup",b:"Re-reads the file from disk, shows the directive + progress, runs the cwd guard, then presents the four-option AskUserQuestion. Never auto-executes — the four options are the contract."},
- 'o-execute':{k:"Pickup option",h:"Execute",b:"Act on the directive in this session, treating it as guidance for judgement (not commands to run). If it points to a memory file or plan, read that first; respect listed constraints; surface open questions before acting. Then archive to <code>archive/consumed-&lt;ts&gt;.md</code>."},
- 'o-edit':{k:"Pickup option",h:"Edit",b:"Open <code>active.md</code> in <code>$EDITOR</code>, revise the directive, then the flow loops back to re-present Step 2. Repeats until you pick Execute / Discard / Save for later."},
- 'o-discard':{k:"Pickup option",h:"Discard",b:"Archive to <code>archive/discarded-&lt;ts&gt;.md</code> without acting. Use it when the work is no longer relevant — or if you don't recognize a handoff someone else committed."},
- 'o-later':{k:"Pickup option",h:"Save for later",b:"Writes <code>deferred-at</code> into the existing frontmatter (in place, via <code>merge-fm-key.sh</code>). The hook then exits silent on the next start until <code>deferral-snooze-hours</code> (default 24h) elapses — no permanent suppression, no nagging."}
+ save:{k:"Skill",h:"/handoff:save",summary:"Auto-invoked when you say a wrap-up phrase ('pick this up later', 'continue in new session', etc.). Presents a confirm before writing — false positives cost one click. Writes directive + frontmatter (saved-at, saved-at-sha, saved-at-branch, saved-from-cwd) to <code>.claude/handoff/active.md</code>. Captures intent only; current commits, branch, and working-tree state are derivable at resume time.",where:["handoff/skills/save/SKILL.md"]},
+ store:{k:"Storage",h:"active.md",summary:"Single-slot storage per repo. The file holds the directive (what the next session should pick up) plus machine-readable frontmatter. On the first save, handoff prompts to add <code>.claude/handoff/</code> to <code>.gitignore</code>. An existing handoff prompts before overwrite. The <code>archive/</code> subdirectory holds consumed, discarded, and expired handoffs.",where:["handoff/skills/save/SKILL.md"]},
+ hook:{k:"Hook",h:"SessionStart hook",summary:"Registered automatically on install — no setup step. On every session start, reads <code>active.md</code> if present. Parses frontmatter, computes age and commits-past-sha, checks the stale threshold (90d default → auto-archive), checks the snooze window, then emits <code>additionalContext</code> with the directive wrapped in <code>&lt;untrusted-source&gt;</code> framing so Claude treats it as data, not instructions.",where:["handoff/hooks/session-start.sh"]},
+ pickup:{k:"Skill",h:"/handoff:pickup",summary:"Auto-invoked after the SessionStart hook surfaces a saved handoff. Re-reads <code>active.md</code> from disk (the surfaced content is treated as a stale snapshot), runs the cwd guard (compares <code>pwd</code> against <code>saved-from-cwd</code>), then presents four options via AskUserQuestion: Execute (act + archive as consumed), Edit (open in editor, re-confirm), Discard (archive as discarded), Save for later (snooze 24h).",where:["handoff/skills/pickup/SKILL.md"]}
 };
+const SURF={
+ save:'pane',
+ store:'pane',
+ hook:'pane',
+ pickup:'pane'
+};
+function renderSurface(d,host){if(!d||!host)return;let h='';
+ if(d.h)h+=`<h3 class="sf-h">${d.h}</h3>`;
+ if(d.summary)h+=`<p class="sf-summary">${d.summary}</p>`;
+ if(d.where&&d.where.length)h+=`<div class="sf-where">${d.where.map(w=>`<code class="sf-loc">${w}</code>`).join('')}</div>`;
+ if(d.code&&d.code.length)h+=d.code.map(c=>`<figure class="sf-code"><figcaption>${c.file||''}</figcaption><pre><code>${c.snippet||''}</code></pre></figure>`).join('');
+ if(d.points&&d.points.length)h+=`<ul class="sf-points">${d.points.map(p=>`<li>${p}</li>`).join('')}</ul>`;
+ if(d.components)h+=d.components;
+ if(d.related&&d.related.length)h+=`<div class="sf-related">${d.related.map(r=>`<button class="chip neutral" onclick="openSurface('${r}')">${r}</button>`).join('')}</div>`;
+ host.innerHTML=h;}
 const panel=document.getElementById('panel');
-function openD(id){const d=DET[id];if(!d)return;pk.textContent=d.k;ph.textContent=d.h;pbd.innerHTML=d.b;panel.classList.add('open');}
-function openCard(el){if(!el)return;pk.textContent=el.dataset.k||'Detail';ph.textContent=el.dataset.t||'';pbd.innerHTML=el.dataset.desc||'';panel.classList.add('open');}
+function openPane(id){const d=DET[id];if(!d)return;
+ const k=document.getElementById('panelKicker');if(k)k.textContent=d.k||'Detail';
+ renderSurface(d,document.getElementById('panelBody'));panel.classList.add('open');}
+const _stack=[]; const MAX_DEPTH=3;
+function _capPush(el){if(!el||el.open)return;if(_stack.length>=MAX_DEPTH){const t=_stack.pop();if(t)t.close();}el.showModal();_stack.push(el);}
+function openSurface(id){const k=(typeof SURF!=='undefined'&&SURF[id])||'pane';
+ if(k==='sheet'){const el=document.getElementById('sheet-'+id);_capPush(el);return;}
+ if(_stack.length){const pd=document.getElementById('paneDialog'),d=DET[id],b=document.getElementById('paneDialogBody');
+  renderSurface(d,b);if(d&&d.k)b.insertAdjacentHTML('afterbegin',`<div class="sf-kicker">${d.k}</div>`);_capPush(pd);}
+ else openPane(id);}
+document.querySelectorAll('dialog.sheet').forEach(dlg=>{
+ dlg.addEventListener('close',()=>{const i=_stack.indexOf(dlg);if(i>-1)_stack.splice(i,1);});
+ dlg.addEventListener('click',e=>{if(e.target===dlg)dlg.close();});});
+function openCard(el){if(!el)return;openPane(el.dataset.id||'');}
+function openD(id){openSurface(id);}
 function closeD(){panel.classList.remove('open');}
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeD();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!_stack.length)closeD();});
 function tgl(){const h=document.documentElement;const t=h.getAttribute('data-theme')==='dark'?'light':'dark';h.setAttribute('data-theme',t);try{localStorage.setItem('wt-theme',t);}catch(e){}}
 (function(){try{const t=localStorage.getItem('wt-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vis');}}),{threshold:.1});

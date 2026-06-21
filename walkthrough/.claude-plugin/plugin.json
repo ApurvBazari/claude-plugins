@@ -1,6 +1,6 @@
 {
   "name": "walkthrough",
-  "version": "1.1.0",
+  "version": "1.2.1",
   "description": "Render a session or any subject (plugin, marketplace, path) as a self-contained interactive HTML document",
   "author": { "name": "Apurv Bazari" },
   "repository": "https://github.com/ApurvBazari/claude-plugins",

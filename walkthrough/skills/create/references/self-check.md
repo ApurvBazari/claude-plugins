@@ -24,5 +24,21 @@ every test to where the rule applies. If any fails, fix the HTML and re-run.
 | 17 | `function openSurface` is defined exactly once | The inlined JS has a single `openSurface` definition (no leftover Phase 2 duplicate); the sheet path lives inside it and `openSheet` is folded into the shared `_capPush`. |
 | 18 | Diagram fidelity — no force-fit state machine / message trace | If a flow / architecture / dependency diagram is rendered, its `edges` are acyclic, single-actor, and unlabelled-guard. A graph with a cycle / back-edge / self-loop or guard labels must instead be a **state / transition diagram**; an ordered multi-actor message exchange must be a **sequence / swimlane diagram** — never a box-and-arrow map silently dropping the cycle/guards/lanes. (authoring-guide § 1) |
 | 19 | No in-session `path:line` silently dropped | Every code anchor the session provided appears in some rendered `where[]` (`sf-loc`) chip or `code[]` block — or is named in the coverage note with a **content** reason (out-of-scope / redundant), never "not read / unverified." An anchor handed to you in-session is first-class detail, not optional. |
+| 20 | The inlined `<script>` parses as valid JS — `DET`/`SURF` string values escape `"` and `\` | Every string value in the `DET` and `SURF` object literals (`k`, `h`, `summary`, each `points[]`, each `where[]`, each `code[].file`/`.snippet`) escapes an embedded double-quote (write `\"`) and backslash (write `\\`); a literal `</script>` is written `<\/script>`. One unescaped `"` ends the string early → a `SyntaxError` that aborts the **entire** `<script>`, leaving every handler (`openSurface`, `tgl`, `setTab`…) undefined so nothing opens on click. Mentally parse each emitted DET/SURF value as JS — author them as if `JSON.stringify`-d. |
 
 Failure on any row -> revise the assembled HTML (or the model, then re-assemble) and re-run before write.
+
+## Ledger + new-component assertions
+
+These extend the table above; reason about each the same way (scope to where it applies, fix and re-run on failure).
+
+- **Ledger cross-reference (when `concepts[]` is present):**
+  - every `concepts[].renderedBy` (when non-null) names a component key that actually appears in the
+    assembled HTML;
+  - every rendered structural component (`.dtree`, `.erd`, `.htree`, `.lstack`, `.ladder`, and the
+    existing diagrams) traces back to a `concepts[]` entry;
+  - no `concepts[]` entry has `bespoke:true` without a `bespokeReason`.
+- **New-component structural checks:**
+  - decision-tree guard `<text>` escapes `<`/`>` as `&lt;`/`&gt;`;
+  - ERD/causal/tree style blocks contain no raw hex (tokens only) and glyphs use CSS/HTML escapes;
+  - any component hosted in a sheet has its internal `id=` suffixed with the surface id.
