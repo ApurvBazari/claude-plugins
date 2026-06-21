@@ -38,4 +38,9 @@ MV=$(python3 -c "import json;d=json.load(open('$MKT'));print([p['version'] for p
 grep -q '## 1.2.0' "$CHANGELOG" || fail "lens CHANGELOG must have a 1.2.0 entry"
 grep -qi 'injectedIntent' "$CHANGELOG" || fail "lens CHANGELOG 1.2.0 entry must mention injectedIntent"
 
+# === backward-compat: absent/empty injectedIntent == v1.1.0 behavior ===
+grep -qiE 'missing or empty|absent or empty|empty .*injectedIntent|fall through to rule 1' "$PIPE" || fail "BC: pipeline §2 must state empty/absent injectedIntent falls through to rule 1"
+grep -qiE 'byte-identical|byte identical' "$PIPE" || fail "BC: pipeline §2 must promise byte-identical v1.1.0 behavior when injectedIntent is empty/absent"
+grep -qiE 'JSON string|parse it defensively|parse defensively' "$PIPE" || fail "BC: pipeline §2 must say to parse a JSON-string injectedIntent defensively before the emptiness check"
+
 echo "PASS: lens injected intent"
