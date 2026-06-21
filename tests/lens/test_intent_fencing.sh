@@ -30,4 +30,9 @@ grep -q '<untrusted-user-input>' "$ESKILL" || fail "FENCE: engine SKILL Step 3 m
 grep -qiE 'untrusted intent content|<untrusted-user-input>' "$CLAUDEMD" || fail "FENCE: lens CLAUDE.md must document the untrusted-intent fencing"
 grep -qiE 'framing, not filtering|not .*capped|verbatim' "$CLAUDEMD" || fail "FENCE: lens CLAUDE.md must note framing-not-filtering / no-cap"
 
+# === CHANGELOG records the fencing hardening ===
+CHANGELOG="$ROOT/lens/CHANGELOG.md"
+[ -s "$CHANGELOG" ] || fail "missing $CHANGELOG"
+grep -qiE 'untrusted-user-input|data fence' "$CHANGELOG" || fail "FENCE: CHANGELOG 1.2.0 must record the data-fencing hardening"
+
 echo "PASS: lens intent fencing"
