@@ -29,6 +29,7 @@ grep -qi 'source-agnostic' "$PIPE" || fail "CAP: §8 must add the source-agnosti
 # === engine SKILL Step 2 mentions the injected override ===
 grep -q 'injectedIntent' "$ESKILL" || fail "SKILL: engine Step 2 must name injectedIntent"
 grep -qiE 'override|wins|highest|before .*docs/superpowers|skip' "$ESKILL" || fail "SKILL: Step 2 must say injectedIntent overrides the docs/superpowers correlation"
+grep -qiE 'injectedIntent.*(wins|override)|(wins|override).*injectedIntent' "$ESKILL" || fail "SKILL: Step 2 must state injectedIntent wins/overrides on one line (semantic gate, not a loose whole-file match)"
 
 # === version bump 1.1.0 -> 1.2.0 (manifest + marketplace + changelog) ===
 PV=$(python3 -c "import json;print(json.load(open('$PJSON'))['version'])")
