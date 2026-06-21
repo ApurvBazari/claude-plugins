@@ -30,4 +30,12 @@ grep -qi 'source-agnostic' "$PIPE" || fail "CAP: §8 must add the source-agnosti
 grep -q 'injectedIntent' "$ESKILL" || fail "SKILL: engine Step 2 must name injectedIntent"
 grep -qiE 'override|wins|highest|before .*docs/superpowers|skip' "$ESKILL" || fail "SKILL: Step 2 must say injectedIntent overrides the docs/superpowers correlation"
 
+# === version bump 1.1.0 -> 1.2.0 (manifest + marketplace + changelog) ===
+PV=$(python3 -c "import json;print(json.load(open('$PJSON'))['version'])")
+MV=$(python3 -c "import json;d=json.load(open('$MKT'));print([p['version'] for p in d['plugins'] if p['name']=='lens'][0])")
+[ "$PV" = "1.2.0" ] || fail "lens plugin.json must be 1.2.0 (got $PV)"
+[ "$MV" = "1.2.0" ] || fail "lens marketplace.json must be 1.2.0 (got $MV)"
+grep -q '## 1.2.0' "$CHANGELOG" || fail "lens CHANGELOG must have a 1.2.0 entry"
+grep -qi 'injectedIntent' "$CHANGELOG" || fail "lens CHANGELOG 1.2.0 entry must mention injectedIntent"
+
 echo "PASS: lens injected intent"
