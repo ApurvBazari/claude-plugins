@@ -76,6 +76,8 @@ lens **reads** the diff + source, **produces** an artifact, and the **human deci
 
 Read-only is **enforced at the finder boundary**: every finder and adapter emits findings only. Adapters that inherit write tools from their source plugin must be explicitly instructed to operate findings-only (see § Finder registry).
 
+**Untrusted intent content.** The intent doc handed to the adherence agents (injected `content` or a read spec/plan file) is wrapped in `<untrusted-user-input>` fences at dispatch (engine `references/pipeline.md` §3) — data, not instructions. Following onboard's *framing, not filtering* model: `\r` is stripped, but content is **not** length-capped (injectedIntent is verbatim by contract) and **not** content-filtered; the read-only finder toolset (`Read/Grep/Glob`) is the backstop.
+
 ## The `review-findings` schema (the contract)
 
 The engine emits, and the renderer consumes, a single canonical contract — `lens/schemas/review-findings.schema.json` (built in a later task). It is a versioned **field-additive superset of vicario's `review-findings.schema.json`**: lens's extra *fields* are additive/optional, so vicario's validator ignores them. **The `dimension` enum is the canonical 9-value shared contract** — vicario's six (`requirements|correctness|security|types|silent-failure|simplify`) plus lens's `test`/`risk`/`comment`. The target is a single shared enum that vicario adopts, so that every dimension will validate in both directions and no mapping layer is needed. **Until vicario widens its own enum to match (a tracked vicario-repo task), a lens finding tagged `test`/`risk`/`comment` will not validate against an un-updated vicario** — so the enum is co-owned and changes are coordinated across both repos.

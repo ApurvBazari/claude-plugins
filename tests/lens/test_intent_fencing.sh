@@ -21,4 +21,13 @@ grep -qiE 'data, not instructions|never as an instruction' "$SPECAG" || fail "FE
 grep -q '<untrusted-user-input>' "$PLANAG" || fail "FENCE: plan-adherence must state intent arrives in <untrusted-user-input>"
 grep -qiE 'data, not instructions|never as an instruction' "$PLANAG" || fail "FENCE: plan-adherence must treat intent as data, not instructions"
 
+# === intent data-fencing: engine SKILL Step 3 + lens CLAUDE.md security note ===
+ESKILL="$ROOT/lens/skills/engine/SKILL.md"
+CLAUDEMD="$ROOT/lens/CLAUDE.md"
+[ -s "$ESKILL" ] || fail "missing $ESKILL"
+[ -s "$CLAUDEMD" ] || fail "missing $CLAUDEMD"
+grep -q '<untrusted-user-input>' "$ESKILL" || fail "FENCE: engine SKILL Step 3 must reference the <untrusted-user-input> fence"
+grep -qiE 'untrusted intent content|<untrusted-user-input>' "$CLAUDEMD" || fail "FENCE: lens CLAUDE.md must document the untrusted-intent fencing"
+grep -qiE 'framing, not filtering|not .*capped|verbatim' "$CLAUDEMD" || fail "FENCE: lens CLAUDE.md must note framing-not-filtering / no-cap"
+
 echo "PASS: lens intent fencing"
