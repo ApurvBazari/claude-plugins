@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.0 — 2026-06-21
+
+- feat: programmatic finder injection — `lens:engine` accepts an additive `injectedFinders` arg (`Array<{ agent, dimension, label?, readonly: true }>`) so a programmatic caller (matali) can dispatch a read-only finder at call time. Injected finders run at ANALYZE alongside the `.claude/lens/settings.md` project tier and are handled identically — read-only enforced at the boundary, normalized, deduped, adversarially verified, and counted toward the §8 fan-out cap. The `agent` resolves via the Agent-tool registry and may be plugin-qualified, so a caller ships the finder in its own plugin (no project-local copy).
+- feat: the `verifier` now gives the `simplify` dimension a judgment default with a real-signal gate (keep only if the cited violation signal is real at the locus; refute when absent or the change is clearly warranted) — previously undefined.
+- note: backward-compatible — `injectedFinders` absent or empty ⇒ behavior **byte-identical** to 1.2.0. The `review-findings` schema is untouched (`injectedFinders` is an engine input, not a schema field).
+
 ## 1.2.0 — 2026-06-21
 - feat: programmatic intent injection — `lens:engine` accepts an additive `injectedIntent` arg (`Array<{ role: "spec" | "plan", name: string, content: string }>`) so a programmatic caller (matali) can hand spec/plan intent directly. INTENT §2 gains **rule 0** (highest priority): when `injectedIntent` is non-empty, the intent record is built **verbatim** from it — `content` is the full spec/plan markdown, `name` is the provenance tag (`sourceSpec`/`sourcePlan`), `role` selects the spec-adherence vs plan-adherence fan-out — and rules 1–4 (the `docs/superpowers/` correlation, latest-only fallback, and transcript reconstruction) are **skipped**. Injected intent is explicit and full-fidelity, so it does **not** set `degraded`.
 - note: backward-compatible — `injectedIntent` absent or empty ⇒ behavior **byte-identical** to 1.1.0 (diff-correlated selection unchanged). The ANALYZE fan-out shape and the §8 adherence cap (≤8 adherence / ≤11 finders, prioritize→cap→`degraded`→name-skipped) are unchanged; the cap now applies source-agnostically to the injected set. The `review-findings` schema is **untouched** — `injectedIntent` is an engine input, not a schema field.

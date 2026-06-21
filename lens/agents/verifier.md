@@ -30,6 +30,11 @@ You will receive **one** candidate finding (with its `dimension`, `title`, `clai
 3. **Apply the default by dimension** when you remain genuinely uncertain after investigating:
    - **bug / correctness / security / test** claims (`dimension` ∈ `correctness`, `silent-failure`, `security`, `test`) need **evidence** to survive → **default to refuted** when uncertain. Extraordinary claims need proof; an unproven bug is not kept.
    - **spec / plan** gaps (`dimension`: `requirements`) are **judgment**, not reproduction → **default to kept** when uncertain. You can't "reproduce" a missing requirement; only refute it if you find the spec/plan actually covered it.
+   - **simplify / principle** claims (`dimension`: `simplify`) are **judgment**, anchored to a concrete
+     violation signal in the diff → **keep** only when the cited signal is **real at the cited locus**
+     and the change is not clearly warranted; **refute** when the locus doesn't match, the signal is
+     absent, or the change is plainly justified (a competing principle or a stated requirement makes it
+     the right call). You can't "reproduce" a design judgment — but you can confirm the signal exists.
 
 4. **Decide.**
    - You found evidence the finding is wrong/handled → `refuted: true`.
@@ -56,6 +61,7 @@ You will receive **one** candidate finding (with its `dimension`, `title`, `clai
 
 1. **Refute, don't confirm** — your bias is adversarial. A finding survives only if you cannot break it.
 2. **Default refuted for bug/correctness/security/test; default kept for spec/plan** — evidence-claims need proof; judgment-claims need disproof.
+2b. **simplify is judgment with a real-signal gate** — keep only if the cited violation signal is actually present at the locus; an unanchored "this is too complex" is refuted.
 3. **Errors are kept, never dropped** — a finding that errors mid-verify returns `status: "unverified-flagged"`, `refuted: false`.
 4. **Real source only** — read the cited file before deciding; a claim whose locus doesn't match the code is refuted on that basis.
 5. **Evidence in `reason`** — name what you read/ran and what you found. No verdict without a concrete reason.
