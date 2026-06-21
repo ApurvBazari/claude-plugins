@@ -37,7 +37,8 @@ MV=$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print([p["versio
 [ "$PV" = "1.2.0" ] || fail "lens plugin.json must be 1.2.0 (got $PV)"
 [ "$MV" = "1.2.0" ] || fail "lens marketplace.json must be 1.2.0 (got $MV)"
 grep -q '## 1.2.0' "$CHANGELOG" || fail "lens CHANGELOG must have a 1.2.0 entry"
-grep -qi 'injectedIntent' "$CHANGELOG" || fail "lens CHANGELOG 1.2.0 entry must mention injectedIntent"
+# section-scoped to the 1.2.0 block (not whole-file) so a later version reusing the token can't mask a 1.2.0 regression
+awk '/^## 1\.2\.0/{f=1;next} /^## /{f=0} f && tolower($0) ~ /injectedintent/{hit=1} END{exit !hit}' "$CHANGELOG" || fail "lens CHANGELOG 1.2.0 entry must mention injectedIntent"
 
 # === backward-compat: absent/empty injectedIntent == v1.1.0 behavior ===
 grep -qiE 'missing or empty|absent or empty|empty .*injectedIntent|fall through to rule 1' "$PIPE" || fail "BC: pipeline §2 must state empty/absent injectedIntent falls through to rule 1"

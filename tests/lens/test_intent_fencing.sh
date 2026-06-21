@@ -33,6 +33,7 @@ grep -qiE 'framing, not filtering|not .*capped|verbatim' "$CLAUDEMD" || fail "FE
 # === CHANGELOG records the fencing hardening ===
 CHANGELOG="$ROOT/lens/CHANGELOG.md"
 [ -s "$CHANGELOG" ] || fail "missing $CHANGELOG"
-grep -qiE 'untrusted-user-input|data fence' "$CHANGELOG" || fail "FENCE: CHANGELOG 1.2.0 must record the data-fencing hardening"
+# section-scoped to the 1.2.0 block (not whole-file) so the assertion gates the version section it names
+awk '/^## 1\.2\.0/{f=1;next} /^## /{f=0} f && tolower($0) ~ /untrusted-user-input|data fence/{hit=1} END{exit !hit}' "$CHANGELOG" || fail "FENCE: CHANGELOG 1.2.0 must record the data-fencing hardening"
 
 echo "PASS: lens intent fencing"
