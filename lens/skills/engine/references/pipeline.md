@@ -149,6 +149,8 @@ the **project tier** (custom finders from `.claude/lens/settings.md`). Read-only
 dispatch boundary** for every tier. Tag every candidate with its `dimension` per the
 producer→dimension map.
 
+**Injected finders (programmatic caller).** A caller may pass `injectedFinders` — `Array<{ agent, dimension, label?, readonly: true }>` — through the same Skill-tool channel as `scope`/`injectedIntent`/`taskIds`. Each is dispatched at ANALYZE **alongside** the `.claude/lens/settings.md` project tier and handled **identically**: read-only **enforced at the dispatch boundary**, output **normalized** into the finding shape, **deduped** by `(file, line, title)`, and **adversarially verified**. The `agent` value resolves through the **Agent-tool registry** and **may be plugin-qualified** (e.g. `matali:principles-finder`), so the finder can ship in the caller's own plugin and self-resolve its references via `${CLAUDE_PLUGIN_ROOT}`. Treat a **missing or empty** `injectedFinders` as "not provided" — behavior is then **byte-identical** to 1.2.0; if it arrives as a **JSON string**, parse it defensively before the emptiness check.
+
 ## 4. Dedup key (VERIFY+DEDUP)
 
 The hybrid tap means several finders (built-in + adapter + project) can surface the **same** issue. Dedup
@@ -234,3 +236,5 @@ spec+plan entries, fill the 8 slots by priority (treat injected `role:"spec"` en
 — unambiguous intent — ahead of any `role:"plan"` entries only if you must choose), set `degraded: true`,
 and **name the skipped injected docs in `summary`** by their `name` provenance tag — never silently drop
 one. Within the cap, an injected set does **not** set `degraded` (Task-1 rule 0).
+
+Injected finders (the `injectedFinders` arg) **count toward** the per-batch finder budget exactly like project-tier finders: they are added after the 3 fixed finders and the ≤8 adherence agents; if the combined set would exceed the batch cap, prioritize, cap, set `degraded: true`, and **name the skipped finders in `summary`** — never silently drop one.

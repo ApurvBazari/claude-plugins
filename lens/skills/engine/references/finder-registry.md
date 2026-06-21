@@ -62,6 +62,8 @@ finders:
 The engine reads this registry and dispatches the named `.claude/agents/` finders, **read-only-enforced at
 the dispatch boundary** like the adapter tier. (Authoring contract: see `finder-contract.md`.)
 
+**Tier 3 also has a call-time variant — *injected* finders.** A programmatic caller (e.g. matali) may pass `injectedFinders: Array<{ agent, dimension, label?, readonly: true }>` directly to the engine instead of registering in `.claude/lens/settings.md`. Injected finders are dispatched and constrained **identically** to file-registered ones; the only difference is the source (the call vs. the settings file). The `agent` resolves through the Agent-tool registry and may be plugin-qualified, so a caller's own plugin agent works without a project-local copy.
+
 ## Normalization (all tiers)
 
 Every tier's raw output is normalized into the `review-findings` shape before dedup/verify:
