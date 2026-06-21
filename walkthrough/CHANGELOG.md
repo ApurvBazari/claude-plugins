@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.2.1 — 2026-06-21
+
+### Fixed
+- fix: the structural self-check now asserts the assembled `<script>` parses as valid JS — every `DET`/`SURF`
+  string value (`k`, `h`, `summary`, `points[]`, `where[]`, `code[]`) must escape embedded `"`/`\` (self-check
+  assertion #20). An unescaped double-quote in a detail `summary` ended the JS string early; the resulting
+  `SyntaxError` aborted the **entire** inline script, leaving every handler (`openSurface`, theme, tabs)
+  undefined — so clicking any diagram/flow block did nothing. `page-scaffold.md` (the `details{}` → `DET`
+  transform) now mandates JSON-style escaping of every emitted string value. Instruction-only hardening; no
+  change to the output format.
+
 ## 1.2.0 — 2026-06-20
 
 ### Concept-coverage layer
