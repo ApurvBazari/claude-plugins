@@ -63,6 +63,12 @@ accordingly; drop refuted findings. Compute `recommendedEscalation` = max surviv
 ## Step 5: Return
 Return the schema-valid `review-findings` JSON. No file write, no prompt.
 
+**Adherence (optional, compute-only).** When the `spec-adherence` / `plan-adherence` finders ran, include
+their structured `specItems[]` / `planSteps[]` as a top-level `adherence: { specItems, planSteps }` on the
+returned object — additive, omit-empty (skip the key entirely if those finders did not run). This lets an
+orchestrator render the full met/partial/missing adherence matrix without re-deriving it from
+`requirements`-dimension findings.
+
 ## Key Rules
 - **Data only.** Return JSON; never write a file or prompt — the caller owns I/O and any gate.
 - **Schema-valid.** Output must validate against `review-findings.schema.json` (the vicario contract).

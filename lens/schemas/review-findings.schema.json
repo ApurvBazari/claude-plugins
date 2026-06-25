@@ -69,6 +69,13 @@
         "new": {"type": "integer"},
         "stillOpen": {"type": "integer"}
       }
+    },
+    "adherence": {
+      "type": "object",
+      "properties": {
+        "specItems": { "type": "array", "items": { "type": "object" } },
+        "planSteps": { "type": "array", "items": { "type": "object" } }
+      }
     }
   }
 }
