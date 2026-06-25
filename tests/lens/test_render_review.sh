@@ -10,11 +10,14 @@ fail(){ echo "FAIL: $1"; exit 1; }
 # 2. Skill is internal (user-invocable: false)
 grep -q "user-invocable: false" "$SKILL" || fail "skill must be internal (user-invocable: false)"
 
+# 2b. Skill is model-uninvokable (disable-model-invocation: true)
+grep -q "disable-model-invocation: true" "$SKILL" || fail "skill must be model-uninvokable (disable-model-invocation: true)"
+
 # 3. Skill renders via walkthrough:render
 grep -q "walkthrough:render" "$SKILL" || fail "skill must document walkthrough:render as its render path"
 
-# 4. Skill documents the no-state rule (never write review-state.json)
-grep -q "review-state.json" "$SKILL" || fail "skill must document that it never writes review-state.json"
+# 4. Skill documents the no-state rule in a never-write context (not a write step)
+grep -qiE "never write[^.]*review-state\.json|No .review-state\.json" "$SKILL" || fail "skill must document that it never writes review-state.json (in negative context)"
 
 # 5. Referenced files exist (reuse, not fork)
 [ -f "$ROOT/lens/skills/review/references/reconcile.md" ] || fail "reconcile.md reference missing"
