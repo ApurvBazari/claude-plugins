@@ -136,14 +136,16 @@ Both choices persist to `.claude/lens/settings.md`. That file also holds the **p
 
 The renderer's happy path is `walkthrough:render`: lens passes the fully-built review-model (it does no HTML synthesis itself) to walkthrough's internal `render` skill, which inlines it into the house-style interactive document. When walkthrough is **not installed**, lens renders the same review-model to a self-contained **markdown report** instead — same content (narrative, adherence, findings, risk, hunks, verdict), plainer form. The fallback is what keeps lens independently installable: walkthrough is an enhancer, never a dependency.
 
-## Skills (planned surface — built in later tasks)
+## Skills
 
-lens has **exactly two skills**: `review` (user-facing, `/lens:review`) and `engine` (internal,
-`user-invocable: false`). There is no separate `render` skill in lens — "lens-render" names the **render
-half inside `skills/review`**, and rendering itself is delegated to walkthrough's `render` skill.
+lens has **three skills**: `review` (user-facing), `engine` (internal), and `render-review` (internal).
+"lens-render" still names the **render role inside `skills/review`** for the interactive `/lens:review`
+flow; `render-review` is the standalone, orchestrator-facing pure render entrypoint — the externalized
+counterpart that completes the engine/render split for external consumers (vicario/matali).
 
 - `review/SKILL.md` — the one user-facing skill (`/lens:review [target]`). Runs the full pipeline: delegates the 5-stage engine judgment (SCOPE→INTENT→ANALYZE→VERIFY→ASSEMBLE) to `engine`, then owns the remaining 3 stages — `reconcile` → `render` → `report` (the `lens-render` half: review-model → `walkthrough:render` / markdown fallback). 8 harness tasks total (see § In-session task list).
 - `engine/SKILL.md` — **internal** (`user-invocable: false`), data-only judgment core: scope → intent → analyze → verify → dedup → rank → return `review-findings` JSON. Writes nothing, never prompts.
+- `render-review/SKILL.md` — **internal** (`user-invocable: false`, `disable-model-invocation: true`), pure/stateless/write-once render entrypoint. Takes an already-computed `review-findings` object (plus optional priorFindings/diffRef/intent), reconciles in-memory, assembles the review-model, renders via `walkthrough:render`, and writes ONLY the caller's `outputPath`. An orchestrator (matali) that owns persistence calls it after `engine`.
 - `agents/` — six finder/verifier agent definitions: the **five built-in finder types** (`spec-adherence`, `plan-adherence`, `correctness`, `risk-classify`, `test-gaps`) that each emit `review-findings` tagged with their `dimension` — at runtime the 3 fixed finders run once while `spec-adherence`/`plan-adherence` fan out to one agent per spec / per plan (pipeline §3), plus the **`verifier`** (the adversarial skeptic used by the VERIFY stage, emitting a per-finding refute **vote** `{id, refuted, reason, status}`; the engine aggregates these votes into the schema's `votes{total,couldNotRefute,refuted}` and resolves each finding's `verified` bool). `test-gaps` owns the `test` / missing-test dimension; the `pr-test-analyzer` adapter only covers brittle/overfit.
 
 No hooks, no scripts, no compiled code — consistent with the marketplace's all-markdown + JSON convention.
