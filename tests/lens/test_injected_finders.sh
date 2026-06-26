@@ -45,14 +45,14 @@ grep -qiE 'signal .*(real|present|at the (cited )?locus)|locus.*match' "$VERIFIE
   || fail "VERIFIER: keep simplify only if the cited violation signal is real at the locus"
 grep -qiE 'warranted|justified' "$VERIFIER" || fail "VERIFIER: refute a simplify finding when the change is clearly warranted"
 
-# === version bump 1.2.0 -> 1.3.0 (manifest + marketplace + changelog) ===
+# === version bump 1.3.0 -> 1.4.0 (manifest + marketplace + changelog) ===
 PJSON="$ROOT/lens/.claude-plugin/plugin.json"
 MKT="$ROOT/.claude-plugin/marketplace.json"
 CHANGELOG="$ROOT/lens/CHANGELOG.md"
 PV=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["version"])' "$PJSON")
 MV=$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print([p["version"] for p in d["plugins"] if p["name"]=="lens"][0])' "$MKT")
-[ "$PV" = "1.3.0" ] || fail "lens plugin.json must be 1.3.0 (got $PV)"
-[ "$MV" = "1.3.0" ] || fail "lens marketplace.json must be 1.3.0 (got $MV)"
+[ "$PV" = "1.4.0" ] || fail "lens plugin.json must be 1.4.0 (got $PV)"
+[ "$MV" = "1.4.0" ] || fail "lens marketplace.json must be 1.4.0 (got $MV)"
 grep -q '## 1.3.0' "$CHANGELOG" || fail "lens CHANGELOG must have a 1.3.0 entry"
 awk '/^## 1\.3\.0/{f=1;next} /^## /{f=0} f && tolower($0) ~ /injectedfinders/{hit=1} END{exit !hit}' "$CHANGELOG" \
   || fail "lens CHANGELOG 1.3.0 entry must mention injectedFinders"
