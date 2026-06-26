@@ -29,7 +29,7 @@ Claude Code plugin marketplace by Apurv Bazari. Five plugins — all markdown + 
          │      └── skills/ (create, update, document)
          │
          └──→ lens/                      ← intent-grounded review companion (brain; renders via walkthrough)
-                ├── skills/ (review, engine)
+                ├── skills/ (review, engine, render-review)
                 ├── agents/ (spec-adherence, plan-adherence, correctness,
                 │           risk-classify, test-gaps, verifier)
                 └── schemas/ (review-findings)

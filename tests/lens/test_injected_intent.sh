@@ -31,11 +31,11 @@ grep -q 'injectedIntent' "$ESKILL" || fail "SKILL: engine Step 2 must name injec
 grep -qiE 'override|wins|highest|before .*docs/superpowers|skip' "$ESKILL" || fail "SKILL: Step 2 must say injectedIntent overrides the docs/superpowers correlation"
 grep -qiE 'injectedIntent.*(wins|override)|(wins|override).*injectedIntent' "$ESKILL" || fail "SKILL: Step 2 must state injectedIntent wins/overrides on one line (semantic gate, not a loose whole-file match)"
 
-# === lens manifest version 1.3.0 (plugin.json + marketplace) ===
+# === lens manifest version 1.4.0 (plugin.json + marketplace) ===
 PV=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["version"])' "$PJSON")
 MV=$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print([p["version"] for p in d["plugins"] if p["name"]=="lens"][0])' "$MKT")
-[ "$PV" = "1.3.0" ] || fail "lens plugin.json must be 1.3.0 (got $PV)"
-[ "$MV" = "1.3.0" ] || fail "lens marketplace.json must be 1.3.0 (got $MV)"
+[ "$PV" = "1.4.0" ] || fail "lens plugin.json must be 1.4.0 (got $PV)"
+[ "$MV" = "1.4.0" ] || fail "lens marketplace.json must be 1.4.0 (got $MV)"
 grep -q '## 1.2.0' "$CHANGELOG" || fail "lens CHANGELOG must have a 1.2.0 entry"
 # section-scoped to the 1.2.0 block (not whole-file) so a later version reusing the token can't mask a 1.2.0 regression
 awk '/^## 1\.2\.0/{f=1;next} /^## /{f=0} f && tolower($0) ~ /injectedintent/{hit=1} END{exit !hit}' "$CHANGELOG" || fail "lens CHANGELOG 1.2.0 entry must mention injectedIntent"

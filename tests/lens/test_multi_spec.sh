@@ -50,8 +50,8 @@ CHANGELOG="$ROOT/lens/CHANGELOG.md"
 grep -qiE 'multiple specs|multi-spec|diff-correlated' "$CLAUDEMD" || fail "lens CLAUDE.md must describe multi-spec intent"
 PV=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["version"])' "$PJSON")
 MV=$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print([p["version"] for p in d["plugins"] if p["name"]=="lens"][0])' "$MKT")
-[ "$PV" = "1.3.0" ] || fail "lens plugin.json must be 1.3.0 (got $PV)"
-[ "$MV" = "1.3.0" ] || fail "lens marketplace.json must be 1.3.0 (got $MV)"
+[ "$PV" = "1.4.0" ] || fail "lens plugin.json must be 1.4.0 (got $PV)"
+[ "$MV" = "1.4.0" ] || fail "lens marketplace.json must be 1.4.0 (got $MV)"
 grep -q '1.1.0' "$CHANGELOG" || fail "lens CHANGELOG must have a 1.1.0 entry"
 
 echo "PASS: lens multi-spec"

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.0 — 2026-06-26
+
+- feat: pure render entrypoint — new internal `lens:render-review` skill takes a `review-findings` object (plus optional `priorFindings`, a `diffRef`, and intent) and renders the interactive HTML review document via `walkthrough:render`, writing ONLY the output path. No lens state, no recompute, no task list — an orchestrator (matali) that owns persistence calls it after `lens:engine`.
+- feat: `lens:engine` compute-only return now optionally carries a top-level `adherence: { specItems, planSteps }` (the `spec-adherence`/`plan-adherence` side-output) so an orchestrator can render the full met/partial/missing matrix without re-deriving it. Field-additive; omit-empty.
+- note: backward-compatible — `adherence` absent ⇒ behavior byte-identical to 1.3.0. The `review-findings` schema gains an optional `adherence` block (field-additive superset); `render-review` is a new skill, not a change to `engine`/`review`.
+
 ## 1.3.0 — 2026-06-21
 
 - feat: programmatic finder injection — `lens:engine` accepts an additive `injectedFinders` arg (`Array<{ agent, dimension, label?, readonly: true }>`) so a programmatic caller (matali) can dispatch a read-only finder at call time. Injected finders run at ANALYZE alongside the `.claude/lens/settings.md` project tier and are handled identically — read-only enforced at the boundary, normalized, deduped, adversarially verified, and counted toward the §8 fan-out cap. The `agent` resolves via the Agent-tool registry and may be plugin-qualified, so a caller ships the finder in its own plugin (no project-local copy).
