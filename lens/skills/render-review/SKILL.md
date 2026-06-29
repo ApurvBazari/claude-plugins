@@ -2,7 +2,6 @@
 name: render-review
 description: Internal pure-render entrypoint — given a review-findings object (plus optional prior findings, a diff ref, and intent), reconcile in-memory, assemble the review-model, and render the interactive HTML via walkthrough:render. Writes ONLY the output HTML; no lens state, no recompute, no task list. Invoked by an orchestrator (e.g. matali) that owns persistence + the gate.
 user-invocable: false
-disable-model-invocation: true
 ---
 
 # Render Review — Pure HTML Render of a review-findings Object
