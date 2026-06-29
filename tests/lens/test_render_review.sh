@@ -10,8 +10,10 @@ fail(){ echo "FAIL: $1"; exit 1; }
 # 2. Skill is internal (user-invocable: false)
 grep -q "user-invocable: false" "$SKILL" || fail "skill must be internal (user-invocable: false)"
 
-# 2b. Skill is model-uninvokable (disable-model-invocation: true)
-grep -q "disable-model-invocation: true" "$SKILL" || fail "skill must be model-uninvokable (disable-model-invocation: true)"
+# 2b. Skill stays model-INVOKABLE — an orchestrator's subagent (e.g. matali's walkthrough-renderer)
+#     dispatches it via the Skill tool, so it must NOT carry disable-model-invocation (that flag hides
+#     a skill from ALL model/subagent invocation, silently degrading the orchestrator render path).
+if grep -q "disable-model-invocation" "$SKILL"; then fail "render-review must stay model-invocable (no disable-model-invocation) so an orchestrator subagent can dispatch it"; fi
 
 # 3. Skill renders via walkthrough:render
 grep -q "walkthrough:render" "$SKILL" || fail "skill must document walkthrough:render as its render path"

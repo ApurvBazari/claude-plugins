@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.1 — 2026-06-29
+
+- fix: `lens:render-review` is now model-invocable — dropped `disable-model-invocation: true` (kept `user-invocable: false`, matching `walkthrough:render`). The skill is dispatched by an orchestrator's subagent (e.g. matali's `walkthrough-renderer`) via the Skill tool; `disable-model-invocation` hid it from *all* model/subagent invocation, so the orchestrator path silently degraded to a generic render instead of the lens-grade document. The skill stays hidden from the user `/` menu.
+
 ## 1.4.0 — 2026-06-26
 
 - feat: pure render entrypoint — new internal `lens:render-review` skill takes a `review-findings` object (plus optional `priorFindings`, a `diffRef`, and intent) and renders the interactive HTML review document via `walkthrough:render`, writing ONLY the output path. No lens state, no recompute, no task list — an orchestrator (matali) that owns persistence calls it after `lens:engine`.
