@@ -41,7 +41,7 @@ else
       shellcheck "$script" 2>&1 | head -5
       SHELL_ERRORS=$((SHELL_ERRORS + 1))
     fi
-  done < <(find . -name '*.sh' -not -path './.git/*' -not -path '*/node_modules/*' -print0 2>/dev/null)
+  done < <(git ls-files -- '*.sh' | tr '\n' '\0')
   if [[ "$SHELL_ERRORS" -eq 0 ]]; then
     echo "  All scripts clean"
   fi
@@ -102,7 +102,7 @@ while IFS= read -r -d '' skill_file; do
   else
     fail "skill missing frontmatter: $skill_file"
   fi
-done < <(find . -path '*/skills/*/SKILL.md' -not -path './.git/*' -print0 2>/dev/null)
+done < <(git ls-files | grep -E '/skills/[^/]+/SKILL\.md$' | tr '\n' '\0')
 echo ""
 
 # ─────────────────────────────────────────────────
@@ -141,7 +141,7 @@ while IFS= read -r -d '' agent_file; do
   if [[ "$AGENT_ISSUES" -eq 0 ]]; then
     pass "agent format: $agent_name"
   fi
-done < <(find . -path '*/agents/*.md' -not -path './.git/*' -not -path './.claude/agents/*' -print0 2>/dev/null)
+done < <(git ls-files | grep -E '/agents/[^/]+\.md$' | tr '\n' '\0')
 echo ""
 
 # ─────────────────────────────────────────────────
@@ -222,7 +222,7 @@ while IFS= read -r -d '' script; do
   else
     fail "not executable: $script"
   fi
-done < <(find . -name '*.sh' -not -path './.git/*' -not -path '*/node_modules/*' -print0 2>/dev/null)
+done < <(git ls-files -- '*.sh' | tr '\n' '\0')
 echo ""
 
 # ─────────────────────────────────────────────────
