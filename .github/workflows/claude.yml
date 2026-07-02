@@ -29,22 +29,24 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           model: claude-opus-4-6
           max_turns: 12
-          track_progress: true
-          custom_instructions: |
-            This is a Claude Code plugin marketplace repository (markdown + shell + JSON, no compiled code).
-            It contains 3 plugins: onboard (codebase analyzer), notify (system notifications), handoff (session continuity).
+          direct_prompt: |
+            Review this pull request for a Claude Code plugin marketplace repository
+            (markdown + shell + JSON, no compiled code). It contains 5 plugins:
+            onboard (codebase analyzer), notify (system notifications), handoff (session
+            continuity), walkthrough (interactive HTML docs), lens (intent-grounded review).
 
-            Review this PR against the repo conventions in .claude/rules/:
+            Scope this review to structure and conventions — correctness/security is handled
+            by the separate security-review workflow and the author's local /lens:review pass.
+            Check the diff against the repo conventions in .claude/rules/:
             - plugin-structure.md: plugin directory requirements, self-contained plugins
-            - skills-authoring.md: SKILL.md H1 naming, Guard pattern, step numbering, Key Rules section
+            - skills-authoring.md: SKILL.md H1 naming, Guard pattern, step numbering, Key Rules
             - agents-authoring.md: Tools section, read-only default, structured output
-            - shell-scripts.md: set -euo pipefail for utilities, exit 0 for hooks, ShellCheck, POSIX compat
+            - shell-scripts.md: set -euo pipefail for utilities, exit 0 for hooks, ShellCheck, POSIX
             - manifests.md: required fields, version sync between plugin.json and marketplace.json
 
-            Also check:
-            - Correctness and potential bugs in shell scripts
-            - Security concerns (command injection in scripts, unsafe variable expansion)
-            - Missing edge cases or error handling
+            Also flag: frontmatter spelling (canonical hyphenated user-invocable /
+            disable-model-invocation), broken reference paths, and CHANGELOG/version drift.
+            Post findings as a PR review comment; if the diff is clean, say so.
 
   claude-sonnet:
     if: >
