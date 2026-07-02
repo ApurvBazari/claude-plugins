@@ -62,10 +62,7 @@ grep -qiE 'clean review|fall through to (steps?|render)|zero findings' "$REVIEW"
 
 # === CLAUDE.md narrative + version 1.4.1 ===
 grep -qiE 'task list|in-session task|progress task' "$CLAUDEMD" || fail "lens CLAUDE.md must describe the in-session task list"
-PV=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["version"])' "$PJSON")
-MV=$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print([p["version"] for p in d["plugins"] if p["name"]=="lens"][0])' "$MKT")
-[ "$PV" = "1.4.1" ] || fail "lens plugin.json must be 1.4.1 (got $PV)"
-[ "$MV" = "1.4.1" ] || fail "lens marketplace.json must be 1.4.1 (got $MV)"
+bash "$ROOT/tests/lib/assert-versions.sh" lens || fail "lens version consistency (plugin.json = marketplace = CHANGELOG)"
 grep -q '1.2.0' "$CHANGELOG" || fail "lens CHANGELOG must have a 1.2.0 entry"
 
 echo "PASS: lens task-tracking"
