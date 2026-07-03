@@ -9,7 +9,8 @@ cardinality. Distinct from the architecture map (services, no fields/cardinality
 in **dependency-depth bands** (computed at synthesis, see `authoring-guide.md` § 1 "ERD layering"),
 referenced/parent entities on top, the most-dependent (junction) at the bottom. A relationship lives on
 its **FK field row** as a clickable `→ Target.field · cardinality`; a **relationship summary** lists
-every edge (the lineless, always-visible channel for keyboard/print/no-hover). On hover/focus of a FK
+every edge (the lineless, always-visible channel for keyboard/print/no-hover), each entity name in it a
+**navigable `openSurface` target** (the row's two `.e` endpoints, not the row itself). On hover/focus of a FK
 row, the shared JS (`interactivity.md`) draws **one** connector — up to a parent (accent), a self-loop
 (purple), or down to a broken back-edge (rose, dashed); cleared on blur. No standing overlay.
 
@@ -20,6 +21,9 @@ row, the shared JS (`interactivity.md`) draws **one** connector — up to a pare
 | forward FK | `.ref` (amber) `→ T.id · N:1` | accent line up into parent |
 | self-reference | `.ref.self` (purple) `↺ self → T.id` | purple self-loop |
 | back-edge (cycle) | `.ref.cyc` (rose) `↩ T.id · N:1` | dashed rose line down |
+
+A **composite / multi-column FK** is one relationship: represent it as a single ref `→ Target(a, b)` on one
+field row → **one** connector — never one row or one line per column.
 
 ```html
 <section id="<id>">
@@ -50,7 +54,7 @@ row, the shared JS (`interactivity.md`) draws **one** connector — up to a pare
   </div>
   <div class="rels">
     <div class="rels-h">relationships</div>
-    <div class="rel"><span class="e">User</span><span class="card">1:N</span><span class="e">Order</span><span class="via">via Order.user_id</span></div>
+    <div class="rel"><span class="e" onclick="openSurface('user')">User</span><span class="card">1:N</span><span class="e" onclick="openSurface('order')">Order</span><span class="via">via Order.user_id</span></div>
   </div>
 </section>
 ```
@@ -81,9 +85,9 @@ or **neutral `Layer 0/1/2`** when a cycle makes roles ambiguous — see `authori
 .ref.cyc{color:var(--rose);background:var(--rose-soft);border-color:color-mix(in srgb,var(--rose) 32%,transparent);}
 .rels{margin:1rem 0 0;border-top:1px dashed var(--border);padding-top:1rem;}
 .rels-h{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.14em;color:var(--tm);margin-bottom:.6rem;}
-.rel{display:flex;align-items:center;gap:.5rem;font-family:var(--mono);font-size:.68rem;padding:.3rem .5rem;border-radius:7px;cursor:pointer;flex-wrap:wrap;transition:background .2s var(--ease);}
-.rel:hover{background:var(--bg-card-hover);}
-.rel .e{color:var(--tp);}
+.rel{display:flex;align-items:center;gap:.5rem;font-family:var(--mono);font-size:.68rem;padding:.3rem .5rem;border-radius:7px;flex-wrap:wrap;}
+.rel .e{color:var(--tp);cursor:pointer;transition:color .2s var(--ease);}
+.rel .e:hover{color:var(--accent);}
 .rel .card{color:var(--accent);border:1px dashed color-mix(in srgb,var(--accent) 40%,transparent);border-radius:100px;padding:.05rem .45rem;font-size:.58rem;}
 .rel .via{color:var(--tm);font-size:.62rem;}
 .ent.hot{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 0 26px var(--accent-glow);z-index:2;}
@@ -97,7 +101,11 @@ or **neutral `Layer 0/1/2`** when a cycle makes roles ambiguous — see `authori
 ```
 
 **Wiring:** each `.ent` clicks to `openSurface('<data-ent>')` (add a `details{}` entry per entity — the
-`openSurface` reference graph must stay acyclic per self-check #14, even when the FK graph cycles). PK =
+`openSurface` reference graph must stay acyclic per self-check #14, even when the FK graph cycles). In the
+`.rels` summary the **entity-name `.e` spans** are the clickable targets — each `<span class="e"
+onclick="openSurface('<entity-id>')">` jumps to that endpoint's entity surface; the row itself carries no
+pointer. These summary→entity links are **star links into the same entity surfaces**, never entity→entity,
+so they add no navigation cycle and keep the `openSurface` graph acyclic (#14). PK =
 `.chip info`; FKs are conveyed by the ref chip. `.deg` degree badges (`2 in`, `junction`, `in cycle`)
 are omit-empty (hide for trivial degree). No JS in this file — the hover-connector lives in
 `interactivity.md`; reveal is the shared IntersectionObserver.

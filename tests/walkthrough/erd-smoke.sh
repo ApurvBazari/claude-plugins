@@ -18,6 +18,7 @@ grep -q 'class="ref self"'  "$F" || fail "self-reference not marked (.ref.self)"
 grep -q 'class="ref cyc"'   "$F" || fail "back-edge not marked (.ref.cyc)"
 grep -q 'class="rels"'      "$F" || fail "relationship summary (.rels) missing"
 grep -q "openSurface('"     "$F" || fail "entities not wired to openSurface"
+grep -q 'class="e" onclick="openSurface(' "$F" || fail ".rel summary entity spans not wired to openSurface (navigable rows, star topology #14)"
 # tokens-only: raw 6-hex only on token-def lines (start with --) and the grain data-URI
 if grep -vE 'data:image|feTurbulence' "$F" | grep -vE '^[[:space:]]*--' | grep -Eq '#[0-9a-fA-F]{6}'; then
   fail "raw hex outside grain SVG / token defs — tokens only"

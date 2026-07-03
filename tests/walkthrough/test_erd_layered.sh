@@ -16,6 +16,8 @@ grep -q 'ref self'   "$DATA"  || fail "data.md must document the self-reference 
 grep -q 'ref cyc'    "$DATA"  || fail "data.md must document the back-edge ref (.ref.cyc)"
 grep -q 'class="rels"' "$DATA" || fail "data.md must document the relationship summary (.rels)"
 grep -qi 'openSurface' "$DATA" || fail "data.md entities must wire openSurface"
+grep -qF -- '.rel .e' "$DATA" || fail "data.md must make .rel summary entity names navigable (.rel .e)"
+grep -q 'class="e" onclick="openSurface(' "$DATA" || fail "data.md recipe must wire .rel entity spans to openSurface (summary→entity star links, #14)"
 grep -qi 'back-compat\|alias\|\.erd\b' "$DATA" || fail "data.md must keep .erd as a back-compat alias"
 # tokens-only in the recipe: no raw 6-hex, no rgba color literals (color-mix only) except the card shadow
 if grep -vE '^[[:space:]]*--|data:image' "$DATA" | grep -Eq '#[0-9a-fA-F]{6}'; then fail "data.md ERD recipe has raw hex — tokens only"; fi
@@ -49,6 +51,8 @@ grep -qiE 'back-edge|back edge' "$AG" || fail "authoring-guide must specify back
 grep -qiE 'self-loop|self-reference' "$AG" || fail "authoring-guide must exclude self-loops from layering"
 grep -qiE 'neutral|ambiguous' "$AG" || fail "authoring-guide must specify neutral-label fallback"
 grep -qiE 'mark|never drop|not.*drop' "$AG" || fail "authoring-guide must require broken edges be marked, not dropped"
+grep -qi 'out-degree' "$AG" || fail "authoring-guide must define more-dependent via out-degree (T5 determinism tie-break)"
+grep -qi 'edge-declaration order' "$AG" || fail "authoring-guide must fix the DFS visitation order (edge-declaration order)"
 
 # --- self-check.md + concept-coverage.md ---
 SC="$ROOT/walkthrough/skills/create/references/self-check.md"

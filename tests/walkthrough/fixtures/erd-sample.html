@@ -52,9 +52,9 @@ h2 em{font-style:italic;color:var(--accent);}
 .ref.cyc{color:var(--rose);background:var(--rose-soft);border-color:color-mix(in srgb,var(--rose) 32%,transparent);}
 .rels{margin:1rem 0 0;border-top:1px dashed var(--border);padding-top:1rem;}
 .rels-h{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.14em;color:var(--tm);margin-bottom:.6rem;}
-.rel{display:flex;align-items:center;gap:.5rem;font-family:var(--mono);font-size:.68rem;padding:.3rem .5rem;border-radius:7px;cursor:pointer;flex-wrap:wrap;transition:background .2s var(--ease);}
-.rel:hover{background:var(--bg-card-hover);}
-.rel .e{color:var(--tp);}
+.rel{display:flex;align-items:center;gap:.5rem;font-family:var(--mono);font-size:.68rem;padding:.3rem .5rem;border-radius:7px;flex-wrap:wrap;}
+.rel .e{color:var(--tp);cursor:pointer;transition:color .2s var(--ease);}
+.rel .e:hover{color:var(--accent);}
 .rel .card{color:var(--accent);border:1px dashed color-mix(in srgb,var(--accent) 40%,transparent);border-radius:100px;padding:.05rem .45rem;font-size:.58rem;}
 .rel .via{color:var(--tm);font-size:.62rem;}
 .ent.hot{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 0 26px var(--accent-glow);z-index:2;}
@@ -119,12 +119,12 @@ h2 em{font-style:italic;color:var(--accent);}
       </div>
       <div class="rels">
         <div class="rels-h">relationships — every edge, explicit</div>
-        <div class="rel"><span class="e">Organization</span><span class="card">1:N</span><span class="e">User</span><span class="via">via User.org_id</span></div>
-        <div class="rel"><span class="e">Role</span><span class="card">1:N</span><span class="e">User</span><span class="via">via User.role_id</span></div>
-        <div class="rel"><span class="e">Organization</span><span class="card">1:N</span><span class="e">Team</span><span class="via">via Team.org_id</span></div>
-        <div class="rel"><span class="e">User</span><span class="card">1:N</span><span class="e">Team</span><span class="via">via Team.lead_id</span></div>
-        <div class="rel"><span class="e">User</span><span class="card">&#8634; self</span><span class="e">User</span><span class="via">via manager_id</span></div>
-        <div class="rel"><span class="e">User</span><span class="card">1:N &#8617;</span><span class="e">Organization</span><span class="via">via Organization.owner_id · back-edge</span></div>
+        <div class="rel"><span class="e" onclick="openSurface('org')">Organization</span><span class="card">1:N</span><span class="e" onclick="openSurface('user')">User</span><span class="via">via User.org_id</span></div>
+        <div class="rel"><span class="e" onclick="openSurface('role')">Role</span><span class="card">1:N</span><span class="e" onclick="openSurface('user')">User</span><span class="via">via User.role_id</span></div>
+        <div class="rel"><span class="e" onclick="openSurface('org')">Organization</span><span class="card">1:N</span><span class="e" onclick="openSurface('team')">Team</span><span class="via">via Team.org_id</span></div>
+        <div class="rel"><span class="e" onclick="openSurface('user')">User</span><span class="card">1:N</span><span class="e" onclick="openSurface('team')">Team</span><span class="via">via Team.lead_id</span></div>
+        <div class="rel"><span class="e" onclick="openSurface('user')">User</span><span class="card">&#8634; self</span><span class="e" onclick="openSurface('user')">User</span><span class="via">via manager_id</span></div>
+        <div class="rel"><span class="e" onclick="openSurface('user')">User</span><span class="card">1:N &#8617;</span><span class="e" onclick="openSurface('org')">Organization</span><span class="via">via Organization.owner_id · back-edge</span></div>
       </div>
     </div>
   </section>
