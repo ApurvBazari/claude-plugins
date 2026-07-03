@@ -12,37 +12,24 @@
 
 set -uo pipefail
 
+# shellcheck source=/dev/null
+. "$(dirname "${BASH_SOURCE[0]}")/handoff-lib.sh"
+
 PROJECT_ROOT="${1:-.}"
 ARCHIVE_DIR="$PROJECT_ROOT/.claude/handoff/archive"
 SETTINGS_FILE="$PROJECT_ROOT/.claude/handoff/settings.md"
 
 [[ -d "$ARCHIVE_DIR" ]] || exit 0
 
-# Default cap.
-retention="10"
+# Resolve the retention cap via the SHARED normalizer, so prune and
+# compute-progress cannot drift (audit H6/H7). hf_normalize_retention returns
+# `unlimited` | a non-negative integer | `10` (default for empty/garbage) —
+# so past the `unlimited`/`0` cases below, `retention` is guaranteed a
+# non-negative integer and the numeric-cap block needs no further validation.
+retention="$(hf_normalize_retention "$(hf_get_fm_value "$SETTINGS_FILE" 'archive-retention')")"
 
-if [[ -f "$SETTINGS_FILE" ]]; then
-  # Parse frontmatter line `archive-retention: <value>` (between the first two `---`).
-  v="$(awk '
-    BEGIN { in_fm = 0; fm_count = 0 }
-    /^---[[:space:]]*$/ { fm_count++; in_fm = (fm_count == 1); next }
-    fm_count >= 2 { exit }
-    in_fm {
-      pos = index($0, ":")
-      if (pos == 0) next
-      k = substr($0, 1, pos - 1); v = substr($0, pos + 1)
-      gsub(/^[[:space:]]+|[[:space:]]+$/, "", k)
-      gsub(/^[[:space:]]+|[[:space:]]+$/, "", v)
-      gsub(/^["'\''"]|["'\''"]$/, "", v)
-      if (k == "archive-retention") { print v; exit }
-    }
-  ' "$SETTINGS_FILE" 2>/dev/null)"
-  [[ -n "$v" ]] && retention="$v"
-fi
-
-# Special values.
 case "$retention" in
-  unlimited|-1|null)
+  unlimited)
     exit 0
     ;;
   0)
@@ -50,11 +37,6 @@ case "$retention" in
     exit 0
     ;;
 esac
-
-# Numeric cap. Anything non-numeric falls back to default 10.
-if ! [[ "$retention" =~ ^[0-9]+$ ]]; then
-  retention="10"
-fi
 
 # Sort newest-first by mtime, keep first <retention>, rm the rest.
 # Use `find -printf` substitute via `stat`-free portable trick.
