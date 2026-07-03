@@ -34,8 +34,11 @@ grep -qiE 'not yet wired|no input path' "$REC" || fail "D4: v1.1 won't-fix must 
 # W2 — the finding-status (confirmed vs flagged) is disambiguated from the verifier's status.
 grep -qi 'distinct from the verifier' "$ASM" || fail "W2: status clarifier missing in review-model-assembly"
 
-# W3 — CLAUDE.md states lens has three skills (review, engine, render-review).
-grep -qi 'three skills' "$CLAUDEMD" || fail "W3: three-skills statement missing in CLAUDE.md"
+# W3 — CLAUDE.md's skill inventory names every skill that actually exists (derived, not a count literal).
+for d in "$ROOT"/lens/skills/*/; do
+  s="$(basename "$d")"
+  grep -q "$s" "$CLAUDEMD" || fail "W3: lens CLAUDE.md must mention skill '$s'"
+done
 
 # W1/D3 consistency — the renamed 'severity trend' / deferred write-back must not leave stale 'verdict trend' wording in the operative docs.
 grep -qi 'verdict trend' "$REC" && fail "reconcile must say 'severity trend', not 'verdict trend'"

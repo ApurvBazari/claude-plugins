@@ -1,6 +1,6 @@
 # walkthrough
 
-> Part of [`claude-plugins`](../README.md) — see also [`onboard`](../onboard/), [`notify`](../notify/), and [`handoff`](../handoff/).
+> Part of [`claude-plugins`](../README.md) — see also [`onboard`](../onboard/), [`notify`](../notify/), [`handoff`](../handoff/), and [`lens`](../lens/).
 
 Render the current session as a self-contained interactive HTML document with diagrams and clickable detail. Turns "what did we just do" into an explorable page — prose, architecture diagrams, decision records, and a file/timeline view — instead of a scroll back through the transcript.
 
@@ -113,6 +113,11 @@ On the first run in a repo (when `.gitignore` exists and doesn't already cover t
 walkthrough is a **pure-skill plugin** — no hooks, no shell scripts, no agents — so it installs and runs in [Claude Cowork](https://claude.com/product/cowork) exactly as it does in Claude Code. Its output is a single portable HTML file, which makes it a natural fit for a Cowork working session: run it and you get an explorable deliverable you can email, drop in a wiki, or open offline.
 
 Because a Cowork folder is often not a git repository, `create` asks **on first run in a non-git folder** where to write — a visible `walkthroughs/` folder (easy to find) or the hidden `.claude/walkthrough/` — and remembers the choice. In a git repository (the typical Claude Code case) nothing changes: walkthroughs go to `.claude/walkthrough/` with no prompt.
+
+## Limitations
+
+- **Android / local-file JS.** Opened as a `file://` document on Android, the page renders the hero and nothing below it — Android blocks JavaScript in local files, and the sections reveal via JS. View on desktop, or host the file over `http(s)`.
+- **No print path.** The document is built for on-screen exploration; there is no dedicated print stylesheet, and collapsed detail (panes, sheets) will not appear in a printout.
 
 ## What it is / isn't
 

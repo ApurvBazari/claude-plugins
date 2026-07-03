@@ -26,7 +26,7 @@ Every user-invocable command across the five plugins (internal building-block sk
 
 | Plugin | Commands |
 |---|---|
-| **onboard** | `/onboard:start` · `/onboard:check` · `/onboard:evolve` · `/onboard:update` · `/onboard:verify` |
+| **onboard** | `/onboard:start` · `/onboard:adopt` · `/onboard:check` · `/onboard:evolve` · `/onboard:update` · `/onboard:verify` |
 | **notify** | `/notify:setup` · `/notify:check` · `/notify:uninstall` |
 | **handoff** | `/handoff:save` · `/handoff:pickup` · `/handoff:check` · `/handoff:discard` |
 | **walkthrough** | `/walkthrough:create` · `/walkthrough:document` · `/walkthrough:update` |

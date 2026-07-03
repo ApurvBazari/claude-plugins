@@ -43,14 +43,26 @@ jobs:
           echo "date=${DATE}" >> "$GITHUB_OUTPUT"
           echo "branch=${BRANCH}" >> "$GITHUB_OUTPUT"
 
+      - name: Load audit prompts
+        id: prompts
+        run: |
+          set -euo pipefail
+          {
+            echo 'analyze<<PROMPT_EOF'
+            cat .claude/prompts/tooling-gap-audit-analyze.md
+            echo 'PROMPT_EOF'
+            echo 'report<<PROMPT_EOF'
+            cat .claude/prompts/tooling-gap-audit-report.md
+            echo 'PROMPT_EOF'
+          } >> "$GITHUB_OUTPUT"
+
       - name: Phase 1 — Analyze
         uses: anthropics/claude-code-action@beta
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           model: claude-opus-4-6
           max_turns: 80
-          track_progress: true
-          prompt_file: .claude/prompts/tooling-gap-audit-analyze.md
+          direct_prompt: ${{ steps.prompts.outputs.analyze }}
 
       - name: Phase 2 — Report
         uses: anthropics/claude-code-action@beta
@@ -58,7 +70,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           model: claude-opus-4-6
           max_turns: 40
-          prompt_file: .claude/prompts/tooling-gap-audit-report.md
+          direct_prompt: ${{ steps.prompts.outputs.report }}
 
       - name: Commit audit artifacts
         env:
@@ -68,7 +80,8 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/tooling-gap-reports/ .claude/audit-baseline.json
+          git add -f docs/tooling-gap-reports/
+          git add .claude/audit-baseline.json
           # If nothing changed (e.g., no report was written due to failure), exit cleanly
           if git diff --cached --quiet; then
             echo "No audit artifacts to commit"

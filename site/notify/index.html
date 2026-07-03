@@ -307,6 +307,11 @@ dialog.sheet::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
           <div class="t">notify-send / libnotify</div>
           <p>Urgency levels (low/normal/critical mapped from sound setting), app-name, message body. Duration filter and repo/branch subtitle work identically.</p>
         </div>
+        <div class="edge">
+          <div class="n">WSL</div>
+          <div class="t">Linux backend, caveats</div>
+          <p><code>notify-send</code> reaches the Linux desktop only if a notification daemon is running. For Windows-side toasts, route through a Windows notifier (e.g. <code>wsl-notify-send</code>) or run Claude Code natively on Windows.</p>
+        </div>
       </div>
     </section>
 
