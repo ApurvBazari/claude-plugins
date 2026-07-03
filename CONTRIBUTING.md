@@ -55,6 +55,14 @@ Run `/validate` (the repo skill) before opening a PR, or run the gates directly:
 shellcheck scripts/*.sh */scripts/*.sh     # all shell scripts ShellCheck-clean
 ```
 
+## Tracked `.claude/` paths
+
+`.claude/` is gitignored, but a curated subset is force-tracked because CI and contributors
+depend on it: `.claude/rules/` (convention docs the PR-review workflow reads), and the repo
+skills `.claude/skills/{doc-audit,validate,feature-done,test-plugins-locally,progressive-disclosure}/`.
+New files added under any of these paths do not stage automatically — add them with `git add -f`.
+Everything else under `.claude/` (walkthrough output, handoff directives, onboard state) stays local.
+
 ## Adding a new plugin
 
 1. Create `<plugin>/` with `.claude-plugin/plugin.json`, `README.md`, `CHANGELOG.md`,

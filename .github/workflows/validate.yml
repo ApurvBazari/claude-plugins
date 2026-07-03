@@ -71,3 +71,27 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verify onboard state files are gitignored
         run: .github/scripts/check-state-gitignore.sh
+
+  belts:
+    name: Test Belts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run all plugin test belts
+        run: bash tests/run-all.sh
+
+  repo-guards:
+    name: Repo Guards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Notify-delegation guard
+        run: .github/scripts/check-notify-delegation.sh
+      - name: Phase-numbering guard
+        run: .github/scripts/check-phase-numbering.sh
+      - name: Phase-tracking guard
+        run: .github/scripts/check-phase-tracking.sh
+      - name: Skill-refs guard
+        run: .github/scripts/check-skill-refs.sh
+      - name: Ref-paths guard
+        run: .github/scripts/check-ref-paths.sh

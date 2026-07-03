@@ -16,10 +16,6 @@ grep -qi 'groups' "$REV" || fail "review component must render adherence groups"
 grep -qiE 'per-group|per group|sub-section' "$REV" || fail "review component must render a per-group sub-section"
 grep -qiE 'falls back|fallback|otherwise' "$REV" || fail "review component must fall back to the flat panel"
 
-PV=$(python3 -c "import json;print(json.load(open('$PJSON'))['version'])")
-MV=$(python3 -c "import json;d=json.load(open('$MKT'));print([p['version'] for p in d['plugins'] if p['name']=='walkthrough'][0])")
-[ "$PV" = "1.4.0" ] || fail "walkthrough plugin.json must be 1.4.0 (got $PV)"
-[ "$MV" = "1.4.0" ] || fail "walkthrough marketplace.json must be 1.4.0 (got $MV)"
-grep -q '1.4.0' "$CHANGELOG" || fail "walkthrough CHANGELOG must have a 1.4.0 entry"
+bash "$ROOT/tests/lib/assert-versions.sh" walkthrough || fail "walkthrough version consistency (plugin.json = marketplace = CHANGELOG)"
 
 echo "PASS: walkthrough grouped adherence"
