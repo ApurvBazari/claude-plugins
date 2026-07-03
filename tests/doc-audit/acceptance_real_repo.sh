@@ -3,10 +3,12 @@
 set -uo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"; source "$DIR/lib.sh"
 FAILED=0
-echo "real repo currently flags the known doc gaps:"
-assert_finding "$REPO_ROOT" MISSING_SKILLS_SECTION   # walkthrough + lens
-assert_finding "$REPO_ROOT" PLUGIN_NOT_IN_ROOT       # lens absent from root README
-assert_finding "$REPO_ROOT" SITE_PAGE_MISSING        # lens has no site page
+# The real repo audits clean as of the SP-2 truth-sweep (2026-07-03), which closed the
+# prior gaps this test used to pin (MISSING_SKILLS_SECTION for walkthrough+lens,
+# PLUGIN_NOT_IN_ROOT + SITE_PAGE_MISSING for lens — all since fixed). Assert clean so this
+# test guards against future doc drift instead of pinning stale, already-closed gaps.
+echo "real repo audits clean (SP-2 truth-sweep closed the prior doc gaps):"
+assert_clean "$REPO_ROOT"
 out_rc=0; bash "$SCRIPT" --root "$REPO_ROOT" >/dev/null 2>&1 || out_rc=$?
-if [[ "$out_rc" -ne 0 ]]; then echo "  ok: nonzero exit on errors"; else echo "  FAIL: expected nonzero exit"; FAILED=1; fi
+if [[ "$out_rc" -eq 0 ]]; then echo "  ok: zero exit on clean repo"; else echo "  FAIL: expected zero exit; rc=$out_rc"; FAILED=1; fi
 exit "$FAILED"
