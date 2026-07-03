@@ -13,10 +13,11 @@ Claude Code plugin marketplace by Apurv Bazari. Five plugins — all markdown + 
 .claude-plugin/marketplace.json          ← plugin registry
          │
          ├──→ onboard/                   ← codebase analyzer + tooling generator
-         │      ├── skills/ (start, generate, update, check, verify, evolve,
-         │      │           wizard, analysis, generation)
-         │      ├── agents/ (codebase-analyzer, config-generator, feature-evaluator)
-         │      └── scripts/ (analyze-structure, detect-stack, measure-complexity)
+         │      ├── skills/ (start, adopt, generate, update, check, verify, evolve,
+         │      │           research, wizard, analysis, generation)
+         │      ├── agents/ (codebase-analyzer, config-generator, feature-evaluator,
+         │      │           research-specialist, research-verifier)
+         │      └── scripts/ (detect-{config,dep,lsp,mcp,structure}-changes, audit-tooling, install-plugins)
          │
          ├──→ notify/                    ← cross-platform system notifications
          │      ├── skills/ (setup, check, uninstall, wizard)
@@ -26,7 +27,7 @@ Claude Code plugin marketplace by Apurv Bazari. Five plugins — all markdown + 
          │      └── skills/ (save, pickup, check, discard)
          │
          ├──→ walkthrough/               ← session → self-contained interactive HTML
-         │      └── skills/ (create, update, document)
+         │      └── skills/ (create, update, document, render)
          │
          └──→ lens/                      ← intent-grounded review companion (brain; renders via walkthrough)
                 ├── skills/ (review, engine, render-review)
