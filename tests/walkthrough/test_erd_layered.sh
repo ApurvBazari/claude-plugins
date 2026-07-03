@@ -16,7 +16,7 @@ grep -q 'ref self'   "$DATA"  || fail "data.md must document the self-reference 
 grep -q 'ref cyc'    "$DATA"  || fail "data.md must document the back-edge ref (.ref.cyc)"
 grep -q 'class="rels"' "$DATA" || fail "data.md must document the relationship summary (.rels)"
 grep -qi 'openSurface' "$DATA" || fail "data.md entities must wire openSurface"
-grep -qF -- '.rel .e' "$DATA" || fail "data.md must make .rel summary entity names navigable (.rel .e)"
+grep -qF -- '.rel .e:hover' "$DATA" || fail "data.md must give .rel summary entity names the navigable hover affordance (.rel .e:hover)"
 grep -q 'class="e" onclick="openSurface(' "$DATA" || fail "data.md recipe must wire .rel entity spans to openSurface (summary→entity star links, #14)"
 grep -qi 'back-compat\|alias\|\.erd\b' "$DATA" || fail "data.md must keep .erd as a back-compat alias"
 # tokens-only in the recipe: no raw 6-hex, no rgba color literals (color-mix only) except the card shadow
