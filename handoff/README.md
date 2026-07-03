@@ -29,7 +29,7 @@ Auto-invokes after the SessionStart hook surfaces a saved handoff. Asks via AskU
 | Choice | What happens |
 |---|---|
 | **Execute** | I act on the directive, then archive the file to `.claude/handoff/archive/consumed-<ts>.md` |
-| **Edit** | Open the directive in `$EDITOR`, re-surface for another confirm |
+| **Edit** | I revise the directive in place from your instructions, then re-surface for another confirm |
 | **Discard** | Archive to `.claude/handoff/archive/discarded-<ts>.md` without acting |
 | **Save for later** | Leave the file in place; snooze for 24h so the next session-start doesn't re-surface immediately |
 
