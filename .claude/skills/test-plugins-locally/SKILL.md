@@ -9,7 +9,7 @@ Spin up (or reset) a sibling sandbox project, point Claude Code at this repo's p
 
 ## What this skill does
 
-The three plugins in this repo (`onboard`, `notify`, `handoff`) ship through the `apurvbazari-plugins` local marketplace which points at this directory. Plugins are **copied** into `~/.claude/plugins/cache/apurvbazari-plugins/<plugin>/<version>/` on install, so source edits don't reach the running session until the cache is refreshed.
+The five plugins in this repo (`onboard`, `notify`, `handoff`, `walkthrough`, `lens`) ship through the `apurvbazari-plugins` local marketplace which points at this directory. Plugins are **copied** into `~/.claude/plugins/cache/apurvbazari-plugins/<plugin>/<version>/` on install, so source edits don't reach the running session until the cache is refreshed.
 
 **Gotcha**: `claude plugin update` is version-gated — it compares the `plugin.json` `version` field and is a **no-op when versions match** (which they almost always do during in-branch dev, since you rarely bump version per edit). The Reset step in this skill therefore mirrors source → cache via `rsync` directly. `claude plugin update` is still useful when you've actually bumped the version, but it cannot be relied on for live-edit dogfooding.
 
@@ -28,7 +28,7 @@ Run only from inside the `claude-plugins` repo root (the directory containing `.
 
 Use `AskUserQuestion` (single-select) with these options:
 
-- **Setup** — first-time wiring: register marketplace if missing, install all 3 plugins, create the sibling testbed dir
+- **Setup** — first-time wiring: register marketplace if missing, install all 5 plugins, create the sibling testbed dir
 - **Reset (Recommended)** — mirror source → plugin cache via `rsync` (bypasses the version-gated `claude plugin update`), nuke the testbed contents, recreate empty subdirs
 - **Run plugin recipe** — pick a plugin and walk its smoke recipe in a fresh sandbox subdir
 - **Status** — read-only: report marketplace + plugin + testbed state, then stop
@@ -61,7 +61,7 @@ fi
 
 # Cache freshness — for each plugin compare source vs the version-pinned cache dir
 # Layout: ~/.claude/plugins/cache/apurvbazari-plugins/<plugin>/<version>/...
-for p in onboard notify handoff; do
+for p in onboard notify handoff walkthrough lens; do
   if [ ! -f "$p/.claude-plugin/plugin.json" ]; then continue; fi
   VER=$(grep -m1 '"version"' "$p/.claude-plugin/plugin.json" | sed -E 's/.*"version": *"([^"]+)".*/\1/')
   CACHE="$HOME/.claude/plugins/cache/apurvbazari-plugins/$p/$VER"
@@ -98,8 +98,8 @@ else
   echo "marketplace apurvbazari-plugins already registered"
 fi
 
-# 2. Install all 3 plugins (skip already-installed)
-for p in onboard notify handoff; do
+# 2. Install all 5 plugins (skip already-installed)
+for p in onboard notify handoff walkthrough lens; do
   if claude plugin list 2>&1 | grep -q "^  ❯ ${p}@apurvbazari-plugins"; then
     echo "$p already installed — skipping (use Reset to refresh)"
   else
@@ -127,7 +127,7 @@ TESTBED="$(cd .. && pwd)/claude-plugins-testbed"
 #    version hasn't bumped (typical during in-branch dev) it's a no-op and
 #    your edits never reach the cache. rsync forces the cache to match source
 #    byte-for-byte (minus VCS and ephemeral metadata).
-for p in onboard notify handoff; do
+for p in onboard notify handoff walkthrough lens; do
   if [ ! -f "$p/.claude-plugin/plugin.json" ]; then continue; fi
   VER=$(grep -m1 '"version"' "$p/.claude-plugin/plugin.json" | sed -E 's/.*"version": *"([^"]+)".*/\1/')
   CACHE="$HOME/.claude/plugins/cache/apurvbazari-plugins/$p/$VER"

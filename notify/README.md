@@ -146,6 +146,8 @@ Per event you can configure:
 | macOS | `terminal-notifier` | 14 system sounds | Yes (bundle ID) | Yes |
 | Linux | `notify-send` (libnotify) | Urgency levels only | No | Yes |
 
+- **WSL.** Under WSL, `notify-send` reaches the Linux desktop only if a notification daemon is running; for Windows-side toasts, route through a Windows notifier (e.g. `wsl-notify-send`) or run Claude Code natively on Windows.
+
 ## Troubleshooting
 
 - **No notifications appearing (macOS)** — Open System Settings → Notifications → terminal-notifier, ensure notifications are allowed. Check that Do Not Disturb / Focus mode is off.

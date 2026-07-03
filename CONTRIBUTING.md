@@ -1,7 +1,7 @@
 # Contributing to claude-plugins
 
-Thanks for your interest. This repo is a Claude Code plugin marketplace — four plugins
-(`onboard`, `notify`, `handoff`, `walkthrough`), all markdown + shell + JSON + HTML, no compiled code.
+Thanks for your interest. This repo is a Claude Code plugin marketplace — five plugins
+(`onboard`, `notify`, `handoff`, `walkthrough`, `lens`), all markdown + shell + JSON + HTML, no compiled code.
 
 ## Repository layout
 

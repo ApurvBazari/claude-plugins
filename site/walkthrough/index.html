@@ -197,7 +197,7 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
       <a href="#isnt">Is / isn't</a>
     </div>
     <div style="display:flex;align-items:center;gap:.8rem">
-      <div class="nav-meta"><span class="dot"></span> PLUGIN · v1.2.0</div>
+      <div class="nav-meta"><span class="dot"></span> PLUGIN · v1.2.1</div>
       <button class="theme-btn" onclick="tgl()">◑ THEME</button></div>
   </div></nav>
   <div class="progress" id="prog"></div>
@@ -383,6 +383,10 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
         <div class="edge"><div class="n">open components</div><div class="t">Floor, not ceiling</div><p>Catalog entries used verbatim where they fit; bespoke components composed from the same primitives where they don't — passing a looks-native checklist. Empty sections are omitted rather than stubbed.</p></div>
       </div>
       <p style="margin-top:1.4rem">The result renders with no network beyond that one font fetch — copy the file anywhere, email it, drop it in a wiki, and it works without the plugin, without a server, and without a connection. Walkthroughs are written to <code>.claude/walkthrough/&lt;YYYY-MM-DD-HHMM&gt;-&lt;slug&gt;.html</code>. When a walkthrough on the same subject already exists, <code>create</code> asks whether to update it in place, write a new versioned file, or overwrite — rather than silently adding a <code>-2</code>/<code>-3</code> suffix. On the first run in a repo, it offers to add the directory to <code>.gitignore</code> (a session artifact can contain code and prose you exchanged) and remembers your choice in <code>settings.md</code>.</p>
+      <div class="callout">
+        <h4>Two caveats</h4>
+        <p>Opened as a <code>file://</code> document on <strong>Android</strong>, the page shows the hero and nothing below — Android blocks JavaScript in local files and the sections reveal via JS; view on desktop or host over <code>http(s)</code>. There is also <strong>no print path</strong>: the document is built for on-screen exploration, with no dedicated print stylesheet, and collapsed detail won't appear in a printout.</p>
+      </div>
     </section>
 
     <section id="cowork">
@@ -455,7 +459,7 @@ write        overwrite the SAME file — no new file, no backup
         <a href="../">← marketplace</a>
         <a href="https://github.com/ApurvBazari/claude-plugins/tree/main/walkthrough">source on GitHub</a>
       </div>
-      <div class="meta">walkthrough · v1.2.0 · MIT · by Apurv Bazari</div>
+      <div class="meta">walkthrough · v1.2.1 · MIT · by Apurv Bazari</div>
     </div>
   </main>
   <aside class="panel" id="panel"><span class="x" onclick="closeD()">✕</span>

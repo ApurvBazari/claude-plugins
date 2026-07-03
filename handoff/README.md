@@ -54,6 +54,10 @@ The plugin registers a SessionStart hook (`hooks/session-start.sh`) automaticall
 
 Claude then invokes `/handoff:pickup`, which presents the four-option AskUserQuestion.
 
+### Cowork
+
+The SessionStart hook is CLI-only — plugin-scoped hooks do not fire in Cowork (it loads user-scoped settings only). In Cowork, a saved handoff will not surface automatically; run `/handoff:pickup` manually to resume.
+
 ## Configuration
 
 Optional settings file at `.claude/handoff/settings.md`. If absent, defaults apply. Frontmatter:
