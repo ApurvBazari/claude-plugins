@@ -47,7 +47,7 @@ Hook computes three progress signals:
 |---|---|---|
 | `commits-past-saved-at` | `git rev-list --count <saved-at-sha>..HEAD` | ≥ 3 → tag as "progress made" |
 | `branch-changed` | `git branch --show-current` vs frontmatter `saved-at-branch` | true → tag as "branch changed" |
-| `days-old` | now vs frontmatter `saved-at` | ≥ 90 → silent auto-archive to `handoff.expired-<ts>.md` |
+| `days-old` | now vs frontmatter `saved-at` | ≥ 90 → auto-archive to `archive/expired-<ts>.md` + one-line note |
 
 The first two are *surface tags* (shown to the user via metadata) — they don't change behavior, they just inform the user's choice in the 4-option AskUserQuestion. The third is a hard cap.
 
@@ -103,22 +103,9 @@ The hook captures `cwd` at fire time (from the SessionStart stdin JSON). The sav
 
 This catches the "I `cd`'d into a different project mid-session" case without adding a second hook.
 
-## Trigger phrases
+## NL trigger (save)
 
-Default whitelist (lowercase, substring match against the most recent user message):
-
-- "save handoff"
-- "pick this up later"
-- "continue in new session"
-- "continue in a new session"
-- "handoff this"
-- "I'll come back to this"
-- "I'll continue next session"
-- "save for later"
-
-The skill auto-invokes when a phrase matches. User can extend / override the list in `.claude/handoff/settings.md` frontmatter (`trigger-phrases`).
-
-Because the save flow is gated by an AskUserQuestion confirm, the whitelist can be relatively loose without causing harm — false positives are zero-cost.
+The save skill auto-invokes when the user says a wrap-up phrase ("save handoff", "pick this up later", "continue in a new session", "I'll come back to this", …). This is driven by the skill's `description` frontmatter — Claude matches the user's message against it and invokes the skill; there is no code that reads a phrase list, and no `trigger-phrases` setting. Because the save flow is gated by an AskUserQuestion confirm, loose matching is harmless — false positives cost one click.
 
 ## Skills
 

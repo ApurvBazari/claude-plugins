@@ -14,7 +14,7 @@ That's it. Nothing else to configure — the SessionStart hook ships inside the 
 
 ## Skills
 
-All skills are invoked as `/handoff:<name>`. Two are auto-invokable (`save`, `pickup`); two require explicit invocation (`check` is auto-invokable but read-only; `discard` is destructive).
+All skills are invoked as `/handoff:<name>`. Three auto-invoke (`save`, `pickup`, `check` — `check` is read-only); `discard` is destructive and user-invoked only.
 
 ### `/handoff:save`
 
@@ -65,16 +65,10 @@ Optional settings file at `.claude/handoff/settings.md`. If absent, defaults app
 ```yaml
 ---
 stale-commit-threshold: 3        # commits past saved-at-sha → tag as "progress made"
-stale-day-threshold: 90          # days past saved-at → silent auto-archive
+stale-day-threshold: 90          # days past saved-at → auto-archive + one-line note
 deferral-snooze-hours: 24        # hours to suppress re-surface after "Save for later"
 gitignore-prompt: ask            # ask | never
 archive-retention: 10            # cap on archive/ file count (special: 0, "unlimited", -1, null)
-trigger-phrases:                 # additions/overrides for save NL trigger
-  - "save handoff"
-  - "pick this up later"
-  - "continue in new session"
-  - "handoff this"
-  - "I'll come back to this"
 ---
 ```
 
