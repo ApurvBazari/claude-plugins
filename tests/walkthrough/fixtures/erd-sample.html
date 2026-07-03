@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Golden fixture — layered cycle-aware ERD</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+/* ── design-system.md: dark :root token block (verbatim) ── */
+:root{
+  --bg-deep:#08090c;--bg-card:#0f1117;--bg-card-hover:#151821;--bg-elevated:#1a1d28;--bg-inset:#060709;
+  --border:#1e2230;--border-active:#2d3348;--border-strong:#3a4159;
+  --tp:#e8eaf0;--ts:#7d8399;--tm:#4a5068;--tf:#2e3349;
+  --blue:#3b82f6;--green:#22c55e;--amber:#f59e0b;--rose:#f43f5e;--purple:#a78bfa;
+  --accent:#22d3ee;--accent-glow:rgba(34,211,238,.16);--accent-soft:rgba(34,211,238,.08);
+  --blue-soft:rgba(59,130,246,.1);--green-soft:rgba(34,197,94,.1);--amber-soft:rgba(245,158,11,.1);--rose-soft:rgba(244,63,94,.1);--purple-soft:rgba(167,139,250,.1);
+  --mono:'JetBrains Mono',monospace;--serif:'Instrument Serif',serif;--sans:'DM Sans',sans-serif;
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+/* ── design-system.md: grain overlay (verbatim) ── */
+body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+/* ── minimal house base (tokens only) ── */
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg-deep);color:var(--tp);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased;}
+main{max-width:920px;margin:0 auto;padding:3rem 1.5rem 5rem;}
+h2{font-family:var(--serif);font-weight:400;font-size:2rem;color:var(--tp);margin:.2rem 0 1rem;}
+h2 em{font-style:italic;color:var(--accent);}
+.sec-label{font-family:var(--mono);font-size:.62rem;text-transform:uppercase;letter-spacing:.18em;color:var(--accent);display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem;}
+.sec-label::before{content:'';width:26px;height:1px;background:var(--accent);}
+.lede{color:var(--ts);font-size:.95rem;max-width:60ch;margin:0 0 1.4rem;}
+/* ── design-system.md: chip primitive (info role — tokens only) ── */
+.chip{display:inline-flex;align-items:center;gap:.3rem;font-family:var(--mono);font-size:.56rem;padding:.1rem .4rem;border-radius:100px;}
+.chip.info{color:var(--blue);background:var(--blue-soft);}
+/* ── data.md § ERD / schema: layered, field-anchored, cycle-aware (verbatim) ── */
+.erd-l{position:relative;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:1.4rem;display:flex;flex-direction:column;gap:1.15rem;margin:1.2rem 0;}
+.erd-l .erd-wires{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:5;}
+.band{position:relative;border:1px dashed var(--border);border-radius:12px;background:var(--bg-inset);padding:1.5rem 1rem 1.15rem;}
+.band-label{position:absolute;top:-.62rem;left:1rem;font-family:var(--mono);font-size:.58rem;text-transform:uppercase;letter-spacing:.16em;color:var(--tm);background:var(--bg-card);padding:.1rem .55rem;border:1px solid var(--border);border-radius:100px;display:flex;align-items:center;gap:.4rem;}
+.band-label .dot{width:5px;height:5px;border-radius:50%;background:var(--accent);}
+.band-row{display:flex;justify-content:center;flex-wrap:wrap;gap:1rem;}
+.ent{flex:0 0 210px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .3s var(--ease),box-shadow .3s var(--ease),opacity .3s var(--ease);position:relative;z-index:1;}
+.ent-name{font-family:var(--mono);font-size:.72rem;font-weight:600;color:var(--tp);background:var(--bg-card-hover);padding:.5rem .7rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.ent-name .deg{font-weight:400;color:var(--tm);font-size:.56rem;}
+.fld{display:flex;align-items:center;justify-content:space-between;gap:.4rem;padding:.42rem .7rem;font-family:var(--mono);font-size:.65rem;color:var(--ts);border-bottom:1px solid var(--border);transition:background .2s var(--ease);}
+.fld:last-child{border-bottom:none;}
+.fld[data-target]{cursor:pointer;}
+.col{color:var(--tp);white-space:nowrap;}
+.type{color:var(--tm);}
+.ref{font-family:var(--mono);font-size:.58rem;color:var(--amber);background:var(--amber-soft);border:1px solid color-mix(in srgb,var(--amber) 30%,transparent);border-radius:100px;padding:.12rem .45rem;white-space:nowrap;}
+.ref .card{color:var(--accent);}
+.ref.self{color:var(--purple);background:var(--purple-soft);border-color:color-mix(in srgb,var(--purple) 32%,transparent);}
+.ref.cyc{color:var(--rose);background:var(--rose-soft);border-color:color-mix(in srgb,var(--rose) 32%,transparent);}
+.rels{margin:1rem 0 0;border-top:1px dashed var(--border);padding-top:1rem;}
+.rels-h{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.14em;color:var(--tm);margin-bottom:.6rem;}
+.rel{display:flex;align-items:center;gap:.5rem;font-family:var(--mono);font-size:.68rem;padding:.3rem .5rem;border-radius:7px;cursor:pointer;flex-wrap:wrap;transition:background .2s var(--ease);}
+.rel:hover{background:var(--bg-card-hover);}
+.rel .e{color:var(--tp);}
+.rel .card{color:var(--accent);border:1px dashed color-mix(in srgb,var(--accent) 40%,transparent);border-radius:100px;padding:.05rem .45rem;font-size:.58rem;}
+.rel .via{color:var(--tm);font-size:.62rem;}
+.ent.hot{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 0 26px var(--accent-glow);z-index:2;}
+.ent.hot.hot-self{border-color:var(--purple);box-shadow:0 0 0 1px var(--purple),0 0 26px color-mix(in srgb,var(--purple) 20%,transparent);}
+.ent.hot.hot-cyc{border-color:var(--rose);box-shadow:0 0 0 1px var(--rose),0 0 26px color-mix(in srgb,var(--rose) 20%,transparent);}
+.ent.dim{opacity:.36;}
+.fld.hotrow{background:var(--accent-soft);}
+/* back-compat: pre-1.3.0 flat ERD alias */
+.erd{display:flex;align-items:center;flex-wrap:wrap;gap:.6rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1.2rem 0;}
+.erd-entity{flex:0 1 220px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+</style>
+</head>
+<body>
+<main>
+  <section id="schema">
+    <div class="sec-label">data model</div>
+    <h2>The <em>schema</em> — layered, cycle-aware</h2>
+    <p class="lede">Four entities across three dependency-depth bands. The Organization&#8596;User cycle is
+      broken by demoting <code>Organization.owner_id</code> to a back-edge; every FK row is field-anchored,
+      and hovering (or Tab-focusing) any FK row draws exactly one connector.</p>
+    <div class="erd-l">
+      <svg class="erd-wires"></svg>
+      <div class="band">
+        <div class="band-label"><span class="dot"></span>Layer 0 · referenced</div>
+        <div class="band-row">
+          <div class="ent" data-ent="org" onclick="openSurface('org')">
+            <div class="ent-name">&lt;Organization&gt;<span class="deg">in cycle</span></div>
+            <div class="fld"><span class="col">id</span><span class="chip info">PK</span></div>
+            <div class="fld"><span class="col">name</span><span class="type">text</span></div>
+            <div class="fld" data-target="user"><span class="col">owner_id</span><span class="ref cyc">&#8617; User.id <span class="card">N:1</span></span></div>
+          </div>
+          <div class="ent" data-ent="role" onclick="openSurface('role')">
+            <div class="ent-name">&lt;Role&gt;</div>
+            <div class="fld"><span class="col">id</span><span class="chip info">PK</span></div>
+            <div class="fld"><span class="col">name</span><span class="type">text</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="band">
+        <div class="band-label"><span class="dot"></span>Layer 1</div>
+        <div class="band-row">
+          <div class="ent" data-ent="user" onclick="openSurface('user')">
+            <div class="ent-name">&lt;User&gt;<span class="deg">in cycle</span></div>
+            <div class="fld"><span class="col">id</span><span class="chip info">PK</span></div>
+            <div class="fld"><span class="col">email</span><span class="type">text</span></div>
+            <div class="fld" data-target="org"><span class="col">org_id</span><span class="ref">&#8594; Organization.id <span class="card">N:1</span></span></div>
+            <div class="fld" data-target="role"><span class="col">role_id</span><span class="ref">&#8594; Role.id <span class="card">N:1</span></span></div>
+            <div class="fld" data-target="user"><span class="col">manager_id</span><span class="ref self">&#8634; self &#8594; User.id</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="band">
+        <div class="band-label"><span class="dot"></span>Layer 2 · junction</div>
+        <div class="band-row">
+          <div class="ent" data-ent="team" onclick="openSurface('team')">
+            <div class="ent-name">&lt;Team&gt;<span class="deg">junction</span></div>
+            <div class="fld"><span class="col">id</span><span class="chip info">PK</span></div>
+            <div class="fld" data-target="org"><span class="col">org_id</span><span class="ref">&#8594; Organization.id <span class="card">N:1</span></span></div>
+            <div class="fld" data-target="user"><span class="col">lead_id</span><span class="ref">&#8594; User.id <span class="card">N:1</span></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="rels">
+        <div class="rels-h">relationships — every edge, explicit</div>
+        <div class="rel"><span class="e">Organization</span><span class="card">1:N</span><span class="e">User</span><span class="via">via User.org_id</span></div>
+        <div class="rel"><span class="e">Role</span><span class="card">1:N</span><span class="e">User</span><span class="via">via User.role_id</span></div>
+        <div class="rel"><span class="e">Organization</span><span class="card">1:N</span><span class="e">Team</span><span class="via">via Team.org_id</span></div>
+        <div class="rel"><span class="e">User</span><span class="card">1:N</span><span class="e">Team</span><span class="via">via Team.lead_id</span></div>
+        <div class="rel"><span class="e">User</span><span class="card">&#8634; self</span><span class="e">User</span><span class="via">via manager_id</span></div>
+        <div class="rel"><span class="e">User</span><span class="card">1:N &#8617;</span><span class="e">Organization</span><span class="via">via Organization.owner_id · back-edge</span></div>
+      </div>
+    </div>
+  </section>
+</main>
+<script>
+/* golden fixture: entity detail surfaces are omitted — real docs route .ent clicks through
+   openSurface()/renderSurface() (interactivity.md). Here it is a no-op so the wired onclick
+   is inert rather than throwing; the tested behaviour is the hover/focus connector below. */
+function openSurface(id){void id;}
+</script>
+<script>
+(function(){var NS='http://www.w3.org/2000/svg';function mk(t){return document.createElementNS(NS,t);}
+function initErd(box){var svg=box.querySelector('.erd-wires');if(!svg)return;
+ function clear(){while(svg.firstChild)svg.removeChild(svg.firstChild);
+  box.querySelectorAll('.hot').forEach(function(e){e.classList.remove('hot','hot-self','hot-cyc');});
+  box.querySelectorAll('.hotrow').forEach(function(e){e.classList.remove('hotrow');});
+  box.querySelectorAll('.dim').forEach(function(e){e.classList.remove('dim');});}
+ function stroke(el,c,dash){el.style.fill='none';el.style.stroke=c;el.style.strokeWidth='1.9';el.style.strokeLinecap='round';el.style.strokeLinejoin='round';if(dash)el.style.strokeDasharray='5 4';}
+ function draw(row){clear();var name=row.getAttribute('data-target');var card=box.querySelector('.ent[data-ent="'+name+'"]');if(!card)return;var src=row.closest('.ent');
+  var B=box.getBoundingClientRect(),r=row.getBoundingClientRect(),sc=src.getBoundingClientRect(),t=card.getBoundingClientRect();
+  row.classList.add('hotrow');box.querySelectorAll('.ent').forEach(function(e){if(e!==card&&e!==src)e.classList.add('dim');});
+  var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;var cardTxt=(row.querySelector('.card')||{}).textContent||'';
+  var p=mk('path'),sx,sy,tx,ty,color;
+  if(card===src){card.classList.add('hot','hot-self');color='var(--purple)';sx=r.right-B.left;sy=(r.top+r.bottom)/2-B.top;
+   var cr=sc.right-B.left,ct=sc.top-B.top,cx=(sc.left+sc.right)/2-B.left;
+   p.setAttribute('d','M '+sx+' '+sy+' C '+(sx+52)+' '+sy+' '+(cr+34)+' '+(ct+4)+' '+cx+' '+ct);stroke(p,color,false);svg.appendChild(p);
+   var hd=mk('path');hd.setAttribute('d','M '+(cx-4.5)+' '+(ct-5)+' L '+cx+' '+ct+' L '+(cx+4.5)+' '+(ct-5));stroke(hd,color,false);svg.appendChild(hd);tx=cx;ty=ct;
+  }else{var down=t.top>r.bottom;color=down?'var(--rose)':'var(--accent)';card.classList.add('hot');if(down)card.classList.add('hot-cyc');
+   tx=(t.left+t.right)/2-B.left;ty=(down?t.top:t.bottom)-B.top;var scMid=(sc.left+sc.right)/2-B.left;var exitLeft=tx<=scMid;
+   sx=(exitLeft?r.left:r.right)-B.left;sy=(r.top+r.bottom)/2-B.top;var reach=Math.min(90,Math.max(34,Math.abs(tx-sx)*0.4));
+   p.setAttribute('d','M '+sx+' '+sy+' C '+(sx+(exitLeft?-reach:reach))+' '+sy+' '+tx+' '+((sy+ty)/2)+' '+tx+' '+ty);stroke(p,color,down);svg.appendChild(p);
+   var ah=down?-5:5;var h2=mk('path');h2.setAttribute('d','M '+(tx-4.5)+' '+(ty+ah)+' L '+tx+' '+ty+' L '+(tx+4.5)+' '+(ty+ah));stroke(h2,color,false);svg.appendChild(h2);}
+  if(cardTxt){var te=mk('text');te.setAttribute('x',(sx+tx)/2);te.setAttribute('y',(sy+ty)/2);te.setAttribute('text-anchor','middle');te.setAttribute('dominant-baseline','middle');te.textContent=cardTxt;te.style.fontFamily='var(--mono)';te.style.fontSize='10px';te.style.fill=color;te.style.paintOrder='stroke';te.style.stroke='var(--bg-inset)';te.style.strokeWidth='4px';svg.appendChild(te);}
+  if(!reduce){var len=p.getTotalLength();var wasDash=p.style.strokeDasharray;p.style.strokeDasharray=len;p.style.strokeDashoffset=len;p.getBoundingClientRect();p.style.transition='stroke-dashoffset .34s var(--ease)';p.style.strokeDashoffset=0;if(wasDash&&wasDash.indexOf('5 4')===0){setTimeout(function(){p.style.transition='none';p.style.strokeDasharray='5 4';p.style.strokeDashoffset=0;},360);}}}
+ box.querySelectorAll('.fld[data-target]').forEach(function(row){row.setAttribute('tabindex','0');
+  row.addEventListener('mouseenter',function(){draw(row);});row.addEventListener('mouseleave',clear);
+  row.addEventListener('focus',function(){draw(row);});row.addEventListener('blur',clear);});}
+document.querySelectorAll('.erd-l').forEach(initErd);})();
+</script>
+</body>
+</html>
