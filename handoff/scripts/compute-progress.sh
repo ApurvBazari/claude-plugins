@@ -51,10 +51,18 @@ snooze_remaining="not snoozed"
 if [[ -n "$deferred_at" ]]; then
   deferred_epoch="$(hf_iso_to_epoch "$deferred_at")"
   if [[ "$deferred_epoch" -gt 0 ]]; then
-    end_epoch=$(( deferred_epoch + snooze_hours * 3600 ))
-    if [[ "$now_epoch" -lt "$end_epoch" ]]; then
-      remaining=$(( (end_epoch - now_epoch) / 3600 ))
+    # Mirror the SessionStart hook's guard EXACTLY (handoff/hooks/session-start.sh):
+    # snooze holds ONLY within the window `0 <= elapsed < snooze_seconds`. A future
+    # deferred-at (elapsed<0) is NOT snoozed — the hook surfaces it — so the display
+    # must report will-surface, never "snoozed". Reporting "snoozed" for a future
+    # deferred-at is the snooze analog of the H6 display-vs-behavior disagreement.
+    snooze_seconds=$(( snooze_hours * 3600 ))
+    elapsed=$(( now_epoch - deferred_epoch ))
+    if [[ "$elapsed" -ge 0 && "$elapsed" -lt "$snooze_seconds" ]]; then
+      remaining=$(( (snooze_seconds - elapsed) / 3600 ))
       snooze_remaining="snoozed (${remaining}h remaining)"
+    elif [[ "$elapsed" -lt 0 ]]; then
+      snooze_remaining="will surface (deferred-at is in the future)"
     else
       snooze_remaining="snooze expired — will surface at next SessionStart"
     fi

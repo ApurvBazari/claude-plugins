@@ -46,4 +46,45 @@ assert_eq "2026-06-01T10:00:00Z" \
   "hf_get_fm_value ignores body decoy"
 
 cleanup
+
+# ---- Snooze-display parity: a FUTURE deferred-at (hook surfaces ⇒ display must agree) ----
+# The SessionStart hook SURFACES a future deferred-at (elapsed<0 is outside the snooze
+# window; test_hook_snooze.sh Case C pins the hook side). compute-progress's display MUST
+# agree: snooze_remaining must NOT say "snoozed" — it must report will-surface. Pre-fix
+# compute-progress reported "snoozed (Nh remaining)" for a future deferred-at (RED); after
+# mirroring the hook's `0 <= elapsed < snooze_seconds` guard it reports will-surface (GREEN).
+# This is the snooze analog of the H6 display-vs-behavior disagreement this branch fixes.
+iso() { # <seconds-offset-from-now> → ISO-8601 UTC
+  local off="$1"
+  if date -u -d "@$(( $(date +%s) + off ))" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null; then :; \
+  else date -u -r "$(( $(date +%s) + off ))" +%Y-%m-%dT%H:%M:%SZ; fi
+}
+
+FIXTURE_ROOT="$(setup_fake_project)"
+# saved 7d ago, deferred 72h in the FUTURE.
+write_active_handoff "$(iso -604800)" HEAD main "$FIXTURE_ROOT" "$(iso 259200)"
+
+# Hook side: surfaces (routes to /handoff:pickup) despite the future deferred-at.
+hook_out="$(CLAUDE_PLUGIN_ROOT="$REPO_ROOT/handoff" bash "$REPO_ROOT/handoff/hooks/session-start.sh" \
+  <<<"{\"cwd\":\"$FIXTURE_ROOT\"}" 2>/dev/null)"
+assert_contains "handoff:pickup" "$hook_out" \
+  "future deferred-at → hook surfaces (Case C parity)"
+
+# Display side: compute-progress must AGREE — never "snoozed" for a future deferred-at.
+eval "$(bash "$REPO_ROOT/handoff/scripts/compute-progress.sh" "$FIXTURE_ROOT")"
+# snooze_remaining is assigned dynamically by the eval'd stdout — SC2154 false positive.
+# shellcheck disable=SC2154
+if printf '%s' "$snooze_remaining" | grep -q -F -- "snoozed"; then
+  FAIL_COUNT=$((FAIL_COUNT + 1))
+  echo "  FAIL: compute-progress says \"snoozed\" for a future deferred-at (disagrees with the surfacing hook)"
+  echo "       snooze_remaining: $snooze_remaining"
+else
+  PASS_COUNT=$((PASS_COUNT + 1))
+  echo "  ok: compute-progress does NOT say \"snoozed\" for a future deferred-at (agrees with hook)"
+fi
+# ...and positively reports that it will surface.
+assert_contains "will surface" "$snooze_remaining" \
+  "future deferred-at → compute-progress reports will-surface"
+
+cleanup
 summary
