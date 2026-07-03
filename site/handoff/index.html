@@ -191,6 +191,10 @@ dialog.sheet::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
         <h4>Trust model</h4>
         <p>The SessionStart hook wraps directive content in <code>&lt;untrusted-source&gt;</code> tags. Routing instructions and metadata are trusted; the saved directive is data you review, not commands Claude runs automatically. The four-option <code>AskUserQuestion</code> ensures confirmation before any action.</p>
       </div>
+      <div class="callout">
+        <h4>Cowork</h4>
+        <p>The SessionStart hook is CLI-only — plugin-scoped hooks don't fire in Claude Cowork (it loads user-scoped settings only). A saved handoff won't surface automatically there; run <code>/handoff:pickup</code> manually to resume.</p>
+      </div>
     </section>
 
     <section id="skills">
