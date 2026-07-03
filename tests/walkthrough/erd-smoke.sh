@@ -24,10 +24,10 @@ if grep -vE 'data:image|feTurbulence' "$F" | grep -vE '^[[:space:]]*--' | grep -
 fi
 # inlined <script> must parse (skip gracefully if node absent)
 if command -v node >/dev/null 2>&1; then
-  TMP="$(mktemp -t erdjs.XXXXXX)"; TMP="$TMP.js"
-  awk '/<script>/{f=1;next} /<\/script>/{f=0} f' "$F" > "$TMP"
-  if [ -s "$TMP" ]; then node --check "$TMP" || { rm -f "$TMP"; fail "inlined <script> is not valid JS"; }; fi
-  rm -f "$TMP"
+  TMP="$(mktemp -t erdjs.XXXXXX)"; JS="$TMP.js"
+  awk '/<script>/{f=1;next} /<\/script>/{f=0} f' "$F" > "$JS"
+  if [ -s "$JS" ]; then node --check "$JS" || { rm -f "$TMP" "$JS"; fail "inlined <script> is not valid JS"; }; fi
+  rm -f "$TMP" "$JS"
 else
   echo "  (node absent — skipped node --check)"
 fi

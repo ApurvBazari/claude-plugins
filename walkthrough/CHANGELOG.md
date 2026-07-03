@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.3.0
+## 1.3.0 — 2026-07-03
 
 ### Added
 - **Layered, cycle-aware ERD.** The schema/data-model renderer now places entities in dependency-depth bands (referenced on top, junctions at the bottom), anchors each relationship on its FK field row (`→ Target.field · cardinality`), lists every edge in a relationship summary, and draws one connector on hover/focus. Handles cycles (mutual FKs → marked back-edge) and self-references (self-loop) via break-and-mark. Self-contained: no standing overlay, no resize/theme/print listeners.
