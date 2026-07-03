@@ -101,6 +101,8 @@ First-class additions in v1.2.0 (concept-coverage layer):
 - **Five new renderers** — decision tree + recursive tree + layer stack (`components/diagrams.md`),
   ERD (`components/data.md`), causal hypothesis ladder (`components/reasoning.md`).
 
+**v1.3.0** — the ERD (`components/data.md`) is rewritten as a dependency-layered, field-anchored, cycle-aware renderer; hover-connector JS lives in `interactivity.md`; layering algorithm in `authoring-guide.md` § 1.
+
 ## Detail surfaces
 
 Clicking an interactive node, card, or cross-link chip opens its detail through **one router**, `openSurface(id)`, which routes to one of two shells rendered from a single structured schema:
