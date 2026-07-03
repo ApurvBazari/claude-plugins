@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.0.2 — 2026-07-03
+
+### Fixed
+- Hook timeout was `3000` (read as 50 minutes; the unit is seconds) — now `10s` so a hung hook can't block session start. (H1)
+- `compute-progress.sh` mis-read frontmatter when the directive body contained a `---` horizontal rule (naive toggle parser); it now shares one correct reader with the hook and prune. (H2, H7)
+- `merge-fm-key.sh` silently no-op'd on a file with no frontmatter (a "Save for later" snooze could be lost with no error); it now exits non-zero with a message. (H3)
+- pickup **Edit** no longer tries to spawn `$EDITOR` (which hangs a non-interactive session) — it revises the directive conversationally, mirroring save. (H4)
+- `archive-retention: null` (and `-1`) now normalize to `unlimited` consistently across the check display and the prune behavior (they previously disagreed — check showed `10`, prune kept everything). (H6)
+- Hook: a future `deferred-at` no longer suppresses the handoff forever; the stale auto-archive note is only emitted when the archive move actually succeeds. (H9)
+
+### Changed
+- Frontmatter reading, body extraction, ISO parsing, and retention normalization consolidated into one shared `handoff/scripts/handoff-lib.sh`, sourced by the hook, `compute-progress.sh`, and `prune-archive.sh` (removes three divergent parser copies). (H7)
+
+### Removed
+- The `trigger-phrases` setting from the docs — it was never read by any code. The save skill auto-invokes via its skill `description`, not a configurable phrase list. (H5)
+
+### Tests
+- New: shared-lib unit tests, cross-script frontmatter agreement, retention agreement (check vs prune), hook snooze paths (incl. future-deferred), settings-override coverage; hooks.json timeout ceiling assertion.
+
 ## 1.0.1 — 2026-06-11
 - fix: quote ${CLAUDE_PLUGIN_ROOT} in the SessionStart hook command (OR-01 exit-127 guard).
 - fix: SK-04 save/pickup/discard descriptions; set -euo pipefail on merge-fm-key.sh; widen compute-progress.sh BSD-date fallback.
