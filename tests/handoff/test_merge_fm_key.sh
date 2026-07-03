@@ -113,4 +113,14 @@ else
   FAIL_COUNT=$((FAIL_COUNT + 1)); echo "  FAIL: expected non-zero exit on failed write, got 0"
 fi
 
+# H3: a file that exists but has NO frontmatter must fail loudly, not silently no-op.
+nofm="$(mktemp)"; printf 'just a body line\nno frontmatter here\n' > "$nofm"
+if bash "$REPO_ROOT/handoff/scripts/merge-fm-key.sh" "$nofm" deferred-at 2026-07-03T00:00:00Z 2>/dev/null; then
+  FAIL_COUNT=$((FAIL_COUNT+1)); echo "  FAIL: H3 merge on frontmatter-less file should exit non-zero"
+else
+  PASS_COUNT=$((PASS_COUNT+1)); echo "  ok: H3 merge on frontmatter-less file exits non-zero"
+fi
+assert_eq "0" "$(grep -c 'deferred-at' "$nofm")" "H3: no key written to frontmatter-less file"
+rm -f "$nofm"
+
 summary
