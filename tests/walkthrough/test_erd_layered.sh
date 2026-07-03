@@ -40,4 +40,14 @@ grep -qiE 'entities' "$SM" || fail "dataModel must document entities[]"
 grep -qiE 'cardinality' "$SM" || fail "dataModel fields must carry cardinality on ref"
 grep -qiE 'computed|synthesis|authoring-guide' "$SM" || fail "session-model must note layer/edgeKind are computed (not authored)"
 
+# --- authoring-guide.md: ERD layering + fidelity ---
+AG="$ROOT/walkthrough/skills/create/references/authoring-guide.md"
+[ -s "$AG" ] || fail "missing $AG"
+grep -qi 'ERD layering' "$AG" || fail "authoring-guide must document 'ERD layering'"
+grep -qiE 'longest-path|1 \+ max|max\(layer' "$AG" || fail "authoring-guide must give the longest-path rank rule"
+grep -qiE 'back-edge|back edge' "$AG" || fail "authoring-guide must specify back-edge removal"
+grep -qiE 'self-loop|self-reference' "$AG" || fail "authoring-guide must exclude self-loops from layering"
+grep -qiE 'neutral|ambiguous' "$AG" || fail "authoring-guide must specify neutral-label fallback"
+grep -qiE 'mark|never drop|not.*drop' "$AG" || fail "authoring-guide must require broken edges be marked, not dropped"
+
 echo "PASS: erd layered doc-contract"

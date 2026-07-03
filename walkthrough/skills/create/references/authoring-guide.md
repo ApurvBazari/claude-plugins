@@ -72,6 +72,16 @@ Notes on the choices:
   detail, `closeD` and Escape close the pane) and **theme toggle** (`tgl`) are part of the
   page-scaffold chrome and are always present. See §3.
 
+### ERD layering (synthesis-time, deterministic)
+
+1. Nodes = entities; edges = FK references `(source → target)`. Ignore `source == target` (self-loops) for layering.
+2. **Break cycles → DAG.** DFS the edge set; any edge to an ancestor on the current DFS stack is a **back-edge**. Mark/remove back-edges until acyclic; prefer removing the edge whose *source* is the more-dependent table (keeps the container/root as parent). Ties → declaration order (determinism).
+3. **Rank.** `layer(e)=0` if `e` has no remaining forward FK; else `layer(e)=1 + max(layer(target))`. Layer 0 renders on top; connectors flow upward (child→parent = 1→N).
+4. **Labels.** If every layer-0 entity is referenced-only and the deepest layer is a pure junction (≥2 FKs, referenced by none), label bands `referenced / core(-N) / junction`. If any layer's role is **ambiguous** (e.g. a cycle makes an entity both referenced and dependent), fall back to **neutral `Layer 0/1/2/…`** for the whole diagram.
+5. **Isolated** entities (no edges) go in a trailing `unrelated` band, never forced into a false relationship.
+
+**ERD fidelity (anti-force-fit):** the layering DAG must be acyclic **after back-edge removal**; every removed back-edge (`.ref.cyc`) and every self-loop (`.ref.self`) must be **visibly marked and rendered** — a schema whose cycles are silently omitted fails the self-check. (The ERD is exempt from the "no cycles in box-and-arrow maps" rule of self-check #18 — it handles cycles by break-and-mark rather than routing to a state diagram.)
+
 ## 2. Omit empty, never stub
 
 A component renders only if its model field has **real content**. A thin session may legitimately be
