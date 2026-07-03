@@ -79,3 +79,41 @@ addEventListener('scroll',()=>{const sc=scrollY/(document.body.scrollHeight-inne
 // initial bar animation for the shown tab
 setTimeout(()=>{const d=document.querySelector('.detail.show');if(d)animate(d);},300);
 ```
+
+### ERD schema wires — hover/focus a FK row draws ONE connector (up=parent/accent, down=back-edge/rose dashed, self=loop/purple), cleared on blur. Container-scoped; no standing overlay ⇒ no resize/theme/print listeners.
+
+```html
+<script>
+(function(){var NS='http://www.w3.org/2000/svg';function mk(t){return document.createElementNS(NS,t);}
+function initErd(box){var svg=box.querySelector('.erd-wires');if(!svg)return;
+ function clear(){while(svg.firstChild)svg.removeChild(svg.firstChild);
+  box.querySelectorAll('.hot').forEach(function(e){e.classList.remove('hot','hot-self','hot-cyc');});
+  box.querySelectorAll('.hotrow').forEach(function(e){e.classList.remove('hotrow');});
+  box.querySelectorAll('.dim').forEach(function(e){e.classList.remove('dim');});}
+ function stroke(el,c,dash){el.style.fill='none';el.style.stroke=c;el.style.strokeWidth='1.9';el.style.strokeLinecap='round';el.style.strokeLinejoin='round';if(dash)el.style.strokeDasharray='5 4';}
+ function draw(row){clear();var name=row.getAttribute('data-target');var card=box.querySelector('.ent[data-ent="'+name+'"]');if(!card)return;var src=row.closest('.ent');
+  var B=box.getBoundingClientRect(),r=row.getBoundingClientRect(),sc=src.getBoundingClientRect(),t=card.getBoundingClientRect();
+  row.classList.add('hotrow');box.querySelectorAll('.ent').forEach(function(e){if(e!==card&&e!==src)e.classList.add('dim');});
+  var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;var cardTxt=(row.querySelector('.card')||{}).textContent||'';
+  var p=mk('path'),sx,sy,tx,ty,color;
+  if(card===src){card.classList.add('hot','hot-self');color='var(--purple)';sx=r.right-B.left;sy=(r.top+r.bottom)/2-B.top;
+   var cr=sc.right-B.left,ct=sc.top-B.top,cx=(sc.left+sc.right)/2-B.left;
+   p.setAttribute('d','M '+sx+' '+sy+' C '+(sx+52)+' '+sy+' '+(cr+34)+' '+(ct+4)+' '+cx+' '+ct);stroke(p,color,false);svg.appendChild(p);
+   var hd=mk('path');hd.setAttribute('d','M '+(cx-4.5)+' '+(ct-5)+' L '+cx+' '+ct+' L '+(cx+4.5)+' '+(ct-5));stroke(hd,color,false);svg.appendChild(hd);tx=cx;ty=ct;
+  }else{var down=t.top>r.bottom;color=down?'var(--rose)':'var(--accent)';card.classList.add('hot');if(down)card.classList.add('hot-cyc');
+   tx=(t.left+t.right)/2-B.left;ty=(down?t.top:t.bottom)-B.top;var scMid=(sc.left+sc.right)/2-B.left;var exitLeft=tx<=scMid;
+   sx=(exitLeft?r.left:r.right)-B.left;sy=(r.top+r.bottom)/2-B.top;var reach=Math.min(90,Math.max(34,Math.abs(tx-sx)*0.4));
+   p.setAttribute('d','M '+sx+' '+sy+' C '+(sx+(exitLeft?-reach:reach))+' '+sy+' '+tx+' '+((sy+ty)/2)+' '+tx+' '+ty);stroke(p,color,down);svg.appendChild(p);
+   var ah=down?-5:5;var h2=mk('path');h2.setAttribute('d','M '+(tx-4.5)+' '+(ty+ah)+' L '+tx+' '+ty+' L '+(tx+4.5)+' '+(ty+ah));stroke(h2,color,false);svg.appendChild(h2);}
+  if(cardTxt){var te=mk('text');te.setAttribute('x',(sx+tx)/2);te.setAttribute('y',(sy+ty)/2);te.setAttribute('text-anchor','middle');te.setAttribute('dominant-baseline','middle');te.textContent=cardTxt;te.style.fontFamily='var(--mono)';te.style.fontSize='10px';te.style.fill=color;te.style.paintOrder='stroke';te.style.stroke='var(--bg-inset)';te.style.strokeWidth='4px';svg.appendChild(te);}
+  if(!reduce){var len=p.getTotalLength();var wasDash=p.style.strokeDasharray;p.style.strokeDasharray=len;p.style.strokeDashoffset=len;p.getBoundingClientRect();p.style.transition='stroke-dashoffset .34s var(--ease)';p.style.strokeDashoffset=0;if(wasDash&&wasDash.indexOf('5 4')===0){setTimeout(function(){p.style.transition='none';p.style.strokeDasharray='5 4';p.style.strokeDashoffset=0;},360);}}}
+ box.querySelectorAll('.fld[data-target]').forEach(function(row){row.setAttribute('tabindex','0');
+  row.addEventListener('mouseenter',function(){draw(row);});row.addEventListener('mouseleave',clear);
+  row.addEventListener('focus',function(){draw(row);});row.addEventListener('blur',clear);});}
+document.querySelectorAll('.erd-l').forEach(initErd);})();
+</script>
+```
+
+**Why no resize/theme/print listeners:** the connector exists only during an active hover/focus and is
+recomputed from live `getBoundingClientRect` each time, so a layout change between hovers is irrelevant —
+there is no standing line to keep in sync. This is precisely why the hybrid ERD stays self-contained.

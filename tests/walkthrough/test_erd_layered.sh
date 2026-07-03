@@ -20,4 +20,16 @@ grep -qi 'back-compat\|alias\|\.erd\b' "$DATA" || fail "data.md must keep .erd a
 # tokens-only in the recipe: no raw 6-hex, no rgba color literals (color-mix only) except the card shadow
 if grep -vE '^[[:space:]]*--|data:image' "$DATA" | grep -Eq '#[0-9a-fA-F]{6}'; then fail "data.md ERD recipe has raw hex — tokens only"; fi
 
+# --- interactivity.md: hover-connector ---
+JS="$ROOT/walkthrough/skills/create/references/interactivity.md"
+[ -s "$JS" ] || fail "missing $JS"
+grep -q 'erd-wires' "$JS"    || fail "interactivity.md must query svg.erd-wires"
+grep -q "querySelectorAll('.erd-l')" "$JS" || fail "interactivity.md must iterate .erd-l containers"
+grep -q 'data-target' "$JS"  || fail "interactivity.md must bind .fld[data-target] rows"
+grep -qi 'getBoundingClientRect' "$JS" || fail "interactivity.md must position via getBoundingClientRect"
+grep -qi 'prefers-reduced-motion' "$JS" || fail "interactivity.md must gate the draw-in on reduced-motion"
+grep -qiE 'mouseenter|focus' "$JS" || fail "interactivity.md must draw on hover/focus"
+# shellcheck disable=SC2015  # A && B || fail: fail runs when A(present) or B(no-resize) is false — intended
+grep -q 'addEventListener' "$JS" && ! grep -qi "addEventListener('resize'" "$JS" || fail "no resize listener needed (transient line only)"
+
 echo "PASS: erd layered doc-contract"
