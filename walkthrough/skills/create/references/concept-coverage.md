@@ -18,7 +18,7 @@ gets a new ⚠️/❌ row pointing at a bespoke recipe — so the "what to add n
 | | `nonlinear-system` | services/layers connected free-form | ✅ | architecture map |
 | | `module-dependency` | import/uses edges, shared leaves (a DAG) | ✅ | dependency graph |
 | | `branching-logic` | labeled yes/no/condition edges, a tree, no cycles | ✅ | decision-tree |
-| | `data-model` | entities with field lists, edges carry cardinality (1:N, N:M) | ✅ | erd |
+| | `data-model` | entities with field lists; FK edges carry cardinality (1:N, N:M); rendered as a layered ERD — entities in dependency-depth bands, field-anchored FK refs, cycles broken+marked | ✅ | erd |
 | | `hierarchy` | strict one-parent containment, n levels | ✅ | htree |
 | | `layering` | ordered vertical bands, each touches only neighbors | ✅ | lstack |
 | Behavior | `state-machine` | states with cyclic / back-edge / self-loop / guarded transitions | ✅ | state diagram |
@@ -55,7 +55,11 @@ beats tree → `branching-logic`):
 - **`hierarchy` vs `module-dependency`** — **strict one-parent containment** over n levels → `hierarchy`
   (htree). **import/uses edges with shared leaves** (a node has >1 parent) → `module-dependency` (dep graph).
 - **`data-model` vs `nonlinear-system`** — nodes are **entities with field lists** and edges carry
-  **cardinality** → `data-model` (erd). Otherwise → `nonlinear-system` (architecture map).
+  **cardinality** → `data-model` (erd). Otherwise → `nonlinear-system` (architecture map). The ERD is
+  **layered / cycle-aware**: entities sort into dependency-depth bands and mutual-FK cycles /
+  self-references render **broken-and-marked** (`.ref.cyc`/`.ref.self`), so an FK cycle stays a
+  `data-model` (erd) — it does **not** promote to `state-machine`; the "cycle → `state-machine`" rule
+  above is for behavioral / transition graphs, not FK graphs among entities-with-cardinality.
 - **`layering` vs `nonlinear-system`** — **ordered vertical bands**, each layer touches only its
   neighbors → `layering` (lstack). **Free-form** connections → `nonlinear-system`.
 - **`causal-chain` vs `linear-process`** — nodes carry **ruled-in/ruled-out evidence** semantics →

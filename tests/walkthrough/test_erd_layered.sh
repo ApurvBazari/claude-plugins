@@ -50,4 +50,14 @@ grep -qiE 'self-loop|self-reference' "$AG" || fail "authoring-guide must exclude
 grep -qiE 'neutral|ambiguous' "$AG" || fail "authoring-guide must specify neutral-label fallback"
 grep -qiE 'mark|never drop|not.*drop' "$AG" || fail "authoring-guide must require broken edges be marked, not dropped"
 
+# --- self-check.md + concept-coverage.md ---
+SC="$ROOT/walkthrough/skills/create/references/self-check.md"
+CC="$ROOT/walkthrough/skills/create/references/concept-coverage.md"
+[ -s "$SC" ] || fail "missing $SC"
+[ -s "$CC" ] || fail "missing $CC"
+grep -qiE 'ERD.*(exempt|except)|except the ERD|ERD is exempt' "$SC" || fail "self-check #18 must carve out the ERD"
+grep -qiE 'erd-l|ERD' "$SC" || fail "self-check ledger must list the layered ERD structural class"
+grep -qiE 'back-edge|self-loop' "$SC" || fail "self-check must assert back-edges/self-loops are marked"
+grep -qi 'layer' "$CC" || fail "concept-coverage data-model row must mention layering"
+
 echo "PASS: erd layered doc-contract"
