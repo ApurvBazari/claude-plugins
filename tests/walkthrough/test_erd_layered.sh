@@ -32,4 +32,12 @@ grep -qiE 'mouseenter|focus' "$JS" || fail "interactivity.md must draw on hover/
 # shellcheck disable=SC2015  # A && B || fail: fail runs when A(present) or B(no-resize) is false — intended
 grep -q 'addEventListener' "$JS" && ! grep -qi "addEventListener('resize'" "$JS" || fail "no resize listener needed (transient line only)"
 
+# --- session-model.md: dataModel ---
+SM="$ROOT/walkthrough/skills/create/references/session-model.md"
+[ -s "$SM" ] || fail "missing $SM"
+grep -q 'dataModel' "$SM" || fail "session-model must document the dataModel field"
+grep -qiE 'entities' "$SM" || fail "dataModel must document entities[]"
+grep -qiE 'cardinality' "$SM" || fail "dataModel fields must carry cardinality on ref"
+grep -qiE 'computed|synthesis|authoring-guide' "$SM" || fail "session-model must note layer/edgeKind are computed (not authored)"
+
 echo "PASS: erd layered doc-contract"

@@ -55,6 +55,21 @@ exact keys `authoring-guide.md` keys its mapping table off of — do not rename 
   "nodes": [ { "id": "...", "label": "...", "kind": "component|step|concept|state|actor" } ], // → diagram nodes
   "edges": [ { "from": "<id>", "to": "<id>", "label": "", "guard": "", "seq": 0 } ], // guard → state-edge condition; seq → sequence order
 
+  // dataModel → the layered ERD (components/data.md). A relational schema is its OWN shape, not
+  // nodes[]/edges[]: entities with typed fields, keyed rows, and FK refs that carry a cardinality.
+  "dataModel": {                 // populated ONLY for schema/ERD sessions; omit otherwise
+    "entities": [
+      { "id": "user", "name": "User", "fields": [
+        { "name": "id", "type": "uuid", "key": "pk" },
+        { "name": "email", "type": "text" },
+        { "name": "manager_id", "key": "fk",
+          "ref": { "entity": "user", "field": "id", "cardinality": "N:1" } } ] }
+      // …
+    ]
+    // layer, edgeKind (forward|self|back), band role/neutral labels and placement are
+    // COMPUTED at synthesis per authoring-guide.md § "ERD layering" — never hand-authored.
+  },
+
   // decisions[] → Tabs + tradeoff bars WHEN tradeoffs[] carry scored axes (bars use data-w);
   // with no scores, fall back to the Accordion checklist (one <details> per decision).
   "decisions": [
@@ -128,6 +143,8 @@ exact keys `authoring-guide.md` keys its mapping table off of — do not rename 
 A detail with `components`, `code`, or a long `summary`+`points` is inferred `sheet`; otherwise it is inferred `pane`. An explicit `surface` field overrides the inference in either direction. See `authoring-guide.md` § 3 for the full inference rule. Nesting depth and acyclicity rules for nested surfaces are spelled out in the **Nesting** note below.
 
 **Nesting.** A sheet's hosted `components[]` may contain nodes that reference other `details{}` ids via `openSurface`, so one detail can open another. Two hard limits keep this bounded: the reference graph must be **acyclic** — a detail must never transitively open itself (an `A → B → A` chain is a build failure) — and the open depth is capped at **3** (a 4th nested open replaces the topmost surface rather than deepening). Author chains deeper than 3 are flattened at synthesis time. The self-check enforces both the acyclic and depth-≤-3 rules.
+
+Each entity `id` is also its `openSurface` target and its ERD `data-ent`; keep the `details{}` cross-link graph acyclic even when the FK graph cycles.
 
 ## Part B — Worked example: "Adding the HDFC SMS parser"
 
