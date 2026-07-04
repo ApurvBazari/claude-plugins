@@ -69,6 +69,7 @@ Present a structured report (markdown table, single block):
 The bottom line answers the most useful question. Logic:
 
 - **No** if snooze is active: "snoozed for `<n>h` more"
+- **No — auto-archived** if `days_old >= stale-day-threshold`: the next SessionStart moves the file to `archive/expired-<ts>.md` and surfaces a one-line note, not a pickup prompt (a hard cap — evaluated before the progress tags below)
 - **No** if file moved to expired/consumed/discarded: shouldn't happen if we're in this branch, but defensive
 - **Yes, with `progress-made` tag** if `commits_past >= stale-commit-threshold` or branch changed
 - **Yes** otherwise

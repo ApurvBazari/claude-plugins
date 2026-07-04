@@ -10,48 +10,26 @@
 
 set -uo pipefail
 
+# shellcheck source=/dev/null
+. "$(dirname "${BASH_SOURCE[0]}")/handoff-lib.sh"
+
 PROJECT_ROOT="${1:-$(pwd)}"
 ACTIVE_FILE="$PROJECT_ROOT/.claude/handoff/active.md"
 SETTINGS_FILE="$PROJECT_ROOT/.claude/handoff/settings.md"
 ARCHIVE_DIR="$PROJECT_ROOT/.claude/handoff/archive"
 
-# Extract a value from YAML frontmatter (between the first --- pair).
-fm_get() {
-  local file="$1" key="$2"
-  [[ -f "$file" ]] || { echo ""; return 0; }
-  awk -v key="$key" '
-    /^---/ { fm=!fm; next }
-    fm && $0 ~ "^" key ":" {
-      sub("^" key ":[[:space:]]*", "")
-      gsub(/^["'\''"]|["'\''"]$/, "")
-      print
-      exit
-    }
-  ' "$file"
-}
+saved_at="$(hf_get_fm_value "$ACTIVE_FILE" 'saved-at')"
+saved_at_sha="$(hf_get_fm_value "$ACTIVE_FILE" 'saved-at-sha')"
+saved_from_cwd="$(hf_get_fm_value "$ACTIVE_FILE" 'saved-from-cwd')"
+deferred_at="$(hf_get_fm_value "$ACTIVE_FILE" 'deferred-at')"
 
-# Parse ISO 8601 → epoch seconds. Try GNU date first, then BSD date.
-iso_to_epoch() {
-  local iso="$1"
-  [[ "$iso" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2} ]] || { echo 0; return; }
-  date -d "$iso" +%s 2>/dev/null \
-    || date -j -f "%Y-%m-%dT%H:%M:%S%z" "$iso" +%s 2>/dev/null \
-    || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$iso" +%s 2>/dev/null \
-    || echo 0
-}
-
-saved_at="$(fm_get "$ACTIVE_FILE" 'saved-at')"
-saved_at_sha="$(fm_get "$ACTIVE_FILE" 'saved-at-sha')"
-saved_from_cwd="$(fm_get "$ACTIVE_FILE" 'saved-from-cwd')"
-deferred_at="$(fm_get "$ACTIVE_FILE" 'deferred-at')"
-
-snooze_hours="$(fm_get "$SETTINGS_FILE" 'deferral-snooze-hours')"
+snooze_hours="$(hf_get_fm_value "$SETTINGS_FILE" 'deferral-snooze-hours')"
 [[ -z "$snooze_hours" ]] && snooze_hours=24
 
 now_epoch="$(date +%s)"
 days_old="unknown"
 if [[ -n "$saved_at" ]]; then
-  saved_epoch="$(iso_to_epoch "$saved_at")"
+  saved_epoch="$(hf_iso_to_epoch "$saved_at")"
   if [[ "$saved_epoch" -gt 0 ]]; then
     days_old=$(( (now_epoch - saved_epoch) / 86400 ))
   fi
@@ -71,12 +49,20 @@ cwd_match="mismatch"
 
 snooze_remaining="not snoozed"
 if [[ -n "$deferred_at" ]]; then
-  deferred_epoch="$(iso_to_epoch "$deferred_at")"
+  deferred_epoch="$(hf_iso_to_epoch "$deferred_at")"
   if [[ "$deferred_epoch" -gt 0 ]]; then
-    end_epoch=$(( deferred_epoch + snooze_hours * 3600 ))
-    if [[ "$now_epoch" -lt "$end_epoch" ]]; then
-      remaining=$(( (end_epoch - now_epoch) / 3600 ))
+    # Mirror the SessionStart hook's guard EXACTLY (handoff/hooks/session-start.sh):
+    # snooze holds ONLY within the window `0 <= elapsed < snooze_seconds`. A future
+    # deferred-at (elapsed<0) is NOT snoozed — the hook surfaces it — so the display
+    # must report will-surface, never "snoozed". Reporting "snoozed" for a future
+    # deferred-at is the snooze analog of the H6 display-vs-behavior disagreement.
+    snooze_seconds=$(( snooze_hours * 3600 ))
+    elapsed=$(( now_epoch - deferred_epoch ))
+    if [[ "$elapsed" -ge 0 && "$elapsed" -lt "$snooze_seconds" ]]; then
+      remaining=$(( (snooze_seconds - elapsed) / 3600 ))
       snooze_remaining="snoozed (${remaining}h remaining)"
+    elif [[ "$elapsed" -lt 0 ]]; then
+      snooze_remaining="will surface (deferred-at is in the future)"
     else
       snooze_remaining="snooze expired — will surface at next SessionStart"
     fi
@@ -88,15 +74,11 @@ if [[ -d "$ARCHIVE_DIR" ]]; then
   archive_count="$(find "$ARCHIVE_DIR" -name '*.md' 2>/dev/null | wc -l | tr -d ' ')"
 fi
 
-retention_value="$(fm_get "$SETTINGS_FILE" 'archive-retention')"
-# Enforce the documented contract (positive integer | 0 | -1 | "unlimited").
-# Anything else — including shell metacharacters from a hostile settings.md
-# — collapses to the default of 10.
-case "$retention_value" in
-  unlimited|-1) ;;
-  ''|*[!0-9]*)  retention_value=10 ;;
-  *) ;;
-esac
+# Normalize to the canonical form both this script (display) and prune-archive
+# (behavior) agree on (audit H6): `unlimited` | non-negative int | `10` (default).
+# hf_normalize_retention also collapses shell metacharacters from a hostile
+# settings.md to `10`, preserving the eval-safety contract below.
+retention_value="$(hf_normalize_retention "$(hf_get_fm_value "$SETTINGS_FILE" 'archive-retention')")"
 
 # Eval-safe output: every value is emitted via `printf '%q'`, which produces
 # a bash-quoted form that survives `eval` without expansion. Combined with

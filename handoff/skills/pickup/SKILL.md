@@ -63,7 +63,7 @@ If cwds match, skip this step entirely.
 Ask via AskUserQuestion (single-select, 4 options):
 
 - **Execute** *(Recommended when directive still applies)* — "I'll act on the directive in this session. The handoff is archived afterwards."
-- **Edit** — "Open the handoff in your `$EDITOR` first so you can revise the directive, then re-present this prompt."
+- **Edit** — "Tell me what to change in the directive; I'll revise it in place, then re-present this prompt."
 - **Discard** — "Archive without acting. Use this if the work is no longer relevant."
 - **Save for later** — "Leave the file in place but snooze re-surface for the configured window (default 24h). Useful if you want to handle this next session, not this one."
 
@@ -83,9 +83,9 @@ Ask via AskUserQuestion (single-select, 4 options):
 
 ### Edit
 
-1. Open `.claude/handoff/active.md` in the user's `$EDITOR` via Bash. If `$EDITOR` is unset, tell the user to edit the file directly and come back when done.
-2. After the editor exits, re-read the file from disk.
-3. Go back to **Step 2** and re-present. The flow repeats until the user picks Execute / Discard / Save for later.
+1. Ask the user what they want to change (conversationally — do NOT spawn an interactive editor; a non-interactive Bash editor launch hangs the session). Accept either specific edits ("drop the launch step", "change the branch to X") or a full replacement directive.
+2. Apply the revision to `.claude/handoff/active.md` with the Edit tool, preserving the frontmatter block unchanged and rewriting only the body (or the specific lines named). Never touch the `---` frontmatter fields here.
+3. Re-read the file from disk, then go back to **Step 2** and re-present. The flow repeats until the user picks Execute / Discard / Save for later.
 
 ### Discard
 
@@ -124,5 +124,6 @@ After dispatching, tell the user (one line):
 - **Directive is guidance, not commands** — on Execute, you apply judgment to the directive; you don't mechanically run statements as if they were a script.
 - **Archive timestamps use `YYYYMMDDTHHMMSS`** (no separators, no timezone — local time is fine since these are local archive markers).
 - **Save-for-later updates `deferred-at` in place** — do not write a separate state file; the frontmatter is the state.
+- **Edit is conversational, never an editor spawn** — spawning an interactive editor from non-interactive Bash hangs the session; revise the directive body in place with the Edit tool (frontmatter stays untouched), mirroring the save skill's gate.
 - **AskUserQuestion guard**: both calls (cwd-guard 2-option, dispatch 4-option) have static option lists. No dynamic single-option risk.
 - **Never auto-Execute.** Even when the directive looks safe and obvious, the four-option AskUserQuestion is the contract.
