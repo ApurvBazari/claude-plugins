@@ -2,10 +2,7 @@
 
 ## Platform Support
 
-| Platform | Backend | Sound Control | Click-to-Focus |
-|----------|---------|---------------|----------------|
-| macOS | `terminal-notifier` | Full (14 sounds) | Yes (bundle ID) |
-| Linux | `notify-send` (libnotify) | No (urgency levels only) | No |
+See `notify/CLAUDE.md` § Platform Support for the canonical backend/sound/click-to-focus matrix. This reference covers only the sound and matcher option values below.
 
 ## macOS Sounds
 
