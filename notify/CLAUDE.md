@@ -24,7 +24,7 @@ Three notification events, each independently configurable:
 Each `stop`/`subagentStop` event supports `minDurationSeconds` as a **leading-edge cooldown** — at most one notification per `N` seconds:
 - When a notification fires, the cooldown clock is stamped (a temp file keyed per session: `$TMPDIR/claude-notify-session-<id>`, or `claude-notify-uid-<uid>` when no session id is present)
 - A subsequent `stop`/`subagentStop` within `N` seconds of the last fired notification is silently skipped; suppressed events do NOT refresh the clock (leading-edge — see spec 2026-07-02 §6a)
-- `notification` events are never cooldown-filtered (attention prompts always fire)
+- `notification` events are never cooldown-*filtered* (attention prompts always fire) — but a fired `notification` still *refreshes* the shared per-session clock, so it can debounce a `stop`/`subagentStop` that lands within `N` seconds. "At most one notification per `N` seconds" counts every fired alert, whatever its event type
 - Default `0` means no cooldown
 
 ## Config Resolution
