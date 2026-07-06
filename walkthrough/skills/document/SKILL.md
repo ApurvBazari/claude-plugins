@@ -52,8 +52,10 @@ nav logo and a `— walkthrough` `<title>` suffix). Replace it with the subject'
 `◆ claude-plugins`). Never leave the literal `walkthrough` session branding on a subject page.
 
 ## Step 7: Output path
-If a second argument (output path) is given, write there. Otherwise default to
-`.claude/walkthrough/<YYYY-MM-DD-HHMM>-<slug>.html` (`slug` = kebab of the title; collisions → `-2`,
+If a second argument (output path) is given, write there. Otherwise resolve `<base>` first (same as
+`create` Step 6.5): if a `settings.md` with `output-location:` exists in `walkthroughs/` (visible) or
+`.claude/walkthrough/` (hidden), use that base; else default to `.claude/walkthrough/`. Then default to
+`<base>/<YYYY-MM-DD-HHMM>-<slug>.html` (`slug` = kebab of the title; collisions → `-2`,
 `-3`, …). For the site convention, the caller passes `site/<plugin>/index.html` (or
 `site/index.html` for the marketplace). Create parent directories if missing.
 

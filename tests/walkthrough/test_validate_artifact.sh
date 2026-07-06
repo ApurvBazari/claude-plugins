@@ -159,4 +159,17 @@ RV="$ROOT/walkthrough/skills/create/references/components/review.md"
 tr -d '`' < "$RV" | grep -niE 'DET sheet|a DET (sheet )?entry|also a DET' && fail "review.md still claims findings are DET sheets (W4)"
 ok "W4: no doc claims sheet-kind in DET"
 
+# --- W5: update + document honor the persisted output base ---
+# create Step 6.5 persists output-location: in <base>/settings.md; update/document must resolve
+# <base> the same way, not hardcode .claude/walkthrough/ (blind to a Cowork-visible walkthroughs/ base).
+UP="$ROOT/walkthrough/skills/update/SKILL.md"
+DC="$ROOT/walkthrough/skills/document/SKILL.md"
+grep -q 'settings.md' "$UP" || fail "update must resolve the persisted base from settings.md (W5)"
+# Strengthening: 'settings.md' alone is WEAK — update already names .claude/walkthrough/settings.md for
+# the gitignore choice, so the line above passes even at base. Gate the actual Step-1 base resolution on
+# the <base> token, which is absent from update's Step 1 at base and only introduced by the W5 edit.
+grep -q '<base>' "$UP" || fail "update Step 1 must resolve/list <base>, not a hardcoded .claude/walkthrough (W5)"
+grep -qiE 'settings.md|persisted base|walkthroughs/' "$DC" || fail "document must honor the persisted base (W5)"
+ok "W5: update+document resolve the persisted base"
+
 echo "PASS test_validate_artifact.sh (Task 1 slice)"
