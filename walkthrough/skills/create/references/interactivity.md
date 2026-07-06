@@ -1,10 +1,14 @@
 # Interactivity — shared JS bundle
 
-This is the shared JS bundle, always inlined into the scaffold's `{{INTERACTIVITY_JS}}` slot. All handlers are guarded so missing elements never throw; all state is namespaced inside this one `<script>`. Unused handlers (e.g. `setTab` when there are no tabs) are harmless no-ops.
+This is the shared JS bundle, always inlined into the scaffold's `{{INTERACTIVITY_JS}}` slot. Its first act is the progressive-enhancement gate: it adds `html.js` (which reveals the JS-gated interactive state) and then loads the detail store by `JSON.parse`-ing the inert `<script type="application/json" id="wt-data">` island into `DET` and `SURF` — the data is no longer emitted as `const DET={…}`/`const SURF={…}` literals in this script, so a data-parse failure is caught and degrades to empty objects rather than killing the whole bundle. All handlers are guarded so missing elements never throw; all state is namespaced inside this one `<script>`. Unused handlers (e.g. `setTab` when there are no tabs) are harmless no-ops.
 
 ### Detail surfaces — `renderSurface` builds the structured DOM; `openSurface` routes via `SURF` to the pane (`openPane`) or a native `<dialog>` (sheet, or the shared `paneDialog` for a pane opened inside a sheet), stacked in the top layer via the shared `_capPush`; `openCard` opens from a card's `data-id`; `openD` is a deprecated alias; native Escape closes the topmost dialog, the manual handler closes the pane only when no dialog is open; backdrop-click closes a dialog
 
 ```js
+// progressive-enhancement gate + inert-data load (must be first)
+document.documentElement.classList.add('js');
+const _WT=(()=>{try{return JSON.parse(document.getElementById('wt-data').textContent||'{}');}catch(e){return{};}})();
+const DET=_WT.DET||{}, SURF=_WT.SURF||{};
 // renderSurface — build a structured detail DOM from a DET record into `host`
 function renderSurface(d,host){if(!d||!host)return;let h='';
  if(d.h)h+=`<h3 class="sf-h">${d.h}</h3>`;
@@ -68,6 +72,8 @@ function tgl(){const h=document.documentElement;const t=h.getAttribute('data-the
 // reveal + progress + animate-on-view
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vis');const d=e.target.querySelector('.detail.show');if(d)animate(d);}}),{threshold:.1});
 document.querySelectorAll('section').forEach(s=>io.observe(s));
+// failsafe: if the IO never fires (runtime error, detached observer), reveal everything after 2.5s
+setTimeout(()=>document.querySelectorAll('section').forEach(s=>s.classList.add('vis')),2500);
 addEventListener('scroll',()=>{const sc=scrollY/(document.body.scrollHeight-innerHeight)*100;if(prog)prog.style.width=sc+'%';
  let cur='';document.querySelectorAll('section[id]').forEach(s=>{if(scrollY>=s.offsetTop-120)cur=s.id;});
  document.querySelectorAll('.nav-links a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+cur));},{passive:true});

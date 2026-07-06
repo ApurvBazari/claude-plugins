@@ -17,4 +17,13 @@ grep -q 'html.js section' "$PS"                       || fail "scaffold must gat
 ! grep -q '{{SURFACE_MAP}}' "$PS"                     || fail "scaffold must retire the {{SURFACE_MAP}} slot"
 ok "page-scaffold: three-block + json-data island + html.js gate"
 
+# --- Task 2: interactivity js-gate + JSON.parse(DET/SURF) + failsafe ---
+IJ="$ROOT/walkthrough/skills/create/references/interactivity.md"
+[ -s "$IJ" ] || fail "missing $IJ"
+grep -q "classList.add('js')" "$IJ"        || fail "interactivity must add the html.js class as its first act"
+grep -q "getElementById('wt-data')" "$IJ"  || fail "interactivity must read the #wt-data island"
+grep -q 'JSON.parse' "$IJ"                 || fail "interactivity must JSON.parse the data island"
+grep -qE "add\('vis'\)\),?2500|2500\)" "$IJ" || fail "interactivity must have the 2.5s failsafe reveal timer"
+ok "interactivity: js-gate + JSON.parse(DET/SURF) + failsafe"
+
 echo "PASS test_validate_artifact.sh (Task 1 slice)"
