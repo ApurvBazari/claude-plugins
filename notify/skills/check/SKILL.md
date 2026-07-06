@@ -20,14 +20,20 @@ If both exist, run checks for each scope separately, labeled accordingly. If nei
 
 ## Checks
 
-Run through each check per discovered scope. The terminal-notifier check is shared (run once).
+Run through each check per discovered scope. The notifier backend check is shared (run once).
 
-### 1. terminal-notifier (shared)
+### 1. Notifier backend (shared)
 
-Run `which terminal-notifier` via Bash.
+Detect the platform first with `uname -s`, then check the matching backend:
 
-- **Pass**: `terminal-notifier` found at [path]
-- **Fail**: `terminal-notifier` is not installed. Run `/notify:setup` to install it.
+- **macOS (`Darwin`)** — run `command -v terminal-notifier`.
+  - **Pass**: `terminal-notifier` found at [path]
+  - **Fail**: `terminal-notifier` is not installed. Run `/notify:setup` to install it.
+- **Linux** — run `command -v notify-send`.
+  - **Pass**: `notify-send` found at [path]
+  - **Fail**: `notify-send` is not installed. Install `libnotify` (e.g. `apt install libnotify-bin`) or run `/notify:setup` for distro-specific instructions.
+
+On Linux, note that sounds map to urgency levels and click-to-focus is unavailable.
 
 ### 2. Notification Script
 
@@ -74,7 +80,7 @@ Present a summary. When both scopes are active, include a Scope column:
 > **Health Check Results:**
 > | Component | Status |
 > |-----------|--------|
-> | terminal-notifier | Pass/Fail |
+> | notifier backend | Pass/Fail |
 > | notify.sh | Pass/Fail |
 > | Hook config | Pass/Fail |
 > | notify-config.json | Pass/Fail |
@@ -83,7 +89,7 @@ Present a summary. When both scopes are active, include a Scope column:
 > **Health Check Results:**
 > | Component | Scope | Status |
 > |-----------|-------|--------|
-> | terminal-notifier | Shared | Pass/Fail |
+> | notifier backend | Shared | Pass/Fail |
 > | notify.sh | Global | Pass/Fail |
 > | notify.sh | Project | Pass/Fail |
 > | Hook config | Global | Pass/Fail |
