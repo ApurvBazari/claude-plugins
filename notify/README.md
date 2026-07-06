@@ -50,7 +50,7 @@ Three notification events, each independently configurable:
 
 | Event | When | Default |
 |---|---|---|
-| `stop` | Claude finishes a response | Enabled · `Hero` sound · `minDurationSeconds: 30` |
+| `stop` | Claude finishes a response | Enabled · `Hero` sound · `minDurationSeconds: 0` (no cooldown) |
 | `notification` | Claude needs user attention | Enabled · `Glass` sound · `minDurationSeconds: 0` |
 | `subagentStop` | A subagent finishes work | Disabled (too noisy) |
 
@@ -58,7 +58,7 @@ Notification content is extracted from Claude's actual last message — not gene
 
 ## Example
 
-`/notify:setup` on macOS, then a Stop hook firing in two scenarios — one suppressed by the duration filter, one delivered:
+`/notify:setup` on macOS with a `30`-second cooldown set on `stop`, then two Stop hooks close together — the second suppressed by the cooldown, the first delivered:
 
 ```
 > /notify:setup
@@ -84,14 +84,9 @@ Sending test notification … ✓
 
 Setup complete. Edit ~/.claude/notify-config.json anytime — changes take effect immediately.
 
-# ── short task: "fix typo in README" ────────
+# ── first stop fires ────────────────────────
 [Stop hook fires]
-[notify.sh: elapsed 4s < 30s threshold → silently skip]
-(no notification — duration filter suppressed)
-
-# ── long task: 12-minute refactor ───────────
-[Stop hook fires]
-[notify.sh: elapsed 743s ≥ 30s → notify]
+[notify.sh: no recent notification → notify; cooldown clock starts]
 
   ┌──────────────────────────────────────┐
   │ Claude Code                          │
@@ -100,6 +95,11 @@ Setup complete. Edit ~/.claude/notify-config.json anytime — changes take effec
   └──────────────────────────────────────┘
 
   Sound: Hero · Click brings VS Code to front
+
+# ── second stop, 8s later ───────────────────
+[Stop hook fires]
+[notify.sh: 8s < 30s cooldown → silently skip]
+(no notification — within the cooldown window)
 ```
 
 ## Install scopes
@@ -137,11 +137,11 @@ Per event you can configure:
 - **Sound** — Hero, Glass, Ping, Purr, Pop, Submarine, and more (macOS); urgency level (Linux)
 - **App to activate** — VS Code, Cursor, Terminal, iTerm2, or none (macOS click-to-focus)
 - **Enabled / disabled** — toggle any event without re-running setup
-- **`minDurationSeconds` (duration filter)** — suppress this event if the elapsed time since last activity is below the threshold. Tracks last activity in a temp file (`$TMPDIR/claude-notify-session-start`). Useful when you want notifications only for substantive work — set `30` on `stop` and short typo fixes won't notify; long refactors will. Leave `0` on `notification` so attention prompts always fire.
+- **`minDurationSeconds` (notification cooldown)** — a leading-edge cooldown. After a `stop`/`subagentStop` notification fires, further ones are suppressed until this many seconds have elapsed since the one that fired — so at most one notification per `N` seconds. The cooldown clock is tracked per session in a temp file (`$TMPDIR/claude-notify-session-<id>`, or a per-user key when no session id is available). Default `0` (no cooldown). `notification` events are never cooldown-filtered, so attention prompts always fire.
 
 ## Platform support
 
-| Platform | Backend | Sound | Click-to-focus | Duration filter |
+| Platform | Backend | Sound | Click-to-focus | Cooldown |
 |---|---|---|---|---|
 | macOS | `terminal-notifier` | 14 system sounds | Yes (bundle ID) | Yes |
 | Linux | `notify-send` (libnotify) | Urgency levels only | No | Yes |

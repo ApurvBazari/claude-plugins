@@ -46,21 +46,21 @@ Note: Linux notification behavior depends on the desktop environment and notific
 | Needs attention | `Notification` | Claude needs user input (permission prompt, idle) |
 | Subagent done | `SubagentStop` | A spawned subagent finishes its work |
 
-## Duration Filtering
+## Notification Cooldown
 
-Each event supports a `minDurationSeconds` field that suppresses notifications for fast responses:
+Each `stop`/`subagentStop` event supports a `minDurationSeconds` cooldown:
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `minDurationSeconds` | int | `0` (disabled) | Minimum elapsed seconds before notification fires |
+| `minDurationSeconds` | int | `0` (no cooldown) | Minimum seconds between fired notifications (leading-edge) |
 
-When set, the `stop` and `subagentStop` events check how long has passed since the last activity. If the elapsed time is less than the threshold, the notification is silently skipped.
+After a notification fires, further `stop`/`subagentStop` notifications are suppressed until `minDurationSeconds` have elapsed. `notification` events are never cooldown-filtered.
 
 **Recommended values:**
-- `0` — Always notify (default)
-- `10` — Skip trivial responses, notify for real work
-- `30` — Only notify for substantial tasks
-- `60` — Only notify for long-running operations
+- `0` — No cooldown (default)
+- `10` — Light debounce for rapid responses
+- `30` — At most one notification every 30s
+- `60` — At most one every minute
 
 Example config:
 ```json
