@@ -92,9 +92,9 @@ just the hero + a summary prose section + one component — that is a complete, 
 - Never emit an empty placeholder ("No files changed"), a component populated with dummy data, or a
   diagram with invented nodes. A missing component is correct; a fabricated one is a defect.
 - Drop the matching CSS and JS too: only the used components' blocks go into `{{COMPONENT_CSS}}` and
-  `{{COMPONENT_JS}}`, and `{{DETAIL_DATA}}` carries only the `DET` ids actually referenced (emit
-  `const DET={};` when nothing wires a detail panel). Unused shared handlers are harmless no-ops, so
-  the shared `{{INTERACTIVITY_JS}}` bundle always ships whole.
+  `{{COMPONENT_JS}}`, and the `{{DATA_JSON}}` island carries only the `DET`/`SURF` entries for the ids
+  actually referenced (emit `{"DET":{},"SURF":{}}` when nothing wires a detail panel). Unused shared
+  handlers are harmless no-ops, so the shared `{{INTERACTIVITY_JS}}` bundle always ships whole.
 
 ## 3. Detail surfaces
 

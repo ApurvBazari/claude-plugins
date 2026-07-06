@@ -190,4 +190,11 @@ RD="$ROOT/walkthrough/README.md"
 grep -qiE 'without javascript|no javascript|js.{0,3}(off|disabled)|readable without' "$RD" || fail "README must note the doc is readable without JS (1.3.1 W9-doc)"
 ok "W9-doc: README states no-JS readability"
 
+# retired data slots must not appear anywhere in the shipped walkthrough/ docs (W1 fiction guard, tree-wide)
+if grep -rn '{{DETAIL_DATA}}\|{{SURFACE_MAP}}' "$ROOT/walkthrough" >/dev/null 2>&1; then
+  grep -rn '{{DETAIL_DATA}}\|{{SURFACE_MAP}}' "$ROOT/walkthrough"
+  fail "a retired data slot ({{DETAIL_DATA}}/{{SURFACE_MAP}}) still appears in walkthrough/ (W1 doc-fiction)"
+fi
+ok "retired {{DETAIL_DATA}}/{{SURFACE_MAP}} slots fully absent from walkthrough/"
+
 echo "PASS test_validate_artifact.sh (Task 1 slice)"
