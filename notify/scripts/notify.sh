@@ -125,9 +125,10 @@ if [[ "$ENABLED" = "false" ]]; then
   exit 0
 fi
 
-# --- Duration filtering ---
-# Record timestamp on stop events for future duration checks.
-# On stop/subagentStop: check elapsed time since last prompt or session start.
+# --- Notification cooldown (leading-edge): suppression check ---
+# On stop/subagentStop, suppress the notification if fewer than MIN_DURATION
+# seconds have elapsed since the last FIRED notification (the clock recorded in
+# TIMESTAMP_FILE, refreshed below only for events that actually fire).
 NOW_EPOCH="$(date +%s 2>/dev/null || echo 0)"
 
 if [[ "$EVENT" = "stop" ]] || [[ "$EVENT" = "subagentStop" ]]; then
@@ -140,7 +141,7 @@ if [[ "$EVENT" = "stop" ]] || [[ "$EVENT" = "subagentStop" ]]; then
     if [[ "$START_EPOCH" =~ ^[0-9]+$ ]] && [[ "$NOW_EPOCH" =~ ^[0-9]+$ ]]; then
       ELAPSED=$((NOW_EPOCH - START_EPOCH))
       if [[ "$ELAPSED" -lt "$MIN_DURATION" ]]; then
-        # Response was too fast — skip notification
+        # Within the cooldown window — suppress this notification
         exit 0
       fi
     fi
@@ -211,8 +212,9 @@ fi
 # --- Send notification (platform-specific) ---
 if [[ "$PLATFORM" = "macos" ]]; then
   if command -v terminal-notifier &>/dev/null; then
-    # Build args so an explicit "none" (or empty) omits the flag entirely — this
-    # is how a user turns OFF the sound or click-to-focus app (N3).
+    # Build args so a config value of "none" omits the flag entirely — this is
+    # how a user turns OFF the sound or click-to-focus app (N3). (The -n guard is
+    # defensive; an empty/absent value falls back to the default above, not omission.)
     tn_args=( -title "$TITLE" -subtitle "$SUBTITLE" -message "$MESSAGE" )
     [[ -n "$SOUND"    && "$SOUND"    != "none" ]] && tn_args+=( -sound "$SOUND" )
     [[ -n "$ACTIVATE" && "$ACTIVATE" != "none" ]] && tn_args+=( -activate "$ACTIVATE" )
