@@ -127,7 +127,7 @@ exact keys `authoring-guide.md` keys its mapping table off of — do not rename 
     "groups": [ { "source": "<spec/plan filename>", "kind": "spec|plan",
                   "items": [ { "label": "...", "state": "met|partial|missing|followed|deviated" } ] } ]
   },
-  "findings": [                       // → findings-list + diff pins; each id also a DET sheet
+  "findings": [                       // → findings-list + diff pins; each id is pre-rendered as a {{SHEETS}} dialog (SURF[id]='sheet'), not in DET
     { "id": "F1", "severity": "critical|high|medium|low",  // 'info' is NOT a severity — render-only chip role for 'low' (review-model-assembly.md)
       "category": "spec-gap|plan-deviation|bug|silent-failure|security|risk|test-gap|quality",
       "location": "path:line", "claim": "...", "detail": "...",
@@ -297,7 +297,7 @@ This model is synthesized in-memory before any HTML and drives component selecti
 The review fields (`verdict`, `adherence`, `findings`, `diffHunks`, `files[].risk`) are optional and
 populated **only** by the `lens` plugin, which assembles the model in context and hands it to
 `walkthrough:render`. `create`/`document`/`update` never set them; omit-empty keeps them inert. Each
-`findings[]` id maps to a `DET` sheet entry (`SURF[id]='sheet'`), and both its findings-list card and
+`findings[]` id maps to a pre-rendered `{{SHEETS}}` dialog (`SURF[id]='sheet'`), and both its findings-list card and
 its annotated-diff pin call `openSurface('<id>')`.
 
 `iteration` (`fixed|still-open|new|possibly-resolved`) and `iterationDelta` are the **state-aware**

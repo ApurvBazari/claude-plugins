@@ -145,4 +145,15 @@ grep -q "openCard(this)" "$FT" && fail "files-timeline still instructs the openC
 grep -q "openSurface(" "$FT" || fail "files-timeline card-detail wiring must use openSurface"
 ok "W3: card details route through openSurface"
 
+# --- W4: docs stop claiming sheet-kind details live in DET ---
+# Sheet-kind details are pre-rendered <dialog>s in {{SHEETS}} (routed via SURF[id]='sheet'), NOT DET records
+# (DET holds only pane-kind records). Broad sweep per the SP-3 lesson: strip backticks first so the
+# backtick-wrapped `a `DET` sheet entry` form (session-model:300) normalizes to `a DET sheet entry` and
+# is caught — a naive contiguous grep would let that variant slip through.
+SM="$ROOT/walkthrough/skills/create/references/session-model.md"
+RC="$ROOT/walkthrough/skills/render/references/render-contract.md"
+tr -d '`' < "$SM" | grep -niE 'DET sheet|a DET (sheet )?entry|also a DET' && fail "session-model still says sheet-kind lives in DET (W4)"
+grep -niE 'one .?DET.? entry each' "$RC" && fail "render-contract still says findings get a DET entry each (W4)"
+ok "W4: no doc claims sheet-kind in DET"
+
 echo "PASS test_validate_artifact.sh (Task 1 slice)"
