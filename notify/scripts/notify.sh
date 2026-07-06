@@ -16,16 +16,6 @@ esac
 
 BASE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 CONFIG_FILE="$BASE_DIR/notify-config.json"
-# User-scoped timestamp file — prevents symlink attacks at a predictable shared path.
-TIMESTAMP_FILE="${TMPDIR:-/tmp}/claude-notify-session-start-${UID:-$(id -u)}"
-
-# Defensive: if another process (or attacker on a world-writable $TMPDIR) has
-# pre-created the path as a symlink, named pipe, or other non-regular file,
-# refuse to reuse it. Delete it and let the normal write create a fresh file.
-# Note: [[ -f ]] follows symlinks, so we test [[ -L ]] first to catch them.
-if [[ -L "$TIMESTAMP_FILE" ]] || { [[ -e "$TIMESTAMP_FILE" ]] && [[ ! -f "$TIMESTAMP_FILE" ]]; }; then
-  rm -f "$TIMESTAMP_FILE" 2>/dev/null
-fi
 
 # --- Detect platform ---
 PLATFORM="unknown"
@@ -70,6 +60,33 @@ except Exception:
     echo "$result"
   fi
 }
+
+# --- Read stdin JSON early (Claude Code passes hook context via stdin) ---
+# Read once, up front, so the cooldown timestamp can be keyed per session.
+STDIN_JSON=""
+if ! [[ -t 0 ]]; then
+  STDIN_JSON="$(cat)"
+fi
+
+# --- Per-session cooldown timestamp file ---
+# Key by the hook's session_id when present so concurrent Claude sessions keep
+# independent cooldown clocks; fall back to a per-user key otherwise (N2).
+# Sanitize the id to a safe filename fragment.
+SESSION_ID="$(json_get "$STDIN_JSON" ".session_id")"
+if [[ -n "$SESSION_ID" ]]; then
+  SESSION_KEY="session-$(printf '%s' "$SESSION_ID" | tr -c 'A-Za-z0-9._-' '_')"
+else
+  SESSION_KEY="uid-${UID:-$(id -u)}"
+fi
+TIMESTAMP_FILE="${TMPDIR:-/tmp}/claude-notify-${SESSION_KEY}"
+
+# Defensive: if another process (or attacker on a world-writable $TMPDIR) has
+# pre-created the path as a symlink, named pipe, or other non-regular file,
+# refuse to reuse it. Delete it and let the normal write create a fresh file.
+# Note: [[ -f ]] follows symlinks, so we test [[ -L ]] first to catch them.
+if [[ -L "$TIMESTAMP_FILE" ]] || { [[ -e "$TIMESTAMP_FILE" ]] && [[ ! -f "$TIMESTAMP_FILE" ]]; }; then
+  rm -f "$TIMESTAMP_FILE" 2>/dev/null
+fi
 
 # --- Read config ---
 ENABLED="true"
@@ -141,12 +158,6 @@ if tmp="$(mktemp "${TIMESTAMP_FILE}.XXXXXX" 2>/dev/null)"; then
   else
     rm -f "$tmp" 2>/dev/null
   fi
-fi
-
-# --- Read stdin JSON (Claude Code passes context via stdin) ---
-STDIN_JSON=""
-if ! [[ -t 0 ]]; then
-  STDIN_JSON="$(cat)"
 fi
 
 # --- Extract contextual message ---
