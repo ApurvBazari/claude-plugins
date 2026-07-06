@@ -147,11 +147,15 @@ if [[ "$EVENT" = "stop" ]] || [[ "$EVENT" = "subagentStop" ]]; then
   fi
 fi
 
-# Update timestamp on every event (tracks last activity).
-# Atomic write: create in a sibling temp file, then rename. Closes the TOCTOU
-# window between the symlink guard above and the write — even if an attacker
-# drops a symlink at $TIMESTAMP_FILE after the check, the rename replaces the
-# directory entry atomically and never writes through the symlink.
+# Refresh the cooldown clock — reached ONLY past the suppression `exit 0` above,
+# so only events that actually FIRE refresh it. This makes the cooldown
+# leading-edge: "at most one notification per N seconds since the last fired one."
+# Suppressed events deliberately do NOT refresh it. Moving this block above the
+# suppression exit would silently make the cooldown trailing-edge — a fork
+# violation (see spec 2026-07-02 §6a). Atomic write: create a sibling temp file,
+# then rename. Closes the TOCTOU window between the symlink guard above and the
+# write — even if an attacker drops a symlink at $TIMESTAMP_FILE after the check,
+# the rename replaces the directory entry atomically and never writes through it.
 if tmp="$(mktemp "${TIMESTAMP_FILE}.XXXXXX" 2>/dev/null)"; then
   if echo "$NOW_EPOCH" > "$tmp" 2>/dev/null; then
     mv -f "$tmp" "$TIMESTAMP_FILE" 2>/dev/null || rm -f "$tmp" 2>/dev/null
