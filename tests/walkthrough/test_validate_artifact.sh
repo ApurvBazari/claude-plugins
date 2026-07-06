@@ -139,4 +139,10 @@ bash "$ROOT/tests/lib/assert-versions.sh" walkthrough || fail "walkthrough versi
 grep -q '1.3.1' "$ROOT/walkthrough/CHANGELOG.md" || fail "CHANGELOG missing 1.3.1 entry"
 ok "version 1.3.1 self-consistent"
 
+# --- W3: card details route through the openSurface router, not the openCard bypass ---
+FT="$ROOT/walkthrough/skills/create/references/components/files-timeline.md"
+grep -q "openCard(this)" "$FT" && fail "files-timeline still instructs the openCard router-bypass"
+grep -q "openSurface(" "$FT" || fail "files-timeline card-detail wiring must use openSurface"
+ok "W3: card details route through openSurface"
+
 echo "PASS test_validate_artifact.sh (Task 1 slice)"

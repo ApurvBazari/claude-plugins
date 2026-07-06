@@ -71,7 +71,7 @@ Render a one-row legend above the tree mapping each risk to its color. Tokens on
 .tcard .td{font-size:.8rem;color:var(--ts);}
 ```
 
-**Wiring:** pills → `tog(this)` (rebuilds the active `data-f` set and hides `.tcard`s whose `data-cat` isn't active). For a card detail surface, add `data-id="<id>"` + `onclick="openCard(this)"` and a matching `details{}`/`DET` entry — the card's content comes from the structured detail, not inline `data-*` text.
+**Wiring:** pills → `tog(this)` (rebuilds the active `data-f` set and hides `.tcard`s whose `data-cat` isn't active). For a card detail surface, add `data-id="<id>"` + `onclick="openSurface('<id>')"` and a matching `details{}`/`DET` entry — the card's content comes from the structured detail, not inline `data-*` text.
 
 ## Timeline
 
