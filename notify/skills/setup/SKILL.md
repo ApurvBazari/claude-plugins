@@ -186,7 +186,7 @@ cp "${CLAUDE_PLUGIN_ROOT}/scripts/notify.sh" "$BASE_DIR/hooks/notify.sh"
 chmod +x "$BASE_DIR/hooks/notify.sh"
 ```
 
-The script supports both macOS (`terminal-notifier`) and Linux (`notify-send`), auto-detects the platform, reads config from `notify-config.json` at runtime, and supports duration-based filtering via `minDurationSeconds`.
+The script supports both macOS (`terminal-notifier`) and Linux (`notify-send`), auto-detects the platform, reads config from `notify-config.json` at runtime, and supports a leading-edge notification cooldown via `minDurationSeconds`.
 
 ### 6b: Merge hooks into `$BASE_DIR/settings.json`
 
