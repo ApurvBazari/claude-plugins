@@ -21,7 +21,7 @@ Claude Code plugin marketplace by Apurv Bazari. Five plugins — all markdown + 
          │
          ├──→ notify/                    ← cross-platform system notifications
          │      ├── skills/ (setup, check, uninstall, wizard)
-         │      └── scripts/ (notify, install-notifier, test-notification)
+         │      └── scripts/ (notify, install-notifier)
          │
          ├──→ handoff/                   ← session handoff continuity
          │      └── skills/ (save, pickup, check, discard)
