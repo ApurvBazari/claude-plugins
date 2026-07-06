@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.0.2 — 2026-07-06
+- fix: normalize the `json_get` python3 fallback booleans to lowercase — on jq-less machines `enabled: false` was ignored (an `enabled:false` event, incl. the default-off `subagentStop`, still fired). (N1)
+- fix: key the notification cooldown timestamp per session, not per user — concurrent Claude sessions no longer reset each other's cooldown clock. (N2)
+- fix: an explicit `"none"` (or empty) `sound`/`activate` now omits the flag, so a user can turn off sound or click-to-focus. (N3)
+- fix: `/notify:check` now platform-detects the notifier backend (`notify-send` on Linux), honoring the documented Linux support. (N4)
+- fix: quote `$BASE_DIR` in the generated hook commands (paths with spaces); dedupe notify hooks on setup re-run; refuse to overwrite a malformed `settings.json`. (N8)
+- docs: `minDurationSeconds` is documented honestly as a leading-edge **notification cooldown** ("at most one notification per N seconds"), not response-duration filtering; the default is `0` everywhere. (N7, fork §6a)
+- docs: remove the never-implemented config precedence-merge, the uninstall backend-removal offer, and the "merged config" check claim. (N5/N6)
+- chore: delete dead `test-notification.sh`; single-source repeated platform/sound prose; add `tests/notify/` coverage for N1–N3 + the cooldown contract + version sync. (N9)
+
 ## 2.0.1 — 2026-06-11
 - fix: use ${CLAUDE_PLUGIN_ROOT} for the install-notifier.sh path (exit-127 guard); SK-04 setup/uninstall descriptions.
 - fix: hook-standard `set -uo pipefail` on notify.sh; remove dead exit-code check in test-notification.sh.
