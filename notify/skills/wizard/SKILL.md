@@ -6,7 +6,7 @@ user-invocable: false
 
 # Wizard Skill — Notification Preferences
 
-You are guiding a developer through customizing their Claude Code notification preferences. This wizard configures which events trigger notifications, what sounds play, duration filtering, and which app activates on click. Works on macOS (terminal-notifier) and Linux (notify-send).
+You are guiding a developer through customizing their Claude Code notification preferences. This wizard configures which events trigger notifications, what sounds play, notification cooldown, and which app activates on click. Works on macOS (terminal-notifier) and Linux (notify-send).
 
 ## Conversation Style
 
@@ -75,18 +75,17 @@ mdfind "kMDItemCFBundleIdentifier == '<bundle-id>'" | head -1
 If no result is returned, warn:
 > That bundle ID wasn't found on your system. Double-check the ID, or proceed and update it later in `notify-config.json`.
 
-### Duration Filtering
+### Notification Cooldown
 
-After configuring Event 1, ask about duration filtering:
+After configuring Event 1, ask about the notification cooldown:
 
-> **Duration filtering** — suppress notifications for fast responses.
+> **Notification cooldown** — at most one notification per N seconds.
 >
-> If set, the `stop` notification only fires when Claude has been working for at least this many seconds. This prevents notification spam for quick follow-up questions.
+> After a `stop` notification fires, further ones are held until N seconds have passed. This prevents notification spam from rapid back-to-back responses.
 >
-> Recommended: `30` seconds (skips trivial responses, notifies for real work).
-> Set to `0` to always notify (default).
+> Recommended: `30` seconds. Set to `0` for no cooldown (default).
 >
-> What minimum duration would you like? (0/10/30/60, or a custom value)
+> What cooldown would you like? (0/10/30/60, or a custom value)
 
 Apply the chosen `minDurationSeconds` to the `stop` event. The `notification` event should keep `minDurationSeconds: 0` since attention prompts should always fire immediately.
 
@@ -163,7 +162,7 @@ Present a summary table before confirming:
 
 > Here are your notification settings:
 >
-> | Event | Enabled | Message | Sound | Min Duration | App |
+> | Event | Enabled | Message | Sound | Cooldown (s) | App |
 > |-------|---------|---------|-------|-------------|-----|
 > | Task completed | ... | ... | ... | ...s | ... |
 > | Needs attention | ... | ... | ... | — | ... |

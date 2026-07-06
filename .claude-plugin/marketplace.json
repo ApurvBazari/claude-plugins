@@ -28,8 +28,8 @@
     {
       "name": "notify",
       "source": "./notify",
-      "description": "Cross-platform system notifications for Claude Code — macOS and Linux with duration filtering",
-      "version": "2.0.1",
+      "description": "Cross-platform system notifications for Claude Code — macOS and Linux with a notification cooldown",
+      "version": "2.0.2",
       "keywords": [
         "notifications",
         "macos",
