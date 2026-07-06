@@ -65,11 +65,14 @@ h2 em{font-style:italic;color:var(--accent);}
 /* back-compat: pre-1.3.0 flat ERD alias */
 .erd{display:flex;align-items:center;flex-wrap:wrap;gap:.6rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1.2rem 0;}
 .erd-entity{flex:0 1 220px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+/* SP-6 visible-unless-JS gate — this fixture has no detail data + one always-visible section (kept .vis so connectors compute on an untransformed layout) */
+html.js section:not(.vis){opacity:0;transform:translateY(24px);}
+section.vis{opacity:1;transform:none;}
 </style>
 </head>
 <body>
 <main>
-  <section id="schema">
+  <section id="schema" class="vis">
     <div class="sec-label">data model</div>
     <h2>The <em>schema</em> — layered, cycle-aware</h2>
     <p class="lede">Four entities across three dependency-depth bands. The Organization&#8596;User cycle is
@@ -129,11 +132,16 @@ h2 em{font-style:italic;color:var(--accent);}
     </div>
   </section>
 </main>
+<script type="application/json" id="wt-data">{"DET":{},"SURF":{}}</script>
 <script>
+document.documentElement.classList.add('js');
+const _WT=(()=>{try{return JSON.parse(document.getElementById('wt-data').textContent||'{}');}catch(e){return{};}})();
+const DET=_WT.DET||{}, SURF=_WT.SURF||{};
 /* golden fixture: entity detail surfaces are omitted — real docs route .ent clicks through
    openSurface()/renderSurface() (interactivity.md). Here it is a no-op so the wired onclick
    is inert rather than throwing; the tested behaviour is the hover/focus connector below. */
 function openSurface(id){void id;}
+setTimeout(()=>document.querySelectorAll('section').forEach(s=>s.classList.add('vis')),2500);
 </script>
 <script>
 (function(){var NS='http://www.w3.org/2000/svg';function mk(t){return document.createElementNS(NS,t);}

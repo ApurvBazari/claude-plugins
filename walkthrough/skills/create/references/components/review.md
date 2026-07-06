@@ -1,7 +1,7 @@
 # Component Catalog — Review (lens)
 
 Three components for `lens` review docs. Tokens only; wire to the shared handlers in
-`interactivity.md`. Each `findings[]` id is also a `DET` sheet entry — see `session-model.md` § Review.
+`interactivity.md`. Each `findings[]` id is pre-rendered as a `{{SHEETS}}` dialog (`SURF[id]='sheet'`), not in `DET` — see `session-model.md` § Review.
 
 ## Annotated diff
 
@@ -36,7 +36,7 @@ Three components for `lens` review docs. Tokens only; wire to the shared handler
 .dl .pin:hover{transform:scale(1.2);}
 ```
 
-**Wiring:** pin → `openSurface('<finding-id>')` (the finding's `DET` sheet). Lines with no finding omit the pin.
+**Wiring:** pin → `openSurface('<finding-id>')` (the finding's pre-rendered `{{SHEETS}}` sheet). Lines with no finding omit the pin.
 
 ## Findings list
 

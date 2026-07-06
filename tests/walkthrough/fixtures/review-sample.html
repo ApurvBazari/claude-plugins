@@ -45,7 +45,8 @@ h2{font-family:var(--serif);font-size:clamp(1.7rem,3.5vw,2.4rem);font-weight:400
 .lede{color:var(--ts);font-size:1.08rem;line-height:1.7;max-width:720px;margin:.6rem 0 0;}
 p{color:var(--ts);font-size:.92rem;line-height:1.7;max-width:720px;}
 p code,li code{font-family:var(--mono);font-size:.8rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
-section{padding:4rem 0 2rem;scroll-margin-top:70px;opacity:0;transform:translateY(24px);transition:opacity .7s var(--ease),transform .7s var(--ease);}
+section{padding:4rem 0 2rem;scroll-margin-top:70px;transition:opacity .7s var(--ease),transform .7s var(--ease);}
+html.js section:not(.vis){opacity:0;transform:translateY(24px);}
 section.vis{opacity:1;transform:none;}
 .sec-label{counter-increment:sec;font-family:var(--mono);font-size:.65rem;color:var(--tm);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.5rem;}
 .sec-label::before{content:counter(sec,decimal-leading-zero) " \2014 ";}
@@ -233,7 +234,12 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
   </div>
 </dialog></div>
   <dialog class="sheet pane-dialog" id="paneDialog"><button class="x" onclick="this.closest('dialog').close()">✕</button><div class="sf-body" id="paneDialogBody"></div></dialog>
-  <script>// renderSurface — build a structured detail DOM from a DET record into `host`
+  <script type="application/json" id="wt-data">{"DET":{"F1":{"k":"high · bug","h":"Password compared with == allowing type coercion","summary":"Use a constant-time strict comparison; == permits type juggling.","where":["src/auth/login.ts:42"],"points":["Fix: Use timingSafeEqual on Buffers","Status: verified"]}},"SURF":{"F1":"sheet"}}</script>
+  <script>
+document.documentElement.classList.add('js');
+const _WT=(()=>{try{return JSON.parse(document.getElementById('wt-data').textContent||'{}');}catch(e){return{};}})();
+const DET=_WT.DET||{}, SURF=_WT.SURF||{};
+// renderSurface — build a structured detail DOM from a DET record into `host`
 function renderSurface(d,host){if(!d||!host)return;let h='';
  if(d.h)h+=`<h3 class="sf-h">${d.h}</h3>`;
  if(d.summary)h+=`<p class="sf-summary">${d.summary}</p>`;
@@ -273,8 +279,9 @@ function tgl(){const h=document.documentElement;const t=h.getAttribute('data-the
 // reveal + progress + animate-on-view
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vis');const d=e.target.querySelector('.detail.show');if(d)animate(d);}}),{threshold:.1});
 document.querySelectorAll('section').forEach(s=>io.observe(s));
+setTimeout(()=>document.querySelectorAll('section').forEach(s=>s.classList.add('vis')),2500);
 addEventListener('scroll',()=>{const sc=scrollY/(document.body.scrollHeight-innerHeight)*100;if(prog)prog.style.width=sc+'%';
  let cur='';document.querySelectorAll('section[id]').forEach(s=>{if(scrollY>=s.offsetTop-120)cur=s.id;});
  document.querySelectorAll('.nav-links a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+cur));},{passive:true});
-const DET={"F1":{k:"high · bug",h:"Password compared with == allowing type coercion",summary:"Use a constant-time strict comparison; == permits type juggling.",where:["src/auth/login.ts:42"],points:["Fix: Use timingSafeEqual on Buffers","Status: verified"]}};const SURF={"F1":"sheet"};</script>
+</script>
 </body></html>

@@ -116,7 +116,7 @@ Because a Cowork folder is often not a git repository, `create` asks **on first 
 
 ## Limitations
 
-- **Android / local-file JS.** Opened as a `file://` document on Android, the page renders the hero and nothing below it — Android blocks JavaScript in local files, and the sections reveal via JS. View on desktop, or host the file over `http(s)`.
+- **Android / local-file JS.** As of 1.3.1 the document is fully readable without JavaScript — opened as a `file://` document on Android (which blocks local-file JS) or with JS disabled, all prose and diagrams render; only the click-to-open detail surfaces and the scroll-reveal animation are inert. For the full interactive experience, view on desktop or host the file over `http(s)`.
 - **No print path.** The document is built for on-screen exploration; there is no dedicated print stylesheet, and collapsed detail (panes, sheets) will not appear in a printout.
 
 ## What it is / isn't

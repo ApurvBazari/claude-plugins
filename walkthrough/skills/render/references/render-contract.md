@@ -10,7 +10,7 @@ select → assemble → self-check → write using `../create/references/` uncha
 - **outputPath** — where to write (e.g. `.claude/lens/<ts>-<slug>.html`). Caller-owned; no gitignore prompt.
 
 ## Review-specific assembly
-- `findings[]` → one `DET` entry each, `SURF[id]='sheet'`, pre-rendered into `{{SHEETS}}`. Schema:
+- `findings[]` → one pre-rendered dialog each in `{{SHEETS}}` (`SURF[id]='sheet'`); NOT in `DET`. Schema:
   `{kicker:"<severity> · <category>", heading:"<claim>", summary:"<detail>", where:["<location>"],
    points:["Fix: <suggestedFix>", "Status: <status>"], surface:"sheet"}`.
 - `diffHunks[]` → annotated-diff; pins call `openSurface('<finding-id>')`.

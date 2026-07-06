@@ -41,6 +41,8 @@ The `create` skill runs a fixed model-before-markup pipeline. The model is fully
 4. **assemble** — start from `references/page-scaffold.md`; inline the `@import` + both `:root` blocks from `references/design-system.md`, the shared JS from `references/interactivity.md`, and the CSS/HTML for each chosen component (read only the `references/components/<group>.md` files for the components you selected) plus its detail (`DET`) data.
 5. **write** — compute `.claude/walkthrough/<YYYY-MM-DD-HHMM>-<slug>.html` (collision → `-2`, `-3`, …), create the dir if missing, handle the first-run gitignore prompt, then write and offer to open (never auto-open).
 
+**v1.3.1** — the assembled page emits THREE script blocks: an inert `<script type="application/json" id="wt-data">` holding `{DET,SURF}` (parsed at runtime, never executed), then the interactivity and component `<script>` boilerplate. Author content never sits in executable JS. Sections are visible unless JS proves healthy (`html.js` gate + 2.5s failsafe). `update` probes all three historical layouts.
+
 ## The update skill — reconstruct, merge, overwrite in place
 
 `update` does not persist or re-read a session model; the existing HTML is the only prior record. It adds two stages in front of create's renderer:
@@ -112,7 +114,7 @@ Clicking an interactive node, card, or cross-link chip opens its detail through 
 
 **One structured schema.** A detail is `{kicker, heading, summary, where[], code[], points[], related[], surface?, components[]}` — replacing the old `{k,h,b}` innerHTML blob. The shared `renderSurface(d,host)` builds the pane DOM from those fields on click; a sheet is **pre-rendered** into the `{{SHEETS}}` slot with the same `sf-*` markup. "Omit empty per sub-field."
 
-**Hybrid routing.** At assemble time each detail gets a kind: an explicit `surface` override wins, else it is inferred — `components`, a `code[]` block, or a `summary`+`points` over ~320 chars → `sheet`, otherwise `pane`. A `const SURF={id:'pane'|'sheet'}` map (the `{{SURFACE_MAP}}` slot) drives the runtime router.
+**Hybrid routing.** At assemble time each detail gets a kind: an explicit `surface` override wins, else it is inferred — `components`, a `code[]` block, or a `summary`+`points` over ~320 chars → `sheet`, otherwise `pane`. A `const SURF={id:'pane'|'sheet'}` map (emitted into the inert `{{DATA_JSON}}` island and parsed at runtime) drives the runtime router.
 
 **Native `<dialog>` nesting, capped.** Sheets open via `showModal()`, so the browser **top layer** gives stacking, focus-trap, top-down Escape, and a stylable `::backdrop` with no library. A pane reached from *inside* a sheet can't use the non-modal `.panel` (it would render behind the modal), so it renders via `renderSurface` into a shared right-edge `<dialog class="sheet pane-dialog" id="paneDialog">`. The shared `_capPush(el)` caps depth at **3** (replace-topmost beyond) and carries an `el.open` no-op guard so a bidirectional `related[]` chip (A↔B) can't double-push the stack. The `openSurface` reference graph must be acyclic.
 

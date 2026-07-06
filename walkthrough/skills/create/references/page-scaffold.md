@@ -4,13 +4,14 @@ This is the empty page shell for every walkthrough: the chrome (frosted nav, scr
 bar, grain overlay, theme toggle, detail panel) plus the BASE/CHROME CSS only. The generator
 copies this document verbatim, then injects the chosen components' CSS into `{{COMPONENT_CSS}}`,
 their markup into `{{HERO}}`/`{{SECTIONS}}`, and their behaviour into `{{COMPONENT_JS}}` — while
-the shared bundle goes into `{{INTERACTIVITY_JS}}` and the detail lookup into `{{DETAIL_DATA}}`.
+the shared bundle goes into `{{INTERACTIVITY_JS}}` and the detail lookup into `{{DATA_JSON}}`, the
+inert `#wt-data` island that is parsed at runtime, never executed.
 
 It contains **no component CSS or markup** — that lives in the `components/` catalog. The base CSS below is
 lifted verbatim from `seed.html`; never invent base styles.
 
 Slots to fill: `{{TITLE}}`, `{{NAV_LINKS}}`, `{{KICKER}}`, `{{HERO}}`, `{{SECTIONS}}`,
-`{{COMPONENT_CSS}}`, `{{INTERACTIVITY_JS}}`, `{{COMPONENT_JS}}`, `{{DETAIL_DATA}}`, `{{SHEETS}}`, `{{SURFACE_MAP}}`.
+`{{COMPONENT_CSS}}`, `{{INTERACTIVITY_JS}}`, `{{COMPONENT_JS}}`, `{{DATA_JSON}}`, `{{SHEETS}}`.
 
 ```html
 <!DOCTYPE html><html lang="en" data-theme="dark"><head>
@@ -60,7 +61,8 @@ h2{font-family:var(--serif);font-size:clamp(1.7rem,3.5vw,2.4rem);font-weight:400
 .lede{color:var(--ts);font-size:1.08rem;line-height:1.7;max-width:720px;margin:.6rem 0 0;}
 p{color:var(--ts);font-size:.92rem;line-height:1.7;max-width:720px;}
 p code,li code{font-family:var(--mono);font-size:.8rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
-section{padding:4rem 0 2rem;scroll-margin-top:70px;opacity:0;transform:translateY(24px);transition:opacity .7s var(--ease),transform .7s var(--ease);}
+section{padding:4rem 0 2rem;scroll-margin-top:70px;transition:opacity .7s var(--ease),transform .7s var(--ease);}
+html.js section:not(.vis){opacity:0;transform:translateY(24px);}
 section.vis{opacity:1;transform:none;}
 .sec-label{counter-increment:sec;font-family:var(--mono);font-size:.65rem;color:var(--tm);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.5rem;}
 .sec-label::before{content:counter(sec,decimal-leading-zero) " \2014 ";}
@@ -128,7 +130,9 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
     <div class="pb" id="panelBody"></div></aside>
   <div id="sheets">{{SHEETS}}</div>
   <dialog class="sheet pane-dialog" id="paneDialog"><button class="x" onclick="this.closest('dialog').close()">✕</button><div class="sf-body" id="paneDialogBody"></div></dialog>
-  <script>{{INTERACTIVITY_JS}}{{COMPONENT_JS}}{{DETAIL_DATA}}{{SURFACE_MAP}}</script>
+  <script type="application/json" id="wt-data">{{DATA_JSON}}</script>
+  <script>{{INTERACTIVITY_JS}}</script>
+  <script>{{COMPONENT_JS}}</script>
 </body></html>
 ```
 
@@ -146,15 +150,16 @@ Fill each marker below. Leave a marker empty (delete it) only when its content d
 | `{{COMPONENT_CSS}}` | The CSS blocks for **only** the components actually used, copied verbatim from the `components/<group>.md` recipes. Omit CSS for unused components. |
 | `{{COMPONENT_JS}}` | The component-specific JS handlers for **only** the components used (e.g. `setTab`, `tog`), copied from the `components/<group>.md` recipes. Omit handlers for unused components. |
 | `{{INTERACTIVITY_JS}}` | The full shared behaviour bundle from `interactivity.md` — theme toggle (`tgl`), detail surfaces (`renderSurface` + `openSurface`/`openPane`, with `openD`/`openCard` aliases and `closeD`), scroll progress, and the IntersectionObserver reveal. |
-| `{{DETAIL_DATA}}` | The `DET` object literal mapping detail ids to structured `{k,h,summary,where,code,points,related}` records read by `renderSurface`. Include only the ids referenced by the markup; emit an empty `const DET={};` if no detail panel is wired. |
+| `{{DATA_JSON}}` | The inert detail payload: `JSON.stringify({ DET:{…}, SURF:{…} })`. `DET` maps each pane-kind id to its `{k,h,summary,where,code,points,related}` record; `SURF` maps every `openSurface` target to `'pane'`/`'sheet'`. Sheet-kind details are NOT in `DET` — they are pre-rendered dialogs in `{{SHEETS}}`. Emit `{"DET":{},"SURF":{}}` when no detail is wired. This block is parsed once at runtime by the interactivity bundle; it is never executed as JS. |
 | `{{SHEETS}}` | Pre-rendered sheet dialogs — one `<dialog class="sheet" id="sheet-<id>">` per **sheet-kind** detail (see the Sheet pattern below), placed in the `#sheets` container. Delete the marker when no detail routes to a sheet. |
-| `{{SURFACE_MAP}}` | The `const SURF={ "<id>": "pane" \| "sheet", … }` map — every `openSurface` target's kind, read by the router to decide pane vs sheet. Emit `const SURF={};` when no sheets are wired. |
+
+**`typeTags` → hero chips:** render the model's `typeTags[]` as a row of `.chip` elements immediately under the `<h1>` in `#top` — one `<span class="chip neutral">tag</span>` per tag (the `.chip` primitive from the base CSS). This is the canonical chip row `reconstruct-and-merge.md` reads back into `typeTags[]`.
 
 **`details{}` → `DET` transform:** the session model's structured `details{ "<id>": {kicker, heading, summary, where[], code[], points[], related[], surface?, components[]} }` (see `session-model.md`) compiles into the runtime `DET[id] = { k: <kicker>, h: <heading>, summary, where, code, points, related }`. Fields stay structured — arrays are preserved, not folded into a blob — and `renderSurface` builds the DOM from them (`where` → loc chips, `code` → annotated blocks, `points` → bullets, `related` → chips that call `openSurface`). `k` = kicker, `h` = heading. Emit only the ids actually wired.
 
-**Escape every string value** emitted into `DET` and `SURF` (`k`, `h`, `summary`, each `points[]`, each `where[]`, `code[].file`/`.snippet`): escape an embedded double-quote (write `\"`) and backslash (write `\\`), exactly as `JSON.stringify` would. One unescaped `"` ends the JS string early and the resulting `SyntaxError` aborts the **entire** inline `<script>` — every handler dies and no detail opens on click. Prose pre-rendered into `{{SHEETS}}` is HTML text, not a JS string, so quotes there need no escaping.
+**Escaping is by construction.** The detail payload is emitted as `{{DATA_JSON}}` = `JSON.stringify({DET,SURF})`. Because it lives in an inert `<script type="application/json">` (parsed, never executed), `JSON.stringify` already produces correct escaping for quotes, backslashes, newlines, and control characters — there is no per-field manual escaping. The ONE additional guard: after serializing, replace any `</` with `<\/` so a value containing `</script>` cannot close the data block early. Prose pre-rendered into `{{SHEETS}}` is HTML text and needs no JS escaping.
 
-**`details{}` → `SURF` + `{{SHEETS}}` transform:** compute each detail's kind (explicit `surface`, else inferred — see `authoring-guide.md` § 3). Pane-kind ids go to `DET` (above) with `SURF[id]='pane'`; sheet-kind ids are pre-rendered as `<dialog id="sheet-<id>">` blocks in `{{SHEETS}}` (header via the same `sf-*` markup, hosting each `components[]` ref with surface-suffixed internal ids) with `SURF[id]='sheet'`. `{{SURFACE_MAP}}` emits the whole `const SURF={ … }`; default any unclassified `openSurface` target to `'pane'`.
+**`details{}` → `SURF` + `{{SHEETS}}` transform:** compute each detail's kind (explicit `surface`, else inferred — see `authoring-guide.md` § 3). Pane-kind ids go to `DET` (above) with `SURF[id]='pane'`; sheet-kind ids are pre-rendered as `<dialog id="sheet-<id>">` blocks in `{{SHEETS}}` (header via the same `sf-*` markup, hosting each `components[]` ref with surface-suffixed internal ids) with `SURF[id]='sheet'`. Both `DET` and the whole `SURF` map are serialized into the inert `{{DATA_JSON}}` island (never a separate JS slot); default any unclassified `openSurface` target to `'pane'`.
 
 **Sheet pattern (`{{SHEETS}}`):** the assembler pre-renders one `<dialog>` per sheet-kind detail into the `#sheets` container (the pane builds its DOM at click time via `renderSurface`; the sheet's is static). It reuses the same `sf-*` content vocabulary as the pane so the two surfaces read the same, with surface-appropriate sizing — the sheet heading is an `<h2 class="sf-h">` (it picks up the larger serif `h2` scale, since `.sf-h` itself is pane-scoped), while the pane uses the compact `<h3 class="sf-h">`. The content lives in a `.sf-body` scroll container and the close `✕` is a direct child of the dialog. The sheet's surface-specific CSS — `dialog.sheet`, `::backdrop`, `dialog.sheet>.x` (which absolutely-positions the close button to float above the scroll), and `dialog.sheet .sf-kicker` — is part of the base CSS lifted verbatim from `seed.html`.
 
