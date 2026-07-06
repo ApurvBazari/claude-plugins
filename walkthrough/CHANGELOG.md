@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.1 — 2026-07-06
+
+### Fixed
+- **Failure architecture (W1/W2):** author-variable detail data moves to an inert `<script type="application/json" id="wt-data">` island (parsed at runtime); every executable `<script>` is now fixed boilerplate that can't `SyntaxError` from authoring. Section visibility is gated on an `html.js` class the script adds first, with a 2.5s failsafe reveal — a data typo, a handler bug, or JS being off can no longer blank the document. Escaping is now by construction (`JSON.stringify`), validated by `node --check` in the belt.
+- **W3** card details call `openSurface` (not the `openCard` router-bypass). **W4** docs no longer claim sheet-kind details live in `DET` (they are pre-rendered `{{SHEETS}}` dialogs). **W5** `update`/`document` honor the persisted output base. **W7** removed the non-existent `--space-*` token reference; clarified the repo-local ask-guard reference; documented the `typeTags`→hero-chip recipe.
+- `update` reconstructs the new JSON-island layout and still upgrades structured (1.1.0–1.3.0) and flat (pre-1.1.0) documents.
+
 ## 1.3.0 — 2026-07-03
 
 ### Added

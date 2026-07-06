@@ -134,4 +134,9 @@ for GF in "$PS" "$ROOT"/tests/walkthrough/fixtures/*.html; do
 done
 ok "reveal gate is specificity-correct (:not(.vis)) in scaffold + all fixtures"
 
+# --- Task 7: version 1.3.1 self-consistent across plugin.json / marketplace / CHANGELOG ---
+bash "$ROOT/tests/lib/assert-versions.sh" walkthrough || fail "walkthrough version out of sync across plugin.json / marketplace / CHANGELOG"
+grep -q '1.3.1' "$ROOT/walkthrough/CHANGELOG.md" || fail "CHANGELOG missing 1.3.1 entry"
+ok "version 1.3.1 self-consistent"
+
 echo "PASS test_validate_artifact.sh (Task 1 slice)"
