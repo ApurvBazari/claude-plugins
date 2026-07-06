@@ -58,4 +58,11 @@ print("ok: fixture scripts node-check clean, #wt-data valid JSON")
 PY
 ok "fixture: self-contained + parse-valid + js-gated"
 
+# --- Task 4: self-check #20 is an executed node --check + JSON-island validation ---
+SC="$ROOT/walkthrough/skills/create/references/self-check.md"
+[ -s "$SC" ] || fail "missing $SC"
+grep -qi 'node --check' "$SC" || fail "self-check #20 must require an executed node --check"
+grep -qi 'JSON.parse\|application/json' "$SC" || fail "self-check #20 must validate the #wt-data island"
+ok "self-check: #20 is executed node --check + JSON validation"
+
 echo "PASS test_validate_artifact.sh (Task 1 slice)"
