@@ -13,7 +13,7 @@ Built on top of [Claude Code](https://code.claude.com/docs/en) by Anthropic. Dis
 | Plugin | What it does | Reach for it when… |
 |---|---|---|
 | **[onboard](./onboard/)** | Lifecycle manager for AI configs — generates initial tooling, then **detects code-vs-config drift** as the project evolves and offers to fix it. | You have an existing repo, OR your AI configs are starting to lag behind the code. |
-| **[notify](./notify/)** | macOS / Linux system notifications when Claude finishes a task. Duration-filtered so short tasks don't spam you. | You leave Claude running long jobs in the background. |
+| **[notify](./notify/)** | macOS / Linux system notifications when Claude finishes a task. A cooldown keeps rapid back-to-back notifications from spamming you. | You leave Claude running long jobs in the background. |
 | **[handoff](./handoff/)** | Save the directive of a wrap-up session, then auto-surface it at the next SessionStart with an Execute / Edit / Discard / Save-for-later prompt. | You end sessions by pasting "continue this work in the new window" prompts into the next session. |
 | **[walkthrough](./walkthrough/)** | Render the current session as a self-contained interactive HTML document with diagrams and clickable detail. | You want a readable, shareable artifact of a session instead of scrolling back through the transcript. |
 | **[lens](./lens/)** | Intent-grounded review companion — reviews the session's diff **against the spec and plan it was meant to follow**, adversarially verifies the findings, and renders an interactive review. | You've finished a change and want a second, intent-aware opinion before you commit, push, or open a PR. |
@@ -82,7 +82,7 @@ claude plugin install lens@apurvbazari-plugins
 Each plugin's README contains a runnable transcript so you can see what a real session looks like before you install:
 
 - **onboard** — initial `/onboard:start` on a Next.js 15 project, then `/onboard:evolve` two weeks later detecting drift and proposing updates → [onboard/README.md#example](./onboard/README.md#example)
-- **notify** — `/notify:setup` followed by the duration filter suppressing a fast task and delivering a long one → [notify/README.md#example](./notify/README.md#example)
+- **notify** — `/notify:setup` followed by the cooldown suppressing a rapid second notification while the first is delivered → [notify/README.md#example](./notify/README.md#example)
 - **handoff** — saying "save handoff" mid-conversation, confirming the auto-save, then a fresh session starting with the four-option resume prompt → [handoff/README.md](./handoff/README.md)
 - **walkthrough** — running `/walkthrough:create` after a feature, getting one self-contained HTML file with diagrams, decision records, and a dark/light toggle → [walkthrough/README.md](./walkthrough/README.md)
 
@@ -107,9 +107,9 @@ For the full skill reference, the drift detection deep dive, generated artifact 
 
 Cross-platform system notifications for Claude Code. macOS via `terminal-notifier`, Linux via `notify-send`. Notifications carry a contextual subtitle (`repo / branch`) and the actual content of Claude's last message — not generic text.
 
-**Duration filtering.** `minDurationSeconds` per event suppresses notifications for fast responses, so notify only fires when Claude has actually been working for a while.
+**Notification cooldown.** `minDurationSeconds` per event is a leading-edge cooldown — after a notification fires, further ones are held until N seconds pass, so rapid back-to-back responses notify at most once per window.
 
-**Honest framing.** notify is intentionally minimal — `terminal-notifier` / `notify-send`, a Stop-hook wrapper, duration filtering, `repo/branch` subtitle. If you need Windows support, webhook fanout (Slack / Discord / Telegram), or typed event categories, the community has richer alternatives:
+**Honest framing.** notify is intentionally minimal — `terminal-notifier` / `notify-send`, a Stop-hook wrapper, a notification cooldown, `repo/branch` subtitle. If you need Windows support, webhook fanout (Slack / Discord / Telegram), or typed event categories, the community has richer alternatives:
 
 - [`777genius/claude-notifications-go`](https://github.com/777genius/claude-notifications-go) — Windows + webhook fanout, single Go binary
 - [`cfngc4594/agent-notify`](https://github.com/cfngc4594/agent-notify) — covers Claude Code + Cursor + Codex with one config
@@ -117,7 +117,7 @@ Cross-platform system notifications for Claude Code. macOS via `terminal-notifie
 
 This plugin is the *"it just works on my machine"* default, not a feature-complete notification platform.
 
-For the full skill reference, install scopes, configuration precedence rules, customisation options (sounds, bundle IDs, duration filter), and troubleshooting: [notify/README.md →](./notify/README.md)
+For the full skill reference, install scopes, scope resolution, customisation options (sounds, bundle IDs, notification cooldown), and troubleshooting: [notify/README.md →](./notify/README.md)
 
 ---
 
