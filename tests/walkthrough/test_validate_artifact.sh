@@ -185,4 +185,9 @@ grep -qiE 'repo-development convention|not (bundled|shipped)|convention \(not sh
 grep -qiE '≥ ?2 (entries|options)|at least 2 (entries|options)|minItems' "$CS" || fail "create/SKILL.md must inline the >=2-entries AskUserQuestion constraint (W7)"
 ok "W7: ask-guard constraint inlined + clarified in create/SKILL.md"
 
+# --- W9-doc: README states the 1.3.1 document is readable without JS ---
+RD="$ROOT/walkthrough/README.md"
+grep -qiE 'without javascript|no javascript|js.{0,3}(off|disabled)|readable without' "$RD" || fail "README must note the doc is readable without JS (1.3.1 W9-doc)"
+ok "W9-doc: README states no-JS readability"
+
 echo "PASS test_validate_artifact.sh (Task 1 slice)"
