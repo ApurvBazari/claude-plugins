@@ -8,6 +8,10 @@ set -uo pipefail
 trap nt_cleanup EXIT
 
 nt_make_sandbox '{ "events": { "stop": { "enabled": true, "minDurationSeconds": 0, "sound": "none", "activate": "none" } } }'
+# lib.sh symlinks $FARM/uname → the real system uname; a bare `>` would follow
+# that symlink and hit the SIP-protected binary (silently leaving PLATFORM=linux
+# on CI). Remove the symlink first so the redirect writes a fresh regular file.
+rm -f "$FARM/uname"
 printf '#!/bin/sh\necho Darwin\n' > "$FARM/uname"; chmod +x "$FARM/uname"   # force macOS send path
 
 nt_run stop '{"last_assistant_message":"x","session_id":"s"}'
