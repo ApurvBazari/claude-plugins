@@ -29,19 +29,18 @@ Installs the platform backend (`terminal-notifier` via Homebrew on macOS, or `no
 
 ### `/notify:check`
 
-Health check. Reports which scopes have notify installed (global / per-project / both), the current event configuration (sounds, durations, enabled flags), the resolved precedence-merged config that the hook will actually use, and sends a test notification to confirm the wiring works end-to-end.
+Health check. Reports which scopes have notify installed (global / per-project / both) and the current event configuration (sounds, cooldowns, enabled flags) for each. Offers to send a test notification on request.
 
 **When to use:** after editing `notify-config.json` by hand, after changing editors, when notifications stop firing for an unclear reason, or as a sanity check before relying on notify for a long task.
 
 ### `/notify:uninstall` *(destructive — user-invoked only)*
 
-Removes notify hooks from `settings.json`, deletes `notify-config.json`, and offers to uninstall the backend (`terminal-notifier` / `notify-send`) if no other tooling on your machine still uses it.
+Removes notify hooks from `settings.json` and deletes `notify-config.json`. The platform backend (`terminal-notifier` / `notify-send`) is left installed.
 
 **When to use:** decommissioning notify, switching to a richer alternative (see [the root README's notify section](../README.md#notify) for community options), or troubleshooting a broken setup by starting clean.
 
 **Side effects:**
 - Removes hook entries that match notify's command line; **does not** touch unrelated hooks in the same `settings.json`.
-- Asks before uninstalling the backend — won't auto-remove `terminal-notifier` if other tools depend on it.
 - Per-project uninstall does not affect global config, and vice versa — they're independent scopes.
 
 ## Hook event model
@@ -117,17 +116,9 @@ Both scopes can coexist — per-project hooks add to global, they don't replace.
 
 Settings live in `notify-config.json` within the chosen scope directory. Edit the file directly — changes take effect immediately, no need to re-run `/notify:setup`. The only setting that requires re-running setup is the `Notification` matcher (which is in `settings.json`, not `notify-config.json`).
 
-### Precedence (project-local inherits + overrides global)
+### Scope resolution
 
-When both `~/.claude/notify-config.json` and `<project>/.claude/notify-config.json` exist:
-
-1. The project-local config **inherits all keys from the global config**.
-2. Keys explicitly set in the project-local config **override** the global value.
-3. Keys absent from the project-local config **fall back** to the global value.
-
-Example — global has `events.stop.sound = "Glass"` and `events.stop.minDurationSeconds = 5`. Project-local sets only `events.stop.message = "Build complete"`. The merged behaviour at runtime is `{ sound: "Glass", minDurationSeconds: 5, message: "Build complete" }`.
-
-This precedence is applied at notify-setup time when project-local is being written; the runtime hook (`notify.sh`) reads only the project-local file when present, falling back to global only when no project-local file exists at all.
+The runtime hook reads exactly one config: the **project-local** `notify-config.json` when it exists, otherwise the **global** one. There is no key-level merge between scopes — each scope's config stands alone. To change project behaviour, edit that project's `notify-config.json`; to change the default everywhere, edit the global one.
 
 ## Customisation
 

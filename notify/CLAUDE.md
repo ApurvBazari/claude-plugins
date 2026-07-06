@@ -32,19 +32,10 @@ Each `stop`/`subagentStop` event supports `minDurationSeconds` as a **leading-ed
 - Config stored in `notify-config.json` under the chosen scope directory — global under `~/.claude/`, per-project under `<project>/.claude/`
 - Wizard creates/updates this file during `/notify:setup`
 - Changes take effect immediately — no restart needed
-- At runtime, `notify.sh` reads the project-local `notify-config.json` when present, else the global one
 
-### Precedence (project-local inherits + overrides global)
+### Scope resolution
 
-When both `~/.claude/notify-config.json` and `<project>/.claude/notify-config.json` exist:
-
-1. The **project-local config inherits all keys from the global config**.
-2. Keys explicitly set in the project-local config **override** the global value.
-3. Keys absent from the project-local config **fall back** to the global value.
-
-Example: global has `events.stop.sound = "Glass"` and `events.stop.minDurationSeconds = 5`. Project-local sets only `events.stop.message = "Build complete"`. The merged behavior at runtime is `{ sound: "Glass", minDurationSeconds: 5, message: "Build complete" }`.
-
-This precedence is applied at notify setup time (when project-local is being written) — `/onboard:start` § Step 3.5.2 reads global as the base and layers project-local override on top, persisting the merged result. Runtime hook (`notify.sh`) reads only the project-local file when present, falling back to global only when no project-local file exists at all.
+`notify.sh` reads exactly one config at runtime: the project-local `notify-config.json` when present, else the global one. There is no cross-scope key merge — each scope's config is used as-is. (onboard does not merge these either; any prior claim of an onboard merge step was inaccurate and has been removed.)
 
 ### Detection (used by /onboard:start before offering project-local setup)
 
