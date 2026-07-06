@@ -37,7 +37,7 @@ FIX="$ROOT/tests/walkthrough/fixtures/failure-arch-sample.html"
 grep -q 'html.js section' "$FIX"            || fail "fixture: hidden state not gated on html.js"
 # parse validity: every executable <script> node --check-clean; #wt-data is valid JSON with no raw </script>
 python3 - "$FIX" <<'PY' || fail "fixture: script/json validation failed (see above)"
-import re,sys,subprocess,json,shutil
+import re,sys,subprocess,json,shutil,tempfile,os
 html=open(sys.argv[1]).read()
 node=shutil.which("node")
 # json island
@@ -49,11 +49,15 @@ try: json.loads(raw)
 except Exception as e: print("#wt-data not valid JSON:",e); sys.exit(1)
 # every OTHER <script> must node --check (skip the json island)
 if not node: print("SKIP node --check (node not installed)"); sys.exit(0)
-for sm in re.finditer(r'<script(?![^>]*application/json)[^>]*>(.*?)</script>',html,re.S):
-    body=sm.group(1)
-    open("/tmp/wt_chk.js","w").write(body)
-    r=subprocess.run([node,"--check","/tmp/wt_chk.js"],capture_output=True,text=True)
-    if r.returncode: print("node --check failed:",r.stderr); sys.exit(1)
+fd,tmp=tempfile.mkstemp(suffix='.js'); os.close(fd)
+try:
+    for sm in re.finditer(r'<script(?![^>]*application/json)[^>]*>(.*?)</script>',html,re.S):
+        body=sm.group(1)
+        open(tmp,"w").write(body)
+        r=subprocess.run([node,"--check",tmp],capture_output=True,text=True)
+        if r.returncode: print("node --check failed:",r.stderr); sys.exit(1)
+finally:
+    os.unlink(tmp)
 print("ok: fixture scripts node-check clean, #wt-data valid JSON")
 PY
 ok "fixture: self-contained + parse-valid + js-gated"
@@ -93,7 +97,7 @@ for FF in "$ROOT"/tests/walkthrough/fixtures/*.html; do
   grep -q 'id="wt-data"' "$FF" || continue   # skip legacy reconstruct fixtures deliberately old-layout
   grep -q 'html.js section' "$FF" || fail "fixture $FF has #wt-data but no html.js gate"
   python3 - "$FF" <<'PY' || fail "fixture $FF: island/script validation failed (see above)"
-import re,sys,subprocess,json,shutil
+import re,sys,subprocess,json,shutil,tempfile,os
 html=open(sys.argv[1]).read()
 m=re.search(r'<script type="application/json" id="wt-data">(.*?)</script>',html,re.S)
 if not m: print("no #wt-data island"); sys.exit(1)
@@ -103,24 +107,32 @@ try: json.loads(raw)
 except Exception as e: print("#wt-data not valid JSON:",e); sys.exit(1)
 node=shutil.which("node")
 if not node: print("SKIP node --check (node not installed)"); sys.exit(0)
-for sm in re.finditer(r'<script(?![^>]*application/json)[^>]*>(.*?)</script>',html,re.S):
-    open("/tmp/wt_fix.js","w").write(sm.group(1))
-    r=subprocess.run([node,"--check","/tmp/wt_fix.js"],capture_output=True,text=True)
-    if r.returncode: print("node --check failed:",r.stderr); sys.exit(1)
+fd,tmp=tempfile.mkstemp(suffix='.js'); os.close(fd)
+try:
+    for sm in re.finditer(r'<script(?![^>]*application/json)[^>]*>(.*?)</script>',html,re.S):
+        open(tmp,"w").write(sm.group(1))
+        r=subprocess.run([node,"--check",tmp],capture_output=True,text=True)
+        if r.returncode: print("node --check failed:",r.stderr); sys.exit(1)
+finally:
+    os.unlink(tmp)
 PY
 done
 # node --check every executable <script> across ALL site pages (layout-agnostic; old-layout is valid JS too)
 if command -v node >/dev/null 2>&1; then
   python3 - "$ROOT" <<'PY' || fail "a site page has a script that fails node --check"
-import re,glob,subprocess,shutil,sys,os
+import re,glob,subprocess,shutil,sys,os,tempfile
 root=sys.argv[1] if len(sys.argv)>1 else "."
 node=shutil.which("node"); bad=0
-for p in glob.glob(os.path.join(root,"site/**/index.html"),recursive=True):
-    html=open(p).read()
-    for m in re.finditer(r'<script(?![^>]*application/json)[^>]*>(.*?)</script>',html,re.S):
-        open("/tmp/wt_site.js","w").write(m.group(1))
-        if subprocess.run([node,"--check","/tmp/wt_site.js"],capture_output=True).returncode:
-            print("node --check FAIL:",p); bad+=1
+fd,tmp=tempfile.mkstemp(suffix='.js'); os.close(fd)
+try:
+    for p in glob.glob(os.path.join(root,"site/**/index.html"),recursive=True):
+        html=open(p).read()
+        for m in re.finditer(r'<script(?![^>]*application/json)[^>]*>(.*?)</script>',html,re.S):
+            open(tmp,"w").write(m.group(1))
+            if subprocess.run([node,"--check",tmp],capture_output=True).returncode:
+                print("node --check FAIL:",p); bad+=1
+finally:
+    os.unlink(tmp)
 sys.exit(1 if bad else 0)
 PY
 else echo "SKIP site node --check (no node)"; fi
