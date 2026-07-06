@@ -62,7 +62,7 @@ h2{font-family:var(--serif);font-size:clamp(1.7rem,3.5vw,2.4rem);font-weight:400
 p{color:var(--ts);font-size:.92rem;line-height:1.7;max-width:720px;}
 p code,li code{font-family:var(--mono);font-size:.8rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
 section{padding:4rem 0 2rem;scroll-margin-top:70px;transition:opacity .7s var(--ease),transform .7s var(--ease);}
-html.js section{opacity:0;transform:translateY(24px);}
+html.js section:not(.vis){opacity:0;transform:translateY(24px);}
 section.vis{opacity:1;transform:none;}
 .sec-label{counter-increment:sec;font-family:var(--mono);font-size:.65rem;color:var(--tm);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.5rem;}
 .sec-label::before{content:counter(sec,decimal-leading-zero) " \2014 ";}

@@ -66,7 +66,7 @@ h2 em{font-style:italic;color:var(--accent);}
 .erd{display:flex;align-items:center;flex-wrap:wrap;gap:.6rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1.2rem 0;}
 .erd-entity{flex:0 1 220px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
 /* SP-6 visible-unless-JS gate — this fixture has no detail data + one always-visible section (kept .vis so connectors compute on an untransformed layout) */
-html.js section{opacity:0;transform:translateY(24px);}
+html.js section:not(.vis){opacity:0;transform:translateY(24px);}
 section.vis{opacity:1;transform:none;}
 </style>
 </head>

@@ -6,7 +6,7 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg-deep);color:var(--tp);font-family:var(--sans);}
 section{padding:4rem 0 2rem;scroll-margin-top:70px;transition:opacity .7s var(--ease),transform .7s var(--ease);}
-html.js section{opacity:0;transform:translateY(24px);}
+html.js section:not(.vis){opacity:0;transform:translateY(24px);}
 section.vis{opacity:1;transform:none;}
 .panel{position:fixed;top:0;right:0;width:300px;height:100vh;background:#0f1117;transform:translateX(100%);}
 .panel.open{transform:none;}

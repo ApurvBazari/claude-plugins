@@ -126,4 +126,12 @@ PY
 else echo "SKIP site node --check (no node)"; fi
 ok "fixtures new-layout + all islands parse-valid + site pages parse-clean"
 
+# --- reveal-gate specificity guard: the html.js gate must NOT out-specify section.vis ---
+for GF in "$PS" "$ROOT"/tests/walkthrough/fixtures/*.html; do
+  grep -q 'html.js section' "$GF" || continue
+  grep -qE 'html\.js section:not\(\.vis\)' "$GF" || fail "$GF: reveal gate must be 'html.js section:not(.vis)' — a bare 'html.js section' gate out-specifies section.vis and blanks the page"
+  ! grep -qE 'html\.js section ?\{' "$GF" || fail "$GF: bare 'html.js section{' gate present — out-specifies section.vis, sections never reveal"
+done
+ok "reveal gate is specificity-correct (:not(.vis)) in scaffold + all fixtures"
+
 echo "PASS test_validate_artifact.sh (Task 1 slice)"
