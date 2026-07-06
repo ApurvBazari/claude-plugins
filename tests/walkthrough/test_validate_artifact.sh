@@ -65,4 +65,22 @@ grep -qi 'node --check' "$SC" || fail "self-check #20 must require an executed n
 grep -qi 'JSON.parse\|application/json' "$SC" || fail "self-check #20 must validate the #wt-data island"
 ok "self-check: #20 is executed node --check + JSON validation"
 
+# --- Task 5: reconstruct three-layout probe + per-layout fixtures ---
+RM="$ROOT/walkthrough/skills/update/references/reconstruct-and-merge.md"
+[ -s "$RM" ] || fail "missing $RM"
+grep -q 'wt-data' "$RM"                  || fail "reconstruct must detect the new #wt-data JSON layout"
+grep -qi 'application/json' "$RM"        || fail "reconstruct must parse the JSON island for the new layout"
+grep -q 'const SURF' "$RM"               || fail "reconstruct must keep the structured inline-const layout branch"
+grep -qiE 'flat|k,h,b|pre-1.1' "$RM"     || fail "reconstruct must keep the pre-1.1.0 flat-DET branch"
+ok "reconstruct: three-layout probe documented"
+
+for f in new structured flat; do
+  FF="$ROOT/tests/walkthrough/fixtures/reconstruct-$f.html"; [ -s "$FF" ] || fail "missing $FF"
+done
+grep -q 'id="wt-data"' "$ROOT/tests/walkthrough/fixtures/reconstruct-new.html" || fail "new fixture must carry #wt-data"
+grep -q 'const SURF' "$ROOT/tests/walkthrough/fixtures/reconstruct-structured.html" || fail "structured fixture must carry inline const SURF"
+! grep -q 'const SURF' "$ROOT/tests/walkthrough/fixtures/reconstruct-flat.html" || fail "flat fixture must NOT carry const SURF"
+grep -q '"b"' "$ROOT/tests/walkthrough/fixtures/reconstruct-flat.html" || fail "flat fixture must carry the legacy b field"
+ok "reconstruct: three per-layout fixtures present + distinct"
+
 echo "PASS test_validate_artifact.sh (Task 1 slice)"
