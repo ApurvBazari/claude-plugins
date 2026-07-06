@@ -26,4 +26,36 @@ grep -q 'JSON.parse' "$IJ"                 || fail "interactivity must JSON.pars
 grep -qE "add\('vis'\)\),?2500|2500\)" "$IJ" || fail "interactivity must have the 2.5s failsafe reveal timer"
 ok "interactivity: js-gate + JSON.parse(DET/SURF) + failsafe"
 
+# --- Task 3: golden new-layout artifact — self-contained + parse-valid + js-gated ---
+FIX="$ROOT/tests/walkthrough/fixtures/failure-arch-sample.html"
+[ -s "$FIX" ] || fail "missing new-layout fixture $FIX"
+# self-contained
+! grep -qE '<script[^>]*src=' "$FIX"        || fail "fixture: <script src> — not self-contained"
+! grep -qiE '<link[^>]*stylesheet' "$FIX"   || fail "fixture: external stylesheet"
+! grep -q '<img' "$FIX"                      || fail "fixture: <img> present"
+# visible-unless-JS: html.js gate present, no bare section{opacity:0}
+grep -q 'html.js section' "$FIX"            || fail "fixture: hidden state not gated on html.js"
+# parse validity: every executable <script> node --check-clean; #wt-data is valid JSON with no raw </script>
+python3 - "$FIX" <<'PY' || fail "fixture: script/json validation failed (see above)"
+import re,sys,subprocess,json,shutil
+html=open(sys.argv[1]).read()
+node=shutil.which("node")
+# json island
+m=re.search(r'<script type="application/json" id="wt-data">(.*?)</script>',html,re.S)
+if not m: print("no #wt-data island"); sys.exit(1)
+raw=m.group(1)
+if "</script" in raw: print("raw </script> inside #wt-data (must be <\\/script)"); sys.exit(1)
+try: json.loads(raw)
+except Exception as e: print("#wt-data not valid JSON:",e); sys.exit(1)
+# every OTHER <script> must node --check (skip the json island)
+if not node: print("SKIP node --check (node not installed)"); sys.exit(0)
+for sm in re.finditer(r'<script(?![^>]*application/json)[^>]*>(.*?)</script>',html,re.S):
+    body=sm.group(1)
+    open("/tmp/wt_chk.js","w").write(body)
+    r=subprocess.run([node,"--check","/tmp/wt_chk.js"],capture_output=True,text=True)
+    if r.returncode: print("node --check failed:",r.stderr); sys.exit(1)
+print("ok: fixture scripts node-check clean, #wt-data valid JSON")
+PY
+ok "fixture: self-contained + parse-valid + js-gated"
+
 echo "PASS test_validate_artifact.sh (Task 1 slice)"
