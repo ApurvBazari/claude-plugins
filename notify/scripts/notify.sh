@@ -211,12 +211,12 @@ fi
 # --- Send notification (platform-specific) ---
 if [[ "$PLATFORM" = "macos" ]]; then
   if command -v terminal-notifier &>/dev/null; then
-    terminal-notifier \
-      -title "$TITLE" \
-      -subtitle "$SUBTITLE" \
-      -message "$MESSAGE" \
-      -sound "$SOUND" \
-      -activate "$ACTIVATE"
+    # Build args so an explicit "none" (or empty) omits the flag entirely — this
+    # is how a user turns OFF the sound or click-to-focus app (N3).
+    tn_args=( -title "$TITLE" -subtitle "$SUBTITLE" -message "$MESSAGE" )
+    [[ -n "$SOUND"    && "$SOUND"    != "none" ]] && tn_args+=( -sound "$SOUND" )
+    [[ -n "$ACTIVATE" && "$ACTIVATE" != "none" ]] && tn_args+=( -activate "$ACTIVATE" )
+    terminal-notifier "${tn_args[@]}"
   fi
 elif [[ "$PLATFORM" = "linux" ]]; then
   if command -v notify-send &>/dev/null; then
