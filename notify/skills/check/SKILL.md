@@ -109,7 +109,7 @@ If the developer requests a test:
 
 **Single scope:** Run the test against that scope's notify.sh by piping mock JSON:
 ```bash
-echo '{"last_assistant_message":"Health check — notifications working!"}' | $SCOPE_DIR/hooks/notify.sh stop
+echo '{"last_assistant_message":"Health check — notifications working!"}' | "$SCOPE_DIR/hooks/notify.sh" stop
 ```
 
 **Both scopes active:** Ask which scope to test:

@@ -32,12 +32,12 @@ If the user includes "dry-run" or "--dry-run" in their command arguments:
 Run `uname -s` to detect the platform.
 
 **macOS (Darwin):**
-Run `which terminal-notifier` via Bash.
+Run `command -v terminal-notifier` via Bash.
 - If installed: `terminal-notifier is installed. Good to go.`
 - If missing: offer to install via `${CLAUDE_PLUGIN_ROOT}/scripts/install-notifier.sh`. If Homebrew is also missing, show install instructions and stop.
 
 **Linux:**
-Run `which notify-send` via Bash.
+Run `command -v notify-send` via Bash.
 - If installed: `notify-send is available. Good to go.`
 - If missing: show installation instructions from `${CLAUDE_PLUGIN_ROOT}/scripts/install-notifier.sh` output (distro-specific `apt`/`dnf`/`pacman` commands) and stop.
 
@@ -110,6 +110,8 @@ Check for existing notification hooks:
 
 If "Cancel", stop. If "Update" or "Replace", continue (Replace removes old config first).
 
+**On "Update":** before merging hooks in Step 6b, remove any *existing* notify hook entries (commands containing `notify.sh`) from each event array first, then add the fresh entry. This prevents a duplicate hook — and therefore a double notification — when setup is re-run against a scope that already has notify installed.
+
 **If no existing config**, proceed directly.
 
 ---
@@ -179,7 +181,7 @@ Generate the following files based on the configuration:
 Create the directory and copy the notification script from the plugin's source, then make it executable:
 
 ```bash
-mkdir -p $BASE_DIR/hooks
+mkdir -p "$BASE_DIR/hooks"
 cp "${CLAUDE_PLUGIN_ROOT}/scripts/notify.sh" "$BASE_DIR/hooks/notify.sh"
 chmod +x "$BASE_DIR/hooks/notify.sh"
 ```
@@ -187,6 +189,8 @@ chmod +x "$BASE_DIR/hooks/notify.sh"
 The script supports both macOS (`terminal-notifier`) and Linux (`notify-send`), auto-detects the platform, reads config from `notify-config.json` at runtime, and supports duration-based filtering via `minDurationSeconds`.
 
 ### 6b: Merge hooks into `$BASE_DIR/settings.json`
+
+If `$BASE_DIR/settings.json` exists but does not parse as JSON, do NOT overwrite it. Stop and tell the developer the file is malformed, show the parse error, and ask them to fix or back it up before re-running setup. Never silently replace an unparseable settings file.
 
 Read the existing `$BASE_DIR/settings.json` (create if it doesn't exist). Merge hook entries into the `hooks` object **non-destructively** — preserve all existing keys and hooks.
 
@@ -200,7 +204,7 @@ Read the existing `$BASE_DIR/settings.json` (create if it doesn't exist). Merge 
         "hooks": [
           {
             "type": "command",
-            "command": "$BASE_DIR/hooks/notify.sh stop",
+            "command": "\"$BASE_DIR/hooks/notify.sh\" stop",
             "timeout": 10
           }
         ]
@@ -212,7 +216,7 @@ Read the existing `$BASE_DIR/settings.json` (create if it doesn't exist). Merge 
         "hooks": [
           {
             "type": "command",
-            "command": "$BASE_DIR/hooks/notify.sh notification",
+            "command": "\"$BASE_DIR/hooks/notify.sh\" notification",
             "timeout": 5
           }
         ]
@@ -223,7 +227,7 @@ Read the existing `$BASE_DIR/settings.json` (create if it doesn't exist). Merge 
         "hooks": [
           {
             "type": "command",
-            "command": "$BASE_DIR/hooks/notify.sh subagentStop",
+            "command": "\"$BASE_DIR/hooks/notify.sh\" subagentStop",
             "timeout": 10
           }
         ]
@@ -246,7 +250,7 @@ Write the full configuration JSON. The `message` field in each event is the **fa
 Run a test notification by piping mock JSON through the new script:
 
 ```bash
-echo '{"last_assistant_message":"Setup complete — notifications are working!"}' | $BASE_DIR/hooks/notify.sh stop
+echo '{"last_assistant_message":"Setup complete — notifications are working!"}' | "$BASE_DIR/hooks/notify.sh" stop
 ```
 
 Ask the developer if they saw the notification.
@@ -291,7 +295,7 @@ If the scope is per-project, add:
 
 ## Key Rules
 
-- **Verify the notifier binary is on PATH before claiming success** — run `which terminal-notifier` (macOS) or `which notify-send` (Linux) and halt with install instructions if the binary is missing. Never proceed to hook wiring when the notification backend is absent.
+- **Verify the notifier binary is on PATH before claiming success** — run `command -v terminal-notifier` (macOS) or `command -v notify-send` (Linux) and halt with install instructions if the binary is missing. Never proceed to hook wiring when the notification backend is absent.
 - **`settings.json` is always read before writing** — hooks are merged non-destructively alongside existing entries. Never overwrite the file; preserve all other hooks, rules, and keys verbatim.
 - **Existing config requires explicit user choice before proceeding** — if `notify.sh`, `notify-config.json`, or existing hooks are detected in Step 3, surface the Update / Replace / Cancel menu and wait. Never silently overwrite a previous setup.
 - **`BASE_DIR` must be a fully resolved absolute path** — no `~` or relative segments in any path that gets written to `settings.json` hook commands. Expand at resolution time in Step 2 and carry the expanded form forward through all subsequent steps.
