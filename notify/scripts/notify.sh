@@ -50,7 +50,14 @@ try:
     val = data
     for k in keys:
         val = val[k]
-    print(val if val is not None else '')
+    if val is None:
+        print('')
+    elif val is True:
+        print('true')
+    elif val is False:
+        print('false')
+    else:
+        print(val)
 except Exception:
     print('')
 " "$path" 2>/dev/null)"
