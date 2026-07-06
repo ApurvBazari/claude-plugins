@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.3.0 — 2026-07-03
+
+### Added
+- **Layered, cycle-aware ERD.** The schema/data-model renderer now places entities in dependency-depth bands (referenced on top, junctions at the bottom), anchors each relationship on its FK field row (`→ Target.field · cardinality`), lists every edge in a relationship summary, and draws one connector on hover/focus. Handles cycles (mutual FKs → marked back-edge) and self-references (self-loop) via break-and-mark. Self-contained: no standing overlay, no resize/theme/print listeners.
+- **Navigable relationship summary.** Each entity name in a `.rels` summary row is an `openSurface` target (the row itself no longer presents a misleading pointer), so the summary is pointer-navigable to its endpoints; activating an endpoint link needs a pointer (the `.e` spans carry no `tabindex`/`role`), while the always-visible summary text stays the print / no-hover reading channel. Summary→entity star links only — never entity→entity — so the `openSurface` graph stays acyclic (#14).
+
+### Changed
+- self-check #18 carves out the ERD (data-model cycles are rendered, not routed to a state diagram).
+- `.erd` (flat) retained as a back-compat alias for pre-1.3.0 docs.
+
 ## 1.2.1 — 2026-06-21
 
 ### Fixed
