@@ -172,4 +172,17 @@ grep -q '<base>' "$UP" || fail "update Step 1 must resolve/list <base>, not a ha
 grep -qiE 'settings.md|persisted base|walkthroughs/' "$DC" || fail "document must honor the persisted base (W5)"
 ok "W5: update+document resolve the persisted base"
 
+# --- W7: drop --space-* fiction; document typeTags->hero-chip recipe; inline+clarify ask-guard ---
+MK="$ROOT/walkthrough/skills/document/references/adapters/marketplace.md"
+grep -q '\-\-space-' "$MK" && fail "marketplace.md references non-existent --space-* tokens (W7)"
+grep -qiE 'typeTags.*chip|hero chip.*typeTags|chip.*from typeTags' "$PS" || fail "page-scaffold must document the typeTags->hero-chip recipe (W7)"
+ok "W7: no --space fiction; typeTags chip recipe present"
+
+# ask-guard: create/SKILL.md must now clarify the rule is a repo-dev convention (not shipped) AND
+# inline the shipped >=2-entries constraint so the skill is self-contained (update already inlines it).
+CS="$ROOT/walkthrough/skills/create/SKILL.md"
+grep -qiE 'repo-development convention|not (bundled|shipped)|convention \(not shipped\)' "$CS" || fail "create/SKILL.md must clarify the ask-guard rule is a repo-dev convention, not shipped (W7)"
+grep -qiE '≥ ?2 (entries|options)|at least 2 (entries|options)|minItems' "$CS" || fail "create/SKILL.md must inline the >=2-entries AskUserQuestion constraint (W7)"
+ok "W7: ask-guard constraint inlined + clarified in create/SKILL.md"
+
 echo "PASS test_validate_artifact.sh (Task 1 slice)"

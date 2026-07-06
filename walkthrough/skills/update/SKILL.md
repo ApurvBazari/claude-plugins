@@ -19,7 +19,9 @@ the two stages unique to `update` (reconstruct + merge) live in `references/reco
 Resolve `<base>` first (same as `create` Step 6.5): if a `settings.md` with `output-location:` exists in
 `walkthroughs/` (visible) or `.claude/walkthrough/` (hidden), use that base; else default to
 `.claude/walkthrough/`. List `<base>/*.html` (not a hardcoded `.claude/walkthrough/`). Never overwrite
-without explicit user confirmation, even when model-invoked. Per `.claude/rules/ask-user-question-guard.md`:
+without explicit user confirmation, even when model-invoked. Per `.claude/rules/ask-user-question-guard.md`
+(a repo-development convention, not shipped with the plugin; the shipped constraint — AskUserQuestion option
+lists must have ≥2 entries, the schema's `minItems: 2` — is inlined per-branch below):
 
 - **0 files** → do not proceed. Tell the user: *"No walkthrough exists yet — run `/walkthrough:create` first."* Offer to run it. Stop.
 - **1 file** → confirm with a 2-option single-select `AskUserQuestion`: `"Update <filename>?"` → `Yes` / `No`. (A 1-option list violates the schema's `minItems: 2`; the yes/no form satisfies it.)

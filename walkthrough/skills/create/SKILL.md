@@ -68,7 +68,10 @@ Decide where walkthroughs are written in this folder, and remember the choice, B
    - Else determine whether this is a git repository: `git rev-parse --is-inside-work-tree` (exit 0 = git repo).
      - **Git repo** → `<base>` = `.claude/walkthrough/` silently (today's behavior; no new prompt).
      - **Not a git repo** (the knowledge-work / Cowork case) → ask via `AskUserQuestion`
-       (single-select, fixed 2 options per `.claude/rules/ask-user-question-guard.md`):
+       (single-select, fixed 2 options per `.claude/rules/ask-user-question-guard.md` — a
+       repo-development convention, not shipped with the plugin; the shipped constraint is simply that
+       AskUserQuestion option lists must have ≥2 entries (the schema's `minItems: 2`), so use a yes/no
+       form when only one candidate exists):
        - **Visible — `walkthroughs/`** (recommended): a plain folder at the project root, easy to find.
        - **Hidden — `.claude/walkthrough/`**: tucked away, consistent with Claude Code projects.
      Persist the choice as a line `output-location: <visible|hidden>` in `<chosen-base>/settings.md`
