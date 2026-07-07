@@ -5,20 +5,20 @@ description: Apply accumulated tooling drift to Claude configuration. Use when u
 
 # Evolve Skill — Apply Pending Drift Updates
 
-You are applying accumulated tooling drift updates. This skill handles two drift sources: **FileChanged drift** (logged by hooks to `.claude/onboard-drift.json`, or the legacy `.claude/greenfield-drift.json` in projects onboarded before the rename) and **plugin drift** (detected by comparing `greenfield-meta.json` against currently-installed plugins).
+You are applying accumulated tooling drift updates. This skill handles two drift sources: **FileChanged drift** (logged by hooks to `.claude/onboard-drift.json`, or the legacy `.claude/greenfield-drift.json` in projects onboarded before the rename) and **plugin drift** (detected by comparing the baseline in `onboard-meta.json` against currently-installed plugins).
 
 ## Guard
 
 Check both drift sources before deciding whether to proceed:
 
 1. Read `.claude/onboard-drift.json` in the project root (falling back to the legacy `.claude/greenfield-drift.json` if only that exists — see § Legacy drift-file migration). Record whether it has entries.
-2. Read `.claude/greenfield-meta.json`. If it exists and contains `generated.toolingFlags.installedPlugins`, run the plugin drift detection from Step 0 below. Record whether plugin drift was found.
+2. Read `.claude/onboard-meta.json`. If it contains `detectedPlugins.installedPlugins`, run the plugin drift detection from Step 0 below. Record whether plugin drift was found.
 
 If onboard-drift.json has no entries (or is missing) AND no plugin drift was detected AND no skill frontmatter drift was detected (Step 2d pre-check against `.claude/onboard-skill-snapshot.json`) AND no agent frontmatter drift was detected (Step 2e pre-check against `.claude/onboard-agent-snapshot.json`) AND no output-style drift was detected (Step 2f pre-check against `.claude/onboard-output-style-snapshot.json`) AND no built-in skills drift was detected (Step 2h pre-check against `.claude/onboard-builtin-skills-snapshot.json`):
 
 > No pending drift detected. Your AI tooling is in sync with your codebase.
 >
-> FileChanged drift is logged automatically when dependencies, configs, or structure change. Plugin drift is detected by comparing installed plugins against greenfield-meta.json. Skill / agent / output-style / built-in skills drift is detected by comparing live files against their respective snapshots in `.claude/`.
+> FileChanged drift is logged automatically when dependencies, configs, or structure change. Plugin drift is detected by comparing installed plugins against the baseline in onboard-meta.json. Skill / agent / output-style / built-in skills drift is detected by comparing live files against their respective snapshots in `.claude/`.
 
 Stop and do not proceed.
 
@@ -47,9 +47,9 @@ Only this orchestrator touches the list. Every internal skill it later invokes (
 
 Plugin drift detection follows the shared procedure in `../generation/references/plugins/plugin-drift-detection.md`. Evolve-specific parameters:
 
-- **Baseline source** — `.claude/greenfield-meta.json.generated.toolingFlags.installedPlugins` or `.claude/onboard-meta.json.detectedPlugins.installedPlugins`. If neither file has this field, skip Step 0 entirely (evolve requires a baseline; use `/onboard:update` instead for projects without one).
+- **Baseline source** — `.claude/onboard-meta.json.detectedPlugins.installedPlugins`. If this field is absent, skip Step 0 entirely (evolve requires a baseline; use `/onboard:update` instead for projects without one).
 - **Probe list** — canonical list in `../generation/references/plugins/plugin-detection-guide.md` § Known Plugin Probe List. Also probe any plugin in `previousPlugins` that isn't in the known list (custom/third-party plugins).
-- **autonomyLevel source** — `onboard-meta.json.wizardAnswers.autonomyLevel`, falling back to `greenfield-meta.json.context.autonomyLevel` if present.
+- **autonomyLevel source** — `onboard-meta.json.wizardAnswers.autonomyLevel`.
 
 Produce the `driftReport` described in `../generation/references/plugins/plugin-drift-detection.md` § Output Schema. If `added` and `removed` are both empty, skip to Step 1.
 
@@ -135,11 +135,11 @@ Read the root CLAUDE.md. Find the `<!-- onboard:plugin-integration:start -->` an
 
 ### 2b.2: Refresh Quality-Gate Hooks
 
-Read the existing `autonomyLevel` from `greenfield-meta.json.context.autonomyLevel` (or fall back to `onboard-meta.json.wizardAnswers.autonomyLevel`).
+Read the existing `autonomyLevel` from `onboard-meta.json.wizardAnswers.autonomyLevel`.
 
 **For added plugins**: Derive new `qualityGates` and `phaseSkills` entries per `references/plugin-integration-rules.md` § qualityGates, phaseSkills, and coveredCapabilities Derivation. Generate new hook scripts following the hook conventions from `../generation/references/guides/hooks-guide.md` § Quality-Gate Hook Templates. Add corresponding entries to `.claude/settings.json` (merge-aware — read first, never overwrite existing non-plugin-integration hooks).
 
-**For removed plugins**: Identify hook scripts that reference removed plugins. Match by script basename against `greenfield-meta.json.generated.toolingFlags.hookStatus.generated` entries. Delete the hook script files. Remove corresponding entries from `.claude/settings.json`. If a `qualityGates` or `phaseSkills` entry references a removed plugin, drop it.
+**For removed plugins**: Identify hook scripts that reference removed plugins. Match by script basename against `onboard-meta.json.hookStatus.generated` entries. Delete the hook script files. Remove corresponding entries from `.claude/settings.json`. If a `qualityGates` or `phaseSkills` entry references a removed plugin, drop it.
 
 **Apply autonomyLevel downgrade**: If `autonomyLevel` is `always-ask`, downgrade all `preCommit[].mode` values to `"advisory"`.
 
@@ -147,21 +147,17 @@ Read the existing `autonomyLevel` from `greenfield-meta.json.context.autonomyLev
 
 **Standalone ↔ plugin reconciliation**: Apply the same reconciliation matrix that `update` uses — see `../update/references/drift-application.md` § Plugin drift application (standalone ↔ plugin reconciliation) for the full table. In short: when `superpowers` enters via `added`, delete `.claude/skills/tdd-workflow/SKILL.md` and `.claude/agents/tdd-test-writer.md` (plus standalone hooks that duplicate its skills); when `superpowers` leaves via `removed` and no alternate coverage exists, regenerate those standalone artifacts via `onboard:generate` with `callerExtras.regenerateOnly`. Same rules apply for any other plugin that shadowed a standalone artifact. Evolve runs this reconciliation without asking — it's acceptable because evolve is meant to drain accumulated drift automatically; users who want per-item approval should use `/onboard:update` instead.
 
-### 2b.3: Update greenfield-meta.json
+### 2b.3: Persist Updated Plugin Baseline to onboard-meta.json
 
-Update the following fields in `.claude/greenfield-meta.json`:
+Advance the plugin-drift baseline in `.claude/onboard-meta.json` so the next run compares against the new state — the same persistence `../update/SKILL.md` § Step 8: Update Metadata performs, and the write contract in `../generation/references/plugins/plugin-drift-detection.md` § Post-apply Persistence. Update:
 
-1. `generated.toolingFlags.installedPlugins` → set to `currentPlugins`
-2. `generated.toolingFlags.coveredCapabilities` → recompute from `currentPlugins` using the capability mapping table in `references/plugin-integration-rules.md`
-3. `generated.toolingFlags.qualityGates` → rebuilt from current state
-4. `generated.toolingFlags.phaseSkills` → rebuilt from current state
-5. `generated.toolingFlags.hookStatus` → update `planned`, `generated`, `skipped` to reflect new hook state
-6. `generated.toolingFlags.mcpStatus` → mirror `onboard-meta.json.mcpStatus` verbatim (parallel to `hookStatus`). If `onboard-meta.json` has no `mcpStatus` yet (older project predating the MCP capability), skip this field silently — do not invent an empty object.
-7. `generated.toolingFlags.skillStatus` → mirror `onboard-meta.json.skillStatus` verbatim (parallel to `hookStatus` and `mcpStatus`). If `onboard-meta.json` has no `skillStatus` yet (older project predating onboard 1.5.0), skip this field silently — do not invent an empty object.
-8. `generated.toolingFlags.agentStatus` → mirror `onboard-meta.json.agentStatus` verbatim (parallel to `skillStatus`). If `onboard-meta.json` has no `agentStatus` yet (older project predating onboard 1.6.0), skip this field silently — do not invent an empty object.
-9. `generated.toolingFlags.outputStyleStatus` → mirror `onboard-meta.json.outputStyleStatus` verbatim. If `onboard-meta.json` has no `outputStyleStatus` yet (older project predating onboard 1.7.0), skip this field silently — do not invent an empty object.
-10. `generated.toolingFlags.lspStatus` → mirror `onboard-meta.json.lspStatus` verbatim. If `onboard-meta.json` has no `lspStatus` yet (older project predating onboard 1.8.0), skip this field silently — do not invent an empty object.
-11. `generated.toolingFlags.builtInSkillsStatus` → mirror `onboard-meta.json.builtInSkillsStatus` verbatim. If `onboard-meta.json` has no `builtInSkillsStatus` yet (older project predating onboard 1.9.0), skip this field silently — do not invent an empty object.
+1. `detectedPlugins.installedPlugins` → set to `currentPlugins`
+2. `detectedPlugins.coveredCapabilities` → recompute from `currentPlugins` using the capability mapping table in `references/plugin-integration-rules.md`
+3. `detectedPlugins.qualityGates` → rebuilt from current state
+4. `detectedPlugins.phaseSkills` → rebuilt from current state
+5. top-level `hookStatus` → update `planned`, `generated`, `skipped` to reflect new hook state
+
+The `mcpStatus`, `skillStatus`, `agentStatus`, `outputStyleStatus`, `lspStatus`, and `builtInSkillsStatus` fields are written directly to `onboard-meta.json` by Steps 2c–2h — there is no separate mirror to maintain here.
 
 ## Step 2c: Apply MCP Drift
 
@@ -197,7 +193,7 @@ Run the same drift classification as `../update/SKILL.md` § 4b.5 Skill Frontmat
 - **missing-file** → invoke `onboard:generate` with `callerExtras.regenerateOnly: [".claude/skills/<skill>/SKILL.md"]` and `callerExtras.disableSkillTuning: true`. The generator reuses the snapshot's frontmatter values so prior tweaks are preserved.
 - **user-tweaked** / **in-sync** → no action.
 
-Update `onboard-meta.json.skillStatus.frontmatterFields[<skill>]` to reflect the applied state. The Step 2b.3 metadata mirror path picks up the refreshed `skillStatus` via the read-modify-write pattern (see below).
+Update `onboard-meta.json.skillStatus.frontmatterFields[<skill>]` to reflect the applied state.
 
 ## Step 2e: Apply Agent Frontmatter Drift
 
@@ -215,7 +211,7 @@ Run the same drift classification as `../update/SKILL.md` § 4b.6 Agent Frontmat
 - **missing-file** → invoke `onboard:generate` with `callerExtras.regenerateOnly: [".claude/agents/<agent>.md"]` and `callerExtras.disableAgentTuning: true`. The generator reuses the snapshot's frontmatter values so prior tweaks are preserved.
 - **user-tweaked** / **in-sync** → no action.
 
-Update `onboard-meta.json.agentStatus.frontmatterFields[<agent>]` to reflect the applied state. The Step 2b.3 metadata mirror path picks up the refreshed `agentStatus` via the read-modify-write pattern.
+Update `onboard-meta.json.agentStatus.frontmatterFields[<agent>]` to reflect the applied state.
 
 ## Step 2f: Apply Output Style Drift
 
@@ -234,7 +230,7 @@ Run the same drift classification as `../update/SKILL.md` § 4b.7 Output Style D
 - **missing-file** → invoke `onboard:generate` with `callerExtras.regenerateOnly: [".claude/output-styles/<name>.md"]` and `callerExtras.disableOutputStyleTuning: true`. The generator reuses the snapshot's frontmatter values and the catalog body template so prior tweaks are preserved.
 - **user-tweaked** / **in-sync** → no action.
 
-Update `onboard-meta.json.outputStyleStatus.frontmatterFields[<style>]` to reflect the applied state. Preserve `outputStyleStatus.activationDefault`, `settingsLocalWritten`, and `settingsLocalWarning` — evolve does NOT touch `settings.local.json`. The Step 2b.3 metadata mirror path picks up the refreshed `outputStyleStatus` via the read-modify-write pattern.
+Update `onboard-meta.json.outputStyleStatus.frontmatterFields[<style>]` to reflect the applied state. Preserve `outputStyleStatus.activationDefault`, `settingsLocalWritten`, and `settingsLocalWarning` — evolve does NOT touch `settings.local.json`.
 
 ## Step 2g: Apply LSP Plugin Drift
 
@@ -257,7 +253,7 @@ When `.claude/onboard-lsp-snapshot.json` is absent, fire a one-time initial prom
 
 **Programmatic mode** (when called via `generate` with `callerExtras.lspPlugins` set): evolve delegates to the caller's explicit list — no prompt fires. An empty array means "declined all"; an absent caller value falls through to interactive prompting.
 
-Update `onboard-meta.json.lspStatus` to reflect additions. The Step 2b.3 metadata mirror path picks up the refreshed `lspStatus` via the read-modify-write pattern.
+Update `onboard-meta.json.lspStatus` to reflect additions.
 
 ## Step 2h: Apply Built-in Skills Drift
 
@@ -282,7 +278,7 @@ Run the same drift classification as `../update/SKILL.md` § 4b.9 Built-in Skill
 
 **Programmatic mode** (when called via `generate` with `callerExtras.builtInSkills` set): evolve delegates to the caller's explicit list — no prompt fires. An empty array means "declined all"; an absent caller value falls through to interactive prompting.
 
-Update `onboard-meta.json.builtInSkillsStatus` to reflect additions. The Step 2b.3 metadata mirror path picks up the refreshed `builtInSkillsStatus` via the read-modify-write pattern.
+Update `onboard-meta.json.builtInSkillsStatus` to reflect additions.
 
 ## Step 2i: Apply Research Staleness (re-research)
 
@@ -306,7 +302,7 @@ After applying all updates (both FileChanged and plugin integration), show what 
 > - .claude/rules/typescript.md: Updated for strict mode
 > - .claude/hooks/pre-commit-code-review.sh: Added (new plugin: code-review)
 > - .claude/settings.json: Updated hook entries
-> - .claude/greenfield-meta.json: Updated installedPlugins, hookStatus, mcpStatus
+> - .claude/onboard-meta.json: Updated detectedPlugins (installedPlugins, coveredCapabilities), hookStatus
 > - .mcp.json: Added [server] entry (new signal detected)
 > - .claude/onboard-mcp-snapshot.json: Updated baseline
 > - .claude/skills/react-component/SKILL.md: Added `paths` field (new archetype default)
@@ -337,19 +333,19 @@ After updates are applied:
 1. Update `lastAuditedAt` in onboard-drift.json to current timestamp
 2. Clear the processed entries from the `entries` array
 3. Keep any entries that were NOT processed (e.g., structural changes that need developer input)
-4. Plugin drift state is persisted in greenfield-meta.json (updated in Step 2b.3) — there is no separate "clear" action for plugin drift.
+4. Plugin drift state is persisted in onboard-meta.json (updated in Step 2b.3) — there is no separate "clear" action for plugin drift.
 
 > **Phase complete:** after the processed entries are cleared, `TaskUpdate(evolve:clear-entries → completed)`. All 4 phase tasks are now `completed` — the run is done.
 
 ## Key Rules
 
 0. **Own the gateless phase-task list end to end** — per `../start/references/phase-tracking.md`, the Initialize Phase Tracking step creates the 4 `evolve:*` tasks; each phase marks its own task `in_progress` before its work (and before any `Skill(onboard:generate)`/`Skill(onboard:research)` dispatch) and `completed` after. Those internal skills are **task-blind** — invoking `generate` inside the apply phase does NOT spawn its own list. The enum is exactly `pending`/`in_progress`/`completed`/`deleted` — no "blocked"/"cancelled". `evolve` has **no hard gate**: it shows the diff *after* applying, so there is no `in_progress`-while-awaiting gate task and no `deleted`-on-cancel transition — every phase is a straight `in_progress → completed`. The list is **in-session visibility only** — the durable record is the on-disk meta/snapshots.
-1. **Read before writing** — Always read the current state of CLAUDE.md, rules, settings.json, and greenfield-meta.json before making changes.
+1. **Read before writing** — Always read the current state of CLAUDE.md, rules, settings.json, and onboard-meta.json before making changes.
 2. **Surgical updates** — Only change the specific sections affected by the drift. Don't rewrite entire files.
 3. **Ask for structural** — Dependency and config changes can be auto-applied. Structural changes (new CLAUDE.md files) require developer confirmation.
 4. **Preserve manual edits** — If the developer has customized CLAUDE.md beyond what onboard generated, preserve those customizations. Only touch the marker-delimited Plugin Integration section.
 5. **Show the diff** — Always show what was changed so the developer can verify.
-6. **Plugin drift is probe-based** — It does not depend on onboard-drift.json entries. It's detected by comparing greenfield-meta.json against filesystem state at evolve-time, following `../generation/references/plugins/plugin-drift-detection.md`.
+6. **Plugin drift is probe-based** — It does not depend on onboard-drift.json entries. It's detected by comparing the baseline in onboard-meta.json against filesystem state at evolve-time, following `../generation/references/plugins/plugin-drift-detection.md`.
 7. **Marker-delimited surgery** — Plugin Integration section updates use the `<!-- onboard:plugin-integration:start/end -->` markers. Never touch content outside the markers.
 8. **Subdirectory annotations refresh via marker + role attribute** — Plugin drift refreshes `<!-- onboard:skill-recommendations:start role="..." -->` blocks in subdirectory CLAUDE.md files without re-invoking scaffold-analyzer. Directories lacking markered blocks are not auto-created — run `/onboard:update` to surface them as new best-practice additions.
 9. **Merge-aware hook updates** — When modifying `.claude/settings.json`, read first, merge plugin-integration hooks, and preserve all other hooks (format, lint, evolution, etc.).

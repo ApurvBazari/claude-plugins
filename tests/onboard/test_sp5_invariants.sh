@@ -38,4 +38,10 @@ else
   echo "ok: O4b legacy-drift fixture present (valid JSON with entries)"
 fi
 
+# --- O3: no phantom greenfield-meta.json survives in evolve (it's a removed
+#     plugin's file onboard never creates; plugin-drift state lives in onboard-meta.json).
+#     NB: this greps `greenfield-meta` (with -meta), so it never matches the O4
+#     `greenfield-drift` read-both fallback, which is intentionally kept. ---
+must_absent "O3: no greenfield-meta in evolve" 'greenfield-meta' onboard/skills/evolve/SKILL.md
+
 exit $fail
