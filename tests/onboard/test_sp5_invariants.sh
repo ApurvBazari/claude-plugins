@@ -44,4 +44,32 @@ fi
 #     `greenfield-drift` read-both fallback, which is intentionally kept. ---
 must_absent "O3: no greenfield-meta in evolve" 'greenfield-meta' onboard/skills/evolve/SKILL.md
 
+# --- O2: the evolve Guard early-exit names MCP (Step 2c) + LSP (Step 2g) +
+#     research staleness (Step 2i). The Guard short-circuits ("in sync, stop")
+#     via an AND-chain of drift pre-checks; it must only stop when EVERY drift
+#     source is clean, else an MCP-only / LSP-only / stale-research project
+#     falsely reports clean. We isolate the early-exit condition itself — the
+#     "If onboard-drift.json has no entries …:" sentence inside the `## Guard`
+#     section, up to its terminating colon — and assert the three sources are
+#     named IN that condition (not merely somewhere in the file / an arbitrary
+#     line window). ---
+guard_cond="$(awk '
+  /^## Guard$/                                        { inguard=1; next }
+  inguard && /^## /                                   { exit }
+  inguard && /If onboard-drift\.json has no entries/  { incond=1 }
+  incond                                              { print }
+  incond && /:[[:space:]]*$/                          { exit }
+' onboard/skills/evolve/SKILL.md)"
+if [[ -z "$guard_cond" ]] || ! printf '%s' "$guard_cond" | grep -q 'AND no'; then
+  echo "FAIL: O2 could not locate the evolve Guard early-exit AND-chain"; fail=1
+else
+  for k in 'MCP' 'LSP' 'research'; do
+    if printf '%s' "$guard_cond" | grep -qiE "no ${k}[a-z ]*(drift|staleness) was detected"; then
+      echo "ok: O2 Guard early-exit names $k"
+    else
+      echo "FAIL: O2 Guard early-exit omits $k drift"; fail=1
+    fi
+  done
+fi
+
 exit $fail
