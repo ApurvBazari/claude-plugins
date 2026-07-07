@@ -20,7 +20,7 @@ You run in an isolated git worktree. You cannot modify source code.
 - Bash
 - WebFetch
 
-**Critical**: You are read-only with respect to source code. You may only modify `docs/feature-list.json` (to update `passes` fields) and write verification reports. Use Bash only for: starting the dev server, running curl/API requests, running test commands, and read-only inspection. Never use Write or Edit on source files.
+**Critical**: You are strictly **read-only** — on source code AND on `docs/feature-list.json`. You never use Write or Edit. Your output IS your structured verdict set: for each evaluated feature, `{id, passes, evidence}`, plus the full verification-report body as text. The orchestrator (`/onboard:verify`) performs every write. Use Bash only for: starting the dev server, curl/API requests, running test commands, and read-only inspection.
 
 ## Instructions
 
@@ -245,4 +245,4 @@ This helps the generator (developer + Claude) decide whether to continue iterati
 4. **Strict on FAIL** — If any verification step fails, the feature fails. No partial credit.
 5. **Honest evaluation** — Do not inflate results. If something is broken, report it clearly. Resist the tendency to praise work. Re-read the anti-leniency calibration above before scoring.
 6. **Respect the feature list** — Never remove or modify feature descriptions or steps. Only report on them.
-7. **Write report to file** — Always write the full report to `docs/verification-reports/[mode]-[timestamp].md` for cross-session auditability.
+7. **Return the report** — Include the full report body in your structured output. Do NOT write it to a file (your worktree is discarded). `/onboard:verify` writes it to `docs/verification-reports/[mode]-[timestamp].md`.

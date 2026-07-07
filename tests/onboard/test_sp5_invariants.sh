@@ -111,4 +111,19 @@ done
 #     agent) ---
 must_absent "O7: no 'three analysis scripts' in update" 'three analysis scripts' onboard/skills/update/SKILL.md
 
+# --- O8: feature-evaluator is read-only and RETURNS data; /onboard:verify owns
+#     every write. The evaluator runs with `isolation: worktree`, so any file it
+#     writes lands in a throwaway worktree and is silently discarded — it must
+#     therefore RETURN its verdicts + report body and let the orchestrator write.
+#     (a) it no longer claims it may modify feature-list; (b) it states its output
+#     IS the returned structured verdict set — a phrase unique to the returns-data
+#     clause, because a bare `grep 'return'` gates only incidentally (the word is
+#     absent today) and any stray future "return" would satisfy it vacuously;
+#     (c) it no longer claims to write the report to a file. ---
+must_absent "O8: evaluator no longer claims it may modify feature-list" \
+  'you may (only )?modify .*feature-list' onboard/agents/feature-evaluator.md
+if ! grep -qi 'structured verdict set' onboard/agents/feature-evaluator.md; then echo "FAIL: O8 evaluator should RETURN its structured verdict set"; fail=1; else echo "ok: O8 evaluator returns its structured verdict set"; fi
+must_absent "O8: evaluator no longer claims to write the report to a file" \
+  'always write the (full )?report to' onboard/agents/feature-evaluator.md
+
 exit $fail
