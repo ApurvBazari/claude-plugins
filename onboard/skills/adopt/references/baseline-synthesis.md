@@ -30,7 +30,7 @@ Canonical-shape `onboard-meta.json` with retrofit additions. Resolve `<dynamic>`
   "mode": "retrofit",
 
   "wizardAnswers": { /* canonical shape from the A3 grounded wizard — ../../wizard/SKILL.md § Output */ },
-  "wizardStatus": { /* canonical 5-key shape — ../../wizard/SKILL.md § Key Rule 7 */ },
+  "wizardStatus": { /* canonical 5-key shape — ../../wizard/SKILL.md § Key Rules (rule 7) */ },
 
   "research": {
     "consumed": true, "engineUsed": "subagent", "depth": "comprehensive",
@@ -67,7 +67,7 @@ Notes:
 - `mcpStatus.existedPreOnboard: true` always in retrofit mode (adopt never owns `.mcp.json`).
 - Adopt always runs research (A2), so `research.consumed` is **always `true`**. On a `location:"none"` or minimal dossier, keep `consumed:true` with `artifactLocation:"none"`, `artifactsWritten:[]`, `htmlRendered:null` — never `consumed:false` (that is config-generator's research-absent convention, which adopt never hits). The re-research 4c telemetry fields never apply (adopt does not re-research).
 - `detectedPlugins` captures `installedPlugins` / `coveredCapabilities` / `qualityGates` / `phaseSkills` (the drift-load-bearing set `update` § 4b.1 reads). Adopt does not run start's Phase-2.5 surface probe, so `pluginSurfaces` is intentionally omitted; a later `/onboard:update` modernization re-probes plugin surfaces live when it regenerates the Plugin Integration section.
-- `wizardStatus.presetUsed` is `"retrofit"` — a retrofit-only value parallel to the stub's `"stub-empty-repo"`; it sits outside the wizard's 3-profile enum (`minimal|standard|comprehensive`) and is not enum-gated by any consumer (the canonical 5-key shape is otherwise honored per `../../wizard/SKILL.md` § Key Rule 7).
+- `wizardStatus.presetUsed` is `"retrofit"` — a retrofit-only value parallel to the stub's `"stub-empty-repo"`; it sits outside the wizard's 3-profile enum (`minimal|standard|comprehensive`) and is not enum-gated by any consumer (the canonical 5-key shape is otherwise honored per `../../wizard/SKILL.md` § Key Rules (rule 7)).
 - In retrofit mode `hookStatus.generated` lists the hook events **observed** in the user's `.claude/settings.json` (user-owned), not events onboard wired — consistent with the A6 prohibition on touching `.claude/settings.json`.
 
 ## A4: synthesize snapshots (in context)

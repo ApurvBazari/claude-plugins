@@ -439,7 +439,7 @@ Same as programmatic mode: read existing `.claude/settings.json` first, merge ho
 
 #### Advanced Event Hooks (from `qualityGates.<advanced-event>` or wizard opt-in)
 
-In addition to the four core quality-gate categories (sessionStart / preCommit / featureStart / postFeature), onboard emits hooks for nine advanced Claude Code events when the caller requests them or the wizard's advanced-hook step selects them. All templates live in `../guides/hooks-guide.md` § Advanced Event Templates — this section covers the generation contract only.
+In addition to the four core quality-gate categories (sessionStart / preCommit / featureStart / postFeature), onboard emits hooks for nine advanced Claude Code events when the caller requests them or the wizard's advanced-hook step selects them. All templates live in `../guides/hooks-guide.md` § Advanced Event Templates. This section covers the generation contract only.
 
 ##### Input sources (in priority order)
 

@@ -38,7 +38,11 @@ check_prose(){
     tgt="$(cd "$(dirname "$src")" && cd "$(dirname "$path")" 2>/dev/null && printf '%s/%s' "$(pwd)" "$(basename "$path")")"
     if [ ! -f "$tgt" ]; then echo "STALE(prose-file): $src -> $path"; continue; fi
     key="$(norm "$sec" | awk '{n=(NF<4?NF:4);for(i=1;i<=n;i++)printf (i>1?" ":"")$i}')"
-    if ! headings "$tgt" | while IFS= read -r h; do norm "$h"; done | grep -qF "$key"; then
+    # Strip parenthetical asides from headings before matching. The ref sec is already truncated at
+    # '(' above, so refs cite the semantic heading name minus its parenthetical (e.g. a heading
+    # "MCP Servers (.mcp.json) — emission Step 1" cited as "MCP Servers — emission Step 1"). Dropping
+    # "(...)" from BOTH sides keeps the match symmetric — it never lets a genuinely-wrong ref resolve.
+    if ! headings "$tgt" | while IFS= read -r h; do norm "$(printf '%s' "$h" | sed -E 's/\([^)]*\)//g')"; done | grep -qF "$key"; then
       echo "STALE(prose-section): $src -> \`$path\` § $sec  [key: $key]"
     fi
   done
@@ -51,7 +55,7 @@ check_links(){
     path="${ref%%#*}"; anchor="${ref#*#}"
     tgt="$(cd "$(dirname "$src")" && cd "$(dirname "$path")" 2>/dev/null && printf '%s/%s' "$(pwd)" "$(basename "$path")")"
     if [ ! -f "$tgt" ]; then echo "STALE(md-file): $src -> $path"; continue; fi
-    if ! headings "$tgt" | while IFS= read -r h; do printf '%s' "$h" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9 -]//g; s/ +/-/g'; done | grep -qiF "$anchor"; then
+    if ! headings "$tgt" | while IFS= read -r h; do printf '%s' "$h" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9 -]//g; s/ /-/g'; done | grep -qiF "$anchor"; then
       echo "STALE(md-anchor): $src -> $path#$anchor"
     fi
   done
