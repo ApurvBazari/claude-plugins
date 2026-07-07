@@ -46,11 +46,11 @@ SRC_COUNT=$(find . -type f \
 - `SRC_COUNT > 0` → source code exists → **skip Phase 0 entirely**, fall through to Phase 1 Recon. Most common case.
 - `SRC_COUNT == 0` → empty repo → proceed to the prior-stub check below.
 
-### Step: Detect prior stub (auto-promote)
+### Step: Detect prior stub (re-run on an empty dir)
 
-If `.claude/onboard-meta.json` already exists AND `jq -r '.mode // empty'` returns `"stub-empty-repo"` AND `SRC_COUNT > 0`: auto-promote. Skip Phase 0 entirely; run Phase 1 Recon → Phase 3 Wizard → Phase 6 Generation. Full generation overwrites the stub artifacts. Append an `updateHistory` entry to the new `onboard-meta.json` noting the `"stub → full"` promotion.
+If `.claude/onboard-meta.json` already exists AND `jq -r '.mode // empty'` returns `"stub-empty-repo"` AND `SRC_COUNT == 0` (the developer ran start twice on a still-empty dir): default to no-op — inform the developer a stub already exists, skip re-write.
 
-If prior stub exists AND `SRC_COUNT == 0` (user ran start twice on empty dir): default to no-op — inform the developer a stub already exists, skip re-write.
+(When source code has since been added, `SRC_COUNT > 0` short-circuits Phase 0 above and the full flow runs — Recon → Research → Grounded Wizard → Plan → **hard gate** → Generation — overwriting the stub artifacts. There is no separate promotion branch.)
 
 ### Step: Present the 3-option menu
 

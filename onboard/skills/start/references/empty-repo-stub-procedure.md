@@ -196,7 +196,7 @@ Do NOT run Phase 7's full education/handoff content — the stub has nothing to 
 
 1. **Repo already has `.claude/onboard-meta.json` from a prior stub run** — Phase 0 guard detects it via `jq -r '.mode // empty'`. If the value is `"stub-empty-repo"`:
    - If `SRC_COUNT` is still 0: offer re-stub (rare — user ran start twice on empty dir). Default: no-op (stub already exists, exit quickly).
-   - If `SRC_COUNT > 0` (source code was added since the stub): **auto-promote** to the full flow — skip Phase 0, run Phase 1 Recon → Phase 3 Wizard → Phase 6 Generation. The full generation overwrites the stub artifacts. Append an `updateHistory` entry to the new `onboard-meta.json` noting the stub→full promotion.
+   - If `SRC_COUNT > 0` (source code was added since the stub): the Phase 0 guard short-circuits and the **full flow** runs — Recon → Research → Grounded Wizard → Plan → hard gate → Generation — overwriting the stub artifacts. The regenerated `onboard-meta.json` reflects the full run; no separate promotion step and no gate is skipped.
 
 2. **Repo has `.claude/onboard-meta.json` from a prior FULL run** — the Phase 0 guard doesn't fire at all (SRC_COUNT > 0 means Phase 0 falls through to Phase 1). The existing-config check (the "Check for Existing Claude Config" step of Phase 1 Recon) already handles the "existing config, choose: Update / Start fresh / Cancel" flow.
 
@@ -218,5 +218,5 @@ Do NOT run Phase 7's full education/handoff content — the stub has nothing to 
 1. **Canonical schema is mandatory** — every top-level key in the `onboard-meta.json` target matches the canonical shape. Downstream consumers must NOT need to branch on stub vs full mode, except to read the top-level `mode: "stub-empty-repo"` marker when they specifically want to.
 2. **All 7 generation-phase status blocks emit `status: "skipped"`** with `reason: "stub-mode-no-code"` — the pre-exit self-audit (config-generator's) accepts `"skipped"` per the existing enum. Do NOT use `"documented"` here; stub mode produces no artifacts for any phase.
 3. **Dynamic version resolution is not optional** — hard-fail the stub if the onboard version cannot be resolved. Never write `pluginVersion: null` or a hardcoded literal. Closes B15.
-4. **Re-entry into full start is auto-promoted** — when a prior stub is detected and SRC_COUNT > 0, the guard falls through to Phase 1 without re-asking. Users don't have to delete the stub before adding code.
+4. **Re-entry with code added falls through to the full flow** — when a prior stub is detected and `SRC_COUNT > 0`, the Phase 0 guard short-circuits to Phase 1 without re-asking. Users don't have to delete the stub before adding code; the full generation overwrites the stub artifacts (with the normal Phase 5 hard gate).
 5. **Three files, in this order, atomic writes** — nothing else is emitted; no snapshots, no subdirectory CLAUDE.md files. Stub mode is minimal by design.
