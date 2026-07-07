@@ -72,4 +72,31 @@ else
   done
 fi
 
+# --- O2 (completion): the Guard's user-facing "in sync" BLOCKQUOTE must ALSO
+#     name MCP + LSP + research, in lockstep with the AND-chain above. The
+#     blockquote is what the developer reads when the Guard reports "nothing to
+#     do"; if it enumerates only the old four sources it re-teaches the wrong
+#     mental model. We isolate the `>`-quoted block that opens with "in sync"
+#     inside the `## Guard` section (NOT the AND-chain line, which already names
+#     them and would pass vacuously) and assert the three sources appear IN the
+#     blockquote itself. ---
+guard_bq="$(awk '
+  /^## Guard$/            { inguard=1; next }
+  inguard && /^## /       { exit }
+  inguard && /in sync/    { inbq=1 }
+  inbq && /^>/            { print; next }
+  inbq && !/^>/           { exit }
+' onboard/skills/evolve/SKILL.md)"
+if [[ -z "$guard_bq" ]] || ! printf '%s' "$guard_bq" | grep -q 'in sync'; then
+  echo "FAIL: O2 could not locate the evolve Guard 'in sync' blockquote"; fail=1
+else
+  for k in 'MCP' 'LSP' 'research'; do
+    if printf '%s' "$guard_bq" | grep -qi "$k"; then
+      echo "ok: O2 Guard 'in sync' blockquote names $k"
+    else
+      echo "FAIL: O2 Guard 'in sync' blockquote omits $k"; fail=1
+    fi
+  done
+fi
+
 exit $fail

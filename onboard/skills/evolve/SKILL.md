@@ -18,7 +18,7 @@ If onboard-drift.json has no entries (or is missing) AND no plugin drift was det
 
 > No pending drift detected. Your AI tooling is in sync with your codebase.
 >
-> FileChanged drift is logged automatically when dependencies, configs, or structure change. Plugin drift is detected by comparing installed plugins against the baseline in onboard-meta.json. Skill / agent / output-style / built-in skills drift is detected by comparing live files against their respective snapshots in `.claude/`.
+> FileChanged drift is logged automatically when dependencies, configs, or structure change. Plugin drift is detected by comparing installed plugins against the baseline in onboard-meta.json. MCP / skill / agent / output-style / LSP / built-in skills drift is detected by comparing live files against their respective snapshots in `.claude/`. Research staleness is detected by re-checking the codebase against the stored research roster in `onboard-meta.json.research`.
 
 Stop and do not proceed.
 
