@@ -93,8 +93,8 @@ Also read any Claude config files that may have been added manually after the in
 
 > **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(update:reanalyze → in_progress)` now, **before** the fresh analysis below. Mark it `TaskUpdate(... → completed)` after the drift comparison against `onboard-meta.json` completes at the end of this step.
 
-Run a fresh analysis (same as start Phase 1):
-- Run the three analysis scripts
+Run a fresh analysis (same as start Phase 1 Recon — script-free):
+- Invoke the `codebase-analyzer` agent (native Glob/Grep/Read + git one-liners; emits reconHints)
 - Perform deep codebase exploration
 
 Compare the fresh analysis against what was captured in onboard-meta.json to detect drift:

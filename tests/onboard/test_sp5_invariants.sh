@@ -106,4 +106,9 @@ for s in detect-config-changes detect-dep-changes detect-structure-changes; do
   if ! tail -3 "$f" | grep -qE '^exit 0'; then echo "FAIL: O5 $s missing explicit exit 0"; fail=1; else echo "ok: O5 $s exit 0"; fi
 done
 
+# --- O7: no 'three analysis scripts' fiction in update (recon is script-free in
+#     v3 — the 3 recon scripts were deleted; recon runs via the codebase-analyzer
+#     agent) ---
+must_absent "O7: no 'three analysis scripts' in update" 'three analysis scripts' onboard/skills/update/SKILL.md
+
 exit $fail
