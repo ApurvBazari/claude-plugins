@@ -1,6 +1,6 @@
 ---
 name: config-generator
-description: Generates all Claude Code tooling artifacts (CLAUDE.md, rules, skills, agents, hooks, MCP, output styles, snapshots, telemetry) from a codebase analysis report and wizard answers. Dispatched by /onboard:start Phase 3 and onboard:generate; hard-fails if invoked without dispatchedAsAgent=true.
+description: Generates all Claude Code tooling artifacts (CLAUDE.md, rules, skills, agents, hooks, MCP, output styles, snapshots, telemetry) from a codebase analysis report and wizard answers. Dispatched by /onboard:start Phase 6 and onboard:generate; hard-fails if invoked without dispatchedAsAgent=true.
 color: purple
 tools: Read, Write, Edit, Glob, Bash
 model: opus

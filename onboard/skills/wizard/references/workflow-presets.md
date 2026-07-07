@@ -123,11 +123,13 @@ The grounded confirm/override wizard runs **~2–3 `AskUserQuestion` exchanges f
 
 **Default model** (used when the wizard's model question is skipped):
 
+This table is the **single source** for the onboard model default — every other site (`start/SKILL.md` model-resolution, the context builder, the generation-manifest example) references this row rather than restating the literal.
+
 | Profile | Default model |
 |---|---|
-| Minimal | `claude-opus-4-7[1m]` (Opus 4.7 1M context) |
-| Standard | `claude-opus-4-7[1m]` (Opus 4.7 1M context) |
-| Comprehensive | `claude-opus-4-7[1m]` (Opus 4.7 1M context) |
+| Minimal | `claude-opus-4-8[1m]` (current 1M-context Opus — the single source; other files reference this row) |
+| Standard | `claude-opus-4-8[1m]` (⟵ same as Minimal) |
+| Comprehensive | `claude-opus-4-8[1m]` (⟵ same as Minimal) |
 
 The high-tier default reflects: Claude tooling generation is a one-time-per-project investment; the model strength makes a measurable difference in the quality of the artifacts produced. Users can downgrade per-project by editing `.claude/settings.json` after start.
 

@@ -386,7 +386,7 @@ This is the review-before-implementation gate. **Nothing has been written yet.**
 
 ### Step: model-resolution (no separate prompt)
 
-The model has already been chosen by this point — either because the developer tuned it in the grounded wizard (`wizardAnswers.skillTuning?.defaultModel`), or implicitly via the profile default (Minimal/Standard/Comprehensive use `claude-opus-4-7[1m]` per `../wizard/references/workflow-presets.md` § Exchange target (uniform across profiles)).
+The model has already been chosen by this point — either because the developer tuned it in the grounded wizard (`wizardAnswers.skillTuning?.defaultModel`), or implicitly via the profile default (Minimal/Standard/Comprehensive all use the canonical default in `../wizard/references/workflow-presets.md` § Exchange target (uniform across profiles)).
 
 **Do NOT** ask "Which model would you like to use?" here. That used to be a separate post-summary question in earlier versions of this skill (`SKILL.md`) — the duplicate prompt was findings A4 in the 2026-04-16 release-gate test.
 
@@ -394,12 +394,11 @@ Resolve the model from the wizard answers as follows:
 
 ```
 chosenModel = wizardAnswers.skillTuning?.defaultModel
-            ?? wizardAnswers.model
             ?? presetDefaultModel(wizardAnswers.selectedPreset)
-            ?? "claude-opus-4-7[1m]"
+            ?? "claude-opus-4-8[1m]"  // canonical: workflow-presets.md § Exchange target
 ```
 
-The profile-default fallback is documented in `../wizard/references/workflow-presets.md`. The final fallback (`claude-opus-4-7[1m]`) covers any path where the wizard answers don't include a model (e.g., a future bug or the grounded wizard skipping the model-tuning card).
+The profile-default fallback is documented in `../wizard/references/workflow-presets.md` § Exchange target. The final literal fallback matches that canonical default and covers any path where the wizard answers don't include a model (e.g., a future bug or the grounded wizard skipping the model-tuning card).
 
 The wizard's summary already shows the chosen model — the developer has already seen and confirmed it. If they wanted to change it, they would have done so in the summary tweak step (or by editing `.claude/settings.json` after start).
 

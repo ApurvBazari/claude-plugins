@@ -44,7 +44,7 @@ Emits a **v3 context** (`version: 3`): the v3 shape adds the top-level `research
 
   "research": { /* research-dossier object returned verbatim by /onboard:start Phase 2 Research Skill(onboard:research); canonical shape: research-dossier.json */ },
 
-  "modelChoice": "claude-opus-4-7[1m]",  // resolved per start SKILL.md § model-resolution
+  "modelChoice": "claude-opus-4-8[1m]",  // example value; resolved per start SKILL.md § model-resolution (canonical default: workflow-presets.md § Exchange target)
 
   "ecosystemPlugins": { "notify": true },  // or false; comes from wizardAnswers.ecosystemPlugins
 
@@ -120,9 +120,8 @@ Use the resolution order in `../SKILL.md § model-resolution`:
 
 ```
 modelChoice = wizardAnswers.skillTuning?.defaultModel
-            ?? wizardAnswers.model
             ?? presetDefaultModel(wizardAnswers.selectedPreset)
-            ?? "claude-opus-4-7[1m]"
+            ?? "claude-opus-4-8[1m]"  // canonical: workflow-presets.md § Exchange target
 ```
 
 ### Step 4: Derive the `enriched` flags

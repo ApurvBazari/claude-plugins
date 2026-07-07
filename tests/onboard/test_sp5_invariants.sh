@@ -126,4 +126,14 @@ if ! grep -qi 'structured verdict set' onboard/agents/feature-evaluator.md; then
 must_absent "O8: evaluator no longer claims to write the report to a file" \
   'always write the (full )?report to' onboard/agents/feature-evaluator.md
 
+# --- O9: the stale model literal is single-sourced away. The canonical default
+#     lives in workflow-presets.md § Exchange target (updated to the current
+#     claude-opus-4-8[1m]); every other site references it or carries the updated
+#     literal — so NO `claude-opus-4-7` literal survives anywhere under skills /
+#     agents / schemas. Also: the config-generator agent's dispatch Phase is
+#     corrected (it runs at Phase 6, not Phase 3). ---
+must_absent "O9: no claude-opus-4-7 literal in onboard" \
+  'claude-opus-4-7' onboard/skills onboard/agents onboard/schemas
+if grep -qE 'Dispatched by /onboard:start Phase 3' onboard/agents/config-generator.md; then echo "FAIL: O9 config-generator says Phase 3"; fail=1; else echo "ok: O9 config-generator phase"; fi
+
 exit $fail
