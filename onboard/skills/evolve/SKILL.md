@@ -55,6 +55,17 @@ Produce the `driftReport` described in `../generation/references/plugins/plugin-
 
 Present the summary to the developer per `../generation/references/plugins/plugin-drift-detection.md` § Presentation, then record `currentPlugins`, `added`, and `removed` for use in Step 2b.
 
+### Step 0.9: Legacy drift-file migration (one-time, idempotent)
+
+Before reading drift, migrate a legacy-named drift log so this and future runs use the canonical name:
+
+1. If `.claude/onboard-drift.json` already exists → migration already done; skip this step.
+2. Else if `.claude/greenfield-drift.json` exists → `mv .claude/greenfield-drift.json .claude/onboard-drift.json`.
+3. **Re-emit the FileChanged hook scripts** so they write the new name: rewrite `.claude/scripts/detect-config-changes.sh`, `.claude/scripts/detect-dep-changes.sh`, `.claude/scripts/detect-structure-changes.sh` from the current onboard templates (their `DRIFT_FILE` now points at `.claude/onboard-drift.json`). Follow `../generation/references/extended/evolution-hooks-guide.md`.
+4. Append an `updateHistory` entry to `onboard-meta.json`: `"migrated greenfield-drift.json → onboard-drift.json"`.
+
+The read-both fallback below still covers a project whose migration has not yet run.
+
 ## Step 1: Read FileChanged Drift Entries
 
 Parse `.claude/onboard-drift.json` (or the legacy `.claude/greenfield-drift.json`) and categorize entries:

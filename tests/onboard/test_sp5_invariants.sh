@@ -22,4 +22,20 @@ must_absent "O4: no greenfield-drift init in generation SKILL" \
 if ! grep -q 'onboard-drift.json' onboard/skills/evolve/SKILL.md; then echo "FAIL: O4 evolve reads onboard-drift.json"; fail=1; else echo "ok: O4 evolve reads onboard-drift.json"; fi
 if ! grep -q 'greenfield-drift.json' onboard/skills/evolve/SKILL.md; then echo "FAIL: O4 evolve keeps legacy fallback mention"; fail=1; else echo "ok: O4 evolve read-both fallback"; fi
 
+# --- O4b: evolve documents the legacy drift-file migration (move + re-emit) ---
+if ! grep -qi 'Legacy drift-file migration' onboard/skills/evolve/SKILL.md; then echo "FAIL: O4b migration step missing"; fail=1; else echo "ok: O4b migration step present"; fi
+if ! grep -qi 're-emit' onboard/skills/evolve/SKILL.md; then echo "FAIL: O4b re-emit missing"; fail=1; else echo "ok: O4b re-emit present"; fi
+
+# --- O4b fixture: the legacy pre-migration drift shape exists (valid JSON carrying `entries`) ---
+legacy_fixture="tests/onboard/fixtures/legacy-drift/.claude/greenfield-drift.json"
+if [[ ! -f "$legacy_fixture" ]]; then
+  echo "FAIL: O4b legacy-drift fixture missing"; fail=1
+elif command -v python3 >/dev/null 2>&1 && ! python3 -c 'import json,sys; sys.exit(0 if "entries" in json.load(open(sys.argv[1])) else 1)' "$legacy_fixture" 2>/dev/null; then
+  echo "FAIL: O4b legacy-drift fixture is not valid JSON carrying entries"; fail=1
+elif ! grep -q '"entries"' "$legacy_fixture"; then
+  echo "FAIL: O4b legacy-drift fixture lacks entries key"; fail=1
+else
+  echo "ok: O4b legacy-drift fixture present (valid JSON with entries)"
+fi
+
 exit $fail
