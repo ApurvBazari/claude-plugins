@@ -123,7 +123,7 @@ The grounded confirm/override wizard runs **~2–3 `AskUserQuestion` exchanges f
 
 **Default model** (used when the wizard's model question is skipped):
 
-This table is the **single source** for the onboard model default — every other site (`start/SKILL.md` model-resolution, the context builder, the generation-manifest example) references this row rather than restating the literal.
+This table is the **single source** for the onboard model default — every other site (the `start` skill's model-resolution, the context builder, the generation-manifest example) references this row rather than restating the literal.
 
 | Profile | Default model |
 |---|---|
