@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -uo pipefail
 
 # FileChanged hook: detect structural changes (new directories with source files).
 # Appends change entries to the drift log (.claude/onboard-drift.json).

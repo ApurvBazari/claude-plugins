@@ -99,4 +99,11 @@ else
   done
 fi
 
+# --- O5: FileChanged hooks do not set -e and end with an explicit exit 0 ---
+for s in detect-config-changes detect-dep-changes detect-structure-changes; do
+  f="onboard/scripts/$s.sh"
+  if grep -qE '^set -euo pipefail|^set -e' "$f"; then echo "FAIL: O5 $s still set -e"; fail=1; else echo "ok: O5 $s no set -e"; fi
+  if ! tail -3 "$f" | grep -qE '^exit 0'; then echo "FAIL: O5 $s missing explicit exit 0"; fail=1; else echo "ok: O5 $s exit 0"; fi
+done
+
 exit $fail
