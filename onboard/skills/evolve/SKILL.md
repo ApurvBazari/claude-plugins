@@ -5,16 +5,16 @@ description: Apply accumulated tooling drift to Claude configuration. Use when u
 
 # Evolve Skill — Apply Pending Drift Updates
 
-You are applying accumulated tooling drift updates. This skill handles two drift sources: **FileChanged drift** (logged by hooks to `.claude/greenfield-drift.json`) and **plugin drift** (detected by comparing `greenfield-meta.json` against currently-installed plugins).
+You are applying accumulated tooling drift updates. This skill handles two drift sources: **FileChanged drift** (logged by hooks to `.claude/onboard-drift.json`, or the legacy `.claude/greenfield-drift.json` in projects onboarded before the rename) and **plugin drift** (detected by comparing `greenfield-meta.json` against currently-installed plugins).
 
 ## Guard
 
 Check both drift sources before deciding whether to proceed:
 
-1. Read `.claude/greenfield-drift.json` in the project root. Record whether it has entries.
+1. Read `.claude/onboard-drift.json` in the project root (falling back to the legacy `.claude/greenfield-drift.json` if only that exists — see § Legacy drift-file migration). Record whether it has entries.
 2. Read `.claude/greenfield-meta.json`. If it exists and contains `generated.toolingFlags.installedPlugins`, run the plugin drift detection from Step 0 below. Record whether plugin drift was found.
 
-If greenfield-drift.json has no entries (or is missing) AND no plugin drift was detected AND no skill frontmatter drift was detected (Step 2d pre-check against `.claude/onboard-skill-snapshot.json`) AND no agent frontmatter drift was detected (Step 2e pre-check against `.claude/onboard-agent-snapshot.json`) AND no output-style drift was detected (Step 2f pre-check against `.claude/onboard-output-style-snapshot.json`) AND no built-in skills drift was detected (Step 2h pre-check against `.claude/onboard-builtin-skills-snapshot.json`):
+If onboard-drift.json has no entries (or is missing) AND no plugin drift was detected AND no skill frontmatter drift was detected (Step 2d pre-check against `.claude/onboard-skill-snapshot.json`) AND no agent frontmatter drift was detected (Step 2e pre-check against `.claude/onboard-agent-snapshot.json`) AND no output-style drift was detected (Step 2f pre-check against `.claude/onboard-output-style-snapshot.json`) AND no built-in skills drift was detected (Step 2h pre-check against `.claude/onboard-builtin-skills-snapshot.json`):
 
 > No pending drift detected. Your AI tooling is in sync with your codebase.
 >
@@ -57,13 +57,13 @@ Present the summary to the developer per `../generation/references/plugins/plugi
 
 ## Step 1: Read FileChanged Drift Entries
 
-Parse `.claude/greenfield-drift.json` and categorize entries:
+Parse `.claude/onboard-drift.json` (or the legacy `.claude/greenfield-drift.json`) and categorize entries:
 
 - **Dependency changes**: new packages added, packages removed, scripts added/removed
 - **Config changes**: tsconfig, eslint, prettier settings changed
 - **Structural changes**: new directories with source files, removed directories
 
-If greenfield-drift.json is missing or has no entries, skip this step (plugin drift alone is sufficient to proceed).
+If onboard-drift.json is missing or has no entries, skip this step (plugin drift alone is sufficient to proceed).
 
 Present a summary when entries exist:
 
@@ -323,7 +323,7 @@ After applying all updates (both FileChanged and plugin integration), show what 
 > **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(evolve:clear-entries → in_progress)` now, **before** clearing the processed entries. Mark it `TaskUpdate(... → completed)` after the entries are cleared — that completes the last phase of the run; all 4 `evolve` tasks are now `completed`.
 
 After updates are applied:
-1. Update `lastAuditedAt` in greenfield-drift.json to current timestamp
+1. Update `lastAuditedAt` in onboard-drift.json to current timestamp
 2. Clear the processed entries from the `entries` array
 3. Keep any entries that were NOT processed (e.g., structural changes that need developer input)
 4. Plugin drift state is persisted in greenfield-meta.json (updated in Step 2b.3) — there is no separate "clear" action for plugin drift.
@@ -338,7 +338,7 @@ After updates are applied:
 3. **Ask for structural** — Dependency and config changes can be auto-applied. Structural changes (new CLAUDE.md files) require developer confirmation.
 4. **Preserve manual edits** — If the developer has customized CLAUDE.md beyond what onboard generated, preserve those customizations. Only touch the marker-delimited Plugin Integration section.
 5. **Show the diff** — Always show what was changed so the developer can verify.
-6. **Plugin drift is probe-based** — It does not depend on greenfield-drift.json entries. It's detected by comparing greenfield-meta.json against filesystem state at evolve-time, following `../generation/references/plugins/plugin-drift-detection.md`.
+6. **Plugin drift is probe-based** — It does not depend on onboard-drift.json entries. It's detected by comparing greenfield-meta.json against filesystem state at evolve-time, following `../generation/references/plugins/plugin-drift-detection.md`.
 7. **Marker-delimited surgery** — Plugin Integration section updates use the `<!-- onboard:plugin-integration:start/end -->` markers. Never touch content outside the markers.
 8. **Subdirectory annotations refresh via marker + role attribute** — Plugin drift refreshes `<!-- onboard:skill-recommendations:start role="..." -->` blocks in subdirectory CLAUDE.md files without re-invoking scaffold-analyzer. Directories lacking markered blocks are not auto-created — run `/onboard:update` to surface them as new best-practice additions.
 9. **Merge-aware hook updates** — When modifying `.claude/settings.json`, read first, merge plugin-integration hooks, and preserve all other hooks (format, lint, evolution, etc.).

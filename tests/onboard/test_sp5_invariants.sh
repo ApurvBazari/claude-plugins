@@ -14,4 +14,12 @@ must_absent "O1: no auto-promote branding survives" \
   onboard/skills/adopt/references/detection-and-classification.md \
   tests/release-gate/manual-test-plan.md
 
+# --- O4: no source writer emits the legacy drift name; readers keep a fallback ---
+must_absent "O4: no greenfield-drift writer in scripts" \
+  'greenfield-drift' onboard/scripts
+must_absent "O4: no greenfield-drift init in generation SKILL" \
+  'greenfield-drift' onboard/skills/generation/SKILL.md
+if ! grep -q 'onboard-drift.json' onboard/skills/evolve/SKILL.md; then echo "FAIL: O4 evolve reads onboard-drift.json"; fail=1; else echo "ok: O4 evolve reads onboard-drift.json"; fi
+if ! grep -q 'greenfield-drift.json' onboard/skills/evolve/SKILL.md; then echo "FAIL: O4 evolve keeps legacy fallback mention"; fail=1; else echo "ok: O4 evolve read-both fallback"; fi
+
 exit $fail

@@ -2,11 +2,11 @@
 set -euo pipefail
 
 # FileChanged hook: detect dependency changes in package manifests.
-# Appends change entries to the drift log (.claude/greenfield-drift.json).
+# Appends change entries to the drift log (.claude/onboard-drift.json).
 # Called when package.json, pyproject.toml, Cargo.toml, go.mod, or Gemfile changes.
 
 FILE_PATH="${1:-}"
-DRIFT_FILE=".claude/greenfield-drift.json"
+DRIFT_FILE=".claude/onboard-drift.json"
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 if [ -z "$FILE_PATH" ]; then

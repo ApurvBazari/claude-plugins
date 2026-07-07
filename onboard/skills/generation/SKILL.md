@@ -325,7 +325,7 @@ Follow `references/extended/evolution-hooks-guide.md`:
 - FileChanged hooks for drift detection
 - SessionStart hook for drift summary
 - Copy detection scripts to `.claude/scripts/`
-- Initialize `.claude/greenfield-drift.json`
+- Initialize `.claude/onboard-drift.json`
 
 ### Verify-Backlog Seeding (v3, when `research` present)
 
