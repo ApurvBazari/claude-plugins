@@ -47,9 +47,15 @@ provenance (one group per distinct source; `kind` is `spec` for `sourceSpec` buc
 existing **flat** `specItems[]`/`planSteps[]` (byte-identical to today). The renderer reads `groups[]` when
 present, the flat arrays otherwise.
 
-2. **Headless / contract-only (e.g. vicario consuming the engine's `review-findings` JSON without the
-   finders' side outputs).** Only the `findings[]` array is available — `specItems[]`/`planSteps[]` are not.
-   **DERIVE** the adherence gaps from the `requirements`-dimension findings:
+2. **Headless / contract-only (e.g. vicario or matali consuming the engine's `review-findings` JSON without the
+   finders' side outputs).** The finders' `specItems[]`/`planSteps[]` are not in scope here, but the engine's
+   return **may still carry a top-level `adherence: { specItems[], planSteps[] }` block** (the 1.4.0
+   side-output). **Consume that block when present** — its items already carry `{label, state}` (and
+   `sourceSpec`/`sourcePlan` when multi-source), so the panel shows full met/followed coverage exactly as the
+   in-session path does; group by `sourceSpec`/`sourcePlan` per the N>1 rule above.
+
+   **Only when the engine's `adherence` block is absent** (a **true fallback** — the contract carries just
+   `findings[]`) do you **DERIVE** the adherence gaps from the `requirements`-dimension findings:
    - `requirements` + `label:"spec-gap"` → a `specItems[]` entry, `state` `partial` or `missing` (read the
      finding's claim/detail to pick which).
    - `requirements` + `label:"plan-deviation"` → a `planSteps[]` entry, `state: deviated`.

@@ -65,4 +65,8 @@ grep -qi 'built in a later task' "$CLAUDEMD" && fail "L5: CLAUDE.md must drop th
 grep -qi 'schema-parity target' "$CLAUDEMD" || fail "L5: CLAUDE.md must state vicario = schema-parity target"
 grep -qi 'live consumer' "$CLAUDEMD" || fail "L5: CLAUDE.md must state matali = the live consumer"
 
+# L2 — the headless path consumes the engine's returned adherence block first; derive-from-gaps is the true fallback.
+grep -qi "engine.*adherence" "$ASM" || fail "L2: review-model-assembly headless path must consume the engine's adherence block when present"
+grep -qiE "true fallback|only when.*adherence.*absent|only if.*adherence.*absent" "$ASM" || fail "L2: derive-from-requirements must be framed as the fallback used only when the engine's adherence block is absent"
+
 echo "PASS: lens doc contracts"
