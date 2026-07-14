@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.2 — 2026-07-14
+
+- fix(docs): the engine is described consistently as **4 stages** (`SCOPE → INTENT → ANALYZE → VERIFY`, where VERIFY dedups, ranks, and assembles the `review-findings` JSON before returning). CLAUDE.md and `engine/references/pipeline.md` no longer over-count to "5 stages" or attribute the review-model + `walkthrough:render` step to the engine — that render is the **review** skill's stage (the engine writes nothing). (L1)
+- fix(docs): `review-model-assembly.md` headless/contract-only path now **consumes the engine's returned `adherence` block** (the 1.4.0 side-output) when present, deriving adherence gaps from `requirements` findings only as a true fallback. (L2)
+- fix(schema): `adherence.specItems` / `adherence.planSteps` items now **declare their shape** — `{ label, state, sourceSpec }` (spec) / `{ label, state, sourcePlan }` (plan) — with `state` enums. **Strictly additive**: properties are optional, no `required[]`, no `additionalProperties:false`, so every payload valid under 1.4.1 stays valid. Pinned in `tests/lens/test_schema_types.sh`. (L3)
+- fix(docs/test): dropped the stale "(built in a later task)" note on the schema (it exists and is tested); added a vicario-vs-matali role sentence (vicario = schema-parity target, matali = live consumer); the sample engine-output fixture's `votes.total` is now `1`, reflecting lens's single-verifier VERIFY (a 3-vote panel is matali/vicario behavior). (L5)
+- note: backward-compatible — additive only, no contract removals. The `review-findings` schema stays a field-additive superset of vicario's; matali payloads are unaffected.
+
 ## 1.4.1 — 2026-06-29
 
 - fix: `lens:render-review` is now model-invocable — dropped `disable-model-invocation: true` (kept `user-invocable: false`, matching `walkthrough:render`). The skill is dispatched by an orchestrator's subagent (e.g. matali's `walkthrough-renderer`) via the Skill tool; `disable-model-invocation` hid it from *all* model/subagent invocation, so the orchestrator path silently degraded to a generic render instead of the lens-grade document. The skill stays hidden from the user `/` menu.
