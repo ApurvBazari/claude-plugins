@@ -1,6 +1,6 @@
 ---
 name: config-generator
-description: Generates all Claude Code tooling artifacts (CLAUDE.md, rules, skills, agents, hooks, MCP, output styles, snapshots, telemetry) from a codebase analysis report and wizard answers. Dispatched by /onboard:start Phase 3 and onboard:generate; hard-fails if invoked without dispatchedAsAgent=true.
+description: Generates all Claude Code tooling artifacts (CLAUDE.md, rules, skills, agents, hooks, MCP, output styles, snapshots, telemetry) from a codebase analysis report and wizard answers. Dispatched by /onboard:start Phase 6 and onboard:generate; hard-fails if invoked without dispatchedAsAgent=true.
 color: purple
 tools: Read, Write, Edit, Glob, Bash
 model: opus
@@ -134,7 +134,7 @@ Generate artifacts in this order:
    - `backlogSeeded`, `backlogItemCount` (as 4b).
    In research-absent mode write `"research": { "consumed": false }` only. On a `callerExtras.reResearch` run, ALSO add the 4c fields (`reResearch`/`refreshedDimensions`/`escalatedToFull`/`backlogMerged`) per the re-research telemetry note below.
 
-   **`metadata.research` re-research fields (v3, 4c):** when `callerExtras.reResearch` is present, ALSO record `reResearch: true`, `refreshedDimensions` (the marker's `dimensions`, or `"all"` when `escalatedToFull`), `escalatedToFull` (from the marker), and `backlogMerged: { added, kept, flaggedObsolete }` (counts from the verify-backlog merge, `verify-backlog-seeding.md` § Re-research merge). Absent marker → omit these four fields (the block is exactly 4b's shape).
+   **`metadata.research` re-research fields (v3, 4c):** when `callerExtras.reResearch` is present, ALSO record `reResearch: true`, `refreshedDimensions` (the marker's `dimensions`, or `"all"` when `escalatedToFull`), `escalatedToFull` (from the marker), and `backlogMerged: { added, kept, flaggedObsolete }` (counts from the verify-backlog merge, `../skills/generation/references/research/verify-backlog-seeding.md` § Re-research merge). Absent marker → omit these four fields (the block is exactly 4b's shape).
 
    **Provenance + retrofit mode (consumed, not written by this agent):** `onboard-meta.json` carries an optional top-level `mode` and `artifactProvenance` map:
    - `mode: "retrofit"` marks a baseline synthesized by `/onboard:adopt` from pre-existing hand-crafted tooling (parallel to the `"stub-empty-repo"` marker). config-generator never writes `mode:"retrofit"` itself — `adopt` does (see `../skills/adopt/references/baseline-synthesis.md`).

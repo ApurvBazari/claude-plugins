@@ -26,7 +26,7 @@ Follow `../../generation/references/plugins/plugin-drift-detection.md` for the f
 
 1. **Resolve baseline** using the caller order for `update`: first `.claude/onboard-meta.json.detectedPlugins.installedPlugins`, then `.claude/onboard-meta.json.callerExtras.installedPlugins`, else empty.
 2. **Probe current state** against the Known Plugin Probe List in `../../generation/references/plugins/plugin-detection-guide.md`. Also probe any plugin in the baseline that isn't in the known list.
-3. **Compute diff** — produce the `driftReport` object described in `plugin-drift-detection.md` § Output Schema.
+3. **Compute diff** — produce the `driftReport` object described in `../../generation/references/plugins/plugin-drift-detection.md` § Output Schema.
 4. **Note the baseline source**. If the baseline was empty, flag the findings section with "Plugin Integration not tracked before — all detected plugins offered as new additions."
 
 Record `driftReport.added`, `driftReport.removed`, and the derived `qualityGatesNext` / `phaseSkillsNext` / `coveredCapabilitiesNext` for Step 7.

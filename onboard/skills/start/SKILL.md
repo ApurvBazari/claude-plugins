@@ -46,11 +46,11 @@ SRC_COUNT=$(find . -type f \
 - `SRC_COUNT > 0` → source code exists → **skip Phase 0 entirely**, fall through to Phase 1 Recon. Most common case.
 - `SRC_COUNT == 0` → empty repo → proceed to the prior-stub check below.
 
-### Step: Detect prior stub (auto-promote)
+### Step: Detect prior stub (re-run on an empty dir)
 
-If `.claude/onboard-meta.json` already exists AND `jq -r '.mode // empty'` returns `"stub-empty-repo"` AND `SRC_COUNT > 0`: auto-promote. Skip Phase 0 entirely; run Phase 1 Recon → Phase 3 Wizard → Phase 6 Generation. Full generation overwrites the stub artifacts. Append an `updateHistory` entry to the new `onboard-meta.json` noting the `"stub → full"` promotion.
+If `.claude/onboard-meta.json` already exists AND `jq -r '.mode // empty'` returns `"stub-empty-repo"` AND `SRC_COUNT == 0` (the developer ran start twice on a still-empty dir): default to no-op — inform the developer a stub already exists, skip re-write.
 
-If prior stub exists AND `SRC_COUNT == 0` (user ran start twice on empty dir): default to no-op — inform the developer a stub already exists, skip re-write.
+(When source code has since been added, `SRC_COUNT > 0` short-circuits Phase 0 above and the full flow runs — Recon → Research → Grounded Wizard → Plan → **hard gate** → Generation — overwriting the stub artifacts. There is no separate promotion branch.)
 
 ### Step: Present the 3-option menu
 
@@ -386,7 +386,7 @@ This is the review-before-implementation gate. **Nothing has been written yet.**
 
 ### Step: model-resolution (no separate prompt)
 
-The model has already been chosen by this point — either because the developer tuned it in the grounded wizard (`wizardAnswers.skillTuning?.defaultModel`), or implicitly via the profile default (Minimal/Standard/Comprehensive use `claude-opus-4-7[1m]` per `../wizard/references/workflow-presets.md` § Exchange target (uniform across profiles)).
+The model has already been chosen by this point — either because the developer tuned it in the grounded wizard (`wizardAnswers.skillTuning?.defaultModel`), or implicitly via the profile default (Minimal/Standard/Comprehensive all use the canonical default in `../wizard/references/workflow-presets.md` § Exchange target (uniform across profiles)).
 
 **Do NOT** ask "Which model would you like to use?" here. That used to be a separate post-summary question in earlier versions of this skill (`SKILL.md`) — the duplicate prompt was findings A4 in the 2026-04-16 release-gate test.
 
@@ -394,12 +394,11 @@ Resolve the model from the wizard answers as follows:
 
 ```
 chosenModel = wizardAnswers.skillTuning?.defaultModel
-            ?? wizardAnswers.model
             ?? presetDefaultModel(wizardAnswers.selectedPreset)
-            ?? "claude-opus-4-7[1m]"
+            ?? "claude-opus-4-8[1m]"  // canonical: workflow-presets.md § Exchange target
 ```
 
-The profile-default fallback is documented in `../wizard/references/workflow-presets.md`. The final fallback (`claude-opus-4-7[1m]`) covers any path where the wizard answers don't include a model (e.g., a future bug or the grounded wizard skipping the model-tuning card).
+The profile-default fallback is documented in `../wizard/references/workflow-presets.md` § Exchange target. The final literal fallback matches that canonical default and covers any path where the wizard answers don't include a model (e.g., a future bug or the grounded wizard skipping the model-tuning card).
 
 The wizard's summary already shows the chosen model — the developer has already seen and confirmed it. If they wanted to change it, they would have done so in the summary tweak step (or by editing `.claude/settings.json` after start).
 

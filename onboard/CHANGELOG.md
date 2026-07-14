@@ -1,5 +1,18 @@
 # Changelog
 
+## 3.1.0 — 2026-07-07
+
+### Correctness batch (SP-5) — documentation-truth fixes + the drift-log rename with a deployed-project migration
+
+- **Drift-log renamed with a migration (why this is a minor)**: the evolution drift log `.claude/greenfield-drift.json` is renamed to `.claude/onboard-drift.json`. All writers emit the new name; readers fall back to the legacy name; and `/onboard:evolve` runs a one-time migration (rename the file + re-emit the FileChanged hook scripts) so no already-onboarded project is stranded on the old name.
+- **`evolve` Guard now covers all drift sources**: the "already in sync" early-exit accounts for MCP, LSP, and research staleness — no more false-clean when the only drift is MCP-only, LSP-only, or a stale research dossier.
+- **Removed phantom `greenfield-meta.json` branches** from `evolve`: plugin-drift state now persists to the real `onboard-meta.json` (`detectedPlugins.*` + `hookStatus`), and a latent never-advancing-baseline bug is fixed.
+- **Deleted the dead "auto-promote" stub branch** and de-branded the stub re-entry docs: the empty-repo stub → full-tooling upgrade is simply the ordinary `SRC_COUNT > 0` full flow behind the hard preview gate (zero runtime change; the unreachable branch was removed).
+- **FileChanged hook scripts never block the triggering tool call**: `detect-{config,dep,structure}-changes.sh` drop `set -e` and always `exit 0` (a failing `find`/`mkdir` under `-e`+`pipefail` could previously abort the hook nonzero — the blocking the contract forbids).
+- **`feature-evaluator` is now strictly read-only**: it returns verdicts + a report body and performs no writes; `/onboard:verify` is the sole writer of `docs/feature-list.json` `passes` and the verification report (the evaluator's worktree writes were being discarded).
+- **Documentation-truth fixes**: repointed stale `§`/anchor cross-references left over from the 2.0.1 doc split; removed the obsolete "three analysis scripts" reference (v3 recon is script-free via the `codebase-analyzer` agent); single-sourced the model default (updated to `claude-opus-4-8[1m]`), corrected a wrong Phase reference, and removed a phantom `wizardAnswers.model` field.
+- **New `tests/onboard/` belt**: a `§`-anchor + markdown-link cross-reference checker (`test_ref_anchors.sh`) and SP-5 invariant pins (`test_sp5_invariants.sh`) auto-discovered by `tests/run-all.sh`.
+
 ## 3.0.0 — 2026-06-15
 
 ### ⚠ Major — research-grounded onboarding

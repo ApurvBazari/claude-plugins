@@ -2,7 +2,7 @@
 
 Patterns for configuring FileChanged and SessionStart hooks that keep AI tooling in sync with the codebase.
 
-> **Scope note**: the base advisory templates for `FileChanged`, `TaskCreated`, and `TaskCompleted` live in [`hooks-guide.md` § Advanced Event Templates](../guides/hooks-guide.md#advanced-event-templates). This guide owns the drift-detection-specific wiring (the `detect-*-changes.sh` scripts and the `.claude/greenfield-drift.json` format) and the team-mode overrides. When adding a new generic variant of any event, update `../guides/hooks-guide.md` — not this file — and cross-reference back here if drift-specific logic needs to layer on top.
+> **Scope note**: the base advisory templates for `FileChanged`, `TaskCreated`, and `TaskCompleted` live in [`hooks-guide.md` § Advanced Event Templates](../guides/hooks-guide.md#advanced-event-templates). This guide owns the drift-detection-specific wiring (the `detect-*-changes.sh` scripts and the `.claude/onboard-drift.json` format) and the team-mode overrides. When adding a new generic variant of any event, update `../guides/hooks-guide.md` — not this file — and cross-reference back here if drift-specific logic needs to layer on top.
 
 ## Hook Architecture
 
@@ -57,7 +57,7 @@ SessionStart hook (prompt-type, AI-powered)
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Check if .claude/greenfield-drift.json exists and has entries since the last session. If drift is detected, briefly summarize what changed and suggest the developer run /onboard:evolve to update tooling. If no drift, say nothing."
+            "prompt": "Check if .claude/onboard-drift.json (or the legacy .claude/greenfield-drift.json) exists and has entries since the last session. If drift is detected, briefly summarize what changed and suggest the developer run /onboard:evolve to update tooling. If no drift, say nothing."
           }
         ]
       }
@@ -92,7 +92,7 @@ The `--auto-update` flag tells the script to update CLAUDE.md and rules directly
 
 ## Drift File Format
 
-`.claude/greenfield-drift.json`:
+`.claude/onboard-drift.json`:
 
 ```json
 {

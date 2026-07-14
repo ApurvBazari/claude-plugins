@@ -48,16 +48,16 @@ Spawn the `feature-evaluator` agent with:
 - The verification strategy
 - The sprint contract (if sprint mode)
 
-The agent runs in worktree isolation (`isolation: worktree`) — it gets a read-only copy of the project and cannot modify source code. It tests the running application and reports results.
+The agent runs in worktree isolation (`isolation: worktree`) — it gets a throwaway copy of the project and is strictly read-only (it never writes `docs/feature-list.json` or a report file; any write in its worktree is discarded). It tests the running application and **returns** structured verdicts (`{id, passes, evidence}` per feature) plus the full verification-report body as text. **You (verify) perform every write.**
 
-Wait for the agent to complete and return its verification report.
+Wait for the agent to complete and return its verdicts + report body.
 
-## Step 4: Process Results
+## Step 4: Process Results (you are the sole writer)
 
-Parse the evaluator's report. For each feature:
+Parse the evaluator's returned verdicts. The evaluator wrote nothing — every change below is yours to apply. For each feature:
 
 ### If PASS:
-- Update `docs/feature-list.json`: set `passes` to `true` for that feature
+- Write `docs/feature-list.json`: set `passes` to `true` for that feature
 - Log in `docs/progress.md`: "F001: [description] — VERIFIED PASSING"
 
 ### If FAIL:
@@ -83,13 +83,13 @@ If running in sprint mode, evaluate the sprint contract criteria from the evalua
 
 ## Step 6: Write Report to File
 
-Write the evaluator's full report to `docs/verification-reports/`:
+The evaluator **returned** the full report body as text (it did not write a file — its worktree was discarded). You write that returned body to `docs/verification-reports/`:
 
 ```bash
 mkdir -p docs/verification-reports
 ```
 
-File naming: `[mode]-[date].md` (e.g., `sprint-1-2026-04-05.md`, `feature-F001-2026-04-05.md`, `all-incomplete-2026-04-05.md`)
+File naming: `[mode]-[timestamp].md` (e.g., `sprint-1-2026-04-05.md`, `feature-F001-2026-04-05.md`, `all-incomplete-2026-04-05.md`)
 
 This creates an auditable trail of verification runs across sessions. Previous reports can be compared to see if scores are trending up or stalling.
 
@@ -131,8 +131,9 @@ Present the overall results:
 ## Key Rules
 
 1. **Never self-evaluate** — Always spawn the feature-evaluator agent. Never test features yourself in the main session.
-2. **Update feature-list.json only on PASS** — Failed features stay as `passes: false`.
-3. **Honest reporting** — Show failures prominently. Don't bury bad news in summary stats.
-4. **Sprint gates are hard** — If a required criterion fails, the sprint is NOT complete. No exceptions.
-5. **Log everything** — Every verification run is logged to docs/progress.md and docs/verification-reports/ for cross-session context.
-6. **Write reports to files** — Always persist the full report to `docs/verification-reports/` for auditability and trend comparison.
+2. **Evaluator returns data; verify owns all writes** — The evaluator is strictly read-only (it runs in a throwaway worktree, so any write it makes is discarded). It returns structured verdicts + the report body as text. **Verify performs every write**: `docs/feature-list.json` on PASS, and the report file — the evaluator writes neither.
+3. **Update feature-list.json only on PASS** — Failed features stay as `passes: false`.
+4. **Honest reporting** — Show failures prominently. Don't bury bad news in summary stats.
+5. **Sprint gates are hard** — If a required criterion fails, the sprint is NOT complete. No exceptions.
+6. **Log everything** — Every verification run is logged to docs/progress.md and docs/verification-reports/ for cross-session context.
+7. **Write reports to files** — You (verify) persist the evaluator's returned report body to `docs/verification-reports/` for auditability and trend comparison.

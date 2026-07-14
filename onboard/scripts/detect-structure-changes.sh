@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -uo pipefail
 
 # FileChanged hook: detect structural changes (new directories with source files).
-# Appends change entries to the drift log (.claude/greenfield-drift.json).
+# Appends change entries to the drift log (.claude/onboard-drift.json).
 # Called on any file change — checks if the file's directory is a new, uncovered directory.
 
 FILE_PATH="${1:-}"
-DRIFT_FILE=".claude/greenfield-drift.json"
+DRIFT_FILE=".claude/onboard-drift.json"
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 if [ -z "$FILE_PATH" ]; then

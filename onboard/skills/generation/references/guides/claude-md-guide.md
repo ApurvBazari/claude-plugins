@@ -185,7 +185,7 @@ Generated root CLAUDE.md includes an Output styles subsection inside Plugin Inte
 
 Do not re-emit built-in styles as files — they're Anthropic-provided. Only custom styles live in `.claude/output-styles/`.
 
-The Plugin Integration subsection generation rules live in `../../SKILL.md` § Plugin Integration Section Generation. For the authoring schema and archetype inference, see `../catalogs/output-styles-guide.md`. For the 5 custom style body templates, see `../catalogs/output-styles-catalog.md`.
+The Plugin Integration subsection generation rules live in `../emission/plugin-integration-section.md` § Plugin Integration Section Generation. For the authoring schema and archetype inference, see `../catalogs/output-styles-guide.md`. For the 5 custom style body templates, see `../catalogs/output-styles-catalog.md`.
 
 ## LSP Support Reference
 

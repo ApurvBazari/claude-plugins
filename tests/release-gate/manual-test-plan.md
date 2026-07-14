@@ -193,7 +193,7 @@ claude
 - [ ] Choosing **Generate canonical stub** writes exactly 3 files — `CLAUDE.md`, `.claude/settings.json`, `.claude/onboard-meta.json` — in canonical schema with stub-mode markers; all 7 generation-phase status keys are `status: "skipped"` with `reason: "stub-mode-no-code"`
 - [ ] `pluginVersion` in the stub meta is resolved dynamically (no hardcoded literal)
 - [ ] The stub run does **not** run the wizard, research, or full generation — and (per phase-tracking) creates **no** task list
-- [ ] Re-running `/onboard:start` after adding source files **auto-promotes** the stub to a full run (overwrites stub artifacts; appends a `"stub → full"` `updateHistory` entry)
+- [ ] Re-running `/onboard:start` after adding source files runs the **full flow** (Recon → Research → Wizard → Plan → Phase 5 hard gate → Generation), overwriting the stub artifacts; the regenerated `onboard-meta.json` reflects the full run (no separate promotion step, no gate skipped)
 - [ ] Session starts cleanly
 
 ---
@@ -363,7 +363,7 @@ Once all scenarios pass:
 | A (nextjs start) | [ ] Pass | Comprehensive profile; full Phase 0–7 + telemetry. See `findings-phase2-nextjs-v2.md` |
 | B-a (python) | [ ] Pass | Minimal profile. See `findings-phase3a-python-v2.md` |
 | B-b (monorepo) | [ ] Pass | Standard profile. See `findings-phase3b-monorepo-v2.md` |
-| B-c (empty) | [ ] Pass | Phase 0 stub + auto-promote. See `findings-phase3c-empty-v2.md` |
+| B-c (empty) | [ ] Pass | Phase 0 stub; re-run with code falls through to the full flow. See `findings-phase3c-empty-v2.md` |
 | C (drift: update/evolve/adopt) | [ ] Pass | Batched approval; auto-checked LSP; re-research. See `findings-phase4-drift-v2.md` |
 | D (CI/audit) | [ ] Pass | See `findings-phase6-ci-audit-v2.md` |
 | E (phase-tracking) | [ ] Pass | Task list, HARD GATE states, `currentPhase`, Resume/Restart |
