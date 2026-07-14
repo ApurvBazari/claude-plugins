@@ -1,8 +1,9 @@
 # Engine pipeline — stages in depth
 
-The engine runs five stages and **returns** a `review-findings` object (per
+The engine runs four stages and **returns** a `review-findings` object (per
 `../../../schemas/review-findings.schema.json`). It writes nothing and never prompts; the caller owns all
-I/O and any gate. Stages: SCOPE → INTENT → ANALYZE → VERIFY+DEDUP → RANK+ASSEMBLE.
+I/O and any gate. Stages: SCOPE → INTENT → ANALYZE → VERIFY (which also dedups, ranks, and assembles the
+findings into the `review-findings` JSON with within-run-stable ids, then returns it).
 
 ## 1. Diff-target resolution (SCOPE)
 
