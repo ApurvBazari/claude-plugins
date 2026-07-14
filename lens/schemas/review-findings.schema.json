@@ -72,9 +72,30 @@
     },
     "adherence": {
       "type": "object",
+      "$comment": "Optional, field-additive — set by the finders' side outputs or the engine's adherence return; vicario's validator ignores it. Item objects declare their known keys but stay open (no required[], no additionalProperties:false) so single-spec flat items and headless-derived items — which may omit sourceSpec/sourcePlan — remain valid.",
       "properties": {
-        "specItems": { "type": "array", "items": { "type": "object" } },
-        "planSteps": { "type": "array", "items": { "type": "object" } }
+        "specItems": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": { "type": "string" },
+              "state": { "type": "string", "enum": ["met", "partial", "missing"] },
+              "sourceSpec": { "type": "string" }
+            }
+          }
+        },
+        "planSteps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": { "type": "string" },
+              "state": { "type": "string", "enum": ["followed", "deviated"] },
+              "sourcePlan": { "type": "string" }
+            }
+          }
+        }
       }
     }
   }
