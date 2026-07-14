@@ -33,3 +33,16 @@ assert any(f["verified"] is False for f in deg["findings"]), \
     "degraded fixture must exercise an unverified-flagged finding (verified:false)"
 print("PASS: review-findings contract (nominal + degraded)")
 PY
+
+# L5 — lens dispatches ONE verifier per finding; the sample fixture's votes.total must be 1
+# (a 3-vote panel is matali/vicario behavior, not lens).
+python3 - "$FIX" <<'PY' || fail "sample fixture votes.total must be 1 (single verifier)"
+import json, sys
+d = json.load(open(sys.argv[1]))
+for fnd in d["findings"]:
+    v = fnd.get("votes")
+    if v is not None:
+        assert v["total"] == 1, f"{fnd['id']}: votes.total must be 1 (lens runs one verifier), got {v['total']}"
+        assert v["couldNotRefute"] + v["refuted"] <= v["total"], f"{fnd['id']}: vote tallies exceed total"
+print("PASS: sample fixture single-verifier votes")
+PY
