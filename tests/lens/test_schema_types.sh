@@ -49,6 +49,12 @@ for k in ("label", "state", "sourceSpec"):
     assert k in si_props, f"specItems.items must declare '{k}' property"
 for k in ("label", "state", "sourcePlan"):
     assert k in ps_props, f"planSteps.items must declare '{k}' property"
+# L3 harden — pin the state ENUM VALUES, not just key presence: a dropped/renamed/added member
+# must fail, and the enums must stay in agreement with review-model-assembly.md's documented vocabulary.
+assert set(si_props["state"].get("enum", [])) == {"met", "partial", "missing"}, \
+    f"specItems.state enum must be exactly met/partial/missing, got {si_props['state'].get('enum')}"
+assert set(ps_props["state"].get("enum", [])) == {"followed", "deviated"}, \
+    f"planSteps.state enum must be exactly followed/deviated, got {ps_props['state'].get('enum')}"
 # additive-safety: the item objects must NOT force required keys or seal additionalProperties,
 # or a valid 1.4.1 adherence payload (e.g. flat single-spec items lacking sourceSpec) would be rejected.
 assert "required" not in si["items"] and "required" not in ps["items"], \
