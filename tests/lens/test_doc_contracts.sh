@@ -50,4 +50,25 @@ grep -qi 'verdict trend' "$CHANGELOGMD" && fail "CHANGELOG must say 'severity tr
 # C2/I1 — the possibly-resolved enum mapping must state the ' — verify' suffix is markdown-only (dropped for the bare enum value).
 grep -qi 'suffix is markdown-only' "$ASM" || fail "review-model-assembly must explain possibly-resolved suffix is dropped for the enum"
 
+# L1 — engine stage count is 4 and ASSEMBLE is not attributed to the engine as a render step.
+grep -q '4 engine stages' "$CLAUDEMD" || fail "L1: CLAUDE.md must say '4 engine stages'"
+grep -qi '5 engine stages' "$CLAUDEMD" && fail "L1: CLAUDE.md must not say '5 engine stages'"
+grep -qi 'delegates the 5-stage engine' "$CLAUDEMD" && fail "L1: CLAUDE.md skills list must not say '5-stage engine'"
+# the render (review-model + walkthrough:render) must be named as the review skill's stage, not an engine stage.
+grep -qi "review.* skill.s render stage" "$CLAUDEMD" || fail "L1: CLAUDE.md must attribute review-model/walkthrough:render to the review skill's render stage"
+# pipeline.md must agree on the 4-stage framing.
+grep -q 'four stages' "$PIPE" || fail "L1: pipeline.md must say 'four stages'"
+grep -qi 'five stages' "$PIPE" && fail "L1: pipeline.md must not say 'five stages'"
+
+# L5 — the schema exists now: no stale '(built in a later task)'; and the vicario/matali roles are stated.
+grep -qi 'built in a later task' "$CLAUDEMD" && fail "L5: CLAUDE.md must drop the stale '(built in a later task)' — the schema exists"
+grep -qi 'schema-parity target' "$CLAUDEMD" || fail "L5: CLAUDE.md must state vicario = schema-parity target"
+grep -qi 'live consumer' "$CLAUDEMD" || fail "L5: CLAUDE.md must state matali = the live consumer"
+
+# L2 — the headless path consumes the engine's returned adherence block first; derive-from-gaps is the true fallback.
+grep -qi "engine.*adherence" "$ASM" || fail "L2: review-model-assembly headless path must consume the engine's adherence block when present"
+# pin the PRIMARY consume-first instruction independently of the fallback sentence (both prior greps also match the fallback line).
+grep -qi "consume that block when present" "$ASM" || fail "L2: review-model-assembly must independently pin the primary 'consume the engine's adherence block when present' instruction"
+grep -qiE "true fallback|only when.*adherence.*absent|only if.*adherence.*absent" "$ASM" || fail "L2: derive-from-requirements must be framed as the fallback used only when the engine's adherence block is absent"
+
 echo "PASS: lens doc contracts"

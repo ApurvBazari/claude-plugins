@@ -35,5 +35,31 @@ for k in ("delta","severityTrend"):
 assert top["emptyScope"]["type"]=="boolean", "emptyScope must be a boolean property"
 assert "emptyScope" not in s.get("required",[]), \
     "emptyScope must stay optional (field-additive; vicario must not require it)"
-print("PASS: schema integer-type parity + 9-value dimension enum + convergence fields + emptyScope")
+# L3 — adherence item shape is declared (additive: properties only, never required,
+# no additionalProperties:false — matali payloads valid under 1.4.1 must stay valid).
+adh = top["adherence"]
+assert adh["type"] == "object", "adherence must be an object"
+assert "adherence" not in s.get("required", []), "adherence must stay optional (field-additive)"
+si = adh["properties"]["specItems"]
+ps = adh["properties"]["planSteps"]
+assert si["type"] == "array" and ps["type"] == "array", "specItems/planSteps must be arrays"
+si_props = si["items"]["properties"]
+ps_props = ps["items"]["properties"]
+for k in ("label", "state", "sourceSpec"):
+    assert k in si_props, f"specItems.items must declare '{k}' property"
+for k in ("label", "state", "sourcePlan"):
+    assert k in ps_props, f"planSteps.items must declare '{k}' property"
+# L3 harden — pin the state ENUM VALUES, not just key presence: a dropped/renamed/added member
+# must fail, and the enums must stay in agreement with review-model-assembly.md's documented vocabulary.
+assert set(si_props["state"].get("enum", [])) == {"met", "partial", "missing"}, \
+    f"specItems.state enum must be exactly met/partial/missing, got {si_props['state'].get('enum')}"
+assert set(ps_props["state"].get("enum", [])) == {"followed", "deviated"}, \
+    f"planSteps.state enum must be exactly followed/deviated, got {ps_props['state'].get('enum')}"
+# additive-safety: the item objects must NOT force required keys or seal additionalProperties,
+# or a valid 1.4.1 adherence payload (e.g. flat single-spec items lacking sourceSpec) would be rejected.
+assert "required" not in si["items"] and "required" not in ps["items"], \
+    "adherence item objects must not add a required[] (would reject 1.4.1-valid payloads)"
+assert si["items"].get("additionalProperties", True) is not False, "specItems.items must not seal additionalProperties"
+assert ps["items"].get("additionalProperties", True) is not False, "planSteps.items must not seal additionalProperties"
+print("PASS: schema integer-type parity + 9-value dimension enum + convergence fields + emptyScope + adherence item shape")
 PY

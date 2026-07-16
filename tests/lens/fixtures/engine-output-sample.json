@@ -13,8 +13,8 @@
       "suggestedFix": "Add a sliding-window rate limiter (e.g. express-rate-limit or a Redis-backed counter) keyed on IP + username. Return HTTP 429 with Retry-After once the threshold is exceeded.",
       "source": "spec-adherence",
       "votes": {
-        "total": 3,
-        "couldNotRefute": 3,
+        "total": 1,
+        "couldNotRefute": 1,
         "refuted": 0
       }
     },
@@ -32,8 +32,8 @@
       "suggestedFix": "Use crypto.timingSafeEqual on Buffers derived from Buffer.from(input) and Buffer.from(stored) after hashing both with the same algorithm. This prevents both type-coercion bypasses and timing side-channels.",
       "source": "correctness",
       "votes": {
-        "total": 3,
-        "couldNotRefute": 3,
+        "total": 1,
+        "couldNotRefute": 1,
         "refuted": 0
       }
     }

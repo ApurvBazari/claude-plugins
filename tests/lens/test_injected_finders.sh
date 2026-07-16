@@ -45,7 +45,7 @@ grep -qiE 'signal .*(real|present|at the (cited )?locus)|locus.*match' "$VERIFIE
   || fail "VERIFIER: keep simplify only if the cited violation signal is real at the locus"
 grep -qiE 'warranted|justified' "$VERIFIER" || fail "VERIFIER: refute a simplify finding when the change is clearly warranted"
 
-# === version bump 1.3.0 -> 1.4.1 (manifest + marketplace + changelog) ===
+# === version consistency (derived via assert-versions.sh) ===
 CHANGELOG="$ROOT/lens/CHANGELOG.md"
 bash "$ROOT/tests/lib/assert-versions.sh" lens || fail "lens version consistency (plugin.json = marketplace = CHANGELOG)"
 grep -q '## 1.3.0' "$CHANGELOG" || fail "lens CHANGELOG must have a 1.3.0 entry"
