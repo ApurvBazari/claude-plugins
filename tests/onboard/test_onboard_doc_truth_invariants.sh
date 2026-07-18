@@ -1,9 +1,23 @@
 #!/usr/bin/env bash
-# test_sp5_invariants.sh — SP-5 doc-truth + code invariants (grep assertions).
+# test_onboard_doc_truth_invariants.sh — onboard's doc-truth + code invariants (grep assertions).
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"; cd "$ROOT" || exit 1
 fail=0
-must_absent(){ local desc="$1"; shift; if grep -rniE "$1" "${@:2}" >/dev/null 2>&1; then echo "FAIL: $desc"; grep -rniE "$1" "${@:2}"; fail=1; else echo "ok: $desc"; fi; }
+# grep's exit code is the source of truth, not the emptiness of its output: rc 1 (no match) means
+# the assertion genuinely holds, but rc >= 2 (unreadable path, malformed ERE) means it was never
+# evaluated. Collapsing both to ok — as a bare `grep … >/dev/null 2>&1 && FAIL || ok` does — reports a
+# pass for an assertion that scanned nothing; since these pins name literal file paths and SP-8 moves
+# files, a later rename would silently green O1/O3/O4/O7/O8/O9. Discriminate rc>1 explicitly.
+must_absent(){
+  local desc="$1" pattern="$2"; shift 2
+  local hits rc=0
+  hits="$(grep -rniE "$pattern" "$@" 2>&1)" || rc=$?
+  case "$rc" in
+    0) echo "FAIL: $desc"; printf '%s\n' "$hits"; fail=1 ;;
+    1) echo "ok: $desc" ;;
+    *) echo "FAIL: $desc — grep errored (rc=$rc), so the assertion was never evaluated"; printf '%s\n' "$hits"; fail=1 ;;
+  esac
+}
 
 # --- O1: no auto-promote branding survives (there is no auto-promote path;
 #     re-run with code added falls through to the full flow + Phase 5 hard gate) ---

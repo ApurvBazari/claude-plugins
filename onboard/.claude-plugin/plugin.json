@@ -1,6 +1,6 @@
 {
   "name": "onboard",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": "Analyze codebases with deep, verified research and generate evidence-grounded Claude tooling — CLAUDE.md, path-scoped rules, skills, agents, hooks, and a verify backlog.",
   "author": {
     "name": "Apurv Bazari"

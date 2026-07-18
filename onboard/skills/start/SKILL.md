@@ -30,49 +30,9 @@ Tell the developer:
 
 Runs **before** Phase 1 Recon. Detects repositories with no source code and routes them to a minimal, canonical-shape stub instead of running the full analysis + wizard. Closes 2026-04-17 release-gate findings B14, B15, B16.
 
-### Step: Detect empty repository
+Follow `references/empty-repo-stub-procedure.md` in full — it is the single source of truth for the detection filter (`SRC_COUNT`), the prior-stub re-run check, the 3-option `AskUserQuestion` menu (Abort / Placeholder only / Generate canonical stub), and each option's execute path.
 
-Count source-code files (exclude `.git/`, dotfiles, `README*`, `LICENSE*`, `.gitignore`):
-
-```bash
-SRC_COUNT=$(find . -type f \
-  -not -path './.git/*' \
-  -not -name '.*' \
-  -not -name 'README*' \
-  -not -name 'LICENSE*' \
-  | wc -l | tr -d ' ')
-```
-
-- `SRC_COUNT > 0` → source code exists → **skip Phase 0 entirely**, fall through to Phase 1 Recon. Most common case.
-- `SRC_COUNT == 0` → empty repo → proceed to the prior-stub check below.
-
-### Step: Detect prior stub (re-run on an empty dir)
-
-If `.claude/onboard-meta.json` already exists AND `jq -r '.mode // empty'` returns `"stub-empty-repo"` AND `SRC_COUNT == 0` (the developer ran start twice on a still-empty dir): default to no-op — inform the developer a stub already exists, skip re-write.
-
-(When source code has since been added, `SRC_COUNT > 0` short-circuits Phase 0 above and the full flow runs — Recon → Research → Grounded Wizard → Plan → **hard gate** → Generation — overwriting the stub artifacts. There is no separate promotion branch.)
-
-### Step: Present the 3-option menu
-
-For empty repos without a prior stub, use `AskUserQuestion` (single-select, header: `"Empty repo"`):
-
-> This repository has no source code yet. How would you like to proceed?
->
-> - **Abort** — stop here. Add source code first, then re-run `/onboard:start`.
-> - **Placeholder only** — write a minimal CLAUDE.md placeholder (no `.claude/` directory). Useful if you want to set up Claude context before the code exists but don't want a formal tooling setup.
-> - **Generate canonical stub** (default) — create CLAUDE.md, `.claude/settings.json`, and `.claude/onboard-meta.json` in canonical schema with stub-mode markers. Re-run `/onboard:start` later to upgrade to full tooling.
-
-Default: **Generate canonical stub**.
-
-**Single-option guard** (per `.claude/rules/ask-user-question-guard.md`): the menu has 3 options → no guard needed.
-
-### Step: Execute the selected path
-
-- **Abort** → stop the skill. No files written.
-- **Placeholder only** → write CLAUDE.md with the placeholder content from the stub procedure (below) but SKIP the `.claude/` directory. Return minimal handoff. Do not proceed to further phases.
-- **Generate canonical stub** (default) → follow `references/empty-repo-stub-procedure.md`. It prescribes: the 3 files, the canonical `onboard-meta.json` schema with all 7 generation-phase status keys set to `status: "skipped"` + `reason: "stub-mode-no-code"`, dynamic `pluginVersion` resolution (no hardcoded literals), and the 3-file atomic write order.
-
-After either stub path completes, run a minimal handoff (see the stub procedure's § Post-write handoff section) and return — do NOT continue to Phase 1 Recon. The stub paths never reach Step 0 below, so no task list is created for a stub run.
+A stub, abort, or placeholder run returns from that procedure directly — **before** Step 0 below — and never reaches Phase 1 Recon, so no phase-task list is created for it.
 
 ---
 
@@ -84,29 +44,13 @@ First, read the contract: `references/phase-tracking.md`. It is the single sourc
 
 ### Step: Resume probe (durable on-disk artifacts)
 
-Before creating a fresh task list, probe for a prior interrupted run. The cross-session anchor is the set of **durable on-disk artifacts** — NOT the task list (the harness task list may be session-scoped and is not guaranteed to survive a new session, so it is in-session visibility only). Probe the two artifacts in order, exactly per `references/phase-tracking.md` § Resume:
+Before creating a fresh task list, probe for a prior interrupted run. The cross-session anchor is the set of **durable on-disk artifacts** (`.claude/onboard-meta.json`, `.claude/onboard-research.json`) — NOT the harness task list, which is in-session visibility only. Follow the full procedure in `references/phase-tracking.md` § Resume. It owns the probe order, the `currentPhase`/`META_MAJOR` reads, the branch conditions, and the fixed two-option `AskUserQuestion` offer. In summary:
 
-```bash
-META=".claude/onboard-meta.json"
-DOSSIER=".claude/onboard-research.json"
-CURRENT_PHASE=$([ -f "$META" ] && jq -r '.currentPhase // empty' "$META" || echo "")
-META_MAJOR=$([ -f "$META" ] && jq -r '._generated.version // empty' "$META" | cut -d. -f1 || echo "")
-```
+1. **Probe 1 — generation-era meta** (`onboard-meta.json` with a `currentPhase`, `META_MAJOR == "3"`, non-cancelled list): `currentPhase == "done"` → the prior run finished, route to the existing-config flow (no resume); integer `currentPhase` → offer **Resume** (finish from Phase `currentPhase + 1`) or **Restart**.
+2. **Probe 2 — research dossier, no meta** → research completed, generation never ran. Offer **Resume into Phase 3** (the wizard re-confirms from the dossier's `research.wizardInferences` — continue forward through context → plan-gate → generation) or **Restart**.
+3. **Probe 3 — neither** → fresh start; skip the prompt and create the list below.
 
-Branch:
-
-1. **Probe 1 — generation-era meta.** If `onboard-meta.json` exists AND has a `currentPhase` (integer or `"done"`) AND `META_MAJOR == "3"` (the segment before the first `.` of `_generated.version`) AND the run's task list — if it still exists this session — is **not** cancelled (no gate-or-later task `deleted`; § Cancel-resume guard):
-   - if `currentPhase == "done"` → the prior run already finished. Do **not** offer resume; route to the existing-config flow (this mirrors the Phase 1 "existing config" branch — Adopt / Update / Start fresh).
-   - else (integer `currentPhase`, i.e. `6`) → offer **Resume** (finish from Phase `currentPhase + 1` = Phase 7 Handoff) or **Restart**, via the fixed-two-option `AskUserQuestion` below.
-2. **Probe 2 — research dossier, no meta.** Else if `.claude/onboard-research.json` exists but `onboard-meta.json` does **not** (and any task list present is non-cancelled) → research completed, generation never ran. Offer **Resume into Phase 3** (the wizard re-confirms from the dossier's `research.wizardInferences` — this is NOT skipping the wizard; continue forward through context → plan-gate → generation) or **Restart**, via the same prompt.
-3. **Probe 3 — neither.** Else → fresh start. Skip the prompt; proceed to create a fresh list below.
-
-For probes 1 (integer case) and 2, present the offer via `AskUserQuestion` (single-select, header `"Resume?"`, **two fixed options**):
-
-- **Resume (Recommended)** — "Continue the interrupted run." Rehydrate from the checkpoint artifact(s): for probe 2 read `.claude/onboard-research.json` and re-derive context, re-create the task list with already-completed phases marked `completed` and the rest `pending`, and continue from the resume target (Phase 7 for probe 1, Phase 3 for probe 2). For probe 1, re-create the list with 0–6 `completed` and 7 `pending`.
-- **Restart** — "Discard the interrupted run and start fresh from Phase 0." Mark any leftover incomplete tasks `deleted`, then fall through to create a fresh list below. (Generation is merge-aware, so a restart that re-reaches Phase 6 will not clobber user edits.)
-
-**Guard Usage:** both options are **fixed** (not built from a dynamic list that could collapse to one), so the single-option guard in `.claude/rules/ask-user-question-guard.md` does **not** apply. On **Resume**, skip the fresh-list creation below and jump to the resume target phase. On **Restart** (or probe 3), continue here.
+Both offer options are **fixed** (Resume / Restart, header `"Resume?"`), so the single-option guard in `.claude/rules/ask-user-question-guard.md` does **not** apply. On **Resume**, rehydrate from the checkpoint artifact(s), re-create the list with already-completed phases marked `completed`, and jump to the resume target (Phase 7 for probe 1, Phase 3 for probe 2); on **Restart** (or probe 3), mark any leftover incomplete tasks `deleted` and continue below.
 
 ### Step: Create the phase-task list
 
@@ -264,52 +208,26 @@ After all questions are answered, present a summary:
 
 ---
 
----
-
 ## Phase 4: Plugin Detection & Context
 
 > **Phase transition (per `references/phase-tracking.md`):** `TaskUpdate(build-context → in_progress)` now, **before** the plugin-detection probes and the build-v3-context step. Mark it `TaskUpdate(... → completed)` after the context builder's validation passes.
 
 ### Step: plugin-detection
 
-Before generation, detect installed Claude Code plugins to enrich the output with plugin-aware features (Plugin Integration section, per-directory skill annotations, plugin-aware agent skipping, quality-gate hooks referencing plugin skills).
+Before generation, detect installed Claude Code plugins so the output is plugin-aware (Plugin Integration section, per-directory skill annotations, plugin-aware agent skipping, quality-gate hooks). The canonical procedures live under `../generation/references/plugins/`:
 
-#### Probe Filesystem — canonical deep probe
+- **Probe both locations** — the dev-sibling path (`${CLAUDE_PLUGIN_ROOT}/../<plugin>/`) and the marketplace cache (`~/.claude/plugins/cache/*/<plugin>/`) — per `../generation/references/plugins/plugin-detection-guide.md` § Known Plugin Probe List. Build `installedPlugins` across the full catalog; continue past misses; only report "no plugins detected" when BOTH locations are empty (the cache probe still runs off `$HOME` when `CLAUDE_PLUGIN_ROOT` is unset).
+- **Classify each surface** via `../generation/references/plugins/plugin-surface-probe.md` — tag every installed plugin `command-or-skill` / `hooks-only` / `agent-only`; the resulting `pluginSurfaces` map prevents fabricated slash refs (release-gate finding G.3, 2026-04-17).
+- **Derive** `coveredCapabilities`, `qualityGates`, and `phaseSkills` per the derivation rules in `../generation/references/plugins/plugin-detection-guide.md` — dedup capabilities; filter gates/skills by `installedPlugins`; downgrade `preCommit[].mode` per `wizardAnswers.autonomyLevel`; drop empty phases.
 
-Follow the canonical procedure in `../generation/references/plugins/plugin-detection-guide.md` § Known Plugin Probe List. The probe walks **both** locations to catch sibling installs AND marketplace-installed plugins:
-
-1. `${CLAUDE_PLUGIN_ROOT}/../<plugin-name>/` (dev monorepo siblings)
-2. `~/.claude/plugins/cache/*/<plugin-name>/[version/]` (marketplace installs, where `<version>` is often the literal string `"unknown"`)
-
-Build `installedPlugins` from successful probes across the full catalog. Do not stop on a single miss — continue through every plugin in the catalog.
-
-**Fallback when `CLAUDE_PLUGIN_ROOT` is unset**: the marketplace-cache probe still runs (keys off `$HOME`). Only fall back to "no plugins detected" when BOTH probe locations yield zero hits across the catalog.
-
-#### Step: probe-plugin-surfaces
-
-For each entry in `installedPlugins`, run the surface-probe procedure in `../generation/references/plugins/plugin-surface-probe.md` to classify the plugin as `command-or-skill`, `hooks-only`, or `agent-only`. The resulting `pluginSurfaces` map feeds the Plugin Integration template to prevent fabricated slash refs (e.g., `/security-guidance:security-review` for a hooks-only plugin — release-gate finding G.3, 2026-04-17).
-
-#### Derive coveredCapabilities, qualityGates, phaseSkills
-
-Apply the derivation rules in `../generation/references/plugins/plugin-detection-guide.md`:
-- `coveredCapabilities` — combine per-plugin capabilities, deduplicated
-- `qualityGates` — filter defaults by `installedPlugins`, then downgrade `preCommit[].mode` per `wizardAnswers.autonomyLevel`
-- `phaseSkills` — filter defaults by `installedPlugins`; remove empty phases
-
-#### Present Detection Results
-
-If plugins were detected:
+Then present the results. If plugins were detected:
 
 > **Detected Claude Code plugins:**
 > - **[plugin name]** ([capabilities])
-> - ...
 >
 > These will be integrated into your generated CLAUDE.md and quality-gate hooks.
 
-If no plugins were detected:
-
-> No Claude Code plugins detected. I'll generate standalone tooling.
-> You can install plugins later and re-run `/onboard:start` to integrate them.
+If none were detected, tell the developer standalone tooling will be generated and they can install plugins and re-run `/onboard:start` later.
 
 ---
 
@@ -335,8 +253,6 @@ The builder emits a context object per the canonical schema. Key invariants:
 Run the builder's validation step before proceeding to Phase 6 Generation. If validation fails, refuse to dispatch — surface the error to the user with the offending field name.
 
 > **Phase complete:** after the context builder's validation passes, `TaskUpdate(build-context → completed)`.
-
----
 
 ---
 
@@ -406,40 +322,19 @@ The model choice is written into `context.modelChoice` by the Phase 4 build-v3-c
 
 ### Step: dispatch to Skill(onboard:generate)
 
-**Invoke `Skill(onboard:generate)` with the context object built in the Phase 4 build-v3-context step.** One contract, one validator, one agent-dispatch boundary.
+**Invoke `Skill(onboard:generate)` with the context object built in the Phase 4 build-v3-context step** — one contract, one validator, one agent-dispatch boundary. The developer approved this plan at the Phase 5 gate, so write mode honors it (same artifact set + decisions).
 
 ```
-Skill(onboard:generate, {mode:"write", context})   // context from the Phase 4 build-v3-context step — the same object the Phase 5 plan step planned from
+Skill(onboard:generate, {mode:"write", context})   // the same object the Phase 5 plan step planned from
 ```
 
-By this point the developer has approved the plan at the Phase 5 gate; write mode honors that plan (same artifact set + decisions).
+The generate skill validates the context (`../generate/SKILL.md` § Validation), dispatches `Agent(config-generator)` with `dispatchedAsAgent: true`, runs the full emission pipeline per `../generation/SKILL.md`, runs its pre-exit self-audit over the 7 generation-phase telemetry keys plus the v3 research block, and returns `{ filesWritten, telemetry, auditPassed, warnings }`. Always dispatch via the Skill tool.
 
-The generate skill then:
+- **Research self-audit:** if `metadata.research.consumed === true`, verify the block is coherent — `.claude/onboard-research.json` exists; `claimsVerified`, `claimsDropped`, `specialistsRun`, `artifactLocation`, `artifactsWritten` are present; `artifactsWritten` paths match the on-disk docs for the recorded `artifactLocation`; and `htmlRendered` is non-null **iff** the `walkthrough` plugin was present at render time (null is correct when absent or `location:"none"`). If `consumed === false` (research-absent / stub mode), record the research key as `status:"skipped"` with a reason (mirrors the existing skipped-key convention). Surface any incoherence as a self-audit warning.
 
-1. Validates the context (see `../generate/SKILL.md` § Validation)
-2. Dispatches `Agent(config-generator)` with `dispatchedAsAgent: true`
-3. Runs the full generation pipeline (emission Step 1 MCP, Step 2 Output Styles, Step 3 LSP, Step 4 Built-in Skills) per `../generation/SKILL.md`
-4. Runs pre-exit self-audit verifying all 7 generation-phase telemetry keys are present. The self-audit also covers the v3 research telemetry block:
-   - **Research self-audit:** if `metadata.research.consumed === true`, verify the block is coherent — `.claude/onboard-research.json` exists; `claimsVerified`, `claimsDropped`, `specialistsRun`, `artifactLocation`, `artifactsWritten` are present; `artifactsWritten` paths match the on-disk docs for the recorded `artifactLocation`; and `htmlRendered` is non-null **iff** the `walkthrough` plugin was present at render time (null is correct when absent or `location:"none"`). If `consumed === false` (research-absent / stub mode), record the research key as `status:"skipped"` with a reason (mirrors the existing skipped-key convention). Surface any incoherence as a self-audit warning.
-5. Returns a structured JSON response with `filesWritten`, `telemetry`, `auditPassed`, `warnings`
+**Do NOT** call `Agent(config-generator)` directly, and **do NOT** call Write / Edit from this skill — the dispatched agent owns every write (hard-fail safety net: config-generator refuses to write unless `dispatchedAsAgent === true`).
 
-**Do NOT** call `Agent(config-generator)` directly from this skill — that breaks the contract boundary and bypasses the shared validation. Always dispatch via the Skill tool.
-
-**Do NOT** call Write / Edit from this skill — the dispatched agent owns all writes (hard-fail safety net: config-generator checks `dispatchedAsAgent === true` and refuses to write if absent).
-
-Before dispatching, inform the developer:
-
-> Generating your Claude tooling... This will create the following artifacts:
-> - Root CLAUDE.md
-> - [Subdirectory CLAUDE.md files if applicable]
-> - Path-scoped rules
-> - Skills
-> - Agents
-> - Hook configuration
-> - MCP servers (if stack signals detected)
-> - Output style
-> - LSP plugin integration (if source files detected)
-> - Setup metadata
+Before dispatching, tell the developer generation is starting and will create the tailored artifact set — root + any subdirectory CLAUDE.md, path-scoped rules, skills, agents, hook configuration, MCP servers / output style / LSP integration where stack signals warrant, and setup metadata.
 
 ### Step: report-results
 
@@ -474,69 +369,9 @@ After generation completes, list every file that was created:
 
 ### Step: ecosystem-plugin-install
 
-If the wizard answers include `ecosystemPlugins`, set up the requested plugins.
+If the wizard answers include `ecosystemPlugins`, set up the requested plugins following the canonical procedure in `references/ecosystem-plugin-install.md` — it owns the per-plugin install-probe (`ls "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh"`), the never-silent inline-install offer for anything missing, and the skip/report messaging. If no plugins were requested or available, skip this step entirely.
 
-#### Resolve Requested Ecosystem Plugins
-
-For each plugin the developer selected in the wizard (`ecosystemPlugins.notify`, etc.), verify it's installed. If it's missing, **offer inline install** — do not skip silently, because the developer explicitly asked for it.
-
-For each requested plugin, probe the filesystem:
-
-```bash
-# Check if notify is available
-ls "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh" 2>/dev/null
-```
-
-Characteristic files per plugin:
-- `notify` → `scripts/notify.sh`
-
-**If the probe finds the file**, the plugin is installed — proceed to the notify delegation sub-step below (for notify).
-
-**If the probe returns nothing**, the plugin is missing. Tell the developer:
-
-> You selected the **<plugin>** plugin during the wizard, but it's not installed yet.
->
-> Install it now? (runs: `claude plugin install <plugin>`)
-
-Use AskUserQuestion with two options:
-- **Install now (Recommended)** — run the install command via Bash, then continue
-- **Skip setup** — don't configure this plugin; continue with the rest of the flow
-
-**If the developer installs:**
-1. Run `claude plugin install <plugin>` via the Bash tool.
-2. Re-run the detection probe to verify.
-3. **On success** — proceed to the corresponding setup step. If the plugin's slash commands/scripts aren't immediately available, note: "Plugin installed, but its scripts may not be on disk yet until you restart the session. If setup fails, restart Claude Code and rerun `/onboard:start`."
-4. **On install failure** — surface the underlying error verbatim. Then emit the explicit skip message below and continue with the next requested plugin.
-
-**If the developer skips or install fails**, emit a clear skip message (never silent):
-
-> Skipping **<plugin>** setup. You can install it later with `claude plugin install <plugin>` and run its setup command directly (`/notify:setup`, etc.).
-
-Then continue to the next requested plugin. Repeat for each entry in `ecosystemPlugins`.
-
-**Edge case** — if a plugin was NOT requested in the wizard (`ecosystemPlugins.<plugin>` is `false` or absent), skip it entirely. Do not probe, do not prompt. This step only acts on what the developer explicitly asked for.
-
-#### Set Up Notify (if requested and available)
-
-If `ecosystemPlugins.notify` is `true` and notify is installed, **delegate configuration to the notify plugin** — `/notify:setup` owns notify wiring and already handles global-vs-per-project scope and detects any pre-existing global config. onboard does **not** copy `notify.sh`, write a `notify-config.json`, run `install-notifier.sh`, or merge notify hooks into this project's `settings.json` — doing so would duplicate (and silently diverge from) whatever `/notify:setup` manages.
-
-Tell the developer:
-
-> The **notify** plugin is installed. Run `/notify:setup` to turn on system notifications — it lets you pick global (all projects) or this-project-only scope and skips anything already configured globally.
-
-If notify was just installed in this step and its scripts aren't on disk yet, the same `/notify:setup` instruction applies once the session is restarted.
-
-#### Report Ecosystem Setup
-
-> **Ecosystem plugins:**
-> - [list each requested plugin and whether it's installed / was just installed / skipped]
->
-> To finish configuring:
-> - Notify: run `/notify:setup`
-
-If no plugins were requested or available, skip this report entirely.
-
----
+**Notify is delegated, never wired per-repo:** when `ecosystemPlugins.notify` is `true` and notify is installed, direct the developer to run `/notify:setup` — onboard never copies `notify.sh`, writes a `notify-config.json`, runs `install-notifier.sh`, or merges notify hooks; `/notify:setup` owns scope selection and global-config detection.
 
 ---
 
@@ -544,46 +379,7 @@ If no plugins were requested or available, skip this report entirely.
 
 > **Phase transition (per `references/phase-tracking.md`):** `TaskUpdate(handoff → in_progress)` now, **before** the handoff narration below. Mark it `TaskUpdate(... → completed)` after the Closing step — that completes the last phase of the run.
 
-### Step: Explain Key Artifacts
-
-Briefly explain the most important generated artifacts:
-
-> **What to know about your new setup:**
->
-> **CLAUDE.md** — This is your main project context file. Claude reads it every session to understand your project. Review it and tweak anything that doesn't feel right.
->
-> **Path-scoped rules** — These activate automatically when Claude works on matching files. For example, your testing rules apply whenever Claude touches test files.
->
-> **Skills** — These give Claude expertise for specific tasks in your project. Try asking Claude to [relevant task based on generated skills].
->
-> **Agents** — Specialized Claude personas. Try running your [agent name] agent on a recent change.
->
-> **Hooks** — Auto-formatting and linting happen in the background. You don't need to think about these.
-
-### Step: Quick Start Suggestions
-
-Based on what was generated, suggest what to try first:
-
-> **Try these first:**
-> 1. Open a file in your project and notice how Claude now has context about your conventions
-> 2. [Stack-specific suggestion, e.g., "Ask Claude to create a new React component and see how it follows your patterns"]
-> 3. [Pain-point based suggestion, e.g., "Ask Claude to write tests for a module you mentioned is error-prone"]
-
-### Step: Next Steps
-
-> **Next steps:**
-> - Review `CLAUDE.md` and adjust anything that doesn't match your preferences
-> - Review the research artifacts in `docs/onboard/` (or `.claude/onboard-research.json` if you chose local/none) — the dossier, architecture map, risk register, and glossary.
-> - Run `/onboard:check` anytime to check the health of your setup
-> - Run `/onboard:update` periodically to align with latest Claude best practices
-> - All generated files have maintenance headers — Claude will let you know when they need updating
-
-If ecosystem plugins were set up, add:
-> - Run `/notify:check` to verify notifications are working
-
-### Step: Closing
-
-> Your project is now set up for AI-assisted development with Claude Code. Happy coding!
+Deliver the handoff narration per `references/handoff-narration.md` in full — Explain Key Artifacts → Quick Start Suggestions → Next Steps → Closing. That reference is the single source of truth for the developer-facing education text (including the `/notify:check` follow-up line to add when ecosystem plugins were set up).
 
 > **Phase complete:** after the closing line, `TaskUpdate(handoff → completed)`. All 8 phase tasks are now `completed` — the run is done.
 
