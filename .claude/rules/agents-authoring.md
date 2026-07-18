@@ -26,6 +26,21 @@ Beyond `name`/`description`/`color`, declare a machine-readable `tools` allowlis
 
 This aligns hand-authored agents with the contract `onboard/agents/config-generator.md` already mandates for *generated* agents.
 
+## References
+
+An agent's supporting docs live in the plugin's flat, agent-owned `agents/references/*.md` — a sibling of the agent files, not inside any skill:
+
+```
+<plugin>/agents/
+├── codebase-analyzer.md
+└── references/
+    └── tech-stack-patterns.md
+```
+
+- Cite them from the agent as a bare `references/<file>.md`. Keep the directory flat (no subfolders) — the depth belongs in `skills/<name>/references/`, which is skill-owned.
+- Use this home when the consumer is an **agent**. A doc a skill loads stays under that skill's `references/`. Never point an agent at a skill's `references/` to borrow a file — if both need it, that is a signal the doc has two owners; pick the primary and cite across explicitly.
+- `.github/scripts/check-references.sh` walks `agents/**/references/`, so a reference here is gated for integrity exactly like a skill-owned one.
+
 ## Tool Access Principle
 
 - **Read-only agents** (analyzers, reviewers): `Read`, `Glob`, `Grep`, `Bash` (read-only commands only)

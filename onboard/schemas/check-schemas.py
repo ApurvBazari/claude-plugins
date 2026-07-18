@@ -3,18 +3,21 @@
 
 Two fixture classes live in onboard/schemas/examples/:
 
-  - <name>.example.json          — a POSITIVE fixture that MUST validate against
-                                   its schema.
+  - <schema>.example.json        — a POSITIVE fixture that MUST validate against
+                                   the <schema> schema.
+  - <schema>--<case>.example.json — a further POSITIVE fixture for the same
+                                   schema, covering a distinct caller path (one
+                                   schema often serves several callers, each
+                                   building a differently-shaped valid object).
   - <schema>--<case>.reject.json — a NEGATIVE fixture that MUST be REJECTED by
                                    the <schema> schema. These pin security/shape
                                    constraints (e.g. custom-specialist agent-path
                                    traversal, unbounded prompts): a reject fixture
                                    that validates is a regression and fails here.
 
-Each fixture is matched to its schema by name:
-  - context-shape-v3  -> onboard/skills/generate/references/context-shape-v3.json
-  - everything else   -> onboard/schemas/<schema>.json
-For a reject fixture, <schema> is the basename up to the first "--".
+Each fixture is matched to its schema by name at onboard/schemas/<schema>.json,
+where <schema> is the basename up to the first "--" — the same rule for both
+classes, so a schema can carry any number of per-case fixtures of either kind.
 
 Exit 0 when every positive fixture validates AND every reject fixture is rejected
 (or none exist), 1 on a missing schema, a positive validation error, or a reject
@@ -36,8 +39,6 @@ EXAMPLES_DIR = os.path.join(ROOT, "schemas", "examples")
 
 
 def schema_path_for(name):
-    if name == "context-shape-v3":
-        return os.path.join(ROOT, "skills", "generate", "references", "context-shape-v3.json")
     return os.path.join(ROOT, "schemas", name + ".json")
 
 
@@ -114,19 +115,20 @@ def main():
 
     # Positive fixtures — each MUST validate.
     for ex in examples:
-        name = os.path.basename(ex)[: -len(".example.json")]
-        schema, err = load_schema(name)
+        base = os.path.basename(ex)[: -len(".example.json")]
+        schema_name = base.split("--", 1)[0]
+        schema, err = load_schema(schema_name)
         if err:
-            print(f"FAIL {name}: {err}", file=sys.stderr)
+            print(f"FAIL {base}: {err}", file=sys.stderr)
             failures += 1
             continue
         with open(ex) as f:
             instance = json.load(f)
         try:
             jsonschema.validate(instance, schema)
-            print(f"OK       {name}")
+            print(f"OK       {base}")
         except jsonschema.ValidationError as err:
-            print(f"FAIL     {name}: {err.message} (at path {list(err.path)})", file=sys.stderr)
+            print(f"FAIL     {base}: {err.message} (at path {list(err.path)})", file=sys.stderr)
             failures += 1
 
     # Negative fixtures — each MUST be rejected.

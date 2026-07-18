@@ -27,23 +27,32 @@ for i in $(seq 0 $((PLUGIN_COUNT - 1))); do
 
   echo "Checking references: $PLUGIN_NAME"
 
+  # A registry entry naming a directory that does not exist IS a broken reference — the
+  # exact class this script exists to catch (a moved, renamed, or typo'd plugin source).
+  # Skipping it silently would print the "Checking references" line above and then report
+  # a pass for a plugin that was never inspected.
   if [ ! -d "$PLUGIN_DIR" ]; then
+    echo "  FAIL: marketplace source '$PLUGIN_SOURCE' does not exist (no directory at $PLUGIN_DIR)"
+    ERRORS=$((ERRORS + 1))
+    echo ""
     continue
   fi
 
-  # Check skill reference directories
-  if [ -d "$PLUGIN_DIR/skills" ]; then
-    while IFS= read -r -d '' ref_dir; do
-      # Every .md file in references/ should be non-empty
-      while IFS= read -r -d '' ref_file; do
-        if [ ! -s "$ref_file" ]; then
-          echo "  FAIL: Empty reference file: $ref_file"
-          ERRORS=$((ERRORS + 1))
-          PLUGIN_ISSUES=$((PLUGIN_ISSUES + 1))
-        fi
-      done < <(find "$ref_dir" -name "*.md" -type f -print0 2>/dev/null)
-    done < <(find "$PLUGIN_DIR/skills" -name "references" -type d -print0 2>/dev/null)
-  fi
+  # Check skill AND agent reference directories
+  for ref_root in "$PLUGIN_DIR/skills" "$PLUGIN_DIR/agents"; do
+    if [ -d "$ref_root" ]; then
+      while IFS= read -r -d '' ref_dir; do
+        # Every .md file in references/ should be non-empty
+        while IFS= read -r -d '' ref_file; do
+          if [ ! -s "$ref_file" ]; then
+            echo "  FAIL: Empty reference file: $ref_file"
+            ERRORS=$((ERRORS + 1))
+            PLUGIN_ISSUES=$((PLUGIN_ISSUES + 1))
+          fi
+        done < <(find "$ref_dir" -name "*.md" -type f -print0 2>/dev/null)
+      done < <(find "$ref_root" -name "references" -type d -print0 2>/dev/null)
+    fi
+  done
 
   # Check script references in agents — only match path-like refs (containing /)
   if [ -d "$PLUGIN_DIR/agents" ]; then

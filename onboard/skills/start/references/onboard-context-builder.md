@@ -30,68 +30,7 @@ From prior phases (already in conversation context):
 
 ## Output schema — context object passed to `Skill(onboard:generate)`
 
-Emits a **v3 context** (`version: 3`): the v3 shape adds the top-level `research` block and routes `generate` Step 0 down the v3 path. This is the **internal v1-shaped object** (`analysis`, `wizardAnswers`, `enriched`, `callerExtras`, …) that `generate` and `config-generator` consume directly; it satisfies `context-shape-v3.json`'s required set (`version`, `source`, `projectPath`, `callerExtras`) and adds the internal fields generate expects (the v3 schema is permissive — `additionalProperties: true` — and no longer requires a `phases` block). `generate` is v3-only as of 3.0.0 (no v2 adapter). The internal field set otherwise matches `../../generate/SKILL.md` Step 1 § Required Context Structure. All fields populated; no `undefined` / absent top-level keys.
-
-```jsonc
-{
-  "source": "onboard:start",
-  "version": 3,                      // v3 context: routes generate Step 0 down the v3 path (reads `research`). Integer, not the plugin version.
-  "projectPath": "/abs/path/to/project",
-
-  "analysis": { /* Phase 1 Recon report — same shape config-generator expects */ },
-
-  "wizardAnswers": { /* Phase 3 Wizard canonical shape; see ../../wizard/SKILL.md § Canonical Output */ },
-
-  "research": { /* research-dossier object returned verbatim by /onboard:start Phase 2 Research Skill(onboard:research); canonical shape: research-dossier.json */ },
-
-  "modelChoice": "claude-opus-4-8[1m]",  // example value; resolved per start SKILL.md § model-resolution (canonical default: workflow-presets.md § Exchange target)
-
-  "ecosystemPlugins": { "notify": true },  // or false; comes from wizardAnswers.ecosystemPlugins
-
-  "enriched": {
-    "enableCICD":           <boolean>,  // derived: wizardAnswers.willDeploy && wizardAnswers.ciPreference !== "none"
-    "enableHarness":        false,      // start-path default
-    "enableEvolution":      true,       // default on; overridden only when wizardAnswers.evolutionPref === "none"
-    "enableSprintContracts": false,     // start-path default
-    "enableTeams":          <boolean>,  // derived: wizardAnswers.teamSize !== "solo" && wizardAnswers.isProduction === true
-    "enableVerification":   true,       // default on
-    "willDeploy":           <boolean>,  // from wizardAnswers
-    "ciAuditAction":        "auto-fix-pr | comment-only | create-issue",  // from wizardAnswers.ciAuditAction, default "comment-only"
-    "prReviewTrigger":      "auto | on-demand | auto-with-skip",          // from wizardAnswers, default "on-demand"
-    "autoEvolutionMode":    "auto-update | manual | notify-only",          // from wizardAnswers, default "manual"
-    "verificationStrategy": "browser-automation | api-testing | cli-execution | test-runner | combination",  // default "combination"
-    "deployTarget":         "vercel | aws | docker | railway | other | none"  // from wizardAnswers
-  },
-
-  "callerExtras": {
-    "installedPlugins":    [ /* from the Phase 4 plugin-detection deep probe */ ],
-    "coveredCapabilities": [ /* derived from installedPlugins per plugin-detection-guide.md */ ],
-    "pluginSurfaces":      { /* from the Phase 4 surface probe — see plugin-surface-probe.md */ },
-    "allowPluginReferences": true,       // default true when installedPlugins is non-empty
-    "allowHttpHooks":        false,      // opt-in only; start never auto-enables http hooks
-
-    // Generation-phase family — SKIP-PHASE flags (start default: never skip)
-    "disableMCP":            false,      // start ALWAYS runs generation emission Step 1 — this is the B1 fix
-    "disableLSP":            false,      // start runs generation emission Step 3 when LSP candidates exist
-    "disableBuiltInSkills":  false,      // start runs generation emission Step 4; output is status:"documented" (see C1.6)
-
-    // Generation-phase family — SUPPRESS-PROMPT flags (start default: never suppress interactive confirmation)
-    "disableSkillTuning":    false,      // start keeps the generation skill batched confirmation ON (interactive mode)
-    "disableAgentTuning":    false,      // same
-    "disableOutputStyleTuning": false,   // same
-
-    // Generation emission Step 3 + Step 4 explicit selections (from wizard)
-    "lspPlugins":            [ /* wizardAnswers.lspPlugins — empty array means "declined all" */ ],
-    "builtInSkills":         [ /* wizardAnswers.builtInSkills — empty array means "declined all" */ ],
-
-    // Boundary-enforcement hooks
-    "qualityGates": { /* derived per plugin-detection-guide.md § qualityGates Derivation */ },
-
-    // Per-phase routing
-    "phaseSkills":  { /* derived per plugin-detection-guide.md § phaseSkills Derivation */ }
-  }
-}
-```
+Emits a **v3 context** (`version: 3`): the **internal v1-shaped object** (`analysis`, `wizardAnswers`, `enriched`, `modelChoice`, `ecosystemPlugins`, `callerExtras`, and the top-level `research` block) that `generate` and `config-generator` consume directly. It satisfies the required set (`version`, `source`, `projectPath`, `callerExtras`) and adds the optional internal fields; the v3 schema is permissive (`additionalProperties: true`, no `phases` block) and `generate` is v3-only as of 3.0.0 (no v2 adapter). The full field-by-field shape — every optional top-level field and the `callerExtras.*` sub-keys — is documented once in the schema this context is validated against: `../../../schemas/context-shape-v3.json` (the single documented source). Populate every field below via the § Construction rules; no `undefined` / absent top-level keys.
 
 ## Construction rules — step by step
 

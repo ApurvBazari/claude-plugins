@@ -1,0 +1,26 @@
+{
+  "version": 3,
+  "source": "onboard:evolve",
+  "projectPath": "/abs/path/to/project",
+  "wizardAnswers": {
+    "projectDescription": "A React SPA with a typed API client and component library.",
+    "teamSize": "small (2-5)",
+    "testingPhilosophy": "tdd",
+    "autonomyLevel": "balanced"
+  },
+  "callerExtras": {
+    "installedPlugins": ["notify"],
+    "coveredCapabilities": ["notifications"],
+    "reResearch": {
+      "dimensions": ["architecture", "testing"],
+      "escalatedToFull": false
+    }
+  },
+  "research": {
+    "engineUsed": "subagent",
+    "depth": "standard",
+    "roster": { "builtins": ["architecture", "testing"] },
+    "findings": {},
+    "artifacts": { "location": "committed", "written": [], "html": null }
+  }
+}

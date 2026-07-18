@@ -2,7 +2,95 @@
   "version": 3,
   "source": "onboard:start",
   "projectPath": "/abs/path/to/project",
-  "callerExtras": { "installedPlugins": [], "coveredCapabilities": [] },
+  "analysis": {
+    "structure": {
+      "totalFiles": 214,
+      "totalDirs": 37,
+      "directoryTree": "src/\n  api/\n  domain/\n  web/\ntests/\n",
+      "keyFiles": ["package.json", "tsconfig.json", "vite.config.ts"],
+      "entryPoints": ["src/index.ts"],
+      "monorepo": false
+    },
+    "stack": {
+      "languages": [{ "name": "TypeScript", "percentage": 82 }, { "name": "CSS", "percentage": 18 }],
+      "frameworks": [{ "name": "React", "version": "18.3.1" }],
+      "buildTools": ["vite"],
+      "testingSetup": { "framework": "vitest", "configFile": "vitest.config.ts", "testFileCount": 41 },
+      "linters": [{ "name": "eslint", "configFile": ".eslintrc.cjs" }],
+      "formatters": [{ "name": "prettier", "configFile": ".prettierrc" }],
+      "cicd": ["github-actions"],
+      "packageManager": "pnpm"
+    },
+    "complexity": { "score": 58, "category": "medium", "fileCount": 214, "locEstimate": 18400 },
+    "configs": { "typescript": { "strict": true }, "eslint": {}, "prettier": {} }
+  },
+  "wizardAnswers": {
+    "projectDescription": "A React SPA with a typed API client and component library.",
+    "teamSize": "small (2-5)",
+    "projectMaturity": "established",
+    "primaryTasks": ["feature-development", "bug-fixing", "refactoring"],
+    "codeReviewProcess": "formal-pr",
+    "branchingStrategy": "trunk-based",
+    "deployFrequency": "daily",
+    "testingPhilosophy": "tdd",
+    "codeStyleStrictness": "strict",
+    "securitySensitivity": "standard",
+    "autonomyLevel": "balanced",
+    "painPoints": {
+      "timeSinks": "Manual regression checks before release.",
+      "errorProne": "Prop drilling across deep component trees.",
+      "automationWishes": "Auto-run affected tests on file change."
+    },
+    "lspPlugins": ["typescript-language-server"],
+    "builtInSkills": ["code-review"]
+  },
+  "modelChoice": "sonnet",
+  "ecosystemPlugins": { "notify": true },
+  "enriched": {
+    "enableCICD": true,
+    "enableHarness": false,
+    "enableEvolution": true,
+    "enableSprintContracts": false,
+    "enableTeams": false,
+    "enableVerification": true,
+    "willDeploy": true,
+    "ciAuditAction": "comment-only",
+    "prReviewTrigger": "on-demand",
+    "autoEvolutionMode": "manual",
+    "verificationStrategy": "combination",
+    "deployTarget": "vercel"
+  },
+  "callerExtras": {
+    "installedPlugins": ["notify"],
+    "coveredCapabilities": ["notifications"],
+    "pluginSurfaces": {
+      "notify": {
+        "type": "command-or-skill",
+        "commands": [],
+        "skills": ["setup", "check", "uninstall", "wizard"],
+        "hooks": [],
+        "agents": []
+      }
+    },
+    "allowPluginReferences": true,
+    "allowHttpHooks": false,
+    "disableMCP": false,
+    "disableLSP": false,
+    "disableBuiltInSkills": false,
+    "disableSkillTuning": false,
+    "disableAgentTuning": false,
+    "disableOutputStyleTuning": false,
+    "lspPlugins": ["typescript-language-server"],
+    "builtInSkills": ["code-review"],
+    "qualityGates": {
+      "sessionStart": [{ "type": "reminder", "message": "Read HARNESS-GUIDE.md before starting." }],
+      "preCommit": [{ "skill": "code-review:code-review", "triggerOn": "commit", "mode": "advisory" }]
+    },
+    "phaseSkills": {
+      "research": ["superpowers:brainstorming"],
+      "review": ["code-review:code-review"]
+    }
+  },
   "research": {
     "engineUsed": "subagent",
     "depth": "standard",

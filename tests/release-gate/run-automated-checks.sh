@@ -360,7 +360,7 @@ else
   pass "4b: sprint-contracts.md no longer references the deleted Round-5 section"
 fi
 
-CSV3="onboard/skills/generate/references/context-shape-v3.json"
+CSV3="onboard/schemas/context-shape-v3.json"
 OBCLAUDE="onboard/CLAUDE.md"
 if grep -qi "required for a full generation" "$CSV3" && grep -qi "regenerateOnly" "$CSV3"; then
   pass "4b: context-shape-v3.json description states runtime-required-unless-regenerateOnly"
@@ -378,7 +378,7 @@ echo ""
 echo "## Plan 4c — re-research on update/evolve (static)"
 # ─────────────────────────────────────────────────
 GEN_SKILL="onboard/skills/generate/SKILL.md"
-CSV3="onboard/skills/generate/references/context-shape-v3.json"
+CSV3="onboard/schemas/context-shape-v3.json"
 
 if grep -q "reResearch" "$CSV3"; then
   pass "4c: context-shape-v3.json documents the callerExtras.reResearch marker"
@@ -639,20 +639,20 @@ else
 fi
 PJ="onboard/.claude-plugin/plugin.json"
 MK=".claude-plugin/marketplace.json"
-if [[ "$(jq -r '.version' "$PJ")" == "3.0.0" ]] && [[ "$(jq -r '.plugins[]|select(.name=="onboard")|.version' "$MK")" == "3.0.0" ]]; then
-  pass "5: onboard bumped to 3.0.0 (plugin.json + marketplace.json)"
+if [[ "$(jq -r '.version' "$PJ")" == "3.1.1" ]] && [[ "$(jq -r '.plugins[]|select(.name=="onboard")|.version' "$MK")" == "3.1.1" ]]; then
+  pass "5: onboard bumped to 3.1.1 (plugin.json + marketplace.json)"
 else
-  fail "5: onboard version not 3.0.0 in both manifests"
+  fail "5: onboard version not 3.1.1 in both manifests"
 fi
 if ! jq -r '.description' "$PJ" | grep -qiE "v2 context shape|rejects v1"; then
   pass "5: onboard manifest description rewritten off the v2 framing"
 else
   fail "5: onboard manifest description still references the v2 context shape"
 fi
-if grep -q "## 3.0.0" onboard/CHANGELOG.md; then
-  pass "5: onboard CHANGELOG has the 3.0.0 entry"
+if grep -q "## 3.1.1" onboard/CHANGELOG.md; then
+  pass "5: onboard CHANGELOG has the 3.1.1 entry"
 else
-  fail "5: onboard CHANGELOG missing the 3.0.0 entry"
+  fail "5: onboard CHANGELOG missing the 3.1.1 entry"
 fi
 echo ""
 

@@ -1,0 +1,21 @@
+{
+  "version": 3,
+  "source": "onboard:update",
+  "projectPath": "/abs/path/to/project",
+  "wizardAnswers": {
+    "projectDescription": "A React SPA with a typed API client and component library.",
+    "teamSize": "small (2-5)",
+    "testingPhilosophy": "tdd",
+    "autonomyLevel": "balanced"
+  },
+  "callerExtras": {
+    "regenerateOnly": [
+      ".claude/skills/tdd-workflow/SKILL.md",
+      ".claude/agents/tdd-test-writer.md",
+      ".claude/output-styles/explanatory.md"
+    ],
+    "disableSkillTuning": true,
+    "disableAgentTuning": true,
+    "disableOutputStyleTuning": true
+  }
+}
