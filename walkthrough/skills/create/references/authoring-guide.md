@@ -22,23 +22,22 @@ one component; pick the row that matches the field's *shape*.
 | `timeline[]` | timeline; stepper if a replayable sequence |
 | `typeTags` includes `research` | concept map + callouts |
 | `nodes[]`/`edges[]` with switchable views | interactive explorer (one selector → diagram + detail) |
-| `concepts[]` entry `type:branching-logic` | decision tree |
-| `concepts[]` entry `type:data-model` | ERD / schema |
-| `concepts[]` entry `type:hierarchy` | recursive tree |
-| `concepts[]` entry `type:layering` | layer stack |
-| `concepts[]` entry `type:causal-chain` | cause→effect (hypothesis ladder) |
 | `timeline[]` of phased parallel/sequential steps | data-driven step timeline |
 | always | hero, prose sections, detail surfaces, theme toggle (chrome from page-scaffold) |
+
+For each concept's type → renderer routing, see the canonical map in `concept-coverage.md` — the
+single source of truth for concept-type-to-component assignment and its disambiguation rules.
 
 Notes on the choices:
 
 - **`decisions[]`** — use **Tabs + tradeoff bars** when each decision weighed options against scored
   axes (the bars need `data-w` magnitudes; tabs swap via `setTab`). With no scores, fall back to the
   **Accordion checklist**: one `<details>` per decision with a verdict badge and rationale in `.ac-body`.
-- **The concept-fidelity gate (run for EVERY concept, generalizes the diagram-fidelity check).** Before
-  selecting a component, classify each `concepts[]` entry into a concept-type using the trigger +
+- **The concept-fidelity gate (run for EVERY concept, generalizes the diagram-fidelity check).** As you
+  select components, classify each concept you intend to convey into a concept-type using the trigger +
   disambiguation rules in `concept-coverage.md`, then bind it to that type's **registered renderer**.
-  If no row matches, compose a **bespoke** component (§ 4) and set `bespoke:true` + a `bespokeReason`.
+  This is a **classify-at-selection** routing decision — transient, not recorded to any standing ledger.
+  If no row matches, compose a **bespoke** component (§ 4) and note what was composed + why.
   **Anti-force-fit invariant:** a concept is NEVER rendered by a component not registered for its type —
   the old "architecture-map is plausible-but-wrong for a state machine" footnote is now a hard rule for
   all types. The disambiguation rules (`concept-coverage.md`) resolve close neighbors; the most specific

@@ -1,9 +1,13 @@
 <!DOCTYPE html>
+<!-- Rendered demo snapshot of the walkthrough look-and-feel — cited by no file as a source.
+     The base CSS + chrome are materialized in skills/create/references/page-scaffold.md (the
+     base-CSS home); this file is a standalone example you can open in a browser to see the
+     rendered result, not a golden/house-style master that any file copies from. -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>walkthrough — house style</title>
+<title>walkthrough — rendered demo snapshot</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
 :root{
@@ -39,16 +43,18 @@ nav{position:fixed;top:0;left:0;right:0;height:54px;z-index:100;backdrop-filter:
 .dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2.5s infinite;}
 .theme-btn{cursor:pointer;font-family:var(--mono);font-size:.62rem;color:var(--ts);border:1px solid var(--border);padding:.28rem .6rem;border-radius:6px;background:none;}
 .progress{position:fixed;top:54px;left:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--blue));z-index:101;width:0;box-shadow:0 0 8px var(--accent-glow);}
-main{max-width:1180px;margin:0 auto;padding:0 1.6rem;padding-top:78px;}
+main{max-width:1180px;margin:0 auto;padding:0 1.6rem;padding-top:78px;counter-reset:sec;}
 .eyebrow{font-family:var(--mono);font-size:.68rem;color:var(--accent);text-transform:uppercase;letter-spacing:.18em;display:inline-flex;align-items:center;gap:.6rem;margin-bottom:.8rem;}
 .eyebrow::before{content:'';width:26px;height:1px;background:var(--accent);}
 h1{font-family:var(--serif);font-size:clamp(2.4rem,6vw,4rem);font-weight:400;line-height:1.04;letter-spacing:-.025em;margin:.2rem 0;max-width:880px;}
 h1 em,h2 em{font-style:italic;color:var(--accent);}
 h2{font-family:var(--serif);font-size:clamp(1.7rem,3.5vw,2.4rem);font-weight:400;line-height:1.15;margin:.2rem 0 .3rem;}
 .lede{color:var(--ts);font-size:1.08rem;line-height:1.7;max-width:720px;margin:.6rem 0 0;}
-section{padding:4rem 0 2rem;scroll-margin-top:70px;opacity:0;transform:translateY(24px);transition:opacity .7s var(--ease),transform .7s var(--ease);}
+section{padding:4rem 0 2rem;scroll-margin-top:70px;transition:opacity .7s var(--ease),transform .7s var(--ease);}
+html.js section:not(.vis){opacity:0;transform:translateY(24px);}
 section.vis{opacity:1;transform:none;}
-.sec-label{font-family:var(--mono);font-size:.65rem;color:var(--tm);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.5rem;}
+.sec-label{counter-increment:sec;font-family:var(--mono);font-size:.65rem;color:var(--tm);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.5rem;}
+.sec-label::before{content:counter(sec,decimal-leading-zero) " \2014 ";}
 /* palette strip */
 .palette{display:flex;gap:.6rem;flex-wrap:wrap;margin:1.2rem 0;}
 .sw{font-family:var(--mono);font-size:.6rem;color:var(--tp);padding:.5rem .7rem;border-radius:8px;border:1px solid var(--border);display:flex;align-items:center;gap:.5rem;background:var(--bg-card);}
@@ -157,7 +163,7 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
 
 <main>
   <section id="top" class="vis" style="padding-top:2.4rem">
-    <div class="eyebrow">House style · session walkthrough</div>
+    <div class="eyebrow">Rendered demo · one house style</div>
     <h1>The session, rendered as an <em>explorable</em> document.</h1>
     <p class="lede">Same look-and-feel every time — layered near-black surfaces, editorial serif headings with accent emphasis, mono technical detail, and glow-accented interactive components. The <em>structure</em> adapts to what the session contained.</p>
     <div class="palette">
@@ -177,13 +183,13 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
   </section>
 
   <section id="approach">
-    <div class="sec-label">01 — decision component</div>
+    <div class="sec-label">decision component</div>
     <h2>Tabs + animated <em>tradeoff</em> bars</h2>
     <p class="lede">For sessions that weighed options. Click a tab — the detail swaps and the bars re-animate.</p>
     <div class="tabs">
-      <div class="tab active" data-app="a" onclick="setTab('a')"><span class="letter">A</span><div class="tt">Inline generation</div><div class="tb">Claude writes HTML each run</div></div>
-      <div class="tab chosen" data-app="b" onclick="setTab('b')"><span class="rec">Chosen</span><span class="letter">B</span><div class="tt">Reference templates</div><div class="tb">copy-and-fill scaffolds</div></div>
-      <div class="tab" data-app="c" onclick="setTab('c')"><span class="letter">C</span><div class="tt">Shipped JS engine</div><div class="tb">renderer as an asset</div></div>
+      <div class="tab active" data-app="a" role="button" tabindex="0" aria-label="Inline generation" onclick="setTab('a')"><span class="letter">A</span><div class="tt">Inline generation</div><div class="tb">Claude writes HTML each run</div></div>
+      <div class="tab chosen" data-app="b" role="button" tabindex="0" aria-label="Reference templates" onclick="setTab('b')"><span class="rec">Chosen</span><span class="letter">B</span><div class="tt">Reference templates</div><div class="tb">copy-and-fill scaffolds</div></div>
+      <div class="tab" data-app="c" role="button" tabindex="0" aria-label="Shipped JS engine" onclick="setTab('c')"><span class="letter">C</span><div class="tt">Shipped JS engine</div><div class="tb">renderer as an asset</div></div>
     </div>
     <div class="detail show" data-app="a">
       <div><h3 style="font-family:var(--serif);font-weight:400;margin:.1rem 0 .4rem">Inline generation</h3><p style="font-size:.86rem;color:var(--ts)">Maximum flexibility, but output drifts run-to-run.</p>
@@ -209,30 +215,30 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
   </section>
 
   <section id="flow">
-    <div class="sec-label">02 — architecture / flow component</div>
+    <div class="sec-label">architecture / flow component</div>
     <h2>Animated <em>flow</em> diagram</h2>
     <p class="lede">For sessions about a pipeline or architecture. Nodes glow on hover; click one for a detail <strong>pane</strong> — or the rich <em>Synthesize</em> node for a full <strong>sheet</strong> that itself nests further detail.</p>
     <div class="flow">
-      <div class="fnode" data-d="gather" onclick="openSurface('gather')"><div class="nl">stage 1</div>Gather</div>
+      <div class="fnode" data-d="gather" role="button" tabindex="0" aria-label="Gather" onclick="openSurface('gather')"><div class="nl">stage 1</div>Gather</div>
       <span class="farr">→</span>
-      <div class="fnode accent" data-d="synth" onclick="openSurface('synth')"><div class="nl">stage 2</div>Synthesize</div>
+      <div class="fnode accent" data-d="synth" role="button" tabindex="0" aria-label="Synthesize" onclick="openSurface('synth')"><div class="nl">stage 2</div>Synthesize</div>
       <span class="farr">→</span>
-      <div class="fnode" data-d="select" onclick="openSurface('select')"><div class="nl">stage 3</div>Select</div>
+      <div class="fnode" data-d="select" role="button" tabindex="0" aria-label="Select" onclick="openSurface('select')"><div class="nl">stage 3</div>Select</div>
       <span class="farr">→</span>
-      <div class="fnode" data-d="assemble" onclick="openSurface('assemble')"><div class="nl">stage 4</div>Assemble</div>
+      <div class="fnode" data-d="assemble" role="button" tabindex="0" aria-label="Assemble" onclick="openSurface('assemble')"><div class="nl">stage 4</div>Assemble</div>
       <span class="farr">→</span>
-      <div class="fnode" data-d="write" onclick="openSurface('write')"><div class="nl">stage 5</div>Write</div>
+      <div class="fnode" data-d="write" role="button" tabindex="0" aria-label="Write" onclick="openSurface('write')"><div class="nl">stage 5</div>Write</div>
     </div>
   </section>
 
   <section id="tests">
-    <div class="sec-label">03 — filterable catalog component</div>
+    <div class="sec-label">filterable catalog component</div>
     <h2>Filterable <em>cards</em></h2>
     <p class="lede">For sessions with many items (files, tests, tools). Toggle a pill to filter.</p>
     <div class="pills">
-      <div class="pill on" data-f="feature" onclick="tog(this)"><span class="s" style="background:var(--green)"></span>feature</div>
-      <div class="pill on" data-f="fix" onclick="tog(this)"><span class="s" style="background:var(--amber)"></span>fix</div>
-      <div class="pill on" data-f="research" onclick="tog(this)"><span class="s" style="background:var(--purple)"></span>research</div>
+      <div class="pill on" data-f="feature" role="button" tabindex="0" aria-label="Filter feature" onclick="tog(this)"><span class="s" style="background:var(--green)"></span>feature</div>
+      <div class="pill on" data-f="fix" role="button" tabindex="0" aria-label="Filter fix" onclick="tog(this)"><span class="s" style="background:var(--amber)"></span>fix</div>
+      <div class="pill on" data-f="research" role="button" tabindex="0" aria-label="Filter research" onclick="tog(this)"><span class="s" style="background:var(--purple)"></span>research</div>
     </div>
     <div class="cards">
       <div class="tcard" data-cat="feature" style="border-left-color:var(--green)"><div class="cat" style="color:var(--green)">feature</div><div class="tn">SMS parser</div><div class="td">Added HDFC debit/credit patterns.</div></div>
@@ -243,7 +249,7 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
   </section>
 
   <section id="contract">
-    <div class="sec-label">04 — checklist component</div>
+    <div class="sec-label">checklist component</div>
     <h2>Accordion <em>checklist</em></h2>
     <p class="lede">For decisions, requirements, or a definition-of-done. Native expand/collapse.</p>
     <div class="acc">
@@ -271,9 +277,9 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
       <h2 class="sf-h">Synthesize the structured session model</h2>
       <p class="sf-summary">The richest stage opens as a <strong>sheet</strong> rather than the glance pane, because it hosts a diagram and a code block. Click a node below — a pane detail opens stacked above this sheet.</p>
       <div class="flow">
-        <div class="fnode" data-d="model-build" onclick="openSurface('select')"><div class="nl">build</div>model</div>
+        <div class="fnode" data-d="model-build" role="button" tabindex="0" aria-label="model" onclick="openSurface('select')"><div class="nl">build</div>model</div>
         <span class="farr">→</span>
-        <div class="fnode accent" data-d="model-render" onclick="openSurface('write')"><div class="nl">then</div>render</div>
+        <div class="fnode accent" data-d="model-render" role="button" tabindex="0" aria-label="render" onclick="openSurface('write')"><div class="nl">then</div>render</div>
       </div>
       <figure class="sf-code"><figcaption>session-model.md</figcaption><pre><code>{ title, summary, sections[], nodes[], details{} }</code></pre></figure>
       <div class="sf-related"><button class="chip neutral" onclick="openSurface('write')">write</button></div>
@@ -283,6 +289,7 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
 <dialog class="sheet pane-dialog" id="paneDialog"><button class="x" onclick="this.closest('dialog').close()">✕</button><div class="sf-body" id="paneDialogBody"></div></dialog>
 
 <script>
+document.documentElement.classList.add('js'); // progressive-enhancement gate — reveals the html.js-gated hidden state
 const DET={
  gather:{k:"Stage 1",h:"Gather",summary:"Pull the conversation, run git enrichment, and read referenced files so every path:line is real.",where:["create/SKILL.md:2"],related:["synth"]},
  select:{k:"Stage 3",h:"Select",summary:"Map the synthesized model to components from the shared vocabulary; omit empty, never stub.",where:["authoring-guide.md:9"],related:["assemble"]},
@@ -317,7 +324,10 @@ document.querySelectorAll('dialog.sheet').forEach(dlg=>{
 function openCard(el){if(!el)return;openPane(el.dataset.id||'');}
 function openD(id){openSurface(id);} // deprecated alias
 function closeD(){panel.classList.remove('open');}
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!_stack.length)closeD();});
+// keyboard: Escape closes the topmost surface; Enter/Space activates any focused [role="button"] (div/span interactives) — native <button>s are excluded and fire themselves
+document.addEventListener('keydown',e=>{
+ if(e.key==='Escape'&&!_stack.length){closeD();return;}
+ if(e.key==='Enter'||e.key===' '){const b=e.target&&e.target.closest&&e.target.closest('[role="button"]');if(b){if(e.key===' ')e.preventDefault();b.click();}}});
 function setTab(app){document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.app===app));
  document.querySelectorAll('.detail').forEach(d=>{const on=d.dataset.app===app;d.classList.toggle('show',on);if(on)animate(d);});}
 function animate(scope){scope.querySelectorAll('.fil').forEach(f=>{f.style.width='0';requestAnimationFrame(()=>requestAnimationFrame(()=>{f.style.width=f.dataset.w+'%';}));});}
@@ -328,6 +338,8 @@ function tgl(){const h=document.documentElement;const t=h.getAttribute('data-the
 // reveal + progress + animate-on-view
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vis');const d=e.target.querySelector('.detail.show');if(d)animate(d);}}),{threshold:.1});
 document.querySelectorAll('section').forEach(s=>io.observe(s));
+// failsafe: if the IO never fires (runtime error, detached observer), reveal everything after 2.5s
+setTimeout(()=>document.querySelectorAll('section').forEach(s=>s.classList.add('vis')),2500);
 addEventListener('scroll',()=>{const sc=scrollY/(document.body.scrollHeight-innerHeight)*100;if(prog)prog.style.width=sc+'%';
  let cur='';document.querySelectorAll('section[id]').forEach(s=>{if(scrollY>=s.offsetTop-120)cur=s.id;});
  document.querySelectorAll('.nav-links a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+cur));},{passive:true});

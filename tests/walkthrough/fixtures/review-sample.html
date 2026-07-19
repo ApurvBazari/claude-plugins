@@ -185,10 +185,10 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
       <div class="iter-delta">2 fixed · 1 new · 3 still-open</div>
       <p class="lede">One finding, severity-ranked. Toggle the category pill to filter; click a card for the full claim, evidence, and suggested fix.</p>
       <div class="pills">
-        <div class="pill on" data-f="bug" onclick="tog(this)"><span class="s" style="background:var(--rose)"></span>bug</div>
+        <div class="pill on" data-f="bug" role="button" tabindex="0" aria-label="Filter bug" onclick="tog(this)"><span class="s" style="background:var(--rose)"></span>bug</div>
       </div>
       <div class="cards">
-        <div class="tcard" data-cat="bug" style="border-left-color:var(--rose)" onclick="openSurface('F1')">
+        <div class="tcard" data-cat="bug" style="border-left-color:var(--rose)" role="button" tabindex="0" aria-label="Finding F1" onclick="openSurface('F1')">
           <div class="cat"><span class="chip danger">high</span> bug <span class="chip warn" data-iter="still-open">still-open</span></div>
           <div class="tn">F1 — Password compared with == allowing type coercion</div>
           <div class="td">src/auth/login.ts:42</div>
@@ -217,7 +217,7 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
       <p class="lede">One file changed, carrying auth risk.</p>
       <div class="risk-legend"><span class="rk-auth">● auth</span></div>
       <div class="tree"><span class="dir">src/auth/</span>
-└── <span class="fl rk-auth" onclick="openSurface('F1')">login.ts</span> <span class="ed">modified</span> <span class="chip warn">risk: auth</span></div>
+└── <span class="fl rk-auth" role="button" tabindex="0" aria-label="login.ts" onclick="openSurface('F1')">login.ts</span> <span class="ed">modified</span> <span class="chip warn">risk: auth</span></div>
     </section>
   </main>
   <aside class="panel" id="panel"><span class="x" onclick="closeD()">✕</span>

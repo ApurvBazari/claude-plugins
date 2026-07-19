@@ -2,18 +2,18 @@
 
 ## Flow / pipeline diagram
 
-**When:** The session described a linear pipeline or staged process. Horizontal nodes with arrows; click a node for detail in the side panel. Lifted from `seed.html`.
+**When:** The session described a linear pipeline or staged process. Horizontal nodes with arrows; click a node for detail in the side panel. The full CSS ships with this recipe below.
 
 ```html
 <section id="<id>">
   <div class="sec-label"><flow></div>
   <h2>Animated <em>flow</em> diagram</h2>
   <div class="flow">
-    <div class="fnode" data-d="<id1>" onclick="openSurface('<id1>')"><div class="nl"><stage 1></div><Label></div>
+    <div class="fnode" data-d="<id1>" role="button" tabindex="0" aria-label="<Label>" onclick="openSurface('<id1>')"><div class="nl"><stage 1></div><Label></div>
     <span class="farr">→</span>
-    <div class="fnode accent" data-d="<id2>" onclick="openSurface('<id2>')"><div class="nl"><stage 2></div><Label></div>
+    <div class="fnode accent" data-d="<id2>" role="button" tabindex="0" aria-label="<Label>" onclick="openSurface('<id2>')"><div class="nl"><stage 2></div><Label></div>
     <span class="farr">→</span>
-    <div class="fnode" data-d="<id3>" onclick="openSurface('<id3>')"><div class="nl"><stage 3></div><Label></div>
+    <div class="fnode" data-d="<id3>" role="button" tabindex="0" aria-label="<Label>" onclick="openSurface('<id3>')"><div class="nl"><stage 3></div><Label></div>
   </div>
 </section>
 ```
@@ -40,11 +40,11 @@
   <div class="sec-label"><architecture></div>
   <h2>Component <em>map</em></h2>
   <div class="archmap">
-    <div class="flow-node accent" data-d="<id1>" onclick="openSurface('<id1>')"><span class="node-label"><layer></span><Component A></div>
+    <div class="flow-node accent" data-d="<id1>" role="button" tabindex="0" aria-label="<Component A>" onclick="openSurface('<id1>')"><span class="node-label"><layer></span><Component A></div>
     <span class="flow-arrow">→</span>
-    <div class="flow-node green" data-d="<id2>" onclick="openSurface('<id2>')"><span class="node-label"><layer></span><Component B></div>
+    <div class="flow-node green" data-d="<id2>" role="button" tabindex="0" aria-label="<Component B>" onclick="openSurface('<id2>')"><span class="node-label"><layer></span><Component B></div>
     <span class="flow-arrow">→</span>
-    <div class="flow-node amber" data-d="<id3>" onclick="openSurface('<id3>')"><span class="node-label"><layer></span><Component C></div>
+    <div class="flow-node amber" data-d="<id3>" role="button" tabindex="0" aria-label="<Component C>" onclick="openSurface('<id3>')"><span class="node-label"><layer></span><Component C></div>
   </div>
 </section>
 ```
@@ -335,13 +335,13 @@ mono tree styling. Internal nodes collapse; **leaf nodes are clickable → `open
         <details open class="ht-node">
           <summary class="ht-row"><span class="ht-label"><Router></span></summary>
           <div class="ht-children">
-            <div class="ht-row ht-leaf" data-d="r1" onclick="openSurface('r1')"><span class="ht-label"><Route /></span></div>
-            <div class="ht-row ht-leaf" data-d="r2" onclick="openSurface('r2')"><span class="ht-label"><Route /x></span></div>
+            <div class="ht-row ht-leaf" data-d="r1" role="button" tabindex="0" aria-label="<Route />" onclick="openSurface('r1')"><span class="ht-label"><Route /></span></div>
+            <div class="ht-row ht-leaf" data-d="r2" role="button" tabindex="0" aria-label="<Route /x>" onclick="openSurface('r2')"><span class="ht-label"><Route /x></span></div>
           </div>
         </details>
         <details class="ht-node">
           <summary class="ht-row"><span class="ht-label"><Store></span></summary>
-          <div class="ht-children"><div class="ht-row ht-leaf" data-d="s1" onclick="openSurface('s1')"><span class="ht-label"><slice></span></div></div>
+          <div class="ht-children"><div class="ht-row ht-leaf" data-d="s1" role="button" tabindex="0" aria-label="<slice>" onclick="openSurface('s1')"><span class="ht-label"><slice></span></div></div>
         </details>
       </div>
     </details>
@@ -378,10 +378,10 @@ Clickable band → `openSurface`.
   <div class="sec-label"><layers></div>
   <h2>The <em>stack</em></h2>
   <div class="lstack">
-    <div class="lstack-band" data-d="l1" onclick="openSurface('l1')"><span class="lstack-name"><UI></span><span class="lstack-role"><React components></span></div>
-    <div class="lstack-band" data-d="l2" onclick="openSurface('l2')"><span class="lstack-name"><API></span><span class="lstack-role"><tRPC handlers></span></div>
-    <div class="lstack-band" data-d="l3" onclick="openSurface('l3')"><span class="lstack-name"><Domain></span><span class="lstack-role"><services></span></div>
-    <div class="lstack-band" data-d="l4" onclick="openSurface('l4')"><span class="lstack-name"><Data></span><span class="lstack-role"><Postgres></span></div>
+    <div class="lstack-band" data-d="l1" role="button" tabindex="0" aria-label="<UI>" onclick="openSurface('l1')"><span class="lstack-name"><UI></span><span class="lstack-role"><React components></span></div>
+    <div class="lstack-band" data-d="l2" role="button" tabindex="0" aria-label="<API>" onclick="openSurface('l2')"><span class="lstack-name"><API></span><span class="lstack-role"><tRPC handlers></span></div>
+    <div class="lstack-band" data-d="l3" role="button" tabindex="0" aria-label="<Domain>" onclick="openSurface('l3')"><span class="lstack-name"><Domain></span><span class="lstack-role"><services></span></div>
+    <div class="lstack-band" data-d="l4" role="button" tabindex="0" aria-label="<Data>" onclick="openSurface('l4')"><span class="lstack-name"><Data></span><span class="lstack-role"><Postgres></span></div>
   </div>
 </section>
 ```

@@ -15,11 +15,11 @@ a root-cause→fix callout. Clickable row → `openSurface` for the full evidenc
   <h2>Why it <em>broke</em></h2>
   <div class="ladder">
     <div class="lad-symptom"><span class="k">symptom</span><the observed failure></div>
-    <div class="lad-row" data-d="h1" onclick="openSurface('h1')">
+    <div class="lad-row" data-d="h1" role="button" tabindex="0" aria-label="<candidate cause 1>" onclick="openSurface('h1')">
       <span class="chip danger">ruled out</span>
       <div class="lad-body"><div class="lad-cause"><candidate cause 1></div><div class="lad-evi"><the evidence that ruled it out></div></div>
     </div>
-    <div class="lad-row ruled-in" data-d="h2" onclick="openSurface('h2')">
+    <div class="lad-row ruled-in" data-d="h2" role="button" tabindex="0" aria-label="<the root candidate>" onclick="openSurface('h2')">
       <span class="chip ok">ruled in</span>
       <div class="lad-body"><div class="lad-cause"><the root candidate></div><div class="lad-evi"><the evidence that confirmed it></div></div>
     </div>

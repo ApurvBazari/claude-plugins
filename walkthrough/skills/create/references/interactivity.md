@@ -2,7 +2,7 @@
 
 This is the shared JS bundle, always inlined into the scaffold's `{{INTERACTIVITY_JS}}` slot. Its first act is the progressive-enhancement gate: it adds `html.js` (which reveals the JS-gated interactive state) and then loads the detail store by `JSON.parse`-ing the inert `<script type="application/json" id="wt-data">` island into `DET` and `SURF` — the data is no longer emitted as `const DET={…}`/`const SURF={…}` literals in this script, so a data-parse failure is caught and degrades to empty objects rather than killing the whole bundle. All handlers are guarded so missing elements never throw; all state is namespaced inside this one `<script>`. Unused handlers (e.g. `setTab` when there are no tabs) are harmless no-ops.
 
-### Detail surfaces — `renderSurface` builds the structured DOM; `openSurface` routes via `SURF` to the pane (`openPane`) or a native `<dialog>` (sheet, or the shared `paneDialog` for a pane opened inside a sheet), stacked in the top layer via the shared `_capPush`; `openCard` opens from a card's `data-id`; `openD` is a deprecated alias; native Escape closes the topmost dialog, the manual handler closes the pane only when no dialog is open; backdrop-click closes a dialog
+### Detail surfaces — `renderSurface` builds the structured DOM; `openSurface` routes via `SURF` to the pane (`openPane`) or a native `<dialog>` (sheet, or the shared `paneDialog` for a pane opened inside a sheet), stacked in the top layer via the shared `_capPush`; `openCard` opens from a card's `data-id`; `openD` is a deprecated alias; native Escape closes the topmost dialog, the manual handler closes the pane only when no dialog is open; backdrop-click closes a dialog. One delegated `keydown` handler also activates any `[role="button"]` element on Enter/Space (Space is `preventDefault`ed so the page never scrolls), which makes every `div`/`span` `onclick` interactive keyboard-operable with no per-element listeners — native `<button>`s carry no `role="button"` and handle Enter/Space themselves, so they are never double-fired.
 
 ```js
 // progressive-enhancement gate + inert-data load (must be first)
@@ -39,7 +39,10 @@ document.querySelectorAll('dialog.sheet').forEach(dlg=>{
 function openCard(el){if(!el)return;openPane(el.dataset.id||'');}
 function openD(id){openSurface(id);} // deprecated alias
 function closeD(){panel.classList.remove('open');}
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!_stack.length)closeD();});
+// keyboard: Escape closes the topmost surface; Enter/Space activates any focused [role="button"] (div/span interactives) — native <button>s are excluded (no role) and fire themselves
+document.addEventListener('keydown',e=>{
+ if(e.key==='Escape'&&!_stack.length){closeD();return;}
+ if(e.key==='Enter'||e.key===' '){const b=e.target&&e.target.closest&&e.target.closest('[role="button"]');if(b){if(e.key===' ')e.preventDefault();b.click();}}});
 ```
 
 Sheets and nested panes rely on the native top layer: `showModal()` stacks each above the last, traps focus in the topmost, and Escape closes them top-down — no hand-rolled focus/stack manager. A pane detail opened from *inside* a sheet can't use the non-modal `.panel` (it would render behind the modal), so it renders via `renderSurface` into the shared `paneDialog` — a narrow right-edge `<dialog class="sheet pane-dialog">` that also stacks in the top layer. `_stack` mirrors the open order; the shared `_capPush` enforces the depth cap (`MAX_DEPTH=3` → replace-topmost: close the top, open the new at the same depth) and the `el.open` no-op guard, so re-opening the same sheet/paneDialog — or a bidirectional `related[]` chip (A↔B) — can't double-push `_stack` and strand a phantom entry. `::backdrop` click closes the dialog it dims (`e.target===dlg`); inner clicks never close it.

@@ -2,10 +2,10 @@
 
 The single source of truth for **which kinds of concept the walkthrough can render**. `components/index.md`
 is the *component* catalog; this is the *concept* catalog that routes to it. Synthesis classifies each
-concept it wants to convey into a `type` here, records it in the session model's `concepts[]` ledger
-(`session-model.md`), and the **concept-fidelity gate** (`authoring-guide.md` § 1) routes it to the
-registered renderer — or, for an uncovered type, to a logged bespoke (`authoring-guide.md` § 4). The gate
-**never** force-fits a concept into a component not registered for its type.
+concept it wants to convey into a `type` here at selection time, and the **concept-fidelity gate**
+(`authoring-guide.md` § 1) routes it to the registered renderer — or, for an uncovered type, to a logged
+bespoke (`authoring-guide.md` § 4). The gate **never** force-fits a concept into a component not
+registered for its type.
 
 After the 1.2.0 renderer work there are **zero ❌ rows**. A future concept-type with no faithful renderer
 gets a new ⚠️/❌ row pointing at a bespoke recipe — so the "what to add next" backlog stays visible.
@@ -68,5 +68,5 @@ beats tree → `branching-logic`):
 ## Uncovered concept → bespoke
 
 If a concept matches no row, the gate routes it to a **bespoke** component (`authoring-guide.md` § 4),
-records it in `concepts[]` with `bespoke: true` + a `bespokeReason`, and a new ⚠️/❌ row SHOULD be added
-here naming the bespoke recipe — so the hole is visible and never silently force-fit.
+noting what was composed + why, and a new ⚠️/❌ row SHOULD be added here naming the bespoke recipe — so
+the hole is visible and never silently force-fit.

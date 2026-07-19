@@ -26,19 +26,15 @@ every test to where the rule applies. If any fails, fix the HTML and re-run.
 | 19 | No in-session `path:line` silently dropped | Every code anchor the session provided appears in some rendered `where[]` (`sf-loc`) chip or `code[]` block — or is named in the coverage note with a **content** reason (out-of-scope / redundant), never "not read / unverified." An anchor handed to you in-session is first-class detail, not optional. |
 | 20 | Scripts parse; the `#wt-data` data island is valid JSON (executed, not eyeballed) | Author-variable content (`DET`/`SURF` and every string field) lives only in the `<script type="application/json" id="wt-data">` island, so escaping is by construction via `JSON.stringify` — never hand-escape. Run `node --check` on each executable `<script>` (skip the JSON island) and `JSON.parse` the island content; both must succeed. A value containing `</script>` must appear as `<\/script>` in the serialized JSON. This is mechanical, not eyeballed: `tests/walkthrough/test_validate_artifact.sh` performs exactly these checks — run it before offering the file. |
 | 21 | ERD cycles are marked, not dropped | Every removed back-edge and self-reference in a layered `.erd-l` renders as `.ref.cyc`/`.ref.self` — the cycle is shown, never silently dropped; the layering DAG is acyclic after back-edge removal; and the `openSurface` graph stays acyclic (#14) even though the visual FK graph cycles — entity `related[]` cross-links must not form an `A → B → A` navigation chain. |
+| 22 | Every rendered structural renderer maps to a registered concept-type | Each structural / diagram renderer present in the assembled HTML (`.dtree`, `.erd-l`, `.htree`, `.lstack`, `.ladder`, and the state / sequence diagrams) traces to a concept-type **registered in `concept-coverage.md`** — the anti-force-fit invariant is enforced at SELECTION time (the concept-fidelity gate, `authoring-guide.md` § 1): classify-and-route, with no persisted ledger to walk. A rendered shape that matches no registered concept-type is a force-fit — route it to its registered renderer or compose a logged bespoke (§ 4). |
+| 23 | Every `onclick` interactive is keyboard-operable | Each `div`/`span` wired with `onclick` (`.fnode`, `.flow-node`, `.tab`, `.pill`, `.fl`, `.ent`, `.lad-row`, `.ht-leaf`, `.lstack-band`, `.tcard`) carries `role="button"` + `tabindex="0"` + a meaningful `aria-label`, so the shared delegated `keydown` handler (`interactivity.md`) activates it on Enter/Space and it is reachable by Tab. **Exempt:** native `<button>` interactives (`.seq-msg`, `.xp-tab`, `.play-btn`, `.pin`, `.theme-btn`) — they handle Enter/Space natively and must NOT carry `role="button"`; and the `.rel .e` ERD-summary endpoint span — a deliberate pointer-only carve-out whose entity surfaces are already reachable via their `role="button"` `.ent` cards. Focus is never trapped. |
 
 Failure on any row -> revise the assembled HTML (or the model, then re-assemble) and re-run before write.
 
-## Ledger + new-component assertions
+## New-component assertions
 
 These extend the table above; reason about each the same way (scope to where it applies, fix and re-run on failure).
 
-- **Ledger cross-reference (when `concepts[]` is present):**
-  - every `concepts[].renderedBy` (when non-null) names a component key that actually appears in the
-    assembled HTML;
-  - every rendered structural component (`.dtree`, `.erd`, `.erd-l`, `.htree`, `.lstack`, `.ladder`, and the
-    existing diagrams) traces back to a `concepts[]` entry;
-  - no `concepts[]` entry has `bespoke:true` without a `bespokeReason`.
 - **New-component structural checks:**
   - decision-tree guard `<text>` escapes `<`/`>` as `&lt;`/`&gt;`;
   - ERD/causal/tree style blocks contain no raw hex (tokens only) and glyphs use CSS/HTML escapes;

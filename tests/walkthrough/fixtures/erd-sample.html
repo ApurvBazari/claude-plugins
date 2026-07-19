@@ -83,13 +83,13 @@ section.vis{opacity:1;transform:none;}
       <div class="band">
         <div class="band-label"><span class="dot"></span>Layer 0 · referenced</div>
         <div class="band-row">
-          <div class="ent" data-ent="org" onclick="openSurface('org')">
+          <div class="ent" data-ent="org" role="button" tabindex="0" aria-label="Organization entity" onclick="openSurface('org')">
             <div class="ent-name">&lt;Organization&gt;<span class="deg">in cycle</span></div>
             <div class="fld"><span class="col">id</span><span class="chip info">PK</span></div>
             <div class="fld"><span class="col">name</span><span class="type">text</span></div>
             <div class="fld" data-target="user"><span class="col">owner_id</span><span class="ref cyc">&#8617; User.id <span class="card">N:1</span></span></div>
           </div>
-          <div class="ent" data-ent="role" onclick="openSurface('role')">
+          <div class="ent" data-ent="role" role="button" tabindex="0" aria-label="Role entity" onclick="openSurface('role')">
             <div class="ent-name">&lt;Role&gt;</div>
             <div class="fld"><span class="col">id</span><span class="chip info">PK</span></div>
             <div class="fld"><span class="col">name</span><span class="type">text</span></div>
@@ -99,7 +99,7 @@ section.vis{opacity:1;transform:none;}
       <div class="band">
         <div class="band-label"><span class="dot"></span>Layer 1</div>
         <div class="band-row">
-          <div class="ent" data-ent="user" onclick="openSurface('user')">
+          <div class="ent" data-ent="user" role="button" tabindex="0" aria-label="User entity" onclick="openSurface('user')">
             <div class="ent-name">&lt;User&gt;<span class="deg">in cycle</span></div>
             <div class="fld"><span class="col">id</span><span class="chip info">PK</span></div>
             <div class="fld"><span class="col">email</span><span class="type">text</span></div>
@@ -112,7 +112,7 @@ section.vis{opacity:1;transform:none;}
       <div class="band">
         <div class="band-label"><span class="dot"></span>Layer 2 · junction</div>
         <div class="band-row">
-          <div class="ent" data-ent="team" onclick="openSurface('team')">
+          <div class="ent" data-ent="team" role="button" tabindex="0" aria-label="Team entity" onclick="openSurface('team')">
             <div class="ent-name">&lt;Team&gt;<span class="deg">junction</span></div>
             <div class="fld"><span class="col">id</span><span class="chip info">PK</span></div>
             <div class="fld" data-target="org"><span class="col">org_id</span><span class="ref">&#8594; Organization.id <span class="card">N:1</span></span></div>
