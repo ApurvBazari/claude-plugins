@@ -131,4 +131,50 @@ for citation in '../../review/references/reconcile.md' '../../render-review/SKIL
   grep -qF "$citation" "$API" || fail "engine-api.md must cite '$citation'"
 done
 
-echo "PASS: lens engine-api belt (ref guards, fencing preservation, JSON example integrity, canon)"
+# === PIPELINE: the stage procedure keeps every rule; the arg shapes live in the canon ===
+PIPE="$ROOT/lens/skills/engine/references/pipeline.md"
+[ -s "$PIPE" ] || fail "missing $PIPE"
+
+# No argument shape is re-declared here — a shape stated twice is a surface that has begun to fork.
+if grep -qF 'Array<{' "$PIPE"; then
+  fail "pipeline.md must not re-declare an argument type — engine-api.md owns the shapes"
+fi
+if grep -qF 'severityTrend' "$PIPE"; then
+  fail "pipeline.md must not name severityTrend — reconcile sets it, never the engine"
+fi
+if grep -qE '(^|[^-[:alnum:]])delta\b' "$PIPE"; then
+  fail "pipeline.md must not name delta — reconcile sets it, never the engine"
+fi
+grep -qF 'engine-api.md' "$PIPE" || fail "pipeline.md must point at engine-api.md for the declared arg shapes"
+
+# Rule 0's ordering IS behavior. Each clause is pinned on its own, and scoped to rule 0 itself — the
+# later rules repeat some of this wording, so a whole-file grep would survive losing rule 0's copy.
+RULE0="$(awk '/^0\. \*\*injected intent/{inside=1} inside && /^1\. \*\*explicit args/{exit} inside{print}' "$PIPE")"
+[ -n "$RULE0" ] || fail "pipeline.md §2 rule 0 (injected intent) is missing"
+rule0_has(){ printf '%s\n' "$RULE0" | grep -qE "$1" || fail "$2"; }
+rule0_has 'highest-priority' "pipeline.md rule 0 must stay the highest-priority intent source"
+rule0_has 'before \*\*rule 1\*\*|before rule 1' "pipeline.md rule 0 must still run before rule 1"
+rule0_has 'wins outright' "pipeline.md rule 0 must still win outright over every rule below"
+rule0_has 'skip rules 1' "pipeline.md rule 0 must still skip rules 1-4 entirely"
+rule0_has "[Nn][Oo][Tt] \`?degraded\`?" "pipeline.md rule 0 must keep the exemption: explicit full-fidelity intent is NOT degraded"
+rule0_has 'parse it defensively' "pipeline.md rule 0 must keep the defensive JSON-string parse"
+
+# The intent doc reaches an agent as fenced data — the whole framing paragraph survives.
+grep -qF '<untrusted-user-input>' "$PIPE" || fail "pipeline.md §3 must keep the <untrusted-user-input> fence"
+grep -qF 'data, not instructions' "$PIPE" || fail "pipeline.md §3 must keep the 'data, not instructions' directive"
+grep -qF 'framing, not filtering' "$PIPE" || fail "pipeline.md §3 must keep 'framing, not filtering' (no length cap)"
+grep -qF 'all sources' "$PIPE" || fail "pipeline.md §3 must keep the fence applying to all intent sources"
+
+# The fan-out cap covers the injected path too, and names what it skipped. Scoped to §8: earlier
+# sections carry their own "name the skipped", which would otherwise mask a loss here.
+CAP="$(awk '/^## 8\./{inside=1} inside{print}' "$PIPE")"
+[ -n "$CAP" ] || fail "pipeline.md §8 (huge-diff rule + fan-out cap) is missing"
+printf '%s\n' "$CAP" | grep -qF 'source-agnostic' || fail "pipeline.md §8 must keep the source-agnostic cap"
+printf '%s\n' "$CAP" | grep -qF 'name the skipped' \
+  || fail "pipeline.md §8 must keep naming the skipped docs, never silently dropping one"
+
+# Both back-compat promises (absent injectedIntent, absent injectedFinders) survive.
+BC_LINES="$(grep -c 'byte-identical' "$PIPE" || true)"
+[ "$BC_LINES" -ge 2 ] || fail "pipeline.md must keep both byte-identical back-compat promises (found $BC_LINES)"
+
+echo "PASS: lens engine-api belt (ref guards, fencing preservation, JSON example integrity, canon, pipeline)"
