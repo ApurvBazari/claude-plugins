@@ -254,3 +254,69 @@ printf '%s\n' "$STEP3" | grep -qF '<untrusted-user-input>' \
   || fail "Step 3 must keep the <untrusted-user-input> fence reference"
 
 echo "PASS: lens engine SKILL belt (canon citation, no shape/return redeclaration, corrected caller claim, retention)"
+
+# === REVIEW SKILL: the standalone flow only — no orchestrator/compute-only surface ===
+# A programmatic caller drives lens:engine directly and never enters /lens:review, so the mode this
+# file used to describe was unreachable prose. reconcile.md carries an identically-titled section that
+# IS live (render-review consumes it); the pins below are what keep the two from being confused.
+RSKILL="$ROOT/lens/skills/review/SKILL.md"
+RECONCILE="$ROOT/lens/skills/review/references/reconcile.md"
+RRSKILL="$ROOT/lens/skills/render-review/SKILL.md"
+for f in "$RSKILL" "$RECONCILE" "$RRSKILL"; do [ -s "$f" ] || fail "missing $f"; done
+
+# Ordered narrowest-first, so each pin names the specific shape of what came back.
+if grep -qiE '^#+ +Orchestrator mode' "$RSKILL"; then
+  fail "the 'Orchestrator mode' heading belongs to reconcile.md alone — review/SKILL.md must not carry one"
+fi
+if grep -qi 'orchestrat' "$RSKILL"; then
+  fail "review/SKILL.md must name no orchestrator — /lens:review has one path and it is standalone"
+fi
+if grep -qi 'compute-only' "$RSKILL"; then
+  fail "review/SKILL.md must carry no compute-only surface — /lens:review always renders and writes state"
+fi
+grep -qF '../engine/references/engine-api.md' "$RSKILL" \
+  || fail "review/SKILL.md must cite ../engine/references/engine-api.md as the engine's declared contract"
+
+# reconcile.md's two anchors are load-bearing for render-review's Step 1 and survive byte-for-byte.
+grep -qxF '#### Wired in orchestrator mode' "$RECONCILE" \
+  || fail "reconcile.md must keep the exact line '#### Wired in orchestrator mode'"
+grep -qxF '## Orchestrator mode (compute-only)' "$RECONCILE" \
+  || fail "reconcile.md must keep the exact line '## Orchestrator mode (compute-only)'"
+
+# Pointer and target move together or not at all.
+grep -qF '../review/references/reconcile.md' "$RRSKILL" \
+  || fail "render-review/SKILL.md must still cite ../review/references/reconcile.md"
+grep -qF '§ Orchestrator mode' "$RRSKILL" \
+  || fail "render-review/SKILL.md must still cite reconcile.md's '§ Orchestrator mode' anchor"
+
+# RETENTION — the live standalone flow is untouched. Each pin is scoped to the step that owns the
+# behavior, so an over-deletion cannot be masked by wording that repeats elsewhere in the file.
+rstep(){ awk -v a="$1" -v b="$2" '$0 ~ a {n=1} n && $0 ~ b {exit} n{print}' "$RSKILL"; }
+
+STEP0="$(rstep '^## Step 0' '^## Step 1')"
+[ -n "$STEP0" ] || fail "review/SKILL.md Step 0 (create the task list) is missing"
+printf '%s\n' "$STEP0" | grep -qF 'TaskCreate' || fail "Step 0 must still create the task list via TaskCreate"
+printf '%s\n' "$STEP0" | grep -qF 'references/task-tracking.md' \
+  || fail "Step 0 must still cite references/task-tracking.md as the task-list contract"
+
+RSTEP2="$(rstep '^## Step 2' '^## Step 3')"
+[ -n "$RSTEP2" ] || fail "review/SKILL.md Step 2 (run the engine) is missing"
+printf '%s\n' "$RSTEP2" | grep -qF 'taskIds = { scope, intent, analyze, verify }' \
+  || fail "Step 2 must still hand the engine its four taskIds"
+printf '%s\n' "$RSTEP2" | grep -qF 'emptyScope === true' \
+  || fail "Step 2 must still key the empty branch on result.emptyScope === true"
+printf '%s\n' "$RSTEP2" | grep -qF 'nothing to review' \
+  || fail "Step 2 must still report 'nothing to review' on the empty-scope branch"
+
+RSTEP3="$(rstep '^## Step 3' '^## Step 4')"
+[ -n "$RSTEP3" ] || fail "review/SKILL.md Step 3 (reconcile) is missing"
+printf '%s\n' "$RSTEP3" | grep -qF 'after a successful render' \
+  || fail "Step 3 must still defer the state write-back until after a successful render"
+
+# Exactly one Key Rule is retired; the other five govern the standalone flow.
+KEYRULES="$(awk '/^## Key Rules/{n=1;next} n{print}' "$RSKILL")"
+[ -n "$KEYRULES" ] || fail "review/SKILL.md Key Rules section is missing"
+KR_COUNT="$(printf '%s\n' "$KEYRULES" | grep -c '^- ' || true)"
+[ "$KR_COUNT" -eq 5 ] || fail "review/SKILL.md must keep exactly 5 Key Rules (found $KR_COUNT)"
+
+echo "PASS: lens review belt (standalone-only surface, reconcile anchors intact, live flow retained)"

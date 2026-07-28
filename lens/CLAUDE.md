@@ -60,8 +60,9 @@ one `TaskCreate` per pipeline stage — `setup`\* · `scope` · `intent` · `ana
 its own stages; it hands the engine `taskIds = { scope, intent, analyze, verify }` so the engine flips
 those four as it runs (handed none, the engine is task-silent — its data-only contract is preserved). The
 dispatched finder/verifier subagents are task-blind. It is **in-session visibility only** — no durable
-run-progress, no cross-session resume (a review is single-shot). Only the standalone path tracks;
-orchestrator/compute-only mode creates no list. See `skills/review/references/task-tracking.md`.
+run-progress, no cross-session resume (a review is single-shot). Only the standalone path tracks; a
+programmatic orchestrator drives `lens:engine` directly and hands it no `taskIds`, so no list exists. See
+`skills/review/references/task-tracking.md`.
 
 ## Brain / eyes boundary
 

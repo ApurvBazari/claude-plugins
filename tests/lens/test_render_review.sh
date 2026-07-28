@@ -26,4 +26,14 @@ grep -qiE "never write[^.]*review-state\.json|No .review-state\.json" "$SKILL" |
 [ -f "$ROOT/lens/skills/review/references/review-model-assembly.md" ] || fail "review-model-assembly.md reference missing"
 [ -f "$ROOT/lens/skills/review/references/markdown-fallback.md" ] || fail "markdown-fallback.md reference missing"
 
+# 6. Step 1 is where reconcile's compute-only mode is actually consumed: it reconciles in memory,
+#    writes nothing, and defers to reconcile.md's orchestrator-mode contract rather than restating it.
+#    Scoped to Step 1 so a citation that drifts to another step still fails.
+STEP1="$(awk '/^## Step 1/{n=1} /^## Step 2/{n=0} n{print}' "$SKILL")"
+[ -n "$STEP1" ] || fail "render-review Step 1 section is missing"
+printf '%s\n' "$STEP1" | grep -qi 'compute-only' || fail "Step 1 must declare the reconcile compute-only"
+printf '%s\n' "$STEP1" | grep -qiE 'write NOTHING|writes nothing' || fail "Step 1's compute-only reconcile must write nothing"
+printf '%s\n' "$STEP1" | grep -qF '../review/references/reconcile.md' || fail "Step 1 must cite ../review/references/reconcile.md as the reconcile contract"
+printf '%s\n' "$STEP1" | grep -qF '§ Orchestrator mode' || fail "Step 1 must cite reconcile.md's § Orchestrator mode section"
+
 echo "OK"
