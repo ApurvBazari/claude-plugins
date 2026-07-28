@@ -105,7 +105,7 @@ All finders emit the same `review-findings` contract; read-only is enforced at t
 |---|---|---|
 | **Built-in** | ships with lens — spec-adherence + plan-adherence (`requirements`), correctness, risk-classify, test-gaps | Authored findings-only by construction |
 | **Adapter** | optional external tooling, runtime-detected, skipped silently if absent (the 5 read-only adapters below) | Most inherit write tools from their source → MUST be instructed findings-only |
-| **Project-custom** | per-project finders registered in `.claude/lens/settings.md` | Constrained findings-only at the dispatch boundary |
+| **Project-custom** | per-project finders registered in `.claude/lens/settings.md` — experimental — secondary to `injectedFinders` | Constrained findings-only at the dispatch boundary |
 
 ### The 5 read-only adapters (adapter tier)
 

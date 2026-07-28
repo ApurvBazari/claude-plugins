@@ -320,3 +320,48 @@ KR_COUNT="$(printf '%s\n' "$KEYRULES" | grep -c '^- ' || true)"
 [ "$KR_COUNT" -eq 5 ] || fail "review/SKILL.md must keep exactly 5 Key Rules (found $KR_COUNT)"
 
 echo "PASS: lens review belt (standalone-only surface, reconcile anchors intact, live flow retained)"
+
+# === REGISTRY: the file-based finder registry is labelled experimental/secondary, one phrasing, ===
+# === at exactly the four programmatic-surface sites — and nowhere a human-only doc would go false ===
+# shellcheck disable=SC2016 # literal backticks — this is the exact grepped string, not shell expansion
+PHRASE='experimental — secondary to `injectedFinders`'
+FREG="$ROOT/lens/skills/engine/references/finder-registry.md"
+SETUP="$ROOT/lens/skills/review/references/setup.md"
+FCONTRACT="$ROOT/lens/skills/engine/references/finder-contract.md"
+LENSREADME="$ROOT/lens/README.md"
+for f in "$FREG" "$SETUP" "$FCONTRACT" "$LENSREADME"; do [ -s "$f" ] || fail "missing $f"; done
+
+# 1. The one phrasing appears verbatim at each of the four named sites — one assertion per file, so a
+# partial rollout fails loudly naming the missing file rather than a single combined pass/fail.
+grep -qF "$PHRASE" "$FREG" || fail "REGISTRY: finder-registry.md Tier 3 must carry the experimental/secondary label"
+grep -qF "$PHRASE" "$CLAUDEMD" || fail "REGISTRY: lens/CLAUDE.md's Project-custom registry row must carry the experimental/secondary label"
+grep -qF "$PHRASE" "$PIPE" || fail "REGISTRY: pipeline.md §3's project tier must carry the experimental/secondary label"
+grep -qF "$PHRASE" "$ESKILL" || fail "REGISTRY: engine/SKILL.md Step 3's project tier must carry the experimental/secondary label"
+
+# 2. NEGATIVE SCOPE PIN — a human running /lens:review standalone has no injectedFinders channel, so
+# calling the file registry "secondary" in a human-facing doc would turn a true doc false.
+grep -qF "$PHRASE" "$LENSREADME" && fail "REGISTRY: lens/README.md must NOT carry the experimental/secondary label — it is the only finder path for a standalone human run"
+grep -qF "$PHRASE" "$SETUP" && fail "REGISTRY: review/references/setup.md must NOT carry the experimental/secondary label — same reason"
+
+# 3. No arg shape may be re-declared in finder-registry.md — engine-api.md owns the shapes.
+if grep -qF 'Array<{' "$FREG"; then
+  fail "REGISTRY: finder-registry.md must not re-declare an argument shape — engine-api.md owns the shapes"
+fi
+
+# 4. finder-registry.md points at the canon for the shape it no longer declares.
+grep -qF 'engine-api.md' "$FREG" || fail "REGISTRY: finder-registry.md must cite engine-api.md for the injectedFinders shape"
+
+# 5. RETENTION (criterion 15a) — finder-contract.md's four numbered requirements survive, each heading
+# present exactly once (a demotion elsewhere must not have collaterally trimmed the authoring contract).
+for heading in '## 1. Emit' '## 2. Pick' '## 3. Be read-only' '## 4. Register'; do
+  COUNT="$(grep -cF "$heading" "$FCONTRACT" || true)"
+  [ "$COUNT" -eq 1 ] || fail "REGISTRY: finder-contract.md must carry '$heading' exactly once (found $COUNT)"
+done
+
+# 6. RETENTION (criterion 15b) — setup.md still writes the empty project registry and still explains
+# what the list holds.
+grep -qF 'finders: []' "$SETUP" || fail "REGISTRY: setup.md must still write the empty 'finders: []' project registry"
+grep -qiE 'finders.*list holds.*project tier|project tier.*finders.*list' "$SETUP" \
+  || fail "REGISTRY: setup.md must still explain the finders: list holds the project tier"
+
+echo "PASS: lens finder-registry belt (experimental/secondary label, scope-pinned, shape demoted, retention intact)"

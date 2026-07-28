@@ -144,8 +144,8 @@ injected `content` get the same fence).
 
 After the built-ins, run the **finder registry** (see `finder-registry.md`): the **adapter tier** (the 5
 read-only adapters, dispatched only when their source plugin is installed, skipped silently otherwise) and
-the **project tier** (custom finders from `.claude/lens/settings.md`). Read-only is **enforced at the
-dispatch boundary** for every tier. Tag every candidate with its `dimension` per the
+the **project tier** (custom finders from `.claude/lens/settings.md`, experimental — secondary to `injectedFinders`).
+Read-only is **enforced at the dispatch boundary** for every tier. Tag every candidate with its `dimension` per the
 producer→dimension map.
 
 **Injected finders (programmatic caller).** A caller may pass `injectedFinders` (shape declared in `engine-api.md` § lens:engine — inputs) through the same Skill-tool channel as `scope`/`injectedIntent`/`taskIds`. Each is dispatched at ANALYZE **alongside** the `.claude/lens/settings.md` project tier and handled **identically**: read-only **enforced at the dispatch boundary**, output **normalized** into the finding shape, **deduped** by `(file, line, title)`, and **adversarially verified**. The `agent` value resolves through the **Agent-tool registry** and **may be plugin-qualified** (e.g. `matali:principles-finder`), so the finder can ship in the caller's own plugin and self-resolve its references via `${CLAUDE_PLUGIN_ROOT}`. Treat a **missing or empty** `injectedFinders` as "not provided" — behavior is then **byte-identical** to 1.2.0; if it arrives as a **JSON string**, parse it defensively before the emptiness check.
