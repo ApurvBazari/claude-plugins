@@ -173,9 +173,15 @@ printf '%s\n' "$CAP" | grep -qF 'source-agnostic' || fail "pipeline.md §8 must 
 printf '%s\n' "$CAP" | grep -qF 'name the skipped' \
   || fail "pipeline.md §8 must keep naming the skipped docs, never silently dropping one"
 
-# Both back-compat promises (absent injectedIntent, absent injectedFinders) survive.
-BC_LINES="$(grep -c 'byte-identical' "$PIPE" || true)"
-[ "$BC_LINES" -ge 2 ] || fail "pipeline.md must keep both byte-identical back-compat promises (found $BC_LINES)"
+# Both back-compat promises (absent injectedIntent, absent injectedFinders) survive. Region-scoped —
+# pipeline.md carries a THIRD, unrelated 'byte-identical' line (§1's emptyScope/findings[] return
+# contract), so a whole-file line count could lose either named promise and still clear a >=2 threshold.
+rule0_has 'byte-identical' "pipeline.md rule 0 must keep its own byte-identical back-compat promise (behavior byte-identical to v1.1.0)"
+
+INJFINDERS="$(awk '/^\*\*Injected finders \(programmatic caller\)\.\*\*/{print}' "$PIPE")"
+[ -n "$INJFINDERS" ] || fail "pipeline.md §3 injected finders paragraph is missing"
+printf '%s\n' "$INJFINDERS" | grep -qF 'byte-identical' \
+  || fail "pipeline.md §3 injected finders paragraph must keep its byte-identical back-compat promise (to 1.2.0)"
 
 echo "PASS: lens engine-api belt (ref guards, fencing preservation, JSON example integrity, canon, pipeline)"
 
@@ -369,7 +375,9 @@ echo "PASS: lens finder-registry belt (experimental/secondary label, scope-pinne
 # === CLAUDE.md INDEX: the schema field enumeration is demoted to a pointer, not re-materialized ===
 
 # 1-2. NEGATIVE — the four field-enumeration bullets are gone; the schema owns the field list now.
-if grep -q '^- \*\*Per finding' "$CLAUDEMD"; then
+# Unanchored (not '^'-pinned): an indented re-materialization ("  - **Per finding ...") is still the
+# same regression and must still be caught, the way its sibling '- **Top-level:**' check already is.
+if grep -qF -- '- **Per finding' "$CLAUDEMD"; then
   fail "INDEX: CLAUDE.md must not re-materialize the per-finding field enumeration — schemas/review-findings.schema.json owns it"
 fi
 if grep -qF -- '- **Top-level:**' "$CLAUDEMD"; then
@@ -380,8 +388,20 @@ fi
 grep -qF 'skills/engine/references/engine-api.md' "$CLAUDEMD" \
   || fail "INDEX: CLAUDE.md must cite skills/engine/references/engine-api.md as the declared programmatic surface"
 
+# 3b. DISCRIMINATING — scoped to § Engine / render split alone. The bare substring check above is
+# satisfied by either of two occurrences (this section's own pointer sentence, or the unrelated
+# mention inside § The review-findings schema below); this pin isolates the first so losing IT
+# specifically cannot hide behind the other one staying intact.
+ENGINESPLIT="$(awk '/^## Engine \/ render split/{n=1;next} n && /^## /{exit} n{print}' "$CLAUDEMD")"
+[ -n "$ENGINESPLIT" ] || fail "INDEX: CLAUDE.md § Engine / render split section is missing"
+printf '%s\n' "$ENGINESPLIT" | grep -qF 'skills/engine/references/engine-api.md' \
+  || fail "INDEX: CLAUDE.md § Engine / render split must itself point at skills/engine/references/engine-api.md"
+
 # 4. CI-PINNED SUBSTRING RETENTION (criterion 16) — each an independent assertion, so a partial loss
-# names itself instead of hiding behind one combined pass/fail.
+# names itself instead of hiding behind one combined pass/fail. (The <untrusted-user-input> /
+# 'framing, not filtering' fencing substrings are already pinned above in the FENCING PRESERVATION
+# section on this same whole file — not repeated here, since a second bare grep would always be
+# satisfied or denied by that earlier assertion first and could never independently fail.)
 grep -qF '4 engine stages' "$CLAUDEMD" || fail "INDEX: CLAUDE.md must keep '4 engine stages'"
 grep -qF 'schema-parity target' "$CLAUDEMD" || fail "INDEX: CLAUDE.md must keep 'schema-parity target'"
 grep -qF 'live consumer' "$CLAUDEMD" || fail "INDEX: CLAUDE.md must keep 'live consumer'"
@@ -396,19 +416,9 @@ grep -qF 'type-design-analyzer' "$CLAUDEMD" || fail "INDEX: CLAUDE.md must keep 
 grep -qF 'comment-analyzer' "$CLAUDEMD" || fail "INDEX: CLAUDE.md must keep the comment-analyzer adapter row"
 grep -qF 'pr-test-analyzer' "$CLAUDEMD" || fail "INDEX: CLAUDE.md must keep the pr-test-analyzer adapter row"
 grep -qF 'feature-dev:code-reviewer' "$CLAUDEMD" || fail "INDEX: CLAUDE.md must keep the feature-dev:code-reviewer adapter row"
-grep -qF '<untrusted-user-input>' "$CLAUDEMD" || fail "INDEX: CLAUDE.md must keep the <untrusted-user-input> fence"
-grep -qF 'framing, not filtering' "$CLAUDEMD" || fail "INDEX: CLAUDE.md must keep 'framing, not filtering'"
 
 # 5. The field-additive / co-owned alignment invariant survives.
 grep -qF 'field-additive' "$CLAUDEMD" || fail "INDEX: CLAUDE.md must keep 'field-additive'"
 grep -qF 'co-owned' "$CLAUDEMD" || fail "INDEX: CLAUDE.md must keep 'co-owned'"
 
-# 6. REF GUARDS re-run — U8 is the last unit to touch CLAUDE.md, so criterion 19 is re-proved here.
-if ! (cd "$ROOT" && bash .github/scripts/check-ref-paths.sh lens); then
-  fail "INDEX: check-ref-paths.sh lens must still exit 0 after the CLAUDE.md index demotion"
-fi
-if ! (cd "$ROOT" && bash .github/scripts/check-skill-refs.sh lens); then
-  fail "INDEX: check-skill-refs.sh lens must still exit 0 after the CLAUDE.md index demotion"
-fi
-
-echo "PASS: lens CLAUDE.md index belt (schema enumeration demoted, CI-pinned substrings retained, ref guards re-proved)"
+echo "PASS: lens CLAUDE.md index belt (schema enumeration demoted, CI-pinned substrings retained)"

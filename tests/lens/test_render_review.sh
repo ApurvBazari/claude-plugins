@@ -41,13 +41,16 @@ printf '%s\n' "$STEP1" | grep -qF '§ Orchestrator mode' || fail "Step 1 must ci
 grep -q "user-invocable: false" "$SKILL" || fail "frontmatter must keep user-invocable: false"
 if grep -q "disable-model-invocation" "$SKILL"; then fail "frontmatter must not gain disable-model-invocation"; fi
 
-# 8. All four step headings present verbatim — proves Steps 2-4 were not reshaped by the emptyScope edit.
+# 8. All four step headings present verbatim, whole-line — proves the HEADINGS were not reshaped by
+#    the emptyScope edit. A substring match would let e.g. '## Step 3: Render' silently grow into
+#    '## Step 3: Render the artifact' and still pass, so this is grep -qxF (whole line), not -qF. This
+#    does not by itself prove the step BODIES are unchanged — only that each heading text is intact.
 for heading in \
   '## Step 1: Reconcile (compute-only, in memory)' \
   '## Step 2: Assemble the review-model' \
   '## Step 3: Render' \
   '## Step 4: Return'; do
-  grep -qF "$heading" "$SKILL" || fail "missing step heading: $heading"
+  grep -qxF "$heading" "$SKILL" || fail "missing or altered step heading (whole line): $heading"
 done
 
 # 9. The emptyScope short-circuit: declared as an input and enforced as a Step 1 guard.
