@@ -1,13 +1,14 @@
 ---
 name: engine
-description: Internal data-only review core invoked BY lens:review (and later consumable by vicario) to produce a review-findings JSON object from the session diff. Not user-invocable; returns data, writes nothing, never prompts.
+description: Internal data-only review core invoked directly by /lens:review and by a programmatic orchestrator (matali) calling it as a compute-only step, to produce a review-findings JSON object from the session diff. Not user-invocable; returns data, writes nothing, never prompts.
 user-invocable: false
 ---
 
 # Engine — the data-only review core
 
 Produce a `review-findings` object (per `../../schemas/review-findings.schema.json`) and RETURN it to
-the caller. Write no files; ask no questions. Read `references/pipeline.md` + `references/finder-registry.md`.
+the caller. Write no files; ask no questions. Read `references/engine-api.md` (the declared input/return
+surface) + `references/pipeline.md` + `references/finder-registry.md`.
 
 ## Progress tracking (optional — only when handed `taskIds`)
 If the caller passed `taskIds` in args (the standalone `/lens:review` path hands

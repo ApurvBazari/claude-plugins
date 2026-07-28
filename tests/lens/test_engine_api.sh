@@ -178,3 +178,79 @@ BC_LINES="$(grep -c 'byte-identical' "$PIPE" || true)"
 [ "$BC_LINES" -ge 2 ] || fail "pipeline.md must keep both byte-identical back-compat promises (found $BC_LINES)"
 
 echo "PASS: lens engine-api belt (ref guards, fencing preservation, JSON example integrity, canon, pipeline)"
+
+# === ENGINE SKILL: canon citation, no shape/return redeclaration, corrected caller claim ===
+ESKILL="$ROOT/lens/skills/engine/SKILL.md"
+[ -s "$ESKILL" ] || fail "missing $ESKILL"
+
+# 1. The engine SKILL cites the canon as its declared input/return surface.
+grep -qF 'references/engine-api.md' "$ESKILL" || fail "engine/SKILL.md must cite references/engine-api.md"
+
+# 2. No shape redeclaration — the canon is the only place an arg/return shape is spelled out.
+if grep -qF 'Array<{' "$ESKILL"; then
+  fail "engine/SKILL.md must not re-declare an argument shape — engine-api.md owns the shapes"
+fi
+
+# 3. Floor (b): neither delta nor severityTrend as an engine return, in the engine's own runtime file.
+if grep -qF 'severityTrend' "$ESKILL"; then
+  fail "engine/SKILL.md must not name severityTrend — reconcile sets it, never the engine"
+fi
+if grep -qE '(^|[^-[:alnum:]])delta\b' "$ESKILL"; then
+  fail "engine/SKILL.md must not name delta — reconcile sets it, never the engine"
+fi
+
+# 4. Frontmatter description: the stale 'invoked BY lens:review'-only claim is corrected to name the
+# real callers. Scoped to the description line itself, not a whole-file grep — Step 2's body legitimately
+# says "lens:review" elsewhere for an unrelated reason, which would make a whole-file check vacuous.
+DESC="$(grep '^description:' "$ESKILL")"
+[ -n "$DESC" ] || fail "engine/SKILL.md frontmatter must carry a description: line"
+if printf '%s\n' "$DESC" | grep -qF 'invoked BY lens:review'; then
+  fail "engine/SKILL.md description must no longer claim it is invoked BY lens:review only"
+fi
+printf '%s\n' "$DESC" | grep -qiE 'matali|orchestrator' \
+  || fail "engine/SKILL.md description must name matali or a programmatic orchestrator as a real caller"
+printf '%s\n' "$DESC" | grep -qF '/lens:review' \
+  || fail "engine/SKILL.md description must still name /lens:review as a real caller"
+
+# 5. RETENTION — scoped to the regions this unit's two edits touch (frontmatter + intro), so a
+# whole-file grep can't mask a loss the way U3's gatekeeper caught elsewhere.
+FRONTMATTER="$(awk '/^---$/{n++; next} n==1{print}' "$ESKILL")"
+[ -n "$FRONTMATTER" ] || fail "engine/SKILL.md frontmatter block is empty"
+printf '%s\n' "$FRONTMATTER" | grep -qF 'name: engine' || fail "frontmatter must keep name: engine"
+printf '%s\n' "$FRONTMATTER" | grep -qF 'user-invocable: false' || fail "frontmatter must keep user-invocable: false"
+
+INTRO="$(awk '/^# Engine/{n=1;next} n && /^## Progress tracking/{exit} n{print}' "$ESKILL")"
+[ -n "$INTRO" ] || fail "engine/SKILL.md intro block is empty"
+printf '%s\n' "$INTRO" | grep -qF 'references/pipeline.md' || fail "intro must keep citing references/pipeline.md"
+printf '%s\n' "$INTRO" | grep -qF 'references/finder-registry.md' || fail "intro must keep citing references/finder-registry.md"
+printf '%s\n' "$INTRO" | grep -qF 'Write no files' || fail "intro must keep the write-no-files / ask-no-questions clause"
+
+# taskIds no-op-when-absent wording + task-blind sentence (Progress tracking section).
+PROGRESS="$(awk '/^## Progress tracking/{n=1;next} n && /^## Step 1/{exit} n{print}' "$ESKILL")"
+[ -n "$PROGRESS" ] || fail "engine/SKILL.md Progress tracking section is empty"
+printf '%s\n' "$PROGRESS" | grep -qiE 'absent.*orchestrator|task action.*byte-identical' \
+  || fail "Progress tracking section must keep the taskIds-absent no-op wording"
+printf '%s\n' "$PROGRESS" | grep -qi 'task-blind' \
+  || fail "Progress tracking section must keep the task-blind sentence"
+
+# The degraded:false,emptyScope:true return literal (Step 1), byte-identical.
+STEP1="$(awk '/^## Step 1/{n=1;next} n && /^## Step 2/{exit} n{print}' "$ESKILL")"
+[ -n "$STEP1" ] || fail "engine/SKILL.md Step 1 section is empty"
+printf '%s\n' "$STEP1" | grep -qF '{findings:[],recommendedEscalation:"minor",degraded:false,emptyScope:true}' \
+  || fail "Step 1 must keep the byte-identical empty-scope return literal"
+
+# The injectedIntent wins/override sentence (Step 2).
+STEP2="$(awk '/^## Step 2/{n=1;next} n && /^## Step 3/{exit} n{print}' "$ESKILL")"
+[ -n "$STEP2" ] || fail "engine/SKILL.md Step 2 section is empty"
+printf '%s\n' "$STEP2" | grep -qiE 'injectedIntent.*(wins|override)|(wins|override).*injectedIntent' \
+  || fail "Step 2 must keep the injectedIntent wins/override sentence"
+
+# The injectedFinders dispatch sentence + the <untrusted-user-input> reference (Step 3).
+STEP3="$(awk '/^## Step 3/{n=1;next} n && /^## Step 4/{exit} n{print}' "$ESKILL")"
+[ -n "$STEP3" ] || fail "engine/SKILL.md Step 3 section is empty"
+printf '%s\n' "$STEP3" | grep -qiE 'inject.*(dispatch|finder)|dispatch.*inject' \
+  || fail "Step 3 must keep the injectedFinders dispatch sentence"
+printf '%s\n' "$STEP3" | grep -qF '<untrusted-user-input>' \
+  || fail "Step 3 must keep the <untrusted-user-input> fence reference"
+
+echo "PASS: lens engine SKILL belt (canon citation, no shape/return redeclaration, corrected caller claim, retention)"
