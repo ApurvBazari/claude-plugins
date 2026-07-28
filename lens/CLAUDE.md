@@ -32,6 +32,8 @@ lens is split into a **data-only engine** and a **renderer**, so the judgment co
 - **`lens-engine`** (`skills/engine`, internal, `user-invocable: false`, data-only): runs scope → intent → analyze → verify → dedup → rank and **returns** a `review-findings` JSON object. It writes nothing and never prompts the user. This is the reusable judgment core.
 - **`lens-render`** (inside `skills/review`): consumes that JSON, builds a review-model (narrative + adherence + findings + risk + annotated hunks + overall verdict), and invokes `walkthrough:render` to produce the artifact — with a markdown fallback when walkthrough is absent.
 
+The full input/return contract for both halves is declared once, in `skills/engine/references/engine-api.md`.
+
 ## The pipeline (`/lens:review [target]`, 4 engine stages + 3 review stages, all in-session)
 
 ```
@@ -88,10 +90,7 @@ Read-only is **enforced at the finder boundary**: every finder and adapter emits
 
 The engine emits, and the renderer consumes, a single canonical contract — `lens/schemas/review-findings.schema.json`. It is a versioned **field-additive superset of vicario's `review-findings.schema.json`**: lens's extra *fields* are additive/optional, so vicario's validator ignores them. **The `dimension` enum is the canonical 9-value shared contract** — vicario's six (`requirements|correctness|security|types|silent-failure|simplify`) plus lens's `test`/`risk`/`comment`. The target is a single shared enum that vicario adopts, so that every dimension will validate in both directions and no mapping layer is needed. **Until vicario widens its own enum to match (a tracked vicario-repo task), a lens finding tagged `test`/`risk`/`comment` will not validate against an un-updated vicario** — so the enum is co-owned and changes are coordinated across both repos.
 
-- **Top-level:** `findings[]`, `recommendedEscalation` (`minor|moderate|major|critical`), `degraded` (bool), `summary` (optional).
-- **Per finding — required:** `id`, `title`, `severity` (`critical|high|medium|low` — exactly vicario's enum; **no `info`**, which is a render-only chip role), `dimension`, `verified` (bool).
-- **Per finding — optional:** `file`, `line`, `votes{total,couldNotRefute,refuted}`, and additive `claim`, `detail`, `suggestedFix`, `source`, `label`, `tags[]`.
-- **`dimension` enum:** vicario's six (`requirements|correctness|security|types|silent-failure|simplify`) **plus** lens additions `test`, `risk`, `comment`.
+The exact field list — top-level, per-finding required/optional, and the `dimension` enum — is not restated here: `lens/schemas/review-findings.schema.json` is the machine contract, and `skills/engine/references/engine-api.md` is the declared programmatic surface it backs.
 
 The alignment invariant is **field-additive only**: never rename, re-type, or repurpose a vicario field; only add optional ones. The `dimension` enum is **co-owned** — its nine values are the shared contract both repos honor; add a new dimension only by updating both schemas in lockstep (never silently in one).
 

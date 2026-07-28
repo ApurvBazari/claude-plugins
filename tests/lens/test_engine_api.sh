@@ -365,3 +365,50 @@ grep -qiE 'finders.*list holds.*project tier|project tier.*finders.*list' "$SETU
   || fail "REGISTRY: setup.md must still explain the finders: list holds the project tier"
 
 echo "PASS: lens finder-registry belt (experimental/secondary label, scope-pinned, shape demoted, retention intact)"
+
+# === CLAUDE.md INDEX: the schema field enumeration is demoted to a pointer, not re-materialized ===
+
+# 1-2. NEGATIVE — the four field-enumeration bullets are gone; the schema owns the field list now.
+if grep -q '^- \*\*Per finding' "$CLAUDEMD"; then
+  fail "INDEX: CLAUDE.md must not re-materialize the per-finding field enumeration — schemas/review-findings.schema.json owns it"
+fi
+if grep -qF -- '- **Top-level:**' "$CLAUDEMD"; then
+  fail "INDEX: CLAUDE.md must not re-materialize the top-level field enumeration — schemas/review-findings.schema.json owns it"
+fi
+
+# 3. POSITIVE — CLAUDE.md points at the canon for the declared programmatic surface.
+grep -qF 'skills/engine/references/engine-api.md' "$CLAUDEMD" \
+  || fail "INDEX: CLAUDE.md must cite skills/engine/references/engine-api.md as the declared programmatic surface"
+
+# 4. CI-PINNED SUBSTRING RETENTION (criterion 16) — each an independent assertion, so a partial loss
+# names itself instead of hiding behind one combined pass/fail.
+grep -qF '4 engine stages' "$CLAUDEMD" || fail "INDEX: CLAUDE.md must keep '4 engine stages'"
+grep -qF 'schema-parity target' "$CLAUDEMD" || fail "INDEX: CLAUDE.md must keep 'schema-parity target'"
+grep -qF 'live consumer' "$CLAUDEMD" || fail "INDEX: CLAUDE.md must keep 'live consumer'"
+# shellcheck disable=SC2016 # literal backticks — these are the exact grepped strings, not shell expansion
+grep -qF '`review`' "$CLAUDEMD" || fail "INDEX: CLAUDE.md must still name the review skill"
+# shellcheck disable=SC2016
+grep -qF '`engine`' "$CLAUDEMD" || fail "INDEX: CLAUDE.md must still name the engine skill"
+# shellcheck disable=SC2016
+grep -qF '`render-review`' "$CLAUDEMD" || fail "INDEX: CLAUDE.md must still name the render-review skill"
+grep -qF 'silent-failure-hunter' "$CLAUDEMD" || fail "INDEX: CLAUDE.md must keep the silent-failure-hunter adapter row"
+grep -qF 'type-design-analyzer' "$CLAUDEMD" || fail "INDEX: CLAUDE.md must keep the type-design-analyzer adapter row"
+grep -qF 'comment-analyzer' "$CLAUDEMD" || fail "INDEX: CLAUDE.md must keep the comment-analyzer adapter row"
+grep -qF 'pr-test-analyzer' "$CLAUDEMD" || fail "INDEX: CLAUDE.md must keep the pr-test-analyzer adapter row"
+grep -qF 'feature-dev:code-reviewer' "$CLAUDEMD" || fail "INDEX: CLAUDE.md must keep the feature-dev:code-reviewer adapter row"
+grep -qF '<untrusted-user-input>' "$CLAUDEMD" || fail "INDEX: CLAUDE.md must keep the <untrusted-user-input> fence"
+grep -qF 'framing, not filtering' "$CLAUDEMD" || fail "INDEX: CLAUDE.md must keep 'framing, not filtering'"
+
+# 5. The field-additive / co-owned alignment invariant survives.
+grep -qF 'field-additive' "$CLAUDEMD" || fail "INDEX: CLAUDE.md must keep 'field-additive'"
+grep -qF 'co-owned' "$CLAUDEMD" || fail "INDEX: CLAUDE.md must keep 'co-owned'"
+
+# 6. REF GUARDS re-run — U8 is the last unit to touch CLAUDE.md, so criterion 19 is re-proved here.
+if ! (cd "$ROOT" && bash .github/scripts/check-ref-paths.sh lens); then
+  fail "INDEX: check-ref-paths.sh lens must still exit 0 after the CLAUDE.md index demotion"
+fi
+if ! (cd "$ROOT" && bash .github/scripts/check-skill-refs.sh lens); then
+  fail "INDEX: check-skill-refs.sh lens must still exit 0 after the CLAUDE.md index demotion"
+fi
+
+echo "PASS: lens CLAUDE.md index belt (schema enumeration demoted, CI-pinned substrings retained, ref guards re-proved)"
