@@ -50,7 +50,7 @@ You will receive **one** candidate finding (with its `dimension`, `title`, `clai
 {
   "id": "F1",
   "refuted": true,
-  "reason": "Read lens/skills/review/SKILL.md:211 — the catch is not empty; it logs the error and falls through to the markdown fallback, so the failure is surfaced, not swallowed.",
+  "reason": "Read src/api/handlers.ts:211 — the catch is not empty; it logs the error and falls through to the markdown fallback, so the failure is surfaced, not swallowed.",
   "status": "verified"
 }
 ```

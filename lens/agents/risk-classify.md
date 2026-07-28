@@ -48,7 +48,7 @@ You will receive: the **diff** (the changes under review) and access to the sour
 ```json
 {
   "files": [
-    { "path": "lens/skills/review/SKILL.md", "change": "modified", "risk": "public-api", "note": "Changes the /lens:review entrypoint contract" },
+    { "path": "src/api/handlers.ts", "change": "modified", "risk": "public-api", "note": "Changes the /lens:review entrypoint contract" },
     { "path": "lens/README.md", "change": "modified", "risk": "none" }
   ],
   "findings": [
@@ -58,7 +58,7 @@ You will receive: the **diff** (the changes under review) and access to the sour
       "severity": "medium",
       "dimension": "risk",
       "label": "risk",
-      "file": "lens/skills/review/SKILL.md",
+      "file": "src/api/handlers.ts",
       "claim": "High-risk auth file changed with no covering test or guard",
       "detail": "The user-facing entrypoint contract changed but no test or guard covers the new target-arg path.",
       "verified": false,
