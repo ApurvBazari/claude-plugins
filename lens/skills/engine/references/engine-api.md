@@ -90,9 +90,12 @@ re-judges.
 **Returns** `{ renderedPath, delta?, severityTrend? }`, or the line `wrote: <path>`. On **any** failure:
 `skipped: <one-line reason>` — never partial state, never an exception that blocks the caller.
 
-**Empty scope.** When the supplied `findings` carries `emptyScope: true`, the return is the literal
-`skipped: nothing to review` and **no artifact is written** — an empty scope has nothing to render, and a
-zero-finding artifact would misreport it as a clean review.
+**Empty scope** — *declared contract; `../../render-review/SKILL.md` adopts this short-circuit in this
+release.* When the supplied `findings` carries `emptyScope: true`, render-review **MUST** return the
+literal `skipped: nothing to review` and write **no artifact** — an empty scope has nothing to render, and
+a zero-finding artifact would misreport it as a clean review. Read this as the obligation the procedure
+takes on, not as behavior already in it: per § Precedence, the procedure is the runtime, and until it
+carries the short-circuit an `emptyScope: true` input still falls through to the ordinary render path.
 
 ## Known consumer assumptions (not part of the contract)
 
@@ -101,7 +104,7 @@ contract:
 
 - **An `agents` finder roster.** matali reads `agents` off the engine return — its `review` skill (lines
   186 and 216 of that skill's `SKILL.md`, in the matali repo) forwards it verbatim into
-  `derived.execution.P5`, and matali's root `CLAUDE.md` (line 52) states that lens "now returns its finder
+  `derived.execution.P5`, and matali's plugin `CLAUDE.md` (line 52) states that lens "now returns its finder
   roster in `agents`". **lens declares no such field**: not in `../../../schemas/review-findings.schema.json`,
   not in `../SKILL.md`, not in § lens:engine — returns above. It is **not part of the contract** — a
   consumer must default it to `[]` and degrade quietly when it is absent. Documented as a divergence, not
