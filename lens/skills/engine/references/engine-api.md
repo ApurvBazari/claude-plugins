@@ -90,12 +90,9 @@ re-judges.
 **Returns** `{ renderedPath, delta?, severityTrend? }`, or the line `wrote: <path>`. On **any** failure:
 `skipped: <one-line reason>` — never partial state, never an exception that blocks the caller.
 
-**Empty scope** — *declared contract; `../../render-review/SKILL.md` adopts this short-circuit in this
-release.* When the supplied `findings` carries `emptyScope: true`, render-review **MUST** return the
-literal `skipped: nothing to review` and write **no artifact** — an empty scope has nothing to render, and
-a zero-finding artifact would misreport it as a clean review. Read this as the obligation the procedure
-takes on, not as behavior already in it: per § Precedence, the procedure is the runtime, and until it
-carries the short-circuit an `emptyScope: true` input still falls through to the ordinary render path.
+**Empty scope.** When the supplied `findings` carries `emptyScope: true`, render-review returns the
+literal `skipped: nothing to review` and writes **no artifact** — an empty scope has nothing to render, and
+a zero-finding artifact would misreport it as a clean review.
 
 ## Known consumer assumptions (not part of the contract)
 

@@ -18,8 +18,12 @@ re-run finders.
 - `diffRef` — a git ref/range to read for annotated diff hunks (optional).
 - `spec` / `plan` / `adherence` — intent for the adherence matrix (optional).
 - `outputPath` — the absolute path to write the HTML (required; create the dir if absent).
+- `findings.emptyScope` — the discriminator for *nothing to review* (true means the caller's scope was
+  empty; false/absent means an ordinary review). Full contract: `../engine/references/engine-api.md`.
 
 ## Step 1: Reconcile (compute-only, in memory)
+If `findings.emptyScope` is true, return `skipped: nothing to review` and write NO artifact.
+
 If `priorFindings` is supplied, reconcile `findings` against it per `../review/references/reconcile.md`
 **§ Orchestrator mode** — fingerprint by dimension + normalized claim + stable context, label each
 finding `fixed | still-open | new | possibly-resolved`, and compute `delta {fixed,new,stillOpen}` +

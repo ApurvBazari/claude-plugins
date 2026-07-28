@@ -36,4 +36,27 @@ printf '%s\n' "$STEP1" | grep -qiE 'write NOTHING|writes nothing' || fail "Step 
 printf '%s\n' "$STEP1" | grep -qF '../review/references/reconcile.md' || fail "Step 1 must cite ../review/references/reconcile.md as the reconcile contract"
 printf '%s\n' "$STEP1" | grep -qF '§ Orchestrator mode' || fail "Step 1 must cite reconcile.md's § Orchestrator mode section"
 
+# 7. Frozen frontmatter: no disable-model-invocation was reintroduced (redundant with 2b, kept as an
+#    independent assertion so a partial revert of one pin still fails the other).
+grep -q "user-invocable: false" "$SKILL" || fail "frontmatter must keep user-invocable: false"
+if grep -q "disable-model-invocation" "$SKILL"; then fail "frontmatter must not gain disable-model-invocation"; fi
+
+# 8. All four step headings present verbatim — proves Steps 2-4 were not reshaped by the emptyScope edit.
+for heading in \
+  '## Step 1: Reconcile (compute-only, in memory)' \
+  '## Step 2: Assemble the review-model' \
+  '## Step 3: Render' \
+  '## Step 4: Return'; do
+  grep -qF "$heading" "$SKILL" || fail "missing step heading: $heading"
+done
+
+# 9. The emptyScope short-circuit: declared as an input and enforced as a Step 1 guard.
+grep -qF 'emptyScope' "$SKILL" || fail "skill must document the emptyScope discriminator"
+grep -qF 'skipped: nothing to review' "$SKILL" || fail "skill must document the literal 'skipped: nothing to review' return"
+printf '%s\n' "$STEP1" | grep -qF 'emptyScope' || fail "Step 1 must guard on emptyScope"
+printf '%s\n' "$STEP1" | grep -qF 'skipped: nothing to review' || fail "Step 1 must return the literal 'skipped: nothing to review'"
+
+# 10. The emptyScope input bullet cites the engine-api.md contract.
+grep -qF '../engine/references/engine-api.md' "$SKILL" || fail "skill must cite ../engine/references/engine-api.md as the emptyScope contract"
+
 echo "OK"
