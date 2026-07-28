@@ -1,7 +1,9 @@
 # Design System — the one look-and-feel
 
 The single invariant of every walkthrough. Components vary; these tokens, fonts, and signature
-patterns never do. Paste the `:root` block verbatim into every generated document's `<style>`.
+patterns never do. The `:root` token blocks and base CSS are materialized once in `page-scaffold.md`
+— the base-CSS home — and copied verbatim into every generated document's `<style>`; this file
+documents what those tokens mean and the signature patterns they compose.
 
 ## Fonts (one `@import`, system fallback)
 
@@ -12,40 +14,27 @@ Roles: `--serif` (Instrument Serif) = display headings + italic-accent `<em>`; `
 = body; `--mono` (JetBrains Mono) = eyebrows, labels, pills, code, trees. Each var ends in a
 generic family (`serif`/`sans-serif`/`monospace`) so offline degrades cleanly.
 
-## Tokens — dark (default)
+## Tokens — two themes (materialized in `page-scaffold.md`)
 
-```css
-:root{
-  --bg-deep:#08090c;--bg-card:#0f1117;--bg-card-hover:#151821;--bg-elevated:#1a1d28;--bg-inset:#060709;
-  --border:#1e2230;--border-active:#2d3348;--border-strong:#3a4159;
-  --tp:#e8eaf0;--ts:#7d8399;--tm:#4a5068;--tf:#2e3349;
-  --blue:#3b82f6;--green:#22c55e;--amber:#f59e0b;--rose:#f43f5e;--purple:#a78bfa;
-  --accent:#22d3ee;--accent-glow:rgba(34,211,238,.16);--accent-soft:rgba(34,211,238,.08);
-  --blue-soft:rgba(59,130,246,.1);--green-soft:rgba(34,197,94,.1);--amber-soft:rgba(245,158,11,.1);--rose-soft:rgba(244,63,94,.1);--purple-soft:rgba(167,139,250,.1);
-  --mono:'JetBrains Mono',monospace;--serif:'Instrument Serif',serif;--sans:'DM Sans',sans-serif;
-  --ease:cubic-bezier(.16,1,.3,1);
-}
-```
+Both palettes live once as the `:root` (dark, default) and `html[data-theme="light"]` (warm light)
+blocks in `page-scaffold.md` — the base-CSS home. The toggle swaps token sets, not stylesheets, so
+components never branch on theme. The token families are identical in shape across both themes:
 
-## Tokens — warm light (toggle)
+| Family | Tokens | Role |
+|--------|--------|------|
+| Surfaces | `--bg-deep`, `--bg-card`, `--bg-card-hover`, `--bg-elevated`, `--bg-inset` | page + card backgrounds (near-black in dark, warm paper in light) |
+| Borders | `--border`, `--border-active`, `--border-strong` | resting → hover → emphasis hairlines |
+| Text | `--tp`, `--ts`, `--tm`, `--tf` | primary → secondary → muted → faint |
+| Palette | `--blue`, `--green`, `--amber`, `--rose`, `--purple` (+ a `-soft` fill each) | semantic status colours |
+| Accent | `--accent`, `--accent-glow`, `--accent-soft` | the one signature accent (cyan in dark, terracotta in light) |
+| Type + motion | `--mono`, `--serif`, `--sans`, `--ease` | the three families + the shared easing curve |
 
-```css
-html[data-theme="light"]{
-  --bg-deep:#faf8f4;--bg-card:#fff;--bg-card-hover:#f5f1ea;--bg-elevated:#fff;--bg-inset:#f5f1ea;
-  --border:#e5dfd6;--border-active:#d8cfc1;--border-strong:#c9c0b3;
-  --tp:#2a2520;--ts:#6b6157;--tm:#9e9486;--tf:#c9c0b3;
-  --blue:#2d5fa0;--green:#2d7a3a;--amber:#b87333;--rose:#b83a3a;--purple:#7a3b8f;
-  --accent:#c05e2b;--accent-glow:rgba(192,94,43,.16);--accent-soft:rgba(192,94,43,.09);
-  --blue-soft:rgba(45,95,160,.1);--green-soft:rgba(45,122,58,.1);--amber-soft:rgba(184,115,51,.1);--rose-soft:rgba(184,58,58,.1);--purple-soft:rgba(122,59,143,.1);
-}
-```
-
-## Signature patterns (must reproduce — full CSS in `seed.html`)
+## Signature patterns (must reproduce — full CSS in `page-scaffold.md`)
 
 - **Eyebrow:** mono, uppercase, `letter-spacing:.18em`, `color:var(--accent)`, 26px accent rule via `::before`.
 - **Headings:** `--serif`, weight 400; `<em>` is `font-style:italic;color:var(--accent)`.
 - **Active/selected:** `border-color:var(--accent); box-shadow:0 0 0 1px var(--accent),0 8px 32px -8px var(--accent-glow)`.
-- **Grain overlay:** `body::after` with the inline data-URI fractal-noise SVG at `opacity:.025` (paste the exact rule from seed.html below).
+- **Grain overlay:** `body::after` with the inline data-URI fractal-noise SVG at `opacity:.025` (the exact rule lives in `page-scaffold.md`).
 - **Frosted nav:** fixed, `backdrop-filter:blur(20px) saturate(180%)`; 2px scroll-progress bar below it.
 - **Motion:** transitions use `var(--ease)`; reveals via IntersectionObserver; width animations use the double-`requestAnimationFrame` reset-then-grow pattern.
 - **Section kicker (auto-numbered):** `.sec-label` carries `counter-increment:sec` (reset on `main`);
@@ -54,11 +43,6 @@ html[data-theme="light"]{
   first real section.
 - **Sheet (detail modal):** a centered native `<dialog class="sheet">` (`max-width:min(900px,92vw)`, `max-height:86vh`, internal scroll) opened with `showModal()` so it lives in the browser top layer (free focus-trap, top-down Escape, stacking). Its `::backdrop` is a token dim — `color-mix(in srgb,var(--bg-deep) …,transparent)` — plus `backdrop-filter:blur(6px) saturate(140%)`, with the solid dim as the no-`backdrop-filter` fallback; entrance via the `sheetIn` keyframe on `var(--ease)`, disabled under `prefers-reduced-motion`. Tokens only — the backdrop never uses raw hex.
 - **Structured detail (`sf-*`):** the glance pane and the sheet render ONE structured-content vocabulary — `sf-h` heading, `sf-summary`, `sf-where`/`sf-loc` location chips, `sf-code` annotated blocks, `sf-points`, `sf-related` chips — built by the shared `renderSurface` for the pane and pre-rendered for the sheet. Omit-empty per field; tokens only.
-
-```css
-/* grain overlay — copy the exact body::after rule from seed.html */
-body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
-```
 
 **Rule:** components reference ONLY these tokens — never raw hex. That is what keeps one look across both themes.
 

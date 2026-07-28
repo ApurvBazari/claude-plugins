@@ -34,7 +34,7 @@ field row → **one** connector — never one row or one line per column.
     <div class="band">
       <div class="band-label"><span class="dot"></span>referenced</div>
       <div class="band-row">
-        <div class="ent" data-ent="user" onclick="openSurface('user')">
+        <div class="ent" data-ent="user" role="button" tabindex="0" aria-label="User entity" onclick="openSurface('user')">
           <div class="ent-name"><User><span class="deg">2 in</span></div>
           <div class="fld"><span class="col">id</span><span class="chip info">PK</span></div>
           <div class="fld"><span class="col">email</span><span class="type">text</span></div>
@@ -44,7 +44,7 @@ field row → **one** connector — never one row or one line per column.
     <div class="band">
       <div class="band-label"><span class="dot"></span>core</div>
       <div class="band-row">
-        <div class="ent" data-ent="order" onclick="openSurface('order')">
+        <div class="ent" data-ent="order" role="button" tabindex="0" aria-label="Order entity" onclick="openSurface('order')">
           <div class="ent-name"><Order></div>
           <div class="fld"><span class="col">id</span><span class="chip info">PK</span></div>
           <div class="fld" data-target="user"><span class="col">user_id</span><span class="ref">→ User.id <span class="card">N:1</span></span></div>
@@ -105,7 +105,10 @@ or **neutral `Layer 0/1/2`** when a cycle makes roles ambiguous — see `authori
 `.rels` summary the **entity-name `.e` spans** are the clickable targets — each `<span class="e"
 onclick="openSurface('<entity-id>')">` jumps to that endpoint's entity surface; the row itself carries no
 pointer. These summary→entity links are **star links into the same entity surfaces**, never entity→entity,
-so they add no navigation cycle and keep the `openSurface` graph acyclic (#14). PK =
+so they add no navigation cycle and keep the `openSurface` graph acyclic (#14). The `.rel .e` spans are a
+deliberate **pointer-only** affordance — they carry no `role="button"`/`tabindex` because every entity they
+reach is already keyboard-operable through its `.ent` card (which does carry `role="button"`), so the summary
+stays a redundant mouse convenience rather than a second Tab stop. PK =
 `.chip info`; FKs are conveyed by the ref chip. `.deg` degree badges (`2 in`, `junction`, `in cycle`)
 are omit-empty (hide for trivial degree). No JS in this file — the hover-connector lives in
 `interactivity.md`; reveal is the shared IntersectionObserver.

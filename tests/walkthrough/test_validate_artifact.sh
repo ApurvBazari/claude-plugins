@@ -149,7 +149,8 @@ ok "reveal gate is specificity-correct (:not(.vis)) in scaffold + all fixtures"
 # --- Task 7: version 1.3.1 self-consistent across plugin.json / marketplace / CHANGELOG ---
 bash "$ROOT/tests/lib/assert-versions.sh" walkthrough || fail "walkthrough version out of sync across plugin.json / marketplace / CHANGELOG"
 grep -q '1.3.1' "$ROOT/walkthrough/CHANGELOG.md" || fail "CHANGELOG missing 1.3.1 entry"
-ok "version 1.3.1 self-consistent"
+grep -q '1.4.0' "$ROOT/walkthrough/CHANGELOG.md" || fail "CHANGELOG missing 1.4.0 entry"
+ok "versions 1.3.1 + 1.4.0 self-consistent"
 
 # --- W3: card details route through the openSurface router, not the openCard bypass ---
 FT="$ROOT/walkthrough/skills/create/references/components/files-timeline.md"

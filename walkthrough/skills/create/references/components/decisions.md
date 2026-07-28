@@ -2,16 +2,16 @@
 
 ## Tabs + tradeoff bars
 
-**When:** The session weighed two or more options/approaches against each other. Tabs swap the detail pane and the tradeoff bars re-grow. Lifted from `seed.html` — includes the responsive `@media` that collapses tabs and the detail grid on narrow screens (these are NOT in the page scaffold and ship with this entry).
+**When:** The session weighed two or more options/approaches against each other. Tabs swap the detail pane and the tradeoff bars re-grow. The full CSS ships with this recipe below — including the responsive `@media` that collapses tabs and the detail grid on narrow screens (these are NOT in the page scaffold and ship with this entry).
 
 ```html
 <section id="<id>">
   <div class="sec-label"><decision></div>
   <h2>Tabs + animated <em>tradeoff</em> bars</h2>
   <div class="tabs">
-    <div class="tab active" data-app="a" onclick="setTab('a')"><span class="letter">A</span><div class="tt"><Option A></div><div class="tb"><one-liner></div></div>
-    <div class="tab chosen" data-app="b" onclick="setTab('b')"><span class="rec">Chosen</span><span class="letter">B</span><div class="tt"><Option B></div><div class="tb"><one-liner></div></div>
-    <div class="tab" data-app="c" onclick="setTab('c')"><span class="letter">C</span><div class="tt"><Option C></div><div class="tb"><one-liner></div></div>
+    <div class="tab active" data-app="a" role="button" tabindex="0" aria-label="<Option A>" onclick="setTab('a')"><span class="letter">A</span><div class="tt"><Option A></div><div class="tb"><one-liner></div></div>
+    <div class="tab chosen" data-app="b" role="button" tabindex="0" aria-label="<Option B>" onclick="setTab('b')"><span class="rec">Chosen</span><span class="letter">B</span><div class="tt"><Option B></div><div class="tb"><one-liner></div></div>
+    <div class="tab" data-app="c" role="button" tabindex="0" aria-label="<Option C>" onclick="setTab('c')"><span class="letter">C</span><div class="tt"><Option C></div><div class="tb"><one-liner></div></div>
   </div>
   <div class="detail show" data-app="a">
     <div><h3 style="font-family:var(--serif);font-weight:400;margin:.1rem 0 .4rem"><Option A></h3><p style="font-size:.86rem;color:var(--ts)"><summary></p>
@@ -54,7 +54,7 @@
 
 ## Accordion checklist
 
-**When:** A definition-of-done, list of decisions, or requirements where each row has a verdict and an expandable rationale. Native `<details>` expand/collapse. Lifted from `seed.html`.
+**When:** A definition-of-done, list of decisions, or requirements where each row has a verdict and an expandable rationale. Native `<details>` expand/collapse. The full CSS ships with this recipe below.
 
 ```html
 <section id="<id>">

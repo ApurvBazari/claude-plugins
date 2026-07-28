@@ -8,7 +8,7 @@ the shared bundle goes into `{{INTERACTIVITY_JS}}` and the detail lookup into `{
 inert `#wt-data` island that is parsed at runtime, never executed.
 
 It contains **no component CSS or markup** — that lives in the `components/` catalog. The base CSS below is
-lifted verbatim from `seed.html`; never invent base styles.
+materialized here once — this file is the base-CSS home; `design-system.md` and the component recipes defer to it.
 
 Slots to fill: `{{TITLE}}`, `{{NAV_LINKS}}`, `{{KICKER}}`, `{{HERO}}`, `{{SECTIONS}}`,
 `{{COMPONENT_CSS}}`, `{{INTERACTIVITY_JS}}`, `{{COMPONENT_JS}}`, `{{DATA_JSON}}`, `{{SHEETS}}`.
@@ -161,7 +161,7 @@ Fill each marker below. Leave a marker empty (delete it) only when its content d
 
 **`details{}` → `SURF` + `{{SHEETS}}` transform:** compute each detail's kind (explicit `surface`, else inferred — see `authoring-guide.md` § 3). Pane-kind ids go to `DET` (above) with `SURF[id]='pane'`; sheet-kind ids are pre-rendered as `<dialog id="sheet-<id>">` blocks in `{{SHEETS}}` (header via the same `sf-*` markup, hosting each `components[]` ref with surface-suffixed internal ids) with `SURF[id]='sheet'`. Both `DET` and the whole `SURF` map are serialized into the inert `{{DATA_JSON}}` island (never a separate JS slot); default any unclassified `openSurface` target to `'pane'`.
 
-**Sheet pattern (`{{SHEETS}}`):** the assembler pre-renders one `<dialog>` per sheet-kind detail into the `#sheets` container (the pane builds its DOM at click time via `renderSurface`; the sheet's is static). It reuses the same `sf-*` content vocabulary as the pane so the two surfaces read the same, with surface-appropriate sizing — the sheet heading is an `<h2 class="sf-h">` (it picks up the larger serif `h2` scale, since `.sf-h` itself is pane-scoped), while the pane uses the compact `<h3 class="sf-h">`. The content lives in a `.sf-body` scroll container and the close `✕` is a direct child of the dialog. The sheet's surface-specific CSS — `dialog.sheet`, `::backdrop`, `dialog.sheet>.x` (which absolutely-positions the close button to float above the scroll), and `dialog.sheet .sf-kicker` — is part of the base CSS lifted verbatim from `seed.html`.
+**Sheet pattern (`{{SHEETS}}`):** the assembler pre-renders one `<dialog>` per sheet-kind detail into the `#sheets` container (the pane builds its DOM at click time via `renderSurface`; the sheet's is static). It reuses the same `sf-*` content vocabulary as the pane so the two surfaces read the same, with surface-appropriate sizing — the sheet heading is an `<h2 class="sf-h">` (it picks up the larger serif `h2` scale, since `.sf-h` itself is pane-scoped), while the pane uses the compact `<h3 class="sf-h">`. The content lives in a `.sf-body` scroll container and the close `✕` is a direct child of the dialog. The sheet's surface-specific CSS — `dialog.sheet`, `::backdrop`, `dialog.sheet>.x` (which absolutely-positions the close button to float above the scroll), and `dialog.sheet .sf-kicker` — is part of the base CSS materialized in the `<style>` block above.
 
 ```html
 <dialog class="sheet" id="sheet-<id>">
@@ -175,5 +175,6 @@ Fill each marker below. Leave a marker empty (delete it) only when its content d
 </dialog>
 ```
 
-**Rule:** copy the base CSS in the `<style>` block verbatim from `seed.html` — never invent base
-styles. Component CSS comes from the `components/` catalog and is injected at `{{COMPONENT_CSS}}` only.
+**Rule:** the base CSS in the `<style>` block above is materialized here once — this file is its single
+source, copied verbatim into every generated document. Component CSS comes from the `components/` catalog
+and is injected at `{{COMPONENT_CSS}}` only.

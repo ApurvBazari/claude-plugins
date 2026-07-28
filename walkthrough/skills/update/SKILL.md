@@ -63,25 +63,25 @@ before selecting components. Fold omitted salient items in; note intentional omi
 
 ## Step 6: Select components
 
-Read the renderer references from `${CLAUDE_PLUGIN_ROOT}/skills/create/references/`. Using
-`authoring-guide.md`, map the merged model to component names, then resolve each to its group file via
-`components/index.md`. Apply "omit empty,
-never stub". Compose bespoke components per the authoring-guide recipe where no catalog entry fits.
+Read the renderer references from `${CLAUDE_PLUGIN_ROOT}/skills/create/references/` and run the shared
+**select** stage of `../render/references/render-contract.md` against the merged model — the single
+canonical source for the shared select→assemble→self-check→write mechanics (map to components via
+`authoring-guide.md` + `components/index.md`; "omit empty, never stub"; compose bespoke where nothing fits).
 
 ## Step 7: Assemble the HTML
 
-Start from `page-scaffold.md`. Inline: the `@import` + both `:root` blocks from `design-system.md`;
-the shared JS from `interactivity.md`; the CSS+HTML for each chosen component from the relevant
-`components/<group>.md` files (routed via `components/index.md`);
-the `DET`/detail data. Fill `{{KICKER}}` from session metadata (date · primary type · scope), uppercase per `page-scaffold.md` — the nav status line.
-Keep it self-contained: no `<script src>`, no `<img>`, only the one Google Fonts `@import`. Produce
-**no** update chrome — no "updated" badge, no changelog; the document simply reflects the new
-combined state.
-Generate `{{NAV_LINKS}}` deterministically from `sections[]` (one `<a href="#id">` per section, id reused from the section; first link `class="on"`) — do not hand-write or hand-match ids.
+Assemble per the shared **assemble** stage of `../render/references/render-contract.md`: copy
+`page-scaffold.md` verbatim, fill its component slots from the recipes you selected, inline
+`interactivity.md` into `{{INTERACTIVITY_JS}}`, emit the inert `{{DATA_JSON}}` island, and generate
+`{{NAV_LINKS}}` deterministically from `sections[]`; self-contained, only the one Google Fonts `@import`.
+**Update-specific:** fill `{{KICKER}}` from session metadata (date · primary type · scope), uppercase per
+`page-scaffold.md` — the nav status line; produce **no** update chrome — no "updated" badge, no changelog;
+the document simply reflects the new combined state.
 
 ## Step 8: Self-check (structure)
-Run `${CLAUDE_PLUGIN_ROOT}/skills/create/references/self-check.md` against the assembled HTML; fix
-and re-check before overwriting.
+Run the shared **self-check** stage of `../render/references/render-contract.md`
+(`${CLAUDE_PLUGIN_ROOT}/skills/create/references/self-check.md`) against the assembled HTML; fix and
+re-check before overwriting.
 
 ## Step 9: Write in place
 

@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.4.0 — 2026-07-18
+
+### Changed
+- **Single-sourced the render pipeline.** `create`, `update`, `document`, and the plugin `CLAUDE.md` now defer to `render/references/render-contract.md` for the shared render behavior instead of restating it, closing the drift surface between the four render-pipeline callers.
+- **Collapsed duplicate concept-routing rows.** `concept-coverage.md` is now the single routing table; the parallel concept-routing rows that had drifted alongside it are gone.
+- **Dropped the `concepts[]` ledger + N/M/F/K coverage line.** The anti-force-fit invariant is re-anchored at selection time (`select` stage) instead of being tracked through a standing per-model ledger and summary line.
+- **Single-sourced base CSS in `page-scaffold.md`.** `design-system.md`'s re-embedded copy of the base CSS is dropped (it now defers to `page-scaffold.md` as the base-CSS home); `seed.html`'s copy is reconciled against that single source and reframed as a standalone demo snapshot (kept as a rendered example, no longer cited as a base-CSS source).
+- Fixed the `CLAUDE.md` gate-skill-count qualifier.
+
+### Added
+- **W9 keyboard operability.** Every `role="button"` interactive now activates on Enter/Space, not pointer-only.
+- A new `test_doc_contracts.sh` guard.
+
 ## 1.3.1 — 2026-07-06
 
 ### Fixed

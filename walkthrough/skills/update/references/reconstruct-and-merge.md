@@ -42,8 +42,8 @@ the detail-panel store is embedded verbatim). Reconstruction reads the rendered 
 ### Detect the data layout first (three historical shapes)
 
 The detail store's location changed in 1.3.1. Probe in this order and parse accordingly — every
-pre-1.3.1 document upgrades into the new layout on re-render (same pattern as the flat→structured and
-no-`concepts[]`→ledger upgrades):
+pre-1.3.1 document upgrades into the new layout on re-render (same pattern as the flat→structured
+detail upgrade):
 
 1. **New (≥1.3.1)** — a `<script type="application/json" id="wt-data">` block is present. `JSON.parse`
    its content into `{DET, SURF}`; recover `details{}` from `DET` (pane-kind) + the `{{SHEETS}}` dialogs
@@ -99,16 +99,13 @@ If the file is hand-edited, minified, or missing the `DET` store, reconstruct wh
 tell the user the fidelity is partial. Never invent decisions, files, or metrics that are not in the
 HTML.
 
-### New 1.2.0 components + the `concepts[]` ledger
+### New 1.2.0 components → model
 
 - **New 1.2.0 components → model:** `.dtree`→`branching-logic`, `.erd`→`data-model`, `.htree`→`hierarchy`,
   `.lstack`→`layering`, `.ladder`→`causal-chain`. For each, recover the nodes/rows + their `DET` detail
-  entries exactly as for the existing diagrams.
-- **Rebuild `concepts[]`:** for each rendered structural/diagram component, emit a `concepts[]` entry —
-  `type` from the component→type map above (and the existing diagrams), `renderedBy` = the component key,
-  `surface` = the hosting section id. A pre-1.2.0 doc with no ledger in its HTML is an UPGRADE trigger:
-  synthesize the ledger from the components present (best-effort), exactly as the flat `DET{k,h,b}` →
-  structured-surface upgrade already works.
+  entries exactly as for the existing diagrams — keying off the rendered class names, `data-*` attrs,
+  `onclick="openSurface(...)"`, and the `#wt-data` `DET`/`SURF` island, the same selectors the rest of
+  Part A uses.
 
 ## Part B — Merge into one coherent, refreshed model
 
