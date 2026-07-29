@@ -18,7 +18,7 @@ CLAUDEMD="$ROOT/lens/CLAUDE.md"
 [ -s "$CLAUDEMD" ] || fail "missing $CLAUDEMD"
 grep -q '<untrusted-user-input>' "$CLAUDEMD" || fail "CLAUDE.md must keep the <untrusted-user-input> fence reference"
 grep -qi 'data, not instructions' "$CLAUDEMD" || fail "CLAUDE.md must keep the 'data, not instructions' clause"
-grep -qi 'framing, not filtering' "$CLAUDEMD" || fail "CLAUDE.md must keep the 'framing, not filtering' clause"
+grep -qF 'framing, not filtering' "$CLAUDEMD" || fail "CLAUDE.md must keep the 'framing, not filtering' clause"
 grep -q '§3' "$CLAUDEMD" || fail "CLAUDE.md must keep the §3 anchor"
 
 # === JSON EXAMPLE INTEGRITY: illustrative-path repairs must not corrupt a fenced JSON sample ===
