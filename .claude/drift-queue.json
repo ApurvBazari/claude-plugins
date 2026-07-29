@@ -10,32 +10,58 @@
       "status": "deferred",
       "decision": "drift-queued, not built",
       "date": "2026-07-17",
-      "rationale": "A clean uninstall inverse is impossible without a generation-time pre-image/backup, which would be a RUNTIME change out of SP-8's no-behavior-change scope \u2014 merge-action hooks in a possibly-preexisting settings.json can't be safely un-merged; add-header/modernize mutate files in place with no saved pre-image; origin:adopted artifacts must never be touched; seed-if-absent docs may be user-edited.",
+      "rationale": "A clean uninstall inverse is impossible without a generation-time pre-image/backup, which would be a RUNTIME change out of SP-8's no-behavior-change scope — merge-action hooks in a possibly-preexisting settings.json can't be safely un-merged; add-header/modernize mutate files in place with no saved pre-image; origin:adopted artifacts must never be touched; seed-if-absent docs may be user-edited.",
       "resolution": "Deferred to a possible future minor (a new skill + 3 doc inventories + a skill-count test, not a patch). Recorded as an onboard 3.1.1 breadcrumb in onboard/CHANGELOG.md so the decision is durable and visible in the PR."
     },
     {
       "id": "SP11-guard-hardening",
-      "title": "Wave-4 candidate (SP-11+) \u2014 close the 'gate that cannot fail' class across onboard's test/gate surface",
+      "title": "Wave-4 candidate (SP-11+) — close the 'gate that cannot fail' class across onboard's test/gate surface",
       "assessedDuring": "SP-8 P5 round-3 review",
       "raisedAt": "2026-07-17",
       "severity": "medium",
-      "rationale": "Three P5 review rounds each fixed instances of one failure mode \u2014 a gate/fixture/belt that reports success without exercising what it claims \u2014 and each fix left the class alive one file over. Deferred as a dedicated hardening sprint rather than chased instance-by-instance inside the diet, per developer decision at the round-3 gate. NONE breaks shipped behavior; all are latent guard gaps.",
+      "rationale": "Three P5 review rounds each fixed instances of one failure mode — a gate/fixture/belt that reports success without exercising what it claims — and each fix left the class alive one file over. Deferred as a dedicated hardening sprint rather than chased instance-by-instance inside the diet, per developer decision at the round-3 gate. NONE breaks shipped behavior; all are latent guard gaps.",
       "items": [
-        "R3-SP8-01: check-ref-paths.sh's .json coverage is unfalsifiable \u2014 tests/ref-paths/test-check-ref-paths.sh has no .json arm; reverting the feature leaves all belts green. Add resolving/dangling .json fixtures; assert BROKEN count.",
+        "R3-SP8-01: check-ref-paths.sh's .json coverage is unfalsifiable — tests/ref-paths/test-check-ref-paths.sh has no .json arm; reverting the feature leaves all belts green. Add resolving/dangling .json fixtures; assert BROKEN count.",
         "R3-RISK-1 / CORR-F1: check-ref-paths.sh reports an unearned pass on a missing ROOT (sibling check-phase-numbering.sh got the guard this round; this one didn't). Also its root-relative branch is CWD-relative and exempts the 4 research-schema .json refs it was added for. Add the -e ROOT guard; convert the 4 to citing-file-relative or a named exemption list.",
-        "R3-SP8-03: the lookalike exemption swallows a dangling .json whose basename is absent under onboard/ \u2014 catches a RELOCATION but not a RENAME/TYPO. Make onboard/schemas/*.json refs non-exemptible, or allowlist the generated-into-target basenames.",
+        "R3-SP8-03: the lookalike exemption swallows a dangling .json whose basename is absent under onboard/ — catches a RELOCATION but not a RENAME/TYPO. Make onboard/schemas/*.json refs non-exemptible, or allowlist the generated-into-target basenames.",
         "R3-SP8-04: the numbering self-test derives its per-violation list from the fixture, so gutting bad-steps.md to 1 line keeps the belt green (55->46 ok, no FAIL). Pin the expected violation count per fixture.",
-        "R3-CORR-F2 / TEST-1: the schema parity belt asserts 'byte-identical accept/reject' but checks only required[]/additionalProperties \u2014 6 malformed shapes flip ACCEPT->REJECT invisibly. Replace with a real HEAD-vs-new differential over an instance corpus; add named-key reject fixtures.",
+        "R3-CORR-F2 / TEST-1: the schema parity belt asserts 'byte-identical accept/reject' but checks only required[]/additionalProperties — 6 malformed shapes flip ACCEPT->REJECT invisibly. Replace with a real HEAD-vs-new differential over an instance corpus; add named-key reject fixtures.",
         "R3-RISK-2: the restored Research self-audit (and start's prose generally) is pinned only by the CI-excluded release-gate; every belt guard on start/SKILL.md is a don't-grow ratchet. Add a must_present_nonempty verbatim pin (the pattern already used for generate's 5 safety strings).",
         "R3-SP8-06 / CORR-F5: check-phase-numbering.sh reports a pass over an existing-but-empty ROOT (zero .md files). Count scanned files; fail on zero.",
-        "R3-CORR-F4: unspaced em-dash (**Step 8\u2014Verify**) false-flags an in-family label. Strip trailing em-dash-and-beyond before shaping.",
+        "R3-CORR-F4: unspaced em-dash (**Step 8—Verify**) false-flags an in-family label. Strip trailing em-dash-and-beyond before shaping.",
         "R3-CORR-F7: indented headings and paren-delimited ordered lists evade declaration detection. Allow ^[[:space:]]{0,3}#{1,6} and [0-9]+[.)].",
         "R3-TEST-2: the ordered-list declaration form has only positive coverage; add an ordered-list violation to bad-steps.md.",
-        "R3-PRIN-1: the belt re-asserts ref integrity the dedicated CI job already owns (belt:98-102) \u2014 duplicate assertion site the belt's own header disclaims. Delete it.",
+        "R3-PRIN-1: the belt re-asserts ref integrity the dedicated CI job already owns (belt:98-102) — duplicate assertion site the belt's own header disclaims. Delete it.",
         "release-gate: run-automated-checks.sh is excluded from run-all.sh discovery, so it caught a dropped instruction CI could not (U6). It also hardcodes versions (drifts each sprint) and launders check-schemas exit 2 as a warning. Make it CI-discoverable, derive its version pins from plugin.json, and bring its exit-2 to parity with the belt's hard-fail."
       ],
       "status": "queued",
-      "note": "Renamed from SP9-* \u2014 SP-9 is already the Wave-3 walkthrough sprint. This is a post-Wave-3 (Wave-4) hardening candidate; not pinned to a Wave-3 slot."
+      "note": "Renamed from SP9-* — SP-9 is already the Wave-3 walkthrough sprint. This is a post-Wave-3 (Wave-4) hardening candidate; not pinned to a Wave-3 slot."
+    },
+    {
+      "id": "SP10-matali-lens-contract-divergence",
+      "title": "matali reads lens:engine return/input fields lens declares nowhere (agents roster, modelPolicy)",
+      "assessedDuring": "SP-10 P3 BUILD",
+      "raisedAt": "2026-07-28",
+      "severity": "medium",
+      "rationale": "SP-10's new single declared programmatic surface (lens/skills/engine/references/engine-api.md) records an `agents` finder roster as an explicitly non-contracted consumer assumption, but the same cross-repo pass surfaced a second, undocumented divergence in the opposite direction (`modelPolicy`, sent by matali but never consumed or acknowledged by lens). Neither breaks anything today — lens ignores unknown input fields and consumers are told to default `agents` to [] — but both are truth gaps between the two repos that a future lens contract change could silently break for matali. Resolve in the matali repo (stop depending on undeclared fields) or via a future lens contract addition (declare and honor them explicitly).",
+      "items": [
+        "matali plugin `skills/review/SKILL.md:186,216` and `CLAUDE.md:52` read an `agents` finder roster off the `lens:engine` return; lens declares this nowhere in its schema or in engine-api.md's returns section — it is recorded only under engine-api.md's '## Known consumer assumptions (not part of the contract)'.",
+        "matali also passes `modelPolicy` as an argument to `lens:engine`; engine-api.md's '## lens:engine — inputs' section does not list it as a consumed input at all — a second, undocumented consumer-side divergence (matali sending something lens never reads)."
+      ]
+    },
+    {
+      "id": "SP10-exit-gate-deferred",
+      "title": "SP-10 exit-gate deferrals: CI ref-guard scope, stale site, reconcile.md framing, unretargeted belts",
+      "assessedDuring": "SP-10 P3 BUILD",
+      "raisedAt": "2026-07-28",
+      "severity": "low",
+      "rationale": "Four items surfaced at the SP-10 exit gate that are correctly out of this diet's bounded scope — three are floor-protected or shared-gate concerns needing a dedicated pass, one is deferred release housekeeping. The CI ref-guard scoping defect is the lens-side instance of the same 'gate that cannot fail' class already tracked under SP11-guard-hardening (onboard's check-ref-paths/check-skill-refs surface): SP-10 fixed it locally in-belt (tests/lens/test_engine_api.sh invokes both guards with the explicit `lens` argument, permanently), but did not fix the CI-workflow root cause, since loosening a shared onboard gate repo-wide is out of scope for a lens diet.",
+      "items": [
+        "CI ref-guard scoping defect: `.github/workflows/validate.yml:104,106` invokes check-skill-refs.sh / check-ref-paths.sh with no argument, so ROOT defaults to `onboard` and every other plugin (including lens) is ungated in CI — the lens belt is the only durable coverage. Additionally check-skill-refs.sh:20 resolves `<path>/SKILL.md` tokens from the citing file's dir only (no repo-root fallback, no code-fence awareness), which produced 7 false positives on lens during SP-10 — same guard-defect class as SP11-guard-hardening's onboard-side findings.",
+        "Stale site: site/index.html:221 still pins lens v1.4.1 and site/lens/index.html is stale after the 1.4.3 bump; site regeneration is deferred to the combined develop->main release.",
+        "reconcile.md:110 framing is now slightly stale post-retirement of lens:review's orchestrator mode: it says the compute-only mode applies 'When lens is driven by an orchestrator ... instead of a human running /lens:review', but post-retirement the orchestrator drives lens:engine and lens:render-review directly, and it is render-review's Step 1 that runs reconcile compute-only. Not fixed in SP-10 because floor (a) mandates reconcile.md stay zero-diff.",
+        "Five belts were not retargeted to the new engine-api.md canon and still pin prose in the demoted files: test_injected_intent.sh, test_injected_finders.sh, test_intent_fencing.sh, test_multi_spec.sh, test_doc_contracts.sh. Deferred to keep the SP-10 diff bounded; none pin a literal type block so they remain accurate, just not canon-sourced."
+      ]
     }
   ]
 }
