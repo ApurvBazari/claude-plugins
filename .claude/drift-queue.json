@@ -76,6 +76,21 @@
         "BOTH guards wrap per-file extraction in `grep ... 2>/dev/null` inside a process substitution, so a file the guard cannot read contributes zero refs AND zero errors. Demonstrated: plant a dangling 'nope/SKILL.md' ref, chmod 000 the file -> both guards exit 0; chmod 644 -> BROKEN reported. Fix: capture find's status, assert scanned>0, drop 2>/dev/null, and count a grep exit >=2 as broken.",
         "check-ref-paths.sh:48-53 exempts any ref whose basename does not exist under ROOT, so a citation to a wholly nonexistent file (./no-such-file.md) passes silently. The relocation class IS caught; the typo class is not."
       ]
+    },
+    {
+      "id": "SP10-render-review-noop-consumer",
+      "title": "lens 1.4.3 adds a third render-review return (`noop:`) that matali does not yet know",
+      "assessedDuring": "SP-10 P5 REVIEW",
+      "raisedAt": "2026-07-29",
+      "severity": "medium",
+      "rationale": "lens 1.4.3's empty-scope short-circuit now returns the line `noop: nothing to review` (a success, no artifact) instead of answering on `skipped:`, which lens declares as its failure-only channel. matali, the live consumer, branches only on `wrote:` vs `skipped:` and knows nothing about `noop:`, so today an empty scope still reads as a render failure there. Nothing breaks -- matali's `skipped:` handling is already degrade-not-block -- but until matali learns `noop:`, an ordinary empty-diff phase is reported as a degrade. Cross-repo: cannot be fixed from claude-plugins.",
+      "items": [
+        "matali `references/delegation-contract.md:54` maps a `skipped:` return to 'render no doc this phase, warn once' -- it should treat `noop: nothing to review` as a clean no-op (no doc, no warning) and keep the warn path for `skipped:` alone.",
+        "matali `skills/pipeline/SKILL.md:665` maps a `skipped:` return to 'Degrade (R10) => no link, note' -- same split needed, so an empty scope stops being counted as a degrade.",
+        "Contract source of truth for the three returns: lens `skills/engine/references/engine-api.md` section '## lens:render-review -- inputs and returns' and `skills/render-review/SKILL.md` Step 4."
+      ],
+      "status": "queued",
+      "note": "Appended as a new entry (never mutating an existing one) per this queue's top-level contract. Resolve in the matali repo."
     }
   ]
 }

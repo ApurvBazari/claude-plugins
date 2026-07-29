@@ -87,12 +87,19 @@ re-judges.
 | `spec` / `plan` / `adherence` | optional | Intent for the adherence matrix. |
 | `outputPath` | required | Absolute path for the artifact — the **only** file this skill writes. |
 
-**Returns** `{ renderedPath, delta?, severityTrend? }`, or the line `wrote: <path>`. On **any** failure:
-`skipped: <one-line reason>` — never partial state, never an exception that blocks the caller.
+**Returns** — three, and a consumer must branch on which:
+
+| Return | Outcome | Meaning |
+|---|---|---|
+| `{ renderedPath, delta?, severityTrend? }`, or the line `wrote: <path>` | success | The artifact was written to `outputPath`. |
+| `noop: nothing to review` | success | The supplied `findings` carried `emptyScope: true` — nothing to render, **no artifact written**. |
+| `skipped: <one-line reason>` | **failure only** | The render failed — never partial state, never an exception that blocks the caller. |
 
 **Empty scope.** When the supplied `findings` carries `emptyScope: true`, render-review returns the
-literal `skipped: nothing to review` and writes **no artifact** — an empty scope has nothing to render, and
-a zero-finding artifact would misreport it as a clean review.
+literal `noop: nothing to review` and writes **no artifact** — an empty scope has nothing to render, and
+a zero-finding artifact would misreport it as a clean review. It is deliberately **not** `skipped:`:
+that line is the failure channel, so a consumer that routes it to a degrade/warn path would read an
+ordinary empty diff as a broken render.
 
 ## Known consumer assumptions (not part of the contract)
 

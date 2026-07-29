@@ -113,8 +113,20 @@ RENDER="$(section "$H_RENDER")"
 for field in findings priorFindings diffRef spec plan adherence outputPath emptyScope; do
   printf '%s\n' "$RENDER" | grep -qF "$field" || fail "render-review section must declare '$field'"
 done
-printf '%s\n' "$RENDER" | grep -qF 'skipped: nothing to review' \
-  || fail "render-review section must declare the literal 'skipped: nothing to review' return"
+# Pinned to the returns-table ROW, not a bare substring: the section names the literal in prose too, so
+# a bare grep stays satisfied even if the declaration itself is renamed.
+# shellcheck disable=SC2016 # literal backticks — this is the exact grepped row, not shell expansion
+printf '%s\n' "$RENDER" | grep -qF '| `noop: nothing to review` | success |' \
+  || fail "render-review section must declare 'noop: nothing to review' as a SUCCESS return"
+printf '%s\n' "$RENDER" | grep -qF 'wrote: <path>' \
+  || fail "render-review section must declare the 'wrote: <path>' success return alongside it"
+# The empty case is a success; `skipped:` is the failure channel. Declaring the empty case ON that
+# channel is what made a healthy empty scope indistinguishable from a broken render for a consumer.
+if printf '%s\n' "$RENDER" | grep -qF 'skipped: nothing to review'; then
+  fail "render-review section must NOT declare 'skipped: nothing to review' — 'skipped:' is failure-only"
+fi
+printf '%s\n' "$RENDER" | grep -qiE 'failure only|failure channel' \
+  || fail "render-review section must name 'skipped:' the failure-only return"
 
 # A consumer's assumption is recorded as a divergence, never promoted to contract.
 CONSUMERS="$(section "$H_CONSUMERS")"

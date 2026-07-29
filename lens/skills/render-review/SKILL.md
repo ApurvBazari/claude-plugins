@@ -22,7 +22,7 @@ re-run finders.
   empty; false/absent means an ordinary review). Full contract: `../engine/references/engine-api.md`.
 
 ## Step 1: Reconcile (compute-only, in memory)
-If `findings.emptyScope` is true, return `skipped: nothing to review` and write NO artifact.
+If `findings.emptyScope` is true, return `noop: nothing to review` and write NO artifact.
 
 If `priorFindings` is supplied, reconcile `findings` against it per `../review/references/reconcile.md`
 **§ Orchestrator mode** — fingerprint by dimension + normalized claim + stable context, label each
@@ -43,14 +43,26 @@ caller's `outputPath`. Otherwise emit a markdown report per `../review/reference
 to `outputPath` with a `.md` extension.
 
 ## Step 4: Return
-Confirm the artifact exists and is non-empty, then return `{ renderedPath: <path>, delta?, severityTrend? }`
-(or the line `wrote: <path>`). On any failure, return `skipped: <one-line reason>` — never partial state,
-never an exception that blocks the caller.
+You have exactly three returns, and a caller must be able to tell them apart:
+
+- **Rendered** — confirm the artifact exists and is non-empty, then return
+  `{ renderedPath: <path>, delta?, severityTrend? }` (or the line `wrote: <path>`).
+- **Nothing to render** — the Step 1 empty-scope short-circuit returns the line `noop: nothing to review`,
+  with no artifact. This is a **success**: the caller asked you to render an empty scope and there was
+  nothing to draw.
+- **Failed** — return `skipped: <one-line reason>` — never partial state, never an exception that blocks
+  the caller.
+
+`skipped:` is the **failure channel only**. Never return it for a healthy empty scope, and never return
+`noop:` for a render that broke — a caller keying on `skipped:` treats it as a degrade, so conflating the
+two makes an ordinary empty diff look like a failure and a real failure look like a no-op.
 
 ## Key Rules
 - **Write-once.** The only file you create is `outputPath`. No `review-state.json`, no task list.
 - **No recompute.** You render the findings you were given; you never re-run finders or re-judge.
 - **Degrade, never block (R10).** Missing walkthrough → markdown fallback; missing diff → omit hunks;
   any failure → `skipped:`.
+- **Three returns, one failure channel.** `wrote: <path>` (rendered) · `noop: nothing to review` (empty
+  scope, no artifact, still a success) · `skipped: <reason>` (**failure, and nothing else**).
 - **Reuse, don't fork.** Reconcile + assembly logic live in `../review/references/`; cite them, do not
   reimplement.

@@ -55,9 +55,26 @@ done
 
 # 9. The emptyScope short-circuit: declared as an input and enforced as a Step 1 guard.
 grep -qF 'emptyScope' "$SKILL" || fail "skill must document the emptyScope discriminator"
-grep -qF 'skipped: nothing to review' "$SKILL" || fail "skill must document the literal 'skipped: nothing to review' return"
+grep -qF 'noop: nothing to review' "$SKILL" || fail "skill must document the literal 'noop: nothing to review' return"
 printf '%s\n' "$STEP1" | grep -qF 'emptyScope' || fail "Step 1 must guard on emptyScope"
-printf '%s\n' "$STEP1" | grep -qF 'skipped: nothing to review' || fail "Step 1 must return the literal 'skipped: nothing to review'"
+printf '%s\n' "$STEP1" | grep -qF 'noop: nothing to review' || fail "Step 1 must return the literal 'noop: nothing to review'"
+
+# 9b. An empty scope is a SUCCESS, so it must not answer on the failure channel. `skipped:` is declared
+#     failure-only (Step 4, Key Rules), so returning it for an empty scope would make an ordinary
+#     empty diff indistinguishable from a render that broke.
+if grep -qF 'skipped: nothing to review' "$SKILL"; then
+  fail "empty scope must not return on the failure channel — 'skipped:' is failure-only, the empty case is 'noop: nothing to review'"
+fi
+
+# 9c. All three returns are declared together where the caller reads them, and the failure channel is
+#     named as such — this is what keeps the noop/failure conflation from creeping back.
+STEP4="$(awk '/^## Step 4/{n=1} /^## Key Rules/{n=0} n{print}' "$SKILL")"
+[ -n "$STEP4" ] || fail "render-review Step 4 section is missing"
+for ret in 'wrote: <path>' 'noop: nothing to review' 'skipped: <one-line reason>'; do
+  printf '%s\n' "$STEP4" | grep -qF "$ret" || fail "Step 4 must declare the return '$ret'"
+done
+printf '%s\n' "$STEP4" | grep -qiE 'failure channel only|failure only' \
+  || fail "Step 4 must state that 'skipped:' is the failure channel only"
 
 # 10. The emptyScope input bullet cites the engine-api.md contract.
 grep -qF '../engine/references/engine-api.md' "$SKILL" || fail "skill must cite ../engine/references/engine-api.md as the emptyScope contract"
