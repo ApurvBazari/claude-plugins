@@ -524,6 +524,22 @@ if grep -qF -- '- **Top-level:**' "$CLAUDEMD"; then
   fail "INDEX: CLAUDE.md must not re-materialize the top-level field enumeration — schemas/review-findings.schema.json owns it"
 fi
 
+# 2b. NEGATIVE — the two programmatic restatements U8 left behind are demoted too. An index may NAME a
+# behavior and point at the canon; re-materializing the engine's empty-scope return literal or
+# render-review's input list re-forks the surface engine-api.md exists to keep single. Each token below
+# occurred exactly once before this demotion, so every pin here started non-vacuous.
+if grep -qE -- 'emptyScope"?: *true' "$CLAUDEMD"; then
+  fail "INDEX: CLAUDE.md must not re-materialize the empty-scope return literal — engine-api.md § lens:engine — returns owns it"
+fi
+if grep -qF -- '{ "findings": []' "$CLAUDEMD"; then
+  fail "INDEX: CLAUDE.md must not re-materialize the engine's return object literal — engine-api.md § lens:engine — returns owns it"
+fi
+for rrfield in priorFindings diffRef outputPath; do
+  if grep -qF -- "$rrfield" "$CLAUDEMD"; then
+    fail "INDEX: CLAUDE.md must not re-enumerate render-review's '$rrfield' input — engine-api.md § lens:render-review — inputs and returns owns it"
+  fi
+done
+
 # 3. POSITIVE — CLAUDE.md points at the canon for the declared programmatic surface.
 grep -qF 'skills/engine/references/engine-api.md' "$CLAUDEMD" \
   || fail "INDEX: CLAUDE.md must cite skills/engine/references/engine-api.md as the declared programmatic surface"
@@ -536,6 +552,16 @@ ENGINESPLIT="$(awk '/^## Engine \/ render split/{n=1;next} n && /^## /{exit} n{p
 [ -n "$ENGINESPLIT" ] || fail "INDEX: CLAUDE.md § Engine / render split section is missing"
 printf '%s\n' "$ENGINESPLIT" | grep -qF 'skills/engine/references/engine-api.md' \
   || fail "INDEX: CLAUDE.md § Engine / render split must itself point at skills/engine/references/engine-api.md"
+
+# 3c. DISCRIMINATING — each site the 2b negatives emptied carries its OWN pointer, so the demotion
+# reads as a redirection rather than a deletion. Scoped per section and bounded: an extractor that
+# lost its terminator would swallow the rest of the file and pass on some other section's pointer.
+for section in 'The pipeline' 'Skills'; do
+  REGION="$(awk -v h="^## $section" '$0 ~ h {n=1;next} n && /^## /{exit} n{print}' "$CLAUDEMD")"
+  bounded "CLAUDE.md § $section" 30 "$REGION"
+  printf '%s\n' "$REGION" | grep -qF 'skills/engine/references/engine-api.md' \
+    || fail "INDEX: CLAUDE.md § $section must point at skills/engine/references/engine-api.md rather than restate the surface"
+done
 
 # 4. CI-PINNED SUBSTRING RETENTION (criterion 16) — each an independent assertion, so a partial loss
 # names itself instead of hiding behind one combined pass/fail. (The <untrusted-user-input> /

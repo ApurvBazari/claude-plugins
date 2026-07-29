@@ -116,6 +116,20 @@
         "MERIT (advisory, 3/3 judges): over-engineering - a 424-line belt guards a 122-line doc, of which only ~15 lines are consolidated shapes; completeness - lens/CLAUDE.md:50 and :155 still restate the surface, so it did not become 'a true index' as the ask required; architecture - a live runtime behavior change shipped inside a doc-consolidation phase on a patch bump. Judges recommended cutting the belt toward 100 lines and splitting the behavior change into its own minor.",
         "PRE-EXISTING, surfaced by merit: lens/CLAUDE.md:140 says 'the engine compares the new findings against the prior set ... and tracks the severity trend', but CLAUDE.md:37/:153 and the new canon all say the engine has 4 stages and reconcile owns that. Not introduced by this diff; contradicts the canon it now points at."
       ]
+    },
+    {
+      "id": "SP10-merit2-closed",
+      "title": "merit-2 (CLAUDE.md did not become a true index) CLOSED post-P5 — supersedes that one item of SP10-review-accepted-deferred",
+      "assessedDuring": "SP-10 P6 hold",
+      "raisedAt": "2026-07-29",
+      "severity": "low",
+      "rationale": "SP10-review-accepted-deferred bundles merit-1/-2/-3 into a single item and records all three as deferred. That entry is committed and the queue contract forbids mutating it, so this entry supersedes the completeness third of it. The developer chose at the P6 hold to close merit-2 rather than ship it deferred: lens/CLAUDE.md:50 and :155 are now pointers into skills/engine/references/engine-api.md instead of restatements of the empty-scope return literal and render-review's input list. merit-1 (over-engineering: a 424-line belt guarding a 122-line doc) and merit-3 (a runtime behavior change shipped inside a doc phase on a patch bump) REMAIN deferred and are unaffected.",
+      "items": [
+        "CLOSED: lens/CLAUDE.md:50 no longer carries the `{ \"findings\": [], \"emptyScope\": true }` literal; it names the empty-scope flag and cites engine-api.md for shape + the nothing-to-review-vs-found-nothing discriminator.",
+        "CLOSED: lens/CLAUDE.md:155 no longer enumerates render-review's priorFindings/diffRef/intent inputs or `outputPath`; it keeps the frontmatter-policy convention (which is CLAUDE.md's own job) and cites engine-api.md for inputs, the three returns, and the single writable path.",
+        "GUARDED: tests/lens/test_engine_api.sh gains 5 negative pins (emptyScope\"?: true / '{ \"findings\": []' / priorFindings / diffRef / outputPath absent from CLAUDE.md) and 2 section-scoped bounded positive pins (§ The pipeline and § Skills must each carry their own engine-api.md pointer). 11 mutations run against a scratch copy, 11 caught — the demotion is not silently reversible.",
+        "STILL DEFERRED (unchanged): merit-1 over-engineering, merit-3 architecture/patch-bump, and the pre-existing lens/CLAUDE.md:140 reconcile-vs-engine severity-trend contradiction — all remain live in SP10-review-accepted-deferred."
+      ]
     }
   ]
 }
