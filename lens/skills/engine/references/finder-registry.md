@@ -49,7 +49,8 @@ staging. There is no write path through any adapter.
 
 ## Tier 3 — Project
 
-Per-project custom finders, registered in `.claude/lens/settings.md` as YAML entries:
+Per-project custom finders — experimental — secondary to `injectedFinders` — registered in
+`.claude/lens/settings.md` as YAML entries:
 
 ```yaml
 finders:
@@ -62,7 +63,7 @@ finders:
 The engine reads this registry and dispatches the named `.claude/agents/` finders, **read-only-enforced at
 the dispatch boundary** like the adapter tier. (Authoring contract: see `finder-contract.md`.)
 
-**Tier 3 also has a call-time variant — *injected* finders.** A programmatic caller (e.g. matali) may pass `injectedFinders: Array<{ agent, dimension, label?, readonly: true }>` directly to the engine instead of registering in `.claude/lens/settings.md`. Injected finders are dispatched and constrained **identically** to file-registered ones; the only difference is the source (the call vs. the settings file). The `agent` resolves through the Agent-tool registry and may be plugin-qualified, so a caller's own plugin agent works without a project-local copy.
+**Tier 3 also has a call-time variant — *injected* finders.** A programmatic caller (e.g. matali) may pass `injectedFinders` (shape declared in `engine-api.md`) directly to the engine instead of registering in `.claude/lens/settings.md`. Injected finders are dispatched and constrained **identically** to file-registered ones; the only difference is the source (the call vs. the settings file). The `agent` resolves through the Agent-tool registry and may be plugin-qualified, so a caller's own plugin agent works without a project-local copy.
 
 ## Normalization (all tiers)
 

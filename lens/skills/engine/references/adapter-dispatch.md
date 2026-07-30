@@ -6,7 +6,7 @@ engine normalizes them. Two parts: a generic **wrapper-prompt** applied to every
 **per-adapter map** for each of the 5.
 
 Normalization is **best-effort**: an adapter whose output still can't be mapped is dropped, `degraded:true`
-is set, and the missing dimension is named in `summary` (per `engine/SKILL.md` Step 3 + Step 4).
+is set, and the missing dimension is named in `summary` (per `../SKILL.md` Step 3 + Step 4).
 
 ## Part 1 — the forcing wrapper-prompt (every adapter)
 

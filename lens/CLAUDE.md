@@ -32,6 +32,8 @@ lens is split into a **data-only engine** and a **renderer**, so the judgment co
 - **`lens-engine`** (`skills/engine`, internal, `user-invocable: false`, data-only): runs scope → intent → analyze → verify → dedup → rank and **returns** a `review-findings` JSON object. It writes nothing and never prompts the user. This is the reusable judgment core.
 - **`lens-render`** (inside `skills/review`): consumes that JSON, builds a review-model (narrative + adherence + findings + risk + annotated hunks + overall verdict), and invokes `walkthrough:render` to produce the artifact — with a markdown fallback when walkthrough is absent.
 
+The full input/return contract for both halves is declared once, in `skills/engine/references/engine-api.md`.
+
 ## The pipeline (`/lens:review [target]`, 4 engine stages + 3 review stages, all in-session)
 
 ```
@@ -45,7 +47,7 @@ Review skill — 3 stages (reconcile → render → report):
  build the review-model → walkthrough:render (markdown fallback) → .claude/lens/
 ```
 
-1. **SCOPE** — resolve the diff target. Default: working tree + this branch's commits vs the merge-base with the default branch; `[target]` overrides. Empty diff or no repo → the engine returns `{ "findings": [], "emptyScope": true }` (no error, no prompt); `review` keys on `emptyScope: true` to report "nothing to review" and exit gracefully after Step 2, marking unreached stages `deleted`.
+1. **SCOPE** — resolve the diff target. Default: working tree + this branch's commits vs the merge-base with the default branch; `[target]` overrides. Empty diff or no repo → the engine flags an **empty scope** rather than erroring or prompting, and `review` keys on that flag to report "nothing to review" and exit gracefully after Step 2, marking unreached stages `deleted`. The flag's field name and shape, and the *nothing-to-review vs found-nothing* discriminator rule, are declared in `skills/engine/references/engine-api.md`.
 2. **INTENT** — build an **intent record** that may span **multiple specs/plans**, selected **diff-correlated**: explicit args win; else every `docs/superpowers/specs/` + `docs/superpowers/plans/` file Added or Modified in the diff (prefer Added; modified-only → degraded); else the latest-only fallback; else reconstruct from the transcript (degraded).
 3. **ANALYZE** — dispatch finder subagents in parallel (see § Finder registry). Built-in finders are spec-adherence + plan-adherence (the wedge → `requirements` dimension; **fanned out one per spec/plan**, each tagging output with `sourceSpec`/`sourcePlan`), correctness, risk-classify, and test-gaps. All emit the same `review-findings` contract; read-only is **enforced at the boundary**.
 4. **VERIFY** — adversarial refute pass. Each candidate finding goes to an independent skeptic agent prompted to **refute** it against real source; only unrefuted findings survive. A finding that **errors mid-verify is kept** as `"unverified — flagged"` — never silently dropped. VERIFY then **dedups** across finders, **ranks**, and **assembles** the survivors into the `review-findings` JSON with within-run-stable ids, and **returns** it. The engine writes nothing.
@@ -60,8 +62,9 @@ one `TaskCreate` per pipeline stage — `setup`\* · `scope` · `intent` · `ana
 its own stages; it hands the engine `taskIds = { scope, intent, analyze, verify }` so the engine flips
 those four as it runs (handed none, the engine is task-silent — its data-only contract is preserved). The
 dispatched finder/verifier subagents are task-blind. It is **in-session visibility only** — no durable
-run-progress, no cross-session resume (a review is single-shot). Only the standalone path tracks;
-orchestrator/compute-only mode creates no list. See `skills/review/references/task-tracking.md`.
+run-progress, no cross-session resume (a review is single-shot). Only the standalone path tracks; a
+programmatic orchestrator drives `lens:engine` directly and hands it no `taskIds`, so no list exists. See
+`skills/review/references/task-tracking.md`.
 
 ## Brain / eyes boundary
 
@@ -81,16 +84,13 @@ lens **reads** the diff + source, **produces** an artifact, and the **human deci
 
 Read-only is **enforced at the finder boundary**: every finder and adapter emits findings only. Adapters that inherit write tools from their source plugin must be explicitly instructed to operate findings-only (see § Finder registry).
 
-**Untrusted intent content.** The intent doc handed to the adherence agents (injected `content` or a read spec/plan file) is wrapped in `<untrusted-user-input>` fences at dispatch (engine `references/pipeline.md` §3) — data, not instructions. Following onboard's *framing, not filtering* model: `\r` is stripped, but content is **not** length-capped (injectedIntent is verbatim by contract) and **not** content-filtered; the read-only finder toolset (`Read/Grep/Glob`) is the backstop.
+**Untrusted intent content.** The intent doc handed to the adherence agents (injected `content` or a read spec/plan file) is wrapped in `<untrusted-user-input>` fences at dispatch (engine `skills/engine/references/pipeline.md` §3) — data, not instructions. Following onboard's *framing, not filtering* model: `\r` is stripped, but content is **not** length-capped (injectedIntent is verbatim by contract) and **not** content-filtered; the read-only finder toolset (`Read/Grep/Glob`) is the backstop.
 
 ## The `review-findings` schema (the contract)
 
 The engine emits, and the renderer consumes, a single canonical contract — `lens/schemas/review-findings.schema.json`. It is a versioned **field-additive superset of vicario's `review-findings.schema.json`**: lens's extra *fields* are additive/optional, so vicario's validator ignores them. **The `dimension` enum is the canonical 9-value shared contract** — vicario's six (`requirements|correctness|security|types|silent-failure|simplify`) plus lens's `test`/`risk`/`comment`. The target is a single shared enum that vicario adopts, so that every dimension will validate in both directions and no mapping layer is needed. **Until vicario widens its own enum to match (a tracked vicario-repo task), a lens finding tagged `test`/`risk`/`comment` will not validate against an un-updated vicario** — so the enum is co-owned and changes are coordinated across both repos.
 
-- **Top-level:** `findings[]`, `recommendedEscalation` (`minor|moderate|major|critical`), `degraded` (bool), `summary` (optional).
-- **Per finding — required:** `id`, `title`, `severity` (`critical|high|medium|low` — exactly vicario's enum; **no `info`**, which is a render-only chip role), `dimension`, `verified` (bool).
-- **Per finding — optional:** `file`, `line`, `votes{total,couldNotRefute,refuted}`, and additive `claim`, `detail`, `suggestedFix`, `source`, `label`, `tags[]`.
-- **`dimension` enum:** vicario's six (`requirements|correctness|security|types|silent-failure|simplify`) **plus** lens additions `test`, `risk`, `comment`.
+The exact field list — top-level, per-finding required/optional, and the `dimension` enum — is not restated here: `lens/schemas/review-findings.schema.json` is the machine contract, and `skills/engine/references/engine-api.md` is the declared programmatic surface it backs.
 
 The alignment invariant is **field-additive only**: never rename, re-type, or repurpose a vicario field; only add optional ones. The `dimension` enum is **co-owned** — its nine values are the shared contract both repos honor; add a new dimension only by updating both schemas in lockstep (never silently in one).
 
@@ -104,7 +104,7 @@ All finders emit the same `review-findings` contract; read-only is enforced at t
 |---|---|---|
 | **Built-in** | ships with lens — spec-adherence + plan-adherence (`requirements`), correctness, risk-classify, test-gaps | Authored findings-only by construction |
 | **Adapter** | optional external tooling, runtime-detected, skipped silently if absent (the 5 read-only adapters below) | Most inherit write tools from their source → MUST be instructed findings-only |
-| **Project-custom** | per-project finders registered in `.claude/lens/settings.md` | Constrained findings-only at the dispatch boundary |
+| **Project-custom** | per-project finders registered in `.claude/lens/settings.md` — experimental — secondary to `injectedFinders` | Constrained findings-only at the dispatch boundary |
 
 ### The 5 read-only adapters (adapter tier)
 
@@ -150,9 +150,9 @@ lens has **three skills**: `review` (user-facing), `engine` (internal), and `ren
 flow; `render-review` is the standalone, orchestrator-facing pure render entrypoint — the externalized
 counterpart that completes the engine/render split for external consumers (vicario/matali).
 
-- `review/SKILL.md` — the one user-facing skill (`/lens:review [target]`). Runs the full pipeline: delegates the 4-stage engine judgment (SCOPE→INTENT→ANALYZE→VERIFY) to `engine`, then owns the remaining 3 stages — `reconcile` → `render` → `report` (the `lens-render` half: review-model → `walkthrough:render` / markdown fallback). 8 harness tasks total (see § In-session task list).
-- `engine/SKILL.md` — **internal** (`user-invocable: false`), data-only judgment core: scope → intent → analyze → verify → dedup → rank → return `review-findings` JSON. Writes nothing, never prompts.
-- `render-review/SKILL.md` — **internal** (`user-invocable: false` — hidden from the user `/` menu, but **model-invocable**: an orchestrator's subagent dispatches it via the Skill tool, so it must NOT carry `disable-model-invocation`), pure/stateless/write-once render entrypoint. Takes an already-computed `review-findings` object (plus optional priorFindings/diffRef/intent), reconciles in-memory, assembles the review-model, renders via `walkthrough:render`, and writes ONLY the caller's `outputPath`. An orchestrator (matali) that owns persistence calls it after `engine`.
+- `skills/review/SKILL.md` — the one user-facing skill (`/lens:review [target]`). Runs the full pipeline: delegates the 4-stage engine judgment (SCOPE→INTENT→ANALYZE→VERIFY) to `engine`, then owns the remaining 3 stages — `reconcile` → `render` → `report` (the `lens-render` half: review-model → `walkthrough:render` / markdown fallback). 8 harness tasks total (see § In-session task list).
+- `skills/engine/SKILL.md` — **internal** (`user-invocable: false`), data-only judgment core: scope → intent → analyze → verify → dedup → rank → return `review-findings` JSON. Writes nothing, never prompts.
+- `skills/render-review/SKILL.md` — **internal** (`user-invocable: false` — hidden from the user `/` menu, but **model-invocable**: an orchestrator's subagent dispatches it via the Skill tool, so it must NOT carry `disable-model-invocation`), the pure/stateless/write-once render entrypoint: it re-runs no finder, re-judges nothing, and writes exactly one file — the caller's. An orchestrator (matali) that owns persistence calls it after `engine`. Its inputs, its three possible returns, and the single path it may write are declared in `skills/engine/references/engine-api.md`.
 - `agents/` — six finder/verifier agent definitions: the **five built-in finder types** (`spec-adherence`, `plan-adherence`, `correctness`, `risk-classify`, `test-gaps`) that each emit `review-findings` tagged with their `dimension` — at runtime the 3 fixed finders run once while `spec-adherence`/`plan-adherence` fan out to one agent per spec / per plan (pipeline §3), plus the **`verifier`** (the adversarial skeptic used by the VERIFY stage, emitting a per-finding refute **vote** `{id, refuted, reason, status}`; the engine aggregates these votes into the schema's `votes{total,couldNotRefute,refuted}` and resolves each finding's `verified` bool). `test-gaps` owns the `test` / missing-test dimension; the `pr-test-analyzer` adapter only covers brittle/overfit.
 
 No hooks, no scripts, no compiled code — consistent with the marketplace's all-markdown + JSON convention.

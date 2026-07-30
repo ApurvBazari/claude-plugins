@@ -49,7 +49,7 @@ You will receive: the **diff** (the changes under review) and access to the sour
       "severity": "medium",
       "dimension": "test",
       "label": "test-gap",
-      "file": "lens/skills/review/SKILL.md",
+      "file": "src/api/handlers.ts",
       "line": 134,
       "claim": "The 'walkthrough absent → markdown fallback' branch is new and untested.",
       "detail": "No test exercises the fallback path, so a regression that breaks markdown rendering would ship silently.",

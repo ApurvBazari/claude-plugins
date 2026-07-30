@@ -32,9 +32,9 @@ every task, leaving none `in_progress` (see Rule 6).
 
 ## Rules
 
-1. **Standalone only.** Only the standalone `/lens:review` path creates and transitions tasks. In
-   **orchestrator / compute-only mode** `review` creates no tasks and passes no `taskIds`, so the engine
-   stays silent — lens remains embeddable.
+1. **Standalone only.** Only the standalone `/lens:review` path creates and transitions tasks. A
+   programmatic orchestrator drives `lens:engine` **directly** and hands it no `taskIds`, so the engine
+   stays task-silent — lens remains embeddable.
 2. **Subjects are display-only.** Nothing parses the subject string; `TaskUpdate` keys on the `taskId`
    returned at creation. Stage order comes from this table and the SKILL step headers, not from any index
    in the subject.
