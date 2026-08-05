@@ -85,9 +85,9 @@ assert_eq "0" "$(run_eval)" "happy path: 0 preserved"
 write_settings "unlimited"
 assert_eq "unlimited" "$(run_eval)" "happy path: unlimited preserved"
 
-# Case 6: happy path — -1 (synonym for unlimited)
+# Case 6: -1 normalizes to unlimited (H6 — display/prune agreement via hf_normalize_retention)
 write_settings "-1"
-assert_eq "-1" "$(run_eval)" "happy path: -1 preserved"
+assert_eq "unlimited" "$(run_eval)" "happy path: -1 normalizes to unlimited"
 
 # Case 7: garbage value collapses to default
 write_settings "bogus"

@@ -29,19 +29,18 @@ Installs the platform backend (`terminal-notifier` via Homebrew on macOS, or `no
 
 ### `/notify:check`
 
-Health check. Reports which scopes have notify installed (global / per-project / both), the current event configuration (sounds, durations, enabled flags), the resolved precedence-merged config that the hook will actually use, and sends a test notification to confirm the wiring works end-to-end.
+Health check. Reports which scopes have notify installed (global / per-project / both) and the current event configuration (sounds, cooldowns, enabled flags) for each. Offers to send a test notification on request.
 
 **When to use:** after editing `notify-config.json` by hand, after changing editors, when notifications stop firing for an unclear reason, or as a sanity check before relying on notify for a long task.
 
 ### `/notify:uninstall` *(destructive — user-invoked only)*
 
-Removes notify hooks from `settings.json`, deletes `notify-config.json`, and offers to uninstall the backend (`terminal-notifier` / `notify-send`) if no other tooling on your machine still uses it.
+Removes notify hooks from `settings.json` and deletes `notify-config.json`. The platform backend (`terminal-notifier` / `notify-send`) is left installed.
 
 **When to use:** decommissioning notify, switching to a richer alternative (see [the root README's notify section](../README.md#notify) for community options), or troubleshooting a broken setup by starting clean.
 
 **Side effects:**
 - Removes hook entries that match notify's command line; **does not** touch unrelated hooks in the same `settings.json`.
-- Asks before uninstalling the backend — won't auto-remove `terminal-notifier` if other tools depend on it.
 - Per-project uninstall does not affect global config, and vice versa — they're independent scopes.
 
 ## Hook event model
@@ -50,7 +49,7 @@ Three notification events, each independently configurable:
 
 | Event | When | Default |
 |---|---|---|
-| `stop` | Claude finishes a response | Enabled · `Hero` sound · `minDurationSeconds: 30` |
+| `stop` | Claude finishes a response | Enabled · `Hero` sound · `minDurationSeconds: 0` (no cooldown) |
 | `notification` | Claude needs user attention | Enabled · `Glass` sound · `minDurationSeconds: 0` |
 | `subagentStop` | A subagent finishes work | Disabled (too noisy) |
 
@@ -58,7 +57,7 @@ Notification content is extracted from Claude's actual last message — not gene
 
 ## Example
 
-`/notify:setup` on macOS, then a Stop hook firing in two scenarios — one suppressed by the duration filter, one delivered:
+`/notify:setup` on macOS with a `30`-second cooldown set on `stop`, then two Stop hooks close together — the second suppressed by the cooldown, the first delivered:
 
 ```
 > /notify:setup
@@ -84,14 +83,9 @@ Sending test notification … ✓
 
 Setup complete. Edit ~/.claude/notify-config.json anytime — changes take effect immediately.
 
-# ── short task: "fix typo in README" ────────
+# ── first stop fires ────────────────────────
 [Stop hook fires]
-[notify.sh: elapsed 4s < 30s threshold → silently skip]
-(no notification — duration filter suppressed)
-
-# ── long task: 12-minute refactor ───────────
-[Stop hook fires]
-[notify.sh: elapsed 743s ≥ 30s → notify]
+[notify.sh: no recent notification → notify; cooldown clock starts]
 
   ┌──────────────────────────────────────┐
   │ Claude Code                          │
@@ -100,6 +94,11 @@ Setup complete. Edit ~/.claude/notify-config.json anytime — changes take effec
   └──────────────────────────────────────┘
 
   Sound: Hero · Click brings VS Code to front
+
+# ── second stop, 8s later ───────────────────
+[Stop hook fires]
+[notify.sh: 8s < 30s cooldown → silently skip]
+(no notification — within the cooldown window)
 ```
 
 ## Install scopes
@@ -117,17 +116,9 @@ Both scopes can coexist — per-project hooks add to global, they don't replace.
 
 Settings live in `notify-config.json` within the chosen scope directory. Edit the file directly — changes take effect immediately, no need to re-run `/notify:setup`. The only setting that requires re-running setup is the `Notification` matcher (which is in `settings.json`, not `notify-config.json`).
 
-### Precedence (project-local inherits + overrides global)
+### Scope resolution
 
-When both `~/.claude/notify-config.json` and `<project>/.claude/notify-config.json` exist:
-
-1. The project-local config **inherits all keys from the global config**.
-2. Keys explicitly set in the project-local config **override** the global value.
-3. Keys absent from the project-local config **fall back** to the global value.
-
-Example — global has `events.stop.sound = "Glass"` and `events.stop.minDurationSeconds = 5`. Project-local sets only `events.stop.message = "Build complete"`. The merged behaviour at runtime is `{ sound: "Glass", minDurationSeconds: 5, message: "Build complete" }`.
-
-This precedence is applied at notify-setup time when project-local is being written; the runtime hook (`notify.sh`) reads only the project-local file when present, falling back to global only when no project-local file exists at all.
+The runtime hook reads exactly one config: the **project-local** `notify-config.json` when it exists, otherwise the **global** one. There is no key-level merge between scopes — each scope's config stands alone. To change project behaviour, edit that project's `notify-config.json`; to change the default everywhere, edit the global one.
 
 ## Customisation
 
@@ -137,11 +128,11 @@ Per event you can configure:
 - **Sound** — Hero, Glass, Ping, Purr, Pop, Submarine, and more (macOS); urgency level (Linux)
 - **App to activate** — VS Code, Cursor, Terminal, iTerm2, or none (macOS click-to-focus)
 - **Enabled / disabled** — toggle any event without re-running setup
-- **`minDurationSeconds` (duration filter)** — suppress this event if the elapsed time since last activity is below the threshold. Tracks last activity in a temp file (`$TMPDIR/claude-notify-session-start`). Useful when you want notifications only for substantive work — set `30` on `stop` and short typo fixes won't notify; long refactors will. Leave `0` on `notification` so attention prompts always fire.
+- **`minDurationSeconds` (notification cooldown)** — a leading-edge cooldown. After a `stop`/`subagentStop` notification fires, further ones are suppressed until this many seconds have elapsed since the one that fired — so at most one notification per `N` seconds. The cooldown clock is tracked per session in a temp file (`$TMPDIR/claude-notify-session-<id>`, or a per-user key when no session id is available). Default `0` (no cooldown). `notification` events are never cooldown-filtered, so attention prompts always fire.
 
 ## Platform support
 
-| Platform | Backend | Sound | Click-to-focus | Duration filter |
+| Platform | Backend | Sound | Click-to-focus | Cooldown |
 |---|---|---|---|---|
 | macOS | `terminal-notifier` | 14 system sounds | Yes (bundle ID) | Yes |
 | Linux | `notify-send` (libnotify) | Urgency levels only | No | Yes |

@@ -1,5 +1,35 @@
 # Changelog
 
+## 1.4.0 — 2026-07-18
+
+### Changed
+- **Single-sourced the render pipeline.** `create`, `update`, `document`, and the plugin `CLAUDE.md` now defer to `render/references/render-contract.md` for the shared render behavior instead of restating it, closing the drift surface between the four render-pipeline callers.
+- **Collapsed duplicate concept-routing rows.** `concept-coverage.md` is now the single routing table; the parallel concept-routing rows that had drifted alongside it are gone.
+- **Dropped the `concepts[]` ledger + N/M/F/K coverage line.** The anti-force-fit invariant is re-anchored at selection time (`select` stage) instead of being tracked through a standing per-model ledger and summary line.
+- **Single-sourced base CSS in `page-scaffold.md`.** `design-system.md`'s re-embedded copy of the base CSS is dropped (it now defers to `page-scaffold.md` as the base-CSS home); `seed.html`'s copy is reconciled against that single source and reframed as a standalone demo snapshot (kept as a rendered example, no longer cited as a base-CSS source).
+- Fixed the `CLAUDE.md` gate-skill-count qualifier.
+
+### Added
+- **W9 keyboard operability.** Every `role="button"` interactive now activates on Enter/Space, not pointer-only.
+- A new `test_doc_contracts.sh` guard.
+
+## 1.3.1 — 2026-07-06
+
+### Fixed
+- **Failure architecture (W1/W2):** author-variable detail data moves to an inert `<script type="application/json" id="wt-data">` island (parsed at runtime); every executable `<script>` is now fixed boilerplate that can't `SyntaxError` from authoring. Section visibility is gated on an `html.js` class the script adds first, with a 2.5s failsafe reveal — a data typo, a handler bug, or JS being off can no longer blank the document. Escaping is now by construction (`JSON.stringify`), validated by `node --check` in the belt.
+- **W3** card details call `openSurface` (not the `openCard` router-bypass). **W4** docs no longer claim sheet-kind details live in `DET` (they are pre-rendered `{{SHEETS}}` dialogs). **W5** `update`/`document` honor the persisted output base. **W7** removed the non-existent `--space-*` token reference; clarified the repo-local ask-guard reference; documented the `typeTags`→hero-chip recipe.
+- `update` reconstructs the new JSON-island layout and still upgrades structured (1.1.0–1.3.0) and flat (pre-1.1.0) documents.
+
+## 1.3.0 — 2026-07-03
+
+### Added
+- **Layered, cycle-aware ERD.** The schema/data-model renderer now places entities in dependency-depth bands (referenced on top, junctions at the bottom), anchors each relationship on its FK field row (`→ Target.field · cardinality`), lists every edge in a relationship summary, and draws one connector on hover/focus. Handles cycles (mutual FKs → marked back-edge) and self-references (self-loop) via break-and-mark. Self-contained: no standing overlay, no resize/theme/print listeners.
+- **Navigable relationship summary.** Each entity name in a `.rels` summary row is an `openSurface` target (the row itself no longer presents a misleading pointer), so the summary is pointer-navigable to its endpoints; activating an endpoint link needs a pointer (the `.e` spans carry no `tabindex`/`role`), while the always-visible summary text stays the print / no-hover reading channel. Summary→entity star links only — never entity→entity — so the `openSurface` graph stays acyclic (#14).
+
+### Changed
+- self-check #18 carves out the ERD (data-model cycles are rendered, not routed to a state diagram).
+- `.erd` (flat) retained as a back-compat alias for pre-1.3.0 docs.
+
 ## 1.2.1 — 2026-06-21
 
 ### Fixed

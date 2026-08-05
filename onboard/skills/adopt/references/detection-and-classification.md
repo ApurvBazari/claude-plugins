@@ -31,7 +31,7 @@ Run these BEFORE recon:
    Stop. (When `adopt` was entered from `update`'s guard, this case cannot occur — update's guard only routes here when tooling was detected.)
 2. **`.claude/onboard-meta.json` already present** → this repo is already onboard-managed. Redirect:
    > This project is already managed by onboard (`.claude/onboard-meta.json` found). Run `/onboard:update` to align it with the latest best practices.
-   Stop. (Adopt is only for *foreign* tooling.) Exception: a `mode:"stub-empty-repo"` meta is not a real baseline — treat it as adoptable only if real source + tooling now exist; otherwise prefer `/onboard:start` (stub auto-promote). In practice, redirect stub repos to `/onboard:start`.
+   Stop. (Adopt is only for *foreign* tooling.) Exception: a `mode:"stub-empty-repo"` meta is not a real baseline — treat it as adoptable only if real source + tooling now exist; otherwise prefer `/onboard:start`. In practice, redirect stub repos to `/onboard:start`.
 
 ## Output (in-context, not written)
 

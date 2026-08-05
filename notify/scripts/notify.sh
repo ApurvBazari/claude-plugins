@@ -16,16 +16,6 @@ esac
 
 BASE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 CONFIG_FILE="$BASE_DIR/notify-config.json"
-# User-scoped timestamp file — prevents symlink attacks at a predictable shared path.
-TIMESTAMP_FILE="${TMPDIR:-/tmp}/claude-notify-session-start-${UID:-$(id -u)}"
-
-# Defensive: if another process (or attacker on a world-writable $TMPDIR) has
-# pre-created the path as a symlink, named pipe, or other non-regular file,
-# refuse to reuse it. Delete it and let the normal write create a fresh file.
-# Note: [[ -f ]] follows symlinks, so we test [[ -L ]] first to catch them.
-if [[ -L "$TIMESTAMP_FILE" ]] || { [[ -e "$TIMESTAMP_FILE" ]] && [[ ! -f "$TIMESTAMP_FILE" ]]; }; then
-  rm -f "$TIMESTAMP_FILE" 2>/dev/null
-fi
 
 # --- Detect platform ---
 PLATFORM="unknown"
@@ -50,7 +40,14 @@ try:
     val = data
     for k in keys:
         val = val[k]
-    print(val if val is not None else '')
+    if val is None:
+        print('')
+    elif val is True:
+        print('true')
+    elif val is False:
+        print('false')
+    else:
+        print(val)
 except Exception:
     print('')
 " "$path" 2>/dev/null)"
@@ -63,6 +60,33 @@ except Exception:
     echo "$result"
   fi
 }
+
+# --- Read stdin JSON early (Claude Code passes hook context via stdin) ---
+# Read once, up front, so the cooldown timestamp can be keyed per session.
+STDIN_JSON=""
+if ! [[ -t 0 ]]; then
+  STDIN_JSON="$(cat)"
+fi
+
+# --- Per-session cooldown timestamp file ---
+# Key by the hook's session_id when present so concurrent Claude sessions keep
+# independent cooldown clocks; fall back to a per-user key otherwise (N2).
+# Sanitize the id to a safe filename fragment.
+SESSION_ID="$(json_get "$STDIN_JSON" ".session_id")"
+if [[ -n "$SESSION_ID" ]]; then
+  SESSION_KEY="session-$(printf '%s' "$SESSION_ID" | tr -c 'A-Za-z0-9._-' '_')"
+else
+  SESSION_KEY="uid-${UID:-$(id -u)}"
+fi
+TIMESTAMP_FILE="${TMPDIR:-/tmp}/claude-notify-${SESSION_KEY}"
+
+# Defensive: if another process (or attacker on a world-writable $TMPDIR) has
+# pre-created the path as a symlink, named pipe, or other non-regular file,
+# refuse to reuse it. Delete it and let the normal write create a fresh file.
+# Note: [[ -f ]] follows symlinks, so we test [[ -L ]] first to catch them.
+if [[ -L "$TIMESTAMP_FILE" ]] || { [[ -e "$TIMESTAMP_FILE" ]] && [[ ! -f "$TIMESTAMP_FILE" ]]; }; then
+  rm -f "$TIMESTAMP_FILE" 2>/dev/null
+fi
 
 # --- Read config ---
 ENABLED="true"
@@ -101,9 +125,10 @@ if [[ "$ENABLED" = "false" ]]; then
   exit 0
 fi
 
-# --- Duration filtering ---
-# Record timestamp on stop events for future duration checks.
-# On stop/subagentStop: check elapsed time since last prompt or session start.
+# --- Notification cooldown (leading-edge): suppression check ---
+# On stop/subagentStop, suppress the notification if fewer than MIN_DURATION
+# seconds have elapsed since the last FIRED notification (the clock recorded in
+# TIMESTAMP_FILE, refreshed below only for events that actually fire).
 NOW_EPOCH="$(date +%s 2>/dev/null || echo 0)"
 
 if [[ "$EVENT" = "stop" ]] || [[ "$EVENT" = "subagentStop" ]]; then
@@ -116,30 +141,28 @@ if [[ "$EVENT" = "stop" ]] || [[ "$EVENT" = "subagentStop" ]]; then
     if [[ "$START_EPOCH" =~ ^[0-9]+$ ]] && [[ "$NOW_EPOCH" =~ ^[0-9]+$ ]]; then
       ELAPSED=$((NOW_EPOCH - START_EPOCH))
       if [[ "$ELAPSED" -lt "$MIN_DURATION" ]]; then
-        # Response was too fast — skip notification
+        # Within the cooldown window — suppress this notification
         exit 0
       fi
     fi
   fi
 fi
 
-# Update timestamp on every event (tracks last activity).
-# Atomic write: create in a sibling temp file, then rename. Closes the TOCTOU
-# window between the symlink guard above and the write — even if an attacker
-# drops a symlink at $TIMESTAMP_FILE after the check, the rename replaces the
-# directory entry atomically and never writes through the symlink.
+# Refresh the cooldown clock — reached ONLY past the suppression `exit 0` above,
+# so only events that actually FIRE refresh it. This makes the cooldown
+# leading-edge: "at most one notification per N seconds since the last fired one."
+# Suppressed events deliberately do NOT refresh it. Moving this block above the
+# suppression exit would silently make the cooldown trailing-edge — a fork
+# violation (see spec 2026-07-02 §6a). Atomic write: create a sibling temp file,
+# then rename. Closes the TOCTOU window between the symlink guard above and the
+# write — even if an attacker drops a symlink at $TIMESTAMP_FILE after the check,
+# the rename replaces the directory entry atomically and never writes through it.
 if tmp="$(mktemp "${TIMESTAMP_FILE}.XXXXXX" 2>/dev/null)"; then
   if echo "$NOW_EPOCH" > "$tmp" 2>/dev/null; then
     mv -f "$tmp" "$TIMESTAMP_FILE" 2>/dev/null || rm -f "$tmp" 2>/dev/null
   else
     rm -f "$tmp" 2>/dev/null
   fi
-fi
-
-# --- Read stdin JSON (Claude Code passes context via stdin) ---
-STDIN_JSON=""
-if ! [[ -t 0 ]]; then
-  STDIN_JSON="$(cat)"
 fi
 
 # --- Extract contextual message ---
@@ -189,12 +212,13 @@ fi
 # --- Send notification (platform-specific) ---
 if [[ "$PLATFORM" = "macos" ]]; then
   if command -v terminal-notifier &>/dev/null; then
-    terminal-notifier \
-      -title "$TITLE" \
-      -subtitle "$SUBTITLE" \
-      -message "$MESSAGE" \
-      -sound "$SOUND" \
-      -activate "$ACTIVATE"
+    # Build args so a config value of "none" omits the flag entirely — this is
+    # how a user turns OFF the sound or click-to-focus app (N3). (The -n guard is
+    # defensive; an empty/absent value falls back to the default above, not omission.)
+    tn_args=( -title "$TITLE" -subtitle "$SUBTITLE" -message "$MESSAGE" )
+    [[ -n "$SOUND"    && "$SOUND"    != "none" ]] && tn_args+=( -sound "$SOUND" )
+    [[ -n "$ACTIVATE" && "$ACTIVATE" != "none" ]] && tn_args+=( -activate "$ACTIVATE" )
+    terminal-notifier "${tn_args[@]}"
   fi
 elif [[ "$PLATFORM" = "linux" ]]; then
   if command -v notify-send &>/dev/null; then

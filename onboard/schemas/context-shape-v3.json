@@ -1,0 +1,124 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/ApurvBazari/claude-plugins/onboard/schemas/context-shape-v3.json",
+  "title": "Onboard Generate — v3 Context Shape",
+  "description": "The single documented source for the internal-generation context object that onboard:start builds and onboard:generate (Step 0) validates. v3 is the ONLY accepted shape (the v2 external-caller API was removed in 3.0.0). The context is the internal v1-shaped object (version:3 + analysis + wizardAnswers + enriched + modelChoice + ecosystemPlugins + callerExtras + an OPTIONAL top-level `research` object, canonical shape: onboard/schemas/research-dossier.json) that generate and config-generator consume directly. There is no `phases` block and no inheritance from a v2 schema. v1 and v2 are rejected. This schema is DESCRIPTIVE and deliberately permissive: `required[]` is only [version, source, projectPath, callerExtras] and `additionalProperties` is true at every level, because generate Step 0 validates the REAL runtime context against it — the added property definitions below document the full shape while leaving `required[]` and `additionalProperties` untouched, so every well-formed context is accepted exactly as before. (Naming a property is not free of effect: a named key with a declared type is checked against that type, whereas `additionalProperties:true` only waves through keys this schema does NOT name. So a malformed value under a now-named key — e.g. `analysis` as a string — rejects where it previously slipped past. No well-formed context is affected, and that is pinned by evidence rather than asserted: schemas/examples/ carries a positive fixture per generate caller — start, update's `regenerateOnly` re-emit, and evolve's `reResearch` regen — so a re-narrowing of any named key fails check-schemas.py.) Deep per-event shapes for callerExtras.qualityGates are specified in generate/references/quality-gates-semantics.md and generation/SKILL.md; callerExtras.phaseSkills is derived per ../skills/generation/references/plugins/plugin-detection-guide.md § phaseSkills Derivation. Both are typed only as objects here. NOTE: `research` is OPTIONAL here; generate makes it required for a full generation (and exempt for callerExtras.regenerateOnly re-emits) at runtime — see generate/SKILL.md Step 0.1.",
+  "type": "object",
+  "required": ["version", "source", "projectPath", "callerExtras"],
+  "additionalProperties": true,
+  "properties": {
+    "version": {
+      "const": 3,
+      "description": "Schema version. HARD-REQUIRED and the only accepted value. v1 and v2 are rejected."
+    },
+    "source": { "type": "string", "minLength": 1, "description": "Identifier of the calling plugin, e.g. 'onboard:start'." },
+    "projectPath": { "type": "string", "description": "Absolute path to the project root." },
+    "analysis": {
+      "type": "object",
+      "description": "Phase 1 Recon report — the structured codebase analysis (structure, stack, complexity, configs) that config-generator consumes. Populated by onboard:start's recon; the full field shape is documented in the codebase-analyzer agent. OPTIONAL at the schema level and left permissive (additionalProperties:true, no nested required)."
+    },
+    "wizardAnswers": {
+      "type": "object",
+      "description": "Phase 3 Grounded Wizard canonical output (projectDescription, teamSize, autonomyLevel, testingPhilosophy, hook/skill/agent tuning, lspPlugins, builtInSkills, painPoints, …). Canonical shape: wizard/SKILL.md § Canonical Output. OPTIONAL at the schema level and left permissive."
+    },
+    "modelChoice": {
+      "type": "string",
+      "description": "Resolved default model identifier for generated skill/agent frontmatter, e.g. 'sonnet' | 'opus' | 'haiku' or a pinned model id. Resolved per start SKILL.md § model-resolution. OPTIONAL."
+    },
+    "ecosystemPlugins": {
+      "type": "object",
+      "description": "Ecosystem-plugin opt-ins copied from wizardAnswers.ecosystemPlugins, e.g. { notify: boolean }. OPTIONAL; left permissive."
+    },
+    "enriched": {
+      "type": "object",
+      "description": "Enriched-tier generation toggles + settings (enableCICD, enableHarness, enableEvolution, enableSprintContracts, enableTeams, enableVerification, willDeploy, ciAuditAction, prReviewTrigger, autoEvolutionMode, verificationStrategy, deployTarget). OPTIONAL; left permissive."
+    },
+    "callerExtras": {
+      "type": "object",
+      "description": "Opaque extra context passed through from the caller. Only its presence (as an object) is required; every sub-key below is OPTIONAL and the object is left permissive (additionalProperties:true).",
+      "properties": {
+        "installedPlugins": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Plugin names the caller detected as installed. Absent → generate probes the filesystem itself (plugin-drift-detection.md § Probe Procedure)."
+        },
+        "coveredCapabilities": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Capabilities already covered by installed plugins; agent generation skips these."
+        },
+        "pluginSurfaces": {
+          "type": "object",
+          "description": "Entry-surface classification keyed by plugin name — each plugin tagged command-or-skill / hooks-only / agent-only. Consumed by the Plugin Integration template to prevent fabricated slash refs for plugins that expose no slash surface (release-gate finding G.3, 2026-04-17). Built by start's Phase 4 surface probe; generate re-probes when this key is absent. Canonical shape + probe procedure: generation/references/plugins/plugin-surface-probe.md. Typed only as an object here (left permissive)."
+        },
+        "allowPluginReferences": {
+          "type": "boolean",
+          "description": "Permit rules/skills to reference installed plugins instead of duplicating guidance. Defaults to true when installedPlugins is non-empty."
+        },
+        "allowHttpHooks": {
+          "type": "boolean",
+          "description": "OFF by default. When false, any qualityGates entry with hookType='http' is refused (skip reason 'http-not-opted-in'). Never auto-inferred."
+        },
+        "disableMCP": {
+          "type": "boolean",
+          "description": "SKIP-PHASE family — when true, skip emission Step 1 (MCP) entirely. Telemetry still records mcpStatus:'skipped'."
+        },
+        "disableLSP": {
+          "type": "boolean",
+          "description": "SKIP-PHASE family — when true, skip emission Step 3 (LSP plugins) entirely. Telemetry still records lspStatus:'skipped'."
+        },
+        "disableBuiltInSkills": {
+          "type": "boolean",
+          "description": "SKIP-PHASE family — when true, skip emission Step 4 (built-in skills) entirely. Telemetry still records builtInSkillsStatus:'skipped'."
+        },
+        "disableSkillTuning": {
+          "type": "boolean",
+          "description": "SUPPRESS-PROMPT family — when true, suppress the per-skill batched confirmation; skill files + snapshot ARE still emitted."
+        },
+        "disableAgentTuning": {
+          "type": "boolean",
+          "description": "SUPPRESS-PROMPT family — when true, suppress the per-agent batched confirmation; agent files + snapshot ARE still emitted."
+        },
+        "disableOutputStyleTuning": {
+          "type": "boolean",
+          "description": "SUPPRESS-PROMPT family — when true, suppress the emission Step 2 output-style confirmation; style file + snapshot ARE still emitted."
+        },
+        "lspPlugins": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Explicit accepted marketplace LSP plugin names for emission Step 3. Empty array = 'detected but declined all'; absent = wizard-driven or full-detected default."
+        },
+        "builtInSkills": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Explicit accepted built-in Claude Code skill names for emission Step 4. Empty array = 'candidates existed but declined all'; absent = wizard-driven or full-candidate default."
+        },
+        "regenerateOnly": {
+          "type": ["array", "boolean"],
+          "items": { "type": "string" },
+          "description": "Snapshot re-emit marker AND scope. Canonically an ARRAY of the artifact paths to re-emit — generate honors the scope and writes only the listed files; this is the form every documented caller builds (update/references/drift-application.md § Artifact gap regeneration is the authoritative construction, and the per-component missing-file steps in update/evolve all use it). A bare boolean is also accepted because Step 0.1 tests this key for TRUTHINESS only, never for a path list. When truthy (a non-empty array included), generate's Step 0.1 research contract is exempt (research may be absent) and a present research object is NOT consumed. See generate/SKILL.md Step 0.1."
+        },
+        "qualityGates": {
+          "type": "object",
+          "description": "Boundary-enforcement hook spec keyed by event (sessionStart/preCommit/featureStart/postFeature + the nine advanced events). Onboard translates these into .claude/settings.json hook entries. The deep per-event ENTRY shape and the per-entry hookType/aux fields + validation rules are specified in generate/references/quality-gates-semantics.md § qualityGates semantics and generation/references/emission/hooks-generation.md § Hook Type Validation — typed only as an object here (left permissive) to keep validation behavior unchanged."
+        },
+        "phaseSkills": {
+          "type": "object",
+          "description": "Per-phase recommended skills (research/planning/feature/review/commit/post-phase) for multi-phase builds, used to compose Plugin Integration narrative + subdir skill annotations. Derivation rules: ../skills/generation/references/plugins/plugin-detection-guide.md § phaseSkills Derivation — typed only as an object here (left permissive)."
+        },
+        "reResearch": {
+          "type": "object",
+          "description": "v3 re-research marker. Present ONLY on a re-research regen built by onboard:update / onboard:evolve — signals config-generator to run the merge-aware regen path (customization floor + marker surgery + progress-preserving backlog merge). Absent on first onboard and on regenerateOnly snapshot replays. Does NOT change generate Step 0.1 validation.",
+          "properties": {
+            "dimensions": { "type": "array", "items": { "type": "string" }, "description": "the research dimensions refreshed this run (scoped set), or all in-roster dims when escalated" },
+            "escalatedToFull": { "type": "boolean", "description": "true when the tiered escalation rule promoted a scoped re-research to full" }
+          }
+        }
+      }
+    },
+    "research": {
+      "type": "object",
+      "description": "Optional synthesized research object. Canonical shape: onboard/schemas/research-dossier.json."
+    }
+  }
+}

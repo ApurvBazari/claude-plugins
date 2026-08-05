@@ -7,7 +7,7 @@
     { "path": ".claude/settings.json", "action": "merge", "purpose": "Add format + lint hooks", "tier": "core", "origin": "generated" }
   ],
   "decisions": {
-    "model": "claude-opus-4-7[1m]",
+    "model": "claude-opus-4-8[1m]",
     "autonomy": "balanced",
     "profile": "comprehensive",
     "hooks": ["format", "lint"],

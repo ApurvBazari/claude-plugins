@@ -46,7 +46,7 @@ You will receive: the **diff** (the changes under review) and access to the surr
       "severity": "high",
       "dimension": "silent-failure",
       "label": "silent-failure",
-      "file": "lens/skills/review/SKILL.md",
+      "file": "src/api/handlers.ts",
       "line": 211,
       "claim": "catch block is empty; a walkthrough:render error is discarded silently",
       "detail": "On render failure the engine returns success with no artifact, hiding the failure from the user.",

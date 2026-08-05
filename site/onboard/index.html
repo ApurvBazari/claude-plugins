@@ -150,7 +150,7 @@ section.vis{opacity:1;transform:none;}
       <a href="#example">Example</a>
     </div>
     <div style="display:flex;align-items:center;gap:.8rem">
-      <div class="nav-meta"><span class="dot"></span> PLUGIN · v3.0.0</div>
+      <div class="nav-meta"><span class="dot"></span> PLUGIN · v3.1.1</div>
       <button class="theme-btn" onclick="tgl()">◑ THEME</button></div>
   </div></nav>
   <div class="progress" id="prog"></div>
@@ -171,9 +171,9 @@ section.vis{opacity:1;transform:none;}
       </div>
       <p style="margin-top:.6rem;font-size:.84rem">Then run <code>/onboard:start</code> to launch the grounded, research-first guided workflow.</p>
       <div class="hstats">
-        <div class="hstat"><div class="v"><em>7</em></div><div class="l">skills</div></div>
-        <div class="hstat"><div class="v">7</div><div class="l">start phases</div></div>
-        <div class="hstat"><div class="v"><em>3</em></div><div class="l">agents</div></div>
+        <div class="hstat"><div class="v"><em>10</em></div><div class="l">skills</div></div>
+        <div class="hstat"><div class="v">8</div><div class="l">start phases</div></div>
+        <div class="hstat"><div class="v"><em>5</em></div><div class="l">agents</div></div>
         <div class="hstat"><div class="v">3</div><div class="l">research profiles</div></div>
         <div class="hstat"><div class="v"><em>0</em></div><div class="l">CDN deps</div></div>
       </div>
@@ -234,8 +234,8 @@ section.vis{opacity:1;transform:none;}
 
     <section id="skills">
       <div class="sec-label">05 — reference</div>
-      <h2>Seven <em>skills</em>, three agents</h2>
-      <p class="lede">All skills use the <code>/onboard:&lt;name&gt;</code> slash syntax. Read-only helpers can auto-invoke; the three destructive entry points require explicit invocation; <code>generate</code> is an internal step hidden from the menu.</p>
+      <h2>Ten <em>skills</em>, five agents</h2>
+      <p class="lede">The six user-facing skills use the <code>/onboard:&lt;name&gt;</code> slash syntax. Read-only helpers can auto-invoke; the three destructive entry points — <code>start</code>, <code>update</code>, and <code>adopt</code> — require explicit invocation; the four internal steps are hidden from the menu entirely.</p>
       <table class="ref-table">
         <thead><tr><th>Skill</th><th>Invocation</th><th>What it does</th></tr></thead>
         <tbody>
@@ -246,6 +246,9 @@ section.vis{opacity:1;transform:none;}
           <tr><td class="slash">/onboard:verify</td><td><span class="tag auto">auto</span></td><td>Independent feature verification — spawns the feature-evaluator agent in worktree isolation to test features against <span class="cell-mono">docs/feature-list.json</span>. Single-feature, sprint, or all-incomplete modes.</td></tr>
           <tr><td class="slash">/onboard:check</td><td><span class="tag auto">auto</span></td><td>Quick health check — last run date, generated artifacts, integrity status, and recommendations.</td></tr>
           <tr><td class="slash">/onboard:generate</td><td><span class="tag hidden-int">internal</span></td><td>Internal generation step invoked by <code>start</code> / <code>update</code> / <code>evolve</code>. Consumes the v3 context; <span class="cell-mono">mode:plan</span> computes the manifest for the gate without writing, <span class="cell-mono">mode:write</span> runs the full pipeline.</td></tr>
+          <tr><td class="slash">research</td><td><span class="tag hidden-int">internal</span></td><td>The v3 research engine. Fans out one read-only specialist per dimension, adversarially verifies every claim against the codebase, then synthesizes the canonical research dossier the generation step consumes. Claims that cannot be proven are dropped, not softened.</td></tr>
+          <tr><td class="slash">wizard</td><td><span class="tag hidden-int">internal</span></td><td>The adaptive Q&amp;A flow that gathers developer preferences during <code>start</code>. A building block, never invoked on its own.</td></tr>
+          <tr><td class="slash">generation</td><td><span class="tag hidden-int">internal</span></td><td>Shared generation building block backing <code>generate</code> — the artifact recipes the config-generator agent writes from.</td></tr>
         </tbody>
       </table>
       <p style="margin-top:1rem">Three agents do the heavy lifting: the <strong>codebase-analyzer</strong> (read-only recon), the <strong>config-generator</strong> (writes all artifacts from the v3 context), and the <strong>feature-evaluator</strong> (independent feature testing, spawned by <code>verify</code>).</p>
@@ -379,7 +382,7 @@ Snapshot updated. AI configs realigned to current code.</code></pre>
         <a href="../">← marketplace</a>
         <a href="https://github.com/ApurvBazari/claude-plugins/tree/main/onboard">source on GitHub</a>
       </div>
-      <div class="meta">onboard · v3.0.0 · MIT · by Apurv Bazari</div>
+      <div class="meta">onboard · v3.1.1 · MIT · by Apurv Bazari</div>
     </div>
   </main>
   <aside class="panel" id="panel"><span class="x" onclick="closeD()">✕</span>

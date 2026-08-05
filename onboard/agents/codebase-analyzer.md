@@ -24,9 +24,9 @@ You will receive the project root path as input. Follow these steps:
 
 Gather baseline facts with the native tools only (NO shell scripts — recon is script-free in v3):
 
-- **Stack** — Glob for manifest/lockfiles (`package.json`, `go.mod`, `Cargo.toml`, `pyproject.toml`, `pom.xml`, `Gemfile`, …) and Read them for languages, frameworks, and exact versions. Apply the matching logic in `../skills/analysis/references/tech-stack-patterns.md`.
+- **Stack** — Glob for manifest/lockfiles (`package.json`, `go.mod`, `Cargo.toml`, `pyproject.toml`, `pom.xml`, `Gemfile`, …) and Read them for languages, frameworks, and exact versions. Apply the matching logic in `references/tech-stack-patterns.md`.
 - **Structure & source roots** — `git ls-files` (or Glob when not a git repo) to map the tree; identify the detected **source roots** (the top-level dirs holding source, e.g. `src/`, `lib/`, `cmd/`, `pkg/`). Record them as `detectedRoots`.
-- **Complexity** — count source files and lines via Glob + `wc -l`; derive the score/category using `../skills/analysis/references/model-recommendations.md` logic.
+- **Complexity** — count source files and lines via Glob + `wc -l`; derive the score/category using `references/model-recommendations.md` logic.
 - **Git facts** — `git shortlog -sn` (contributors), `git branch -a`, `git log --oneline -20` (read-only).
 
 You are read-only: only Read/Glob/Grep and read-only Bash (`git`, `wc`, `ls`).
@@ -37,7 +37,7 @@ Go beyond recon. Read key configuration files to understand:
 
 - **Exact dependency versions** — Read `package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml` etc.
 - **Build configuration** — Read `tsconfig.json`, `webpack.config.*`, `vite.config.*`, `next.config.*` etc.
-- **Linting/formatting config presence** — note `.eslintrc.*`, `.prettierrc`, `biome.json`, `pyproject.toml [tool.ruff]` etc.
+- **Linting/formatting config presence** — note `.eslintrc.*`, `.prettierrc`, `biome.json`, `pyproject.toml [tool.ruff]` etc. Follow `references/config-extraction-guide.md` for the full per-ecosystem config file map and extraction detail.
 - **Testing config presence** — note `jest.config.*`, `vitest.config.*`, `pytest.ini`, `conftest.py` etc.
 - **CI/CD pipeline presence** — note `.github/workflows/*.yml`, `.gitlab-ci.yml` etc.
 

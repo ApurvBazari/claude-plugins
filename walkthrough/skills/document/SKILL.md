@@ -32,18 +32,19 @@ Run `../create/references/completeness.md` Part 1 against the subject before sel
 Fold omitted salient items in; note intentional omissions for the coverage note.
 
 ## Step 5: Select components
-Using `../create/references/authoring-guide.md`, map the model to component names, then look each up
-in `../create/references/components/index.md` for its group file. Apply "omit empty, never stub".
-For the marketplace card grid (and anything else with no catalog entry), compose a bespoke component
-per the authoring-guide recipe + looks-native checklist.
+Run the shared **select** stage of `../render/references/render-contract.md`: using
+`../create/references/authoring-guide.md`, map the model to component names, then look each up in
+`../create/references/components/index.md` for its group file; apply "omit empty, never stub". For the
+marketplace card grid (and anything else with no catalog entry), compose a bespoke component per the
+authoring-guide recipe + looks-native checklist.
 
 ## Step 6: Assemble the HTML
-Start from `../create/references/page-scaffold.md`. Inline: the `@import` + both `:root` blocks from
-`design-system.md`; the shared JS from `interactivity.md`; the CSS+HTML for each chosen component
-(read only the `components/<group>.md` files for components you selected); the `DET`/detail data.
-Self-contained: no `<script src>`, no `<link rel=stylesheet>`, no `<img>` — only the one Google
-Fonts `@import`. Internal links MUST be relative (`./onboard/`, `../`) — never root-absolute.
-Generate `{{NAV_LINKS}}` deterministically from `sections[]` (one `<a href="#id">` per section, id reused from the section; first link `class="on"`) — do not hand-write or hand-match ids.
+Assemble per the shared **assemble** stage of `../render/references/render-contract.md` — the single
+canonical source for the select→assemble→self-check→write mechanics (copy
+`../create/references/page-scaffold.md` verbatim, fill its component slots from the selected recipes,
+inline `../create/references/interactivity.md`, emit the inert `{{DATA_JSON}}` island, generate
+`{{NAV_LINKS}}` deterministically; self-contained, only the one Google Fonts `@import`).
+**Document-specific:** internal links MUST be relative (`./onboard/`, `../`) — never root-absolute.
 
 **Rebrand the scaffold chrome.** The page-scaffold ships session-doc branding (the `◆ walk·through`
 nav logo and a `— walkthrough` `<title>` suffix). Replace it with the subject's identity: set
@@ -52,17 +53,21 @@ nav logo and a `— walkthrough` `<title>` suffix). Replace it with the subject'
 `◆ claude-plugins`). Never leave the literal `walkthrough` session branding on a subject page.
 
 ## Step 7: Output path
-If a second argument (output path) is given, write there. Otherwise default to
-`.claude/walkthrough/<YYYY-MM-DD-HHMM>-<slug>.html` (`slug` = kebab of the title; collisions → `-2`,
+If a second argument (output path) is given, write there. Otherwise resolve `<base>` first (same as
+`create` Step 6.5): if a `settings.md` with `output-location:` exists in `walkthroughs/` (visible) or
+`.claude/walkthrough/` (hidden), use that base; else default to `.claude/walkthrough/`. Then default to
+`<base>/<YYYY-MM-DD-HHMM>-<slug>.html` (`slug` = kebab of the title; collisions → `-2`,
 `-3`, …). For the site convention, the caller passes `site/<plugin>/index.html` (or
 `site/index.html` for the marketplace). Create parent directories if missing.
 
 ## Step 8: Self-check (structure)
-Run `../create/references/self-check.md` against the assembled HTML; fix and re-check before writing.
+Run the shared **self-check** stage of `../render/references/render-contract.md`
+(`../create/references/self-check.md`) against the assembled HTML; fix and re-check before writing.
 
 ## Step 9: Write the file
-Write the assembled HTML to the Step 7 path. (No gitignore prompt — unlike `create`, `document`
-output is a published/derived artifact, not private session content.)
+Per the shared **write** stage of `../render/references/render-contract.md`, write the assembled HTML to
+the Step 7 path. (No gitignore prompt — unlike `create`, `document` output is a published/derived
+artifact, not private session content.)
 
 ## Step 10: Offer to open
 Tell the user the path (under three lines). Offer `open "<path>"` (macOS; `xdg-open` on Linux).

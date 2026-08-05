@@ -2,10 +2,10 @@
 
 The single source of truth for **which kinds of concept the walkthrough can render**. `components/index.md`
 is the *component* catalog; this is the *concept* catalog that routes to it. Synthesis classifies each
-concept it wants to convey into a `type` here, records it in the session model's `concepts[]` ledger
-(`session-model.md`), and the **concept-fidelity gate** (`authoring-guide.md` § 1) routes it to the
-registered renderer — or, for an uncovered type, to a logged bespoke (`authoring-guide.md` § 4). The gate
-**never** force-fits a concept into a component not registered for its type.
+concept it wants to convey into a `type` here at selection time, and the **concept-fidelity gate**
+(`authoring-guide.md` § 1) routes it to the registered renderer — or, for an uncovered type, to a logged
+bespoke (`authoring-guide.md` § 4). The gate **never** force-fits a concept into a component not
+registered for its type.
 
 After the 1.2.0 renderer work there are **zero ❌ rows**. A future concept-type with no faithful renderer
 gets a new ⚠️/❌ row pointing at a bespoke recipe — so the "what to add next" backlog stays visible.
@@ -18,7 +18,7 @@ gets a new ⚠️/❌ row pointing at a bespoke recipe — so the "what to add n
 | | `nonlinear-system` | services/layers connected free-form | ✅ | architecture map |
 | | `module-dependency` | import/uses edges, shared leaves (a DAG) | ✅ | dependency graph |
 | | `branching-logic` | labeled yes/no/condition edges, a tree, no cycles | ✅ | decision-tree |
-| | `data-model` | entities with field lists, edges carry cardinality (1:N, N:M) | ✅ | erd |
+| | `data-model` | entities with field lists; FK edges carry cardinality (1:N, N:M); rendered as a layered ERD — entities in dependency-depth bands, field-anchored FK refs, cycles broken+marked | ✅ | erd |
 | | `hierarchy` | strict one-parent containment, n levels | ✅ | htree |
 | | `layering` | ordered vertical bands, each touches only neighbors | ✅ | lstack |
 | Behavior | `state-machine` | states with cyclic / back-edge / self-loop / guarded transitions | ✅ | state diagram |
@@ -55,7 +55,11 @@ beats tree → `branching-logic`):
 - **`hierarchy` vs `module-dependency`** — **strict one-parent containment** over n levels → `hierarchy`
   (htree). **import/uses edges with shared leaves** (a node has >1 parent) → `module-dependency` (dep graph).
 - **`data-model` vs `nonlinear-system`** — nodes are **entities with field lists** and edges carry
-  **cardinality** → `data-model` (erd). Otherwise → `nonlinear-system` (architecture map).
+  **cardinality** → `data-model` (erd). Otherwise → `nonlinear-system` (architecture map). The ERD is
+  **layered / cycle-aware**: entities sort into dependency-depth bands and mutual-FK cycles /
+  self-references render **broken-and-marked** (`.ref.cyc`/`.ref.self`), so an FK cycle stays a
+  `data-model` (erd) — it does **not** promote to `state-machine`; the "cycle → `state-machine`" rule
+  above is for behavioral / transition graphs, not FK graphs among entities-with-cardinality.
 - **`layering` vs `nonlinear-system`** — **ordered vertical bands**, each layer touches only its
   neighbors → `layering` (lstack). **Free-form** connections → `nonlinear-system`.
 - **`causal-chain` vs `linear-process`** — nodes carry **ruled-in/ruled-out evidence** semantics →
@@ -64,5 +68,5 @@ beats tree → `branching-logic`):
 ## Uncovered concept → bespoke
 
 If a concept matches no row, the gate routes it to a **bespoke** component (`authoring-guide.md` § 4),
-records it in `concepts[]` with `bespoke: true` + a `bespokeReason`, and a new ⚠️/❌ row SHOULD be added
-here naming the bespoke recipe — so the hole is visible and never silently force-fit.
+noting what was composed + why, and a new ⚠️/❌ row SHOULD be added here naming the bespoke recipe — so
+the hole is visible and never silently force-fit.

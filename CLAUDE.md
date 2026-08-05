@@ -14,14 +14,14 @@ Claude Code plugin marketplace by Apurv Bazari. Five plugins — all markdown + 
          │
          ├──→ onboard/                   ← codebase analyzer + tooling generator
          │      ├── skills/ (start, adopt, generate, update, check, verify, evolve,
-         │      │           research, wizard, analysis, generation)
+         │      │           research, wizard, generation)
          │      ├── agents/ (codebase-analyzer, config-generator, feature-evaluator,
          │      │           research-specialist, research-verifier)
          │      └── scripts/ (detect-{config,dep,structure}-changes, detect-{lsp,mcp}-signals, audit-tooling, install-plugins)
          │
          ├──→ notify/                    ← cross-platform system notifications
          │      ├── skills/ (setup, check, uninstall, wizard)
-         │      └── scripts/ (notify, install-notifier, test-notification)
+         │      └── scripts/ (notify, install-notifier)
          │
          ├──→ handoff/                   ← session handoff continuity
          │      └── skills/ (save, pickup, check, discard)
@@ -30,7 +30,7 @@ Claude Code plugin marketplace by Apurv Bazari. Five plugins — all markdown + 
          │      └── skills/ (create, update, document, render)
          │
          └──→ lens/                      ← intent-grounded review companion (brain; renders via walkthrough)
-                ├── skills/ (review, engine, render-review)
+                ├── skills/ (review, engine, render-review, capability)
                 ├── agents/ (spec-adherence, plan-adherence, correctness,
                 │           risk-classify, test-gaps, verifier)
                 └── schemas/ (review-findings)
@@ -56,7 +56,7 @@ Skills are the authoring form for all user-facing entrypoints and internal orche
 | Agents | `agents/<name>.md` | H1 name, Tools section, Instructions with numbered steps, Output Format |
 | Shell scripts | `scripts/<name>.sh` | `#!/usr/bin/env bash`, `set -euo pipefail`, ShellCheck-clean, POSIX compat |
 | Manifests | `.claude-plugin/plugin.json` | Required: name, version, description, author, license, keywords |
-| References | `skills/<name>/references/*.md` | Supporting docs loaded by skill instructions |
+| References | `skills/<name>/references/*.md` (skill-owned) or `agents/references/*.md` (agent-owned) | Supporting docs loaded by skill or agent instructions. A reference lives with whatever owns it: colocate with the skill that loads it; use the plugin's flat `agents/references/` home when the consumer is an agent rather than a skill. `check-references.sh` walks both. |
 
 ## Skill Frontmatter Categories
 
@@ -67,7 +67,7 @@ Apply the right invocation policy per skill:
 | Destructive / setup | User only (explicit) | `disable-model-invocation: true` | `onboard:start`, `onboard:update`, `notify:setup`, `notify:uninstall` |
 | Read-only helpers | User + auto | (default) — write a specific `description` | `onboard:check`, `onboard:verify`, `onboard:evolve`, `notify:check` |
 | Programmatic API | Claude only, hidden | `user-invocable: false` | `onboard:generate` |
-| Internal building blocks | Claude only, hidden | `user-invocable: false` | `wizard`, `analysis`, `generation` |
+| Internal building blocks | Claude only, hidden | `user-invocable: false` | `wizard`, `generation` |
 
 Canonical frontmatter spelling is **hyphenated** (`user-invocable`, `disable-model-invocation`) per the Claude Code docs. Underscore spelling is silently ignored.
 
@@ -76,7 +76,7 @@ Canonical frontmatter spelling is **hyphenated** (`user-invocable`, `disable-mod
 - File names: kebab-case (`codebase-analyzer.md`, `validate-bash.sh`)
 - Plugin directories: lowercase (`onboard`, `notify`, `handoff`)
 - Manifest names: match directory name
-- Skill references: always in `references/` subdirectory inside the skill
+- References: always in a `references/` subdirectory owned by their consumer — inside the skill (`skills/<name>/references/`) for skill-loaded docs, or the plugin's flat `agents/references/` for agent-loaded docs
 - Skill `name` frontmatter: lowercase letters, numbers, hyphens only (max 64 chars). If omitted, derives from the directory name.
 
 ## Quality Checks
@@ -99,9 +99,9 @@ When referencing Claude Code documentation in any plugin file, use the current h
 
 ## Branching & Release
 
-Two branches: `develop` (default, integration) and `main` (release).
+Two branches: `develop` (integration) and `main` (release). **`main` is the GitHub default branch** — it is what the published marketplace serves, so a fresh `/plugin marketplace add ApurvBazari/claude-plugins` installs released code, not in-flight work.
 
-- Feature branches → PR to `develop` (squash merge)
+- Feature branches → PR to `develop` (squash merge). Pass `--base develop` explicitly — `gh pr create` targets `main` by default now.
 - When ready to ship: PR from `develop` → `main` (**merge commit, never squash**)
 - After shipping: merge `main` back into `develop` (merge commit) to keep them in sync
 

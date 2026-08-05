@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -uo pipefail
 
 # FileChanged hook: detect configuration file changes.
-# Appends change entries to the drift log (.claude/greenfield-drift.json).
+# Appends change entries to the drift log (.claude/onboard-drift.json).
 # Called when tsconfig, eslint, prettier, biome, or ruff configs change.
 
 FILE_PATH="${1:-}"
-DRIFT_FILE=".claude/greenfield-drift.json"
+DRIFT_FILE=".claude/onboard-drift.json"
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 if [ -z "$FILE_PATH" ]; then

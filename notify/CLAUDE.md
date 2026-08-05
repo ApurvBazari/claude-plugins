@@ -4,7 +4,7 @@ Cross-platform system notifications for Claude Code. macOS via `terminal-notifie
 
 ## Platform Support
 
-| Platform | Backend | Sound | Click-to-Focus | Duration Filter |
+| Platform | Backend | Sound | Click-to-Focus | Cooldown |
 |----------|---------|-------|----------------|-----------------|
 | macOS | `terminal-notifier` | 14 system sounds | Yes (bundle ID) | Yes |
 | Linux | `notify-send` (libnotify) | Urgency levels only | No | Yes |
@@ -19,32 +19,23 @@ Three notification events, each independently configurable:
 | `notification` | Claude needs user attention | Enabled, "Glass" sound |
 | `subagentStop` | A subagent finishes work | Disabled (too noisy) |
 
-## Duration Filtering
+## Notification Cooldown
 
-Each event supports `minDurationSeconds` to suppress notifications for fast responses:
-- Tracks last activity timestamp in a temp file (`$TMPDIR/claude-notify-session-start`)
-- On `stop`/`subagentStop`: compares elapsed time against threshold
-- If elapsed < threshold, notification is silently skipped
-- `notification` event should keep `minDurationSeconds: 0` (attention prompts should always fire)
+Each `stop`/`subagentStop` event supports `minDurationSeconds` as a **leading-edge cooldown** — at most one notification per `N` seconds:
+- When a notification fires, the cooldown clock is stamped (a temp file keyed per session: `$TMPDIR/claude-notify-session-<id>`, or `claude-notify-uid-<uid>` when no session id is present)
+- A subsequent `stop`/`subagentStop` within `N` seconds of the last fired notification is silently skipped; suppressed events do NOT refresh the clock (leading-edge — see spec 2026-07-02 §6a)
+- `notification` events are never cooldown-*filtered* (attention prompts always fire) — but a fired `notification` still *refreshes* the shared per-session clock, so it can debounce a `stop`/`subagentStop` that lands within `N` seconds. "At most one notification per `N` seconds" counts every fired alert, whatever its event type
+- Default `0` means no cooldown
 
 ## Config Resolution
 
-- Config stored in `notify-config.json` (plugin-local, not `.claude/`)
+- Config stored in `notify-config.json` under the chosen scope directory — global under `~/.claude/`, per-project under `<project>/.claude/`
 - Wizard creates/updates this file during `/notify:setup`
 - Changes take effect immediately — no restart needed
-- Both global (`~/.claude/`) and per-project (`<project>/.claude/`) scopes supported
 
-### Precedence (project-local inherits + overrides global)
+### Scope resolution
 
-When both `~/.claude/notify-config.json` and `<project>/.claude/notify-config.json` exist:
-
-1. The **project-local config inherits all keys from the global config**.
-2. Keys explicitly set in the project-local config **override** the global value.
-3. Keys absent from the project-local config **fall back** to the global value.
-
-Example: global has `events.stop.sound = "Glass"` and `events.stop.minDurationSeconds = 5`. Project-local sets only `events.stop.message = "Build complete"`. The merged behavior at runtime is `{ sound: "Glass", minDurationSeconds: 5, message: "Build complete" }`.
-
-This precedence is applied at notify setup time (when project-local is being written) — `/onboard:start` § Step 3.5.2 reads global as the base and layers project-local override on top, persisting the merged result. Runtime hook (`notify.sh`) reads only the project-local file when present, falling back to global only when no project-local file exists at all.
+`notify.sh` reads exactly one config at runtime: the project-local `notify-config.json` when present, else the global one. There is no cross-scope key merge — each scope's config is used as-is. (onboard does not merge these either; any prior claim of an onboard merge step was inaccurate and has been removed.)
 
 ### Detection (used by /onboard:start before offering project-local setup)
 
@@ -88,7 +79,7 @@ Notifications show repo + branch context:
 - **Global** (`~/.claude/settings.json`): hooks fire in every project
 - **Per-project** (`<project>/.claude/settings.json`): hooks fire only in that project
 - Per-project extends/overrides global — both can coexist
-- The wizard detects the running editor (VS Code, Cursor, Windsurf, iTerm2) for bundle ID (macOS only)
+- The wizard detects the running editor (VS Code, Cursor, Windsurf) for bundle ID (macOS only)
 
 ## Skills
 

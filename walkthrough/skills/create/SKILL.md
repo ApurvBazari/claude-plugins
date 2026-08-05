@@ -23,7 +23,7 @@ never invent a line number; if unverified, cite `path` only or omit.
 
 ## Step 3: Synthesize the session model
 Build the structured model per `references/session-model.md` (title, summary, typeTags,
-sections[], concepts[], nodes[], edges[], decisions[], files[], timeline[], metrics[], openQuestions[],
+sections[], nodes[], edges[], decisions[], files[], timeline[], metrics[], openQuestions[],
 details{}) BEFORE writing any HTML.
 
 ## Step 4: Coverage critic
@@ -40,17 +40,16 @@ swimlane diagram; a shape the catalog still cannot draw faithfully → compose a
 force-fit a state machine or a message trace into a flow / architecture map.
 
 Run the **concept-fidelity gate** (`references/authoring-guide.md` § 1, routed by
-`references/concept-coverage.md`): classify each `concepts[]` entry into a concept-type, bind it to the
-registered renderer, and never force-fit an uncovered concept (compose bespoke instead). The
-mechanical concept-coverage assertion (`references/completeness.md` Part 1b) must pass before assemble.
+`references/concept-coverage.md`): classify each concept at selection time into a concept-type, bind it to the
+registered renderer, and never force-fit an uncovered concept (compose bespoke instead).
 
 ## Step 6: Assemble the HTML
-Start from `references/page-scaffold.md`. Inline: the `@import` + both `:root` blocks from
-`references/design-system.md`; the shared JS from `references/interactivity.md`; the CSS+HTML
-for each chosen component — read **only** the `references/components/<group>.md` files for the
-components you selected in Step 5 (routed via `components/index.md`); the `DET`/detail data. Keep it
-self-contained: no `<script src>`, no `<img>`, only the one Google Fonts `@import`.
-Generate `{{NAV_LINKS}}` deterministically from `sections[]` (one `<a href="#id">` per section, id reused from the section; first link `class="on"`) — do not hand-write or hand-match ids.
+Assemble per the **assemble** stage of `../render/references/render-contract.md` — the single canonical
+source for the shared select→assemble→self-check→write mechanics. Copy `references/page-scaffold.md`
+verbatim (its `<style>` block is the base-CSS home), fill its component slots from the recipes you selected
+in Step 5, inline the `references/interactivity.md` bundle into `{{INTERACTIVITY_JS}}`, emit the inert
+`{{DATA_JSON}}` island, and generate `{{NAV_LINKS}}` deterministically from `sections[]`. Keep it
+self-contained: only the one Google Fonts `@import`.
 
 ## Step 6.5: Resolve output base directory
 Decide where walkthroughs are written in this folder, and remember the choice, BEFORE computing the path.
@@ -68,7 +67,10 @@ Decide where walkthroughs are written in this folder, and remember the choice, B
    - Else determine whether this is a git repository: `git rev-parse --is-inside-work-tree` (exit 0 = git repo).
      - **Git repo** → `<base>` = `.claude/walkthrough/` silently (today's behavior; no new prompt).
      - **Not a git repo** (the knowledge-work / Cowork case) → ask via `AskUserQuestion`
-       (single-select, fixed 2 options per `.claude/rules/ask-user-question-guard.md`):
+       (single-select, fixed 2 options per `.claude/rules/ask-user-question-guard.md` — a
+       repo-development convention, not shipped with the plugin; the shipped constraint is simply that
+       AskUserQuestion option lists must have ≥2 entries (the schema's `minItems: 2`), so use a yes/no
+       form when only one candidate exists):
        - **Visible — `walkthroughs/`** (recommended): a plain folder at the project root, easy to find.
        - **Hidden — `.claude/walkthrough/`**: tucked away, consistent with Claude Code projects.
      Persist the choice as a line `output-location: <visible|hidden>` in `<chosen-base>/settings.md`
@@ -95,11 +97,13 @@ persist the choice in `<base>/settings.md`. (See `.claude/rules/ask-user-questio
 When `<base>` is `walkthroughs/` (a non-git folder has no `.gitignore`), this step self-skips.
 
 ## Step 9: Self-check (structure)
-Before writing, run `references/self-check.md` against the assembled HTML. Fix any failure and
-re-check. Do not write a document that fails the self-check.
+Run the shared **self-check** stage of `../render/references/render-contract.md`: run
+`references/self-check.md` against the assembled HTML, fix any failure, and re-check. Do not write a
+document that fails the self-check.
 
 ## Step 10: Write the file
-Write the assembled HTML to the path from Step 7.
+Per the shared **write** stage of `../render/references/render-contract.md`, write the assembled HTML to
+the path resolved in Steps 6.5–8.
 
 ## Step 11: Offer to open
 Tell the user the path (under three lines). Offer to open it:

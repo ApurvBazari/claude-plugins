@@ -93,8 +93,8 @@ Also read any Claude config files that may have been added manually after the in
 
 > **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(update:reanalyze → in_progress)` now, **before** the fresh analysis below. Mark it `TaskUpdate(... → completed)` after the drift comparison against `onboard-meta.json` completes at the end of this step.
 
-Run a fresh analysis (same as start Phase 1):
-- Run the three analysis scripts
+Run a fresh analysis (same as start Phase 1 Recon — script-free):
+- Invoke the `codebase-analyzer` agent (native Glob/Grep/Read + git one-liners; emits reconHints)
 - Perform deep codebase exploration
 
 Compare the fresh analysis against what was captured in onboard-meta.json to detect drift:
@@ -160,7 +160,7 @@ Follow `references/drift-classification.md` § 4b.8. Record as `lspDrift.{newLan
 Follow `references/drift-classification.md` § 4b.9. Record as `builtInSkillsDrift.{newSkills, newlyRelevant, staleCandidates}[]` for Step 7.
 
 #### 4b.10: Research Staleness
-Apply `references/re-research.md` § Detection: map the Step-3 codebase drift to research dimensions, intersect with the stored-depth roster (`onboard-meta.json.research.depth`), and apply the escalation rule. Record `reResearch = { dimensions, escalatedToFull }` for Step 6 (empty `dimensions` → no offer). Read-only classification — re-research itself runs in Step 7 on approval.
+Apply `references/re-research.md` § Detection (read-only) — map the Step-3 codebase drift to research dimensions, intersect with the stored-depth roster (`onboard-meta.json.research.depth`), and apply the escalation rule. Record `reResearch = { dimensions, escalatedToFull }` for Step 6 (empty `dimensions` → no offer). Read-only classification — re-research itself runs in Step 7 on approval.
 
 > **Phase complete:** after all Step 4b detectors (4b.1–4b.10) have recorded their findings, `TaskUpdate(update:best-practices-drift → completed)`.
 
@@ -395,7 +395,7 @@ Apply the full application procedure for each approved drift type — verbatim f
 - **Built-in skills drift** (4b.9): Follow `references/drift-application.md` § Built-in skills drift application (including placement migration).
 - **Artifact gap regeneration** (4b.2): Follow `references/drift-application.md` § Artifact gap regeneration.
 - **New best-practice additions** (4b.3): Follow `references/drift-application.md` § New best-practice additions.
-- **Research staleness** (4b.10): if the developer approved the re-ground, follow `references/re-research.md` § Orchestration — invoke `onboard:research` in scoped/merge mode, build the `version:3` context with the merged dossier + `callerExtras.reResearch` (NO `regenerateOnly`), and invoke `onboard:generate`. The merge-aware regen honors the user-customized-file merge/replace/skip choices already gathered in Step 6. On the atomic-abort fallback, report the failure and leave tooling untouched.
+- **Research staleness** (4b.10): if the developer approved the re-ground, follow `references/re-research.md` § Orchestration (writes) — invoke `onboard:research` in scoped/merge mode, build the `version:3` context with the merged dossier + `callerExtras.reResearch` (NO `regenerateOnly`), and invoke `onboard:generate`. The merge-aware regen honors the user-customized-file merge/replace/skip choices already gathered in Step 6. On the atomic-abort fallback, report the failure and leave tooling untouched.
 
 ### Step 8: Update Metadata
 

@@ -3,7 +3,45 @@
   "$comment": "version 1. FIELD-additive superset of vicario review-findings: extra optional fields are ignored by vicario's validator. The dimension enum is the canonical 9-value SHARED contract (vicario's six + lens's test/risk/comment); vicario adopts the same enum so all dimensions validate both ways — no mapping layer. Until the vicario repo widens its enum to match (tracked), only the 6 shared dimensions round-trip to an un-updated vicario; coordinate enum changes across both repos.",
   "title": "lens review-findings",
   "type": "object",
-  "required": ["findings", "recommendedEscalation", "degraded"],
+  "oneOf": [
+    {
+      "$comment": "SUCCESS channel — the ordinary return, and the only channel a 1.4.3-shaped call can ever receive. Its required[] is 1.4.3's, unchanged, and the top-level properties below are its field set: declaring the failure channel as a branch rather than as another property is what keeps that field set from growing. `error` is excluded here so the two channels stay mutually exclusive instead of both matching a half-and-half object. The allOf clauses below carry CROSS-FIELD constraints; none adds a property, so the derived seven-field count is untouched. They are NARROWINGS, not additions: each rejects documents 1.4.3's schema accepted, and lens/CHANGELOG.md's 1.5.0 entry discloses them as such.",
+      "required": ["findings", "recommendedEscalation", "degraded"],
+      "not": { "required": ["error"] },
+      "allOf": [
+        {
+          "$comment": "degraded:true ⇒ degradedReasons[] present and non-empty. Stated in prose as 'present if and only if degraded is true', this half was unenforced: an engine that set the bit and named no cause validated, and a consumer branching on degradedReasons[] to learn WHY silently read a partial run as a clean one. NARROWING: degradedReasons did not exist in 1.4.3, so no 1.4.3-produced degraded return satisfies this clause.",
+          "if": { "required": ["degraded"], "properties": { "degraded": { "const": true } } },
+          "then": {
+            "required": ["degradedReasons"],
+            "properties": { "degradedReasons": { "minItems": 1 } }
+          }
+        },
+        {
+          "$comment": "degraded:false ⇒ degradedReasons[] absent or empty — the other half of the same biconditional. Without it a return could name causes while claiming full coverage, which is the same contradiction read from the other side.",
+          "if": { "required": ["degraded"], "properties": { "degraded": { "const": false } } },
+          "then": {
+            "properties": { "degradedReasons": { "maxItems": 0 } }
+          }
+        },
+        {
+          "$comment": "emptyScope:true ⇒ findings[] empty. emptyScope is declared 'true ONLY on empty-diff/no-repo' and 'the SOLE discriminator between nothing-to-review and a review that found nothing', yet a document setting the flag beside a populated findings[] validated — so the discriminator a caller is told to key on could contradict the array it is meant to replace. NARROWING: emptyScope existed in 1.1.0, so a prior-run document carrying the flag alongside findings no longer validates.",
+          "if": { "required": ["emptyScope"], "properties": { "emptyScope": { "const": true } } },
+          "then": {
+            "properties": { "findings": { "maxItems": 0 } }
+          }
+        }
+      ]
+    },
+    {
+      "$comment": "FAILURE channel — the named-error envelope a pre-flight raise returns. Sealed to the single key `error`, so an envelope can never arrive carrying half a review. A consumer branches on the presence of `error` BEFORE it reads either channel; this is not a review-findings document, and vicario's validator is not expected to accept it.",
+      "required": ["error"],
+      "properties": {
+        "error": { "$ref": "#/definitions/errorEnvelope" }
+      },
+      "additionalProperties": false
+    }
+  ],
   "properties": {
     "findings": {
       "type": "array",
@@ -33,11 +71,18 @@
           "line": {"type": "integer"},
           "votes": {
             "type": "object",
+            "$comment": "the verify tally for this finding; total == n (the caller's verifyVotes) and couldNotRefute + refuted + abstained == total. abstained counts the dead votes — verifier runs that errored mid-way. Optional. The four counts carry minimum:0 and total is bounded to verifyVotes' own 1..5 range: a tally is a count of dispatches, so a negative member and a total outside the panel sizes the engine can be asked for are both unreachable states the schema should not accept. NARROWING: votes has existed unbounded since 1.0.0 — not 1.4.3 — so a prior-run document from any release carrying a negative count or a total outside 1..5 no longer validates. The sum invariant itself stays prose — draft-07 cannot express it.",
             "properties": {
-              "total": {"type": "integer"},
-              "couldNotRefute": {"type": "integer"},
-              "refuted": {"type": "integer"}
+              "total": {"type": "integer", "minimum": 1, "maximum": 5},
+              "couldNotRefute": {"type": "integer", "minimum": 0},
+              "refuted": {"type": "integer", "minimum": 0},
+              "abstained": {"type": "integer", "minimum": 0}
             }
+          },
+          "voteResolution": {
+            "type": "string",
+            "enum": ["verified", "abstained"],
+            "$comment": "this finding's outcome under the named rule huginn-quorum-v1, whose procedure is declared in skills/engine/references/pipeline.md §5 and not restated here. 'dropped' is deliberately absent: a dropped finding never reaches findings[], so no surviving finding can carry it. Optional — a finding may omit it."
           },
           "voteDegraded": {"type": "boolean", "$comment": "carried for vicario parity; lens v1 does not set it"},
           "claim": {"type": "string"},
@@ -54,6 +99,31 @@
     },
     "recommendedEscalation": {"type": "string", "enum": ["minor", "moderate", "major", "critical"]},
     "degraded": {"type": "boolean"},
+    "degradedReasons": {
+      "type": "array",
+      "$comment": "Optional, engine-owned. degraded:true if and only if this array is non-empty (enforced by the success branch's allOf, not left to prose); the closed 7-code set is declared in skills/engine/references/engine-api.md, not restated here.",
+      "items": {
+        "type": "object",
+        "$comment": "`code` is required and the object is sealed, matching how definitions.errorEnvelope is sealed. Untightened, {} and {\"detail\":\"…\"} and a typo'd {\"cod\":\"finder-died\"} all validated — so the closed enum guarded nothing, and a consumer branching on the code read every degrade as an unrecognized one.",
+        "required": ["code"],
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "finder-died",
+              "finder-malformed",
+              "intent-soft",
+              "intent-reconstructed",
+              "adherence-capped",
+              "finders-capped",
+              "diff-truncated"
+            ]
+          },
+          "detail": {"type": "string"}
+        }
+      }
+    },
     "summary": {"type": "string"},
     "emptyScope": {"type": "boolean", "$comment": "true only on empty-diff/no-repo; lets a caller distinguish 'nothing to review' from a clean zero-finding review. Field-additive — vicario's validator ignores it (only the dimension enum is co-owned)."},
     "severityTrend": {
@@ -72,10 +142,52 @@
     },
     "adherence": {
       "type": "object",
+      "$comment": "Optional, field-additive — set by the finders' side outputs or the engine's adherence return; vicario's validator ignores it. Item objects declare their known keys but stay open (no required[], no additionalProperties:false) so single-spec flat items and headless-derived items — which may omit sourceSpec/sourcePlan — remain valid.",
       "properties": {
-        "specItems": { "type": "array", "items": { "type": "object" } },
-        "planSteps": { "type": "array", "items": { "type": "object" } }
+        "specItems": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": { "type": "string" },
+              "state": { "type": "string", "enum": ["met", "partial", "missing"] },
+              "sourceSpec": { "type": "string" }
+            }
+          }
+        },
+        "planSteps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": { "type": "string" },
+              "state": { "type": "string", "enum": ["followed", "deviated"] },
+              "sourcePlan": { "type": "string" }
+            }
+          }
+        }
       }
+    }
+  },
+  "definitions": {
+    "errorEnvelope": {
+      "type": "object",
+      "$comment": "the envelope's shape AND its closed code set. skills/engine/references/engine-api.md § Errors stays the single DECLARED home — the raiser, the trigger and the per-code `extra` shape are only there, and the two invariants that bound the channel are only there. The four spellings are MIRRORED here on purpose, exactly as degradedReasons' seven-code enum is: an unmirrored `code: string` accepted E_MADE_UP, so the closed registry guarded nothing a validator could see. The mirror is a second COPY, not a second source of truth, and it is pinned back to the § Errors table by tests/lens/test_schema_types.sh so the two can never drift apart silently. Widening this enum is the same ask-first boundary as widening the table.",
+      "required": ["code", "message", "extra"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "E_UNSUPPORTED_CAPABILITY",
+            "E_MODEL_POLICY_UNSATISFIABLE",
+            "E_INVALID_INPUT",
+            "E_MANIFEST_UNREADABLE"
+          ]
+        },
+        "message": { "type": "string" },
+        "extra": { "type": "object" }
+      },
+      "additionalProperties": false
     }
   }
 }

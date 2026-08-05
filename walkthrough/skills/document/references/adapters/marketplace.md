@@ -19,7 +19,7 @@ The marketplace landing is the collection-as-subject. Inputs: `.claude-plugin/ma
 The landing's centerpiece is a grid of plugin cards (one per `marketplace.json` entry), each linking
 to that plugin's page (`./<plugin>/`). No catalog component is a card grid, so compose a **bespoke**
 one per `authoring-guide.md` §"compose a new component":
-- Use design-system tokens only (no raw hex), the type scale, and `--space-*` spacing.
+- Use design-system tokens only (no raw hex) and the type scale; spacing is plain rem (this system tokenizes color, font, and easing — not spacing).
 - Each card: plugin name (h3), `description`, a `keywords` chip row, and a relative link `./<plugin>/`.
 - Must pass the authoring-guide "looks-native" checklist (indistinguishable from catalog components).
 

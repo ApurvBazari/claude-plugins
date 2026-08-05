@@ -197,7 +197,7 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
       <a href="#isnt">Is / isn't</a>
     </div>
     <div style="display:flex;align-items:center;gap:.8rem">
-      <div class="nav-meta"><span class="dot"></span> PLUGIN · v1.2.1</div>
+      <div class="nav-meta"><span class="dot"></span> PLUGIN · v1.4.0</div>
       <button class="theme-btn" onclick="tgl()">◑ THEME</button></div>
   </div></nav>
   <div class="progress" id="prog"></div>
@@ -233,7 +233,7 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
       <h2>A composed document, <em>not</em> a transcript dump</h2>
       <p class="lede">Open the file in any browser and you get a synthesized document — a summary and type tags for the session, architecture and flow diagrams rendered as inline SVG, decision records (what was chosen, what was rejected, why), a file-touch list with real <code>path:line</code> references, and a timeline and metrics where the session has them.</p>
       <p>For richer surfaces there are two interactive components: an <strong>interactive explorer</strong> — a selector that drives a live diagram region and a detail pane from one shared data model, useful for multi-component architectures where you want to navigate relationships rather than read a static diagram — and a <strong>data-driven step timeline</strong> — phases of parallel and sequential steps with source pills and micro-cycles, useful when the session covers a pipeline, workflow, or multi-phase build.</p>
-      <p>v1.2.0 adds a <strong>concept-coverage layer</strong>: a <code>concepts[]</code> ledger in the session model, a concept-fidelity gate that routes each concept to the renderer best-shaped for it, and five new concept-shaped renderers — a <strong>decision tree</strong>, a <strong>recursive tree</strong>, a <strong>layer stack</strong>, an <strong>ERD</strong>, and a <strong>causal hypothesis ladder</strong> — so branching logic, hierarchies, layered stacks, data models, and debugging traces each render in the shape that fits them.</p>
+      <p>v1.2.0 adds a <strong>concept-coverage layer</strong>: a concept-fidelity gate that routes each concept to the renderer best-shaped for it, and five new concept-shaped renderers — a <strong>decision tree</strong>, a <strong>recursive tree</strong>, a <strong>layer stack</strong>, an <strong>ERD</strong>, and a <strong>causal hypothesis ladder</strong> — so branching logic, hierarchies, layered stacks, data models, and debugging traces each render in the shape that fits them.</p>
       <p>Components adapt to the session — the catalog is a floor, not a ceiling. When content fits no off-the-shelf component, a bespoke one is composed from the same design-system primitives so it still looks native, and empty sections are omitted rather than stubbed. After writing the file, <code>create</code> surfaces a short <strong>coverage summary</strong> — what made it into the document and what was intentionally omitted — so you can spot anything left out before you close the session.</p>
       <div class="callout">
         <h4>No setup, no config</h4>
@@ -291,7 +291,7 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
         <span class="farr">→</span>
         <div class="fnode" onclick="openSurface('write')" tabindex="0" role="button" aria-label="Stage 5 write"><div class="nl">stage 5</div>write</div>
       </div>
-      <p><code>create</code> runs this flow over a session: <em>gather</em> reads cited source files so <code>path:line</code> refs are real, <em>synthesize</em> builds the session model (including the <code>concepts[]</code> ledger), <em>select</em> maps it to components via the concept-fidelity gate, <em>assemble</em> inlines the scaffold, and <em>write</em> emits the file. Rendering never starts from the raw transcript — the full model is built first. <code>document</code> runs the same flow over a subject instead; <code>update</code> adds two stages in front — <em>reconstruct</em> the prior model from the rendered HTML and <em>merge</em> in explicitly-named files — before re-entering it.</p>
+      <p><code>create</code> runs this flow over a session: <em>gather</em> reads cited source files so <code>path:line</code> refs are real, <em>synthesize</em> builds the session model, <em>select</em> maps it to components via the concept-fidelity gate, <em>assemble</em> inlines the scaffold, and <em>write</em> emits the file. Rendering never starts from the raw transcript — the full model is built first. <code>document</code> runs the same flow over a subject instead; <code>update</code> adds two stages in front — <em>reconstruct</em> the prior model from the rendered HTML and <em>merge</em> in explicitly-named files — before re-entering it.</p>
     </section>
 
     <section id="surfaces">
@@ -314,7 +314,7 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
     <section id="concepts">
       <div class="sec-label">v1.2.0 addition</div>
       <h2>Concept coverage — <em>the right renderer for every concept</em></h2>
-      <p class="lede">The concept-coverage layer ensures each kind of idea renders in the shape that fits it. Synthesis classifies each concept it wants to convey into a type, records it in the session model's <code>concepts[]</code> ledger, and the <strong>concept-fidelity gate</strong> routes it to the registered renderer — or, for an uncovered type, to a logged bespoke component. The gate never force-fits a concept into a component not registered for its type.</p>
+      <p class="lede">The concept-coverage layer ensures each kind of idea renders in the shape that fits it. Synthesis classifies each concept it wants to convey into a type at selection time, and the <strong>concept-fidelity gate</strong> routes it to the registered renderer — or, for an uncovered type, to a logged bespoke component. The gate never force-fits a concept into a component not registered for its type.</p>
       <p>v1.2.0 adds five new concept-shaped renderers, bringing coverage to zero uncovered concept-types in the built-in map. Click any renderer name below for detail.</p>
       <table class="cov-table" aria-label="Selected v1.2.0 concept-coverage additions">
         <thead><tr><th>Concept-type</th><th>Trigger</th><th>Renderer (v1.2.0 new)</th></tr></thead>
@@ -413,7 +413,7 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
         <pre class="cb-body"><code>&gt; /walkthrough:create architecture decisions
 
 gather      read cited source files (path:line refs are real)
-synthesize  session model — sections, nodes, edges, decisions, files, concepts[]
+synthesize  session model — sections, nodes, edges, decisions, files, timeline
 select      concept-fidelity gate → map model → components (omit empty, never stub)
 assemble    inline scaffold + tokens + JS + SVG + detail data
 write       .claude/walkthrough/2026-06-04-1430-architecture.html
@@ -459,7 +459,7 @@ write        overwrite the SAME file — no new file, no backup
         <a href="../">← marketplace</a>
         <a href="https://github.com/ApurvBazari/claude-plugins/tree/main/walkthrough">source on GitHub</a>
       </div>
-      <div class="meta">walkthrough · v1.2.1 · MIT · by Apurv Bazari</div>
+      <div class="meta">walkthrough · v1.4.0 · MIT · by Apurv Bazari</div>
     </div>
   </main>
   <aside class="panel" id="panel"><span class="x" onclick="closeD()">✕</span>
@@ -552,13 +552,13 @@ addEventListener('scroll',()=>{const sc=scrollY/(document.body.scrollHeight-inne
  document.querySelectorAll('.nav-links a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+cur));},{passive:true});
 document.querySelectorAll('[role="button"]').forEach(n=>n.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();n.click();}}));
 const DET={
- 'mode-session':{k:"Input mode",h:"Session",summary:"The current conversation is the source of record — there is no repository scan. <code>create</code> renders it from scratch; <code>update</code> refreshes an existing document by reconstructing its model from the rendered HTML, then merging in named files. Both produce the session model: sections, nodes, edges, decisions, files, timeline, and the v1.2.0 concepts[] ledger."},
+ 'mode-session':{k:"Input mode",h:"Session",summary:"The current conversation is the source of record — there is no repository scan. <code>create</code> renders it from scratch; <code>update</code> refreshes an existing document by reconstructing its model from the rendered HTML, then merging in named files. Both produce the session model: sections, nodes, edges, decisions, files, and timeline."},
  'mode-subject':{k:"Input mode",h:"Subject",summary:"A plugin, the whole marketplace, or any path. <code>document</code> reads the subject's own files — README + manifest are canonical, plus the skills/ surface — and synthesizes the subject model. The page is a rendering of those sources, not a separately-maintained doc."},
  'visual-layer':{k:"Shared",h:"Visual layer",summary:"Reused verbatim across all three skills: the design system (tokens + both :root theme blocks), the interactivity JS (theme toggle, detail surfaces), the page scaffold, and the open component catalog. Only the model and the gathering differ between session and subject."},
  gather:{k:"Stage 1",h:"gather",summary:"Read any source file you intend to cite so path:line refs are real. For a session, the transcript is the source of record — no repo scan. For a subject, gather reads the README + manifest (canonical) and the skills surface."},
- synthesize:{k:"Stage 2",h:"synthesize",summary:"Build the structured model BEFORE any HTML — for a session: sections, diagram nodes, decisions, files, timeline, and the v1.2.0 concepts[] ledger (each concept classified by type, routed to a renderer). The model is fully synthesized before a single tag is written — rendering never starts from the raw transcript."},
+ synthesize:{k:"Stage 2",h:"synthesize",summary:"Build the structured model BEFORE any HTML — for a session: sections, diagram nodes, decisions, files, and timeline. The model is fully synthesized before a single tag is written — rendering never starts from the raw transcript."},
  coverage:{k:"Gate",h:"coverage critic",summary:"After the model is synthesized, a salient-item coverage critic re-scans the source so every important item is either in the model or deliberately out of scope. Omitted items are folded back in; intentional omissions feed the coverage summary surfaced after the run."},
- select:{k:"Stage 3",h:"select",summary:"Map the model to components via the authoring guide and the catalog. The concept-fidelity gate (v1.2.0) routes each concepts[] entry to its registered renderer — never force-fitting a concept into a component not registered for its type. Apply \"omit empty, never stub\" — a component renders only when the model has real content. Where no catalog entry fits, compose a bespoke component from the same primitives."},
+ select:{k:"Stage 3",h:"select",summary:"Map the model to components via the authoring guide and the catalog. The concept-fidelity gate classifies each concept at selection time and routes it to its registered renderer — never force-fitting a concept into a component not registered for its type. Apply \"omit empty, never stub\" — a component renders only when the model has real content. Where no catalog entry fits, compose a bespoke component from the same primitives."},
  assemble:{k:"Stage 4",h:"assemble",summary:"Start from the page scaffold; inline the Google Fonts @import + both :root blocks, the shared JS, and the CSS/HTML for each chosen component plus its detail data. Everything — CSS, JS, SVG — is inlined into the one file."},
  selfcheck:{k:"Gate",h:"self-check",summary:"Before the file is written, a structural self-check runs on the assembled HTML — verifying self-containment, token-only CSS, nav-to-section-id alignment, and detail-store integrity. Failures are fixed and re-checked before write."},
  write:{k:"Stage 5",h:"write",summary:"Write the file. For a session, that is .claude/walkthrough/<YYYY-MM-DD-HHMM>-<slug>.html, then offer to open — never auto-open. A same-subject slug prompts update-in-place / new versioned file / overwrite instead of a silent -2/-3 suffix. For the docs site, document writes to the path given (e.g. site/<plugin>/index.html)."},

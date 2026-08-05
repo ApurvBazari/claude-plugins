@@ -22,23 +22,22 @@ one component; pick the row that matches the field's *shape*.
 | `timeline[]` | timeline; stepper if a replayable sequence |
 | `typeTags` includes `research` | concept map + callouts |
 | `nodes[]`/`edges[]` with switchable views | interactive explorer (one selector → diagram + detail) |
-| `concepts[]` entry `type:branching-logic` | decision tree |
-| `concepts[]` entry `type:data-model` | ERD / schema |
-| `concepts[]` entry `type:hierarchy` | recursive tree |
-| `concepts[]` entry `type:layering` | layer stack |
-| `concepts[]` entry `type:causal-chain` | cause→effect (hypothesis ladder) |
 | `timeline[]` of phased parallel/sequential steps | data-driven step timeline |
 | always | hero, prose sections, detail surfaces, theme toggle (chrome from page-scaffold) |
+
+For each concept's type → renderer routing, see the canonical map in `concept-coverage.md` — the
+single source of truth for concept-type-to-component assignment and its disambiguation rules.
 
 Notes on the choices:
 
 - **`decisions[]`** — use **Tabs + tradeoff bars** when each decision weighed options against scored
   axes (the bars need `data-w` magnitudes; tabs swap via `setTab`). With no scores, fall back to the
   **Accordion checklist**: one `<details>` per decision with a verdict badge and rationale in `.ac-body`.
-- **The concept-fidelity gate (run for EVERY concept, generalizes the diagram-fidelity check).** Before
-  selecting a component, classify each `concepts[]` entry into a concept-type using the trigger +
+- **The concept-fidelity gate (run for EVERY concept, generalizes the diagram-fidelity check).** As you
+  select components, classify each concept you intend to convey into a concept-type using the trigger +
   disambiguation rules in `concept-coverage.md`, then bind it to that type's **registered renderer**.
-  If no row matches, compose a **bespoke** component (§ 4) and set `bespoke:true` + a `bespokeReason`.
+  This is a **classify-at-selection** routing decision — transient, not recorded to any standing ledger.
+  If no row matches, compose a **bespoke** component (§ 4) and note what was composed + why.
   **Anti-force-fit invariant:** a concept is NEVER rendered by a component not registered for its type —
   the old "architecture-map is plausible-but-wrong for a state machine" footnote is now a hard rule for
   all types. The disambiguation rules (`concept-coverage.md`) resolve close neighbors; the most specific
@@ -72,6 +71,16 @@ Notes on the choices:
   detail, `closeD` and Escape close the pane) and **theme toggle** (`tgl`) are part of the
   page-scaffold chrome and are always present. See §3.
 
+### ERD layering (synthesis-time, deterministic)
+
+1. Nodes = entities; edges = FK references `(source → target)`. Ignore `source == target` (self-loops) for layering.
+2. **Break cycles → DAG.** DFS the edge set — for determinism, fix the **DFS visitation order = entities in declaration order; for each entity, visit its neighbors (FK targets) in edge-declaration order** — so two runs converge on the same back-edges. Any edge to an ancestor on the current DFS stack is a **back-edge**. Mark/remove back-edges until acyclic; prefer removing the edge whose *source* is the **more-dependent** table (keeps the container/root as parent). **More-dependent = the entity with the greater out-degree of remaining forward FKs; ties broken by declaration order.**
+3. **Rank.** `layer(e)=0` if `e` has no remaining forward FK; else `layer(e)=1 + max(layer(target))`. Layer 0 renders on top; connectors flow upward (child→parent = 1→N).
+4. **Labels.** If every layer-0 entity is referenced-only and the deepest layer is a pure junction (≥2 FKs, referenced by none), label bands `referenced / core(-N) / junction`. If any layer's role is **ambiguous** (e.g. a cycle makes an entity both referenced and dependent), fall back to **neutral `Layer 0/1/2/…`** for the whole diagram. **Hybrid labels are allowed on the neutral fallback:** a band MAY carry an optional **structural-hint suffix** — `Layer 0 · referenced` where that layer is unambiguously referenced-only, `Layer N · junction` where it is a pure junction — while the neutral `Layer N` stays the spine (the suffix is a hint, never the label, and is dropped where the role is genuinely mixed). This is exactly what the golden fixture uses (`Layer 0 · referenced` / `Layer 1` / `Layer 2 · junction`).
+5. **Isolated** entities (no edges) go in a trailing `unrelated` band, never forced into a false relationship.
+
+**ERD fidelity (anti-force-fit):** the layering DAG must be acyclic **after back-edge removal**; every removed back-edge (`.ref.cyc`) and every self-loop (`.ref.self`) must be **visibly marked and rendered** — a schema whose cycles are silently omitted fails the self-check. (The ERD is exempt from the "no cycles in box-and-arrow maps" rule of self-check #18 — it handles cycles by break-and-mark rather than routing to a state diagram.)
+
 ## 2. Omit empty, never stub
 
 A component renders only if its model field has **real content**. A thin session may legitimately be
@@ -82,9 +91,9 @@ just the hero + a summary prose section + one component — that is a complete, 
 - Never emit an empty placeholder ("No files changed"), a component populated with dummy data, or a
   diagram with invented nodes. A missing component is correct; a fabricated one is a defect.
 - Drop the matching CSS and JS too: only the used components' blocks go into `{{COMPONENT_CSS}}` and
-  `{{COMPONENT_JS}}`, and `{{DETAIL_DATA}}` carries only the `DET` ids actually referenced (emit
-  `const DET={};` when nothing wires a detail panel). Unused shared handlers are harmless no-ops, so
-  the shared `{{INTERACTIVITY_JS}}` bundle always ships whole.
+  `{{COMPONENT_JS}}`, and the `{{DATA_JSON}}` island carries only the `DET`/`SURF` entries for the ids
+  actually referenced (emit `{"DET":{},"SURF":{}}` when nothing wires a detail panel). Unused shared
+  handlers are harmless no-ops, so the shared `{{INTERACTIVITY_JS}}` bundle always ships whole.
 
 ## 3. Detail surfaces
 

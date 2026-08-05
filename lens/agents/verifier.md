@@ -50,7 +50,7 @@ You will receive **one** candidate finding (with its `dimension`, `title`, `clai
 {
   "id": "F1",
   "refuted": true,
-  "reason": "Read lens/skills/review/SKILL.md:211 — the catch is not empty; it logs the error and falls through to the markdown fallback, so the failure is surfaced, not swallowed.",
+  "reason": "Read src/api/handlers.ts:211 — the catch is not empty; it logs the error and falls through to the markdown fallback, so the failure is surfaced, not swallowed.",
   "status": "verified"
 }
 ```
@@ -67,4 +67,5 @@ You will receive **one** candidate finding (with its `dimension`, `title`, `clai
 5. **Evidence in `reason`** — name what you read/ran and what you found. No verdict without a concrete reason.
 6. **Read-only** — Bash is for repro/inspection only; never edit, write, stage, or commit.
 7. **One finding per invocation** — you judge exactly the finding handed to you, nothing else.
-- **The engine owns the flip, not you.** You emit exactly one vote per finding (`{id, refuted, reason, status}`). The engine aggregates votes into the schema's `votes{total,couldNotRefute,refuted}` and resolves the finding's `verified` bool: a `refuted:false` + `status:"verified"` vote yields `verified:true` (the finding survives); a `status:"unverified-flagged"` vote keeps the finding with `verified:false` (flagged, never dropped); a `refuted:true` vote drops the finding from the surviving set.
+- **The engine owns the flip, not you.** You emit exactly one vote per finding (`{id, refuted, reason, status}`) — but n votes may run for the same finding, one dispatch per requested panel seat, and the engine aggregates all of them into the finding's `verified` bool and `voteResolution` by the named rule `huginn-quorum-v1`; the vote-tally shape and the resolution branches are declared at `../skills/engine/references/pipeline.md` §5 and `../skills/engine/references/engine-api.md` — not restated here. Your own `status:"unverified-flagged"` vote is what the rule counts as a dead vote; you decide only your own vote, never the finding's fate.
+- **Your `model: opus` frontmatter is an overridable default, never a floor violation.** A caller's `modelPolicy` may resolve you to a different model for this run, but it never resolves below the never-Haiku floor — a second gate alongside `deny`, declared and applied at `../skills/engine/references/engine-api.md` § Model resolution, which every `verifier`-role dispatch passes when the model plan is resolved in pre-flight. A policy value that would put you below it raises there rather than downgrading you. Edge case: `deny:['opus']` with no `default`/`byRole`/`byAgent` to substitute leaves no allowed candidate for your dispatch — the run raises rather than silently downgrading the adversarial skeptic to a weaker model (the denied-winner rule, same section).

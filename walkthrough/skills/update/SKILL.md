@@ -16,8 +16,12 @@ the two stages unique to `update` (reconstruct + merge) live in `references/reco
 
 ## Step 1: Resolve the target (always confirm — the overwrite safety gate)
 
-List `.claude/walkthrough/*.html`. Never overwrite without explicit user confirmation, even when
-model-invoked. Per `.claude/rules/ask-user-question-guard.md`:
+Resolve `<base>` first (same as `create` Step 6.5): if a `settings.md` with `output-location:` exists in
+`walkthroughs/` (visible) or `.claude/walkthrough/` (hidden), use that base; else default to
+`.claude/walkthrough/`. List `<base>/*.html` (not a hardcoded `.claude/walkthrough/`). Never overwrite
+without explicit user confirmation, even when model-invoked. Per `.claude/rules/ask-user-question-guard.md`
+(a repo-development convention, not shipped with the plugin; the shipped constraint — AskUserQuestion option
+lists must have ≥2 entries, the schema's `minItems: 2` — is inlined per-branch below):
 
 - **0 files** → do not proceed. Tell the user: *"No walkthrough exists yet — run `/walkthrough:create` first."* Offer to run it. Stop.
 - **1 file** → confirm with a 2-option single-select `AskUserQuestion`: `"Update <filename>?"` → `Yes` / `No`. (A 1-option list violates the schema's `minItems: 2`; the yes/no form satisfies it.)
@@ -59,25 +63,25 @@ before selecting components. Fold omitted salient items in; note intentional omi
 
 ## Step 6: Select components
 
-Read the renderer references from `${CLAUDE_PLUGIN_ROOT}/skills/create/references/`. Using
-`authoring-guide.md`, map the merged model to component names, then resolve each to its group file via
-`components/index.md`. Apply "omit empty,
-never stub". Compose bespoke components per the authoring-guide recipe where no catalog entry fits.
+Read the renderer references from `${CLAUDE_PLUGIN_ROOT}/skills/create/references/` and run the shared
+**select** stage of `../render/references/render-contract.md` against the merged model — the single
+canonical source for the shared select→assemble→self-check→write mechanics (map to components via
+`authoring-guide.md` + `components/index.md`; "omit empty, never stub"; compose bespoke where nothing fits).
 
 ## Step 7: Assemble the HTML
 
-Start from `page-scaffold.md`. Inline: the `@import` + both `:root` blocks from `design-system.md`;
-the shared JS from `interactivity.md`; the CSS+HTML for each chosen component from the relevant
-`components/<group>.md` files (routed via `components/index.md`);
-the `DET`/detail data. Fill `{{KICKER}}` from session metadata (date · primary type · scope), uppercase per `page-scaffold.md` — the nav status line.
-Keep it self-contained: no `<script src>`, no `<img>`, only the one Google Fonts `@import`. Produce
-**no** update chrome — no "updated" badge, no changelog; the document simply reflects the new
-combined state.
-Generate `{{NAV_LINKS}}` deterministically from `sections[]` (one `<a href="#id">` per section, id reused from the section; first link `class="on"`) — do not hand-write or hand-match ids.
+Assemble per the shared **assemble** stage of `../render/references/render-contract.md`: copy
+`page-scaffold.md` verbatim, fill its component slots from the recipes you selected, inline
+`interactivity.md` into `{{INTERACTIVITY_JS}}`, emit the inert `{{DATA_JSON}}` island, and generate
+`{{NAV_LINKS}}` deterministically from `sections[]`; self-contained, only the one Google Fonts `@import`.
+**Update-specific:** fill `{{KICKER}}` from session metadata (date · primary type · scope), uppercase per
+`page-scaffold.md` — the nav status line; produce **no** update chrome — no "updated" badge, no changelog;
+the document simply reflects the new combined state.
 
 ## Step 8: Self-check (structure)
-Run `${CLAUDE_PLUGIN_ROOT}/skills/create/references/self-check.md` against the assembled HTML; fix
-and re-check before overwriting.
+Run the shared **self-check** stage of `../render/references/render-contract.md`
+(`${CLAUDE_PLUGIN_ROOT}/skills/create/references/self-check.md`) against the assembled HTML; fix and
+re-check before overwriting.
 
 ## Step 9: Write in place
 

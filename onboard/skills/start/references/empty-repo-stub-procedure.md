@@ -1,6 +1,6 @@
 # Empty-Repo Stub Procedure
 
-Canonical procedure for generating a minimal, canonical-shape `.claude/` stub when `/onboard:start` runs on a repo with no source code. Invoked by `../SKILL.md` § Phase 0 (Empty-Repo Guard) after the developer picks option 3 ("Generate canonical stub") from the Phase 0 menu.
+Canonical procedure for detecting an empty repository and generating a minimal, canonical-shape `.claude/` stub when `/onboard:start` runs on a repo with no source code. This reference is the **single source** for Phase 0 behavior — the detection filter, the prior-stub re-run check, the 3-option menu, and each option's execute path all live here; `../SKILL.md` § Phase 0 (Empty-Repo Guard) is a thin pointer into this procedure.
 
 ## Why this reference exists
 
@@ -10,14 +10,58 @@ Before Cluster 2 (2026-04-18), `/onboard:start` on an empty repo was intercepted
 - **B15**: The stub hardcoded `version: "1.0.0"` regardless of installed onboard version.
 - **B16**: The start skill's own empty-path behavior was never tested because the skill never ran for empty repos.
 
-This procedure closes all three by moving the logic INTO the start skill (Phase 0 Empty-Repo Guard) and prescribing the exact canonical-shape output.
+This procedure closes all three by moving the logic INTO the start skill's Phase 0 boundary — consolidated here as the single canonical procedure — and prescribing the exact canonical-shape output.
+
+## Detect empty repository
+
+Runs at the top of `../SKILL.md` § Phase 0, before Phase 1 Recon. Count source-code files (exclude `.git/`, dotfiles, `README*`, `LICENSE*`, `.gitignore`):
+
+```bash
+SRC_COUNT=$(find . -type f \
+  -not -path './.git/*' \
+  -not -name '.*' \
+  -not -name 'README*' \
+  -not -name 'LICENSE*' \
+  | wc -l | tr -d ' ')
+```
+
+- `SRC_COUNT > 0` → source code exists → **skip Phase 0 entirely**, fall through to Phase 1 Recon. Most common case.
+- `SRC_COUNT == 0` → empty repo → proceed to the prior-stub check below.
+
+## Detect prior stub (re-run on an empty dir)
+
+If `.claude/onboard-meta.json` already exists AND `jq -r '.mode // empty'` returns `"stub-empty-repo"` AND `SRC_COUNT == 0` (the developer ran start twice on a still-empty dir): default to no-op — inform the developer a stub already exists, skip re-write. See § Edge cases 1 below for the full re-entry matrix, including the `SRC_COUNT > 0` case.
+
+(When source code has since been added, `SRC_COUNT > 0` short-circuits the detection step above and the full flow runs — Recon → Research → Grounded Wizard → Plan → **hard gate** → Generation — overwriting the stub artifacts. There is no separate promotion branch.)
+
+## Present the 3-option menu
+
+For empty repos without a prior stub, use `AskUserQuestion` (single-select, header: `"Empty repo"`):
+
+> This repository has no source code yet. How would you like to proceed?
+>
+> - **Abort** — stop here. Add source code first, then re-run `/onboard:start`.
+> - **Placeholder only** — write a minimal CLAUDE.md placeholder (no `.claude/` directory). Useful if you want to set up Claude context before the code exists but don't want a formal tooling setup.
+> - **Generate canonical stub** (default) — create CLAUDE.md, `.claude/settings.json`, and `.claude/onboard-meta.json` in canonical schema with stub-mode markers. Re-run `/onboard:start` later to upgrade to full tooling.
+
+Default: **Generate canonical stub**.
+
+**Single-option guard** (per `.claude/rules/ask-user-question-guard.md`): the menu has 3 options → no guard needed.
+
+## Execute the selected path
+
+- **Abort** → stop the skill. No files written.
+- **Placeholder only** → write CLAUDE.md with the placeholder content from § Output artifacts below but SKIP the `.claude/` directory. Return minimal handoff. Do not proceed to further phases.
+- **Generate canonical stub** (default) → continue with the rest of this procedure: the 3 files (§ Output artifacts), the canonical `onboard-meta.json` schema with all 7 generation-phase status keys set to `status: "skipped"` + `reason: "stub-mode-no-code"`, dynamic `pluginVersion` resolution (no hardcoded literals), and the 3-file atomic write order (§ Write order).
+
+After either stub path completes, run a minimal handoff (§ Post-write handoff below) and return to `../SKILL.md` — do NOT continue to Phase 1 Recon. The stub paths never reach `../SKILL.md` § Step 0, so no task list is created for a stub run.
 
 ## Invocation
 
 Called from `../SKILL.md` § Phase 0 Empty-Repo Guard, after:
 
-1. The guard detected no source files (`SRC_COUNT == 0` via the documented `find` filter)
-2. The developer selected option 3 ("Generate canonical stub") from the 3-option `AskUserQuestion` menu
+1. The guard detected no source files (`SRC_COUNT == 0`, § Detect empty repository above)
+2. The developer selected option 3 ("Generate canonical stub") from the § Present the 3-option menu above
 3. The developer has been told what will happen next
 
 Do NOT invoke this procedure from any other context — the Phase 0 guard is the only legitimate entry point.
@@ -196,7 +240,7 @@ Do NOT run Phase 7's full education/handoff content — the stub has nothing to 
 
 1. **Repo already has `.claude/onboard-meta.json` from a prior stub run** — Phase 0 guard detects it via `jq -r '.mode // empty'`. If the value is `"stub-empty-repo"`:
    - If `SRC_COUNT` is still 0: offer re-stub (rare — user ran start twice on empty dir). Default: no-op (stub already exists, exit quickly).
-   - If `SRC_COUNT > 0` (source code was added since the stub): **auto-promote** to the full flow — skip Phase 0, run Phase 1 Recon → Phase 3 Wizard → Phase 6 Generation. The full generation overwrites the stub artifacts. Append an `updateHistory` entry to the new `onboard-meta.json` noting the stub→full promotion.
+   - If `SRC_COUNT > 0` (source code was added since the stub): the Phase 0 guard short-circuits and the **full flow** runs — Recon → Research → Grounded Wizard → Plan → hard gate → Generation — overwriting the stub artifacts. The regenerated `onboard-meta.json` reflects the full run; no separate promotion step and no gate is skipped.
 
 2. **Repo has `.claude/onboard-meta.json` from a prior FULL run** — the Phase 0 guard doesn't fire at all (SRC_COUNT > 0 means Phase 0 falls through to Phase 1). The existing-config check (the "Check for Existing Claude Config" step of Phase 1 Recon) already handles the "existing config, choose: Update / Start fresh / Cancel" flow.
 
@@ -218,5 +262,5 @@ Do NOT run Phase 7's full education/handoff content — the stub has nothing to 
 1. **Canonical schema is mandatory** — every top-level key in the `onboard-meta.json` target matches the canonical shape. Downstream consumers must NOT need to branch on stub vs full mode, except to read the top-level `mode: "stub-empty-repo"` marker when they specifically want to.
 2. **All 7 generation-phase status blocks emit `status: "skipped"`** with `reason: "stub-mode-no-code"` — the pre-exit self-audit (config-generator's) accepts `"skipped"` per the existing enum. Do NOT use `"documented"` here; stub mode produces no artifacts for any phase.
 3. **Dynamic version resolution is not optional** — hard-fail the stub if the onboard version cannot be resolved. Never write `pluginVersion: null` or a hardcoded literal. Closes B15.
-4. **Re-entry into full start is auto-promoted** — when a prior stub is detected and SRC_COUNT > 0, the guard falls through to Phase 1 without re-asking. Users don't have to delete the stub before adding code.
+4. **Re-entry with code added falls through to the full flow** — when a prior stub is detected and `SRC_COUNT > 0`, the Phase 0 guard short-circuits to Phase 1 without re-asking. Users don't have to delete the stub before adding code; the full generation overwrites the stub artifacts (with the normal Phase 5 hard gate).
 5. **Three files, in this order, atomic writes** — nothing else is emitted; no snapshots, no subdirectory CLAUDE.md files. Stub mode is minimal by design.

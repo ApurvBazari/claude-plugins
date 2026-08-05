@@ -130,7 +130,7 @@ p code{font-family:var(--mono);font-size:.8rem;background:var(--accent-soft);col
 
 ## Legend
 
-**When:** A document uses colour/symbol coding (status colours, category swatches) that needs a key. A compact swatch row — reuses the palette pattern from `seed.html`.
+**When:** A document uses colour/symbol coding (status colours, category swatches) that needs a key. A compact swatch row — its CSS ships with this recipe below.
 
 ```html
 <div class="legend">

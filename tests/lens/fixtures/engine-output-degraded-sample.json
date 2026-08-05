@@ -9,17 +9,22 @@
       "file": "src/auth/login.ts",
       "label": "spec-gap",
       "claim": "The spec requires an audit-log entry on every login attempt; none is emitted.",
-      "detail": "The adversarial verifier errored mid-refute (a tool failure), so this finding is KEPT and flagged as unverified rather than silently dropped — the degraded contract. verified is false and the review-model renders it as 'unverified-flagged'.",
+      "detail": "The adversarial verifier errored mid-refute (a tool failure), so its one vote is dead and tallies into abstained. With valid 0 below the quorum of 1, huginn-quorum-v1 resolves the finding as abstained: KEPT and flagged as unverified rather than silently dropped — the degraded contract. verified is false and the review-model renders it as 'unverified-flagged'.",
       "suggestedFix": "Emit an audit-log record (actor, ip, outcome) on each login attempt, success or failure.",
       "source": "spec-adherence",
       "votes": {
         "total": 1,
         "couldNotRefute": 0,
-        "refuted": 0
-      }
+        "refuted": 0,
+        "abstained": 1
+      },
+      "voteResolution": "abstained"
     }
   ],
   "recommendedEscalation": "moderate",
   "degraded": true,
-  "summary": "Degraded review: the adversarial VERIFY pass errored part-way, so its one finding is retained as unverified-flagged (verified:false) rather than dropped. degraded is true; recommendedEscalation is moderate (verdict 'fix')."
+  "degradedReasons": [
+    { "code": "finder-died", "detail": "the risk-classify finder errored mid-run and returned no parseable output" }
+  ],
+  "summary": "Degraded review: the risk-classify finder died mid-run and is missing from this run's coverage (degradedReasons: finder-died). Separately, the adversarial VERIFY pass errored part-way on F1, so that finding is retained as unverified-flagged (verified:false) rather than dropped. degraded is true; recommendedEscalation is moderate (verdict 'fix')."
 }

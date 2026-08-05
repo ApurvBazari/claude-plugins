@@ -29,8 +29,8 @@ the detail-panel store is embedded verbatim). Reconstruction reads the rendered 
 | Tabs + tradeoff bars, or accordion `<details>` | `decisions[]` (`title`, `why`, `alternatives`, `tradeoffs[{axis, score}]`) | bar widths carry the score — read `data-w="N"` back into `score`; the tab / `.ac-body` copy is `why` / `alternatives` |
 | File tree / filterable cards | `files[]` (`path`, `change`, `note`) | `change` is encoded by the row's color/badge class |
 | Timeline / stepper | `timeline[]` (`t`, `label`, `ref`) | `ref` is the anchor each entry scrolls to |
-| Trailing `const DET={…}` in the `<script>` | `details{}` | **highest-fidelity source** — see below |
-| Trailing `const SURF={…}` in the `<script>` | `details{}[id].surface` | the `{{SURFACE_MAP}}` slot — maps each id to `'pane'`/`'sheet'`; recovers the surface kind |
+| `DET={…}` — from the `#wt-data` island (new) OR the trailing `const DET={…}` in the `<script>` (structured) | `details{}` | **highest-fidelity source** — see below |
+| `SURF={…}` — from the `#wt-data` island (new) OR the trailing `const SURF={…}` in the `<script>` (structured) | `details{}[id].surface` | maps each id to `'pane'`/`'sheet'`; recovers the surface kind |
 | Pre-rendered `<dialog class="sheet" id="sheet-<id>">` blocks | `details{}` (sheet-kind) | the `{{SHEETS}}` slot — structured `sf-*` header + hosted components recover the rich detail; see below |
 
 ### Reconstruction notes
@@ -39,18 +39,34 @@ the detail-panel store is embedded verbatim). Reconstruction reads the rendered 
   number into the text (`01 — flow`); strip a leading `NN[ —-]` so the CSS counter does not
   double-number after re-render. Store only the label.
 
+### Detect the data layout first (three historical shapes)
+
+The detail store's location changed in 1.3.1. Probe in this order and parse accordingly — every
+pre-1.3.1 document upgrades into the new layout on re-render (same pattern as the flat→structured
+detail upgrade):
+
+1. **New (≥1.3.1)** — a `<script type="application/json" id="wt-data">` block is present. `JSON.parse`
+   its content into `{DET, SURF}`; recover `details{}` from `DET` (pane-kind) + the `{{SHEETS}}` dialogs
+   (sheet-kind) + `SURF` exactly as below.
+2. **Structured (1.1.0–1.3.0)** — no `#wt-data`, but an inline `const SURF={…}` and `const DET={…}` in the
+   page `<script>`. Read them in place (the current behavior, unchanged).
+3. **Flat (pre-1.1.0)** — no `#wt-data`, no `const SURF`, and `DET` records carry a `b` field. Use the flat
+   `DET{k,h,b}` upgrade path in "Back-compat" below.
+
 ### The `DET` store + `SURF` map + sheet dialogs are the reliable path for `details{}`
 
 The detail data is embedded verbatim in the page `<script>` and body. Parse it directly rather than
 re-deriving from prose. Reverse the `details → DET/SURF/{{SHEETS}}` transform documented in
 `page-scaffold.md` + `authoring-guide.md` § 3:
 
-- **`const SURF={ "<id>": "pane"|"sheet" }`** (the `{{SURFACE_MAP}}` slot) — read first; it tells you
-  which shell each id used, and re-creates the model's `surface` field.
-- **Pane-kind** (`SURF[id]!=='sheet'`) — read `DET[id]` from the structured
-  `const DET={ "<id>": {k,h,summary,where,code,points,related} }` literal (the `{{DETAIL_DATA}}` slot):
-  `kicker`=`k`, `heading`=`h`, and `summary`/`where[]`/`code[]`/`points[]`/`related[]` map back to the
-  same-named fields verbatim (arrays stay arrays).
+- **`SURF={ "<id>": "pane"|"sheet" }`** (parsed from the `#wt-data` island in the new layout, or read
+  from the structured-era inline `const SURF=`) — read first; it tells you which shell each id used, and
+  re-creates the model's `surface` field.
+- **Pane-kind** (`SURF[id]!=='sheet'`) — read `DET[id]` from the
+  `DET={ "<id>": {k,h,summary,where,code,points,related} }` structure (parsed from the island in the new
+  layout, or the structured-era inline `const DET=`): `kicker`=`k`, `heading`=`h`, and
+  `summary`/`where[]`/`code[]`/`points[]`/`related[]` map back to the same-named fields verbatim (arrays
+  stay arrays).
 - **Sheet-kind** (`SURF[id]==='sheet'`) — the detail is NOT in `DET`; read its pre-rendered
   `<dialog class="sheet" id="sheet-<id>">`: `sf-kicker`→`kicker`, `sf-h`→`heading`, `sf-summary`→`summary`,
   `sf-where`(`sf-loc` chips)→`where[]`, `sf-code`→`code[]`, `sf-points`→`points[]`, `sf-related`→`related[]`,
@@ -83,16 +99,13 @@ If the file is hand-edited, minified, or missing the `DET` store, reconstruct wh
 tell the user the fidelity is partial. Never invent decisions, files, or metrics that are not in the
 HTML.
 
-### New 1.2.0 components + the `concepts[]` ledger
+### New 1.2.0 components → model
 
 - **New 1.2.0 components → model:** `.dtree`→`branching-logic`, `.erd`→`data-model`, `.htree`→`hierarchy`,
   `.lstack`→`layering`, `.ladder`→`causal-chain`. For each, recover the nodes/rows + their `DET` detail
-  entries exactly as for the existing diagrams.
-- **Rebuild `concepts[]`:** for each rendered structural/diagram component, emit a `concepts[]` entry —
-  `type` from the component→type map above (and the existing diagrams), `renderedBy` = the component key,
-  `surface` = the hosting section id. A pre-1.2.0 doc with no ledger in its HTML is an UPGRADE trigger:
-  synthesize the ledger from the components present (best-effort), exactly as the flat `DET{k,h,b}` →
-  structured-surface upgrade already works.
+  entries exactly as for the existing diagrams — keying off the rendered class names, `data-*` attrs,
+  `onclick="openSurface(...)"`, and the `#wt-data` `DET`/`SURF` island, the same selectors the rest of
+  Part A uses.
 
 ## Part B — Merge into one coherent, refreshed model
 

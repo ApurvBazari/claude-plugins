@@ -19,7 +19,11 @@ The visual layer (`create/references/`: `design-system.md`, `interactivity.md`, 
 
 ## The 5-stage pipeline
 
-The `create` skill runs a fixed model-before-markup pipeline. The model is fully synthesized before a single tag is written.
+The `create` skill runs a fixed model-before-markup pipeline. The model is fully synthesized before a
+single tag is written. The first two stages (gather, synthesize) are create's own; the terminal stages
+(**select → assemble → self-check → write**) are the shared render mechanics, described once in
+`skills/render/references/render-contract.md` — create, update, document, and render all PERFORM them by
+following that contract rather than restating them here.
 
 ```
 ┌──────────┐   ┌─────────────┐   ┌──────────┐   ┌────────────┐   ┌─────────┐
@@ -37,9 +41,15 @@ The `create` skill runs a fixed model-before-markup pipeline. The model is fully
 
 1. **gather** — read any source file you intend to cite so `path:line` refs are real. The session transcript is the source of record; there is no repository scan.
 2. **synthesize** — build the structured session model per `references/session-model.md` (`title`, `summary`, `typeTags`, `sections[]`, `nodes[]`, `edges[]`, `decisions[]`, `files[]`, `timeline[]`, `metrics[]`, `openQuestions[]`, `details{}`) BEFORE any HTML.
-3. **select** — map the model to components via `references/authoring-guide.md` + the `references/components/` catalog (look up each chosen component in `components/index.md`); apply "omit empty, never stub"; compose bespoke where no catalog entry fits.
-4. **assemble** — start from `references/page-scaffold.md`; inline the `@import` + both `:root` blocks from `references/design-system.md`, the shared JS from `references/interactivity.md`, and the CSS/HTML for each chosen component (read only the `references/components/<group>.md` files for the components you selected) plus its detail (`DET`) data.
-5. **write** — compute `.claude/walkthrough/<YYYY-MM-DD-HHMM>-<slug>.html` (collision → `-2`, `-3`, …), create the dir if missing, handle the first-run gitignore prompt, then write and offer to open (never auto-open).
+3. **select → assemble → self-check → write** — the shared render stages, per
+   `skills/render/references/render-contract.md` (the single source): map the model to components (catalog
+   floor + bespoke escape), copy `references/page-scaffold.md` verbatim and fill its slots (component
+   CSS/JS, the `{{INTERACTIVITY_JS}}` bundle, the inert `{{DATA_JSON}}` island, deterministic
+   `{{NAV_LINKS}}`), run the structural self-check, then write. `create` wraps them with its own output-base
+   resolution, proliferation guard, first-run gitignore prompt, and open offer
+   (`.claude/walkthrough/<YYYY-MM-DD-HHMM>-<slug>.html`, collision → `-2`, `-3`, …; never auto-open).
+
+**v1.3.1** — the assembled page emits THREE script blocks: an inert `<script type="application/json" id="wt-data">` holding `{DET,SURF}` (parsed at runtime, never executed), then the interactivity and component `<script>` boilerplate. Author content never sits in executable JS. Sections are visible unless JS proves healthy (`html.js` gate + 2.5s failsafe). `update` probes all three historical layouts.
 
 ## The update skill — reconstruct, merge, overwrite in place
 
@@ -72,7 +82,7 @@ These two invariants are non-negotiable — they are what make every walkthrough
 
 ## Pre-write gates
 
-Two model-performed gates run before write, shared by all three skills: `self-check.md` (structure — self-contained, tokens, ASCII CSS, nav↔id, DET keys) and `completeness.md` (coverage — the salient-item critic after synthesis + the coverage note at the offer step).
+Two model-performed gates run before write: `self-check.md` (structure — self-contained, tokens, ASCII CSS, nav↔id, DET keys) runs in all four skills, including `render`'s own self-check stage; `completeness.md` (coverage — the salient-item critic after synthesis + the coverage note at the offer step) runs only in the three user-facing skills — `render` has no coverage gate.
 
 ## The open component system
 
@@ -95,11 +105,14 @@ First-class additions in v1.1.0 (lens review layer): components/review.md (annot
 
 First-class additions in v1.2.0 (concept-coverage layer):
 - **`concept-coverage.md`** — the concept→renderer map + disambiguation rules; the auditable answer to
-  "what can we explain?". The `concepts[]` session-model ledger records each concept + its renderer.
+  "what can we explain?". The concept-fidelity gate classifies and routes each concept against this map at
+  selection time — no persisted ledger.
 - **Concept-fidelity gate** (`authoring-guide.md` § 1) — generalizes the diagram-fidelity check to every
   concept-type with an anti-force-fit invariant.
 - **Five new renderers** — decision tree + recursive tree + layer stack (`components/diagrams.md`),
   ERD (`components/data.md`), causal hypothesis ladder (`components/reasoning.md`).
+
+**v1.3.0** — the ERD (`components/data.md`) is rewritten as a dependency-layered, field-anchored, cycle-aware renderer; hover-connector JS lives in `interactivity.md`; layering algorithm in `authoring-guide.md` § 1.
 
 ## Detail surfaces
 
@@ -110,7 +123,7 @@ Clicking an interactive node, card, or cross-link chip opens its detail through 
 
 **One structured schema.** A detail is `{kicker, heading, summary, where[], code[], points[], related[], surface?, components[]}` — replacing the old `{k,h,b}` innerHTML blob. The shared `renderSurface(d,host)` builds the pane DOM from those fields on click; a sheet is **pre-rendered** into the `{{SHEETS}}` slot with the same `sf-*` markup. "Omit empty per sub-field."
 
-**Hybrid routing.** At assemble time each detail gets a kind: an explicit `surface` override wins, else it is inferred — `components`, a `code[]` block, or a `summary`+`points` over ~320 chars → `sheet`, otherwise `pane`. A `const SURF={id:'pane'|'sheet'}` map (the `{{SURFACE_MAP}}` slot) drives the runtime router.
+**Hybrid routing.** At assemble time each detail gets a kind: an explicit `surface` override wins, else it is inferred — `components`, a `code[]` block, or a `summary`+`points` over ~320 chars → `sheet`, otherwise `pane`. A `const SURF={id:'pane'|'sheet'}` map (emitted into the inert `{{DATA_JSON}}` island and parsed at runtime) drives the runtime router.
 
 **Native `<dialog>` nesting, capped.** Sheets open via `showModal()`, so the browser **top layer** gives stacking, focus-trap, top-down Escape, and a stylable `::backdrop` with no library. A pane reached from *inside* a sheet can't use the non-modal `.panel` (it would render behind the modal), so it renders via `renderSurface` into a shared right-edge `<dialog class="sheet pane-dialog" id="paneDialog">`. The shared `_capPush(el)` caps depth at **3** (replace-topmost beyond) and carries an `el.open` no-op guard so a bidirectional `related[]` chip (A↔B) can't double-push the stack. The `openSurface` reference graph must be acyclic.
 
@@ -132,7 +145,11 @@ Three user-facing skills (all show in `/walkthrough:` autocomplete; all default 
   walkthrough plugin's first internal building block (programmatic-API category, like `onboard:generate`);
   consumed by the `lens` plugin. "Render the session" for users remains `create`.
 
-One internal building block: `render/SKILL.md` (`user-invocable: false`) — invoked by external plugins (e.g. lens) that supply a pre-synthesized model. The user-facing skills (`create`, `update`, `document`) handle synthesis themselves and do not call `render` directly. No agents, no hooks, no scripts.
+One internal building block: `render/SKILL.md` (`user-invocable: false`). `render` is the documented
+terminal stage; the user-facing producers (`create`, `update`, `document`) synthesize their own model, then
+PERFORM the shared terminal stages by following `skills/render/references/render-contract.md` — they do
+**not** invoke the `render` skill. The `render` SKILL is the programmatic entry for external callers (e.g.
+`lens`) that supply a pre-synthesized model. No agents, no hooks, no scripts.
 
 ## AskUserQuestion usage
 

@@ -48,7 +48,7 @@ One HTML file. Open it in any browser and you get a composed document — not a 
 - an **interactive explorer** — a selector that drives a live diagram region and a detail pane from one shared data model, useful for multi-component architectures where you want to navigate relationships rather than read a static diagram
 - a **data-driven step timeline** — phases of parallel and sequential steps with source pills and micro-cycles, useful when the session covers a pipeline, workflow, or multi-phase build
 - **rich detail surfaces** — click a node, card, or cross-link and its detail opens in a structured glance **pane**, or a centered **sheet** for richer content (a hosted diagram, code) that can itself open further detail, nested
-- a **concept-coverage map** plus five concept-shaped renderers — a decision tree, a recursive tree, a layer stack, an ERD, and a cause→effect hypothesis ladder — so branching logic, hierarchies, layered stacks, data models, and debugging traces each render in the shape that fits them
+- a **concept-coverage map** plus five concept-shaped renderers — a decision tree, a recursive tree, a layer stack, a layered, cycle-aware ERD, and a cause→effect hypothesis ladder — so branching logic, hierarchies, layered stacks, data models (schema view with dependency-banded entities, field-anchored relationships, and foreign-key cycles/self-references), and debugging traces each render in the shape that fits them
 
 Components adapt to the session. The catalog is a floor, not a ceiling: when content fits no off-the-shelf component, a bespoke one is composed from the same design-system primitives so it still looks native. Empty sections are omitted rather than stubbed.
 
@@ -116,7 +116,7 @@ Because a Cowork folder is often not a git repository, `create` asks **on first 
 
 ## Limitations
 
-- **Android / local-file JS.** Opened as a `file://` document on Android, the page renders the hero and nothing below it — Android blocks JavaScript in local files, and the sections reveal via JS. View on desktop, or host the file over `http(s)`.
+- **Android / local-file JS.** As of 1.3.1 the document is fully readable without JavaScript — opened as a `file://` document on Android (which blocks local-file JS) or with JS disabled, all prose and diagrams render; only the click-to-open detail surfaces and the scroll-reveal animation are inert. For the full interactive experience, view on desktop or host the file over `http(s)`.
 - **No print path.** The document is built for on-screen exploration; there is no dedicated print stylesheet, and collapsed detail (panes, sheets) will not appear in a printout.
 
 ## What it is / isn't

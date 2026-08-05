@@ -117,7 +117,7 @@ Then render + hard-gate exactly like `start` Phase 5 (Plan → Preview → Gate)
 
 > **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(adopt:write-handoff → in_progress)` now (only reached on **Approve** at the A5 gate), **before** the baseline write below. Mark it `TaskUpdate(... → completed)` after the baseline is written and the handoff is shown (or, when entered from update, after control is handed back) — that completes the last phase of the adopt run; all 6 `adopt` tasks are now `completed`.
 
-Follow `references/baseline-synthesis.md` § A6: write the snapshots + `onboard-meta.json`, then patch `onboard-research.json`'s `artifacts.html` to the A5 render path (or leave null on markdown fallback). **Touch no hand-crafted artifact.**
+Follow `references/baseline-synthesis.md` § A6: write the baseline — write the snapshots + `onboard-meta.json`, then patch `onboard-research.json`'s `artifacts.html` to the A5 render path (or leave null on markdown fallback). **Touch no hand-crafted artifact.**
 
 Then hand off:
 

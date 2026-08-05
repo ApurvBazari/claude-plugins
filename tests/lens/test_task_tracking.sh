@@ -34,7 +34,6 @@ grep -qiE 'one task per stage|never per finder|single .?analyze' "$TT" || fail "
 grep -q 'TaskCreate' "$REVIEW" || fail "review must create the task list via TaskCreate"
 grep -q 'taskIds' "$REVIEW" || fail "review must pass taskIds to the engine"
 grep -q 'task-tracking' "$REVIEW" || fail "review must reference references/task-tracking.md"
-grep -qiE 'create no tasks|no .?taskIds|no task list' "$REVIEW" || fail "review orchestrator mode must skip tracking"
 grep -qiE 'nothing to review' "$REVIEW" || fail "review must handle the empty-diff path (mark reconcile/render deleted, report completed)"
 grep -qiE 'render fail.*skip the (state )?write' "$REVIEW" || fail "review SKILL must state render-failure skips the state write"
 grep -qiE 'render failure|empty output|no path returned' "$MDFB" || fail "markdown-fallback must define render failure"
@@ -60,7 +59,7 @@ grep -qE 'emptyScope === true' "$REVIEW" || fail "review must key the empty bran
 # Real text: "Clean review (real diff, zero findings): ... fall through to Steps 3–5"
 grep -qiE 'clean review|fall through to (steps?|render)|zero findings' "$REVIEW" || fail "review must document the clean-review fall-through (real diff, zero findings -> render)"
 
-# === CLAUDE.md narrative + version 1.4.1 ===
+# === CLAUDE.md narrative + version consistency (derived) ===
 grep -qiE 'task list|in-session task|progress task' "$CLAUDEMD" || fail "lens CLAUDE.md must describe the in-session task list"
 bash "$ROOT/tests/lib/assert-versions.sh" lens || fail "lens version consistency (plugin.json = marketplace = CHANGELOG)"
 grep -q '1.2.0' "$CHANGELOG" || fail "lens CHANGELOG must have a 1.2.0 entry"

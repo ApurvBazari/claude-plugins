@@ -9,9 +9,9 @@
   <div class="sec-label"><files></div>
   <h2>File <em>tree</em></h2>
   <div class="tree"><span class="dir"><root>/</span>            <span class="nw"><N new></span>
-├── <span class="fl" data-d="<id1>" onclick="openSurface('<id1>')"><file-a></span> <span class="nw">new</span>
+├── <span class="fl" data-d="<id1>" role="button" tabindex="0" aria-label="<file-a>" onclick="openSurface('<id1>')"><file-a></span> <span class="nw">new</span>
 ├── <span class="dir"><subdir>/</span>
-│   └── <span class="fl" data-d="<id2>" onclick="openSurface('<id2>')"><file-b></span> <span class="ed">edited</span>
+│   └── <span class="fl" data-d="<id2>" role="button" tabindex="0" aria-label="<file-b>" onclick="openSurface('<id2>')"><file-b></span> <span class="ed">edited</span>
 └── <span class="fl"><file-c></span></div>
 </section>
 ```
@@ -40,15 +40,15 @@ Render a one-row legend above the tree mapping each risk to its color. Tokens on
 
 ## Filterable cards + pills
 
-**When:** The session produced many discrete items (commits, tests, tools, tasks) that group into categories. Toggle a pill to show/hide a category. Lifted from `seed.html`.
+**When:** The session produced many discrete items (commits, tests, tools, tasks) that group into categories. Toggle a pill to show/hide a category. The full CSS ships with this recipe below.
 
 ```html
 <section id="<id>">
   <div class="sec-label"><catalog></div>
   <h2>Filterable <em>cards</em></h2>
   <div class="pills">
-    <div class="pill on" data-f="<catA>" onclick="tog(this)"><span class="s" style="background:var(--green)"></span><catA></div>
-    <div class="pill on" data-f="<catB>" onclick="tog(this)"><span class="s" style="background:var(--amber)"></span><catB></div>
+    <div class="pill on" data-f="<catA>" role="button" tabindex="0" aria-label="Filter <catA>" onclick="tog(this)"><span class="s" style="background:var(--green)"></span><catA></div>
+    <div class="pill on" data-f="<catB>" role="button" tabindex="0" aria-label="Filter <catB>" onclick="tog(this)"><span class="s" style="background:var(--amber)"></span><catB></div>
   </div>
   <div class="cards">
     <div class="tcard" data-cat="<catA>" style="border-left-color:var(--green)"><div class="cat" style="color:var(--green)"><catA></div><div class="tn"><title></div><div class="td"><one-line description></div></div>
@@ -71,7 +71,7 @@ Render a one-row legend above the tree mapping each risk to its color. Tokens on
 .tcard .td{font-size:.8rem;color:var(--ts);}
 ```
 
-**Wiring:** pills → `tog(this)` (rebuilds the active `data-f` set and hides `.tcard`s whose `data-cat` isn't active). For a card detail surface, add `data-id="<id>"` + `onclick="openCard(this)"` and a matching `details{}`/`DET` entry — the card's content comes from the structured detail, not inline `data-*` text.
+**Wiring:** pills → `tog(this)` (rebuilds the active `data-f` set and hides `.tcard`s whose `data-cat` isn't active). For a card detail surface, add `data-id="<id>"` + `onclick="openSurface('<id>')"` and a matching `details{}`/`DET` entry — the card's content comes from the structured detail, not inline `data-*` text.
 
 ## Timeline
 

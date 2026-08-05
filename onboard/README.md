@@ -18,7 +18,7 @@ All skills are invoked with the `/onboard:<name>` slash syntax. Read-only helper
 
 ### `/onboard:evolve` — the drift detection loop
 
-The drift loop. Reads `.claude/greenfield-drift.json` (populated by auto-evolution hooks `onboard:start` writes during initial setup), compares the snapshot against current code state, and proposes targeted updates: new languages added, new dependencies, structural changes, missing hooks, stale rules.
+The drift loop. Reads `.claude/onboard-drift.json` (populated by auto-evolution hooks `onboard:start` writes during initial setup), compares the snapshot against current code state, and proposes targeted updates: new languages added, new dependencies, structural changes, missing hooks, stale rules. (Legacy projects: the old `greenfield-drift.json` is still read; `/onboard:evolve` migrates it.)
 
 You decide which proposed updates to apply. Snapshot then updates so the next `/onboard:evolve` run is incremental.
 
@@ -56,7 +56,7 @@ Quick health check showing last run date, generated artifacts, integrity status,
 
 ### `/onboard:generate` *(internal API — `user-invocable: false`, hidden from `/` menu)*
 
-Internal generation step invoked by `/onboard:start` (after the grounded wizard) and by `/onboard:update` / `/onboard:evolve` (for missing-file repair). Consumes the v3 context shape (`version: 3`, per `skills/generate/references/context-shape-v3.json`) and emits all Claude tooling artifacts without re-running the interactive wizard or codebase analysis. This is not an external API — the v2 external-caller contract was removed in 3.0.0. It accepts a `mode`: `"plan"` computes the `generationManifest` (what it *would* write) for the pre-implementation gate without writing; `"write"` (default) runs the full pipeline.
+Internal generation step invoked by `/onboard:start` (after the grounded wizard) and by `/onboard:update` / `/onboard:evolve` (for missing-file repair). Consumes the v3 context shape (`version: 3`, per `schemas/context-shape-v3.json`) and emits all Claude tooling artifacts without re-running the interactive wizard or codebase analysis. This is not an external API — the v2 external-caller contract was removed in 3.0.0. It accepts a `mode`: `"plan"` computes the `generationManifest` (what it *would* write) for the pre-implementation gate without writing; `"write"` (default) runs the full pipeline.
 
 ## Architecture
 
@@ -102,7 +102,7 @@ Internal architecture and agent contracts: [`onboard/CLAUDE.md`](./CLAUDE.md).
 
 When `/onboard:start` runs in **enriched mode**, it installs auto-evolution hooks that quietly track changes:
 
-- **FileChanged hooks** on `package.json`, `tsconfig.json`, `pyproject.toml`, lockfiles, and structural anchors → log diffs to `.claude/greenfield-drift.json`
+- **FileChanged hooks** on `package.json`, `tsconfig.json`, `pyproject.toml`, lockfiles, and structural anchors → log diffs to `.claude/onboard-drift.json`
 - **SessionStart hook** → summarises pending drift at the start of each Claude Code session
 
 Then `/onboard:evolve` reads the drift log, compares against the original snapshot, categorises changes (new dependencies, structural shifts, config diffs, missing hooks), proposes targeted updates, and applies the ones you approve. Snapshot updates after each run so subsequent invocations are incremental.

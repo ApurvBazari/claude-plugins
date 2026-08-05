@@ -17,22 +17,6 @@ exact keys `authoring-guide.md` keys its mapping table off of — do not rename 
   "title":   "...",                  // doc <title> + hero <h1>; page-scaffold hero slot
   "summary": "...",                  // hero lede / one-paragraph plain recap under the h1
 
-  // concepts[] — the legibility LEDGER: every concept this doc explains + how it renders.
-  // Synthesis classifies each concept into a `type` from concept-coverage.md, then the
-  // concept-fidelity gate (authoring-guide.md § 1) binds it to a renderer. Omit-empty governs:
-  // list only concepts actually conveyed. The completeness critic walks this array (completeness.md).
-  "concepts": [
-    {
-      "id": "router-branch",          // stable key
-      "type": "branching-logic",       // a concept-type from concept-coverage.md
-      "label": "How the router picks a handler",
-      "renderedBy": "decision-tree",   // component key (as in sections[].components[]), or null when bespoke
-      "surface": "routing",            // the section id it renders in, or the literal "sheet"
-      "bespoke": false,                // true → composed via authoring-guide § 4
-      "bespokeReason": null            // required string when bespoke:true (what was composed + why)
-    }
-  ],
-
   // typeTags drive the hero chip row. Special-case: if it includes "research",
   // the page LEADS with a concept/mind map + callouts instead of a code-change layout.
   "typeTags": ["feature", "parsing"], // → hero chips; "research" → concept map + callouts
@@ -54,6 +38,21 @@ exact keys `authoring-guide.md` keys its mapping table off of — do not rename 
   // `kind` hints intent; nodes with a matching details[] entry are clickable (openSurface).
   "nodes": [ { "id": "...", "label": "...", "kind": "component|step|concept|state|actor" } ], // → diagram nodes
   "edges": [ { "from": "<id>", "to": "<id>", "label": "", "guard": "", "seq": 0 } ], // guard → state-edge condition; seq → sequence order
+
+  // dataModel → the layered ERD (components/data.md). A relational schema is its OWN shape, not
+  // nodes[]/edges[]: entities with typed fields, keyed rows, and FK refs that carry a cardinality.
+  "dataModel": {                 // populated ONLY for schema/ERD sessions; omit otherwise
+    "entities": [
+      { "id": "user", "name": "User", "fields": [
+        { "name": "id", "type": "uuid", "key": "pk" },
+        { "name": "email", "type": "text" },
+        { "name": "manager_id", "key": "fk",
+          "ref": { "entity": "user", "field": "id", "cardinality": "N:1" } } ] }
+      // …
+    ]
+    // layer, edgeKind (forward|self|back), band role/neutral labels and placement are
+    // COMPUTED at synthesis per authoring-guide.md § "ERD layering" — never hand-authored.
+  },
 
   // decisions[] → Tabs + tradeoff bars WHEN tradeoffs[] carry scored axes (bars use data-w);
   // with no scores, fall back to the Accordion checklist (one <details> per decision).
@@ -112,7 +111,7 @@ exact keys `authoring-guide.md` keys its mapping table off of — do not rename 
     "groups": [ { "source": "<spec/plan filename>", "kind": "spec|plan",
                   "items": [ { "label": "...", "state": "met|partial|missing|followed|deviated" } ] } ]
   },
-  "findings": [                       // → findings-list + diff pins; each id also a DET sheet
+  "findings": [                       // → findings-list + diff pins; each id is pre-rendered as a {{SHEETS}} dialog (SURF[id]='sheet'), not in DET
     { "id": "F1", "severity": "critical|high|medium|low",  // 'info' is NOT a severity — render-only chip role for 'low' (review-model-assembly.md)
       "category": "spec-gap|plan-deviation|bug|silent-failure|security|risk|test-gap|quality",
       "location": "path:line", "claim": "...", "detail": "...",
@@ -129,6 +128,8 @@ A detail with `components`, `code`, or a long `summary`+`points` is inferred `sh
 
 **Nesting.** A sheet's hosted `components[]` may contain nodes that reference other `details{}` ids via `openSurface`, so one detail can open another. Two hard limits keep this bounded: the reference graph must be **acyclic** — a detail must never transitively open itself (an `A → B → A` chain is a build failure) — and the open depth is capped at **3** (a 4th nested open replaces the topmost surface rather than deepening). Author chains deeper than 3 are flattened at synthesis time. The self-check enforces both the acyclic and depth-≤-3 rules.
 
+Each entity `id` is also its `openSurface` target and its ERD `data-ent`; keep the `details{}` cross-link graph acyclic even when the FK graph cycles.
+
 ## Part B — Worked example: "Adding the HDFC SMS parser"
 
 A complete, realistic model for a small feature session. Every field is populated with believable
@@ -140,11 +141,6 @@ structured `Txn` records, with a fail-soft strategy and one-pattern-per-format d
   "title": "Adding the HDFC SMS parser",
   "summary": "Wired up a parser that turns raw HDFC bank transaction SMS into structured Txn records. A RegexMatcher pulls the amount, merchant, and date out of the message; a TxnExtractor normalizes them into a Txn. Unrecognized messages fail soft to null instead of throwing, so a new SMS format never crashes the import pipeline.",
   "typeTags": ["feature", "parsing", "tests"],
-
-  "concepts": [
-    { "id": "pipeline", "type": "linear-process", "label": "How a message becomes a Txn", "renderedBy": "flow", "surface": "pipeline", "bespoke": false, "bespokeReason": null },
-    { "id": "failsoft", "type": "scored-decision", "label": "Fail soft on unrecognized SMS", "renderedBy": "tabs", "surface": "decisions", "bespoke": false, "bespokeReason": null }
-  ],
 
   "sections": [
     {
@@ -280,7 +276,7 @@ This model is synthesized in-memory before any HTML and drives component selecti
 The review fields (`verdict`, `adherence`, `findings`, `diffHunks`, `files[].risk`) are optional and
 populated **only** by the `lens` plugin, which assembles the model in context and hands it to
 `walkthrough:render`. `create`/`document`/`update` never set them; omit-empty keeps them inert. Each
-`findings[]` id maps to a `DET` sheet entry (`SURF[id]='sheet'`), and both its findings-list card and
+`findings[]` id maps to a pre-rendered `{{SHEETS}}` dialog (`SURF[id]='sheet'`), and both its findings-list card and
 its annotated-diff pin call `openSurface('<id>')`.
 
 `iteration` (`fixed|still-open|new|possibly-resolved`) and `iterationDelta` are the **state-aware**

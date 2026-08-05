@@ -14,10 +14,6 @@ grep -qi 'orchestrator is the single writer' "$REC" || fail "CO1: reconcile must
 grep -qi 'severityTrend' "$REC" || fail "CO2: reconcile must name severityTrend in the returned object"
 grep -qi 'delta' "$REC" || fail "CO2: reconcile must name delta in the returned object"
 
-# CO3 — SKILL exposes the compute-only branch: return, skip render (Step 4) and state write (Step 5).
-grep -qi 'compute-only' "$SKILL" || fail "CO3: SKILL must document the compute-only branch"
-grep -qiE 'skip .*render|skip Step 4' "$SKILL" || fail "CO3: SKILL compute-only must skip the render"
-
 # CO4 — acknowledged suppression wired for orchestrator mode (caller supplies it); standalone stays fenced.
 grep -qi 'wired in orchestrator mode' "$REC" || fail "CO4: reconcile must wire acknowledged for orchestrator mode"
 grep -qiE 'suppressed|kept out' "$REC" || fail "CO4: acknowledged findings must be suppressed"

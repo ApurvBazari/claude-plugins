@@ -88,7 +88,6 @@ Internal building blocks (`user-invocable: false` — hidden from menu):
 - `skills/generate/SKILL.md` — internal generation step, invoked via Skill tool
 - `skills/wizard/SKILL.md` — drives the grounded confirm/override surface (research-seeded)
 - `skills/research/SKILL.md` — the v3 research engine (fan-out specialists → verify → synthesize dossier)
-- `skills/analysis/SKILL.md` — tech stack pattern matching, model recommendations
 - `skills/generation/SKILL.md` — artifact generation logic, core + enriched modes
 
 ## Script Conventions
@@ -112,6 +111,8 @@ Internal building blocks (`user-invocable: false` — hidden from menu):
 
 Path convention: the generation skill (and other skills) cite a reference as `references/<group>/<file>.md`. Between two reference files, use a bare `<file>.md` for same-subfolder siblings and `../<group>/<file>.md` across subfolders.
 
+`agents/references/` is a separate, flat, agent-owned home (no subfolders): `tech-stack-patterns.md`, `model-recommendations.md`, `config-extraction-guide.md` — cited by `codebase-analyzer.md` as a bare `references/<file>.md`.
+
 ## Key Patterns
 
 - Maintenance headers on all generated artifacts (version + date)
@@ -126,7 +127,7 @@ Path convention: the generation skill (and other skills) cite a reference as `re
 
 Every user-facing onboard entry point (`start`, `update`, `evolve`, `adopt`) creates a durable task list at the beginning of the run so that multi-phase operations survive context interruptions and can be resumed:
 
-- **Each entry point owns its task list** — `start`/`update`/`evolve`/`adopt` each open their own TaskCreate call with a task per phase. Internal skills (`generate`, `research`, `wizard`, `generation`, `analysis`) do not create independent tasks; the orchestrating entry point tracks them.
+- **Each entry point owns its task list** — `start`/`update`/`evolve`/`adopt` each open their own TaskCreate call with a task per phase. Internal skills (`generate`, `research`, `wizard`, `generation`) do not create independent tasks; the orchestrating entry point tracks them.
 - **Orchestrator owns transitions** — only the invoking entry point drives TaskUpdate calls (status: `in_progress` → `completed`, or `deleted` for a gate-cancel/never-ran task; the enum is exactly `pending`/`in_progress`/`completed`/`deleted` — there is no `failed`, per the contract's § Verified status enum). Sub-skills never directly update the task tree of their caller.
 - **R2 checkpoint-resume via on-disk artifacts + `currentPhase`** — `/onboard:start` records the current execution phase in `onboard-meta.json.currentPhase` (Phase 6 post-generation) so a resumed session can detect how far generation progressed without re-running earlier phases. Other entry points write equivalent resume markers in their artifact outputs (dossier, snapshots, meta).
 - **Contract reference**: `skills/start/references/phase-tracking.md` is the authoritative design document for the tracking model, task-subject scheme (bare phase slugs for `start`, e.g. `plan-gate`; `<entrypoint>:<slug>` for `update`/`evolve`/`adopt`, e.g. `update:approve-gate`; the subject is a display label — order comes from the ladder, not an index in the subject), and resume semantics. The belt gate `.github/scripts/check-phase-tracking.sh` asserts the wiring is present in all four entry points.

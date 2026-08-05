@@ -121,7 +121,7 @@ One row per changed file with its risk class (from risk-classify `files[]`). Omi
 
 | File | Change | Risk |
 |---|---|---|
-| lens/skills/review/SKILL.md | modified | public-api |
+| src/api/handlers.ts | modified | public-api |
 | lens/README.md | modified | none |
 ```
 

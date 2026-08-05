@@ -1,7 +1,7 @@
 # Component Catalog — Review (lens)
 
 Three components for `lens` review docs. Tokens only; wire to the shared handlers in
-`interactivity.md`. Each `findings[]` id is also a `DET` sheet entry — see `session-model.md` § Review.
+`interactivity.md`. Each `findings[]` id is pre-rendered as a `{{SHEETS}}` dialog (`SURF[id]='sheet'`), not in `DET` — see `session-model.md` § Review.
 
 ## Annotated diff
 
@@ -36,7 +36,7 @@ Three components for `lens` review docs. Tokens only; wire to the shared handler
 .dl .pin:hover{transform:scale(1.2);}
 ```
 
-**Wiring:** pin → `openSurface('<finding-id>')` (the finding's `DET` sheet). Lines with no finding omit the pin.
+**Wiring:** pin → `openSurface('<finding-id>')` (the finding's pre-rendered `{{SHEETS}}` sheet). Lines with no finding omit the pin.
 
 ## Findings list
 
@@ -48,11 +48,11 @@ Three components for `lens` review docs. Tokens only; wire to the shared handler
   <h2>What the review <em>found</em></h2>
   <div class="iter-delta">2 fixed · 1 new · 3 still-open</div>
   <div class="pills">
-    <div class="pill on" data-f="bug" onclick="tog(this)"><span class="s" style="background:var(--rose)"></span>bug</div>
-    <div class="pill on" data-f="spec-gap" onclick="tog(this)"><span class="s" style="background:var(--amber)"></span>spec-gap</div>
+    <div class="pill on" data-f="bug" role="button" tabindex="0" aria-label="Filter bug" onclick="tog(this)"><span class="s" style="background:var(--rose)"></span>bug</div>
+    <div class="pill on" data-f="spec-gap" role="button" tabindex="0" aria-label="Filter spec-gap" onclick="tog(this)"><span class="s" style="background:var(--amber)"></span>spec-gap</div>
   </div>
   <div class="cards">
-    <div class="tcard" data-cat="bug" style="border-left-color:var(--rose)" onclick="openSurface('F1')">
+    <div class="tcard" data-cat="bug" style="border-left-color:var(--rose)" role="button" tabindex="0" aria-label="Finding F1" onclick="openSurface('F1')">
       <div class="cat"><span class="chip danger">high</span> bug <span class="chip info" data-iter="new">new</span></div>
       <div class="tn">F1 — <claim></div>
       <div class="td"><path:line></div>
