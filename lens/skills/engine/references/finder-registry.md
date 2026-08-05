@@ -35,7 +35,7 @@ foreign producer onto one closed `dimension`, with scoping:
 | `type-design-analyzer` | `types` | full |
 | `comment-analyzer` | `comment` | full |
 | `pr-test-analyzer` | `test` | **brittle/overfit + behavioral-delta ONLY** — lens's built-in `test-gaps` owns "missing test" |
-| `feature-dev:code-reviewer` | `correctness` | a capability-locked read-only **2nd opinion** |
+| `feature-dev:code-reviewer` | `correctness` | a capability-locked (tool-permission sense — not a `lens:capability` token) read-only **2nd opinion** |
 
 **Read-only enforcement (per adapter).** Only two adapters are inherently locked:
 
@@ -58,6 +58,8 @@ finders:
     dimension: security          # one of the closed enum
     label: injection-audit       # free-form sub-category
     readonly: true               # must be true; enforced at dispatch
+    model: opus                  # optional — this finder's model (engine-api.md)
+    effort: high                 # optional — reasoning effort (engine-api.md)
 ```
 
 The engine reads this registry and dispatches the named `.claude/agents/` finders, **read-only-enforced at

@@ -66,6 +66,13 @@ finders:
     dimension: security         # closed enum (see finder-contract.md)
     label: injection-audit      # the finder's sub-category
     readonly: true              # required — read-only is enforced at the boundary
+    model: opus                 # optional — the model this finder runs on
+    effort: high                # optional — the reasoning effort it is asked for
 ```
+
+A malformed entry in this file never fails a review: the engine normalizes what it can, drops what it
+cannot, and on a drop it sets `degraded: true` with `degradedReasons` code `finder-malformed` and names
+the dropped finder in `summary`. The accepted values live in
+`lens/skills/engine/references/engine-api.md` § lens:engine — inputs.
 
 After writing `settings.md` (and the `.gitignore` entry if applicable), return to SKILL Step 2.
