@@ -147,7 +147,7 @@ section.vis{opacity:1;transform:none;}
       <a href="#isnt">Is / isn't</a>
     </div>
     <div style="display:flex;align-items:center;gap:.8rem">
-      <div class="nav-meta"><span class="dot"></span> PLUGIN · v1.4.1</div>
+      <div class="nav-meta"><span class="dot"></span> PLUGIN · v1.5.0</div>
       <button class="theme-btn" onclick="tgl()">◑ THEME</button>
     </div>
   </div></nav>
@@ -170,7 +170,7 @@ section.vis{opacity:1;transform:none;}
       </div>
       <p style="margin-top:.6rem;font-size:.84rem">No setup step required. Run <code>/lens:review</code> inside an active session to start a review.</p>
       <div class="hstats">
-        <div class="hstat"><div class="v"><em>3</em></div><div class="l">skills</div></div>
+        <div class="hstat"><div class="v"><em>4</em></div><div class="l">skills</div></div>
         <div class="hstat"><div class="v">5</div><div class="l">finder types</div></div>
         <div class="hstat"><div class="v"><em>1</em></div><div class="l">review doc</div></div>
         <div class="hstat"><div class="v">adversarial</div><div class="l">verification</div></div>
@@ -282,8 +282,8 @@ section.vis{opacity:1;transform:none;}
 
     <section id="skills">
       <div class="sec-label">04 — reference</div>
-      <h2>Three <em>skills</em>, five finders</h2>
-      <p class="lede">lens exposes one user-facing skill and two internal skills. The five finder agents run as part of the pipeline — they are not invoked directly.</p>
+      <h2>Four <em>skills</em>, five finders</h2>
+      <p class="lede">lens exposes one user-facing skill and three internal skills. The five finder agents run as part of the pipeline — they are not invoked directly.</p>
       <table class="ref-table">
         <thead><tr><th>Skill</th><th>Invocation</th><th>What it does</th></tr></thead>
         <tbody>
@@ -302,9 +302,14 @@ section.vis{opacity:1;transform:none;}
             <td><span class="tag hidden-int">internal</span></td>
             <td>Pure, write-once render entrypoint (<span class="cell-mono">user-invocable: false</span>, but model-invocable). Takes an already-computed <code>review-findings</code> object, reconciles in-memory, assembles the review-model, and renders via <code>walkthrough:render</code> — writing only the caller's output path. An orchestrator that owns persistence (e.g. matali) calls it after <code>engine</code>.</td>
           </tr>
+          <tr>
+            <td class="slash">capability</td>
+            <td><span class="tag hidden-int">internal</span></td>
+            <td>The compatibility gate a programmatic caller runs <em>before</em> it sends a review (<span class="cell-mono">user-invocable: false</span>). Answers which lens is installed and whether it supports a given feature — returning the manifest version (read live, never hardcoded), the advertised capability tokens, and the input keys a caller may rely on. Asking for a token lens does not advertise returns a named error rather than a silent partial run.</td>
+          </tr>
         </tbody>
       </table>
-      <p style="margin-top:1rem">The five built-in finders run in parallel during Stage 3: <strong>spec-adherence</strong>, <strong>plan-adherence</strong>, <strong>correctness</strong>, <strong>risk-classify</strong>, and <strong>test-gaps</strong>. Each emits structured findings tagged with its dimension. The verify stage then routes each finding to the skeptic agent.</p>
+      <p style="margin-top:1rem">The five built-in finders run in parallel during Stage 3: <strong>spec-adherence</strong>, <strong>plan-adherence</strong>, <strong>correctness</strong>, <strong>risk-classify</strong>, and <strong>test-gaps</strong>. Each emits structured findings tagged with its dimension. The verify stage then routes each finding to the <strong>verifier</strong> skeptic agent.</p>
       <p>Settings live at <code>.claude/lens/settings.md</code>. Review state and finding history live at <code>.claude/lens/review-state.json</code>. These are the only files lens ever writes.</p>
     </section>
 
@@ -351,7 +356,7 @@ section.vis{opacity:1;transform:none;}
         <a href="../">← marketplace</a>
         <a href="https://github.com/ApurvBazari/claude-plugins/tree/main/lens">source on GitHub</a>
       </div>
-      <div class="meta">lens · v1.4.1 · MIT · by Apurv Bazari</div>
+      <div class="meta">lens · v1.5.0 · MIT · by Apurv Bazari</div>
     </div>
   </main>
 
