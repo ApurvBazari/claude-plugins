@@ -99,9 +99,9 @@ When referencing Claude Code documentation in any plugin file, use the current h
 
 ## Branching & Release
 
-Two branches: `develop` (default, integration) and `main` (release).
+Two branches: `develop` (integration) and `main` (release). **`main` is the GitHub default branch** — it is what the published marketplace serves, so a fresh `/plugin marketplace add ApurvBazari/claude-plugins` installs released code, not in-flight work.
 
-- Feature branches → PR to `develop` (squash merge)
+- Feature branches → PR to `develop` (squash merge). Pass `--base develop` explicitly — `gh pr create` targets `main` by default now.
 - When ready to ship: PR from `develop` → `main` (**merge commit, never squash**)
 - After shipping: merge `main` back into `develop` (merge commit) to keep them in sync
 
