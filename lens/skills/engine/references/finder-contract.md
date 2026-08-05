@@ -66,7 +66,12 @@ finders:
     dimension: security         # closed enum
     label: injection-audit      # your sub-category
     readonly: true              # required
+    model: opus                 # optional — the model this finder runs on
+    effort: high                # optional — the reasoning effort it is asked for
 ```
+
+`model` and `effort` are optional and per-finder; their accepted values, and what a malformed one
+does, are declared in `engine-api.md` § lens:engine — inputs.
 
 ## Adversarial verification
 

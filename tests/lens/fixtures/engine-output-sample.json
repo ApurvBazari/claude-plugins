@@ -15,8 +15,10 @@
       "votes": {
         "total": 1,
         "couldNotRefute": 1,
-        "refuted": 0
-      }
+        "refuted": 0,
+        "abstained": 0
+      },
+      "voteResolution": "verified"
     },
     {
       "id": "F2",
@@ -34,8 +36,10 @@
       "votes": {
         "total": 1,
         "couldNotRefute": 1,
-        "refuted": 0
-      }
+        "refuted": 0,
+        "abstained": 0
+      },
+      "voteResolution": "verified"
     }
   ],
   "recommendedEscalation": "major",

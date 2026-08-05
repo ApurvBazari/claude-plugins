@@ -5,8 +5,9 @@ own taxonomies**, not the `review-findings` finding shape the built-in finders e
 engine normalizes them. Two parts: a generic **wrapper-prompt** applied to every adapter, and a
 **per-adapter map** for each of the 5.
 
-Normalization is **best-effort**: an adapter whose output still can't be mapped is dropped, `degraded:true`
-is set, and the missing dimension is named in `summary` (per `../SKILL.md` Step 3 + Step 4).
+Normalization is **best-effort**: an adapter whose output still can't be mapped is dropped,
+`degraded:true` is set with `degradedReasons` code `finder-malformed`, and the missing dimension is
+named in `summary` (per `../SKILL.md` Step 3 + Step 4).
 
 ## Part 1 — the forcing wrapper-prompt (every adapter)
 
@@ -25,6 +26,17 @@ wrapper raises the hit rate; it does not replace validation.
 An adapter that ships its own Output Format section may not fully honor this wrapper; the validation belt
 (drop + `degraded`) is the backstop for exactly those cases. `type-design-analyzer` (qualitative ratings,
 no per-finding structure) is the expected lowest-yield adapter — it leans hardest on the fallback.
+
+**A carried `effort` rides this wrapper.** When a producer reached through this wrapper is dispatched
+from a Tier-3 record carrying an `effort` (declared in `./engine-api.md` § lens:engine — inputs), that
+one-line directive is **appended to the wrapper above** — placed after its read-only, findings-only
+contract, never ahead of it and never substituted for any part of it. Ordering is the guard: a
+directive that arrives first is a directive that can be read as re-framing the contract behind it, and
+this wrapper's whole job is to be the first thing a foreign agent reads. The directive is composed by
+the engine from the record's one validated token, so no registry text rides in with it, and any that
+did would arrive fenced (`./pipeline.md` §3). The
+read-only, findings-only contract stands unchanged, the validation belt above still runs, and an
+adapter dispatched without an `effort` gets exactly the wrapper as written. **The resolved model rides the same dispatch, unrelated to the prompt text above:** it is the model Step 0 resolved for this producer, passed as the Agent/Task tool's `model` parameter — `effort` alone is the prompt-level knob.
 
 ## Part 2 — per-adapter maps
 
@@ -55,8 +67,7 @@ wrong behavior → `high`).
 ### `feature-dev:code-reviewer` → `dimension: correctness`
 Native output: structured review findings already close to the shape. Tool allowlist is read-only (no
 constraint needed beyond the wrapper). `label` = `2nd-opinion`; keep its severity if it maps cleanly, else
-map down to the four-value scale. Used as a capability-locked **2nd opinion** — its findings dedup against
-the built-in `correctness` finder by `(file, line, title)`.
+map down to the four-value scale. Used as a capability-locked (tool-permission sense — not a `lens:capability` token) **2nd opinion** — its findings dedup against the built-in `correctness` finder by `(file, line, title)`.
 
 ## After normalization
 Normalized findings re-enter the pipeline exactly like built-in findings: deduped by `(file, line, title)`

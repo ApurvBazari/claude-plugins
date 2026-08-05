@@ -8,7 +8,12 @@ fail(){ echo "FAIL: $1"; exit 1; }
 [ -s "$SCHEMA" ] || fail "schema missing"
 [ -s "$FIX" ] || fail "fixture missing"
 [ -s "$DEGRADED" ] || fail "degraded fixture missing"
-python3 - "$SCHEMA" "$FIX" "$DEGRADED" <<'PY' || fail "fixture does not match schema"
+
+# GLOB the fixture list so any future engine-output-*.json fixture is auto-covered by the shape
+# and bidirectional-degrade checks below, rather than requiring an explicit arg per new fixture.
+FIXTURES=("$ROOT"/tests/lens/fixtures/engine-output-*.json)
+
+python3 - "$SCHEMA" "$FIX" "$DEGRADED" "${FIXTURES[@]}" <<'PY' || fail "fixture does not match schema"
 import json,sys
 schema=json.load(open(sys.argv[1]))
 dims=set(schema["properties"]["findings"]["items"]["properties"]["dimension"]["enum"])
@@ -21,17 +26,30 @@ def check(path):
     for f in doc["findings"]:
         assert {"id","title","severity","dimension","verified"} <= set(f), f"{path}: finding missing keys: {f.get('id')}"
         assert f["severity"] in sev and f["dimension"] in dims, f"{path}: bad severity/dimension in {f.get('id')}"
+    # U2 — bidirectional invariant: degraded:true if and only if degradedReasons[] is non-empty,
+    # checked uniformly across every engine-output-*.json fixture (present + future).
+    assert bool(doc.get("degradedReasons")) == doc["degraded"], (
+        f"{path}: degraded ({doc['degraded']}) must agree with degradedReasons "
+        f"non-emptiness ({doc.get('degradedReasons')})"
+    )
     return doc
-# Nominal path.
+
+for p in sys.argv[4:]:
+    check(p)
+
+# Nominal path — pinned by name (not glob position), so the by-name checks below survive
+# regardless of how many fixtures the glob picks up or in what order.
 nominal=check(sys.argv[2])
 assert nominal["degraded"] is False, "nominal fixture should have degraded:false"
+assert not nominal.get("degradedReasons"), "nominal fixture must omit degradedReasons (or leave it empty)"
 # Degraded path — verify-error / null-finder / reconstructed-intent / truncation. This is the
 # branch the only prior fixture never exercised; this very review run sets degraded:true.
 deg=check(sys.argv[3])
 assert deg["degraded"] is True, "degraded fixture must set degraded:true"
+assert deg.get("degradedReasons"), "degraded fixture must carry a non-empty degradedReasons[]"
 assert any(f["verified"] is False for f in deg["findings"]), \
     "degraded fixture must exercise an unverified-flagged finding (verified:false)"
-print("PASS: review-findings contract (nominal + degraded)")
+print("PASS: review-findings contract (nominal + degraded, globbed fixtures)")
 PY
 
 # L5 — lens dispatches ONE verifier per finding; the sample fixture's votes.total must be 1

@@ -1,0 +1,48 @@
+{
+  "findings": [
+    {
+      "id": "F1",
+      "title": "Session token compared with a non-constant-time equality",
+      "severity": "high",
+      "dimension": "correctness",
+      "verified": true,
+      "file": "src/auth/session.ts",
+      "line": 88,
+      "label": "bug",
+      "claim": "The session token is compared with ===, leaking the position of the first differing byte through timing.",
+      "detail": "Three skeptics judged this candidate. Two could not refute it and one refuted it, and none errored — valid 3, quorum 2, refutes 1. Since refutes * 2 (2) is below valid (3), huginn-quorum-v1 resolves the finding as verified: a lone refuter does not carry a three-skeptic panel.",
+      "suggestedFix": "Compare with crypto.timingSafeEqual over equal-length Buffers derived from the presented and stored tokens.",
+      "source": "correctness",
+      "votes": {
+        "total": 3,
+        "couldNotRefute": 2,
+        "refuted": 1,
+        "abstained": 0
+      },
+      "voteResolution": "verified"
+    },
+    {
+      "id": "F2",
+      "title": "Spec's session-revocation requirement has no implementation",
+      "severity": "medium",
+      "dimension": "requirements",
+      "verified": false,
+      "file": "src/auth/session.ts",
+      "label": "spec-gap",
+      "claim": "The spec requires that revoking a session invalidates outstanding tokens; nothing in the session module revokes anything.",
+      "detail": "Two of the three skeptics errored mid-refute and returned 'unverified-flagged', so their votes are dead and tally into abstained. That leaves valid 1 below the quorum of 2, so huginn-quorum-v1 resolves the finding as abstained: it is KEPT with verified:false and flagged, never dropped. Too few skeptics came back for the panel's verdict to count either way.",
+      "suggestedFix": "Implement revocation (a server-side revocation list or a token version counter) and assert it in the session tests.",
+      "source": "spec-adherence",
+      "votes": {
+        "total": 3,
+        "couldNotRefute": 1,
+        "refuted": 0,
+        "abstained": 2
+      },
+      "voteResolution": "abstained"
+    }
+  ],
+  "recommendedEscalation": "major",
+  "degraded": false,
+  "summary": "Multi-skeptic run: three verifier votes per candidate. F1 survived 2-1 (verified). F2 lost two skeptics to mid-refute errors, leaving one valid vote below the quorum of 2, so it is kept and flagged as abstained rather than dropped. A third candidate — 'Login handler logs the raw password on failure' (correctness, src/auth/login.ts:120) — drew one refute against one keep among its two valid votes; a tie satisfies refutes * 2 >= valid, so huginn-quorum-v1 dropped it and it is absent from findings[]. A dead verifier vote is surfaced per finding as verified:false with voteResolution 'abstained', not as a coverage degrade: degraded is false and degradedReasons is absent."
+}
