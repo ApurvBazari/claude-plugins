@@ -7,8 +7,13 @@ REPO_ROOT="$(cd "$HERE/../.." && pwd)"
 trap cleanup EXIT
 setup_fake_project >/dev/null
 
-# Active handoff at the NEW path.
-write_active_handoff "2026-05-20T10:00:00Z" "abc1234" "main" "$FIXTURE_ROOT"
+# Active handoff at the NEW path. saved-at must stay inside the hook's 90-day stale
+# window, or the hook archives the fixture instead of surfacing it and every assertion
+# below fails on a date rather than on behavior. Derive it relative to now — as
+# test_hook_stale.sh and test_hook_snooze.sh already do — never pin a literal date.
+saved_at="$(date -u -d "7 days ago" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null \
+            || date -u -v-7d +%Y-%m-%dT%H:%M:%SZ)"
+write_active_handoff "$saved_at" "abc1234" "main" "$FIXTURE_ROOT"
 
 # Run the hook with the cwd-providing stdin contract.
 out="$(printf '{"cwd": "%s"}' "$FIXTURE_ROOT" | bash "$REPO_ROOT/handoff/hooks/session-start.sh")"
