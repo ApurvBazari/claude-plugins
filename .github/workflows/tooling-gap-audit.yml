@@ -16,6 +16,14 @@ permissions:
   pull-requests: write
   id-token: write
 
+# Input contract: claude-code-action auto-detects its mode from the event and from
+# whether a prompt was supplied — there is no `mode` input. `direct_prompt`/`model`/
+# `max_turns` were retired in v1, so passing them left the action seeing no prompt at
+# all; it fell back to tag mode, and tag mode refuses `schedule` events ("Tag mode
+# cannot handle schedule events"). Supplying `prompt` is what selects agent mode, and
+# agent mode is the one that handles automation triggers. Model and turn limits now
+# ride along in `claude_args` as CLI flags.
+
 jobs:
   audit:
     runs-on: ubuntu-latest
@@ -60,17 +68,15 @@ jobs:
         uses: anthropics/claude-code-action@beta
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          model: claude-opus-4-6
-          max_turns: 80
-          direct_prompt: ${{ steps.prompts.outputs.analyze }}
+          prompt: ${{ steps.prompts.outputs.analyze }}
+          claude_args: "--model claude-opus-4-6 --max-turns 80"
 
       - name: Phase 2 — Report
         uses: anthropics/claude-code-action@beta
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          model: claude-opus-4-6
-          max_turns: 40
-          direct_prompt: ${{ steps.prompts.outputs.report }}
+          prompt: ${{ steps.prompts.outputs.report }}
+          claude_args: "--model claude-opus-4-6 --max-turns 40"
 
       - name: Commit audit artifacts
         env:
