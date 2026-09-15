@@ -38,8 +38,22 @@ for i in $(seq 0 $((PLUGIN_COUNT - 1))); do
     continue
   fi
 
-  # Check skill AND agent reference directories
-  for ref_root in "$PLUGIN_DIR/skills" "$PLUGIN_DIR/agents"; do
+  # A references/ directory under agents/ is a defect, not a layout choice: Claude Code
+  # registers EVERY .md under agents/ as a dispatchable agent, so reference docs parked
+  # there surface as phantom agents (`<plugin>:references:<file>`) and `claude plugin
+  # validate` flags each one for missing frontmatter. References belong in the plugin's
+  # own references/ home instead.
+  if [ -d "$PLUGIN_DIR/agents" ]; then
+    while IFS= read -r -d '' stray; do
+      echo "  FAIL: references/ directory under agents/: $stray"
+      echo "        Every .md under agents/ is registered as an agent. Move these to $PLUGIN_DIR/references/."
+      ERRORS=$((ERRORS + 1))
+      PLUGIN_ISSUES=$((PLUGIN_ISSUES + 1))
+    done < <(find "$PLUGIN_DIR/agents" -name "references" -type d -print0 2>/dev/null)
+  fi
+
+  # Check skill reference directories and the plugin's own references/ home
+  for ref_root in "$PLUGIN_DIR/skills" "$PLUGIN_DIR/references"; do
     if [ -d "$ref_root" ]; then
       while IFS= read -r -d '' ref_dir; do
         # Every .md file in references/ should be non-empty
