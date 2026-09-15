@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.1 — 2026-09-15
+
+### Fixed
+- **self-check row 20 no longer sends installed users to a belt that does not ship.** The row ended "run it before offering the file", where *it* was `tests/walkthrough/test_validate_artifact.sh` — a repo-internal belt. The marketplace ships this plugin as a git-subdir of `walkthrough/` alone, so `tests/` never reaches an installed copy, and the last gate before write pointed at a file the user does not have. The row's requirement is unchanged (an executed `node --check` on each script plus a `JSON.parse` of the `#wt-data` island); only the belt reference is demoted to a parenthetical marked repo-internal.
+
 ## 1.4.0 — 2026-07-18
 
 ### Changed

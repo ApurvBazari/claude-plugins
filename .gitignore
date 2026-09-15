@@ -36,3 +36,14 @@ docs/
 
 # handoff directives (may contain session content)
 .claude/handoff/
+
+# Local session/tooling state. All redundant with .claude/ above; listed
+# explicitly so the intent survives if that blanket line is ever narrowed.
+# lens review settings + state (rendered reviews go to the configured outputPath, e.g. docs/reviews/)
+.claude/lens/
+# matali's isolated feature checkouts + its per-run pipeline state
+.claude/worktrees/
+.claude/matali/state/
+
+# matali worktree seed-file manifest — local tooling config, not marketplace content
+.worktreeinclude
