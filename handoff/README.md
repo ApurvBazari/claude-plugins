@@ -134,7 +134,7 @@ If you don't recognize a saved handoff in your repo (e.g., someone else committe
 
 Long Claude Code sessions often end with the user typing a paragraph into the *next* session window to continue the work. That paragraph is reproducible — it's just "the directive of where we left off". This plugin captures it at end-of-session and surfaces it at the start of the next, removing the copy-paste step.
 
-The five locked design choices (auto-save-with-confirm, single active slot, directive-only content, four-option resume flow, surface-and-confirm trust model) are documented in [`handoff/CLAUDE.md`](./CLAUDE.md).
+The five locked design choices (auto-save-with-confirm, single active slot, directive-only content, four-option resume flow, surface-and-confirm trust model) are documented in [`handoff/CONVENTIONS.md`](./CONVENTIONS.md).
 
 ## License
 

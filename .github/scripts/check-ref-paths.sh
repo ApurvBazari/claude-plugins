@@ -29,7 +29,7 @@ broken=0
 scanned=0
 
 COLLISION_EXEMPT=(
-  "CLAUDE.md"   # onboard/CLAUDE.md exists, but `src/.../CLAUDE.md` etc. mean the target project's
+  "CLAUDE.md"   # the repo root has one, but `src/.../CLAUDE.md` etc. mean the target project's
 )
 
 is_collision_exempt() {

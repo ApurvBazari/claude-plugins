@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.3 — 2026-09-15
+
+### Changed
+- **Plugin-root `CLAUDE.md` renamed to `CONVENTIONS.md`.** Claude Code never loads a `CLAUDE.md` at a plugin root as project context, so the file was inert weight in the shipped payload and `claude plugin validate --strict` flagged it on every plugin. The content is unchanged — it is the internal conventions doc for developing this plugin — it just no longer claims a filename the runtime reserves for project context. `notify` now passes `claude plugin validate --strict` clean.
+
 ## 2.0.2 — 2026-07-06
 - fix: normalize the `json_get` python3 fallback booleans to lowercase — on jq-less machines `enabled: false` was ignored (an `enabled:false` event, incl. the default-off `subagentStop`, still fired). (N1)
 - fix: key the notification cooldown timestamp per session, not per user — concurrent Claude sessions no longer reset each other's cooldown clock. (N2)

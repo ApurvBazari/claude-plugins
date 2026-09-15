@@ -3,7 +3,7 @@
 This file is the **single canonical description** of the four stages every walkthrough producer runs to turn
 a finished model into the house-style HTML: **select → assemble → self-check → write**. `create`, `update`,
 `document`, and `render` all PERFORM these stages by following this contract — the mechanics are stated here
-once so the producer SKILLs and `CLAUDE.md` don't restate them. Each producer keeps only its own surrounding
+once so the producer SKILLs and `CONVENTIONS.md` don't restate them. Each producer keeps only its own surrounding
 steps inline (scope/gather/synthesize, reconstruct/merge, subject-gather, programmatic entry) and defers the
 shared middle-and-end here.
 
