@@ -31,7 +31,7 @@ if ! (cd "$ROOT" && bash .github/scripts/check-skill-refs.sh lens); then
 fi
 
 # === FENCING PRESERVATION: the untrusted-intent fencing sentence survives its path-token repair ===
-CLAUDEMD="$ROOT/lens/CLAUDE.md"
+CLAUDEMD="$ROOT/lens/CONVENTIONS.md"
 [ -s "$CLAUDEMD" ] || fail "missing $CLAUDEMD"
 grep -q '<untrusted-user-input>' "$CLAUDEMD" || fail "CLAUDE.md must keep the <untrusted-user-input> fence reference"
 grep -qi 'data, not instructions' "$CLAUDEMD" || fail "CLAUDE.md must keep the 'data, not instructions' clause"
@@ -1259,7 +1259,7 @@ for f in "$FREG" "$SETUP" "$FCONTRACT" "$LENSREADME"; do [ -s "$f" ] || fail "mi
 # 1. The one phrasing appears verbatim at each of the four named sites — one assertion per file, so a
 # partial rollout fails loudly naming the missing file rather than a single combined pass/fail.
 grep -qF "$PHRASE" "$FREG" || fail "REGISTRY: finder-registry.md Tier 3 must carry the experimental/secondary label"
-grep -qF "$PHRASE" "$CLAUDEMD" || fail "REGISTRY: lens/CLAUDE.md's Project-custom registry row must carry the experimental/secondary label"
+grep -qF "$PHRASE" "$CLAUDEMD" || fail "REGISTRY: lens/CONVENTIONS.md's Project-custom registry row must carry the experimental/secondary label"
 grep -qF "$PHRASE" "$PIPE" || fail "REGISTRY: pipeline.md §3's project tier must carry the experimental/secondary label"
 grep -qF "$PHRASE" "$ESKILL" || fail "REGISTRY: engine/SKILL.md Step 3's project tier must carry the experimental/secondary label"
 

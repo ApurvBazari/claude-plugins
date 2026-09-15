@@ -5,7 +5,7 @@ PIPE="$ROOT/lens/skills/engine/references/pipeline.md"
 ASM="$ROOT/lens/skills/review/references/review-model-assembly.md"
 REC="$ROOT/lens/skills/review/references/reconcile.md"
 SKILL="$ROOT/lens/skills/review/SKILL.md"
-CLAUDEMD="$ROOT/lens/CLAUDE.md"
+CLAUDEMD="$ROOT/lens/CONVENTIONS.md"
 FC="$ROOT/lens/skills/engine/references/finder-contract.md"
 READMEMD="$ROOT/lens/README.md"
 CHANGELOGMD="$ROOT/lens/CHANGELOG.md"
@@ -85,7 +85,7 @@ grep -qiE "true fallback|only when.*adherence.*absent|only if.*adherence.*absent
 # WORDS-table idiom at tests/lens/test_engine_api.sh:171.
 API="$ROOT/lens/skills/engine/references/engine-api.md"
 CAPSKILL="$ROOT/lens/skills/capability/SKILL.md"
-python3 - "$ROOT/lens/skills" "$CLAUDEMD" <<'PY' || fail "AC29a: lens/CLAUDE.md's skill count-word is not the derived word for lens/skills/*/"
+python3 - "$ROOT/lens/skills" "$CLAUDEMD" <<'PY' || fail "AC29a: lens/CONVENTIONS.md's skill count-word is not the derived word for lens/skills/*/"
 import os, sys
 
 skills_dir, claudemd = sys.argv[1], sys.argv[2]
@@ -95,7 +95,7 @@ word = WORDS.get(count)
 assert word, f"lens/skills/*/ has {count} dirs — no number word is mapped for that count"
 text = open(claudemd, encoding="utf-8").read()
 assert f"{word} skills" in text, \
-    f"lens/CLAUDE.md must claim '{word} skills' (derived from the {count} dirs under lens/skills/*/)"
+    f"lens/CONVENTIONS.md must claim '{word} skills' (derived from the {count} dirs under lens/skills/*/)"
 PY
 
 # AC26 — CLAUDE.md § Skills carries the capability row, matching the engine/render-review pattern.
@@ -146,20 +146,20 @@ grep -qF 'huginn-quorum-v1' "$CLAUDEMD" \
 # whole-file grep, which is the weakening this pin exists to prevent.
 CLAUDEMD_PLAIN="$(tr -d '`' < "$CLAUDEMD")"
 if printf '%s\n' "$(flatten "$CLAUDEMD_PLAIN")" | grep -qE 'votes *\{'; then
-  fail "lens/CLAUDE.md must not restate the vote-tally shape (e.g. votes{total,couldNotRefute,refuted}) — pipeline.md §5 / engine-api.md govern it; CLAUDE.md points"
+  fail "lens/CONVENTIONS.md must not restate the vote-tally shape (e.g. votes{total,couldNotRefute,refuted}) — pipeline.md §5 / engine-api.md govern it; CLAUDE.md points"
 fi
 # SECTION-SCOPED, one pin per site, each one_line-guarded. `huginn-quorum-v1` occurs on TWO lines of
-# lens/CLAUDE.md — the VERIFY stage bullet in § The pipeline and the agents bullet in § Skills — and
+# lens/CONVENTIONS.md — the VERIFY stage bullet in § The pipeline and the agents bullet in § Skills — and
 # BOTH already carried the citation, so a whole-file selector ORed them: deleting the citation from the
 # pipeline bullet (the exact line a previous fix cycle repaired) left the pin green off the other one.
 # A guard that cannot detect the removal of the thing it repaired is not a guard.
 for cmsection in 'The pipeline' 'Skills'; do
   QLINE="$(printf '%s\n' "$CLAUDEMD_PLAIN" | awk -v h="^## $cmsection" '$0 ~ h {n=1;next} n && /^## /{exit} n{print}' | grep -F 'huginn-quorum-v1' || true)"
   [ -n "$QLINE" ] \
-    || fail "lens/CLAUDE.md § $cmsection must name huginn-quorum-v1 — it is the rule that section's own claim depends on"
-  one_line "$QLINE" "lens/CLAUDE.md § $cmsection huginn-quorum-v1 citation"
+    || fail "lens/CONVENTIONS.md § $cmsection must name huginn-quorum-v1 — it is the rule that section's own claim depends on"
+  one_line "$QLINE" "lens/CONVENTIONS.md § $cmsection huginn-quorum-v1 citation"
   printf '%s\n' "$QLINE" | grep -qF 'skills/engine/references/pipeline.md' \
-    || fail "lens/CLAUDE.md § $cmsection must point at skills/engine/references/pipeline.md where it names huginn-quorum-v1, rather than describing the tally"
+    || fail "lens/CONVENTIONS.md § $cmsection must point at skills/engine/references/pipeline.md where it names huginn-quorum-v1, rather than describing the tally"
 done
 
 # AC26 — README gains exactly ONE internal-skill blockquote for capability, matching the two existing ones.

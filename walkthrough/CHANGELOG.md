@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.2 — 2026-09-15
+
+### Changed
+- **Plugin-root `CLAUDE.md` renamed to `CONVENTIONS.md`.** Claude Code never loads a `CLAUDE.md` at a plugin root as project context, so the file was inert weight in the shipped payload and `claude plugin validate --strict` flagged it on every plugin. The content is unchanged — it is the internal conventions doc for developing this plugin — it just no longer claims a filename the runtime reserves for project context. `walkthrough` now passes `claude plugin validate --strict` clean.
+
 ## 1.4.1 — 2026-09-15
 
 ### Fixed

@@ -463,7 +463,7 @@ NEG_FILES=(
   "$ROOT/lens/skills/engine/references/pipeline.md"
   "$ROOT/lens/skills/engine/SKILL.md"
   "$ROOT/lens/skills/engine/references/finder-registry.md"
-  "$ROOT/lens/CLAUDE.md"
+  "$ROOT/lens/CONVENTIONS.md"
 )
 for f in "${NEG_FILES[@]}"; do
   [ -s "$f" ] || fail "missing $f"

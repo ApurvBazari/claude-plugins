@@ -23,7 +23,7 @@ grep -qiE 'data, not instructions|never as an instruction' "$PLANAG" || fail "FE
 
 # === intent data-fencing: engine SKILL Step 3 + lens CLAUDE.md security note ===
 ESKILL="$ROOT/lens/skills/engine/SKILL.md"
-CLAUDEMD="$ROOT/lens/CLAUDE.md"
+CLAUDEMD="$ROOT/lens/CONVENTIONS.md"
 [ -s "$ESKILL" ] || fail "missing $ESKILL"
 [ -s "$CLAUDEMD" ] || fail "missing $CLAUDEMD"
 grep -q '<untrusted-user-input>' "$ESKILL" || fail "FENCE: engine SKILL Step 3 must reference the <untrusted-user-input> fence"

@@ -161,7 +161,7 @@ Per event you can configure:
 
 ## Internals
 
-For the hook event model, JSON parsing pattern, script safety rules, and detection logic used by `/onboard:start` to probe whether notify is already configured, see [`notify/CLAUDE.md`](./CLAUDE.md).
+For the hook event model, JSON parsing pattern, script safety rules, and detection logic used by `/onboard:start` to probe whether notify is already configured, see [`notify/CONVENTIONS.md`](./CONVENTIONS.md).
 
 ## License
 

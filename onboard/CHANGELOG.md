@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.1.3 — 2026-09-15
+
+### Changed
+- **Plugin-root `CLAUDE.md` renamed to `CONVENTIONS.md`.** Claude Code never loads a `CLAUDE.md` at a plugin root as project context, so the file was inert weight in the shipped payload and `claude plugin validate --strict` flagged it on every plugin. The content is unchanged — it is the internal conventions doc for developing this plugin — it just no longer claims a filename the runtime reserves for project context. `onboard` now passes `claude plugin validate --strict` clean.
+
+## 3.1.2 — 2026-09-15
+
+### Fixed
+- **Reference docs no longer register as phantom agents.** `agents/references/` held `tech-stack-patterns.md`, `model-recommendations.md` and `config-extraction-guide.md`. Claude Code registers every `.md` under `agents/` as a dispatchable agent, so all three appeared in the agent roster as `onboard:references:*` with full tool access, and `claude plugin validate --strict` failed onboard on three counts of missing agent frontmatter. They move to the plugin's flat `references/` home; `codebase-analyzer.md`'s three citations become `../references/<file>.md` — agent-borne `.md` refs resolve relative to the citing file, so the `../` is load-bearing and `check-ref-paths.sh` enforces it.
+- **`check-references.sh` rejects the layout that caused it.** The gate now walks the plugin-root `references/` home and fails outright on any `references/` directory under `agents/`, empty or not. Both branches carry a behavioral self-test in `tests/onboard/test_onboard_structural_invariants.sh` that builds a scratch plugin and proves the guard fires on its target.
+
 ## 3.1.1 — 2026-07-17
 
 ### Structural/doc diet — no runtime behavior change

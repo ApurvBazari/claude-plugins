@@ -111,7 +111,7 @@ Internal building blocks (`user-invocable: false` — hidden from menu):
 
 Path convention: the generation skill (and other skills) cite a reference as `references/<group>/<file>.md`. Between two reference files, use a bare `<file>.md` for same-subfolder siblings and `../<group>/<file>.md` across subfolders.
 
-`agents/references/` is a separate, flat, agent-owned home (no subfolders): `tech-stack-patterns.md`, `model-recommendations.md`, `config-extraction-guide.md` — cited by `codebase-analyzer.md` as a bare `references/<file>.md`.
+`references/` (at the plugin root, no subfolders) is the flat, agent-owned home: `tech-stack-patterns.md`, `model-recommendations.md`, `config-extraction-guide.md` — cited by `codebase-analyzer.md` as `../references/<file>.md` — agent-borne `.md` citations resolve relative to the citing file, so the `../` is load-bearing (`check-ref-paths.sh` enforces it). It must not live under `agents/`: Claude Code registers every `.md` there as a dispatchable agent, so these three surfaced as `onboard:references:*` phantom agents until 3.1.2.
 
 ## Key Patterns
 
