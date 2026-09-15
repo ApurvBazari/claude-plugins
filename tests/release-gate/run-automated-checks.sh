@@ -361,16 +361,16 @@ else
 fi
 
 CSV3="onboard/schemas/context-shape-v3.json"
-OBCLAUDE="onboard/CLAUDE.md"
+OBCLAUDE="onboard/CONVENTIONS.md"
 if grep -qi "required for a full generation" "$CSV3" && grep -qi "regenerateOnly" "$CSV3"; then
   pass "4b: context-shape-v3.json description states runtime-required-unless-regenerateOnly"
 else
   fail "4b: context-shape-v3.json description note missing/insufficient"
 fi
 if grep -qiE "consumes.*research|research.*sharpen|verify backlog" "$OBCLAUDE"; then
-  pass "4b: onboard/CLAUDE.md notes generation consumes research (v3)"
+  pass "4b: onboard/CONVENTIONS.md notes generation consumes research (v3)"
 else
-  fail "4b: onboard/CLAUDE.md missing the consumes-research note"
+  fail "4b: onboard/CONVENTIONS.md missing the consumes-research note"
 fi
 echo ""
 
@@ -475,16 +475,16 @@ else
   fail "4c: config-generator missing the 4c telemetry fields"
 fi
 VB="onboard/skills/generation/references/research/verify-backlog-seeding.md"
-OBCLAUDE="onboard/CLAUDE.md"
+OBCLAUDE="onboard/CONVENTIONS.md"
 if grep -q "sourceClaim" "$VB" && grep -qi "Re-research merge" "$VB"; then
   pass "4c: verify-backlog-seeding has the merge path + sourceClaim provenance"
 else
   fail "4c: verify-backlog-seeding missing the merge path / sourceClaim"
 fi
 if grep -qi "re-research" "$OBCLAUDE"; then
-  pass "4c: onboard/CLAUDE.md notes the re-research capability"
+  pass "4c: onboard/CONVENTIONS.md notes the re-research capability"
 else
-  fail "4c: onboard/CLAUDE.md missing the re-research note"
+  fail "4c: onboard/CONVENTIONS.md missing the re-research note"
 fi
 echo ""
 
@@ -604,7 +604,7 @@ if ! grep -qE "string — semver|string—semver" "$GEN"; then
 else
   fail "5: sweep#1 — generate still describes version as a semver string"
 fi
-OBCLAUDE="onboard/CLAUDE.md"
+OBCLAUDE="onboard/CONVENTIONS.md"
 if ! grep -qiE "headless mode|hard cutover" "$OBCLAUDE"; then
   pass "5: sweep#2 — CLAUDE.md free of Headless/Hard-cutover prose"
 else

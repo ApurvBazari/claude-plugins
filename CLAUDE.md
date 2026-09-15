@@ -113,5 +113,5 @@ Squash-merging develop→main causes permanent divergence — the two branches l
 
 1. Create `<plugin>/` directory with `.claude-plugin/plugin.json`, `README.md`, and at least one skill
 2. Add entry to `.claude-plugin/marketplace.json` — version must match plugin.json
-3. Create `<plugin>/CLAUDE.md` documenting internal conventions
+3. Create `<plugin>/CONVENTIONS.md` documenting internal conventions
 4. Follow patterns from existing plugins — use onboard as the most complete reference

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.1 — 2026-09-15
+
+### Changed
+- **Plugin-root `CLAUDE.md` renamed to `CONVENTIONS.md`.** Claude Code never loads a `CLAUDE.md` at a plugin root as project context, so the file was inert weight in the shipped payload and `claude plugin validate --strict` flagged it on every plugin. The content is unchanged — it is the internal conventions doc for developing this plugin — it just no longer claims a filename the runtime reserves for project context. `lens` now passes `claude plugin validate --strict` clean.
+
 ## 1.5.0 — 2026-07-31
 
 - feat: new internal `lens:capability` skill (`user-invocable: false`, model-invocable, never in the `/` menu) reports the plugin version — read live from `.claude-plugin/plugin.json`, never hardcoded — the advertised `capabilities[]` token set, and `supports{}` (input keys, resolution rules, effort channel); an absent requested token returns a named-error miss instead of a silent no-op (the taxonomy is declared once in `engine-api.md` § Errors). Pinned in `test_capability.sh`: the manifest-sourced version read (a hardcoded semver anywhere in the skill fails the belt), the exact advertised token set, `supports{}`'s three slots, and both of the skill's returns. Backward-compat vs 1.4.3: purely additive — a brand-new skill, not a change to an existing one; a 1.4.3-only caller that never calls `lens:capability` sees no behavior change at all.

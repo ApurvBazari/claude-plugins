@@ -43,7 +43,7 @@ grep -q 'sourceSpec' "$ASM" || fail "assembly: groups built from sourceSpec/sour
 grep -qiE 'sub-section per spec|per spec/plan|one .* per spec' "$MDFB" || fail "markdown fallback must group adherence per spec/plan"
 
 # === lens narrative + version ===
-CLAUDEMD="$ROOT/lens/CLAUDE.md"
+CLAUDEMD="$ROOT/lens/CONVENTIONS.md"
 CHANGELOG="$ROOT/lens/CHANGELOG.md"
 grep -qiE 'multiple specs|multi-spec|diff-correlated' "$CLAUDEMD" || fail "lens CLAUDE.md must describe multi-spec intent"
 bash "$ROOT/tests/lib/assert-versions.sh" lens || fail "lens version consistency (plugin.json = marketplace = CHANGELOG)"

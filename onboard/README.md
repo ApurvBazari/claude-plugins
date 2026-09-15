@@ -96,7 +96,7 @@ Phase 7: Handoff ──→ explains generated artifacts, suggests next steps
 - **wizard skill** — grounded confirm/override surface seeded by the research inferences
 - **config-generator agent** — takes the v3 context (recon + research + wizard) and produces all artifacts
 
-Internal architecture and agent contracts: [`onboard/CLAUDE.md`](./CLAUDE.md).
+Internal architecture and agent contracts: [`onboard/CONVENTIONS.md`](./CONVENTIONS.md).
 
 ## Drift detection deep dive
 

@@ -2,7 +2,7 @@
 
 ## Platform Support
 
-See `notify/CLAUDE.md` § Platform Support for the canonical backend/sound/click-to-focus matrix. This reference covers only the sound and matcher option values below.
+See `notify/CONVENTIONS.md` § Platform Support for the canonical backend/sound/click-to-focus matrix. This reference covers only the sound and matcher option values below.
 
 ## macOS Sounds
 
