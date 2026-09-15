@@ -56,7 +56,7 @@ Skills are the authoring form for all user-facing entrypoints and internal orche
 | Agents | `agents/<name>.md` | H1 name, Tools section, Instructions with numbered steps, Output Format |
 | Shell scripts | `scripts/<name>.sh` | `#!/usr/bin/env bash`, `set -euo pipefail`, ShellCheck-clean, POSIX compat |
 | Manifests | `.claude-plugin/plugin.json` | Required: name, version, description, author, license, keywords |
-| References | `skills/<name>/references/*.md` (skill-owned) or `agents/references/*.md` (agent-owned) | Supporting docs loaded by skill or agent instructions. A reference lives with whatever owns it: colocate with the skill that loads it; use the plugin's flat `agents/references/` home when the consumer is an agent rather than a skill. `check-references.sh` walks both. |
+| References | `skills/<name>/references/*.md` (skill-owned) or `<plugin>/references/*.md` (plugin-flat) | Supporting docs loaded by skill or agent instructions. Colocate with the skill that loads it; when the consumer is an agent, use the plugin's flat `references/` home. **Never `agents/**/references/`** — Claude Code registers every `.md` under `agents/` as a dispatchable agent, so a reference parked there becomes a phantom agent (`<plugin>:references:<file>`) and fails `claude plugin validate`. `check-references.sh` walks both valid homes and rejects the agents/ one. |
 
 ## Skill Frontmatter Categories
 
@@ -76,7 +76,7 @@ Canonical frontmatter spelling is **hyphenated** (`user-invocable`, `disable-mod
 - File names: kebab-case (`codebase-analyzer.md`, `validate-bash.sh`)
 - Plugin directories: lowercase (`onboard`, `notify`, `handoff`)
 - Manifest names: match directory name
-- References: always in a `references/` subdirectory owned by their consumer — inside the skill (`skills/<name>/references/`) for skill-loaded docs, or the plugin's flat `agents/references/` for agent-loaded docs
+- References: always in a `references/` subdirectory owned by their consumer — inside the skill (`skills/<name>/references/`) for skill-loaded docs, or the plugin's flat `<plugin>/references/` for agent-loaded docs. Never under `agents/` — everything there is registered as an agent.
 - Skill `name` frontmatter: lowercase letters, numbers, hyphens only (max 64 chars). If omitted, derives from the directory name.
 
 ## Quality Checks

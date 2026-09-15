@@ -12,7 +12,7 @@
       "name": "onboard",
       "source": "./onboard",
       "description": "Analyze codebases with deep, verified research and generate evidence-grounded Claude tooling — CLAUDE.md, path-scoped rules, skills, agents, hooks, and a verify backlog.",
-      "version": "3.1.1",
+      "version": "3.1.2",
       "keywords": [
         "onboarding",
         "setup",

@@ -68,30 +68,46 @@ if [ -e onboard/skills/analysis ]; then bad "onboard/skills/analysis still exist
 must_absent "no live 'skills/analysis' reference remains" 'skills/analysis' onboard/ tests/
 
 for f in tech-stack-patterns model-recommendations config-extraction-guide; do
-  must_present_nonempty "agents/references/$f.md exists and is non-empty" "onboard/agents/references/$f.md"
+  must_present_nonempty "references/$f.md exists and is non-empty" "onboard/references/$f.md"
 done
+if [ -e onboard/agents/references ]; then
+  bad "onboard/agents/references still exists — every .md under agents/ registers as an agent"
+else
+  ok "onboard/agents/references absent (references are not in the agent namespace)"
+fi
 
-# Behavioral self-test: the agents/**/references/ walk must actually DETECT an empty reference.
-# A grep for the walk's source text would be vacuous — that string predates this extension, so a revert of the
-# walk itself would still pass. Build a minimal scratch plugin whose only agents reference is EMPTY,
-# point check-references.sh at it (it scans .claude-plugin/marketplace.json relative to CWD), and
-# assert it flags the empty file; then make the file non-empty and assert it passes. Mirrors the
-# numbering good/bad-fixture pattern.
+# Behavioral self-test, two targets. A grep for the walk's source text would be vacuous — those
+# strings predate this belt, so a revert would still pass. Build a minimal scratch plugin and drive
+# check-references.sh at it (it scans .claude-plugin/marketplace.json relative to CWD).
+#   (a) the plugin-root references/ walk must DETECT an empty reference, and clear once it is filled;
+#   (b) a references/ directory under agents/ must be REJECTED outright, empty or not — that is the
+#       phantom-agent defect, and a non-empty file there must not be enough to pass.
 CR_GATE="$ROOT/.github/scripts/check-references.sh"
 cr_scratch="$(mktemp -d)"
-mkdir -p "$cr_scratch/.claude-plugin" "$cr_scratch/p/skills" "$cr_scratch/p/agents/a/references"
+mkdir -p "$cr_scratch/.claude-plugin" "$cr_scratch/p/skills" "$cr_scratch/p/references"
 printf '{ "plugins": [ { "name": "p", "source": "./p" } ] }\n' > "$cr_scratch/.claude-plugin/marketplace.json"
-: > "$cr_scratch/p/agents/a/references/empty.md"            # EMPTY agents reference — must be flagged
+
+: > "$cr_scratch/p/references/empty.md"                       # EMPTY root reference — must be flagged
 if ( cd "$cr_scratch" && bash "$CR_GATE" >/dev/null 2>&1 ); then
-  bad "check-references.sh did NOT flag an empty agents/**/references file (walk is vacuous)"
+  bad "check-references.sh did NOT flag an empty references/ file (root walk is vacuous)"
 else
-  ok "check-references.sh flags an empty agents/**/references file"
+  ok "check-references.sh flags an empty references/ file"
 fi
-printf 'non-empty\n' > "$cr_scratch/p/agents/a/references/empty.md"   # now NON-empty — must pass
+
+printf 'non-empty\n' > "$cr_scratch/p/references/empty.md"     # now NON-empty — must pass
 if ( cd "$cr_scratch" && bash "$CR_GATE" >/dev/null 2>&1 ); then
-  ok "check-references.sh exits 0 once the agents reference is non-empty"
+  ok "check-references.sh exits 0 once the references/ file is non-empty"
 else
-  bad "check-references.sh is still nonzero after the agents reference is made non-empty"
+  bad "check-references.sh is still nonzero after the references/ file is made non-empty"
+fi
+
+# (b) same scratch plugin, now with a NON-EMPTY reference parked under agents/ — location alone fails.
+mkdir -p "$cr_scratch/p/agents/a/references"
+printf 'non-empty\n' > "$cr_scratch/p/agents/a/references/parked.md"
+if ( cd "$cr_scratch" && bash "$CR_GATE" >/dev/null 2>&1 ); then
+  bad "check-references.sh accepted a references/ directory under agents/ (phantom-agent guard is vacuous)"
+else
+  ok "check-references.sh rejects a references/ directory under agents/ even when non-empty"
 fi
 rm -rf "$cr_scratch"
 
