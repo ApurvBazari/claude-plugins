@@ -185,6 +185,14 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
 .erd-ent li{display:flex;align-items:center;justify-content:space-between;gap:.5rem;font-family:var(--mono);font-size:.72rem;color:var(--ts);padding:.18rem 0;}
 .erd-rel{display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--tm);font-family:var(--mono);font-size:.62rem;gap:.2rem;min-width:46px;}
 .erd-rel span{font-size:1.1rem;line-height:1;color:var(--border-active);}
+/* layered ERD demo — dependency-depth bands, FK-anchored refs (walkthrough 1.3.0+) */
+.erd-demo-l{display:flex;flex-direction:column;gap:.9rem;margin:.6rem 0 .2rem;}
+.erd-band{position:relative;border:1px dashed var(--border);border-radius:11px;background:var(--bg-inset);padding:1.05rem .8rem .7rem;}
+.erd-band-l{position:absolute;top:-.55rem;left:.8rem;display:flex;align-items:center;gap:.35rem;font-family:var(--mono);font-size:.55rem;text-transform:uppercase;letter-spacing:.14em;color:var(--tm);background:var(--bg-card);border:1px solid var(--border);border-radius:100px;padding:.08rem .5rem;}
+.erd-band-l .dot{width:5px;height:5px;border-radius:50%;background:var(--accent);}
+.erd-fk{font-family:var(--mono);font-size:.62rem;color:var(--accent);}
+.erd-rels{font-family:var(--mono);font-size:.68rem;color:var(--ts);margin:.5rem 0 0;}
+.erd-rels strong{color:var(--tm);font-weight:500;}
 /* legend */
 .legend{display:flex;gap:.6rem;flex-wrap:wrap;margin:1rem 0;}
 .lg{font-family:var(--mono);font-size:.6rem;color:var(--tp);padding:.5rem .7rem;border-radius:8px;border:1px solid var(--border);display:flex;align-items:center;gap:.5rem;background:var(--bg-card);}
@@ -238,7 +246,7 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
         <div class="hstat"><div class="v"><em>3</em></div><div class="l">user skills</div></div>
         <div class="hstat"><div class="v">2</div><div class="l">input modes</div></div>
         <div class="hstat"><div class="v">5</div><div class="l">pipeline stages</div></div>
-        <div class="hstat"><div class="v"><em>5</em></div><div class="l">new v1.2.0 renderers</div></div>
+        <div class="hstat"><div class="v"><em>29</em></div><div class="l">concept-types, 0 uncovered</div></div>
         <div class="hstat"><div class="v">2</div><div class="l">themes, 1 toggle</div></div>
         <div class="hstat"><div class="v"><em>1</em></div><div class="l">HTML file out</div></div>
       </div>
@@ -249,7 +257,7 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
       <h2>A composed document, <em>not</em> a transcript dump</h2>
       <p class="lede">Open the file in any browser and you get a synthesized document — a summary and type tags for the session, architecture and flow diagrams rendered as inline SVG, decision records (what was chosen, what was rejected, why), a file-touch list with real <code>path:line</code> references, and a timeline and metrics where the session has them.</p>
       <p>For richer surfaces there are two interactive components: an <strong>interactive explorer</strong> — a selector that drives a live diagram region and a detail pane from one shared data model, useful for multi-component architectures where you want to navigate relationships rather than read a static diagram — and a <strong>data-driven step timeline</strong> — phases of parallel and sequential steps with source pills and micro-cycles, useful when the session covers a pipeline, workflow, or multi-phase build.</p>
-      <p>v1.2.0 adds a <strong>concept-coverage layer</strong>: a concept-fidelity gate that routes each concept to the renderer best-shaped for it, and five new concept-shaped renderers — a <strong>decision tree</strong>, a <strong>recursive tree</strong>, a <strong>layer stack</strong>, an <strong>ERD</strong>, and a <strong>causal hypothesis ladder</strong> — so branching logic, hierarchies, layered stacks, data models, and debugging traces each render in the shape that fits them.</p>
+      <p>Underneath sits a <strong>concept-coverage layer</strong>: a concept-fidelity gate that routes each concept to the renderer best-shaped for it, across concept-shaped renderers including a <strong>decision tree</strong>, a <strong>recursive tree</strong>, a <strong>layer stack</strong>, a <strong>layered ERD</strong>, and a <strong>causal hypothesis ladder</strong> — so branching logic, hierarchies, layered stacks, data models, and debugging traces each render in the shape that fits them.</p>
       <p>Components adapt to the session — the catalog is a floor, not a ceiling. When content fits no off-the-shelf component, a bespoke one is composed from the same design-system primitives so it still looks native, and empty sections are omitted rather than stubbed. After writing the file, <code>create</code> surfaces a short <strong>coverage summary</strong> — what made it into the document and what was intentionally omitted — so you can spot anything left out before you close the session.</p>
       <div class="callout">
         <h4>No setup, no config</h4>
@@ -328,12 +336,12 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
     </section>
 
     <section id="concepts">
-      <div class="sec-label">v1.2.0 addition</div>
+      <div class="sec-label">concept coverage</div>
       <h2>Concept coverage — <em>the right renderer for every concept</em></h2>
       <p class="lede">The concept-coverage layer ensures each kind of idea renders in the shape that fits it. Synthesis classifies each concept it wants to convey into a type at selection time, and the <strong>concept-fidelity gate</strong> routes it to the registered renderer — or, for an uncovered type, to a logged bespoke component. The gate never force-fits a concept into a component not registered for its type.</p>
-      <p>v1.2.0 adds five new concept-shaped renderers, bringing coverage to zero uncovered concept-types in the built-in map. Click any renderer name below for detail.</p>
-      <table class="cov-table" aria-label="Selected v1.2.0 concept-coverage additions">
-        <thead><tr><th>Concept-type</th><th>Trigger</th><th>Renderer (v1.2.0 new)</th></tr></thead>
+      <p>The built-in map currently covers <strong>29 concept-types with zero uncovered rows</strong>. A selection of the concept-shaped renderers is below — click any renderer name for detail.</p>
+      <table class="cov-table" aria-label="Selected concept-coverage renderers">
+        <thead><tr><th>Concept-type</th><th>Trigger</th><th>Renderer</th></tr></thead>
         <tbody>
           <tr class="cov-new">
             <td><span class="cov-type" role="button" tabindex="0" onclick="openSurface('cov-dtree')" style="cursor:pointer">branching-logic</span></td>
@@ -352,8 +360,8 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
           </tr>
           <tr class="cov-new">
             <td><span class="cov-type" role="button" tabindex="0" onclick="openSurface('cov-erd')" style="cursor:pointer">data-model</span></td>
-            <td>Entities with field lists, edges carry cardinality (1:N, N:M)</td>
-            <td><span class="cov-renderer" role="button" tabindex="0" onclick="openSurface('cov-erd')" style="cursor:pointer">ERD</span></td>
+            <td>Entities with field lists; FK edges carry cardinality (1:N, N:M)</td>
+            <td><span class="cov-renderer" role="button" tabindex="0" onclick="openSurface('cov-erd')" style="cursor:pointer">layered ERD</span></td>
           </tr>
           <tr class="cov-new">
             <td><span class="cov-type" role="button" tabindex="0" onclick="openSurface('cov-ladder')" style="cursor:pointer">causal-chain</span></td>
@@ -362,7 +370,7 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
           </tr>
         </tbody>
       </table>
-      <p>The concept-coverage map (<code>concept-coverage.md</code>) is the single source of truth for which concept-types are covered and which renderer each routes to. Disambiguation rules handle close neighbors: for instance, any cycle or back-edge routes to a state machine, not a decision tree; strict one-parent containment routes to the recursive tree, not the dependency graph (which allows shared leaves). An uncovered concept-type gets a bespoke component and a new ⚠️ row in the map — the hole stays visible rather than being silently force-fit.</p>
+      <p>The concept-coverage map (<code>concept-coverage.md</code>) is the single source of truth for which concept-types are covered and which renderer each routes to. Disambiguation rules handle close neighbors: for instance, a cycle or back-edge routes to a state machine, not a decision tree — except in a data model, which is carved out, because an ERD renders its own cycles by breaking and marking them rather than handing them to a state diagram; strict one-parent containment routes to the recursive tree, not the dependency graph (which allows shared leaves). An uncovered concept-type gets a bespoke component and a new ⚠️ row in the map — the hole stays visible rather than being silently force-fit.</p>
       <div class="callout">
         <h4>Concept-fidelity gate — the anti-force-fit invariant</h4>
         <p>The gate generalizes the pre-existing diagram-fidelity check to every concept-type. It routes each concept to its registered renderer, never fitting a branching-logic concept into a linear flow or a data-model concept into an architecture map. The gate is part of the <code>authoring-guide.md</code> Step 1 and runs in the same select stage as the component-selection pass.</p>
@@ -391,12 +399,14 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
     <section id="contained">
       <div class="sec-label">the core promise</div>
       <h2>Self-contained, <em>tokens only</em></h2>
-      <p class="lede">Two invariants make every walkthrough recognizably the same artifact and portable anywhere. They are non-negotiable.</p>
+      <p class="lede">Two invariants — self-contained and tokens-only — make every walkthrough recognizably the same artifact and portable anywhere. They are non-negotiable. The rest are the guarantees that fall out of them.</p>
       <div class="edge-grid">
         <div class="edge"><div class="n">self-contained</div><div class="t">Everything inlined</div><p>All CSS, JS, and SVG live in the single HTML file. The <strong>only</strong> external resource is one Google Fonts <span class="cell-mono">@import</span> — no <span class="cell-mono">&lt;script src&gt;</span>, no <span class="cell-mono">&lt;link rel=stylesheet&gt;</span>, no <span class="cell-mono">&lt;img&gt;</span>, no CDN.</p></div>
         <div class="edge"><div class="n">tokens only</div><div class="t">One house style</div><p>Never a raw hex, font, or spacing literal — everything goes through CSS custom properties. Both themes are <span class="cell-mono">:root</span> token blocks; the toggle swaps token sets, not stylesheets.</p></div>
         <div class="edge"><div class="n">two themes</div><div class="t">Dark + warm-light</div><p>One in-document toggle, viewer's choice per-view. Nothing about it requires a server or a build step.</p></div>
         <div class="edge"><div class="n">open components</div><div class="t">Floor, not ceiling</div><p>Catalog entries used verbatim where they fit; bespoke components composed from the same primitives where they don't — passing a looks-native checklist. Empty sections are omitted rather than stubbed.</p></div>
+        <div class="edge"><div class="n">fails visibly</div><div class="t">No blank page</div><p>Author-written detail lives in an inert <span class="cell-mono">&lt;script type="application/json"&gt;</span> island parsed at runtime, so every executable script is fixed boilerplate that a content typo cannot break. Escaping is by construction. Section reveal carries a 2.5s failsafe — a handler bug can't leave you staring at nothing.</p></div>
+        <div class="edge"><div class="n">keyboard-operable</div><div class="t">Not pointer-only</div><p>Every interactive element activates on Enter and Space, not just a click — so the diagrams, cards, and detail surfaces are reachable without a mouse.</p></div>
       </div>
       <p style="margin-top:1.4rem">The result renders with no network beyond that one font fetch — copy the file anywhere, email it, drop it in a wiki, and it works without the plugin, without a server, and without a connection. Walkthroughs are written to <code>.claude/walkthrough/&lt;YYYY-MM-DD-HHMM&gt;-&lt;slug&gt;.html</code>. When a walkthrough on the same subject already exists, <code>create</code> asks whether to update it in place, write a new versioned file, or overwrite — rather than silently adding a <code>-2</code>/<code>-3</code> suffix. On the first run in a repo, it offers to add the directory to <code>.gitignore</code> (a session artifact can contain code and prose you exchanged) and remembers your choice in <code>settings.md</code>.</p>
       <div class="callout">
@@ -454,7 +464,7 @@ write        overwrite the SAME file — no new file, no backup
         <span class="lg"><i style="background:var(--accent)"></i>shared renderer stage</span>
         <span class="lg"><i style="background:var(--green)"></i>session input (create / update)</span>
         <span class="lg"><i style="background:var(--blue)"></i>subject input (document)</span>
-        <span class="lg"><i style="background:var(--purple)"></i>concept-fidelity gate (v1.2.0)</span>
+        <span class="lg"><i style="background:var(--purple)"></i>concept-fidelity gate</span>
       </div>
     </section>
 
@@ -504,27 +514,37 @@ const MAX_DEPTH = 3;                        // sheets nest, capped at 3</code></
     <dialog class="sheet" id="sheet-cov-erd">
       <button class="x" onclick="this.closest('dialog').close()">✕</button>
       <div class="sf-body">
-        <div class="sf-kicker">v1.2.0 renderer</div>
-        <h3 class="sf-h">ERD</h3>
-        <p class="sf-summary">For data-model concepts — entities with field lists joined by cardinality. HTML entity cards, PK/FK on the <code>.chip</code> primitive, no fragile SVG edges. This sheet is roomy enough to host the renderer itself: the concept-coverage model maps many <code>concept</code> rows to one <code>renderer</code>.</p>
-        <div class="erd-demo">
-          <div class="erd-ent">
-            <h4>concept</h4>
-            <ul>
-              <li>id <span class="chip accent">PK</span></li>
-              <li>type</li>
-              <li>renderer <span class="chip neutral">FK</span></li>
-            </ul>
+        <div class="sf-kicker">concept renderer</div>
+        <h3 class="sf-h">Layered ERD</h3>
+        <p class="sf-summary">For data-model concepts — entities with field lists and relationships carrying cardinality. Entities sit in <strong>dependency-depth bands</strong> (referenced entities on top, the most-dependent at the bottom), and each relationship lives on its own <strong>FK field row</strong> as <code>→ Target.field · cardinality</code> rather than on a fragile floating edge. A relationship summary lists every edge as the always-visible channel for keyboard, print, and no-hover reading; one connector is drawn on hover or focus. Cycles are broken and marked, self-references render as a self-loop. This sheet is roomy enough to host the renderer itself: the concept-coverage model maps many <code>concept</code> rows to one <code>renderer</code>.</p>
+        <div class="erd-demo-l">
+          <div class="erd-band">
+            <div class="erd-band-l"><span class="dot"></span>referenced</div>
+            <div class="erd-demo">
+              <div class="erd-ent">
+                <h4>renderer</h4>
+                <ul>
+                  <li>id <span class="chip accent">PK</span></li>
+                  <li>name</li>
+                </ul>
+              </div>
+            </div>
           </div>
-          <div class="erd-rel"><span>→</span>N:1</div>
-          <div class="erd-ent">
-            <h4>renderer</h4>
-            <ul>
-              <li>id <span class="chip accent">PK</span></li>
-              <li>name</li>
-            </ul>
+          <div class="erd-band">
+            <div class="erd-band-l"><span class="dot"></span>dependent</div>
+            <div class="erd-demo">
+              <div class="erd-ent">
+                <h4>concept</h4>
+                <ul>
+                  <li>id <span class="chip accent">PK</span></li>
+                  <li>type</li>
+                  <li>renderer <span class="erd-fk">→ renderer.id · N:1</span></li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
+        <p class="erd-rels"><strong>Relationships:</strong> concept.renderer → renderer.id · N:1</p>
         <div class="sf-related"><button class="chip neutral" onclick="openSurface('cov-htree')">cov-htree</button><button class="chip neutral" onclick="openSurface('cov-ladder')">cov-ladder</button></div>
       </div>
     </dialog>
@@ -582,11 +602,11 @@ const DET={
  'surf-pane':{k:"Detail surfaces",h:"Glance pane",summary:"The lightweight right-edge panel, for light details. Its structured glance shows only the fields the detail actually has — empty fields are omitted, never stubbed. Built at click time by renderSurface from the DET record."},
  'surf-sheet':{k:"Detail surfaces",h:"Centered sheet",summary:"A centered native <dialog> surface for richer content that the narrow pane can't hold — a hosted diagram, a code block. It is roomy enough to host a full catalog component. A sheet can itself open further detail. Opened with showModal() for free focus-trap and top-layer stacking."},
  'surf-nested':{k:"Detail surfaces",h:"Nested detail",summary:"A surface reached from inside a sheet opens further detail, nested — so you can follow a cross-link from one component to the next, navigating relationships in a multi-component architecture rather than reading one static diagram. Capped at 3 levels; replace-topmost beyond that."},
- 'cov-dtree':{k:"v1.2.0 renderer",h:"Decision tree",summary:"For branching-logic concepts — labeled yes/no/condition edges, a tree with no cycles. Inline SVG with accent-bordered decision nodes and green leaf nodes. Distinct from the flow (no branches) and the state diagram (cycles/back-edges). Clickable nodes open detail via openSurface."},
- 'cov-htree':{k:"v1.2.0 renderer",h:"Recursive tree",summary:"For hierarchy concepts — strict one-parent containment over n levels (an AST, a component tree, a taxonomy). An indented collapsible tree via native <details> (no JS for collapse). Internal nodes collapse; leaf nodes open detail via openSurface. Distinct from the dependency graph (shared leaves → a DAG)."},
- 'cov-lstack':{k:"v1.2.0 renderer",h:"Layer stack",summary:"For layering concepts — ordered vertical bands where each layer touches only its neighbors (a tech stack, a network/protocol stack, a middleware chain). Full-width HTML bands, top = outermost, bottom = innermost. Clickable bands open detail via openSurface. Distinct from the architecture map (free-form connections)."},
- 'cov-erd':{k:"v1.2.0 renderer",h:"ERD",summary:"For data-model concepts — entities with field lists and relationships carrying cardinality (1:N, N:M). HTML entity cards joined by cardinality connector chips — no fragile SVG edges. PK/FK use the .chip primitive. Clickable entities open detail via openSurface. Distinct from the architecture map (services, no fields/cardinality)."},
- 'cov-ladder':{k:"v1.2.0 renderer",h:"Causal hypothesis ladder",summary:"For causal-chain concepts — a debugging trace: symptom, candidate causes each ruled in or out by evidence, converging to a root cause and fix. HTML rows with .chip status (ruled-in = ok, ruled-out = danger) plus a root-cause→fix callout. Distinct from the flow (neutral processing stages, no evidence semantics)."}
+ 'cov-dtree':{k:"concept renderer",h:"Decision tree",summary:"For branching-logic concepts — labeled yes/no/condition edges, a tree with no cycles. Inline SVG with accent-bordered decision nodes and green leaf nodes. Distinct from the flow (no branches) and the state diagram (cycles/back-edges). Clickable nodes open detail via openSurface."},
+ 'cov-htree':{k:"concept renderer",h:"Recursive tree",summary:"For hierarchy concepts — strict one-parent containment over n levels (an AST, a component tree, a taxonomy). An indented collapsible tree via native <details> (no JS for collapse). Internal nodes collapse; leaf nodes open detail via openSurface. Distinct from the dependency graph (shared leaves → a DAG)."},
+ 'cov-lstack':{k:"concept renderer",h:"Layer stack",summary:"For layering concepts — ordered vertical bands where each layer touches only its neighbors (a tech stack, a network/protocol stack, a middleware chain). Full-width HTML bands, top = outermost, bottom = innermost. Clickable bands open detail via openSurface. Distinct from the architecture map (free-form connections)."},
+ 'cov-erd':{k:"concept renderer",h:"Layered ERD",summary:"For data-model concepts — entities with field lists and relationships carrying cardinality (1:N, N:M). Entities are placed in dependency-depth bands: referenced entities on top, the most-dependent (junctions) at the bottom. Each relationship is anchored on its own FK field row as → Target.field · cardinality, with one connector drawn on hover or focus; a relationship summary lists every edge as the always-visible channel for keyboard, print and no-hover reading. Cycles are broken and marked, self-references render as a self-loop. Clickable entities open detail via openSurface. Distinct from the architecture map (services, no fields/cardinality)."},
+ 'cov-ladder':{k:"concept renderer",h:"Causal hypothesis ladder",summary:"For causal-chain concepts — a debugging trace: symptom, candidate causes each ruled in or out by evidence, converging to a root cause and fix. HTML rows with .chip status (ruled-in = ok, ruled-out = danger) plus a root-cause→fix callout. Distinct from the flow (neutral processing stages, no evidence semantics)."}
 };
 const SURF={'surf-sheet':'sheet','cov-erd':'sheet'};
   </script>
