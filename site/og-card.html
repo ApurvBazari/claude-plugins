@@ -1,0 +1,93 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<title>claude-plugins — social card source</title>
+<!--
+  Source of truth for site/og.png (the Open Graph / social preview card).
+  Renders at exactly 1200x630 — the Open Graph standard, which LinkedIn,
+  X, Slack and Discord all accept.
+
+  Regenerate after editing:
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+      --headless --disable-gpu --hide-scrollbars \
+      --force-device-scale-factor=2 --window-size=1200,630 \
+      --virtual-time-budget=8000 \
+      --screenshot=/tmp/og@2x.png \
+      "file://$PWD/site/og-card.html"
+    magick /tmp/og@2x.png -resize 1200x630 -strip site/og.png
+
+  Rendered at 2x then downscaled so the Instrument Serif headline stays
+  crisp. Palette and type are lifted verbatim from site/index.html — if the
+  site's tokens change, change them here too.
+-->
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root{
+  --bg-deep:#08090c; --bg-card:#0f1117; --bg-inset:#060709;
+  --border:#1e2230; --border-active:#2d3348;
+  --tp:#e8eaf0; --ts:#7d8399; --tm:#4a5068;
+  --accent:#22d3ee; --accent-glow:rgba(34,211,238,.16); --accent-soft:rgba(34,211,238,.08);
+  --mono:'JetBrains Mono',monospace; --serif:'Instrument Serif',serif; --sans:'DM Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:1200px;height:630px;overflow:hidden;}
+body{
+  background:var(--bg-deep);color:var(--tp);font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;position:relative;
+  display:flex;flex-direction:column;justify-content:space-between;
+  padding:62px 72px;
+}
+/* accent bloom, bottom-left — same glow the site uses behind the hero */
+body::before{
+  content:'';position:absolute;left:-180px;bottom:-260px;width:820px;height:820px;
+  background:radial-gradient(circle,var(--accent-glow) 0%,transparent 68%);
+  pointer-events:none;
+}
+/* the site's film-grain overlay */
+body::after{
+  content:'';position:absolute;inset:0;pointer-events:none;opacity:.025;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.row{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;}
+.logo{font-family:var(--mono);font-size:22px;font-weight:600;letter-spacing:.01em;}
+.logo span{color:var(--accent);}
+.meta{
+  font-family:var(--mono);font-size:13px;color:var(--tm);
+  text-transform:uppercase;letter-spacing:.16em;display:flex;align-items:center;gap:10px;
+}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);}
+h1{
+  position:relative;z-index:1;
+  font-family:var(--serif);font-weight:400;font-size:82px;line-height:1.06;
+  letter-spacing:-.025em;max-width:1000px;
+}
+h1 em{font-style:italic;color:var(--accent);}
+.foot{position:relative;z-index:1;border-top:1px solid var(--border);padding-top:24px;}
+.chips{display:flex;gap:10px;}
+.chip{
+  font-family:var(--mono);font-size:14px;letter-spacing:.06em;color:var(--ts);
+  background:var(--bg-card);border:1px solid var(--border);
+  padding:8px 16px;border-radius:24px;
+}
+.chip.lead{color:var(--tp);border-color:var(--border-active);background:var(--accent-soft);}
+.lic{font-family:var(--mono);font-size:14px;color:var(--tm);letter-spacing:.14em;text-transform:uppercase;}
+</style></head>
+<body>
+  <div class="row">
+    <div class="logo">◆ claude<span>-plugins</span></div>
+    <div class="meta"><span class="dot"></span>marketplace · 5 plugins</div>
+  </div>
+
+  <h1>Sharp, honest tooling that makes<br>Claude Code's work<br><em>visible and verifiable</em>.</h1>
+
+  <div class="foot row">
+    <div class="chips">
+      <span class="chip lead">walkthrough</span>
+      <span class="chip lead">lens</span>
+      <span class="chip">onboard</span>
+      <span class="chip">notify</span>
+      <span class="chip">handoff</span>
+    </div>
+    <div class="lic">MIT · free</div>
+  </div>
+</body></html>
