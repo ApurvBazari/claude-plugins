@@ -132,7 +132,7 @@ grep -qF -- 'wt-credit' "$DOCUMENT_SKILL" \
 grep -qF -- 'wt-credit' "$RM" \
   || fail "reconstruct-and-merge.md must declare the provenance footer scaffold-owned (recovered into no model field)"
 # the footer is provenance, not a tracking beacon
-grep -qE 'wt-credit[^\n]*(utm_|\?ref=|track)' "$PS" \
+grep -qE 'wt-credit.*(utm_|\?ref=|track)' "$PS" \
   && fail "the provenance footer must not carry tracking parameters"
 ok "FOOTER: provenance footer single-sourced in page-scaffold.md, reconciled in document + update, untracked"
 
