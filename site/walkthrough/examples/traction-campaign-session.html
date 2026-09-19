@@ -1,0 +1,344 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The shelf nobody was sent to — walkthrough</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root{
+  --bg-deep:#08090c; --bg-card:#0f1117; --bg-card-hover:#151821; --bg-elevated:#1a1d28; --bg-inset:#060709;
+  --border:#1e2230; --border-active:#2d3348; --border-strong:#3a4159;
+  --tp:#e8eaf0; --ts:#7d8399; --tm:#4a5068; --tf:#2e3349;
+  --blue:#3b82f6; --green:#22c55e; --amber:#f59e0b; --rose:#f43f5e; --purple:#a78bfa;
+  --accent:#22d3ee; --accent-glow:rgba(34,211,238,.16); --accent-soft:rgba(34,211,238,.08);
+  --blue-soft:rgba(59,130,246,.1); --green-soft:rgba(34,197,94,.1); --amber-soft:rgba(245,158,11,.1); --rose-soft:rgba(244,63,94,.1); --purple-soft:rgba(167,139,250,.1);
+  --mono:'JetBrains Mono',monospace; --serif:'Instrument Serif',serif; --sans:'DM Sans',sans-serif;
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+html[data-theme="light"]{
+  --bg-deep:#faf8f4; --bg-card:#fff; --bg-card-hover:#f5f1ea; --bg-elevated:#fff; --bg-inset:#f5f1ea;
+  --border:#e5dfd6; --border-active:#d8cfc1; --border-strong:#c9c0b3;
+  --tp:#2a2520; --ts:#6b6157; --tm:#9e9486; --tf:#c9c0b3;
+  --blue:#2d5fa0; --green:#2d7a3a; --amber:#b87333; --rose:#b83a3a; --purple:#7a3b8f;
+  --accent:#c05e2b; --accent-glow:rgba(192,94,43,.16); --accent-soft:rgba(192,94,43,.09);
+  --blue-soft:rgba(45,95,160,.1); --green-soft:rgba(45,122,58,.1); --amber-soft:rgba(184,115,51,.1); --rose-soft:rgba(184,58,58,.1); --purple-soft:rgba(122,59,143,.1);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg-deep);color:var(--tp);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .3s,color .3s;}
+body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+/* nav */
+nav{position:fixed;top:0;left:0;right:0;height:54px;z-index:100;backdrop-filter:blur(20px) saturate(180%);background:color-mix(in srgb,var(--bg-deep) 82%,transparent);border-bottom:1px solid var(--border);}
+.nav-in{max-width:1180px;margin:0 auto;height:100%;display:flex;align-items:center;justify-content:space-between;padding:0 1.6rem;}
+.logo{font-family:var(--mono);font-size:.82rem;font-weight:600;letter-spacing:.02em;}
+.logo span{color:var(--accent);}
+.nav-links{display:flex;gap:.3rem;font-family:var(--mono);font-size:.68rem;}
+.nav-links a{color:var(--ts);text-decoration:none;padding:.3rem .55rem;border-radius:6px;transition:.2s;}
+.nav-links a:hover,.nav-links a.on{color:var(--tp);background:var(--accent-soft);}
+.nav-meta{display:flex;align-items:center;gap:.45rem;font-family:var(--mono);font-size:.62rem;color:var(--tm);text-transform:uppercase;letter-spacing:.12em;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2.5s infinite;}
+.theme-btn{cursor:pointer;font-family:var(--mono);font-size:.62rem;color:var(--ts);border:1px solid var(--border);padding:.28rem .6rem;border-radius:6px;background:none;}
+footer.wt-credit{border-top:1px solid var(--border);margin-top:4rem;padding:1.6rem 2rem 2rem;text-align:center;font-family:var(--mono);font-size:.62rem;color:var(--tm);text-transform:uppercase;letter-spacing:.12em;}
+footer.wt-credit a{color:var(--tm);text-decoration:none;border-bottom:1px solid var(--border);transition:color .2s;}
+footer.wt-credit a:hover{color:var(--accent);}
+.progress{position:fixed;top:54px;left:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--blue));z-index:101;width:0;box-shadow:0 0 8px var(--accent-glow);}
+main{max-width:1180px;margin:0 auto;padding:0 1.6rem;padding-top:78px;counter-reset:sec;}
+.eyebrow{font-family:var(--mono);font-size:.68rem;color:var(--accent);text-transform:uppercase;letter-spacing:.18em;display:inline-flex;align-items:center;gap:.6rem;margin-bottom:.8rem;}
+.eyebrow::before{content:'';width:26px;height:1px;background:var(--accent);}
+h1{font-family:var(--serif);font-size:clamp(2.4rem,6vw,4rem);font-weight:400;line-height:1.04;letter-spacing:-.025em;margin:.2rem 0;max-width:880px;}
+h1 em,h2 em{font-style:italic;color:var(--accent);}
+h2{font-family:var(--serif);font-size:clamp(1.7rem,3.5vw,2.4rem);font-weight:400;line-height:1.15;margin:.2rem 0 .3rem;}
+.lede{color:var(--ts);font-size:1.08rem;line-height:1.7;max-width:720px;margin:.6rem 0 0;}
+p{color:var(--ts);font-size:.92rem;line-height:1.7;max-width:720px;}
+p code,li code{font-family:var(--mono);font-size:.8rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
+section{padding:4rem 0 2rem;scroll-margin-top:70px;transition:opacity .7s var(--ease),transform .7s var(--ease);}
+html.js section:not(.vis){opacity:0;transform:translateY(24px);}
+section.vis{opacity:1;transform:none;}
+.sec-label{counter-increment:sec;font-family:var(--mono);font-size:.65rem;color:var(--tm);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.5rem;}
+.sec-label::before{content:counter(sec,decimal-leading-zero) " \2014 ";}
+/* hero stats */
+.hstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:1.8rem;}
+.hstat{background:var(--bg-card);padding:1.1rem 1.2rem;}
+.hstat .v{font-family:var(--serif);font-size:1.9rem;color:var(--tp);line-height:1;}
+.hstat .v em{font-style:italic;color:var(--accent);}
+.hstat .l{font-family:var(--mono);font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;margin-top:.4rem;}
+/* detail panel */
+.panel{position:fixed;top:0;right:0;width:300px;height:100vh;background:var(--bg-card);border-left:1px solid var(--border-active);padding:24px 20px;overflow:auto;transform:translateX(100%);transition:transform .25s var(--ease);box-shadow:-20px 0 50px rgba(0,0,0,.3);z-index:200;}
+.panel.open{transform:none;}
+.panel .x{position:absolute;top:14px;right:16px;color:var(--tm);cursor:pointer;font-size:18px;}
+.panel .pk{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);}
+.panel h3{font-family:var(--serif);font-weight:400;font-size:1.4rem;margin:.2rem 0 .6rem;}
+.panel .pb{font-size:.86rem;color:var(--ts);line-height:1.6;}
+.panel code{font-family:var(--mono);font-size:.72rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
+.panel .sf-h{font-family:var(--serif);font-weight:400;font-size:1.4rem;margin:.2rem 0 .5rem;}
+.sf-summary{font-size:.86rem;color:var(--ts);line-height:1.6;margin:0 0 .8rem;}
+.sf-where{display:flex;flex-wrap:wrap;gap:.35rem;margin:.2rem 0 .8rem;}
+.sf-loc{font-family:var(--mono);font-size:.7rem;background:var(--accent-soft);color:var(--accent);padding:1px 6px;border-radius:4px;}
+.sf-code{margin:.2rem 0 .8rem;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.sf-code figcaption{font-family:var(--mono);font-size:.6rem;color:var(--tm);background:var(--bg-inset);padding:.3rem .6rem;}
+.sf-code pre{margin:0;padding:.6rem;overflow:auto;font-family:var(--mono);font-size:.72rem;color:var(--tp);}
+.sf-points{margin:.2rem 0 .8rem;padding-left:1.1rem;}
+.sf-points li{font-size:.84rem;color:var(--ts);margin:.25rem 0;}
+.sf-related{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.6rem;}
+.sf-related .chip{cursor:pointer;border:none;}
+dialog.sheet{max-width:min(900px,92vw);width:100%;max-height:86vh;border:1px solid var(--border-active);border-radius:14px;background:var(--bg-card);color:var(--tp);padding:0;overflow:hidden;box-shadow:0 30px 80px -20px rgba(0,0,0,.5);}
+dialog.sheet::backdrop{background:color-mix(in srgb,var(--bg-deep) 70%,transparent);backdrop-filter:blur(6px) saturate(140%);}
+dialog.sheet>.x{position:absolute;top:12px;right:14px;color:var(--tm);cursor:pointer;font-size:18px;background:none;border:none;z-index:1;}
+dialog.sheet .sf-body{padding:26px 24px;overflow:auto;flex:1;min-height:0;}
+dialog.sheet .sf-kicker{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);}
+dialog.sheet[open]{display:flex;flex-direction:column;animation:sheetIn .26s var(--ease);}
+@keyframes sheetIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){dialog.sheet[open]{animation:none;}}
+dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;height:100vh;max-height:100vh;border-radius:0;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@media(max-width:780px){.nav-links{display:none}}
+.chip{display:inline-flex;align-items:center;gap:.35rem;font-family:var(--mono);font-size:.6rem;font-weight:500;text-transform:uppercase;letter-spacing:.06em;padding:.2rem .55rem;border-radius:20px;border:1px solid var(--border);background:var(--bg-card);color:var(--ts);}
+.chip::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;}
+.chip.ok{color:var(--green);background:var(--green-soft);border-color:color-mix(in srgb,var(--green) 30%,transparent);}
+.chip.info{color:var(--blue);background:var(--blue-soft);border-color:color-mix(in srgb,var(--blue) 30%,transparent);}
+.chip.warn{color:var(--amber);background:var(--amber-soft);border-color:color-mix(in srgb,var(--amber) 30%,transparent);}
+.chip.danger{color:var(--rose);background:var(--rose-soft);border-color:color-mix(in srgb,var(--rose) 30%,transparent);}
+.chip.neutral{color:var(--ts);background:var(--bg-elevated);border-color:var(--border);}
+/* flow diagram */
+.flow{display:flex;align-items:center;flex-wrap:wrap;gap:.4rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1.2rem 0;}
+.fnode{flex:1;min-width:110px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:.8rem .9rem;font-family:var(--mono);font-size:.7rem;cursor:pointer;transition:all .3s var(--ease);}
+.fnode:hover{border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow);transform:scale(1.03);}
+.fnode .nl{font-size:.55rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;}
+.fnode.accent{border-color:color-mix(in srgb,var(--accent) 40%,transparent);background:linear-gradient(135deg,var(--bg-elevated),var(--accent-soft));}
+.fnode.gap{border-style:dashed;border-color:var(--border-strong);opacity:.75;}
+.farr{color:var(--border-strong);font-size:1.1rem;}
+/* callout */
+.callout{background:var(--accent-soft);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:.9rem 1.2rem;margin:1.1rem 0;}
+.callout h4{font-family:var(--serif);font-weight:400;color:var(--accent);margin:0 0 .3rem;font-size:1.1rem;}
+.callout p{margin:0;font-size:.86rem;color:var(--ts);}
+.callout code{font-family:var(--mono);font-size:.78rem;background:var(--bg-card);color:var(--accent);padding:1px 5px;border-radius:4px;}
+/* tabs + tradeoff bars */
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;margin:1.4rem 0;}
+.tab{position:relative;text-align:left;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1rem 1.1rem;cursor:pointer;transition:all .25s var(--ease);}
+.tab:hover{border-color:var(--border-strong);}
+.tab.active{border-color:var(--accent);background:var(--bg-card-hover);box-shadow:0 0 0 1px var(--accent),0 8px 32px -8px var(--accent-glow);}
+.tab .letter{font-family:var(--serif);font-style:italic;font-size:1.5rem;color:var(--accent);}
+.tab .tt{font-weight:600;margin:.2rem 0;}
+.tab .tb{font-size:.8rem;color:var(--ts);}
+.rec{position:absolute;top:-9px;right:12px;font-family:var(--mono);font-size:.58rem;text-transform:uppercase;letter-spacing:.1em;background:var(--accent);color:var(--bg-deep);padding:.2rem .5rem;border-radius:20px;opacity:0;transition:opacity .3s;}
+.tab.chosen .rec{opacity:1;}
+.detail{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.3rem;display:none;}
+.detail.show{display:grid;grid-template-columns:1.3fr 1fr;gap:1.6rem;animation:fadeUp .4s var(--ease);}
+.proscons{display:flex;gap:1.4rem;margin-top:.7rem;font-size:.82rem;}
+.proscons .p b,.proscons .c b{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.1em;display:block;margin-bottom:.3rem;}
+.proscons .p li{color:var(--green);} .proscons .c li{color:var(--rose);}
+.proscons ul{margin:0;padding-left:1rem;}
+.bar{display:grid;grid-template-columns:90px 1fr 28px;gap:.7rem;align-items:center;margin-bottom:.6rem;font-family:var(--mono);font-size:.66rem;}
+.bar .trk{height:9px;background:var(--border);border-radius:5px;overflow:hidden;}
+.bar .fil{height:100%;border-radius:5px;width:0;transition:width .8s var(--ease);}
+@media(max-width:780px){.tabs{grid-template-columns:1fr}.detail.show{grid-template-columns:1fr}}
+/* file tree */
+.tree{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.3rem;font-family:var(--mono);font-size:.72rem;line-height:1.75;color:var(--ts);white-space:pre;overflow-x:auto;margin-top:1rem;}
+.tree .dir{color:var(--accent);}
+.tree .fl{color:var(--blue);cursor:pointer;}
+.tree .fl:hover{color:var(--tp);}
+.tree .nw{color:var(--green);font-size:.58rem;}
+.tree .ed{color:var(--amber);font-size:.58rem;}
+/* timeline */
+.timeline{position:relative;padding-left:2rem;margin:1.2rem 0;}
+.timeline::before{content:'';position:absolute;left:7px;top:0;bottom:0;width:2px;background:var(--border);}
+.timeline-item{position:relative;padding-bottom:2rem;padding-left:1.5rem;}
+.timeline-item::before{content:'';position:absolute;left:-2rem;top:6px;width:16px;height:16px;border-radius:50%;border:2px solid var(--border);background:var(--bg-deep);}
+.timeline-item.active::before{border-color:var(--accent);background:var(--accent);box-shadow:0 0 12px var(--accent-glow);}
+.timeline-version{font-family:var(--mono);font-size:.82rem;font-weight:600;color:var(--tp);margin-bottom:.25rem;}
+.timeline-date{font-family:var(--mono);font-size:.68rem;color:var(--tm);margin-bottom:.5rem;}
+.timeline-desc{font-size:.82rem;color:var(--ts);line-height:1.6;}
+/* open questions */
+.oq{display:flex;gap:.8rem;align-items:flex-start;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:.8rem 1.1rem;margin-bottom:.6rem;}
+.oq .q{font-family:var(--serif);font-style:italic;color:var(--accent);font-size:1.3rem;line-height:1;}
+.oq div{font-size:.86rem;color:var(--ts);}
+</style></head>
+<body>
+  <nav><div class="nav-in">
+    <div class="logo">◆ walk<span>through</span></div>
+    <div class="nav-links"><a href="#top" class="on">start</a><a href="#problem">problem</a><a href="#path">path</a><a href="#decisions">decisions</a><a href="#build">build</a><a href="#proof">proof</a><a href="#open">open</a></div>
+    <div style="display:flex;align-items:center;gap:.8rem">
+      <div class="nav-meta"><span class="dot"></span> SESSION &middot; 2026-09-19 &middot; DISTRIBUTION</div>
+      <button class="theme-btn" onclick="tgl()">◑ THEME</button></div>
+  </div></nav>
+  <div class="progress" id="prog"></div>
+  <main>
+    <section id="top" class="vis"><div class="eyebrow">session walkthrough &middot; distribution</div>
+  <h1>The shelf nobody was <em>sent to</em></h1>
+  <p class="lede">A five-plugin marketplace had everything a visitor needs &mdash; a live site, released plugins, a published example &mdash; and almost no visitors. This session worked out why, found that the product&rsquo;s own output had no way back to it, and shipped the fix.</p>
+  <div class="hstats">
+    <div class="hstat"><div class="v"><em>4</em></div><div class="l">render paths, one edit</div></div>
+    <div class="hstat"><div class="v">55</div><div class="l">belts green</div></div>
+    <div class="hstat"><div class="v">2</div><div class="l">themes browser-verified</div></div>
+    <div class="hstat"><div class="v">0</div><div class="l">new design tokens</div></div>
+  </div></section>
+    
+<section id="problem">
+  <div class="sec-label">the ask</div>
+  <h2>The question, and the one <em>underneath</em> it</h2>
+  <p class="lede">The question was &ldquo;how do we get traction?&rdquo; The honest answer turned out not to be a missing channel.</p>
+  <p>The reflex reading was that no distribution work had been done. That was wrong: the plugins were released, the documentation site was live, a real example artifact was published and reachable, a brand kit existed, launch copy had been drafted months earlier, and two community-directory listings had been merged. The shelf was built.</p>
+  <p>What had never happened was anyone being sent to it &mdash; and two of the surfaces that <em>do</em> get traffic were describing the plugins inaccurately, advertising a companion plugin that does not exist and a feature that had since been replaced.</p>
+  <div class="callout"><h4>The reframe</h4><p>A plugin installs with <code>claude plugin marketplace add</code>, which clones the repository directly. Someone can install, use, and rely on all five plugins without ever loading the repository page &mdash; so the usual signal of appreciation is unreachable from inside the product.</p></div>
+</section>
+
+<section id="path">
+  <div class="sec-label">diagnosis</div>
+  <h2>Where the path actually <em>goes</em></h2>
+  <p class="lede">Tracing the install and the artifact end to end showed both terminating without a way home. Click any stage for detail.</p>
+  <div class="flow">
+    <div class="fnode accent" data-d="install" role="button" tabindex="0" aria-label="marketplace add" onclick="openSurface('install')"><div class="nl">stage 1</div>marketplace add</div>
+    <span class="farr">&rarr;</span>
+    <div class="fnode" data-d="clone" role="button" tabindex="0" aria-label="git clone" onclick="openSurface('clone')"><div class="nl">stage 2</div>git clone</div>
+    <span class="farr">&rarr;</span>
+    <div class="fnode" data-d="run" role="button" tabindex="0" aria-label="plugin runs" onclick="openSurface('run')"><div class="nl">stage 3</div>plugin runs</div>
+    <span class="farr">&rarr;</span>
+    <div class="fnode" data-d="artifact" role="button" tabindex="0" aria-label="artifact rendered" onclick="openSurface('artifact')"><div class="nl">stage 4</div>artifact rendered</div>
+    <span class="farr">&rarr;</span>
+    <div class="fnode" data-d="share" role="button" tabindex="0" aria-label="shared onward" onclick="openSurface('share')"><div class="nl">stage 5</div>shared onward</div>
+    <span class="farr">&rarr;</span>
+    <div class="fnode gap" data-d="repo" role="button" tabindex="0" aria-label="the repository" onclick="openSurface('repo')"><div class="nl">never reached</div>the repository</div>
+  </div>
+  <p>The last hop was the finding. A generated walkthrough is a single self-contained HTML file whose whole purpose is to be handed to someone else &mdash; and it carried no mark of what produced it. Every shared artifact was a dead end rather than a door.</p>
+</section>
+
+<section id="decisions">
+  <div class="sec-label">decisions</div>
+  <h2>Three calls that shaped the <em>work</em></h2>
+  <p class="lede">Each was weighed against alternatives rather than assumed. Switch tabs to compare.</p>
+  <div class="tabs">
+    <div class="tab active" data-app="a" role="button" tabindex="0" aria-label="What leads the pitch" onclick="setTab('a')"><span class="letter">A</span><div class="tt">What leads</div><div class="tb">Artifact, argument, or self-audit?</div></div>
+    <div class="tab chosen" data-app="b" role="button" tabindex="0" aria-label="How far the attribution goes" onclick="setTab('b')"><span class="rec">Chosen</span><span class="letter">B</span><div class="tt">How far attribution goes</div><div class="tb">Quiet footer, or more?</div></div>
+    <div class="tab" data-app="c" role="button" tabindex="0" aria-label="Order of the campaign" onclick="setTab('c')"><span class="letter">C</span><div class="tt">Order of work</div><div class="tb">Repair first, or post first?</div></div>
+  </div>
+  <div class="detail show" data-app="a">
+    <div><h3 style="font-family:var(--serif);font-weight:400;margin:.1rem 0 .4rem">Lead with the artifact</h3><p style="font-size:.86rem;color:var(--ts)">The flagship renders a document you can open in one click. A competing option &mdash; leading with the spec-adherence review idea &mdash; is more novel but needs the reader to first understand a subtle failure mode. With very little attention to spend, nothing subtle survives.</p>
+      <div class="proscons"><div class="p"><b>Pros</b><ul><li>Proof in one click</li><li>The only output that is itself shareable</li></ul></div><div class="c"><b>Cons</b><ul><li>Leads with the less novel idea</li></ul></div></div></div>
+    <div class="chart">
+      <div class="bar"><span>immediacy</span><div class="trk"><div class="fil" style="background:var(--green)" data-w="92"></div></div><span>92</span></div>
+      <div class="bar"><span>novelty</span><div class="trk"><div class="fil" style="background:var(--amber)" data-w="55"></div></div><span>55</span></div>
+      <div class="bar"><span>compounding</span><div class="trk"><div class="fil" style="background:var(--green)" data-w="88"></div></div><span>88</span></div>
+    </div>
+  </div>
+  <div class="detail" data-app="b">
+    <div><h3 style="font-family:var(--serif);font-weight:400;margin:.1rem 0 .4rem">Subtle attribution only</h3><p style="font-size:.86rem;color:var(--ts)">A quiet line in generated documents, and nothing else. Louder options &mdash; a pointer at install time, or treating sharing as a product surface &mdash; were rejected: these artifacts get handed to colleagues, and anything that reads as advertising would cost more trust than the link is worth.</p>
+      <div class="proscons"><div class="p"><b>Pros</b><ul><li>Survives the campaign ending</li><li>No telemetry, no tracking</li></ul></div><div class="c"><b>Cons</b><ul><li>Slowest possible signal</li></ul></div></div></div>
+    <div class="chart">
+      <div class="bar"><span>trust kept</span><div class="trk"><div class="fil" style="background:var(--green)" data-w="95"></div></div><span>95</span></div>
+      <div class="bar"><span>reach</span><div class="trk"><div class="fil" style="background:var(--amber)" data-w="45"></div></div><span>45</span></div>
+      <div class="bar"><span>upkeep cost</span><div class="trk"><div class="fil" style="background:var(--green)" data-w="5"></div></div><span>5</span></div>
+    </div>
+  </div>
+  <div class="detail" data-app="c">
+    <div><h3 style="font-family:var(--serif);font-weight:400;margin:.1rem 0 .4rem">Repair before posting</h3><p style="font-size:.86rem;color:var(--ts)">Nothing gets posted until the shelf tells the truth. Two public listings described plugins inaccurately; a post driving readers onto that would spend the one shot each channel gives you. Order beats volume.</p>
+      <div class="proscons"><div class="p"><b>Pros</b><ul><li>Every later click lands on something accurate</li><li>Repairs are reversible; posts are not</li></ul></div><div class="c"><b>Cons</b><ul><li>Delays the visible part</li></ul></div></div></div>
+    <div class="chart">
+      <div class="bar"><span>reversible</span><div class="trk"><div class="fil" style="background:var(--green)" data-w="90"></div></div><span>90</span></div>
+      <div class="bar"><span>speed</span><div class="trk"><div class="fil" style="background:var(--rose)" data-w="35"></div></div><span>35</span></div>
+      <div class="bar"><span>accuracy</span><div class="trk"><div class="fil" style="background:var(--green)" data-w="96"></div></div><span>96</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="build">
+  <div class="sec-label">the change</div>
+  <h2>One edit, four <em>render paths</em></h2>
+  <p class="lede">The scaffold file is copied verbatim by every renderer, so the footer only had to be written once &mdash; but two existing rules elsewhere had to be reconciled with it.</p>
+  <div class="tree"><span class="dir">walkthrough/</span>
+&#9500;&#9472;&#9472; <span class="dir">skills/create/references/</span>
+&#9474;   &#9492;&#9472;&#9472; <span class="fl" data-d="scaffold" role="button" tabindex="0" aria-label="page-scaffold.md" onclick="openSurface('scaffold')">page-scaffold.md</span> <span class="ed">the single source</span>
+&#9500;&#9472;&#9472; <span class="dir">skills/document/</span>
+&#9474;   &#9492;&#9472;&#9472; <span class="fl" data-d="rebrand" role="button" tabindex="0" aria-label="document SKILL.md" onclick="openSurface('rebrand')">SKILL.md</span> <span class="ed">rebrand carve-out</span>
+&#9500;&#9472;&#9472; <span class="dir">skills/update/references/</span>
+&#9474;   &#9492;&#9472;&#9472; <span class="fl" data-d="reconstruct" role="button" tabindex="0" aria-label="reconstruct-and-merge.md" onclick="openSurface('reconstruct')">reconstruct-and-merge.md</span> <span class="ed">declared scaffold-owned</span>
+&#9492;&#9472;&#9472; <span class="dir">.claude-plugin/</span>
+    &#9492;&#9472;&#9472; <span class="fl">plugin.json</span> <span class="ed">1.4.2 &rarr; 1.5.0</span>
+<span class="dir">tests/walkthrough/</span>
+&#9492;&#9472;&#9472; <span class="fl" data-d="belt" role="button" tabindex="0" aria-label="test_doc_contracts.sh" onclick="openSurface('belt')">test_doc_contracts.sh</span> <span class="nw">5 new assertions</span></div>
+  <div class="callout"><h4>The collision worth catching</h4><p>The document renderer already carried a rule: <em>never leave the tool&rsquo;s own branding on a subject page</em>. A provenance line would have been read as exactly that branding and stripped. Provenance is not branding &mdash; it records what produced the file, which stays true after a rebrand &mdash; so the rule now says so explicitly, and a test fails if either side stops mentioning it.</p></div>
+</section>
+
+<section id="proof">
+  <div class="sec-label">verification</div>
+  <h2>How it was actually <em>checked</em></h2>
+  <p class="lede">A test that has never been seen to fail is not known to work, and a renderer cannot be verified by grep alone.</p>
+  <div class="timeline">
+    <div class="timeline-item"><div class="timeline-version">Belt written first</div><div class="timeline-date">red</div><div class="timeline-desc">The new assertions were run before the implementation and observed failing with the exact expected message &mdash; not assumed to fail.</div></div>
+    <div class="timeline-item"><div class="timeline-version">Implementation</div><div class="timeline-date">green</div><div class="timeline-desc">Footer CSS and element added to the shared scaffold, reusing only theme tokens that already existed. The belt passed; the full suite stayed green.</div></div>
+    <div class="timeline-item"><div class="timeline-version">Structural reasoning</div><div class="timeline-date">verified, not asserted</div><div class="timeline-desc">The reveal logic observes only section elements and its hide rule is section-scoped, so a footer placed outside the main content is structurally exempt from ever being hidden by a failed observer.</div></div>
+    <div class="timeline-item active"><div class="timeline-version">Browser gate</div><div class="timeline-date">both themes</div><div class="timeline-desc">Rendered in a real browser and inspected in light and dark. A grep belt once missed a defect that turned a whole page blank; since then, seeing it is the gate.</div></div>
+  </div>
+</section>
+
+<section id="open">
+  <div class="sec-label">open</div>
+  <h2>What is still <em>unresolved</em></h2>
+  <p class="lede">Honest leftovers from this session, recorded rather than smoothed over.</p>
+  <div class="oq"><span class="q">1</span><div>A historical session&rsquo;s document <strong>cannot be re-rendered</strong> with a newer engine. The refresh tool merges new material rather than re-rendering, and the create tool only ever documents the current session. Old artifacts can therefore only age.</div></div>
+  <div class="oq"><span class="q">2</span><div>The footer also appears on subject pages generated for the documentation site, since those use the same renderer. That is arguably correct &mdash; it is still true &mdash; but it was a consequence, not a decision.</div></div>
+  <div class="oq"><span class="q">3</span><div>The muted token the footer inherits sits below common contrast guidance on the dark theme. It introduces no new problem &mdash; the existing chrome uses the same token &mdash; but the design system as a whole has not been audited for it.</div></div>
+</section>
+
+  </main>
+  <footer class="wt-credit">generated by <a href="https://github.com/ApurvBazari/claude-plugins" target="_blank" rel="noopener">walkthrough</a></footer>
+  <aside class="panel" id="panel"><span class="x" onclick="closeD()">✕</span>
+    <div class="pk" id="panelKicker">Detail</div>
+    <div class="pb" id="panelBody"></div></aside>
+  <div id="sheets"></div>
+  <dialog class="sheet pane-dialog" id="paneDialog"><button class="x" onclick="this.closest('dialog').close()">✕</button><div class="sf-body" id="paneDialogBody"></div></dialog>
+  <script type="application/json" id="wt-data">{"DET": {"install": {"k": "Stage 1", "h": "claude plugin marketplace add", "summary": "The documented install route. It registers the marketplace and fetches the plugin source directly, entirely inside the terminal.", "where": ["README.md:44"], "related": ["clone"]}, "clone": {"k": "Stage 2", "h": "git clone", "summary": "The marketplace source is cloned to fetch the plugin. This is a machine fetch, not a person browsing \\u2014 which is why clone counts and page views tell completely different stories.", "related": ["run"]}, "run": {"k": "Stage 3", "h": "The plugin runs", "summary": "From here the plugin works locally. Nothing in the flow asks the user to visit anything, and nothing ever surfaces where the tool came from.", "related": ["artifact"]}, "artifact": {"k": "Stage 4", "h": "A self-contained document", "summary": "The flagship renders one HTML file with all CSS, JS and SVG inline. It opens offline by double-click, which is exactly what makes it worth handing to someone.", "where": ["walkthrough/skills/create/references/page-scaffold.md"], "related": ["share"]}, "share": {"k": "Stage 5", "h": "Handed onward", "summary": "The file gets sent to a colleague. Before this session it arrived carrying no indication of what produced it, so a reader who liked it had nothing to follow.", "related": ["repo"]}, "repo": {"k": "Never reached", "h": "The repository", "summary": "The one surface where interest could be registered, and the only one the whole path never touches. The provenance footer adds the first link back to it from inside a generated document.", "related": ["scaffold"]}, "scaffold": {"k": "The single source", "h": "page-scaffold.md", "summary": "Copied verbatim by create, document, render and update, so one edit reaches every renderer. The footer sits outside the main content and is styled only from tokens that already existed \\u2014 no new colour, both themes covered.", "where": ["walkthrough/skills/create/references/page-scaffold.md:54", "walkthrough/skills/create/references/page-scaffold.md:131"], "related": ["rebrand"]}, "rebrand": {"k": "Reconciled", "h": "The rebrand carve-out", "summary": "The document renderer rebrands a page's chrome to its subject and forbids leaving the tool's own branding behind. Without an explicit carve-out, that rule reads as an instruction to strip the provenance line.", "where": ["walkthrough/skills/document/SKILL.md:49"], "related": ["reconstruct"]}, "reconstruct": {"k": "Reconciled", "h": "Scaffold-owned, not content", "summary": "The refresh tool rebuilds a model by reading a rendered document back. The footer is now declared scaffold-owned so it is recovered into no field and never folded into prose \\u2014 it is simply re-emitted.", "where": ["walkthrough/skills/update/references/reconstruct-and-merge.md"], "related": ["belt"]}, "belt": {"k": "The guard", "h": "Five new assertions", "summary": "Each can fail on a realistic wrong implementation: missing style, missing element, wrong or absent link, an unreconciled rebrand rule, an unreconciled reconstruction mapping, or a tracking parameter appended to the link.", "where": ["tests/walkthrough/test_doc_contracts.sh"]}}, "SURF": {"install": "pane", "clone": "pane", "run": "pane", "artifact": "pane", "share": "pane", "repo": "pane", "scaffold": "pane", "rebrand": "pane", "reconstruct": "pane", "belt": "pane"}}</script>
+  <script>// progressive-enhancement gate + inert-data load (must be first)
+document.documentElement.classList.add('js');
+const _WT=(()=>{try{return JSON.parse(document.getElementById('wt-data').textContent||'{}');}catch(e){return{};}})();
+const DET=_WT.DET||{}, SURF=_WT.SURF||{};
+// renderSurface — build a structured detail DOM from a DET record into `host`
+function renderSurface(d,host){if(!d||!host)return;let h='';
+ if(d.h)h+=`<h3 class="sf-h">${d.h}</h3>`;
+ if(d.summary)h+=`<p class="sf-summary">${d.summary}</p>`;
+ if(d.where&&d.where.length)h+=`<div class="sf-where">${d.where.map(w=>`<code class="sf-loc">${w}</code>`).join('')}</div>`;
+ if(d.code&&d.code.length)h+=d.code.map(c=>`<figure class="sf-code"><figcaption>${c.file||''}</figcaption><pre><code>${c.snippet||''}</code></pre></figure>`).join('');
+ if(d.points&&d.points.length)h+=`<ul class="sf-points">${d.points.map(p=>`<li>${p}</li>`).join('')}</ul>`;
+ if(d.components)h+=d.components;
+ if(d.related&&d.related.length)h+=`<div class="sf-related">${d.related.map(r=>`<button class="chip neutral" onclick="openSurface('${r}')">${r}</button>`).join('')}</div>`;
+ host.innerHTML=h;}
+const panel=document.getElementById('panel');
+function openPane(id){const d=DET[id];if(!d)return;
+ const k=document.getElementById('panelKicker');if(k)k.textContent=d.k||'Detail';
+ renderSurface(d,document.getElementById('panelBody'));panel.classList.add('open');}
+// Phase ③ router: pane vs sheet via SURF; sheets and nested panes stack as native <dialog>s in the top layer, capped at MAX_DEPTH (replace-topmost)
+const _stack=[]; const MAX_DEPTH=3;
+function _capPush(el){if(!el||el.open)return;if(_stack.length>=MAX_DEPTH){const t=_stack.pop();if(t)t.close();}el.showModal();_stack.push(el);}
+function openSurface(id){const k=(typeof SURF!=='undefined'&&SURF[id])||'pane';
+ if(k==='sheet'){const el=document.getElementById('sheet-'+id);_capPush(el);return;}
+ if(_stack.length){const pd=document.getElementById('paneDialog'),d=DET[id],b=document.getElementById('paneDialogBody');
+  // nested pane → shared paneDialog: render kicker + body, then stack it. Re-opening swaps content in place (no new depth level; _capPush no-ops on el.open).
+  renderSurface(d,b);if(d&&d.k)b.insertAdjacentHTML('afterbegin',`<div class="sf-kicker">${d.k}</div>`);_capPush(pd);}
+ else openPane(id);}
+// dialog housekeeping: pop on close, close on backdrop click
+document.querySelectorAll('dialog.sheet').forEach(dlg=>{
+ dlg.addEventListener('close',()=>{const i=_stack.indexOf(dlg);if(i>-1)_stack.splice(i,1);});
+ dlg.addEventListener('click',e=>{if(e.target===dlg)dlg.close();});});
+function openCard(el){if(!el)return;openPane(el.dataset.id||'');}
+function openD(id){openSurface(id);} // deprecated alias
+function closeD(){panel.classList.remove('open');}
+// keyboard: Escape closes the topmost surface; Enter/Space activates any focused [role="button"] (div/span interactives) — native <button>s are excluded (no role) and fire themselves
+document.addEventListener('keydown',e=>{
+ if(e.key==='Escape'&&!_stack.length){closeD();return;}
+ if(e.key==='Enter'||e.key===' '){const b=e.target&&e.target.closest&&e.target.closest('[role="button"]');if(b){if(e.key===' ')e.preventDefault();b.click();}}});
+function setTab(app){document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.app===app));
+ document.querySelectorAll('.detail').forEach(d=>{const on=d.dataset.app===app;d.classList.toggle('show',on);if(on)animate(d);});}
+function animate(scope){scope.querySelectorAll('.fil').forEach(f=>{f.style.width='0';requestAnimationFrame(()=>requestAnimationFrame(()=>{f.style.width=f.dataset.w+'%';}));});}
+function tog(el){el.classList.toggle('on');const set=new Set([...document.querySelectorAll('.pill.on')].map(p=>p.dataset.f));
+ document.querySelectorAll('.tcard').forEach(c=>c.classList.toggle('hidden',!set.has(c.dataset.cat)));}
+function tgl(){const h=document.documentElement;const t=h.getAttribute('data-theme')==='dark'?'light':'dark';h.setAttribute('data-theme',t);try{localStorage.setItem('wt-theme',t);}catch(e){}}
+(function(){try{const t=localStorage.getItem('wt-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+// reveal + progress + animate-on-view
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vis');const d=e.target.querySelector('.detail.show');if(d)animate(d);}}),{threshold:.1});
+document.querySelectorAll('section').forEach(s=>io.observe(s));
+// failsafe: if the IO never fires (runtime error, detached observer), reveal everything after 2.5s
+setTimeout(()=>document.querySelectorAll('section').forEach(s=>s.classList.add('vis')),2500);
+addEventListener('scroll',()=>{const sc=scrollY/(document.body.scrollHeight-innerHeight)*100;if(prog)prog.style.width=sc+'%';
+ let cur='';document.querySelectorAll('section[id]').forEach(s=>{if(scrollY>=s.offsetTop-120)cur=s.id;});
+ document.querySelectorAll('.nav-links a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+cur));},{passive:true});
+// initial bar animation for the shown tab
+setTimeout(()=>{const d=document.querySelector('.detail.show');if(d)animate(d);},300);</script>
+  <script></script>
+</body></html>

@@ -136,4 +136,17 @@ grep -qE 'wt-credit[^\n]*(utm_|\?ref=|track)' "$PS" \
   && fail "the provenance footer must not carry tracking parameters"
 ok "FOOTER: provenance footer single-sourced in page-scaffold.md, reconciled in document + update, untracked"
 
+# --- published examples are current-engine renders carrying the provenance footer ---
+ex_count=0
+for ex in "$ROOT"/site/walkthrough/examples/*.html; do
+  [ -e "$ex" ] || continue
+  ex_count=$((ex_count+1))
+  grep -qF 'wt-credit' "$ex" \
+    || fail "published example $(basename "$ex") predates the provenance footer - re-render it with the current engine"
+  grep -qiE 'vicario|matali|mimir|asgard|iris|jamakhata|wallet' "$ex" \
+    && fail "published example $(basename "$ex") leaks an unreleased-project reference"
+done
+[ "$ex_count" -ge 1 ] || fail "expected at least 1 published example under site/walkthrough/examples/, found $ex_count"
+ok "EXAMPLES: $ex_count published example(s), provenance footer present, leak-free"
+
 echo "PASS: walkthrough doc contracts"
