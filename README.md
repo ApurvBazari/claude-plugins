@@ -1,6 +1,14 @@
 # claude-plugins
 
+![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)
+![Plugins: 5](https://img.shields.io/badge/plugins-5-informational)
+![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin%20marketplace-d97757)
+
 > Sharp, honest tooling that makes Claude Code's work visible and verifiable. Claude Code plugins for the project lifecycle — `onboard` keeps AI configs aligned as your code evolves, `notify` closes the loop, `handoff` carries session intent across context boundaries, `walkthrough` turns a session into an explorable document, and `lens` reviews work against its spec before it ships. Five plugins that work on their own and **compose together**.
+
+[![A walkthrough document rendered from a real Claude Code session](./site/assets/hero-walkthrough.jpg)](https://apurvbazari.github.io/claude-plugins/walkthrough/examples/traction-campaign-session.html)
+
+*Above: `walkthrough` turned a real session into this self-contained HTML document — [open the live one](https://apurvbazari.github.io/claude-plugins/walkthrough/examples/traction-campaign-session.html). One file, no server, works offline.*
 
 Built on top of [Claude Code](https://code.claude.com/docs/en) by Anthropic. Distributed under [MIT](./LICENSE).
 
