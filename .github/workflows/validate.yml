@@ -83,9 +83,9 @@ jobs:
           python-version: '3.x'
       # onboard/schemas/check-schemas.py validates every schema fixture only when jsonschema
       # is importable; without it the suite is skipped, so the belts would report a pass having
-      # validated no schema at all.
-      - name: Install jsonschema
-        run: pip install jsonschema
+      # validated no schema at all. tests/ci/test-workflow-contracts.sh parses workflows with PyYAML.
+      - name: Install belt dependencies
+        run: pip install jsonschema pyyaml
       - name: Run all plugin test belts
         run: bash tests/run-all.sh
 

@@ -18,22 +18,34 @@ permissions:
 
 jobs:
   auto-security-review:
-    if: github.event_name == 'pull_request'
+    # Same-repo, human-authored PRs only (fork PRs get no secrets; bot actors are rejected).
+    if: >
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      !endsWith(github.actor, '[bot]')
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
-      - uses: anthropics/claude-code-action@beta
+      - id: claude
+        uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1.0.231
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          model: claude-opus-4-6
-          # max_turns intentionally high: security audit on multi-file PRs needs turns
-          # for reading + analysis + posting findings. Lower values (20-30) caused the audit
-          # to truncate silently without updating the progress comment. See PR #16 history.
-          max_turns: 100
+          # track_progress selects tag mode: the checklist comment the prompt updates.
           track_progress: true
-          direct_prompt: |
+          include_fix_links: false
+          # 100 turns: multi-file audits need room to read, analyse, and post. v1 now fails the
+          # step on max turns, and the guard below names the cause, so truncation is never silent.
+          claude_args: |
+            --model claude-opus-4-6
+            --max-turns 100
+            --allowedTools "Bash(gh pr diff:*),Bash(gh pr view:*)"
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
             Security audit for a Claude Code plugin repo (markdown + shell scripts + JSON manifests — no compiled code, no web frontend, no database).
             It contains 5 plugins: onboard (codebase analyzer), notify (system notifications), handoff (session continuity), walkthrough (interactive HTML docs), lens (intent-grounded review).
 
@@ -50,23 +62,48 @@ jobs:
             Skip categories irrelevant to this repo: SQL/NoSQL/LDAP injection, XXE, XSS, CSRF, deserialization, authentication, session management.
 
             **Progress tracking**: Update your progress comment by checking off each item as you complete it. After finishing all checks, post a final summary with findings listed as Critical / High / Medium / Low. If clean, confirm the changes pass review. Always post the final report — do not end without updating the comment.
+      - name: Fail unless the audit completed
+        if: always()
+        env:
+          CLAUDE_CONCLUSION: ${{ steps.claude.outputs.conclusion }}
+          CLAUDE_EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: .github/scripts/assert-claude-run-complete.sh
 
   security-review:
+    # "@claude security-review" on a PR, from a trusted human. Agent mode (a prompt, no
+    # track_progress): Claude reads the PR and posts one report comment via `gh pr comment`.
     if: >
-      (github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment') &&
+      (github.event_name == 'pull_request_review_comment' ||
+       (github.event_name == 'issue_comment' && github.event.issue.pull_request)) &&
+      github.event.comment.user.type != 'Bot' &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
       contains(github.event.comment.body, '@claude security-review')
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PR_NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
-      - uses: anthropics/claude-code-action@beta
+      # A comment event checks out the default branch; agent mode fetches no PR context.
+      # Check out the PR head so Claude reads the files under review, not main's copies.
+      - name: Check out the PR head
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr checkout "$PR_NUMBER"
+      - id: claude
+        uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1.0.231
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          model: claude-opus-4-6
-          max_turns: 20
-          trigger_phrase: "@claude security-review"
-          direct_prompt: |
+          claude_args: |
+            --model claude-opus-4-6
+            --max-turns 20
+            --allowedTools "Read,Glob,Grep,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ env.PR_NUMBER }}
+
             Security audit for a Claude Code plugin repo (markdown + shell scripts + JSON manifests — no compiled code, no web frontend, no database).
             It contains 5 plugins: onboard (codebase analyzer), notify (system notifications), handoff (session continuity), walkthrough (interactive HTML docs), lens (intent-grounded review).
 
@@ -82,4 +119,11 @@ jobs:
 
             Skip categories irrelevant to this repo: SQL/NoSQL/LDAP injection, XXE, XSS, CSRF, deserialization, authentication, session management.
 
-            Format: list findings as Critical / High / Medium / Low. If clean, confirm the changes pass review.
+            Post the report as a single `gh pr comment` on PR NUMBER, listing findings as
+            Critical / High / Medium / Low. If clean, say the changes pass review.
+      - name: Fail unless the review completed
+        if: always()
+        env:
+          CLAUDE_CONCLUSION: ${{ steps.claude.outputs.conclusion }}
+          CLAUDE_EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: .github/scripts/assert-claude-run-complete.sh
