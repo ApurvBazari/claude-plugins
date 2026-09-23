@@ -1,104 +1,94 @@
 name: Tooling Gap Audit
 
-# Runs a two-phase Claude-powered audit every 15 days to detect when Anthropic
-# ships new Claude Code features that our plugins don't yet support.
-# Phase 1 (analyze): reads local plugins + live docs, produces structured JSON.
-# Phase 2 (report): renders JSON into a strict-schema markdown report.
-# A post-step diffs the report and opens a PR if content changed.
+# Every 15 days (and on demand): detect drift between this repo's Claude tooling and the
+# baseline in .claude/audit-baseline.json.
+#   1. audit-tooling.sh runs the structural checks; collect-audit-findings.sh turns them, plus any
+#      baseline path that no longer exists, into a sorted list of findings — no model involved.
+#   2. One Claude pass writes a dated markdown report explaining each finding.
+#   3. open-gap-audit-issue.sh fingerprints the findings list and files the report as a
+#      `tooling-audit` issue only when that fingerprint is new, closing the issue it supersedes, or
+#      closing the open one once nothing drifts. The model's wording never decides any of this.
+# Nothing is committed or pushed: the report lives in the issue.
 
 on:
   schedule:
     - cron: '0 6 1,15 * *'
   workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch to audit
+        required: false
+        default: develop
 
 permissions:
-  contents: write
-  pull-requests: write
-  id-token: write
-
-# Input contract: claude-code-action auto-detects its mode from the event and from
-# whether a prompt was supplied — there is no `mode` input. `direct_prompt`/`model`/
-# `max_turns` were retired in v1, so passing them left the action seeing no prompt at
-# all; it fell back to tag mode, and tag mode refuses `schedule` events ("Tag mode
-# cannot handle schedule events"). Supplying `prompt` is what selects agent mode, and
-# agent mode is the one that handles automation triggers. Model and turn limits now
-# ride along in `claude_args` as CLI flags.
+  contents: read
+  issues: write
 
 jobs:
   audit:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
-      - name: Checkout develop
-        uses: actions/checkout@v4
+      - name: Check out the audited branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: develop
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ inputs.ref || 'develop' }}
+          fetch-depth: 1
 
-      - name: Create audit branch
-        id: branch
+      - name: Run structural drift checks
+        id: drift
         run: |
           set -euo pipefail
-          DATE=$(date -u +%Y-%m-%d)
-          BRANCH="chore/audit-${DATE}"
-          # Handle same-day re-runs: reuse existing branch if it already exists
-          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
-            git fetch origin "$BRANCH"
-            git checkout "$BRANCH"
-          else
-            git checkout -b "$BRANCH"
-          fi
-          echo "date=${DATE}" >> "$GITHUB_OUTPUT"
-          echo "branch=${BRANCH}" >> "$GITHUB_OUTPUT"
+          mkdir -p .audit-out
+          echo "date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+          bash onboard/scripts/audit-tooling.sh . > .audit-out/drift.md
+          cat .audit-out/drift.md
 
-      - name: Load audit prompts
-        id: prompts
+      - name: Collect deterministic findings
+        run: |
+          set -euo pipefail
+          .github/scripts/collect-audit-findings.sh .audit-out/drift.md .claude/audit-baseline.json > .audit-out/findings.txt
+          echo "Findings ($(grep -c . .audit-out/findings.txt || true)):"
+          cat .audit-out/findings.txt
+
+      - name: Load the audit prompt
+        id: prompt
         run: |
           set -euo pipefail
           {
-            echo 'analyze<<PROMPT_EOF'
-            cat .claude/prompts/tooling-gap-audit-analyze.md
-            echo 'PROMPT_EOF'
-            echo 'report<<PROMPT_EOF'
-            cat .claude/prompts/tooling-gap-audit-report.md
+            echo 'body<<PROMPT_EOF'
+            cat .claude/prompts/tooling-gap-audit.md
             echo 'PROMPT_EOF'
           } >> "$GITHUB_OUTPUT"
 
-      - name: Phase 1 — Analyze
-        uses: anthropics/claude-code-action@beta
+      # Agent mode (a prompt on a schedule/dispatch event). github_token skips the Claude-App
+      # token exchange, which rejects runs whose workflow file differs from the default branch.
+      - id: claude
+        uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1.0.231
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          prompt: ${{ steps.prompts.outputs.analyze }}
-          claude_args: "--model claude-opus-4-6 --max-turns 80"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          claude_args: |
+            --model claude-opus-4-6
+            --max-turns 40
+            --allowedTools "Read,Glob,Grep,Write"
+          prompt: |
+            AUDIT DATE: ${{ steps.drift.outputs.date }}
+            FINDINGS: .audit-out/findings.txt
+            DRIFT REPORT: .audit-out/drift.md
+            REPORT OUTPUT: .audit-out/gap-report.md
 
-      - name: Phase 2 — Report
-        uses: anthropics/claude-code-action@beta
-        with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          prompt: ${{ steps.prompts.outputs.report }}
-          claude_args: "--model claude-opus-4-6 --max-turns 40"
+            ${{ steps.prompt.outputs.body }}
 
-      - name: Commit audit artifacts
+      - name: Fail unless the audit completed
+        if: always()
         env:
-          AUDIT_DATE: ${{ steps.branch.outputs.date }}
-          AUDIT_BRANCH: ${{ steps.branch.outputs.branch }}
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f docs/tooling-gap-reports/
-          git add .claude/audit-baseline.json
-          # If nothing changed (e.g., no report was written due to failure), exit cleanly
-          if git diff --cached --quiet; then
-            echo "No audit artifacts to commit"
-            exit 0
-          fi
-          git commit -m "chore(audit): tooling gap artifacts ${AUDIT_DATE}"
-          git push origin "${AUDIT_BRANCH}"
+          CLAUDE_CONCLUSION: ${{ steps.claude.outputs.conclusion }}
+          CLAUDE_EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: .github/scripts/assert-claude-run-complete.sh
 
-      - name: Open gap audit PR
+      - name: File the audit issue
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          AUDIT_DATE: ${{ steps.branch.outputs.date }}
-          AUDIT_BRANCH: ${{ steps.branch.outputs.branch }}
-        run: .github/scripts/open-gap-audit-pr.sh "$AUDIT_DATE" "$AUDIT_BRANCH"
+          AUDIT_DATE: ${{ steps.drift.outputs.date }}
+        run: .github/scripts/open-gap-audit-issue.sh "$AUDIT_DATE" .audit-out/gap-report.md .audit-out/findings.txt

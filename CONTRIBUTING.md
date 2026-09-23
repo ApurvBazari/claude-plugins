@@ -50,7 +50,7 @@ Run `/validate` (the repo skill) before opening a PR, or run the gates directly:
 .github/scripts/validate-manifests.sh    # required manifest fields
 .github/scripts/check-structure.sh        # plugin directory structure
 .github/scripts/check-references.sh        # every referenced file exists
-.github/scripts/check-action-pinning.sh    # Actions pinned to version/SHA, not mutable refs
+.github/scripts/check-action-pinning.sh    # Actions pinned to a full commit SHA + version comment
 .github/scripts/check-version-sync.sh      # plugin.json ↔ marketplace.json versions match
 shellcheck scripts/*.sh */scripts/*.sh     # all shell scripts ShellCheck-clean
 ```

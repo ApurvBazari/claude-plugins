@@ -1,0 +1,16 @@
+# Keeps the SHA-pinned actions current. Dependabot rewrites the SHA and its trailing
+# `# vX.Y.Z` comment together, in one grouped PR per month, into develop.
+# Dependabot reads this file from the repository's default branch, so it takes effect once merged there.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    target-branch: "develop"
+    schedule:
+      interval: "monthly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "chore(ci)"

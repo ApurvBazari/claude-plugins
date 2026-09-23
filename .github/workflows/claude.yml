@@ -16,20 +16,39 @@ permissions:
   id-token: write
   actions: read
 
+# claude-code-action v1: `direct_prompt`/`model`/`max_turns` no longer exist and are silently
+# ignored — the prompt goes in `prompt`, model and turn limit in `claude_args`. The action is
+# SHA-pinned; Dependabot bumps the SHA and its version comment together.
+
 jobs:
   pr-review:
-    if: github.event_name == 'pull_request'
+    # Same-repo, human-authored PRs only: fork PRs get no secrets, and claude-code-action rejects
+    # bot actors (Dependabot, claude[bot] pushes) — either would fail this job red for no reason.
+    if: >
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      !endsWith(github.actor, '[bot]')
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
-      - uses: anthropics/claude-code-action@beta
+      - id: claude
+        uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1.0.231
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          model: claude-opus-4-6
-          max_turns: 12
-          direct_prompt: |
+          # track_progress selects tag mode: one tracking comment, updated in place.
+          track_progress: true
+          include_fix_links: false
+          claude_args: |
+            --model claude-opus-4-6
+            --max-turns 40
+            --allowedTools "Bash(gh pr diff:*),Bash(gh pr view:*)"
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
             Review this pull request for a Claude Code plugin marketplace repository
             (markdown + shell + JSON, no compiled code). It contains 5 plugins:
             onboard (codebase analyzer), notify (system notifications), handoff (session
@@ -46,38 +65,54 @@ jobs:
 
             Also flag: frontmatter spelling (canonical hyphenated user-invocable /
             disable-model-invocation), broken reference paths, and CHANGELOG/version drift.
-            Post findings as a PR review comment; if the diff is clean, say so.
+            Post your findings by updating your tracking comment; if the diff is clean, say so.
+      - name: Fail unless the review completed
+        if: always()
+        env:
+          CLAUDE_CONCLUSION: ${{ steps.claude.outputs.conclusion }}
+          CLAUDE_EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: .github/scripts/assert-claude-run-complete.sh
 
   claude-sonnet:
+    # Trusted humans only: on a public repo anyone can comment, and each run spends the owner's
+    # Claude subscription. Bot comments are excluded so Claude's own replies cannot re-trigger.
     if: >
       (github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment') &&
+      github.event.comment.user.type != 'Bot' &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
       contains(github.event.comment.body, '@claude') &&
       !contains(github.event.comment.body, '@claude-opus') &&
       !contains(github.event.comment.body, '@claude security-review')
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
-      - uses: anthropics/claude-code-action@beta
+      - uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1.0.231
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          model: claude-sonnet-4-6
-          max_turns: 10
           trigger_phrase: "@claude"
+          claude_args: |
+            --model claude-sonnet-4-6
+            --max-turns 10
 
   claude-opus:
     if: >
       (github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment') &&
+      github.event.comment.user.type != 'Bot' &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
       contains(github.event.comment.body, '@claude-opus')
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
-      - uses: anthropics/claude-code-action@beta
+      - uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1.0.231
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          model: claude-opus-4-6
-          max_turns: 10
           trigger_phrase: "@claude-opus"
+          claude_args: |
+            --model claude-opus-4-6
+            --max-turns 10
