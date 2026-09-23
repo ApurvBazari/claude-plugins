@@ -30,7 +30,7 @@ NOT_BOT_COMMENT = "github.event.comment.user.type != 'Bot'"
 TRUSTED_COMMENTER = "contains(fromJSON('[\"OWNER\",\"MEMBER\",\"COLLABORATOR\"]'), github.event.comment.author_association)"
 
 # Workflows whose claude-code-action use is under contract. Task 4 appends tooling-gap-audit.yml.
-CONTRACT_FILES = ["claude.yml", "security-review.yml"]
+CONTRACT_FILES = ["claude.yml", "security-review.yml", "tooling-gap-audit.yml"]
 
 def cca_steps(job):
     return [s for s in job.get("steps", []) if str(s.get("uses", "")).startswith(CCA)]
@@ -113,6 +113,30 @@ if "track_progress" in w:
     fail("security-review.yml:security-review must not set track_progress (agent mode is the documented path)")
 if "Bash(gh pr comment:*)" not in str(w.get("claude_args", "")):
     fail("security-review.yml:security-review must allow Bash(gh pr comment:*) to post its report")
+
+# --- tooling-gap audit: one guarded agent-mode pass, report filed as an issue, never pushes ---
+audit_wf = load(wf_dir / "tooling-gap-audit.yml")
+audit_on = audit_wf.get("on", audit_wf.get(True, {}))
+audit = audit_wf["jobs"]["audit"]
+if "schedule" not in audit_on:
+    fail("tooling-gap-audit.yml must keep its schedule trigger")
+if "ref" not in ((audit_on.get("workflow_dispatch") or {}).get("inputs") or {}):
+    fail("tooling-gap-audit.yml workflow_dispatch must accept a `ref` input (branch verification runs)")
+if audit_wf.get("permissions") != {"contents": "read", "issues": "write"}:
+    fail(f"tooling-gap-audit.yml permissions must be exactly contents: read, issues: write — got {audit_wf.get('permissions')}")
+audit_cca = cca_steps(audit)
+if len(audit_cca) != 1:
+    fail(f"tooling-gap-audit.yml must run exactly one Claude step (two steps overwrite one execution file) — found {len(audit_cca)}")
+elif "github_token" not in (audit_cca[0].get("with") or {}):
+    fail("tooling-gap-audit.yml Claude step must pass github_token (skips the App-token exchange that rejects branch runs)")
+if not guarded(audit):
+    fail("tooling-gap-audit.yml has no completion guard after its claude step")
+runs = "\n".join(str(s.get("run", "")) for s in audit.get("steps", []))
+if "git push" in runs or "git commit" in runs:
+    fail("tooling-gap-audit.yml must not commit or push — the report lives in an issue")
+for needle in ("onboard/scripts/audit-tooling.sh", ".github/scripts/open-gap-audit-issue.sh"):
+    if needle not in runs:
+        fail(f"tooling-gap-audit.yml must run {needle}")
 
 if failures:
     print("FAIL: workflow contracts")
