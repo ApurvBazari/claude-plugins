@@ -21,7 +21,7 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
       - uses: anthropics/claude-code-action@beta
@@ -56,7 +56,7 @@ jobs:
       !contains(github.event.comment.body, '@claude security-review')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
       - uses: anthropics/claude-code-action@beta
@@ -72,7 +72,7 @@ jobs:
       contains(github.event.comment.body, '@claude-opus')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
       - uses: anthropics/claude-code-action@beta
