@@ -2,11 +2,12 @@ name: Tooling Gap Audit
 
 # Every 15 days (and on demand): detect drift between this repo's Claude tooling and the
 # baseline in .claude/audit-baseline.json.
-#   1. audit-tooling.sh runs the deterministic structural checks and saves its drift report.
-#   2. One Claude pass reads that report and the baseline, confirms each item against the repo,
-#      and writes a dated markdown report.
-#   3. open-gap-audit-issue.sh files the report as a `tooling-audit` issue — only when it differs
-#      from the open one — and closes the open one once the drift is resolved.
+#   1. audit-tooling.sh runs the structural checks; collect-audit-findings.sh turns them, plus any
+#      baseline path that no longer exists, into a sorted list of findings — no model involved.
+#   2. One Claude pass writes a dated markdown report explaining each finding.
+#   3. open-gap-audit-issue.sh fingerprints the findings list and files the report as a
+#      `tooling-audit` issue only when that fingerprint is new, closing the issue it supersedes, or
+#      closing the open one once nothing drifts. The model's wording never decides any of this.
 # Nothing is committed or pushed: the report lives in the issue.
 
 on:
@@ -43,6 +44,13 @@ jobs:
           bash onboard/scripts/audit-tooling.sh . > .audit-out/drift.md
           cat .audit-out/drift.md
 
+      - name: Collect deterministic findings
+        run: |
+          set -euo pipefail
+          .github/scripts/collect-audit-findings.sh .audit-out/drift.md .claude/audit-baseline.json > .audit-out/findings.txt
+          echo "Findings ($(grep -c . .audit-out/findings.txt || true)):"
+          cat .audit-out/findings.txt
+
       - name: Load the audit prompt
         id: prompt
         run: |
@@ -66,6 +74,7 @@ jobs:
             --allowedTools "Read,Glob,Grep,Write"
           prompt: |
             AUDIT DATE: ${{ steps.drift.outputs.date }}
+            FINDINGS: .audit-out/findings.txt
             DRIFT REPORT: .audit-out/drift.md
             REPORT OUTPUT: .audit-out/gap-report.md
 
@@ -82,4 +91,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AUDIT_DATE: ${{ steps.drift.outputs.date }}
-        run: .github/scripts/open-gap-audit-issue.sh "$AUDIT_DATE" .audit-out/gap-report.md
+        run: .github/scripts/open-gap-audit-issue.sh "$AUDIT_DATE" .audit-out/gap-report.md .audit-out/findings.txt

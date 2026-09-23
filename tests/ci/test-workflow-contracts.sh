@@ -185,7 +185,8 @@ def run_contracts(root):
     runs = "\n".join(str(s.get("run", "")) for s in audit.get("steps", []))
     if "git push" in runs or "git commit" in runs:
         fail("tooling-gap-audit.yml must not commit or push — the report lives in an issue")
-    for needle in ("onboard/scripts/audit-tooling.sh", ".github/scripts/open-gap-audit-issue.sh"):
+    for needle in ("onboard/scripts/audit-tooling.sh", ".github/scripts/collect-audit-findings.sh",
+                   ".github/scripts/open-gap-audit-issue.sh"):
         if needle not in runs:
             fail(f"tooling-gap-audit.yml must run {needle}")
 
