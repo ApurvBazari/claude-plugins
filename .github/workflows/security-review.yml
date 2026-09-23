@@ -72,6 +72,9 @@ jobs:
   security-review:
     # "@claude security-review" on a PR, from a trusted human. Agent mode (a prompt, no
     # track_progress): Claude reads the PR and posts one report comment via `gh pr comment`.
+    # The workspace deliberately stays on the default branch. A comment job runs with secrets and
+    # id-token: write, so checking out the PR head would let later steps (the guard) execute code
+    # the PR author controls. Claude reads the change through `gh pr diff` / `gh pr view` instead.
     if: >
       (github.event_name == 'pull_request_review_comment' ||
        (github.event_name == 'issue_comment' && github.event.issue.pull_request)) &&
@@ -86,12 +89,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
-      # A comment event checks out the default branch; agent mode fetches no PR context.
-      # Check out the PR head so Claude reads the files under review, not main's copies.
-      - name: Check out the PR head
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh pr checkout "$PR_NUMBER"
       - id: claude
         uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1.0.231
         with:
@@ -103,6 +100,9 @@ jobs:
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ env.PR_NUMBER }}
+
+            Read the change with `gh pr diff` and `gh pr view`. The files in your working directory are
+            the default branch, not the PR — use them only for surrounding context.
 
             Security audit for a Claude Code plugin repo (markdown + shell scripts + JSON manifests — no compiled code, no web frontend, no database).
             It contains 5 plugins: onboard (codebase analyzer), notify (system notifications), handoff (session continuity), walkthrough (interactive HTML docs), lens (intent-grounded review).

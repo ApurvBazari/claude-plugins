@@ -103,6 +103,20 @@ def run_contracts(root):
         if got != want:
             fail(f"{wf_name}:{job_id} if: is not the expected gate expression\n      want: {want}\n      got:  {got}")
 
+    # --- no job pulls PR-head code into a workspace whose later steps run with secrets (C1) ---
+    # issue_comment jobs run in the base repo's context with secrets and id-token: write. Checking
+    # out the PR head there means any later workspace-relative `run:` (the guard) executes code the
+    # PR author controls. Comment jobs read the PR through `gh pr diff` / `gh pr view` instead.
+    for wf_path in sorted(wf_dir.glob("*.yml")):
+        for job_id, job in (load(wf_path).get("jobs") or {}).items():
+            comment_job = "github.event.comment" in str(job.get("if", ""))
+            for step in job.get("steps", []) or []:
+                if "gh pr checkout" in str(step.get("run", "")):
+                    fail(f"{wf_path.name}:{job_id} runs `gh pr checkout`: later steps would execute PR-head code with secrets in scope")
+                if (comment_job and str(step.get("uses", "")).startswith("actions/checkout@")
+                        and "ref" in (step.get("with") or {})):
+                    fail(f"{wf_path.name}:{job_id} is comment-triggered and checks out a non-default ref")
+
     # --- automatic PR reviews: tag mode, guard, fork + bot gates ---
     for wf_name, jobs, job_id, turns in (("claude.yml", claude, "pr-review", "--max-turns 40"),
                                          ("security-review.yml", security, "auto-security-review", "--max-turns 100")):
@@ -224,6 +238,10 @@ MUTANTS = [
      "github.event.issue.pull_request)",
      "!github.event.issue.pull_request)",
      "security-review PR-only gate negated"),
+    ("security-review.yml",
+     "      - name: Fail unless the review completed\n",
+     "      - run: gh pr checkout \"$PR_NUMBER\"\n      - name: Fail unless the review completed\n",
+     "security-review checks out the PR head before its guard"),
 ]
 missed = []
 for fname, old, new, label in MUTANTS:
