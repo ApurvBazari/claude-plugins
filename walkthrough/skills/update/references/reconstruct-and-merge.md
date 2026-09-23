@@ -32,6 +32,7 @@ the detail-panel store is embedded verbatim). Reconstruction reads the rendered 
 | `DET={…}` — from the `#wt-data` island (new) OR the trailing `const DET={…}` in the `<script>` (structured) | `details{}` | **highest-fidelity source** — see below |
 | `SURF={…}` — from the `#wt-data` island (new) OR the trailing `const SURF={…}` in the `<script>` (structured) | `details{}[id].surface` | maps each id to `'pane'`/`'sheet'`; recovers the surface kind |
 | Pre-rendered `<dialog class="sheet" id="sheet-<id>">` blocks | `details{}` (sheet-kind) | the `{{SHEETS}}` slot — structured `sf-*` header + hosted components recover the rich detail; see below |
+| `<footer class="wt-credit">…</footer>` | *(nothing — do not recover)* | Scaffold-owned provenance chrome, emitted verbatim by `page-scaffold.md`. It maps to no model field; on regeneration it is re-emitted from the scaffold. Never fold it into `prose` or treat it as section content. |
 
 ### Reconstruction notes
 

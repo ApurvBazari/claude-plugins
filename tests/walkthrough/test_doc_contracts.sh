@@ -120,4 +120,33 @@ for d in "$ROOT"/walkthrough/skills/*/; do
 done
 ok "COUNTS: CLAUDE.md names every skill directory that exists (derived, not a bare literal)"
 
+# --- provenance footer: scaffold-owned, one source, exempt from the document rebrand ---
+grep -qF -- 'footer.wt-credit{' "$PS" \
+  || fail "page-scaffold.md must carry the .wt-credit provenance footer CSS"
+grep -qF -- '<footer class="wt-credit">' "$PS" \
+  || fail "page-scaffold.md shell must emit the provenance footer element"
+grep -qF -- 'https://github.com/ApurvBazari/claude-plugins' "$PS" \
+  || fail "the provenance footer must link back to the marketplace repo"
+grep -qF -- 'wt-credit' "$DOCUMENT_SKILL" \
+  || fail "document/SKILL.md must state whether the chrome rebrand touches the provenance footer — an unreconciled rebrand rule silently strips it"
+grep -qF -- 'wt-credit' "$RM" \
+  || fail "reconstruct-and-merge.md must declare the provenance footer scaffold-owned (recovered into no model field)"
+# the footer is provenance, not a tracking beacon
+grep -qE 'wt-credit.*(utm_|\?ref=|track)' "$PS" \
+  && fail "the provenance footer must not carry tracking parameters"
+ok "FOOTER: provenance footer single-sourced in page-scaffold.md, reconciled in document + update, untracked"
+
+# --- published examples are current-engine renders carrying the provenance footer ---
+ex_count=0
+for ex in "$ROOT"/site/walkthrough/examples/*.html; do
+  [ -e "$ex" ] || continue
+  ex_count=$((ex_count+1))
+  grep -qF 'wt-credit' "$ex" \
+    || fail "published example $(basename "$ex") predates the provenance footer - re-render it with the current engine"
+  grep -qiE 'vicario|matali|mimir|asgard|iris|jamakhata|wallet' "$ex" \
+    && fail "published example $(basename "$ex") leaks an unreleased-project reference"
+done
+[ "$ex_count" -ge 1 ] || fail "expected at least 1 published example under site/walkthrough/examples/, found $ex_count"
+ok "EXAMPLES: $ex_count published example(s), provenance footer present, leak-free"
+
 echo "PASS: walkthrough doc contracts"
