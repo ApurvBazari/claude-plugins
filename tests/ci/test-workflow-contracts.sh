@@ -138,6 +138,26 @@ for needle in ("onboard/scripts/audit-tooling.sh", ".github/scripts/open-gap-aud
     if needle not in runs:
         fail(f"tooling-gap-audit.yml must run {needle}")
 
+# --- Dependabot: monthly, grouped, into develop ---
+dep_path = root / ".github" / "dependabot.yml"
+if not dep_path.exists():
+    fail(".github/dependabot.yml is missing — SHA pins would go stale silently")
+else:
+    dep = load(dep_path)
+    ups = [u for u in dep.get("updates", []) if u.get("package-ecosystem") == "github-actions"]
+    if len(ups) != 1:
+        fail(f"dependabot.yml needs exactly one github-actions entry, found {len(ups)}")
+    else:
+        u = ups[0]
+        if u.get("target-branch") != "develop":
+            fail("dependabot.yml github-actions updates must target develop (feature work never lands on main directly)")
+        if (u.get("schedule") or {}).get("interval") != "monthly":
+            fail("dependabot.yml github-actions schedule must be monthly")
+        if not any("*" in (g.get("patterns") or []) for g in (u.get("groups") or {}).values()):
+            fail("dependabot.yml must group all github-actions updates into one PR")
+        if (u.get("commit-message") or {}).get("prefix") != "chore(ci)":
+            fail("dependabot.yml commit-message prefix must be chore(ci)")
+
 if failures:
     print("FAIL: workflow contracts")
     for f in failures:
