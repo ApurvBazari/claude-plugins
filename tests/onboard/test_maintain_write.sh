@@ -54,6 +54,22 @@ expect "a marker-breaking id is refused" 2 "$rc"
 rc=0; lesson --id L-8 --text $'two\nlines' --summary 's' --ref 'r' 2>/dev/null || rc=$?
 expect "multi-line text is refused" 2 "$rc"
 
+# --- existing bytes are never rewritten: CRLF files keep every line ending; a symlinked
+# CLAUDE.md stays a symlink and the lesson lands in its target ---
+new_repo bytes
+printf '# Web\r\n\r\n## Notes\r\n- Keep it small.\r\n' > CLAUDE.md
+printf '# Shared\n' > AGENTS.md
+mkdir -p apps/web && ln -s ../../AGENTS.md apps/web/CLAUDE.md
+commit_base
+lesson --id L-20 --text 'First CRLF lesson.' --summary s --ref r --file CLAUDE.md >/dev/null
+lesson --id L-21 --text 'Second CRLF lesson.' --summary s --ref r --file CLAUDE.md >/dev/null
+expect "CRLF: no existing line is rewritten (0 deletions)" "0" "$(git diff --numstat -- CLAUDE.md | cut -f2)"
+expect "CRLF: every line ending stays CRLF" "True" \
+  "$(python3 -c 'import sys; b=open(sys.argv[1],"rb").read(); print(b.count(b"\n") == b.count(b"\r\n") and b"<!-- lesson:L-21 -->" in b)' CLAUDE.md)"
+lesson --id L-22 --text 'Shared lesson.' --summary s --ref r --file apps/web/CLAUDE.md >/dev/null
+if [ -L apps/web/CLAUDE.md ]; then echo "ok: symlink: CLAUDE.md is still a symlink"; else fail "symlink: CLAUDE.md was replaced by a regular file"; fi
+expect "symlink: the lesson lands in the link's target" "1" "$(grep -c 'lesson:L-22' AGENTS.md)"
+
 # --- result assembly: recorded entries + guard output ---
 new_repo result
 put CLAUDE.md '# Root'

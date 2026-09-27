@@ -67,9 +67,17 @@ def _single_line(name, value):
     return value
 
 
+def _read_raw(path):
+    """A file's text with its bytes and line endings exactly as on disk."""
+    with open(path, encoding="utf-8", errors="surrogateescape", newline="") as f:
+        return f.read()
+
+
 def write_atomic(path, text):
+    # Write through a symlink (CLAUDE.md -> AGENTS.md is common), never over it; bytes as given.
+    path = os.path.realpath(path)
     tmp = path + ".tmp-maintain-write"
-    with open(tmp, "w") as f:
+    with open(tmp, "w", encoding="utf-8", errors="surrogateescape", newline="") as f:
         f.write(text)
     os.replace(tmp, path)
 
@@ -205,10 +213,15 @@ def cmd_lesson(argv):
     else:
         rel = ".claude/rules/lessons.md"
     full = os.path.join(top, rel)
-    existing = open(full).read() if os.path.isfile(full) else None
+    existing = _read_raw(full) if os.path.isfile(full) else None
     if existing is not None and ("<!-- lesson:%s -->" % o["--id"]) in existing:
         sys.stderr.write("maintain-write: lesson %s is already in %s\n" % (o["--id"], rel))
         return 3
+    # A CRLF file is edited as LF and written back as CRLF, so no existing line changes a byte;
+    # any other file is edited as it is (its own endings untouched, new lines end in \n).
+    crlf = bool(existing) and "\n" in existing and existing.count("\r\n") == existing.count("\n")
+    if crlf:
+        existing = existing.replace("\r\n", "\n")
     if "--file" in o:
         text = existing or ""
         if START in text and END in text:
@@ -226,6 +239,8 @@ def cmd_lesson(argv):
         new = header + entry
     else:
         new = _append_block(existing, entry)
+    if crlf:
+        new = new.replace("\n", "\r\n")
     parent = os.path.dirname(full)
     if not os.path.isdir(parent):
         os.makedirs(parent)
