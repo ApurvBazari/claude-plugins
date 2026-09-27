@@ -22,8 +22,21 @@ CLEAN = "clean"
 
 
 def _git(top, *args):
-    return subprocess.run(["git", "-c", "core.quotepath=off"] + list(args), cwd=top, check=True,
-                          stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout
+    # Literal pathspecs: a Next.js route folder such as `app/[id]/` is a glob that would also
+    # match `app/d/`, so a restore of one path could reset a user's dirty sibling.
+    return subprocess.run(["git", "--literal-pathspecs", "-c", "core.quotepath=off"] + list(args),
+                          cwd=top, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout
+
+
+def _in_head(top, path):
+    """True when HEAD has `path`. With the before-snapshot (every dirty or untracked path), a path
+    absent from it and present in HEAD is exactly one that was clean and tracked before apply —
+    unlike the index at `after` time, which also holds files staged or force-added during apply."""
+    try:
+        _git(top, "cat-file", "-e", "HEAD:" + path)
+        return True
+    except subprocess.CalledProcessError:
+        return False
 
 
 def _top():
@@ -137,7 +150,7 @@ def cmd_after(top, argv):
                 pre_dirty.append(path)
         elif path in files or any(path.startswith(p) for p in prefixes):
             continue
-        elif path not in before and _git(top, "ls-files", "-z", "--", path).strip(b"\0"):
+        elif path not in before and _in_head(top, path):
             _git(top, "restore", "--source=HEAD", "--staged", "--worktree", "--", path)
             violations.append({"path": path, "action": "restored"})
         else:

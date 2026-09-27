@@ -45,6 +45,30 @@ expect "AC8: the pre-dirty file keeps both edits" "b|dirty before|bad again" "$(
 if [ -f src/new.ts ]; then echo "ok: AC8 new file not deleted"; else fail "AC8 deleted an untracked file"; fi
 if [ -e "$state" ]; then fail "after left the state file"; else echo "ok: after removes the state file"; fi
 
+# --- paths are literal, and "clean before, tracked" means absent from before and present in HEAD ---
+# A Next.js route folder `[id]` is a glob that also matches `d`; the guard must not touch the user's
+# dirty app/d/page.tsx. A file staged during apply, or an ignored file force-added, is not in HEAD:
+# reported, never deleted (§ 9).
+new_repo literal
+put 'app/[id]/page.tsx' 'route'
+put app/d/page.tsx 'd'
+put .gitignore '.env'
+commit_base
+echo "user wip" >> app/d/page.tsx
+put .env 'SECRET=1'
+state="$(bash "$GUARD" before)"
+echo "bad" >> 'app/[id]/page.tsx'
+put src/staged.ts 'x' && git add src/staged.ts
+git add -f .env
+rc=0; out="$(bash "$GUARD" after --state "$state")" || rc=$?
+expect "literal: only the edited route file is restored; staged + force-added files reported" \
+  ".env:reported app/[id]/page.tsx:restored src/staged.ts:reported" \
+  "$(field "$out" '" ".join(v["path"] + ":" + v["action"] for v in d["violations"])')"
+expect "literal: the route file is back to HEAD" "route" "$(cat 'app/[id]/page.tsx')"
+expect "literal: the user's dirty sibling keeps its work" "d|user wip" "$(tr '\n' '|' < app/d/page.tsx | sed 's/|$//')"
+expect "literal: a staged new file is not deleted" "x" "$(cat src/staged.ts 2>/dev/null)"
+expect "literal: a force-added ignored file is not deleted" "SECRET=1" "$(cat .env 2>/dev/null)"
+
 # --- AC27: the --out folder exemption ---
 new_repo ac27
 put CLAUDE.md '# Root'
