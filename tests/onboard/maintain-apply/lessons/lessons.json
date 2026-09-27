@@ -16,6 +16,8 @@
       "evidence": { "summary": "gate-2 steer", "ref": "matali run 20260927-0001" } },
     { "id": "L-out", "text": "Export only named functions.",
       "evidence": { "summary": "owner note", "ref": "matali run 20260927-0001" },
-      "target": { "file": "src/index.ts" } }
+      "target": { "file": "src/index.ts" } },
+    { "id": "L-code", "text": "Pricing math in `pricing-engine.ts` runs through `decimal.js`; don't round before the `$total` boundary.",
+      "evidence": { "summary": "owner's `decimal.js` note", "ref": "matali run 20260927-0001" } }
   ]
 }

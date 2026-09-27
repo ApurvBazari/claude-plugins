@@ -162,7 +162,7 @@ def check_lessons(expected, work, snap=None):
     if snap is None:
         want = {"L-new": ("applied", None), "L-path": ("applied", None), "L-file": ("applied", None),
                 "L-dup": ("skipped", "already-present"), "L-near": ("deferred", "possible-duplicate"),
-                "L-out": ("deferred", "target-outside-tooling")}
+                "L-out": ("deferred", "target-outside-tooling"), "L-code": ("applied", None)}
         check("AC13: each lesson's outcome", status == want, json.dumps(status))
         near = [d for d in res["deferred"] if d["id"] == "L-near"]
         check("AC13: the near-duplicate names the existing line",
@@ -183,7 +183,8 @@ def check_lessons(expected, work, snap=None):
         want = {"L-new": ("skipped", "already-present"), "L-path": ("skipped", "already-present"),
                 "L-file": ("skipped", "already-present"), "L-dup": ("skipped", "already-present"),
                 "L-near": ("deferred", "possible-duplicate"),
-                "L-out": ("deferred", "target-outside-tooling")}
+                "L-out": ("deferred", "target-outside-tooling"),
+                "L-code": ("skipped", "already-present")}
         check("AC12: second run — applied come back skipped, deferred stay deferred", status == want,
               json.dumps(status))
         check("AC12: second run writes no file", res["filesWritten"] == [], str(res["filesWritten"]))

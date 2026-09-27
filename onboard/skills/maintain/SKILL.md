@@ -27,18 +27,18 @@ File paths only, given as `detect=<path> out=<path> [lessons=<path>]` or as a JS
 - **You** edit `CLAUDE.md` files (Step 3) with the Edit tool.
 - **`maintain-write.sh`** writes lesson entries (Step 4) and records every result entry; **`maintain-guard.sh after --result`** writes the result file (Step 5). Never write under `.claude/` or the `out` file with your own tools.
 
-Read files — the inputs, tooling files, and this skill's `references/` — with the Read tool. Run every helper from the repository root as its own `bash "<script>" …` call — no `cd`, no shell variables, no `;` or `&&` chains, no pipes:
+Read files — the inputs, tooling files, and this skill's `references/` — with the Read tool. Run every helper from the repository root as its own `bash "<script>" …` call — no `cd`, no shell variables, no `;` or `&&` chains, no pipes. Pass every free-text value — lesson text, evidence summary and ref, the summaries you compose — in **single quotes**, exactly as given, and write an apostrophe inside it as `'\''` (`don't` → `'don'\''t'`). Never double quotes: inside them bash runs `` `backticks` `` and expands `$names` before the helper sees the text, and lesson text is markdown, full of backticks:
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/maintain-guard.sh" before                   # prints <state>
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/maintain-detect.sh" --mentioned <script> --package <name|-> --manifest <package.json> <file>   # exit 0 = mentioned
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/maintain-detect.sh" --lesson-present --id <id> --text "<text>"   # {"status", "at"}
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/maintain-detect.sh" --lesson-present --id <id> --text '<text>'   # {"status", "at"}
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/maintain-detect.sh" --lesson-file <glob>...                     # {"file", "exists"}
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/maintain-write.sh" record --state <state> applied --id <id> --file <path> --summary "<text>"
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/maintain-write.sh" record --state <state> applied --id <id> --file <path> --summary '<text>'
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/maintain-write.sh" record --state <state> skipped --id <id> --file <path>
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/maintain-write.sh" record --state <state> deferred --id <id> --reason <reason> --hint "<text>" [--existing <file:line>]
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/maintain-write.sh" record --state <state> deferred --id <id> --reason <reason> --hint '<text>' [--existing <file:line>]
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/maintain-write.sh" record --state <state> item --detect <detect> --id <id>
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/maintain-write.sh" lesson --id <id> --text "<text>" --summary "<text>" --ref "<ref>" [--paths <glob>... | --file <path>]
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/maintain-write.sh" lesson --id <id> --text '<text>' --summary '<text>' --ref '<ref>' [--paths <glob>... | --file <path>]
 ```
 
 ## Step 0: Read and check
@@ -46,7 +46,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/maintain-write.sh" lesson --id <id> --text "
 Read `detect`, and `lessons` if given. If a file is missing or not JSON, its `schemaVersion` is not `1`, a required top-level field is missing (`detect`: `range`, `project`, `items`; `lessons`: `lessons`), or `detect` is an error object (it has `error`):
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/maintain-write.sh" early --out <out> --id X1 --reason bad-input --hint "<what was wrong, one line>"
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/maintain-write.sh" early --out <out> --id X1 --reason bad-input --hint '<what was wrong, one line>'
 ```
 
 and stop.
@@ -72,16 +72,16 @@ Go through `detect.items` in order.
 1. **Find the target.** Walk up from the directory of the item's `file`: that directory's `CLAUDE.md`, then each parent directory's, ending at the root `CLAUDE.md`. The target is the first one with a *fitting commands section*: a heading at any level that names commands or scripts (`Commands`, `Build Commands`, `Development Commands`, `Essential Commands`, `Scripts`, or an equivalent) whose section holds at least one command entry — a list line, a table body row, a line inside a fenced code block, or an inline `A | B` line. A section of prose alone does not fit. No fitting section in any of those files → `record … deferred --id <id> --reason no-matching-section --hint "add a commands section, or run /onboard:update"` and go to the next item.
 2. **Already there?** `--mentioned <name> --package <package, or - when null> --manifest <file> <target>`. Exit 0 → `record … skipped --id <id> --file <target>` and go to the next item.
 3. **Write exactly one line** in the section's own style — list, fenced block, table row, or inline `A | B` — with the Edit tool. Follow `references/command-styles.md` exactly: which entry's style to copy, where the line goes, how to build the invocation (the section's runner form, including its package selector), and the description slot, which holds the item's `run` verbatim when the entries have descriptions. Never invented prose. No other line in the file changes.
-4. **Check the write (D25).** Run the Step 3.2 `--mentioned` command again. Exit 0 → `record … applied --id <id> --file <target> --summary "<the invocation> under <heading>"`. Exit 1 → remove the line you just wrote, so the file is byte-identical to before, and `record … deferred --id <id> --reason unrecognized-style --hint "add the line by hand in the section's style"`. This is the only line you ever remove, and only your own.
+4. **Check the write (D25).** Run the Step 3.2 `--mentioned` command again. Exit 0 → `record … applied --id <id> --file <target> --summary '<the invocation> under <heading>'`. Exit 1 → remove the line you just wrote, so the file is byte-identical to before, and `record … deferred --id <id> --reason unrecognized-style --hint "add the line by hand in the section's style"`. This is the only line you ever remove, and only your own.
 
 ## Step 4: Lessons
 
 Skip this step when no `lessons` file was given. Otherwise, for each lesson in order:
 
-1. `--lesson-present --id <id> --text "<text>"`. Status `present-id` or `present-text` → `record … skipped --id <id> --file <the file part of at>`.
+1. `--lesson-present --id <id> --text '<text>'`. Status `present-id` or `present-text` → `record … skipped --id <id> --file <the file part of at>`.
 2. A `target.file` that is not a `CLAUDE.md` (at any depth) and not under `.claude/rules/` → `record … deferred --id <id> --reason target-outside-tooling --hint "retarget the lesson to a CLAUDE.md or .claude/rules/"`.
 3. **Near-duplicate check (D8).** Read the destination (untargeted: `.claude/rules/lessons.md`; `target.paths`: the file `--lesson-file` names; `target.file`: that file), the other `.claude/rules/lessons*.md` files, and the root `CLAUDE.md`. If an existing line already states the same rule in other words → `record … deferred --id <id> --reason possible-duplicate --existing <file>:<line> --hint "compare with the existing line"`. Only a clear restatement of the same rule counts; a related but different rule does not. Never merge or reword.
-4. **Write it:** `maintain-write.sh lesson --id <id> --text "<text>" --summary "<evidence.summary>" --ref "<evidence.ref>"`, plus `--paths <each glob>` for a `target.paths` lesson or `--file <target.file>` for a `target.file` lesson. It prints `{"file": …}`; then `record … applied --id <id> --file <that file> --summary "lesson <id>"`. The bytes it writes are in `references/lesson-entries.md`. `evidence.pointer` is never passed or written.
+4. **Write it:** `maintain-write.sh lesson --id <id> --text '<text>' --summary '<evidence.summary>' --ref '<evidence.ref>'`, plus `--paths <each glob>` for a `target.paths` lesson or `--file <target.file>` for a `target.file` lesson. It prints `{"file": …}`; then `record … applied --id <id> --file <that file> --summary 'lesson <id>'`. The bytes it writes are in `references/lesson-entries.md`. `evidence.pointer` is never passed or written.
 
 ## Step 5: Guard after — writes the result
 

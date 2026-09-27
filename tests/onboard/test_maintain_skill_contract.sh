@@ -72,6 +72,14 @@ done
 for style in '**List**' '**Fenced block**' '**Table row**' '**Inline `A | B`**'; do
   check "command-styles.md names the $style style (D26)" grep -qF "$style" "$DIR/references/command-styles.md"
 done
+# Free text (lesson text, evidence, summaries) reaches helper calls as shell arguments. In double
+# quotes bash would run `backticks` and expand $vars before the helper sees them, so every
+# free-text placeholder is single-quoted and the skill says how to write an apostrophe.
+for flag in --text --summary --ref --hint; do
+  if grep -qE -- "$flag \"<" "$SKILL"; then fail "a $flag placeholder is double-quoted (bash expands \` and \$ inside)"
+  else echo "ok: no double-quoted $flag placeholder"; fi
+done
+check "states the single-quote rule for free text ('\\'')" grep -qF "'\\''" "$SKILL"
 check "command-styles.md: npm lifecycle shortcuts are not a runner form (npm run <name>)" \
   grep -qF 'are not a runner form' "$DIR/references/command-styles.md"
 check "lesson-entries.md pins the evidence line" grep -qF '_evidence: <summary> (<ref>)_' "$DIR/references/lesson-entries.md"
