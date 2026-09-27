@@ -1,0 +1,1159 @@
+{
+  "schemaVersion": 1,
+  "description": "Labelled ranges for tests/onboard/test_maintain_corpus.sh. Each range is replayed read-only (git clone --shared), with CLAUDE.md files and .claude/rules restored to base when restoreTooling is true, and detect's items (ids aside) must equal expected. villasa-pricing is labelled from the spec's worked example (§ 16, § 17). The other five were drafted from detect's output on 2026-09-27 and every item is audited against plain git evidence by audit-labels.py, which shares no code with detect. Never refresh a label from detect's output without re-running that audit.",
+  "ranges": [
+    {
+      "id": "villasa-pricing",
+      "repo": "~/Desktop/projects/villasa",
+      "base": "4cabaf21b6071b4eb1106e65ae43d18cc840bae5",
+      "head": "add521a9dc27e1e9205edda21ff0a0c48a1efe8f",
+      "restoreTooling": true,
+      "note": "AC16. The worked example's range (spec § 16, § 17): 8 inform items, no apply or defer item. Label from the worked example's detect.json, not from detect's own output.",
+      "expected": {
+        "items": [
+          {
+            "kind": "dependency-added",
+            "name": "decimal.js",
+            "version": "^10.6.0",
+            "file": "apps/crm/package.json",
+            "disposition": "inform"
+          },
+          {
+            "kind": "recheck-line",
+            "line": "CLAUDE.md:119",
+            "matched": [
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/billing-config.ts"
+              }
+            ],
+            "disposition": "inform"
+          },
+          {
+            "kind": "recheck-line",
+            "line": "CLAUDE.md:114",
+            "matched": [
+              {
+                "by": "stem",
+                "value": "decimal"
+              }
+            ],
+            "disposition": "inform"
+          },
+          {
+            "kind": "recheck-line",
+            "line": "CLAUDE.md:115",
+            "matched": [
+              {
+                "by": "stem",
+                "value": "decimal"
+              }
+            ],
+            "disposition": "inform"
+          },
+          {
+            "kind": "recheck-line",
+            "line": "CLAUDE.md:142",
+            "matched": [
+              {
+                "by": "stem",
+                "value": "decimal"
+              }
+            ],
+            "disposition": "inform"
+          },
+          {
+            "kind": "recheck-line",
+            "line": "CLAUDE.md:154",
+            "matched": [
+              {
+                "by": "stem",
+                "value": "decimal"
+              }
+            ],
+            "disposition": "inform"
+          },
+          {
+            "kind": "recheck-line",
+            "line": "CLAUDE.md:265",
+            "matched": [
+              {
+                "by": "stem",
+                "value": "decimal"
+              }
+            ],
+            "disposition": "inform"
+          },
+          {
+            "kind": "recheck-line",
+            "line": "apps/crm/CLAUDE.md:177",
+            "matched": [
+              {
+                "by": "stem",
+                "value": "decimal"
+              }
+            ],
+            "disposition": "inform"
+          }
+        ],
+        "truncated": {
+          "recheck-line": 0
+        }
+      }
+    },
+    {
+      "id": "villasa-sms",
+      "repo": "~/Desktop/projects/villasa",
+      "base": "2ce6d5829279340c8cf3a4520f097ef4ae95d6da",
+      "head": "0d79a564716ac46d395e907fb7b66eb382a16915",
+      "restoreTooling": true,
+      "note": "A workspace dependency added to one app; the only recheck is the auth file the commit changed (modified docs such as docs/progress.md are not keys — owner decision 2026-09-27).",
+      "expected": {
+        "items": [
+          {
+            "kind": "dependency-added",
+            "name": "@repo/sms",
+            "version": "workspace:*",
+            "file": "apps/crm/package.json",
+            "disposition": "inform"
+          },
+          {
+            "kind": "recheck-line",
+            "line": "apps/crm/CLAUDE.md:134",
+            "matched": [
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/auth-server.ts"
+              }
+            ],
+            "disposition": "inform"
+          }
+        ],
+        "truncated": {
+          "recheck-line": 0
+        }
+      }
+    },
+    {
+      "id": "villasa-pwa-decommission",
+      "repo": "~/Desktop/projects/villasa",
+      "base": "fb31cd3e0ae5f83881e0c5e5fcdf47ce21d3c1ed",
+      "head": "fb9efe46a20d1c9457b352bdfbb9892673344d1b",
+      "restoreTooling": true,
+      "note": "A whole app deleted: directory and file path-mention-broken items, config-changed for its deleted configs, and per-package dependency-removed stale-lines (owner decision 2026-09-27: per-package, even where another package still uses the dependency).",
+      "expected": {
+        "items": [
+          {
+            "kind": "recheck-line",
+            "line": "CLAUDE.md:200",
+            "matched": [
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/public-listing-service.ts"
+              }
+            ],
+            "disposition": "inform"
+          },
+          {
+            "kind": "dependency-removed",
+            "name": "@prisma/client",
+            "file": "apps/pwa/package.json",
+            "line": "packages/core/CLAUDE.md:9",
+            "alsoAt": [
+              "packages/db/CLAUDE.md:10",
+              "packages/db/CLAUDE.md:33",
+              "packages/db/CLAUDE.md:35",
+              ".claude/rules/deployment.md:55"
+            ],
+            "disposition": "defer",
+            "reason": "stale-line",
+            "hint": "edit by hand: this line names a removed dependency"
+          },
+          {
+            "kind": "dependency-removed",
+            "name": "@repo/core",
+            "file": "apps/pwa/package.json",
+            "line": "CLAUDE.md:13",
+            "alsoAt": [
+              "apps/client/CLAUDE.md:69",
+              "apps/client/CLAUDE.md:71",
+              "apps/client/CLAUDE.md:130",
+              "packages/core/CLAUDE.md:1",
+              "packages/core/CLAUDE.md:19",
+              "packages/core/CLAUDE.md:23"
+            ],
+            "disposition": "defer",
+            "reason": "stale-line",
+            "hint": "edit by hand: this line names a removed dependency"
+          },
+          {
+            "kind": "dependency-removed",
+            "name": "@repo/db",
+            "file": "apps/pwa/package.json",
+            "line": "CLAUDE.md:31",
+            "alsoAt": [
+              "CLAUDE.md:32",
+              "CLAUDE.md:33",
+              "CLAUDE.md:34",
+              "CLAUDE.md:35",
+              "CLAUDE.md:43",
+              "CLAUDE.md:44",
+              "apps/crm/CLAUDE.md:207",
+              "apps/crm/CLAUDE.md:234",
+              "apps/crm/CLAUDE.md:235",
+              "apps/crm/CLAUDE.md:236",
+              "packages/core/CLAUDE.md:7",
+              "packages/core/CLAUDE.md:8",
+              "packages/core/CLAUDE.md:9",
+              "packages/db/CLAUDE.md:1",
+              "packages/db/CLAUDE.md:14",
+              "packages/db/CLAUDE.md:15",
+              "packages/db/CLAUDE.md:16",
+              "packages/db/CLAUDE.md:17",
+              "packages/db/CLAUDE.md:18",
+              "packages/db/CLAUDE.md:19",
+              ".claude/rules/database.md:25",
+              ".claude/rules/database.md:26",
+              ".claude/rules/database.md:27",
+              ".claude/rules/deployment.md:105",
+              ".claude/rules/deployment.md:106",
+              ".claude/rules/deployment.md:109"
+            ],
+            "disposition": "defer",
+            "reason": "stale-line",
+            "hint": "edit by hand: this line names a removed dependency"
+          },
+          {
+            "kind": "dependency-removed",
+            "name": "@repo/eslint-config",
+            "file": "apps/pwa/package.json",
+            "line": "packages/eslint-config/CLAUDE.md:1",
+            "alsoAt": [],
+            "disposition": "defer",
+            "reason": "stale-line",
+            "hint": "edit by hand: this line names a removed dependency"
+          },
+          {
+            "kind": "dependency-removed",
+            "name": "clsx",
+            "file": "apps/pwa/package.json",
+            "line": "apps/crm/CLAUDE.md:142",
+            "alsoAt": [],
+            "disposition": "defer",
+            "reason": "stale-line",
+            "hint": "edit by hand: this line names a removed dependency"
+          },
+          {
+            "kind": "dependency-removed",
+            "name": "eslint",
+            "file": "apps/pwa/package.json",
+            "line": "CLAUDE.md:15",
+            "alsoAt": [
+              "CLAUDE.md:27",
+              "CLAUDE.md:224",
+              "apps/client/CLAUDE.md:25",
+              "packages/eslint-config/CLAUDE.md:1",
+              "packages/eslint-config/CLAUDE.md:3"
+            ],
+            "disposition": "defer",
+            "reason": "stale-line",
+            "hint": "edit by hand: this line names a removed dependency"
+          },
+          {
+            "kind": "dependency-removed",
+            "name": "next",
+            "file": "apps/pwa/package.json",
+            "line": "apps/client/CLAUDE.md:41",
+            "alsoAt": [
+              "apps/client/CLAUDE.md:42",
+              "apps/client/CLAUDE.md:116",
+              "apps/client/CLAUDE.md:134",
+              "apps/client/CLAUDE.md:136",
+              "apps/client/CLAUDE.md:139",
+              "apps/crm/CLAUDE.md:203",
+              "packages/core/CLAUDE.md:10",
+              "packages/eslint-config/CLAUDE.md:9",
+              "packages/eslint-config/CLAUDE.md:20",
+              "packages/eslint-config/CLAUDE.md:23",
+              ".claude/rules/components.md:41",
+              ".claude/rules/security.md:69"
+            ],
+            "disposition": "defer",
+            "reason": "stale-line",
+            "hint": "edit by hand: this line names a removed dependency"
+          },
+          {
+            "kind": "dependency-removed",
+            "name": "react",
+            "file": "apps/pwa/package.json",
+            "line": "CLAUDE.md:90",
+            "alsoAt": [
+              "CLAUDE.md:111",
+              "CLAUDE.md:175",
+              "apps/crm/CLAUDE.md:141",
+              "packages/core/CLAUDE.md:10",
+              ".claude/rules/components.md:2",
+              ".claude/rules/components.md:48",
+              ".claude/rules/testing.md:21"
+            ],
+            "disposition": "defer",
+            "reason": "stale-line",
+            "hint": "edit by hand: this line names a removed dependency"
+          },
+          {
+            "kind": "dependency-removed",
+            "name": "tailwind-merge",
+            "file": "apps/pwa/package.json",
+            "line": "apps/crm/CLAUDE.md:142",
+            "alsoAt": [],
+            "disposition": "defer",
+            "reason": "stale-line",
+            "hint": "edit by hand: this line names a removed dependency"
+          },
+          {
+            "kind": "dependency-removed",
+            "name": "typescript",
+            "file": "apps/pwa/package.json",
+            "line": "CLAUDE.md:28",
+            "alsoAt": [],
+            "disposition": "defer",
+            "reason": "stale-line",
+            "hint": "edit by hand: this line names a removed dependency"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/client/CLAUDE.md:138",
+            "mention": "apps/pwa",
+            "path": "apps/pwa",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was deleted"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/pwa/CLAUDE.md:9",
+            "mention": "src/lib/prisma.ts",
+            "path": "apps/pwa/src/lib/prisma.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was deleted"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/pwa/CLAUDE.md:10",
+            "mention": "src/lib/catalog.ts",
+            "path": "apps/pwa/src/lib/catalog.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was deleted"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/pwa/CLAUDE.md:11",
+            "mention": "src/app/page.tsx",
+            "path": "apps/pwa/src/app/page.tsx",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was deleted"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/pwa/CLAUDE.md:13",
+            "mention": "src/app/api/revalidate/route.ts",
+            "path": "apps/pwa/src/app/api/revalidate/route.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was deleted"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": ".claude/rules/deployment.md:38",
+            "mention": "apps/pwa",
+            "path": "apps/pwa",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was deleted"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": ".claude/rules/deployment.md:38",
+            "mention": "apps/pwa/vercel.json",
+            "path": "apps/pwa/vercel.json",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was deleted"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": ".claude/rules/security.md:89",
+            "mention": "apps/pwa",
+            "path": "apps/pwa",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was deleted"
+          },
+          {
+            "kind": "config-changed",
+            "file": "apps/pwa/eslint.config.mjs",
+            "disposition": "defer",
+            "reason": "needs-review",
+            "command": "/onboard:update"
+          },
+          {
+            "kind": "config-changed",
+            "file": "apps/pwa/tsconfig.json",
+            "disposition": "defer",
+            "reason": "needs-review",
+            "command": "/onboard:update"
+          }
+        ],
+        "truncated": {
+          "recheck-line": 0
+        }
+      }
+    },
+    {
+      "id": "villasa-core-extraction",
+      "repo": "~/Desktop/projects/villasa",
+      "base": "4a11acfc6c9b7d9047c8435ec5bf1816e1476523",
+      "head": "16e5b8bc8d2f6e78699b77ecf1f5f322f9d1345f",
+      "restoreTooling": true,
+      "note": "A shared package extracted by renames: path-mention-broken with renamedTo for files and a directory, a new package's scripts as apply items, directory-new, and a truncated recheck set (cap 8).",
+      "expected": {
+        "items": [
+          {
+            "kind": "dependency-added",
+            "name": "@repo/core",
+            "version": "workspace:*",
+            "file": "apps/crm/package.json",
+            "disposition": "inform"
+          },
+          {
+            "kind": "dependency-added",
+            "name": "@types/node",
+            "version": "^22",
+            "file": "packages/core/package.json",
+            "disposition": "inform"
+          },
+          {
+            "kind": "recheck-line",
+            "line": "apps/crm/CLAUDE.md:11",
+            "matched": [
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/activity-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/addon-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/amenity-category-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/amenity-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/audit-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/availability-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/booking-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/booking-snapshot-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/calendar-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/caretaker-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/commission-rate-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/damage-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/dashboard-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/deposit-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/destination-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/expense-approval-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/expense-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/guest-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/ical-export-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/ical-sync-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/income-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/invoice-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/lead-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/media-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/notification-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/owner-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/payment-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/payout-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/peak-calendar-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/pnl-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/pricing-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/property-day-pricing-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/property-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/recurring-schedule-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/report-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/tag-category-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/tag-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/task-overdue-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/task-rule-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/task-template-service.ts"
+              }
+            ],
+            "disposition": "inform"
+          },
+          {
+            "kind": "recheck-line",
+            "line": "CLAUDE.md:190",
+            "matched": [
+              {
+                "by": "path",
+                "value": "packages/core/src/pricing/booking-financials.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/booking-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/deposit-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/invoice-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/payout-service.ts"
+              },
+              {
+                "by": "name",
+                "value": "zod"
+              },
+              {
+                "by": "stem",
+                "value": "decimal"
+              }
+            ],
+            "disposition": "inform"
+          },
+          {
+            "kind": "recheck-line",
+            "line": "CLAUDE.md:191",
+            "matched": [
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/booking-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/calendar-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/deposit-service.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/task-service.ts"
+              }
+            ],
+            "disposition": "inform"
+          },
+          {
+            "kind": "recheck-line",
+            "line": "apps/crm/CLAUDE.md:255",
+            "matched": [
+              {
+                "by": "path",
+                "value": "packages/core/src/locale/formatters.ts"
+              },
+              {
+                "by": "path",
+                "value": "packages/core/src/money/invoice-helpers.ts"
+              },
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/invoice-service.ts"
+              }
+            ],
+            "disposition": "inform"
+          },
+          {
+            "kind": "recheck-line",
+            "line": "CLAUDE.md:87",
+            "matched": [
+              {
+                "by": "path",
+                "value": "packages/core/src/errors/business-error.ts"
+              }
+            ],
+            "disposition": "inform"
+          },
+          {
+            "kind": "recheck-line",
+            "line": "apps/crm/CLAUDE.md:17",
+            "matched": [
+              {
+                "by": "path",
+                "value": "apps/crm/src/app/(dashboard)/owners/actions.ts"
+              }
+            ],
+            "disposition": "inform"
+          },
+          {
+            "kind": "recheck-line",
+            "line": "apps/crm/CLAUDE.md:19",
+            "matched": [
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/caretaker-service.ts"
+              }
+            ],
+            "disposition": "inform"
+          },
+          {
+            "kind": "recheck-line",
+            "line": "apps/crm/CLAUDE.md:23",
+            "matched": [
+              {
+                "by": "path",
+                "value": "apps/crm/src/lib/services/guest-service.ts"
+              }
+            ],
+            "disposition": "inform"
+          },
+          {
+            "kind": "script-added",
+            "name": "lint",
+            "run": "eslint .",
+            "file": "packages/core/package.json",
+            "package": "@repo/core",
+            "disposition": "apply"
+          },
+          {
+            "kind": "script-added",
+            "name": "test",
+            "run": "vitest run",
+            "file": "packages/core/package.json",
+            "package": "@repo/core",
+            "disposition": "apply"
+          },
+          {
+            "kind": "script-added",
+            "name": "test:watch",
+            "run": "vitest",
+            "file": "packages/core/package.json",
+            "package": "@repo/core",
+            "disposition": "apply"
+          },
+          {
+            "kind": "script-added",
+            "name": "typecheck",
+            "run": "tsc --noEmit",
+            "file": "packages/core/package.json",
+            "package": "@repo/core",
+            "disposition": "apply"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/crm/CLAUDE.md:13",
+            "mention": "src/lib/validators/",
+            "path": "apps/crm/src/lib/validators",
+            "renamedTo": "packages/core/src/validators",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was renamed to packages/core/src/validators"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/crm/CLAUDE.md:20",
+            "mention": "src/lib/validators/caretaker-schema.ts",
+            "path": "apps/crm/src/lib/validators/caretaker-schema.ts",
+            "renamedTo": "packages/core/src/validators/caretaker-schema.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was renamed to packages/core/src/validators/caretaker-schema.ts"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/crm/CLAUDE.md:24",
+            "mention": "src/lib/validators/guest-schema.ts",
+            "path": "apps/crm/src/lib/validators/guest-schema.ts",
+            "renamedTo": "packages/core/src/validators/guest-schema.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was renamed to packages/core/src/validators/guest-schema.ts"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/crm/CLAUDE.md:25",
+            "mention": "src/lib/guest-helpers.ts",
+            "path": "apps/crm/src/lib/guest-helpers.ts",
+            "renamedTo": "packages/core/src/helpers/guest-helpers.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was renamed to packages/core/src/helpers/guest-helpers.ts"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/crm/CLAUDE.md:33",
+            "mention": "src/lib/validators/booking-schema.ts",
+            "path": "apps/crm/src/lib/validators/booking-schema.ts",
+            "renamedTo": "packages/core/src/validators/booking-schema.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was renamed to packages/core/src/validators/booking-schema.ts"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/crm/CLAUDE.md:38",
+            "mention": "src/lib/booking-financials.ts",
+            "path": "apps/crm/src/lib/booking-financials.ts",
+            "renamedTo": "packages/core/src/pricing/booking-financials.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was renamed to packages/core/src/pricing/booking-financials.ts"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/crm/CLAUDE.md:42",
+            "mention": "src/lib/validators/payout-schema.ts",
+            "path": "apps/crm/src/lib/validators/payout-schema.ts",
+            "renamedTo": "packages/core/src/validators/payout-schema.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was renamed to packages/core/src/validators/payout-schema.ts"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/crm/CLAUDE.md:43",
+            "mention": "src/lib/validators/deposit-schema.ts",
+            "path": "apps/crm/src/lib/validators/deposit-schema.ts",
+            "renamedTo": "packages/core/src/validators/deposit-schema.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was renamed to packages/core/src/validators/deposit-schema.ts"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/crm/CLAUDE.md:44",
+            "mention": "src/lib/validators/damage-schema.ts",
+            "path": "apps/crm/src/lib/validators/damage-schema.ts",
+            "renamedTo": "packages/core/src/validators/damage-schema.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was renamed to packages/core/src/validators/damage-schema.ts"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/crm/CLAUDE.md:68",
+            "mention": "src/lib/validators/pricing-schema.ts",
+            "path": "apps/crm/src/lib/validators/pricing-schema.ts",
+            "renamedTo": "packages/core/src/validators/pricing-schema.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was renamed to packages/core/src/validators/pricing-schema.ts"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/crm/CLAUDE.md:69",
+            "mention": "src/lib/validators/task-template-schema.ts",
+            "path": "apps/crm/src/lib/validators/task-template-schema.ts",
+            "renamedTo": "packages/core/src/validators/task-template-schema.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was renamed to packages/core/src/validators/task-template-schema.ts"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/crm/CLAUDE.md:71",
+            "mention": "src/lib/validators/invoice-schema.ts",
+            "path": "apps/crm/src/lib/validators/invoice-schema.ts",
+            "renamedTo": "packages/core/src/validators/invoice-schema.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was renamed to packages/core/src/validators/invoice-schema.ts"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/crm/CLAUDE.md:72",
+            "mention": "src/lib/invoice-helpers.ts",
+            "path": "apps/crm/src/lib/invoice-helpers.ts",
+            "renamedTo": "packages/core/src/money/invoice-helpers.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was renamed to packages/core/src/money/invoice-helpers.ts"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/crm/CLAUDE.md:78",
+            "mention": "src/lib/validators/expense-schema.ts",
+            "path": "apps/crm/src/lib/validators/expense-schema.ts",
+            "renamedTo": "packages/core/src/validators/expense-schema.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was renamed to packages/core/src/validators/expense-schema.ts"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/crm/CLAUDE.md:85",
+            "mention": "src/lib/validators/income-schema.ts",
+            "path": "apps/crm/src/lib/validators/income-schema.ts",
+            "renamedTo": "packages/core/src/validators/income-schema.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was renamed to packages/core/src/validators/income-schema.ts"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/crm/CLAUDE.md:90",
+            "mention": "src/lib/pnl-helpers.ts",
+            "path": "apps/crm/src/lib/pnl-helpers.ts",
+            "renamedTo": "packages/core/src/money/pnl-helpers.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was renamed to packages/core/src/money/pnl-helpers.ts"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/crm/CLAUDE.md:95",
+            "mention": "src/lib/recurring-schedule-helpers.ts",
+            "path": "apps/crm/src/lib/recurring-schedule-helpers.ts",
+            "renamedTo": "packages/core/src/money/recurring-schedule-helpers.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was renamed to packages/core/src/money/recurring-schedule-helpers.ts"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/crm/CLAUDE.md:97",
+            "mention": "src/lib/validators/recurring-schedule-schema.ts",
+            "path": "apps/crm/src/lib/validators/recurring-schedule-schema.ts",
+            "renamedTo": "packages/core/src/validators/recurring-schedule-schema.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was renamed to packages/core/src/validators/recurring-schedule-schema.ts"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/crm/CLAUDE.md:135",
+            "mention": "src/lib/formatters.ts",
+            "path": "apps/crm/src/lib/formatters.ts",
+            "renamedTo": "packages/core/src/locale/formatters.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was renamed to packages/core/src/locale/formatters.ts"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/crm/CLAUDE.md:137",
+            "mention": "src/lib/url.ts",
+            "path": "apps/crm/src/lib/url.ts",
+            "renamedTo": "packages/core/src/helpers/url.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was renamed to packages/core/src/helpers/url.ts"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/crm/CLAUDE.md:138",
+            "mention": "src/lib/slug.ts",
+            "path": "apps/crm/src/lib/slug.ts",
+            "renamedTo": "packages/core/src/helpers/slug.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was renamed to packages/core/src/helpers/slug.ts"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/crm/CLAUDE.md:141",
+            "mention": "src/lib/errors/business-error.ts",
+            "path": "apps/crm/src/lib/errors/business-error.ts",
+            "renamedTo": "packages/core/src/errors/business-error.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was renamed to packages/core/src/errors/business-error.ts"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/crm/CLAUDE.md:142",
+            "mention": "src/lib/payment-helpers.ts",
+            "path": "apps/crm/src/lib/payment-helpers.ts",
+            "renamedTo": "packages/core/src/money/payment-helpers.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was renamed to packages/core/src/money/payment-helpers.ts"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/crm/CLAUDE.md:143",
+            "mention": "src/lib/ca-export-helpers.ts",
+            "path": "apps/crm/src/lib/ca-export-helpers.ts",
+            "renamedTo": "packages/core/src/money/ca-export-helpers.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was renamed to packages/core/src/money/ca-export-helpers.ts"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/crm/CLAUDE.md:147",
+            "mention": "src/lib/vedic-helpers.ts",
+            "path": "apps/crm/src/lib/vedic-helpers.ts",
+            "renamedTo": "packages/core/src/pricing/vedic-helpers.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was renamed to packages/core/src/pricing/vedic-helpers.ts"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/crm/CLAUDE.md:149",
+            "mention": "src/lib/availability/freshness.ts",
+            "path": "apps/crm/src/lib/availability/freshness.ts",
+            "renamedTo": "packages/core/src/availability/freshness.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was renamed to packages/core/src/availability/freshness.ts"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/crm/CLAUDE.md:260",
+            "mention": "src/lib/billing-config.ts",
+            "path": "apps/crm/src/lib/billing-config.ts",
+            "renamedTo": "packages/core/src/pricing/billing-config.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was renamed to packages/core/src/pricing/billing-config.ts"
+          },
+          {
+            "kind": "path-mention-broken",
+            "line": "apps/crm/CLAUDE.md:260",
+            "mention": "src/lib/pricing-engine.ts",
+            "path": "apps/crm/src/lib/pricing-engine.ts",
+            "renamedTo": "packages/core/src/pricing/pricing-engine.ts",
+            "disposition": "defer",
+            "reason": "stale-reference",
+            "hint": "edit by hand: the path was renamed to packages/core/src/pricing/pricing-engine.ts"
+          },
+          {
+            "kind": "config-changed",
+            "file": "packages/core/eslint.config.mjs",
+            "disposition": "defer",
+            "reason": "needs-review",
+            "command": "/onboard:update"
+          },
+          {
+            "kind": "config-changed",
+            "file": "packages/core/tsconfig.json",
+            "disposition": "defer",
+            "reason": "needs-review",
+            "command": "/onboard:update"
+          },
+          {
+            "kind": "directory-new",
+            "path": "packages/core",
+            "count": 124,
+            "disposition": "defer",
+            "reason": "needs-prompt",
+            "command": "/onboard:update"
+          }
+        ],
+        "truncated": {
+          "recheck-line": 143
+        }
+      }
+    },
+    {
+      "id": "mywebsite-sprint2",
+      "repo": "~/Desktop/projects/mywebsite",
+      "base": "d2a1346087ab3dc4666bd2b950acf54b07e59997",
+      "head": "747e4b7d7e8d973b512970a6692df05ac99752d6",
+      "restoreTooling": true,
+      "note": "A single-package site: three added scripts (apply) and two new test directories.",
+      "expected": {
+        "items": [
+          {
+            "kind": "script-added",
+            "name": "build:fixtures",
+            "run": "node scripts/build-tokens.mjs --check && SITE_CONTENT_ROOT=tests/fixtures/content node scripts/build-strict.mjs",
+            "file": "package.json",
+            "package": "apurvbazari",
+            "disposition": "apply"
+          },
+          {
+            "kind": "script-added",
+            "name": "dev:fixtures",
+            "run": "node scripts/build-tokens.mjs && SITE_CONTENT_ROOT=tests/fixtures/content astro dev",
+            "file": "package.json",
+            "package": "apurvbazari",
+            "disposition": "apply"
+          },
+          {
+            "kind": "script-added",
+            "name": "test:e2e:fixtures",
+            "run": "SITE_CONTENT_ROOT=tests/fixtures/content sh scripts/e2e.sh --project=fixture-build",
+            "file": "package.json",
+            "package": "apurvbazari",
+            "disposition": "apply"
+          },
+          {
+            "kind": "directory-new",
+            "path": "tests/e2e/fixture-build",
+            "count": 5,
+            "disposition": "defer",
+            "reason": "needs-prompt",
+            "command": "/onboard:update"
+          },
+          {
+            "kind": "directory-new",
+            "path": "tests/unit",
+            "count": 6,
+            "disposition": "defer",
+            "reason": "needs-prompt",
+            "command": "/onboard:update"
+          }
+        ],
+        "truncated": {
+          "recheck-line": 0
+        }
+      }
+    },
+    {
+      "id": "jamakhata-agp-bump",
+      "repo": "~/Desktop/projects/jamakhata",
+      "base": "904047cd09c0126f83ffd19447ed3e8a2ca08821",
+      "head": "4184757a8c6faa03cae8460688724cedd88f131a",
+      "restoreTooling": true,
+      "note": "A Kotlin/Gradle project: no package.json kinds; a changed .kts build file is a source path, so its tooling mentions are rechecks.",
+      "expected": {
+        "items": [
+          {
+            "kind": "recheck-line",
+            "line": "app/src/main/java/dev/apurvbazari/jamakhata/data/CLAUDE.md:16",
+            "matched": [
+              {
+                "by": "path",
+                "value": "app/build.gradle.kts"
+              }
+            ],
+            "disposition": "inform"
+          },
+          {
+            "kind": "recheck-line",
+            "line": ".claude/rules/privacy-invariants.md:80",
+            "matched": [
+              {
+                "by": "path",
+                "value": "app/build.gradle.kts"
+              }
+            ],
+            "disposition": "inform"
+          }
+        ],
+        "truncated": {
+          "recheck-line": 0
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "name": "acme",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "test": "vitest run",
+    "lint": "eslint ."
+  }
+}
