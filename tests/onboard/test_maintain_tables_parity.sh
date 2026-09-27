@@ -41,6 +41,7 @@ done
 mcp_start() {  # a repo whose base is an empty commit, so every signal present now is "new"
   new_repo "mcp-$1"
   git commit -q --allow-empty -m empty
+  # shellcheck disable=SC2034  # BASE is read by detect() in maintain-helpers.sh
   BASE="$(git rev-parse HEAD)"
 }
 mcp_check() {

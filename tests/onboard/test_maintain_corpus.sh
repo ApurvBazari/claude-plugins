@@ -25,6 +25,7 @@ while IFS='|' read -r shape package; do
   REPO="$SCRATCH/shape-$shape"
   bash "$CORPUS/build-shape.sh" "$shape" "$REPO" >/dev/null || { fail "shape $shape did not build"; continue; }
   cd "$REPO" || exit 1
+  # shellcheck disable=SC2034  # BASE is read by detect() in maintain-helpers.sh
   BASE="$(git rev-parse HEAD)"
   python3 "$CORPUS/add-script.py" "$package" price:check "tsx scripts/price-check.ts"
   detect

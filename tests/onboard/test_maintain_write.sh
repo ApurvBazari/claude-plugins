@@ -78,6 +78,7 @@ commit_base
 put package.json '{"name":"x","scripts":{"t":"y"}}'
 put tsconfig.json '{}'
 git add -A && git commit -qm two
+# shellcheck disable=SC2034  # BASE is read by detect() in maintain-helpers.sh
 BASE="$(git rev-parse HEAD~1)"
 detect
 state="$(bash "$GUARD" before)"
