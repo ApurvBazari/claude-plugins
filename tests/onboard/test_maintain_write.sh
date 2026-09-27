@@ -96,6 +96,22 @@ then echo "ok: result validates against maintain-result.json"; else fail "result
 
 rc=0; bash "$WRITE" record --state "$SCRATCH/none.json" applied --id D1 --file CLAUDE.md --summary s 2>/dev/null || rc=$?
 expect "record without a state file is refused" 2 "$rc"
+
+# record stores repo-relative paths whatever form the model passes (§ 6.3): absolute, through a
+# symlinked prefix ($TMPDIR is /var/… on macOS, git reports /private/var/…), or relative.
+state="$(bash "$GUARD" before)"
+real="$(pwd -P)"
+bash "$WRITE" record --state "$state" applied --id D1 --file "$REPO/CLAUDE.md" --summary s
+bash "$WRITE" record --state "$state" applied --id D2 --file "$real/CLAUDE.md" --summary s
+bash "$WRITE" record --state "$state" skipped --id L-1 --file "$REPO/.claude/rules/lessons.md"
+bash "$WRITE" record --state "$state" deferred --id L-2 --reason possible-duplicate --hint h --existing "$real/CLAUDE.md:24"
+expect "record: absolute --file paths become repo-relative" "D1 CLAUDE.md D2 CLAUDE.md L-1 .claude/rules/lessons.md" \
+  "$(python3 -c 'import json,sys; e=json.load(open(sys.argv[1]))["entries"]; print(" ".join(x["id"] + " " + x["file"] for x in e["applied"] + e["skipped"]))' "$state")"
+expect "record: the file part of --existing becomes repo-relative" "CLAUDE.md:24" \
+  "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["entries"]["deferred"][0]["existing"])' "$state")"
+rc=0; bash "$WRITE" record --state "$state" applied --id D3 --file "$SCRATCH/elsewhere.md" --summary s 2>/dev/null || rc=$?
+expect "record: a --file outside the repo is refused" 2 "$rc"
+rm -f "$state"
 rc=0; bash "$WRITE" early --out "$REPO/.claude/maintain-run/early.json" --id X1 --reason bad-input --hint 'detect.json is not JSON' || rc=$?
 OUT="$REPO/.claude/maintain-run/early.json"
 expect "early: one deferred bad-input, nothing else" "0 X1:bad-input 0 0 0" \

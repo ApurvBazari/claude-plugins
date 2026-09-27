@@ -118,28 +118,43 @@ def _from_item(detect_path, item_id):
     return entry
 
 
+def _repo_rel(top, path):
+    """A path the model passed (relative, absolute, or via a symlinked prefix such as macOS's
+    /var -> /private/var) as the repo-relative form the result carries (§ 6.3)."""
+    full = os.path.abspath(path)
+    full = os.path.join(os.path.realpath(os.path.dirname(full)), os.path.basename(full))
+    rel = os.path.relpath(full, os.path.realpath(top)).replace(os.sep, "/")
+    if rel == ".." or rel.startswith("../"):
+        raise Bad("path outside the repo: %s" % path)
+    return rel
+
+
 def cmd_record(argv):
     if len(argv) < 3 or argv[0] != "--state":
         raise Bad("usage: record --state <file> applied|skipped|deferred|item ...")
     state_path, kind, rest = argv[1], argv[2], argv[3:]
     state = _load_state(state_path)
+    top = state.get("top") or os.getcwd()
     if kind == "applied":
         o = _opts(rest, ("--id", "--file", "--summary"))
         if not all(k in o for k in ("--id", "--file", "--summary")):
             raise Bad("applied needs --id, --file and --summary")
-        entry, bucket = {"id": o["--id"], "file": o["--file"], "summary": o["--summary"]}, "applied"
+        entry, bucket = {"id": o["--id"], "file": _repo_rel(top, o["--file"]), "summary": o["--summary"]}, "applied"
     elif kind == "skipped":
         o = _opts(rest, ("--id", "--file"))
         if "--id" not in o:
             raise Bad("skipped needs --id")
         entry, bucket = {"id": o["--id"], "reason": "already-present"}, "skipped"
         if "--file" in o:
-            entry["file"] = o["--file"]
+            entry["file"] = _repo_rel(top, o["--file"])
     elif kind == "deferred":
         o = _opts(rest, ("--id", "--reason", "--command", "--hint", "--summary", "--existing", "--path"))
         if "--id" not in o:
             raise Bad("deferred needs --id")
         entry, bucket = _deferred(o), "deferred"
+        path, sep, line = entry.get("existing", "").rpartition(":")
+        if sep and path and line.isdigit():
+            entry["existing"] = _repo_rel(top, path) + ":" + line
     elif kind == "item":
         o = _opts(rest, ("--detect", "--id"))
         if "--detect" not in o or "--id" not in o:
