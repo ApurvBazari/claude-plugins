@@ -89,6 +89,7 @@ Internal building blocks (`user-invocable: false` — hidden from menu):
 - `skills/wizard/SKILL.md` — drives the grounded confirm/override surface (research-seeded)
 - `skills/research/SKILL.md` — the v3 research engine (fan-out specialists → verify → synthesize dossier)
 - `skills/generation/SKILL.md` — artifact generation logic, core + enriched modes
+- `skills/maintain/SKILL.md` — non-interactive maintain apply, called by an orchestrator with file paths (writes CLAUDE.md script lines itself; lessons and the result go through `maintain-write.sh` / the guard)
 
 ## Script Conventions
 
@@ -97,6 +98,8 @@ Internal building blocks (`user-invocable: false` — hidden from menu):
 - Recon is **script-free** (native Glob/Grep/Read + git one-liners) as of v3.
 - Evolution scripts: `detect-dep-changes.sh`, `detect-config-changes.sh`, `detect-structure-changes.sh`
 - CI audit script: `audit-tooling.sh`
+- Maintain entry: `maintain-detect.sh` (detect + read-only query modes), `maintain-guard.sh` (R9 fence), `maintain-write.sh` (writes under the protected `.claude/` path). Each is a thin bash wrapper over `scripts/maintain-lib/` — python3 standard library only, 3.9-compatible, always run with `-B` so no bytecode lands in the plugin.
+- `maintain-lib/tables.py` copies the language / vendor / config / MCP-signal tables of the `detect-*` scripts rather than refactoring them; `tests/onboard/test_maintain_tables_parity.sh` fails when a copy drifts.
 
 ## Reference Organization
 

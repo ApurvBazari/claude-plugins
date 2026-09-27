@@ -14,10 +14,11 @@ Claude Code plugin marketplace by Apurv Bazari. Five plugins — all markdown + 
          │
          ├──→ onboard/                   ← codebase analyzer + tooling generator
          │      ├── skills/ (start, adopt, generate, update, check, verify, evolve,
-         │      │           research, wizard, generation)
+         │      │           research, wizard, generation, maintain)
          │      ├── agents/ (codebase-analyzer, config-generator, feature-evaluator,
          │      │           research-specialist, research-verifier)
-         │      └── scripts/ (detect-{config,dep,structure}-changes, detect-{lsp,mcp}-signals, audit-tooling, install-plugins)
+         │      └── scripts/ (detect-{config,dep,structure}-changes, detect-{lsp,mcp}-signals, audit-tooling, install-plugins,
+         │                    maintain-{detect,guard,write} + maintain-lib/)
          │
          ├──→ notify/                    ← cross-platform system notifications
          │      ├── skills/ (setup, check, uninstall, wizard)
