@@ -72,6 +72,8 @@ done
 for style in '**List**' '**Fenced block**' '**Table row**' '**Inline `A | B`**'; do
   check "command-styles.md names the $style style (D26)" grep -qF "$style" "$DIR/references/command-styles.md"
 done
+check "command-styles.md: npm lifecycle shortcuts are not a runner form (npm run <name>)" \
+  grep -qF 'are not a runner form' "$DIR/references/command-styles.md"
 check "lesson-entries.md pins the evidence line" grep -qF '_evidence: <summary> (<ref>)_' "$DIR/references/lesson-entries.md"
 check "D20: lesson-entries.md says evidence.pointer is never written" \
   grep -qF '`evidence.pointer` is never written' "$DIR/references/lesson-entries.md"

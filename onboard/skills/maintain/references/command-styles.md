@@ -20,6 +20,8 @@ Copy the runner form of the entries around it:
 | `bun run dev` | `bun run price:check` | `bun run --filter <package> price:check` |
 | bare names (`dev`, `test`) | `price:check` | `price:check` |
 
+npm's lifecycle shortcuts — `npm test`, `npm start`, `npm stop`, `npm restart` — are not a runner form: npm runs any other script only as `npm run <name>`. When the entry you copy is one of them (a section ending in `` `npm test` `` is common), still write `npm run price:check`, never `npm price:check`. yarn, pnpm and bun have no such exception.
+
 "Same package" means the target `CLAUDE.md` sits in the item's package directory, or the target is the root `CLAUDE.md` and the item's `file` is the root `package.json`. When the item's `package` is null, the package is named by its directory (`--filter ./apps/tool`, `-w apps/tool`). If the entries already name the item's package with a selector, reuse exactly that selector spelling.
 
 Bare names have no runner word, so the line cannot be recognised as a mention: Step 3.4 then removes it and defers `unrecognized-style`. Write it anyway — that check, not you, decides.
