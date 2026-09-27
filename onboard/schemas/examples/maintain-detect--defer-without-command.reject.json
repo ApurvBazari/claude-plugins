@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "range": { "baseRef": "HEAD~1", "base": "4cabaf21b6071b4eb1106e65ae43d18cc840bae5", "head": "worktree" },
+  "project": { "onboarded": true, "metaVersion": "3.2.0" },
+  "items": [ { "id": "D1", "kind": "config-changed", "file": "tsconfig.json", "disposition": "defer", "reason": "needs-review" } ],
+  "truncated": { "recheck-line": 0 }
+}

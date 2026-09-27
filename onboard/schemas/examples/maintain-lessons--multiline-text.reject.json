@@ -1,0 +1,3 @@
+{ "schemaVersion": 1,
+  "lessons": [ { "id": "L-1", "text": "Round only at the boundary.\nAnd never in between.",
+                 "evidence": { "summary": "gate-1 steer", "ref": "matali run 1" } } ] }

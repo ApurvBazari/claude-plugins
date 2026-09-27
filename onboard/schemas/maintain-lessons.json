@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/ApurvBazari/claude-plugins/onboard/schemas/maintain-lessons.json",
+  "title": "onboard maintain — approved lessons",
+  "description": "Written by the caller (matali's CLI: one writer) and read by onboard:maintain. Holds only lessons the owner approved; apply writes each text verbatim. evidence.summary and evidence.ref are committed into tooling, so ref must be durable; evidence.pointer is machine-local and never written (D20). Spec § 6.2.",
+  "type": "object",
+  "required": ["schemaVersion", "lessons"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "lessons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "text", "evidence"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^(?!.*--)[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
+            "description": "Written into an HTML comment marker, so no '--' and no spaces."
+          },
+          "text": { "type": "string", "minLength": 1, "maxLength": 500, "pattern": "^[^\\r\\n]+$" },
+          "evidence": {
+            "type": "object",
+            "required": ["summary", "ref"],
+            "additionalProperties": false,
+            "properties": {
+              "summary": { "type": "string", "minLength": 1, "pattern": "^[^\\r\\n]+$" },
+              "ref": { "type": "string", "minLength": 1, "pattern": "^[^\\r\\n]+$" },
+              "pointer": { "type": "string" }
+            }
+          },
+          "target": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": ["paths"],
+                "additionalProperties": false,
+                "properties": {
+                  "paths": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": { "type": "string", "minLength": 1, "pattern": "^[^\\r\\n]+$" }
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": ["file"],
+                "additionalProperties": false,
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "minLength": 1,
+                    "pattern": "^(?!/)(?!(.*/)?\\.\\.(/|$)).+$",
+                    "description": "Repo-relative. Must be a CLAUDE.md or under .claude/rules/ — apply defers target-outside-tooling otherwise (checked per lesson, not here, so one bad target does not reject the whole file)."
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

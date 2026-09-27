@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "range": { "baseRef": "HEAD~1", "base": "4cabaf21b6071b4eb1106e65ae43d18cc840bae5", "head": "worktree" },
+  "project": { "onboarded": true, "metaVersion": "3.2.0" },
+  "items": [ { "id": "D1", "kind": "dependency-added", "name": "decimal.js", "version": "^10.6.0",
+               "file": "package.json", "disposition": "apply" } ],
+  "truncated": { "recheck-line": 0 }
+}

@@ -1,0 +1,2 @@
+{ "schemaVersion": 1,
+  "lessons": [ { "id": "L-1", "text": "Round only at the boundary.", "evidence": { "summary": "gate-1 steer" } } ] }
