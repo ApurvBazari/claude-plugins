@@ -1,0 +1,74 @@
+name: Probe release-docs CI
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    branches: [develop]
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  probe:
+    if: github.head_ref == 'probe/release-docs-ci'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: V2 tools present
+        run: |
+          for c in google-chrome google-chrome-stable chromium node python3 perl magick convert gh; do
+            printf '%-22s %s\n' "$c" "$(command -v "$c" || echo MISSING)"
+          done
+          google-chrome --version || true
+      - name: V2 headless render
+        run: |
+          (google-chrome --headless=new --disable-gpu --no-sandbox --no-first-run \
+            --user-data-dir="$RUNNER_TEMP/p" --virtual-time-budget=3000 --window-size=1400,900 \
+            --dump-dom "file://$PWD/site/onboard/index.html" > "$RUNNER_TEMP/dom.html" 2>/dev/null &)
+          for _ in $(seq 1 40); do grep -q 'id="maintain"' "$RUNNER_TEMP/dom.html" 2>/dev/null && break; sleep 0.5; done
+          pkill -f "$RUNNER_TEMP/p" || true
+          echo "dump-dom found maintain section: $(grep -c 'id="maintain"' "$RUNNER_TEMP/dom.html" || true)"
+      - id: opus
+        uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1.0.231
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: |
+            --model claude-opus-5-5
+            --max-turns 12
+            --plugin-dir walkthrough
+            --allowedTools "Skill,Read,Write,Agent,Task,Bash(echo:*)"
+          prompt: |
+            /probe-ci
+      - id: sonnet
+        if: always()
+        uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1.0.231
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: |
+            --model claude-sonnet-5
+            --max-turns 2
+          prompt: |
+            Reply with the single word OK.
+      - name: V1 + V3 results
+        if: always()
+        env:
+          OPUS_FILE: ${{ steps.opus.outputs.execution_file }}
+          SONNET_FILE: ${{ steps.sonnet.outputs.execution_file }}
+        run: |
+          echo "--- probe-out.txt"; cat probe-out.txt || echo "probe-out.txt MISSING"
+          echo "--- protected-path files on disk"; ls -la .claude/probe-write.txt .claude/probe-redirect.txt .github/probe-write.txt 2>&1 || true
+          echo "--- git state after the action (did it commit?)"; git status --short; git log -1 --oneline
+          for f in "$OPUS_FILE" "$SONNET_FILE"; do
+            [ -f "$f" ] || { echo "no execution file: $f"; continue; }
+            python3 - "$f" <<'PY'
+          import json, sys
+          msgs = json.load(open(sys.argv[1]))
+          init = next((m for m in msgs if m.get("type") == "system" and m.get("subtype") == "init"), {})
+          res = next((m for m in reversed(msgs) if m.get("type") == "result"), {})
+          print("model:", init.get("model"), "| is_error:", res.get("is_error"), "| turns:", res.get("num_turns"))
+          print("permission_mode:", init.get("permissionMode"), "| denials:", json.dumps(res.get("permission_denials"))[:1500])
+          PY
+          done
