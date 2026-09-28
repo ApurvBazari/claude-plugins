@@ -264,6 +264,7 @@ All generated files include self-maintaining headers (version + date) that promp
 
 - **bash** — evolution + CI-audit scripts and generated hooks (recon itself is script-free; macOS and Linux ship with it)
 - **git** — repository analysis and contributor detection
+- **python3** — required by the [maintain entry](#maintain-entry-for-orchestrators)'s `maintain-*` scripts (standard library only)
 - **tree** (optional) — directory visualisation; falls back to `find`
 - **jq** (optional) — JSON parsing in hooks; generated hooks include a `python3` fallback
 
