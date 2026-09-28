@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "lessons": [
+    { "id": "L-new", "text": "Always run the price check before a release.",
+      "evidence": { "summary": "gate-1 steer", "ref": "matali run 20260927-0001",
+                    "pointer": "/tmp/run/events.jsonl#12" } },
+    { "id": "L-path", "text": "Library code never reads environment variables directly.",
+      "evidence": { "summary": "review finding", "ref": "matali run 20260927-0001" },
+      "target": { "paths": ["src/lib/**"] } },
+    { "id": "L-file", "text": "Keep the root CLAUDE.md under 200 lines.",
+      "evidence": { "summary": "owner note", "ref": "matali run 20260927-0001" },
+      "target": { "file": "CLAUDE.md" } },
+    { "id": "L-dup", "text": "Keep functions pure",
+      "evidence": { "summary": "gate-2 steer", "ref": "matali run 20260927-0001" } },
+    { "id": "L-near", "text": "Functions must stay pure, with no side effects.",
+      "evidence": { "summary": "gate-2 steer", "ref": "matali run 20260927-0001" } },
+    { "id": "L-out", "text": "Export only named functions.",
+      "evidence": { "summary": "owner note", "ref": "matali run 20260927-0001" },
+      "target": { "file": "src/index.ts" } },
+    { "id": "L-code", "text": "Pricing math in `pricing-engine.ts` runs through `decimal.js`; don't round before the `$total` boundary.",
+      "evidence": { "summary": "owner's `decimal.js` note", "ref": "matali run 20260927-0001" } }
+  ]
+}

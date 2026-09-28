@@ -1,0 +1,6 @@
+{
+  "name": "@repo/web",
+  "scripts": {
+    "dev": "next dev"
+  }
+}

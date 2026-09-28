@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "lessons": [
+    { "id": "L-7f3a", "text": "All pricing math runs through decimal.js; round to 2dp only at the output boundary.",
+      "evidence": { "summary": "gate-1 steer", "ref": "matali run 20260926-1412", "pointer": "<run>/events.jsonl#42" },
+      "target": { "paths": ["apps/crm/src/lib/**"] } },
+    { "id": "L-9c01", "text": "Run the pricing belt before touching billing-config.ts.",
+      "evidence": { "summary": "review finding", "ref": "matali run 20260926-1412" } },
+    { "id": "L-2b44", "text": "CRM server actions return BusinessError, never throw.",
+      "evidence": { "summary": "owner note", "ref": "matali run 20260926-1412" },
+      "target": { "file": "apps/crm/CLAUDE.md" } }
+  ]
+}

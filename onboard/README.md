@@ -58,6 +58,10 @@ Quick health check showing last run date, generated artifacts, integrity status,
 
 Internal generation step invoked by `/onboard:start` (after the grounded wizard) and by `/onboard:update` / `/onboard:evolve` (for missing-file repair). Consumes the v3 context shape (`version: 3`, per `schemas/context-shape-v3.json`) and emits all Claude tooling artifacts without re-running the interactive wizard or codebase analysis. This is not an external API — the v2 external-caller contract was removed in 3.0.0. It accepts a `mode`: `"plan"` computes the `generationManifest` (what it *would* write) for the pre-implementation gate without writing; `"write"` (default) runs the full pipeline.
 
+### `onboard:maintain` *(internal — `user-invocable: false`, hidden from `/` menu)*
+
+The apply half of the **maintain entry**, called by an orchestrator (matali v2's maintain phase) after a change lands. It runs non-interactively: given a `maintain-detect` report and optional owner-approved lessons, it writes each new `package.json` script as one line in the nearest fitting commands section of a `CLAUDE.md` (in that section's own style), writes the approved lessons into `.claude/rules/lessons*.md` or a marked section, and returns `applied[]` / `deferred[]` / `skipped[]` in `maintain-result.json`. It never prompts, never commits, and writes only tooling files.
+
 ## Architecture
 
 ```
@@ -108,6 +112,16 @@ When `/onboard:start` runs in **enriched mode**, it installs auto-evolution hook
 Then `/onboard:evolve` reads the drift log, compares against the original snapshot, categorises changes (new dependencies, structural shifts, config diffs, missing hooks), proposes targeted updates, and applies the ones you approve. Snapshot updates after each run so subsequent invocations are incremental.
 
 See the [Example](#example) below for a full two-run transcript showing start followed by evolve detecting drift two weeks later.
+
+## Maintain entry (for orchestrators)
+
+Two scripts and one internal skill keep tooling current after each change, without the wizard:
+
+1. **`scripts/maintain-detect.sh --base <ref> --out <file>`** — no model, about a second. Reports only the drift the git range caused, each item labelled `apply` (a new script line maintain writes), `defer` (a to-do with a command or hint) or `inform` (context for the owner's lesson decisions: a new dependency, a tooling line that mentions a changed path).
+2. **`onboard:maintain`** — run by the caller's model with `detect=… out=… [lessons=…]`; writes the `apply` items and the approved lessons, and returns `maintain-result.json`.
+3. **`scripts/maintain-guard.sh`** fences that run to tooling files; **`scripts/maintain-write.sh`** writes the lesson entries and the result, because `.claude/` is a [protected path](https://code.claude.com/docs/en/permission-modes#protected-paths) that Claude Code's own tools may not write unattended.
+
+The contract is three JSON schemas in `schemas/` — `maintain-detect.json`, `maintain-lessons.json`, `maintain-result.json`, all `schemaVersion: 1`. Callers locate the scripts with `claude plugin list --json` (`installPath`, `version` ≥ 3.2.0).
 
 ## Example
 

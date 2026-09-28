@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "range": { "baseRef": "HEAD~1", "base": "4cabaf21b6071b4eb1106e65ae43d18cc840bae5", "head": "worktree" },
+  "project": { "onboarded": false, "metaVersion": null },
+  "items": [ { "id": "D1", "kind": "not-onboarded", "disposition": "defer", "reason": "not-onboarded", "command": "/onboard:start" } ],
+  "truncated": { "recheck-line": 0 }
+}

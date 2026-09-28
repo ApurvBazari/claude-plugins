@@ -1,0 +1,8 @@
+{
+  "name": "acme",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  }
+}
