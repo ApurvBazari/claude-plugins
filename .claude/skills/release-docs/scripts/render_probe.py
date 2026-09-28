@@ -31,10 +31,15 @@ document.querySelectorAll('section[id]').forEach(function(s){var c=getComputedSt
 document.querySelectorAll('nav a[href^="#"]').forEach(function(a){
  var id=a.getAttribute('href').slice(1);if(id&&!document.getElementById(id))r.badNav.push(id);});
 var det=(typeof DET!=='undefined')?DET:null;
+var tested={};
 document.querySelectorAll('[data-d]').forEach(function(n){var k=n.getAttribute('data-d');
  if(!det||!(k in det)){r.badKeys.push(k);return;}
+ tested[k]=1;
  if(typeof openD==='function'){try{openD(k);if(typeof closeD==='function')closeD();}
  catch(e){r.openErrors.push(k+': '+e.message);}}});
+if(det&&typeof openD==='function'){Object.keys(det).forEach(function(k){if(tested[k])return;
+ try{openD(k);if(typeof closeD==='function')closeD();}
+ catch(e){r.openErrors.push(k+': '+e.message);}});}
 r.width=window.innerWidth;r.scrollWidth=document.documentElement.scrollWidth;
 console.log('RCPROBE:'+JSON.stringify(r)+':ENDPROBE');},2000);</script>"""
 LIGHT = "<script>document.documentElement.setAttribute('data-theme','light');</script>"

@@ -29,6 +29,22 @@ while [ $# -gt 0 ]; do
 done
 [ ${#pages[@]} -gt 0 ] || { echo "usage: render-check.sh [--shots DIR] PAGE..." >&2; exit 2; }
 
+# RENDER_TIMEOUT feeds arithmetic in chrome_run (limit=$(( RENDER_TIMEOUT * 2 ))); a malformed value
+# there errors under set -e in a way that can unwind past the page loop without ever printing a
+# per-page line, so it is validated and normalized once, up front, instead of defaulted inline.
+if [ -n "${RENDER_TIMEOUT:-}" ]; then
+  case "$RENDER_TIMEOUT" in
+    ''|*[!0-9]*)
+      echo "render-check: RENDER_TIMEOUT must be a positive integer (seconds): $RENDER_TIMEOUT" >&2
+      exit 2 ;;
+  esac
+  [ "$RENDER_TIMEOUT" -gt 0 ] || {
+    echo "render-check: RENDER_TIMEOUT must be a positive integer (seconds): $RENDER_TIMEOUT" >&2
+    exit 2
+  }
+fi
+RENDER_TIMEOUT="${RENDER_TIMEOUT:-30}"
+
 for cmd in node python3; do
   command -v "$cmd" >/dev/null 2>&1 || { echo "render-check: $cmd not found" >&2; exit 2; }
 done
@@ -46,10 +62,14 @@ trap cleanup EXIT
 # chrome_run <tag> <window WxH> <done-test: dom|png> <output> <chrome args...>
 # The "dom" test runs in real wall-clock time (no --virtual-time-budget — see the deviation note
 # above) and polls for the probe's console.log marker, captured via --enable-logging=stderr --v=1.
+# For "png", any stale file at <output> (left by an earlier render-check.sh run into the same
+# --shots dir) is removed first — otherwise the done-test [ -s "$out" ] is already true and Chrome
+# is killed ~1s in, leaving the old screenshot in place and silently reported as this run's.
 chrome_run() {
   local tag="$1" win="$2" test="$3" out="$4" pid i=0 limit
   shift 4
-  limit=$(( ${RENDER_TIMEOUT:-30} * 2 ))
+  limit=$(( RENDER_TIMEOUT * 2 ))
+  [ "$test" = png ] && rm -f "$out"
   "$CHROME" --headless=new --disable-gpu --no-sandbox --hide-scrollbars --no-first-run \
     --user-data-dir="$WORK/prof-$tag" --window-size="$win" "$@" \
     > "$WORK/$tag.log" 2>&1 &
@@ -69,6 +89,39 @@ chrome_run() {
   if [ "$test" = dom ]; then mv "$WORK/$tag.log" "$out"; fi
 }
 
+# probe_verdict <tag> <width> <html file> — the dom check for one width, printing judge's verdict
+# (empty when clean). Retried exactly once, and only when the probe itself never reported (Chrome
+# never wrote the console marker before RENDER_TIMEOUT) — spec § 10's single retry. A failure the
+# probe DID report (a real hidden section, bad nav link, openD() throw, overflow, ...) is never
+# retried; it is judge's verdict on the first, real attempt.
+probe_verdict() {
+  local tag="$1" width="$2" html="$3" verdict
+  chrome_run "$tag" "$width,30000" dom "$WORK/$tag.log" --enable-logging=stderr --v=1 "file://$html"
+  verdict="$(python3 "$HERE/render_probe.py" read "$WORK/$tag.log" \
+    | python3 "$HERE/render_probe.py" judge "$width")"
+  case "$verdict" in
+    "the probe never reported"*)
+      chrome_run "$tag-r2" "$width,30000" dom "$WORK/$tag-r2.log" --enable-logging=stderr --v=1 "file://$html"
+      verdict="$(python3 "$HERE/render_probe.py" read "$WORK/$tag-r2.log" \
+        | python3 "$HERE/render_probe.py" judge "$width")"
+      ;;
+  esac
+  printf '%s' "$verdict"
+}
+
+# shot <tag> <win> <out> <chrome args...> — a screenshot, retried once if it comes out missing or
+# empty (spec § 10), then a stderr warning (not a page FAIL — shots are artifacts for the reviewer,
+# not part of the pass/fail contract) if it is still missing or empty after the retry.
+shot() {
+  local tag="$1" win="$2" out="$3"
+  shift 3
+  chrome_run "$tag" "$win" png "$out" "$@"
+  if [ ! -s "$out" ]; then
+    chrome_run "$tag-r2" "$win" png "$out" "$@"
+  fi
+  [ -s "$out" ] || echo "render-check: warning: screenshot not written: $out" >&2
+}
+
 fail=0
 n=0
 for page in "${pages[@]}"; do
@@ -81,10 +134,7 @@ for page in "${pages[@]}"; do
   fi
   python3 "$HERE/render_probe.py" inject "$page" "$WORK/p$n.html" probe
   for width in 1400 500; do
-    chrome_run "p$n-$width" "$width,30000" dom "$WORK/p$n-$width.log" \
-      --enable-logging=stderr --v=1 "file://$WORK/p$n.html"
-    verdict="$(python3 "$HERE/render_probe.py" read "$WORK/p$n-$width.log" \
-      | python3 "$HERE/render_probe.py" judge "$width")"
+    verdict="$(probe_verdict "p$n-$width" "$width" "$WORK/p$n.html")"
     [ -z "$verdict" ] || bad="${bad:+$bad; }$verdict"
   done
   if [ -n "$shots" ]; then
@@ -93,9 +143,9 @@ for page in "${pages[@]}"; do
       index.html) name="$(basename "$(dirname "$page")")" ;;
       *) name="$(basename "$page" .html)" ;;
     esac
-    chrome_run "p$n-dark" "1400,9000" png "$shots/$name-dark.png" --screenshot="$shots/$name-dark.png" "file://$(cd "$(dirname "$page")" && pwd)/$(basename "$page")"
+    shot "p$n-dark" "1400,9000" "$shots/$name-dark.png" --screenshot="$shots/$name-dark.png" "file://$(cd "$(dirname "$page")" && pwd)/$(basename "$page")"
     python3 "$HERE/render_probe.py" inject "$page" "$WORK/p$n-light.html" light
-    chrome_run "p$n-light" "1400,9000" png "$shots/$name-light.png" --screenshot="$shots/$name-light.png" "file://$WORK/p$n-light.html"
+    shot "p$n-light" "1400,9000" "$shots/$name-light.png" --screenshot="$shots/$name-light.png" "file://$WORK/p$n-light.html"
   fi
   if [ -n "$bad" ]; then echo "FAIL $page: $bad"; fail=1; else echo "ok   $page"; fi
 done

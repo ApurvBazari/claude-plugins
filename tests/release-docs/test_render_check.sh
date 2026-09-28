@@ -42,6 +42,25 @@ page "$SCRATCH/nav.html" "" "fine" missing
 page "$SCRATCH/wide.html" '<div style="width:900px">wide</div>' "fine" two
 sed 's/<section id="two">/<section id="two" style="display:none">/' "$SCRATCH/good.html" > "$SCRATCH/hidden.html"
 
+# a DET entry that throws when opened, with no [data-d] element pointing at it — the shape of the
+# real handoff/lens/notify/walkthrough pages, which open details via onclick="openSurface(...)"
+# rather than a data-d button, so the only way to reach the throw is to walk Object.keys(DET).
+cat > "$SCRATCH/detboom.html" <<'EOF'
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="utf-8"><title>t</title>
+<style>section{opacity:0;transition:opacity .2s}section.vis{opacity:1}</style></head><body>
+<nav><a href="#top">Top</a><a href="#two">Two</a></nav><main>
+<section id="top"><h1>Top</h1></section>
+<section id="two"><p>Two</p></section></main>
+<aside id="panel"><div id="pbd"></div></aside>
+<script>
+const DET={a:{b:"fine"},boom:null};
+function openD(k){document.getElementById('pbd').innerHTML=DET[k].b;}
+function closeD(){}
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('vis');}));
+document.querySelectorAll('section').forEach(s=>io.observe(s));
+</script></body></html>
+EOF
+
 run() { RC=0; OUTTXT="$(bash "$RENDER" "$@" 2>&1)" || RC=$?; }
 
 run "$SCRATCH/good.html"
@@ -58,9 +77,60 @@ case "$OUTTXT" in *"hidden"*"two"*) echo "ok: T5-HIDDEN names the section" ;; *)
 run "$SCRATCH/wide.html"
 expect "T5-WIDE exit 1" 1 "$RC"
 case "$OUTTXT" in *"500px"*"overflow"*) echo "ok: T5-WIDE overflow at 500px" ;; *) fail "T5-WIDE output: $OUTTXT" ;; esac
+run "$SCRATCH/detboom.html"
+expect "T5-DETBOOM exit 1" 1 "$RC"
+case "$OUTTXT" in *"openD() threw"*) echo "ok: T5-DETBOOM catches a DET key with no data-d" ;; *) fail "T5-DETBOOM output: $OUTTXT" ;; esac
 run --shots "$SCRATCH/shots" "$SCRATCH/good.html"
 [ -s "$SCRATCH/shots/good-dark.png" ] && [ -s "$SCRATCH/shots/good-light.png" ] \
   && echo "ok: T5-SHOTS both themes written" || fail "T5-SHOTS missing: $(ls "$SCRATCH/shots" 2>&1)"
+
+# a stale PNG left in the shots dir (e.g. from an earlier render-check.sh run) must be replaced, not
+# reported as this run's — mkstemp-free rm-before-write, verified by checking the PNG magic bytes.
+printf 'not a png' > "$SCRATCH/shots/good-dark.png"
+run --shots "$SCRATCH/shots" "$SCRATCH/good.html"
+magic="$(head -c 8 "$SCRATCH/shots/good-dark.png" 2>/dev/null | od -An -tx1 | tr -d ' \n')"
+case "$magic" in 89504e470d0a1a0a*) echo "ok: T5-STALE-SHOT replaced with a real PNG" ;; *) fail "T5-STALE-SHOT magic: $magic" ;; esac
+
+RENDER_TIMEOUT=abc run "$SCRATCH/good.html"
+expect "T5-BADTIMEOUT exit 2" 2 "$RC"
+case "$OUTTXT" in *"RENDER_TIMEOUT"*) echo "ok: T5-BADTIMEOUT names the var" ;; *) fail "T5-BADTIMEOUT output: $OUTTXT" ;; esac
+
+# spec § 10's single retry: a CHROME= stand-in distinguishes the retry attempt (its profile dir
+# carries a "-r2" suffix — see render-check.sh's probe_verdict/shot) so the retry path can be
+# exercised deterministically, without depending on real Chrome flakiness. It logs one line per
+# invocation so the count proves exactly one retry per width (2 widths => 4 lines), never more.
+cat > "$SCRATCH/fake-chrome.sh" <<'EOF'
+#!/usr/bin/env bash
+args="$*"
+echo "$args" >> "${FAKE_CHROME_LOG:?}"
+case "$args" in
+  *"-r2"*)
+    if [ "${FAKE_CHROME_MODE:-}" = recovers ]; then
+      echo 'RCPROBE:{"errors":[],"hidden":[],"empty":[],"badNav":[],"badKeys":[],"openErrors":[],"width":1400,"scrollWidth":1400}:ENDPROBE'
+    fi
+    ;;
+esac
+exec sleep 9999
+EOF
+chmod +x "$SCRATCH/fake-chrome.sh"
+
+: > "$SCRATCH/fake-chrome-recovers.log"
+CHROME="$SCRATCH/fake-chrome.sh" FAKE_CHROME_MODE=recovers FAKE_CHROME_LOG="$SCRATCH/fake-chrome-recovers.log" RENDER_TIMEOUT=2 \
+  run "$SCRATCH/good.html"
+expect "T5-RETRY-RECOVERS exit 0" 0 "$RC"
+lines="$(wc -l < "$SCRATCH/fake-chrome-recovers.log" | tr -d ' ')"
+[ "$lines" = 4 ] && echo "ok: T5-RETRY-RECOVERS retried exactly once per width (4 calls)" \
+  || fail "T5-RETRY-RECOVERS call count: $lines"
+
+: > "$SCRATCH/fake-chrome-hangs.log"
+CHROME="$SCRATCH/fake-chrome.sh" FAKE_CHROME_MODE=hangs FAKE_CHROME_LOG="$SCRATCH/fake-chrome-hangs.log" RENDER_TIMEOUT=2 \
+  run "$SCRATCH/good.html"
+expect "T5-RETRY-GIVES-UP exit 1" 1 "$RC"
+case "$OUTTXT" in *"the probe never reported"*) echo "ok: T5-RETRY-GIVES-UP names the failure" ;; *) fail "T5-RETRY-GIVES-UP output: $OUTTXT" ;; esac
+lines="$(wc -l < "$SCRATCH/fake-chrome-hangs.log" | tr -d ' ')"
+[ "$lines" = 4 ] && echo "ok: T5-RETRY-GIVES-UP stopped after exactly one retry per width (4 calls, not more)" \
+  || fail "T5-RETRY-GIVES-UP call count: $lines"
+
 run "$SCRATCH/nope.html"
 expect "T5-BADINPUT exit 2" 2 "$RC"
 
