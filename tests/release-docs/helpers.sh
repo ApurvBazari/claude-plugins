@@ -83,7 +83,7 @@ fx_landing() { # <version> <escaped description>
 EOF
 }
 
-fx_og() { # <title> <description> — one surfaces.json og entry
+fx_og() { # <title> <description> — one docs-surfaces.json og entry
   printf '{"title":"%s","description":"%s","og:title":"%s","og:description":"%s","og:image:alt":"card","twitter:title":"%s","twitter:description":"%s","twitter:image:alt":"card"}' \
     "$1" "$2" "$1" "$2" "$1" "$2"
 }
@@ -113,10 +113,10 @@ fx_repo() {
   mkdir -p site/alpha
   fx_page 1.0.0 > site/alpha/index.html
   fx_landing 1.0.0 'Alpha does a &amp; b.' > site/index.html
-  mkdir -p .claude/skills/release-docs .github
+  mkdir -p .github
   printf '{"schemaVersion":1,"surfaces":["site/index.html","site/*/index.html","README.md","CLAUDE.md","{plugin}/README.md","{plugin}/CONVENTIONS.md","{plugin}/references/**/*.md","{plugin}/skills/*/references/**/*.md"],"frozen":["site/*/examples/**"],"landing":"site/index.html","pages":{"alpha":"site/alpha/index.html"},"og":{"site/index.html":%s,"site/alpha/index.html":%s},"retired":[]}\n' \
     "$(fx_og 'market — fixture' 'Market page.')" "$(fx_og 'alpha — fixture' 'Alpha page.')" \
-    > .claude/skills/release-docs/surfaces.json
+    > .github/docs-surfaces.json
   put .github/docs-ledger.json '{"schemaVersion":1,"entries":{},"intentional":[]}'
   git add -A && git commit -qm base
   git switch -q -c develop

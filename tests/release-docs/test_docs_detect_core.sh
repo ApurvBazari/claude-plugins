@@ -119,10 +119,10 @@ printf 'not json' > .github/docs-ledger.json
 RC=0; bash "$DETECT" --range main..HEAD --out "$SCRATCH/x.json" 2>/dev/null || RC=$?
 expect "T2-BADLEDGER exit 2" 2 "$RC"
 git checkout -q -- .github/docs-ledger.json
-mv .claude/skills/release-docs/surfaces.json "$SCRATCH/s.json"
+mv .github/docs-surfaces.json "$SCRATCH/s.json"
 RC=0; bash "$DETECT" --range main..HEAD --out "$SCRATCH/x.json" 2>/dev/null || RC=$?
 expect "T2-NOSURFACES exit 2" 2 "$RC"
-mv "$SCRATCH/s.json" .claude/skills/release-docs/surfaces.json
+mv "$SCRATCH/s.json" .github/docs-surfaces.json
 RC=0; (cd "$SCRATCH" && bash "$DETECT" --out x.json 2>/dev/null) || RC=$?
 expect "T2-NOREPO exit 2" 2 "$RC"
 RC=0; bash "$DETECT" --range main..HEAD 2>/dev/null || RC=$?

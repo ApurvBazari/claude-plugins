@@ -1,11 +1,12 @@
-"""surfaces.json: which files are doc surfaces, the page map, OG strings, retired identifiers."""
+""".github/docs-surfaces.json: which files are doc surfaces, the page map, OG strings, retired
+identifiers. It lives outside .claude/ because the unattended CI model must be able to write it."""
 import json
 import re
 import subprocess
 
 import repo
 
-SURFACES = ".claude/skills/release-docs/surfaces.json"
+SURFACES = ".github/docs-surfaces.json"
 LEDGER = ".github/docs-ledger.json"
 EXTRA_ALLOWED = (LEDGER, SURFACES, "site/og.png", "site/og-card.html")
 
@@ -66,7 +67,7 @@ def page_of(surf, name):
 
 
 def allowed_paths(ctx):
-    """The write fence: doc surfaces, the ledger, surfaces.json, the OG card and every plugin's
+    """The write fence: doc surfaces, the ledger, docs-surfaces.json, the OG card and every plugin's
     page path (so a generated page for a new plugin is allowed)."""
     surf = load(ctx)
     extra = list(EXTRA_ALLOWED) + [page_of(surf, p["name"]) for p in ctx.plugins()]
