@@ -46,9 +46,11 @@ def run(opts):
 
 
 def main(argv):
+    # Bad input exits 2, never with a traceback: exit 1 is the gate's "open obligations" code, so
+    # a crash must not masquerade as one. OSError/ValueError are the last line of defence.
     try:
         return run(parse(argv))
-    except repo.RepoError as e:
+    except (repo.RepoError, OSError, ValueError) as e:
         sys.stderr.write("docs-detect: %s\n%s\n" % (e, USAGE))
         return 2
 

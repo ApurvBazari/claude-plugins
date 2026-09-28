@@ -1,6 +1,7 @@
 """The committed coverage ledger (.github/docs-ledger.json): loading, anchors, dispositions,
 and the `intentional` allowances for deliberate historical mentions."""
 import json
+import os
 import re
 
 import repo
@@ -31,11 +32,12 @@ def slug(heading):
 
 
 def anchor_ok(ctx, target):
-    """'file#anchor' exists: the file holds id="anchor" (HTML) or a heading with that slug (md)."""
-    if "#" not in target:
+    """'file#anchor' exists: the file holds id="anchor" (HTML) or a heading with that slug (md).
+    A non-string target, or one naming a directory, is simply not found."""
+    if not isinstance(target, str) or "#" not in target:
         return False
     rel, anchor = target.split("#", 1)
-    if not anchor or not ctx.exists(rel):
+    if not anchor or not os.path.isfile(ctx.path(rel)):
         return False
     text = ctx.read(rel)
     if rel.endswith(".md"):
@@ -52,9 +54,11 @@ def entry_problem(ctx, decl):
     if disp not in DISPOSITIONS:
         return "unknown disposition %r" % disp
     if disp == "covered":
-        at = decl.get("at") or []
+        at = decl.get("at")
         if not at:
             return "covered needs a non-empty at list"
+        if not isinstance(at, list) or not all(isinstance(t, str) for t in at):
+            return "covered needs `at` to be a list of 'file#anchor' strings"
         bad = [t for t in at if not anchor_ok(ctx, t)]
         return "at target(s) not found: %s" % ", ".join(bad) if bad else None
     if not str(decl.get("reason") or "").strip():

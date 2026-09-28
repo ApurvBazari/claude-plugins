@@ -5,11 +5,18 @@ paragraph. `###` headings and blank lines end an entry; they are not entries the
 import hashlib
 import re
 
+import repo
+
 HEAD_RE = re.compile(r"^## \[?(\d+)\.(\d+)\.(\d+)\]?")
 
 
 def vtuple(v):
-    return tuple(int(x) for x in v.split("."))
+    """(major, minor, patch, ...) as ints; a non-numeric part (e.g. 1.0.0-beta.1) is bad input."""
+    try:
+        return tuple(int(x) for x in v.split("."))
+    except (AttributeError, ValueError):
+        raise repo.RepoError("unparseable version %r: expected numeric MAJOR.MINOR.PATCH"
+                             % (v,)) from None
 
 
 def parse(text):

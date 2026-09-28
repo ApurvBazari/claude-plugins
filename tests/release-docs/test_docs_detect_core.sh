@@ -43,6 +43,61 @@ detect
 expect "T2-LEDGER one entry still open" 1 "$(count changelog-entry)"
 case "$(field changelog-entry detail)" in *"not found"*) echo "ok: T2-LEDGER bad anchor named" ;; *) fail "T2-LEDGER detail: $(field changelog-entry detail)" ;; esac
 
+# Malformed `at` values are ledger mistakes: the entry stays open with a readable reason (exit 0 on
+# --out, 1 on --gate), never a crash — a traceback's exit 1 would read as "open obligations".
+# T2-DIRANCHOR: an `at` target naming a directory is simply not found.
+python3 - "$id0" "$id1" "$id2" <<'PY'
+import json, sys
+a, b, c = sys.argv[1:]
+json.dump({"schemaVersion": 1, "intentional": [], "entries": {
+    a: {"disposition": "covered", "at": ["site/alpha#skills"]},
+    b: {"disposition": "not-user-facing", "reason": "internal speed-up"},
+    c: {"disposition": "covered", "at": ["site/alpha/index.html#skills"]}}},
+    open(".github/docs-ledger.json", "w"))
+PY
+detect
+expect "T2-DIRANCHOR exit" 0 "$RC"
+expect "T2-DIRANCHOR no traceback" 0 "$(grep -c Traceback "$SCRATCH/stderr")"
+expect "T2-DIRANCHOR one entry open" 1 "$(count changelog-entry)"
+case "$(field changelog-entry detail)" in *"not found: site/alpha#skills"*) echo "ok: T2-DIRANCHOR target named" ;; *) fail "T2-DIRANCHOR detail: $(field changelog-entry detail)" ;; esac
+
+# T2-ATSTRING: `at` as a bare string is not iterated character by character.
+python3 - "$id0" "$id1" "$id2" <<'PY'
+import json, sys
+a, b, c = sys.argv[1:]
+json.dump({"schemaVersion": 1, "intentional": [], "entries": {
+    a: {"disposition": "covered", "at": "site/alpha/index.html#skills"},
+    b: {"disposition": "not-user-facing", "reason": "internal speed-up"},
+    c: {"disposition": "covered", "at": ["site/alpha/index.html#top"]}}},
+    open(".github/docs-ledger.json", "w"))
+PY
+detect
+expect "T2-ATSTRING exit" 0 "$RC"
+expect "T2-ATSTRING one entry open" 1 "$(count changelog-entry)"
+case "$(field changelog-entry detail)" in *"list of 'file#anchor' strings"*) echo "ok: T2-ATSTRING readable reason" ;; *) fail "T2-ATSTRING detail: $(field changelog-entry detail)" ;; esac
+
+# T2-ATNONSTR: a non-string `at` item and a non-list `at` object stay open, readably.
+python3 - "$id0" "$id1" "$id2" <<'PY'
+import json, sys
+a, b, c = sys.argv[1:]
+json.dump({"schemaVersion": 1, "intentional": [], "entries": {
+    a: {"disposition": "covered", "at": [5]},
+    b: {"disposition": "not-user-facing", "reason": "internal speed-up"},
+    c: {"disposition": "covered", "at": {"file": "site/alpha/index.html#top"}}}},
+    open(".github/docs-ledger.json", "w"))
+PY
+detect
+expect "T2-ATNONSTR exit" 0 "$RC"
+expect "T2-ATNONSTR no traceback" 0 "$(grep -c Traceback "$SCRATCH/stderr")"
+expect "T2-ATNONSTR two entries open" 2 "$(count changelog-entry)"
+case "$(field changelog-entry detail 0)|$(field changelog-entry detail 1)" in
+  *"list of 'file#anchor' strings"*"|"*"list of 'file#anchor' strings"*) echo "ok: T2-ATNONSTR readable reasons" ;;
+  *) fail "T2-ATNONSTR details: $(field changelog-entry detail 0) | $(field changelog-entry detail 1)" ;;
+esac
+RC=0; bash "$DETECT" --range main..HEAD --gate >/dev/null 2>"$SCRATCH/stderr" || RC=$?
+expect "T2-ATNONSTR gate reports open (exit 1)" 1 "$RC"
+expect "T2-ATNONSTR gate no traceback" 0 "$(grep -c Traceback "$SCRATCH/stderr")"
+
 # T2-REASON: not-user-facing / waived without a reason stay open; waived with a reason resolves.
 python3 - "$id0" "$id1" "$id2" <<'PY'
 import json, sys
@@ -127,5 +182,16 @@ RC=0; (cd "$SCRATCH" && bash "$DETECT" --out x.json 2>/dev/null) || RC=$?
 expect "T2-NOREPO exit 2" 2 "$RC"
 RC=0; bash "$DETECT" --range main..HEAD 2>/dev/null || RC=$?
 expect "T2-NOMODE exit 2" 2 "$RC"
+RC=0; bash "$DETECT" --range main..HEAD --out "$SCRATCH/no/such/dir/x.json" 2>"$SCRATCH/err" || RC=$?
+expect "T2-OUTDIR exit 2" 2 "$RC"
+expect "T2-OUTDIR no traceback" 0 "$(grep -c Traceback "$SCRATCH/err")"
+
+# T2-PRERELEASE: a base plugin.json at a prerelease version is bad input: exit 2 naming it.
+fx_repo prerelease
+bump 1.1.0-beta.1 '- Beta.'
+RC=0; bash "$DETECT" --range HEAD..HEAD --out "$SCRATCH/x.json" 2>"$SCRATCH/err" || RC=$?
+expect "T2-PRERELEASE exit 2" 2 "$RC"
+expect "T2-PRERELEASE no traceback" 0 "$(grep -c Traceback "$SCRATCH/err")"
+case "$(cat "$SCRATCH/err")" in *"1.1.0-beta.1"*) echo "ok: T2-PRERELEASE version named" ;; *) fail "T2-PRERELEASE stderr: $(cat "$SCRATCH/err")" ;; esac
 
 exit "$failures"
