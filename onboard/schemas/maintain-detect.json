@@ -1,0 +1,333 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/ApurvBazari/claude-plugins/onboard/schemas/maintain-detect.json",
+  "title": "onboard maintain — detect report",
+  "description": "Written by scripts/maintain-detect.sh (one writer). Either a report of the tooling drift a git range caused, each item labelled apply / defer / inform by a fixed per-kind table, or an error object (exit 2). Spec: onboard maintain entry § 6.1, § 6.5.",
+  "oneOf": [
+    { "$ref": "#/definitions/report" },
+    { "$ref": "#/definitions/error" }
+  ],
+  "definitions": {
+    "error": {
+      "type": "object",
+      "required": ["schemaVersion", "error"],
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "error": {
+          "type": "object",
+          "required": ["code", "message"],
+          "additionalProperties": false,
+          "properties": {
+            "code": { "enum": ["bad-args", "out-dir-missing", "not-a-repo", "bad-ref", "missing-dependency", "internal"] },
+            "message": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "report": {
+      "type": "object",
+      "required": ["schemaVersion", "range", "project", "items", "truncated"],
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "range": {
+          "type": "object",
+          "required": ["baseRef", "base", "head"],
+          "additionalProperties": false,
+          "properties": {
+            "baseRef": { "type": "string", "minLength": 1 },
+            "base": { "type": "string", "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$" },
+            "head": { "const": "worktree" }
+          }
+        },
+        "project": {
+          "type": "object",
+          "required": ["onboarded", "metaVersion"],
+          "additionalProperties": false,
+          "properties": {
+            "onboarded": { "type": "boolean" },
+            "metaVersion": { "type": ["string", "null"] }
+          }
+        },
+        "items": { "type": "array", "items": { "$ref": "#/definitions/item" } },
+        "truncated": {
+          "type": "object",
+          "required": ["recheck-line"],
+          "additionalProperties": false,
+          "properties": { "recheck-line": { "type": "integer", "minimum": 0 } }
+        }
+      }
+    },
+    "id": { "type": "string", "pattern": "^D[1-9][0-9]*$" },
+    "ref": { "type": "string", "pattern": "^[^/].*:[1-9][0-9]*$" },
+    "path": { "type": "string", "minLength": 1, "pattern": "^[^/]" },
+    "hint": { "type": "string", "minLength": 1 },
+    "update": { "const": "/onboard:update" },
+    "item": {
+      "oneOf": [
+        { "$ref": "#/definitions/script-added" },
+        { "$ref": "#/definitions/dependency-added" },
+        { "$ref": "#/definitions/recheck-line" },
+        { "$ref": "#/definitions/dependency-removed" },
+        { "$ref": "#/definitions/script-removed" },
+        { "$ref": "#/definitions/path-mention-broken" },
+        { "$ref": "#/definitions/manifest-changed" },
+        { "$ref": "#/definitions/config-changed" },
+        { "$ref": "#/definitions/directory-new" },
+        { "$ref": "#/definitions/reference-broken" },
+        { "$ref": "#/definitions/lessons-large" },
+        { "$ref": "#/definitions/language-new" },
+        { "$ref": "#/definitions/signal-mcp" },
+        { "$ref": "#/definitions/signal-builtin-skill" },
+        { "$ref": "#/definitions/research-stale" },
+        { "$ref": "#/definitions/not-onboarded" }
+      ]
+    },
+    "script-added": {
+      "type": "object",
+      "required": ["id", "kind", "name", "run", "file", "package", "disposition"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/definitions/id" },
+        "kind": { "const": "script-added" },
+        "name": { "type": "string", "minLength": 1 },
+        "run": { "type": "string" },
+        "file": { "$ref": "#/definitions/path" },
+        "package": { "type": ["string", "null"] },
+        "disposition": { "const": "apply" }
+      }
+    },
+    "dependency-added": {
+      "type": "object",
+      "required": ["id", "kind", "name", "version", "file", "disposition"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/definitions/id" },
+        "kind": { "const": "dependency-added" },
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string" },
+        "file": { "$ref": "#/definitions/path" },
+        "disposition": { "const": "inform" }
+      }
+    },
+    "recheck-line": {
+      "type": "object",
+      "required": ["id", "kind", "line", "matched", "disposition"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/definitions/id" },
+        "kind": { "const": "recheck-line" },
+        "line": { "$ref": "#/definitions/ref" },
+        "matched": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["by", "value"],
+            "additionalProperties": false,
+            "properties": {
+              "by": { "enum": ["path", "name", "stem"] },
+              "value": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "disposition": { "const": "inform" }
+      }
+    },
+    "dependency-removed": {
+      "type": "object",
+      "required": ["id", "kind", "name", "file", "line", "alsoAt", "disposition", "reason", "hint"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/definitions/id" },
+        "kind": { "const": "dependency-removed" },
+        "name": { "type": "string", "minLength": 1 },
+        "file": { "$ref": "#/definitions/path" },
+        "line": { "$ref": "#/definitions/ref" },
+        "alsoAt": { "type": "array", "items": { "$ref": "#/definitions/ref" } },
+        "disposition": { "const": "defer" },
+        "reason": { "const": "stale-line" },
+        "hint": { "$ref": "#/definitions/hint" }
+      }
+    },
+    "script-removed": {
+      "type": "object",
+      "required": ["id", "kind", "name", "file", "package", "line", "alsoAt", "disposition", "reason", "hint"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/definitions/id" },
+        "kind": { "const": "script-removed" },
+        "name": { "type": "string", "minLength": 1 },
+        "file": { "$ref": "#/definitions/path" },
+        "package": { "type": ["string", "null"] },
+        "line": { "$ref": "#/definitions/ref" },
+        "alsoAt": { "type": "array", "items": { "$ref": "#/definitions/ref" } },
+        "disposition": { "const": "defer" },
+        "reason": { "const": "stale-line" },
+        "hint": { "$ref": "#/definitions/hint" }
+      }
+    },
+    "path-mention-broken": {
+      "type": "object",
+      "required": ["id", "kind", "line", "mention", "path", "disposition", "reason", "hint"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/definitions/id" },
+        "kind": { "const": "path-mention-broken" },
+        "line": { "$ref": "#/definitions/ref" },
+        "mention": { "type": "string", "minLength": 1 },
+        "path": { "$ref": "#/definitions/path" },
+        "renamedTo": { "$ref": "#/definitions/path" },
+        "disposition": { "const": "defer" },
+        "reason": { "const": "stale-reference" },
+        "hint": { "$ref": "#/definitions/hint" }
+      }
+    },
+    "manifest-changed": {
+      "type": "object",
+      "required": ["id", "kind", "file", "disposition", "reason", "command"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/definitions/id" },
+        "kind": { "const": "manifest-changed" },
+        "file": { "$ref": "#/definitions/path" },
+        "disposition": { "const": "defer" },
+        "reason": { "const": "unparsed-ecosystem" },
+        "command": { "$ref": "#/definitions/update" }
+      }
+    },
+    "config-changed": {
+      "type": "object",
+      "required": ["id", "kind", "file", "disposition", "reason", "command"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/definitions/id" },
+        "kind": { "const": "config-changed" },
+        "file": { "$ref": "#/definitions/path" },
+        "disposition": { "const": "defer" },
+        "reason": { "const": "needs-review" },
+        "command": { "$ref": "#/definitions/update" }
+      }
+    },
+    "directory-new": {
+      "type": "object",
+      "required": ["id", "kind", "path", "count", "disposition", "reason", "command"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/definitions/id" },
+        "kind": { "const": "directory-new" },
+        "path": { "$ref": "#/definitions/path" },
+        "count": { "type": "integer", "minimum": 5 },
+        "disposition": { "const": "defer" },
+        "reason": { "const": "needs-prompt" },
+        "command": { "$ref": "#/definitions/update" }
+      }
+    },
+    "reference-broken": {
+      "type": "object",
+      "required": ["id", "kind", "file", "disposition", "reason", "hint"],
+      "additionalProperties": false,
+      "oneOf": [ { "required": ["glob"] }, { "required": ["path"] } ],
+      "properties": {
+        "id": { "$ref": "#/definitions/id" },
+        "kind": { "const": "reference-broken" },
+        "file": { "$ref": "#/definitions/path" },
+        "glob": { "type": "string", "minLength": 1 },
+        "path": { "$ref": "#/definitions/path" },
+        "renamedTo": { "$ref": "#/definitions/path" },
+        "disposition": { "const": "defer" },
+        "reason": { "const": "stale-reference" },
+        "hint": { "$ref": "#/definitions/hint" }
+      }
+    },
+    "lessons-large": {
+      "type": "object",
+      "required": ["id", "kind", "file", "lines", "threshold", "disposition", "reason", "hint"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/definitions/id" },
+        "kind": { "const": "lessons-large" },
+        "file": { "const": ".claude/rules/lessons.md" },
+        "lines": { "type": "integer", "minimum": 1 },
+        "threshold": { "type": "integer", "minimum": 1 },
+        "disposition": { "const": "defer" },
+        "reason": { "const": "needs-review" },
+        "hint": { "$ref": "#/definitions/hint" }
+      }
+    },
+    "language-new": {
+      "type": "object",
+      "required": ["id", "kind", "name", "count", "disposition", "reason", "command"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/definitions/id" },
+        "kind": { "const": "language-new" },
+        "name": { "enum": ["typescript", "go", "rust", "c-cpp", "csharp", "java", "kotlin", "lua", "php", "python", "ruby", "swift"] },
+        "count": { "type": "integer", "minimum": 1 },
+        "disposition": { "const": "defer" },
+        "reason": { "const": "needs-install" },
+        "command": { "$ref": "#/definitions/update" }
+      }
+    },
+    "signal-mcp": {
+      "type": "object",
+      "required": ["id", "kind", "name", "signal", "disposition", "reason", "command"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/definitions/id" },
+        "kind": { "const": "signal-mcp" },
+        "name": { "enum": ["github", "vercel", "prisma", "supabase", "chrome-devtools-mcp"] },
+        "signal": { "type": "string", "minLength": 1 },
+        "disposition": { "const": "defer" },
+        "reason": { "const": "needs-prompt" },
+        "command": { "$ref": "#/definitions/update" }
+      }
+    },
+    "signal-builtin-skill": {
+      "type": "object",
+      "required": ["id", "kind", "name", "dependency", "disposition", "reason", "command"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/definitions/id" },
+        "kind": { "const": "signal-builtin-skill" },
+        "name": { "type": "string", "pattern": "^/[a-z0-9-]+$" },
+        "dependency": { "type": "string", "minLength": 1 },
+        "disposition": { "const": "defer" },
+        "reason": { "const": "needs-prompt" },
+        "command": { "$ref": "#/definitions/update" }
+      }
+    },
+    "research-stale": {
+      "type": "object",
+      "required": ["id", "kind", "dimensions", "escalatedToFull", "disposition", "reason", "command"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/definitions/id" },
+        "kind": { "const": "research-stale" },
+        "dimensions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["architecture", "data-model", "testing", "security", "conventions", "domain", "dependencies"] }
+        },
+        "escalatedToFull": { "type": "boolean" },
+        "disposition": { "const": "defer" },
+        "reason": { "const": "needs-research" },
+        "command": { "$ref": "#/definitions/update" }
+      }
+    },
+    "not-onboarded": {
+      "type": "object",
+      "required": ["id", "kind", "disposition", "reason", "command"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/definitions/id" },
+        "kind": { "const": "not-onboarded" },
+        "disposition": { "const": "defer" },
+        "reason": { "const": "not-onboarded" },
+        "command": { "const": "/onboard:start" }
+      }
+    }
+  }
+}

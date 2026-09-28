@@ -1,5 +1,18 @@
 # Changelog
 
+## 3.2.0 — 2026-09-27
+
+### Added — the maintain entry (for orchestrators)
+- **`scripts/maintain-detect.sh`** — a no-model report of the tooling drift a git range caused (working tree vs a base ref, untracked included, tooling paths excluded). Each item is labelled `apply`, `defer` or `inform` by a fixed per-kind table. It covers new scripts and dependencies, tooling lines that mention a changed path or dependency (`recheck-line`, ranked and capped at 8), removed scripts or dependencies still named in tooling, backticked paths the diff deleted or renamed (resolved walking up from each nested `CLAUDE.md`), broken rule `paths:` globs and hook scripts, new directories, languages, MCP and built-in-skill signals, config and non-JS manifest changes, stale research, and an oversized `lessons.md`. Read-only query modes (`--mentioned`, `--lesson-file`, `--lesson-present`) share its predicates with the apply step.
+- **`onboard:maintain`** (internal, `user-invocable: false`) — the non-interactive apply step. It writes each `apply` script line in the target section's own style (list, fenced block, table row or inline), checks the line with the same predicate detect uses, and removes it if unrecognised. It writes owner-approved lessons into `.claude/rules/lessons*.md` or a marked section, and returns `maintain-result.json`.
+- **`scripts/maintain-guard.sh`** — restores or reports any change outside `CLAUDE.md` / `.claude/rules/` during apply. **`scripts/maintain-write.sh`** — writes lesson entries and result entries, because `.claude/` is a Claude Code protected path the model's own tools may not write unattended.
+- **Schemas** `maintain-detect.json`, `maintain-lessons.json`, `maintain-result.json`, with example and reject fixtures.
+
+### Tests
+- Ten new belts under `tests/onboard/test_maintain_*.sh`, including a shape corpus (11 real `CLAUDE.md` shapes) and a range corpus (six real commit ranges, labels audited against git). There is also a local headless harness, `tests/onboard/maintain-apply/run.sh`, for the model-driven apply; it is not a CI belt.
+
+Nothing existing changes: `start`, `update`, `evolve`, `generate`, the FileChanged `detect-*` hooks and `audit-tooling.sh` are untouched.
+
 ## 3.1.3 — 2026-09-15
 
 ### Changed

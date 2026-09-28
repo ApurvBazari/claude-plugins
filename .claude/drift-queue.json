@@ -417,6 +417,24 @@
         "merit-3 (high) merit panel: architecture, 3/3 judges, unchanged"
       ],
       "suggestedFix": "Triage as a Wave-4 batch. The three merit findings are structural judgements about the release's size and shape and want a scoping decision, not a patch; P3-C/P3-D/P3-L cluster on the capability manifest read and its CI coverage; P3-G/P3-H/P3-M/P3-X cluster on the same guard-that-cannot-fail class already queued as SP11-guard-hardening."
+    },
+    {
+      "id": "MAINT-1",
+      "title": "Converge /onboard:evolve and the FileChanged detect-* hooks onto maintain-detect.sh",
+      "source": "onboard maintain entry spec § 14 (3.2.0)",
+      "raisedAt": "2026-09-27",
+      "status": "deferred",
+      "rationale": "Two detectors with different semantics now coexist: the hooks log every package.json key to onboard-drift.json, maintain-detect reports only diff-caused drift. A dependency can reach tooling twice (maintain's lesson flow, then a later /onboard:evolve).",
+      "resolution": "A future onboard minor rewires evolve and the hooks onto maintain-detect.sh; the maintain entry itself shipped without touching them (spec § 2)."
+    },
+    {
+      "id": "MAINT-2",
+      "title": "/onboard:check warns on rule frontmatter fields Claude Code ignores (globs:)",
+      "source": "onboard maintain entry spec § 14 (2026-09-27 review, D31)",
+      "raisedAt": "2026-09-27",
+      "status": "deferred",
+      "rationale": "Claude Code reads only paths: from a rule; a rule scoped with globs: is silently loaded in every session (villasa: 7 of 8 rules). Not a maintain concern — not diff-caused (D2).",
+      "resolution": "Add a warning to /onboard:check in a later onboard release."
     }
   ]
 }

@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/ApurvBazari/claude-plugins/onboard/schemas/maintain-result.json",
+  "title": "onboard maintain — apply result",
+  "description": "Written by onboard:maintain (one writer). applied / deferred / skipped per item or lesson id; filesWritten is what the caller stages for its tooling commit; preDirty is the subset that already had uncommitted changes before apply. inform items never appear. Spec § 6.3, § 6.4.",
+  "type": "object",
+  "required": ["schemaVersion", "applied", "deferred", "skipped", "filesWritten", "preDirty"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "applied": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "file", "summary"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "file": { "type": "string", "minLength": 1 },
+          "summary": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "deferred": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "reason"],
+        "anyOf": [ { "required": ["command"] }, { "required": ["hint"] } ],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "reason": {
+            "enum": ["needs-prompt", "needs-install", "needs-research", "needs-review", "stale-line",
+                     "stale-reference", "unrecognized-style", "unparsed-ecosystem", "no-matching-section",
+                     "possible-duplicate", "target-outside-tooling", "not-onboarded", "bad-input",
+                     "guard-violation"]
+          },
+          "command": { "type": "string", "pattern": "^/onboard:[a-z]+$" },
+          "hint": { "type": "string", "minLength": 1 },
+          "summary": { "type": "string" },
+          "existing": { "type": "string", "pattern": "^.+:[1-9][0-9]*$" },
+          "kind": { "type": "string" },
+          "name": { "type": "string" },
+          "file": { "type": "string" },
+          "line": { "type": "string" },
+          "alsoAt": { "type": "array", "items": { "type": "string" } },
+          "path": { "type": "string" },
+          "mention": { "type": "string" },
+          "renamedTo": { "type": "string" },
+          "glob": { "type": "string" }
+        }
+      }
+    },
+    "skipped": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "reason"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "reason": { "const": "already-present" },
+          "file": { "type": "string" }
+        }
+      }
+    },
+    "filesWritten": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "preDirty": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+  }
+}

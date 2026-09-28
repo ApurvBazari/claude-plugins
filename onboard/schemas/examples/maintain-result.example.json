@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "applied": [ { "id": "D3", "file": "apps/crm/CLAUDE.md", "summary": "`pnpm --filter @repo/crm price:check` under ## Commands" } ],
+  "deferred": [
+    { "id": "D7", "reason": "needs-install", "command": "/onboard:update", "kind": "language-new", "name": "rust",
+      "summary": "rust files appeared" },
+    { "id": "L-9c01", "reason": "possible-duplicate", "hint": "compare with the existing line",
+      "existing": "CLAUDE.md:152", "summary": "near-duplicate of an existing rule" }
+  ],
+  "skipped": [ { "id": "L-7f3a", "reason": "already-present", "file": ".claude/rules/lessons-crm-lib.md" } ],
+  "filesWritten": ["apps/crm/CLAUDE.md"],
+  "preDirty": []
+}

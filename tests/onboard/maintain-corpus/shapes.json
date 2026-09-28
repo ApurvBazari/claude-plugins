@@ -1,0 +1,30 @@
+{
+  "script": { "name": "price:check", "run": "tsx scripts/price-check.ts" },
+  "shapes": {
+    "template": { "package": "package.json", "outcome": "insert", "file": "CLAUDE.md",
+      "line": "^- `npm run price:check` — tsx scripts/price-check\\.ts$",
+      "after": "^- `npm test` — Run the unit tests$" },
+    "inline": { "package": "package.json", "outcome": "replace", "file": "CLAUDE.md",
+      "line": "^`npm run dev` \\| `npm test` \\| `npm run lint` \\| `npm run price:check`$" },
+    "build-commands": { "package": "package.json", "outcome": "insert", "file": "CLAUDE.md",
+      "line": "^- `npm run price:check`: tsx scripts/price-check\\.ts$",
+      "after": "^- `npm run preview`: Preview the build$" },
+    "essential": { "package": "package.json", "outcome": "insert", "file": "CLAUDE.md",
+      "line": "^- `yarn price:check` - tsx scripts/price-check\\.ts$",
+      "after": "^- `yarn test` - Run tests$" },
+    "development-commands": { "package": "package.json", "outcome": "insert", "file": "CLAUDE.md",
+      "line": "^bun run price:check$", "after": "^bun test$" },
+    "fenced-comments": { "package": "apps/crm/package.json", "outcome": "insert", "file": "apps/crm/CLAUDE.md",
+      "line": "^pnpm --filter @repo/crm price:check +# tsx scripts/price-check\\.ts$",
+      "after": "^pnpm --filter @repo/crm test:watch +# Vitest watch mode$" },
+    "table": { "package": "package.json", "outcome": "insert", "file": "CLAUDE.md",
+      "line": "^\\| `npm run price:check` \\| tsx scripts/price-check\\.ts \\|$",
+      "after": "^\\| `npm test` \\| Run the tests \\|$" },
+    "bare-table": { "package": "package.json", "outcome": "deferred", "reason": "unrecognized-style" },
+    "nested-no-commands": { "package": "apps/web/package.json", "outcome": "insert", "file": "CLAUDE.md",
+      "line": "^- `pnpm --filter @repo/web price:check` — tsx scripts/price-check\\.ts$",
+      "after": "^- `pnpm --filter @repo/api dev` — Start the API$" },
+    "no-section": { "package": "package.json", "outcome": "deferred", "reason": "no-matching-section" },
+    "prose-only": { "package": "package.json", "outcome": "deferred", "reason": "no-matching-section" }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "villa",
+  "private": true,
+  "scripts": {
+    "dev": "turbo dev",
+    "lint": "turbo lint"
+  }
+}
