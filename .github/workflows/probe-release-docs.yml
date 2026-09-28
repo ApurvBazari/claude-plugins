@@ -1,37 +1,41 @@
 name: Probe release-docs CI
 
+# Throwaway probe for the release-docs plan. Runs on a push to the probe branch, NOT a
+# pull_request: on PR events claude-code-action restores .claude/ and CLAUDE.md from the base
+# branch, and the real bot's sync will run outside a PR context.
+
 on:
-  pull_request:
-    types: [opened, synchronize]
-    branches: [develop]
+  push:
+    branches: [probe/release-docs-ci]
 
 permissions:
   contents: read
-  pull-requests: write
-  id-token: write
 
 jobs:
   probe:
-    if: github.head_ref == 'probe/release-docs-ci'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: V2 tools present
-        run: |
-          for c in google-chrome google-chrome-stable chromium node python3 perl magick convert gh; do
-            printf '%-22s %s\n' "$c" "$(command -v "$c" || echo MISSING)"
-          done
-          google-chrome --version || true
-      - name: V2 headless render
-        run: |
-          (google-chrome --headless=new --disable-gpu --no-sandbox --no-first-run \
-            --user-data-dir="$RUNNER_TEMP/p" --virtual-time-budget=3000 --window-size=1400,900 \
-            --dump-dom "file://$PWD/site/onboard/index.html" > "$RUNNER_TEMP/dom.html" 2>/dev/null &)
-          for _ in $(seq 1 40); do grep -q 'id="maintain"' "$RUNNER_TEMP/dom.html" 2>/dev/null && break; sleep 0.5; done
-          pkill -f "$RUNNER_TEMP/p" || true
-          echo "dump-dom found maintain section: $(grep -c 'id="maintain"' "$RUNNER_TEMP/dom.html" || true)"
-      - id: opus
+        with:
+          persist-credentials: false
+      - id: opus_plain
+        uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1.0.231
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ github.token }}
+          claude_args: |
+            --model claude-opus-5-5
+            --max-turns 2
+          prompt: |
+            Reply with the single word OK.
+      - name: Keep the V3 execution file
+        if: always()
+        env:
+          F: ${{ steps.opus_plain.outputs.execution_file }}
+        run: cp "$F" "$RUNNER_TEMP/opus-plain.json" 2>/dev/null || echo "no execution file"
+      - id: opus_probe
+        if: always()
         uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1.0.231
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -43,34 +47,30 @@ jobs:
             --allowedTools "Skill,Read,Write,Agent,Task,Bash(echo:*)"
           prompt: |
             /probe-ci
-      - id: sonnet
-        if: always()
-        uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1.0.231
-        with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          github_token: ${{ github.token }}
-          claude_args: |
-            --model claude-sonnet-5
-            --max-turns 2
-          prompt: |
-            Reply with the single word OK.
-      - name: V1 + V3 results
+      - name: Keep the V1 execution file
         if: always()
         env:
-          OPUS_FILE: ${{ steps.opus.outputs.execution_file }}
-          SONNET_FILE: ${{ steps.sonnet.outputs.execution_file }}
+          F: ${{ steps.opus_probe.outputs.execution_file }}
+        run: cp "$F" "$RUNNER_TEMP/opus-probe.json" 2>/dev/null || echo "no execution file"
+      - name: V1 + V3 results
+        if: always()
         run: |
           echo "--- probe-out.txt"; cat probe-out.txt || echo "probe-out.txt MISSING"
           echo "--- protected-path files on disk"; ls -la .claude/probe-write.txt .claude/probe-redirect.txt .github/probe-write.txt 2>&1 || true
           echo "--- git state after the action (did it commit?)"; git status --short; git log -1 --oneline
-          for f in "$OPUS_FILE" "$SONNET_FILE"; do
+          for f in "$RUNNER_TEMP/opus-plain.json" "$RUNNER_TEMP/opus-probe.json"; do
+            echo "--- $f"
             [ -f "$f" ] || { echo "no execution file: $f"; continue; }
             python3 - "$f" <<'PY'
           import json, sys
           msgs = json.load(open(sys.argv[1]))
           init = next((m for m in msgs if m.get("type") == "system" and m.get("subtype") == "init"), {})
           res = next((m for m in reversed(msgs) if m.get("type") == "result"), {})
-          print("model:", init.get("model"), "| is_error:", res.get("is_error"), "| turns:", res.get("num_turns"))
-          print("permission_mode:", init.get("permissionMode"), "| denials:", json.dumps(res.get("permission_denials"))[:1500])
+          print("model:", init.get("model"), "| is_error:", res.get("is_error"), "| turns:", res.get("num_turns"),
+                "| cost:", res.get("total_cost_usd"), "| usage:", list((res.get("modelUsage") or {}).keys()))
+          print("permission_mode:", init.get("permissionMode"), "| tools:", init.get("tools"))
+          print("agents:", init.get("agents"), "| skills:", init.get("skills"), "| slash:", init.get("slash_commands"))
+          print("result:", str(res.get("result"))[:600])
+          print("denials:", json.dumps(res.get("permission_denials"))[:1500])
           PY
           done
