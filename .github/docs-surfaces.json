@@ -107,13 +107,16 @@
     "claude-onboard/skills/generation/references/skills-guide.md",
     "claude-onboard/skills/wizard/SKILL.md",
     "claude-onboard/skills/wizard/references/question-bank.md",
+    "collect-git-context.sh",
     "concepts[]",
     "greenfield-drift.json",
     "greenfield-meta.json",
     "headlessMode",
     "install-mcp-plugins.sh",
     "scripts/install-mcp-plugins.sh",
+    "test-notification.sh",
     "test_sp5_invariants.sh",
+    "trigger-phrases",
     "wizardAnswers.model"
   ]
 }

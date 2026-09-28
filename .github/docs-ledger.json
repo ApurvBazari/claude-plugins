@@ -19,6 +19,12 @@
       "token": ".claude/greenfield-drift.json",
       "context": "or the legacy .claude/greenfield-drift.json",
       "reason": "the generated SessionStart hook still checks the legacy drift-log name, for projects onboarded before the rename"
+    },
+    {
+      "file": "handoff/CONVENTIONS.md",
+      "token": "trigger-phrases",
+      "context": "and no `trigger-phrases` setting",
+      "reason": "states that the removed trigger-phrases setting does not exist (it was never read by any code)"
     }
   ]
 }

@@ -8,6 +8,7 @@ import repo
 
 LEDGER = ".github/docs-ledger.json"
 DISPOSITIONS = ("covered", "not-user-facing", "waived")
+INTENTIONAL_KEYS = ("file", "token", "context", "reason")
 EMPTY = {"schemaVersion": 1, "entries": {}, "intentional": []}
 
 
@@ -22,6 +23,12 @@ def load(ctx):
             or not isinstance(d.get("entries"), dict) or not isinstance(d.get("intentional"), list):
         raise repo.RepoError("%s needs schemaVersion 1, an entries object and an intentional list"
                              % LEDGER)
+    for i in d["intentional"]:
+        if not isinstance(i, dict) or not all(isinstance(i.get(k), str) and i[k].strip()
+                                              for k in INTENTIONAL_KEYS):
+            raise repo.RepoError("%s: every intentional entry must be an object whose %s are "
+                                 "non-empty strings, got %s"
+                                 % (LEDGER, "/".join(INTENTIONAL_KEYS), json.dumps(i)[:120]))
     return d
 
 

@@ -39,6 +39,12 @@ def load(ctx):
                      ("og", dict), ("retired", list)):
         if not isinstance(d.get(key), typ):
             raise repo.RepoError("%s: %r must be a %s" % (SURFACES, key, typ.__name__))
+    # The unattended model appends to retired[]: a non-string would crash the matcher, and an
+    # empty or blank one would match every line of every surface.
+    bad = [t for t in d["retired"] if not isinstance(t, str) or not t.strip()]
+    if bad:
+        raise repo.RepoError("%s: every 'retired' entry must be a non-empty string, got %s"
+                             % (SURFACES, ", ".join(json.dumps(t) for t in bad)))
     return d
 
 

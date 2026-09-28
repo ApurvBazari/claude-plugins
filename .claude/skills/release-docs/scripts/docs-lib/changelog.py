@@ -19,12 +19,13 @@ def vtuple(v):
                              % (v,)) from None
 
 
-def parse(text):
-    versions, cur, buf, state = {}, None, [], {"kind": None}
+def _walk(text):
+    """{version: [(entry text, the `###` heading it sits under, or None)]}, in file order."""
+    versions, cur, buf, state = {}, None, [], {"kind": None, "section": None}
 
     def flush():
         if cur is not None and buf:
-            versions[cur].append(" ".join(s for s in buf if s))
+            versions[cur].append((" ".join(s for s in buf if s), state["section"]))
         del buf[:]
         state["kind"] = None
 
@@ -34,6 +35,7 @@ def parse(text):
             flush()
             cur = ".".join(m.groups())
             versions.setdefault(cur, [])
+            state["section"] = None
             continue
         if line.startswith("# ") or line.startswith("## "):
             flush()
@@ -43,6 +45,8 @@ def parse(text):
             continue
         if not line.strip() or line.startswith("#"):
             flush()
+            if re.match(r"#{3,}\s", line):
+                state["section"] = line.lstrip("#").strip()
         elif re.match(r"[-*] ", line):
             flush()
             buf.append(line[2:].strip())
@@ -59,6 +63,12 @@ def parse(text):
     return versions
 
 
+def parse(text):
+    """{version: [entry text]}. The section heading is deliberately not part of an entry: ids hash the
+    text alone, so moving a bullet between `###` sections never reopens it."""
+    return {ver: [t for t, _section in entries] for ver, entries in _walk(text).items()}
+
+
 def entry_id(plugin, version, text):
     norm = " ".join(text.split())
     return "%s@%s#%s" % (plugin, version, hashlib.sha1(norm.encode("utf-8")).hexdigest()[:8])
@@ -70,4 +80,14 @@ def new_entries(plugin, text, base_version):
     for ver, entries in parse(text).items():
         if base_version is None or vtuple(ver) > vtuple(base_version):
             out.extend((entry_id(plugin, ver, e), ver, e) for e in entries)
+    return out
+
+
+def new_sectioned(plugin, text, base_version):
+    """new_entries, each with the `###` heading it sits under (None outside one). For stale-mention
+    only, where a verbless bullet under `### Removed` is a retirement; the ids are new_entries' own."""
+    out = []
+    for ver, entries in _walk(text).items():
+        if base_version is None or vtuple(ver) > vtuple(base_version):
+            out.extend((entry_id(plugin, ver, e), ver, e, s) for e, s in entries)
     return out
