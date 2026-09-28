@@ -74,6 +74,11 @@ def _page(ctx, p, page, sk, ag):
 def _tree(p, claude, sk, ag):
     obs, start = [], claude.find("──→ %s/" % p["dir"])
     if start < 0:
+        # A new plugin is exactly this case, and nothing else catches it (doc-audit's
+        # PLUGIN_NOT_IN_ROOT reads only the root README).
+        if sk or ag:
+            obs.append(ob("inventory-row", p["name"], "CLAUDE.md",
+                          "root CLAUDE.md tree has no entry for %s" % p["name"]))
         return obs
     end = claude.find("──→ ", start + 4)
     block = claude[start:end if end > 0 else len(claude)]

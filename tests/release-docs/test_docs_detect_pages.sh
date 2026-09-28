@@ -61,7 +61,7 @@ python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d
 detect
 expect "T3-OG missing entry" 1 "$(count og-copy site/index.html)"
 
-# T3-MISSING: a new marketplace plugin with no page and no landing card.
+# T3-MISSING: a new marketplace plugin with no page, no landing card and no root CLAUDE.md tree entry.
 fx_repo missing
 python3 - <<'PY'
 import json
@@ -70,8 +70,11 @@ d["plugins"].append({"name": "beta", "source": "./beta", "version": "0.1.0", "de
 json.dump(d, open(".claude-plugin/marketplace.json", "w"))
 PY
 put beta/.claude-plugin/plugin.json '{"name":"beta","version":"0.1.0","description":"Beta."}'
+put beta/skills/go/SKILL.md '---' 'name: go' 'description: Go.' '---'
 detect
 expect "T3-MISSING page + card" 2 "$(count page-missing)"
+expect "T3-MISSING no root CLAUDE.md tree entry" 1 "$(count inventory-row CLAUDE.md)"
+expect "T3-MISSING tree detail" "root CLAUDE.md tree has no entry for beta" "$(field inventory-row detail)"
 
 # T3-COUNT: a new skill and a new agent make the stats wrong; a new user skill is missing from the table.
 fx_repo count
@@ -123,6 +126,56 @@ mkdir -p site/gone && fx_page 0.1.0 > site/gone/index.html
 detect
 expect "T3-REMOVED-PLUGIN card + page flagged" 2 \
   "$(python3 -c "import json; print(sum(1 for o in json.load(open('$OUT'))['obligations'] if o['kind']=='stale-mention' and o.get('token')=='gone'))")"
+
+# T3-AUDIT-*: doc-audit's findings (the real audit-docs.sh, copied in) arrive as inventory-row
+# obligations, and a failed audit is never read as "no findings".
+fx_audit() { # <name> — fx_repo plus the real audit-docs.sh and a root README it passes
+  fx_repo "$1"
+  mkdir -p .claude/skills/doc-audit/scripts
+  cp "$ROOT/.claude/skills/doc-audit/scripts/audit-docs.sh" .claude/skills/doc-audit/scripts/
+  put README.md '# fx' '' 'The alpha plugin.' '' '## Commands' '' '- `/alpha:run`'
+}
+
+# T3-AUDIT-CLEAN: the audit fixture itself is clean, so the counts below belong to their drift.
+fx_audit auditclean
+detect
+expect "T3-AUDIT-CLEAN exit" 0 "$RC"
+expect "T3-AUDIT-CLEAN no inventory-row" 0 "$(count inventory-row)"
+
+# T3-AUDIT-README: /alpha:run swapped for a phantom /alpha:ghost. CMD_NOT_IN_README is an ERROR, so
+# audit-docs exits 1 — a valid report, not a failure — and PHANTOM_CMD a WARN; both on the README.
+fx_audit auditreadme
+sed -i.bak 's#/alpha:run#/alpha:ghost#' alpha/README.md
+detect
+expect "T3-AUDIT-README exit" 0 "$RC"
+expect "T3-AUDIT-README CMD_NOT_IN_README + PHANTOM_CMD" 2 "$(count inventory-row alpha/README.md)"
+
+# T3-AUDIT-MANIFEST: marketplace.json's description drifts from plugin.json (doc-audit layer 3).
+fx_audit auditmanifest
+python3 - <<'PY'
+import json
+f = ".claude-plugin/marketplace.json"
+d = json.load(open(f))
+d["plugins"][0]["description"] = "Alpha, described differently."
+json.dump(d, open(f, "w"))
+PY
+detect
+expect "T3-AUDIT-MANIFEST one row on marketplace.json" 1 "$(count inventory-row .claude-plugin/marketplace.json)"
+case "$(field inventory-row detail)" in
+  DESC_MISMATCH:*) echo "ok: T3-AUDIT-MANIFEST names the code" ;;
+  *) fail "T3-AUDIT-MANIFEST detail: $(field inventory-row detail)" ;;
+esac
+
+# T3-AUDIT-CRASH: an audit that dies without a report fails detect (exit 2); it never reads as clean.
+fx_audit auditcrash
+put .claude/skills/doc-audit/scripts/audit-docs.sh '#!/usr/bin/env bash' 'exit 1'
+detect
+expect "T3-AUDIT-CRASH exit" 2 "$RC"
+expect "T3-AUDIT-CRASH no traceback" 0 "$(grep -c Traceback "$SCRATCH/stderr")"
+case "$(cat "$SCRATCH/stderr")" in
+  *"doc-audit failed (rc 1)"*) echo "ok: T3-AUDIT-CRASH message" ;;
+  *) fail "T3-AUDIT-CRASH stderr: $(cat "$SCRATCH/stderr")" ;;
+esac
 
 # T3-ALLOWED: the write-fence list holds the surfaces, the ledger and every plugin page path.
 fx_repo allowed
