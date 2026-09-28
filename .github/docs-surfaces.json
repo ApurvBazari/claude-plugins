@@ -83,5 +83,37 @@
       "twitter:image:alt": "claude-plugins — sharp, honest tooling that makes Claude Code's work visible and verifiable. Five plugins: walkthrough, lens, onboard, notify, handoff."
     }
   },
-  "retired": []
+  "retired": [
+    "--space-*",
+    ".claude/greenfield-drift.json",
+    "claude-onboard/.claude-plugin/plugin.json",
+    "claude-onboard/README.md",
+    "claude-onboard/agents/codebase-analyzer.md",
+    "claude-onboard/agents/config-generator.md",
+    "claude-onboard/commands/init.md",
+    "claude-onboard/commands/status.md",
+    "claude-onboard/commands/update.md",
+    "claude-onboard/scripts/analyze-structure.sh",
+    "claude-onboard/scripts/detect-stack.sh",
+    "claude-onboard/scripts/measure-complexity.sh",
+    "claude-onboard/skills/analysis/SKILL.md",
+    "claude-onboard/skills/analysis/references/model-recommendations.md",
+    "claude-onboard/skills/analysis/references/tech-stack-patterns.md",
+    "claude-onboard/skills/generation/SKILL.md",
+    "claude-onboard/skills/generation/references/agents-guide.md",
+    "claude-onboard/skills/generation/references/claude-md-guide.md",
+    "claude-onboard/skills/generation/references/hooks-guide.md",
+    "claude-onboard/skills/generation/references/rules-guide.md",
+    "claude-onboard/skills/generation/references/skills-guide.md",
+    "claude-onboard/skills/wizard/SKILL.md",
+    "claude-onboard/skills/wizard/references/question-bank.md",
+    "concepts[]",
+    "greenfield-drift.json",
+    "greenfield-meta.json",
+    "headlessMode",
+    "install-mcp-plugins.sh",
+    "scripts/install-mcp-plugins.sh",
+    "test_sp5_invariants.sh",
+    "wizardAnswers.model"
+  ]
 }

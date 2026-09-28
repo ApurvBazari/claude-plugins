@@ -3,6 +3,8 @@ import changelog
 import inventory
 import ledger
 import pages
+import prereqs
+import stale
 import surfaces
 from kinds import ob
 
@@ -26,6 +28,7 @@ def changelog_obligations(ctx, led):
 def collect(ctx):
     led = ledger.load(ctx)
     surf = surfaces.load(ctx)
-    obs = pages.check(ctx, surf) + inventory.check(ctx, surf) + changelog_obligations(ctx, led)
+    obs = (pages.check(ctx, surf) + inventory.check(ctx, surf) + prereqs.check(ctx, surf)
+           + stale.check(ctx, surf, led) + changelog_obligations(ctx, led))
     return {"schemaVersion": 1, "range": {"base": ctx.base, "head": ctx.head},
             "open": len(obs), "obligations": obs}
