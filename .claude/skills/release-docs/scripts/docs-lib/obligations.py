@@ -1,6 +1,8 @@
 """Assemble every obligation check into one report (docs-detect's JSON)."""
 import changelog
+import inventory
 import ledger
+import pages
 import surfaces
 from kinds import ob
 
@@ -23,7 +25,7 @@ def changelog_obligations(ctx, led):
 
 def collect(ctx):
     led = ledger.load(ctx)
-    surfaces.load(ctx)
-    obs = changelog_obligations(ctx, led)
+    surf = surfaces.load(ctx)
+    obs = pages.check(ctx, surf) + inventory.check(ctx, surf) + changelog_obligations(ctx, led)
     return {"schemaVersion": 1, "range": {"base": ctx.base, "head": ctx.head},
             "open": len(obs), "obligations": obs}

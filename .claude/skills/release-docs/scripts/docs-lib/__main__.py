@@ -30,6 +30,16 @@ def parse(argv):
 
 def run(opts):
     ctx = repo.Context(opts.get("--root"), opts.get("--range", "origin/main..HEAD"))
+    if opts.get("--fix-mechanical"):
+        import mechanical
+        for line in mechanical.fix(ctx):
+            print(line)
+        return 0
+    if opts.get("--allowed-paths"):
+        import surfaces
+        for rel in surfaces.allowed_paths(ctx):
+            print(rel)
+        return 0
     if "--out" not in opts and "--gate" not in opts:
         raise repo.RepoError("say what to do: --out FILE or --gate")
     report = obligations.collect(ctx)
