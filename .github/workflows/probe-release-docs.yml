@@ -1,11 +1,12 @@
 name: Probe release-docs CI
 
-# Throwaway probe for the release-docs plan. Runs on a push to the probe branch, NOT a
-# pull_request: on PR events claude-code-action restores .claude/ and CLAUDE.md from the base
-# branch, and the real bot's sync will run outside a PR context.
+# Throwaway probe for the release-docs plan. Runs on a PR whose BASE is the probe branch:
+# on PR events claude-code-action restores .claude/ and CLAUDE.md from the base branch, so the
+# base must already carry the probe skill and agent. (push is not a supported action event.)
 
 on:
-  push:
+  pull_request:
+    types: [opened, synchronize]
     branches: [probe/release-docs-ci]
 
 permissions:
