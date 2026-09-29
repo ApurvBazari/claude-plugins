@@ -250,6 +250,10 @@ jobs:
           }
           s="$(seal | sha256sum | cut -c1-64)"
           g="$(gitstate | sha256sum | cut -c1-64)"
+          # A readable copy, for the seal step's diff on a mismatch. The run can reach it, so only
+          # the hash in the step outputs decides; global config shows by key name, never by value.
+          { gitstate; echo "-- global keys"; git config --global --list --name-only 2>/dev/null || true; } > "$T/gitstate.before"
+          chmod a-w "$T/gitstate.before"
           {
             echo "start=$start"
             echo "artifact=release-docs-${start:0:7}-sync-attempt$GITHUB_RUN_ATTEMPT"
@@ -347,9 +351,55 @@ jobs:
           g="$(gitstate | sha256sum | cut -c1-64)" || g=""
           [ -n "$GITSTATE" ] && [ "$g" = "$GITSTATE" ] || {
             echo "::error::git's config, hooks or refs changed during the run: no bundle is published"
+            echo "What changed since prepare (< before, > after); a diagnosis only, the hash decided:"
+            diff "$RUNNER_TEMP/gitstate.before" <({ gitstate; echo "-- global keys"; git config --global --list --name-only 2>/dev/null || true; }) || true
             exit 1
           }
           echo "Seal and git state verified."
+
+      # What the model did, from the action's execution record: each tool call with its command or
+      # path, and the start of each failed call's output. A diagnosis only: nothing reads it, and it
+      # can't fail sync. The runner reads a workflow command at the start of a line once leading
+      # space is trimmed, so every string the model chose is JSON-quoted (no raw newline) after a
+      # fixed prefix.
+      - name: List the model's tool calls
+        if: ${{ !cancelled() && steps.claude.outcome != 'skipped' }}
+        continue-on-error: true
+        env:
+          CLAUDE_EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          path = os.environ.get("CLAUDE_EXECUTION_FILE") or ""
+          try:
+              with open(path, encoding="utf-8") as fh:
+                  msgs = json.load(fh)
+          except (OSError, ValueError) as e:
+              print("no readable execution record at %s (%s)" % (json.dumps(path), type(e).__name__))
+              raise SystemExit(0)
+          keys = ("command", "file_path", "path", "pattern", "skill", "subagent_type", "description")
+          n = 0
+          try:
+              for m in msgs if isinstance(msgs, list) else []:
+                  content = ((m if isinstance(m, dict) else {}).get("message") or {}).get("content")
+                  for b in content if isinstance(content, list) else []:
+                      if not isinstance(b, dict):
+                          continue
+                      if b.get("type") == "tool_use":
+                          n += 1
+                          inp = b.get("input") if isinstance(b.get("input"), dict) else {}
+                          arg = next((inp[k] for k in keys if isinstance(inp.get(k), str)), "")
+                          print("%3d %s %s" % (n, json.dumps(str(b.get("name"))), json.dumps(arg[:300])))
+                      elif b.get("type") == "tool_result" and b.get("is_error"):
+                          c = b.get("content")
+                          if isinstance(c, list):
+                              c = " ".join(str(x.get("text", "")) for x in c if isinstance(x, dict))
+                          print("    failed: %s" % json.dumps(str(c or "").strip()[:300]))
+          except Exception as e:  # a diagnosis never fails the job
+              print("listing stopped early (%s)" % type(e).__name__)
+          print("%d tool call(s)" % n)
+          PY
 
       # The completion guard, from its sealed copy: the checkout's copy is the model's to write. An
       # incomplete run does not stop the bundle: publish opens it as a draft labelled needs-owner

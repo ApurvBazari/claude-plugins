@@ -18,7 +18,8 @@
 #   allowlist are the probed ones;
 # - final review I6, M1, M3: the model can't Read /proc, its subprocesses get a scrubbed environment
 #   (with bubblewrap installed and proved to isolate first, which the scrub needs on Linux) and Bash
-#   calls long enough for the belts; publish builds its PR body only once its gate says
+#   calls long enough for the belts; a git-state mismatch prints a diff and still fails, and the
+#   model's tool calls are listed, JSON-quoted, without ever failing sync; publish builds its PR body only once its gate says
 #   publish, with the escaped post-checks report first; its staged-set check reads full object
 #   names with submodules seen, and refuses any credential-shaped string the run added (a check that
 #   runs the extracted scan on a scratch repo).
@@ -1009,6 +1010,74 @@ def a41(c):
     return f
 
 
+GS_COPY = '{ gitstate; echo "-- global keys"; git config --global --list --name-only 2>/dev/null || true; }'
+
+
+@check("A42", "a git-state mismatch prints what changed, and still fails")
+def a42(c):
+    f = []
+    pj = (c.step("prepare") or {}).get("j") or ""
+    at = pj.find(GS_COPY + ' > "$RUNNER_TEMP/gitstate.before"')
+    if at < 0 or not pj.find('g="$(gitstate | sha256sum | cut -c1-64)"') < at \
+            < pj.find('chmod a-w "$RUNNER_TEMP/gitstate.before"'):
+        f.append("prepare does not save a read-only copy of the git state after hashing it")
+    sj = (c.step("seal") or {}).get("j") or ""
+    m = re.search(r'\[ -n "\$GITSTATE" \] && \[ "\$g" = "\$GITSTATE" \] \|\| \{\n(.*?)\n\s*\}$', sj, re.S | re.M)
+    lines = [ln.strip() for ln in (m.group(1) if m else "").split("\n")
+             if ln.strip() and not ln.strip().startswith("#")]
+    if 'diff "$RUNNER_TEMP/gitstate.before" <(%s) || true' % GS_COPY not in lines:
+        f.append("the seal step does not diff the git state on a mismatch")
+    if not lines or lines[-1] != "exit 1" or any(re.search(r"\bexit 0\b|\breturn\b", ln) for ln in lines):
+        f.append("a git-state mismatch no longer ends in exit 1")
+    return f
+
+
+@check("A43", "the model's tool calls are listed after it runs, JSON-quoted, and the listing can't fail sync")
+def a43(c):
+    ci, i = c.claude_index(), c.index(lambda s: (s["name"] or "") == "List the model's tool calls")
+    if i is None or ci is None or not i > ci:
+        return ["sync lists no tool calls after the Claude step"]
+    s = c.sync["steps"][i]
+    f = []
+    if unwrap(s["if"]) != "!cancelled() && steps.claude.outcome != 'skipped'":
+        f.append("the listing's if: is %r: it must run whenever the model ran, seal or not" % unwrap(s["if"]))
+    if not re.search(r"^        continue-on-error: true$", s["raw"], re.M):
+        f.append("a failed listing can stop sync (no continue-on-error: true)")
+    if "CLAUDE_EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}" not in s["raw"]:
+        f.append("the listing does not read the action's execution record")
+    body = heredoc(s["run"], "python3 - ")
+    if body is None:
+        return f + ["the listing has no python heredoc"]
+    # Run it. The runner reads a workflow command at the start of a line after trimming leading
+    # space, so a model-chosen string must never start one; a failed call shows; a missing record
+    # and a malformed one are not errors.
+    rec = [{"type": "assistant", "message": {"content": [
+               {"type": "tool_use", "name": "Bash", "input": {"command": "echo hi\n::add-mask::cmd"}},
+               {"type": "tool_use", "name": "Read", "input": {"file_path": "README.md"}}]}},
+           {"type": "user", "message": {"content": [
+               {"type": "tool_result", "is_error": True, "content": [{"type": "text", "text": "boom\n::error::out"}]}]}},
+           {"type": "result", "subtype": "success"}]
+    with tempfile.TemporaryDirectory() as d:
+        good, bad = os.path.join(d, "exec.json"), os.path.join(d, "bad.json")
+        with open(good, "w", encoding="utf-8") as fh:
+            json.dump(rec, fh)
+        with open(bad, "w", encoding="utf-8") as fh:
+            json.dump([{"message": "not a dict"}, 7], fh)
+        for path, want in ((good, ("2 tool call(s)", '"README.md"', "failed:", "boom")),
+                           (os.path.join(d, "none.json"), ("no readable execution record",)),
+                           (bad, ())):
+            p = subprocess.run([sys.executable, "-"], input=body.encode(), stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT, env=dict(os.environ, CLAUDE_EXECUTION_FILE=path))
+            out = p.stdout.decode("utf-8", "replace")
+            name = os.path.basename(path)
+            if p.returncode != 0:
+                f.append("the listing exits %d on %s: %s" % (p.returncode, name, out.strip()[-200:]))
+            f += ["the listing of %s lacks %r" % (name, w) for w in want if w not in out]
+            f += ["the listing of %s starts a line with a workflow command: %r" % (name, ln)
+                  for ln in out.split("\n") if ln.lstrip().startswith("::")]
+    return f
+
+
 @check("PARSE", "the belt's reader agrees with PyYAML on every job and step", yaml_only=True)
 def parse(c):
     f = []
@@ -1071,6 +1140,14 @@ BWRAP_PROFILE = (S + "printf '%s\\n' 'abi <abi/4.0>,' 'include <tunables/global>
                  + S + "  'profile bwrap /usr/bin/bwrap flags=(unconfined) {' '  userns,' '}' \\\n"
                  + S + "  | sudo tee /etc/apparmor.d/bwrap > /dev/null\n")
 BWRAP_LOAD = S + "sudo apparmor_parser -r /etc/apparmor.d/bwrap\n"
+GS_SAVE = (S + GS_COPY + ' > "$T/gitstate.before"\n'
+           + S + 'chmod a-w "$T/gitstate.before"\n')
+GS_DIFF = "            diff \"$RUNNER_TEMP/gitstate.before\" <(%s) || true\n" % GS_COPY
+TRAIL_HEAD = ("      - name: List the model's tool calls\n"
+              "        if: ${{ !cancelled() && steps.claude.outcome != 'skipped' }}\n"
+              "        continue-on-error: true\n"
+              "        env:\n"
+              "          CLAUDE_EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}\n")
 BWRAP = ("      - id: bwrap\n"
          "        name: Install bubblewrap and prove it isolates\n"
          "        run: |\n"
@@ -1257,6 +1334,21 @@ MUTANTS = [
     ("A41", [(WF, BWRAP_LOAD, "", 1), (WF, BWRAP_CMP, BWRAP_CMP + BWRAP_LOAD, 1)], "the profile loaded after the probe"),
     ("A41", [(WF, BWRAP_LOAD, BWRAP_LOAD + S + "sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0\n", 1)],
      "the restriction lifted for every process"),
+    ("A42", [(WF, GS_SAVE, "", 1)], "no readable copy of the git state"),
+    ("A42", [(WF, GS_SAVE, GS_SAVE.replace("\n" + S + 'chmod a-w "$T/gitstate.before"', ""), 1)],
+     "the copy left writable"),
+    ("A42", [(WF, GS_DIFF, "", 1)], "a mismatch prints nothing"),
+    ("A42", [(WF, GS_DIFF + "            exit 1\n", GS_DIFF + "            exit 0\n", 1)],
+     "a mismatch that passes once it has printed"),
+    ("A43", [(WF, "      - name: List the model's tool calls\n", "      - name: Something else\n", 1)], "no listing"),
+    ("A43", [(WF, TRAIL_HEAD, TRAIL_HEAD.replace("        continue-on-error: true\n", ""), 1)],
+     "a listing that can fail sync"),
+    ("A43", [(WF, TRAIL_HEAD, TRAIL_HEAD.replace("steps.claude.outcome != 'skipped'",
+                                                 "steps.seal.outcome == 'success'"), 1)],
+     "no listing when the seal fails"),
+    ("A43", [(WF, "json.dumps(arg[:300])", "arg[:300]", 1)], "a command printed raw"),
+    ("A43", [(WF, 'json.dumps(str(c or "").strip()[:300])', 'str(c or "").strip()[:300]', 1)],
+     "a failed call's output printed raw"),
     ("PARSE", [(WF, "        run: |\n          set +e\n          rm -rf \"$RUNNER_TEMP/post-checks.md\"",
                 "        run: |2\n          set +e\n          rm -rf \"$RUNNER_TEMP/post-checks.md\"", 1)],
      "an indentation indicator the reader does not know"),
