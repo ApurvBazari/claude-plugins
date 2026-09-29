@@ -1,0 +1,790 @@
+name: Release Docs Sync
+
+# When a develop→main release PR opens or updates, detect the docs obligations the release creates.
+# If any are open, the docs bot runs /release-docs unattended and opens a docs PR to develop for the
+# owner to review. A release that needs nothing costs nothing: the detect job ends it.
+# Spec: docs/superpowers/specs/2026-09-28-release-docs-sync-design.md (§ 7, and § 13 A3).
+#
+# The model never runs in a pull_request context: there, claude-code-action swaps in the PR base's
+# (main's) .claude/ and CLAUDE.md, so the bot would lack its own skill and edit the wrong root file.
+#
+#   release PR (develop → main): opened / reopened / synchronize
+#     detect    docs-detect.sh over origin/main..develop → open N        (no model, no secrets)
+#     dispatch  N > 0: gh workflow run release-docs.yml --ref develop
+#               -f dry_run=false -f release_pr=<PR>                      (GITHUB_TOKEN, actions: write)
+#
+#   workflow_dispatch on develop (from dispatch, or by hand, where dry_run defaults to true)
+#     detect    again, on the develop commit the sync will use
+#     sync      the model's job: contents: read, no PAT ("untrusted build")
+#               prepare: the snapshot, then a sealed read-only copy of the scripts, all in $RUNNER_TEMP
+#               → /release-docs mode=ci (Opus, unattended)
+#               → verify the seal and git's state → post-checks from the copy
+#               → post-checks exit 0 or 1 and a fenced report: upload the bundle (a binary patch
+#                 against the start commit, the report, the screenshots, the verifier output);
+#                 anything else: the job fails, and nothing is published
+#     publish   a fresh runner, no model ("trusted publish"): check out the detected commit,
+#               snapshot and copy the scripts, apply the patch, run the full post-checks itself
+#               → rc 0: docs PR to develop; rc 1: a draft labelled needs-owner;
+#                 anything else: nothing is committed or pushed, and the job fails.
+#               DOCS_BOT_TOKEN exists only in its push step, never in a job the model ran in.
+#
+# The merged docs PR moves develop; the release PR's synchronize re-runs detect, which finds 0 and
+# stops. What blocks main is the required "Docs Obligations" job in validate.yml, not this workflow.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Run the sync and every check and upload the result, but push nothing
+        type: boolean
+        default: true
+      release_pr:
+        description: Release PR number to link the docs PR on (digits only; empty for none)
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+# Per event, so a dispatched sync never cancels the detect run that dispatched it, and a newer sync
+# cancels an older run whole, its publish job included (spec § 9.6). head_ref keeps a PR to main
+# from another branch out of the release PR's group.
+concurrency:
+  group: release-docs-${{ github.event_name }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  detect:
+    name: Detect docs obligations
+    # A release PR (head develop, from this repo: a fork can name its branch develop too), or a dispatch.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.head_ref == 'develop' && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      open: ${{ steps.detect.outputs.open }}
+      sha: ${{ steps.detect.outputs.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: develop
+          fetch-depth: 0
+          persist-credentials: false
+      - id: detect
+        name: Count the open docs obligations
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/obligations.json"
+          bash .claude/skills/release-docs/scripts/docs-detect.sh --range origin/main..HEAD --out "$out"
+          open="$(python3 -c 'import json,sys; print(int(json.load(open(sys.argv[1]))["open"]))' "$out")"
+          sha="$(git rev-parse HEAD)"
+          [[ "$open" =~ ^[0-9]+$ && "$sha" =~ ^[0-9a-f]{40}$ ]] \
+            || { echo "::error::docs-detect gave no open count"; exit 1; }
+          echo "open=$open" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          python3 - "$out" <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          import json, sys
+          d = json.load(open(sys.argv[1]))
+          print("### Docs obligations open on develop: %d\n" % d["open"])
+          for o in d["obligations"]:
+              print("- `%s` %s — %s" % (o["kind"], o["file"], o["detail"]))
+          PY
+
+  dispatch:
+    name: Dispatch the docs sync on develop
+    needs: detect
+    if: github.event_name == 'pull_request' && needs.detect.outputs.open != '0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      # workflow_dispatch is exempt from the rule that GITHUB_TOKEN events trigger no workflow runs.
+      - name: Dispatch release-docs.yml on develop
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RELEASE_PR: ${{ github.event.pull_request.number }}
+          OPEN: ${{ needs.detect.outputs.open }}
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_PR" =~ ^[1-9][0-9]{0,9}$ ]] || { echo "::error::not a pull request number"; exit 1; }
+          gh workflow run release-docs.yml --repo "$REPO" --ref develop -f dry_run=false -f release_pr="$RELEASE_PR"
+          echo "Dispatched the docs sync on develop for release PR #$RELEASE_PR ($OPEN open obligation(s))." \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+
+  # The model's job ("untrusted build"). Whatever the model can write to can poison a later step of
+  # this same job ($GITHUB_ENV, $GITHUB_PATH, files in the home directory), so the job holds nothing
+  # worth stealing: a read-only GITHUB_TOKEN and no PAT. The R24 protections below still bound the
+  # damage within the job. Its one product is the bundle artifact, which publish treats as untrusted.
+  sync:
+    name: Sync docs (the model; no publishing credentials)
+    needs: detect
+    if: github.event_name == 'workflow_dispatch' && needs.detect.outputs.open != '0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    outputs:
+      artifact: ${{ steps.prepare.outputs.artifact }}
+      changed: ${{ steps.bundle.outputs.changed }}
+      claude: ${{ steps.claude.outputs.conclusion }}
+      rc: ${{ steps.post.outputs.rc }}
+    # The Claude CLI (2.1.283, pinned by the action; the scrub needs 2.1.209+) strips most variables,
+    # the OAuth token among them, from the environment of every subprocess it starts: Bash commands,
+    # hooks, MCP servers. It must come from the launch environment, which the action builds from its
+    # env context (action.yml's Run step); a settings `env` copy is ignored. Only Claude reads it.
+    env:
+      CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.detect.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate the dispatch inputs
+        env:
+          RELEASE_PR: ${{ inputs.release_pr }}
+        run: |
+          [[ "$RELEASE_PR" =~ ^([1-9][0-9]{0,9})?$ ]] \
+            || { echo "::error::release_pr must be empty or a pull request number (digits only)"; exit 1; }
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.x'
+      - name: Install belt dependencies
+        run: pip install jsonschema pyyaml
+
+      # Everything the authoritative checks trust is made here, before the model runs, and outside
+      # the checkout: the snapshot first (nothing has written to the checkout yet), a read-only copy
+      # of the scripts and of the completion guard, and the before-report. Their digest, and git's
+      # state, are step outputs, which nothing later in the job can rewrite. The seal() and
+      # gitstate() bodies must stay identical to the ones in "Verify the seal and git's state".
+      - id: prepare
+        name: Snapshot, seal the scripts, create the branch
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          shopt -s inherit_errexit
+          T="$RUNNER_TEMP"
+          bash .claude/skills/release-docs/scripts/post-checks.sh --snapshot "$T/before.snap"
+          cp -R .claude/skills/release-docs/scripts "$T/rd"
+          cp .github/scripts/assert-claude-run-complete.sh "$T/assert-claude-run-complete.sh"
+          bash "$T/rd/docs-detect.sh" --range origin/main..HEAD --out "$T/obligations.before.json"
+          start="$(git rev-parse HEAD)"
+          branch="docs/release-sync-${start:0:7}"
+          if [ "$DRY_RUN" = false ] && git show-ref --verify --quiet "refs/remotes/origin/$branch"; then
+            echo "::error::$branch already exists: an earlier sync of this develop commit pushed it. Delete that branch (and close its PR) to sync again."
+            exit 1
+          fi
+          git switch -c "$branch"
+          mkdir -p .release-docs/run
+          # The model's copies (SKILL.md mode=ci reads them there); the authoritative ones stay in $T.
+          cp "$T/before.snap" "$T/obligations.before.json" .release-docs/run/
+          chmod -R a-w "$T/rd" "$T/assert-claude-run-complete.sh" "$T/before.snap" "$T/obligations.before.json"
+          seal() (
+            cd "$RUNNER_TEMP"
+            set -- rd assert-claude-run-complete.sh before.snap obligations.before.json
+            find "$@" -printf '%y %m %s %p\n' | LC_ALL=C sort
+            find "$@" -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum
+          )
+          gitstate() {
+            local cfg f
+            cfg="$(git config --file .git/config --list)"
+            # claude-code-action rewrites exactly these (git-config.ts configureGitAuth); nothing after
+            # the Claude step uses them: the push names its own URL, and the commit sets its author.
+            printf '%s\n' "$cfg" | { grep -vE '^(user\.(name|email)|remote\.origin\.url|http\..*\.extraheader)=' || true; }
+            echo "-- hooks"
+            if [ -e .git/hooks ] || [ -L .git/hooks ]; then
+              find .git/hooks -printf '%y %m %p\n' | LC_ALL=C sort
+              find .git/hooks -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum
+            else
+              echo "no hooks directory"
+            fi
+            echo "-- global"
+            for f in "$HOME/.gitconfig" "$HOME/.config/git/config"; do
+              if [ -e "$f" ] || [ -L "$f" ]; then printf '%s ' "$f"; sha256sum < "$f"; else echo "$f absent"; fi
+            done
+            echo "-- refs"
+            git rev-parse HEAD
+            git symbolic-ref -q HEAD || echo detached
+            git for-each-ref --format='%(objectname) %(refname)'
+          }
+          s="$(seal | sha256sum | cut -c1-64)"
+          g="$(gitstate | sha256sum | cut -c1-64)"
+          {
+            echo "start=$start"
+            echo "artifact=release-docs-${start:0:7}-sync-attempt$GITHUB_RUN_ATTEMPT"
+            echo "seal=$s"
+            echo "git=$g"
+          } >> "$GITHUB_OUTPUT"
+
+      - id: claude
+        uses: anthropics/claude-code-action@756cc22e19660d20e8cc9496b4f242475a7f7790 # v1.0.235
+        # A run that hits its turn or time cap still reaches post-checks and becomes a draft PR (spec
+        # § 9.7): a step timeout fails the step without cancelling the job, and continue-on-error
+        # keeps that failure from failing the job, which would skip publish. The verdict is not
+        # lost: publish drafts the PR and ends red, and with nothing to publish the last step here
+        # fails. The job's 60 minutes leave room after the 40.
+        timeout-minutes: 40
+        continue-on-error: true
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Skips the OIDC → Claude-App token exchange, which refuses a workflow file that differs
+          # from the default branch.
+          github_token: ${{ github.token }}
+          # The dispatch job starts this run with GITHUB_TOKEN, so its actor is github-actions[bot],
+          # and agent mode rejects a bot actor unless it is listed. Only a workflow in this repo that
+          # holds actions: write can dispatch as that bot.
+          allowed_bots: 'github-actions[bot]'
+          # Stricter than spec § 7's list. The scripts are allowed one by one: a directory prefix
+          # would also match `scripts/../../<any file the model wrote>.sh`. No `bash tests/run-all.sh`:
+          # the model can Edit a tracked belt, so that rule would run code of its choosing; post-checks
+          # runs the belts itself, after the fence has reverted such edits. `node --check` stays: the
+          # playbook's page-missing path runs walkthrough:document, whose render contract runs it. It
+          # can execute code (`-r`), like any write primitive here, which this job contains: no PAT,
+          # contents: read, and publish re-verifies everything from its own checkout.
+          # Read(//proc/**) is denied (// is the filesystem root; Read deny rules also cover Grep
+          # and Glob): /proc/self/environ holds the OAuth token, and Read is otherwise unrestricted,
+          # so the model could copy it into a doc without running any code.
+          claude_args: |
+            --model claude-opus-5-5
+            --max-turns 120
+            --plugin-dir walkthrough
+            --allowedTools "Read,Edit,Write,Glob,Grep,Agent,Task,Skill,Bash(bash .claude/skills/release-docs/scripts/docs-detect.sh:*),Bash(bash .claude/skills/release-docs/scripts/post-checks.sh:*),Bash(bash .claude/skills/release-docs/scripts/render-check.sh:*),Bash(bash .claude/skills/release-docs/scripts/og-regen.sh:*),Bash(node --check:*),Bash(git diff:*),Bash(git status:*)"
+            --disallowedTools "Read(//proc/**)"
+          # post-checks runs every belt in one Bash call, which the default 2-minute Bash timeout would
+          # kill. The action merges the settings input into ~/.claude/settings.json
+          # (setup-claude-code-settings.ts), and Claude Code writes that file's env entries into its
+          # own environment: a channel the action's source shows, where a step env: may not reach
+          # the CLI through the composite action.
+          settings: '{"env": {"BASH_DEFAULT_TIMEOUT_MS": "900000", "BASH_MAX_TIMEOUT_MS": "900000"}}'
+          prompt: |
+            /release-docs mode=ci
+
+      # Fail closed, before anything reads what the run left: the sealed copies must be exactly as
+      # prepared (content, type and mode), and git's config, hooks and refs unchanged.
+      - id: seal
+        name: Verify the seal and git's state
+        if: ${{ !cancelled() && steps.prepare.outcome == 'success' }}
+        env:
+          SEAL: ${{ steps.prepare.outputs.seal }}
+          GITSTATE: ${{ steps.prepare.outputs.git }}
+        run: |
+          set -euo pipefail
+          shopt -s inherit_errexit
+          seal() (
+            cd "$RUNNER_TEMP"
+            set -- rd assert-claude-run-complete.sh before.snap obligations.before.json
+            find "$@" -printf '%y %m %s %p\n' | LC_ALL=C sort
+            find "$@" -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum
+          )
+          gitstate() {
+            local cfg f
+            cfg="$(git config --file .git/config --list)"
+            # claude-code-action rewrites exactly these (git-config.ts configureGitAuth); nothing after
+            # the Claude step uses them: the push names its own URL, and the commit sets its author.
+            printf '%s\n' "$cfg" | { grep -vE '^(user\.(name|email)|remote\.origin\.url|http\..*\.extraheader)=' || true; }
+            echo "-- hooks"
+            if [ -e .git/hooks ] || [ -L .git/hooks ]; then
+              find .git/hooks -printf '%y %m %p\n' | LC_ALL=C sort
+              find .git/hooks -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum
+            else
+              echo "no hooks directory"
+            fi
+            echo "-- global"
+            for f in "$HOME/.gitconfig" "$HOME/.config/git/config"; do
+              if [ -e "$f" ] || [ -L "$f" ]; then printf '%s ' "$f"; sha256sum < "$f"; else echo "$f absent"; fi
+            done
+            echo "-- refs"
+            git rev-parse HEAD
+            git symbolic-ref -q HEAD || echo detached
+            git for-each-ref --format='%(objectname) %(refname)'
+          }
+          s="$(seal | sha256sum | cut -c1-64)" || s=""
+          [ -n "$SEAL" ] && [ "$s" = "$SEAL" ] || {
+            echo "::error::the sealed scripts, snapshot or before-report changed during the run: no bundle is published"
+            exit 1
+          }
+          g="$(gitstate | sha256sum | cut -c1-64)" || g=""
+          [ -n "$GITSTATE" ] && [ "$g" = "$GITSTATE" ] || {
+            echo "::error::git's config, hooks or refs changed during the run: no bundle is published"
+            exit 1
+          }
+          echo "Seal and git state verified."
+
+      # The completion guard, from its sealed copy: the checkout's copy is the model's to write. An
+      # incomplete run does not stop the bundle: publish opens it as a draft labelled needs-owner
+      # (spec § 9.7), and whichever job carries the verdict ends red.
+      - name: Fail unless the sync completed
+        if: always()
+        continue-on-error: true
+        env:
+          SEALED: ${{ steps.seal.outcome }}
+          CLAUDE_CONCLUSION: ${{ steps.claude.outputs.conclusion }}
+          CLAUDE_EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: |
+          if [ "$SEALED" != success ]; then
+            echo "::error::the completion guard's sealed copy is not verified (seal step: ${SEALED:-none})"
+            exit 1
+          fi
+          bash "$RUNNER_TEMP/assert-claude-run-complete.sh"
+
+      # From the sealed copy, against the sealed snapshot, with --expect-clean. The report and the
+      # shots go outside the checkout, to paths cleared first.
+      - id: post
+        name: Post-checks (from the sealed copy)
+        if: ${{ !cancelled() && steps.seal.outcome == 'success' }}
+        run: |
+          set +e
+          rm -rf "$RUNNER_TEMP/post-checks.md" "$RUNNER_TEMP/shots"
+          bash "$RUNNER_TEMP/rd/post-checks.sh" --before "$RUNNER_TEMP/before.snap" --expect-clean \
+            --report "$RUNNER_TEMP/post-checks.md" --shots "$RUNNER_TEMP/shots"
+          echo "rc=$?" >> "$GITHUB_OUTPUT"
+
+      # This job fails here, and publish never runs, unless post-checks exited 0 or 1 AND its report
+      # opens with the write fence's result: post-checks writes the fence's lines first, and exits 2
+      # whenever the fence did not complete.
+      - id: gate
+        name: Refuse an untrusted tree
+        if: ${{ !cancelled() && steps.claude.outcome != 'skipped' }}
+        env:
+          SEALED: ${{ steps.seal.outcome }}
+          POST_RC: ${{ steps.post.outputs.rc }}
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/post-checks.md"
+          refuse() { echo "::error::$* — no bundle is published"; exit 1; }
+          [ "$SEALED" = success ] || refuse "the seal or git's state did not verify"
+          case "$POST_RC" in
+            0|1) ;;
+            *) refuse "post-checks exited '${POST_RC:-none}': bad input, a fence that did not complete, or an untrusted snapshot" ;;
+          esac
+          [ -f "$report" ] && [ ! -L "$report" ] || refuse "post-checks left no report"
+          fence_line="$(head -n 1 "$report")"
+          case "$fence_line" in
+            "- ok: write fence") ;;
+            "- FAIL: "*|"- FENCE: "*) [ "$POST_RC" = 1 ] || refuse "the write fence failed, yet post-checks exited $POST_RC" ;;
+            *) refuse "the post-checks report does not open with the write fence's result" ;;
+          esac
+          echo "The fenced tree may be bundled (post-checks exit $POST_RC)."
+
+      # The one hand-off to publish: the fenced tree as a binary patch against the start commit (new
+      # files included, through a throwaway index), with the report, the screenshots and the model's
+      # verifier output for the reviewer. Without a passing gate it carries no patch.
+      - id: bundle
+        name: Bundle the patch and the report
+        if: ${{ !cancelled() && steps.claude.outcome != 'skipped' }}
+        env:
+          GATE: ${{ steps.gate.outcome }}
+          START: ${{ steps.prepare.outputs.start }}
+          POST_RC: ${{ steps.post.outputs.rc }}
+          CLAUDE_CONCLUSION: ${{ steps.claude.outputs.conclusion }}
+        run: |
+          set -euo pipefail
+          B="$RUNNER_TEMP/bundle"
+          rm -rf "$B"
+          mkdir "$B"
+          if [ -f "$RUNNER_TEMP/post-checks.md" ]; then cp "$RUNNER_TEMP/post-checks.md" "$B/"; fi
+          if [ -d "$RUNNER_TEMP/shots" ]; then cp -R "$RUNNER_TEMP/shots" "$B/shots"; fi
+          # The model's verifier output: untrusted data, taken only as a regular file reached through
+          # no symlink.
+          v=.release-docs/run/verifier.json
+          if [ -f "$v" ] && [ "$(realpath -e "$v" 2>/dev/null)" = "$PWD/$v" ]; then cp "$v" "$B/verifier.json"; fi
+          if [ "$GATE" != success ]; then
+            echo "The gate refused this tree: the bundle carries no patch."
+            exit 0
+          fi
+          [[ "$START" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::the start commit is not a 40-hex SHA"; exit 1; }
+          export GIT_INDEX_FILE="$RUNNER_TEMP/bundle.index"
+          git read-tree "$START"
+          git -c core.hooksPath=/dev/null -c core.fsmonitor=false add -A
+          git -c core.hooksPath=/dev/null -c core.fsmonitor=false \
+            diff --cached --binary --no-renames --no-ext-diff --no-textconv "$START" > "$B/sync.patch"
+          python3 - "$B/meta.json" "$START" "$POST_RC" "$CLAUDE_CONCLUSION" <<'PY'
+          import json, sys
+          path, start, rc, claude = sys.argv[1:]
+          with open(path, "w") as f:
+              json.dump({"start": start, "post_checks_rc": rc, "claude": claude}, f, indent=1)
+          PY
+          if [ -s "$B/sync.patch" ]; then changed=true; else changed=false; fi
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+          echo "Bundled: patch $(wc -c < "$B/sync.patch") bytes (changed=$changed), post-checks exit $POST_RC."
+
+      - name: Upload the bundle
+        if: ${{ !cancelled() && steps.bundle.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ steps.prepare.outputs.artifact }}
+          path: ${{ runner.temp }}/bundle
+          if-no-files-found: ignore
+
+      # When nothing will be published (a dry run, or a sync that changed nothing), this job carries
+      # the verdict: red unless post-checks passed and the run completed. Otherwise publish carries it.
+      - name: Fail unless the sync passed (when nothing is published)
+        if: ${{ !cancelled() && steps.gate.outcome == 'success' && (inputs.dry_run != false || steps.bundle.outputs.changed != 'true') }}
+        env:
+          POST_RC: ${{ steps.post.outputs.rc }}
+          CLAUDE_CONCLUSION: ${{ steps.claude.outputs.conclusion }}
+        run: |
+          [ "$POST_RC" = 0 ] || { echo "::error::post-checks failed (exit $POST_RC): the report is in the bundle artifact"; exit 1; }
+          [ "$CLAUDE_CONCLUSION" = success ] || { echo "::error::the Claude run did not complete"; exit 1; }
+          echo "post-checks passed and the run completed; nothing is published from this run."
+
+  # Trusted publish: a fresh runner that never runs the model and installs no Claude. It trusts only
+  # its own checkout of the commit detect saw, and the scripts in it, copied before anything from the
+  # bundle touches the tree. The bundle is untrusted input: its patch is applied, then fenced and
+  # re-checked in full here. DOCS_BOT_TOKEN exists only in this job's push step.
+  publish:
+    name: Publish the docs PR (no model)
+    needs: [detect, sync]
+    if: >-
+      github.event_name == 'workflow_dispatch' && needs.sync.result == 'success' &&
+      inputs.dry_run == false && needs.sync.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.detect.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ needs.sync.outputs.artifact }}
+          path: ${{ runner.temp }}/sync
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.x'
+      - name: Install belt dependencies
+        run: pip install jsonschema pyyaml
+
+      # Before anything from the bundle touches the tree: the snapshot, a copy of the scripts the
+      # checks run from (the patch cannot rewrite them), the before-report, and the allowlist as it
+      # lists START's files. Then the bundle is checked against the commit detect saw, which reaches
+      # this job only through env.
+      - id: prepare
+        name: Snapshot, copy the scripts, check the bundle
+        env:
+          START: ${{ needs.detect.outputs.sha }}
+        run: |
+          set -euo pipefail
+          T="$RUNNER_TEMP"
+          bash .claude/skills/release-docs/scripts/post-checks.sh --snapshot "$T/p.snap"
+          cp -R .claude/skills/release-docs/scripts "$T/rd"
+          bash "$T/rd/docs-detect.sh" --range origin/main..HEAD --out "$T/before.json"
+          bash "$T/rd/docs-detect.sh" --allowed-paths > "$T/allowed.start.txt"
+          refuse() { echo "::error::$*"; exit 1; }
+          [[ "$START" =~ ^[0-9a-f]{40}$ ]] || refuse "the detected commit is not a 40-hex SHA"
+          [ "$(git rev-parse HEAD)" = "$START" ] || refuse "the checkout is not the detected commit"
+          git merge-base --is-ancestor "$START" origin/develop || refuse "$START is not on develop"
+          m="$T/sync/meta.json"
+          p="$T/sync/sync.patch"
+          [ -f "$m" ] && [ ! -L "$m" ] && [ -f "$p" ] && [ ! -L "$p" ] && [ -s "$p" ] \
+            || refuse "the bundle has no patch or no meta.json"
+          start="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["start"])' "$m")"
+          [[ "$start" =~ ^[0-9a-f]{40}$ ]] && [ "$start" = "$START" ] \
+            || refuse "the bundle's start commit is not the detected commit"
+          claude="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["claude"])' "$m")"
+          sync_rc="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["post_checks_rc"])' "$m")"
+          branch="docs/release-sync-${START:0:7}"
+          if git show-ref --verify --quiet "refs/remotes/origin/$branch"; then
+            refuse "$branch already exists: an earlier sync of this develop commit pushed it"
+          fi
+          {
+            echo "branch=$branch"
+            if [ "$claude" = success ]; then echo "claude=success"; else echo "claude=incomplete"; fi
+            if [ "$sync_rc" = 0 ]; then echo "sync_rc=0"; else echo "sync_rc=1"; fi
+            echo "artifact=release-docs-${START:0:7}-publish-attempt$GITHUB_RUN_ATTEMPT"
+          } >> "$GITHUB_OUTPUT"
+
+      # A patch that creates or deletes anything but a plain file (a gitlink, a symlink, an
+      # executable) or changes a mode is refused whole: the model's job can't produce one, so it
+      # means the bundle was tampered with. Then the patch goes to the working tree only: without
+      # --index, apply stages nothing, so even a gitlink would leave at most an empty directory,
+      # which git add ignores.
+      - name: Apply the sync patch
+        env:
+          BRANCH: ${{ steps.prepare.outputs.branch }}
+        run: |
+          set -euo pipefail
+          patch="$RUNNER_TEMP/sync/sync.patch"
+          odd="$(git -c core.hooksPath=/dev/null -c core.fsmonitor=false apply --summary "$patch" | grep -vE '^ (create|delete) mode 100644 ' || true)"
+          if [ -n "$odd" ]; then
+            echo "::error::the patch holds something other than plain files; nothing is applied:"
+            printf '%s\n' "$odd"
+            exit 1
+          fi
+          git switch -c "$BRANCH"
+          git -c core.hooksPath=/dev/null -c core.fsmonitor=false apply --binary "$patch"
+          git status --short
+
+      # Authoritative: this job's own full post-checks (fence, waiver, gate, render, belts), from the
+      # pre-apply copy, against the pre-apply snapshot, with --expect-clean.
+      - id: post
+        name: Post-checks (authoritative, on this job's checkout)
+        run: |
+          set +e
+          bash "$RUNNER_TEMP/rd/post-checks.sh" --before "$RUNNER_TEMP/p.snap" --expect-clean \
+            --report "$RUNNER_TEMP/pc.md" --shots "$RUNNER_TEMP/shots"
+          echo "rc=$?" >> "$GITHUB_OUTPUT"
+
+      # No secrets here. Publish only when post-checks exited 0 or 1 AND its report opens with the
+      # write fence's result. The PR is a draft when this run or the model job's did not pass (say
+      # the model touched files outside the doc surfaces: its patch no longer carries them, but the
+      # owner should know), or the model's run did not complete.
+      - id: gate
+        name: Decide whether the tree may be committed
+        if: ${{ !cancelled() && steps.post.outcome == 'success' }}
+        env:
+          POST_RC: ${{ steps.post.outputs.rc }}
+          SYNC_CLAUDE: ${{ steps.prepare.outputs.claude }}
+          SYNC_RC: ${{ steps.prepare.outputs.sync_rc }}
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/pc.md"
+          refuse() { echo "::error::$* — nothing is committed or pushed"; exit 1; }
+          case "$POST_RC" in
+            0|1) ;;
+            *) refuse "post-checks exited '${POST_RC:-none}': bad input, a fence that did not complete, or an untrusted snapshot" ;;
+          esac
+          [ -f "$report" ] && [ ! -L "$report" ] || refuse "post-checks left no report"
+          fence_line="$(head -n 1 "$report")"
+          case "$fence_line" in
+            "- ok: write fence") ;;
+            "- FAIL: "*|"- FENCE: "*) [ "$POST_RC" = 1 ] || refuse "the write fence failed, yet post-checks exited $POST_RC" ;;
+            *) refuse "the post-checks report does not open with the write fence's result" ;;
+          esac
+          draft=false
+          if [ "$POST_RC" != 0 ] || [ "$SYNC_RC" != 0 ] || [ "$SYNC_CLAUDE" != success ]; then draft=true; fi
+          { echo "publish=true"; echo "draft=$draft"; } >> "$GITHUB_OUTPUT"
+
+      # Only once the gate has said publish: after a post-checks exit 2 the tree is untrusted, and
+      # --pr-body runs the checkout's audit-docs.sh. The post-checks report comes first, with its
+      # < and > escaped: it names files the run wrote, and nothing model-written can then open an
+      # HTML comment that hides it. --pr-body shows every value a run could write as code.
+      - name: Build the PR body
+        if: ${{ !cancelled() && steps.gate.outputs.publish == 'true' }}
+        env:
+          POST_RC: ${{ steps.post.outputs.rc }}
+          ARTIFACT: ${{ steps.prepare.outputs.artifact }}
+          SYNC_ARTIFACT: ${{ needs.sync.outputs.artifact }}
+          SYNC_RC: ${{ steps.prepare.outputs.sync_rc }}
+          SYNC_CLAUDE: ${{ steps.prepare.outputs.claude }}
+        run: |
+          set +e
+          T="$RUNNER_TEMP"
+          # --verifier is always passed; a bundle without the model's verifier output says
+          # "verifier output missing".
+          {
+            printf '## Post-checks (exit %s, run by the publish job)\n\n' "${POST_RC:-none}"
+            sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' "$T/pc.md" 2>/dev/null \
+              || echo "- post-checks did not run"
+            echo ""
+            echo "The model job's own post-checks exited $SYNC_RC, and its Claude run was $SYNC_CLAUDE; its report is in its bundle."
+            echo ""
+            bash "$T/rd/docs-detect.sh" --range origin/main..HEAD --pr-body \
+              --before "$T/before.json" --verifier "$T/sync/verifier.json" \
+              || echo "- docs-detect --pr-body failed; see the job log"
+            echo ""
+            echo "Screenshots and this report: artifact \`$ARTIFACT\`. The model job's own bundle (patch, report, verifier output): artifact \`$SYNC_ARTIFACT\`. Both are on run $GITHUB_RUN_ID."
+            printf '\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n'
+          } > "$T/pr-body.md"
+          if [ "$(wc -c < "$T/pr-body.md")" -gt 60000 ]; then
+            head -c 60000 "$T/pr-body.md" | sed '$d' > "$T/pr-body.cut"  # never ends mid-line or mid-character
+            printf '\n\n… cut at 60000 bytes; the full report is in the artifact.\n' >> "$T/pr-body.cut"
+            mv "$T/pr-body.cut" "$T/pr-body.md"
+          fi
+          cat "$T/pr-body.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the screenshots and the report
+        if: ${{ !cancelled() && steps.post.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ steps.prepare.outputs.artifact }}
+          path: |
+            ${{ runner.temp }}/shots
+            ${{ runner.temp }}/pc.md
+            ${{ runner.temp }}/pr-body.md
+          if-no-files-found: ignore
+
+      # The last word on what is committed, and independent of the fence's internals: every staged
+      # entry must be a plain file (mode 100644, or 000000 for a deletion) at a path the trusted
+      # copy's allowlist lists, built from START's docs-surfaces.json and marketplace: START's files
+      # (so a deletion passes) or the fenced tree's (so a new page passes). Anything else fails the
+      # job, before the PAT step, with every offending entry listed. The staged tree's id goes to the
+      # push step, which commits exactly that tree.
+      - id: stage
+        name: Stage the fenced tree and refuse anything but plain in-fence files
+        if: ${{ !cancelled() && steps.gate.outputs.publish == 'true' && (steps.post.outputs.rc == '0' || steps.post.outputs.rc == '1') }}
+        run: |
+          set -euo pipefail
+          T="$RUNNER_TEMP"
+          git -c core.hooksPath=/dev/null -c core.fsmonitor=false add -A
+          bash "$T/rd/docs-detect.sh" --allowed-paths > "$T/allowed.now.txt"
+          git -c core.hooksPath=/dev/null -c core.fsmonitor=false \
+            diff --cached --raw -z --no-renames --no-abbrev --ignore-submodules=none HEAD > "$T/staged.raw"
+          python3 - "$T/staged.raw" "$T/allowed.start.txt" "$T/allowed.now.txt" <<'PY'
+          import json, sys
+          raw = open(sys.argv[1], "rb").read().split(b"\0")
+          allowed = set()
+          for listing in sys.argv[2:]:
+              allowed |= set(open(listing, encoding="utf-8").read().splitlines())
+          bad, n, i = [], 0, 0
+          while i + 1 < len(raw):
+              meta, path = raw[i].decode("ascii", "replace").split(), raw[i + 1].decode("utf-8", "replace")
+              i, n = i + 2, n + 1
+              if len(meta) != 5 or not meta[0].startswith(":"):
+                  bad.append("unreadable entry %s" % json.dumps(raw[i - 2].decode("ascii", "replace")))
+              elif meta[1] not in ("100644", "000000"):
+                  bad.append("mode %s at %s" % (meta[1], json.dumps(path)))
+              elif path not in allowed:
+                  bad.append("outside the allowlist: %s" % json.dumps(path))
+          for b in bad:
+              print("::error::staged entry refused, %s" % b)
+          print("%d staged entries checked, %d refused" % (n, len(bad)))
+          sys.exit(1 if bad else 0)
+          PY
+          # No credential-shaped string may be added by the run (I6): the model's job could read what
+          # it was never meant to, and a token in a doc or the PR body is public once pushed. Each
+          # staged blob is compared with HEAD's, so a pre-existing mention never trips it, binary
+          # files included. The string itself is never printed.
+          python3 - "$T/staged.raw" "$T/pr-body.md" <<'PY'
+          import collections, json, re, subprocess, sys
+          CRED = re.compile(rb"(sk-ant-)[A-Za-z0-9_-]*|(gh[pousr]_)[A-Za-z0-9]*|(github_pat_)[A-Za-z0-9_]*")
+          def creds(data):
+              return collections.Counter((next(g for g in m.groups() if g), m.group(0)) for m in CRED.finditer(data))
+          def blob(sha):
+              if not sha.strip("0"):
+                  return b""
+              p = subprocess.run(["git", "cat-file", "blob", sha], stdout=subprocess.PIPE)
+              if p.returncode != 0:
+                  sys.exit("::error::could not read the staged blob %s" % sha)
+              return p.stdout
+          raw = open(sys.argv[1], "rb").read().split(b"\0")
+          found, i = [], 0
+          while i + 1 < len(raw):
+              meta, path = raw[i].decode("ascii", "replace").split(), raw[i + 1].decode("utf-8", "replace")
+              i += 2
+              added = creds(blob(meta[3])) - creds(blob(meta[2]))
+              found += ["%s in %s" % (k.decode(), json.dumps(path)) for k in sorted({k for k, _t in added})]
+          with open(sys.argv[2], "rb") as f:
+              found += ["%s in the PR body" % k.decode() for k in sorted({k for k, _t in creds(f.read())})]
+          for x in found:
+              print("::error::refused, a credential-shaped string (%s...)" % x)
+          sys.exit(1 if found else 0)
+          PY
+          echo "tree=$(git write-tree)" >> "$GITHUB_OUTPUT"
+
+      # The only step that holds DOCS_BOT_TOKEN (a GITHUB_TOKEN PR would not trigger CI): the commit,
+      # the push, the PR and its label. Every git write runs with hooks and fsmonitor off.
+      - id: push
+        name: Push the docs branch and open the PR
+        if: ${{ !cancelled() && steps.gate.outputs.publish == 'true' && steps.stage.outcome == 'success' && (steps.post.outputs.rc == '0' || steps.post.outputs.rc == '1') }}
+        env:
+          GH_TOKEN: ${{ secrets.DOCS_BOT_TOKEN }}
+          POST_RC: ${{ steps.post.outputs.rc }}
+          DRAFT: ${{ steps.gate.outputs.draft }}
+          BRANCH: ${{ steps.prepare.outputs.branch }}
+          START: ${{ needs.detect.outputs.sha }}
+          RELEASE_PR: ${{ inputs.release_pr }}
+          REPO: ${{ github.repository }}
+          TREE: ${{ steps.stage.outputs.tree }}
+        run: |
+          set -euo pipefail
+          case "$POST_RC" in 0|1) ;; *) echo "::error::post-checks exit '${POST_RC:-none}': not publishing"; exit 1 ;; esac
+          [[ "$BRANCH" =~ ^docs/release-sync-[0-9a-f]{7}$ ]] || { echo "::error::unexpected branch name"; exit 1; }
+          [[ "$START" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::the start commit is not a 40-hex SHA"; exit 1; }
+          [[ "$RELEASE_PR" =~ ^([1-9][0-9]{0,9})?$ ]] || { echo "::error::release_pr is not a PR number"; exit 1; }
+          [ -n "$TREE" ] && [ "$(git write-tree)" = "$TREE" ] || { echo "::error::the staged tree is not the one the stage step checked"; exit 1; }
+          if git diff --cached --quiet; then
+            echo "Nothing is left once fenced: no docs PR."
+            exit 0
+          fi
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::DOCS_BOT_TOKEN is not set: cannot push the docs branch or open the PR"
+            exit 1
+          fi
+          base="$(git rev-parse origin/main)"
+          range="${base:0:7}..${START:0:7}"
+          {
+            printf 'docs(release): sync docs for %s\n\n' "$range"
+            printf 'Generated by the release-docs bot (/release-docs mode=ci) for release PR #%s.\n' "${RELEASE_PR:-none (a manual run)}"
+            printf 'The PR body lists what was resolved, what is still open, the coverage\n'
+            printf 'ledger and the verifier disagreements.\n\n'
+            printf 'Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>\n'
+          } > "$RUNNER_TEMP/commit-msg.txt"
+          git -c core.hooksPath=/dev/null -c core.fsmonitor=false \
+            -c user.name="release-docs bot" -c user.email="release-docs-bot@users.noreply.github.com" \
+            commit -q -F "$RUNNER_TEMP/commit-msg.txt"
+          git -c core.hooksPath=/dev/null -c core.fsmonitor=false \
+            push -q "https://x-access-token:${GH_TOKEN}@${GITHUB_SERVER_URL#https://}/${REPO}.git" "HEAD:refs/heads/$BRANCH" \
+            || { echo "::error::the push of $BRANCH was rejected. If an earlier sync of this develop commit pushed it, delete that branch to sync again."; exit 1; }
+          draft=()
+          [ "$DRAFT" = false ] || draft=(--draft)
+          url="$(gh pr create --repo "$REPO" --base develop --head "$BRANCH" "${draft[@]}" \
+            --title "docs(release): sync docs for $range" --body-file "$RUNNER_TEMP/pr-body.md")"
+          echo "Docs PR: $url" | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$DRAFT" != false ]; then
+            gh pr edit "$url" --repo "$REPO" --add-label needs-owner \
+              || echo "::warning::could not label $url needs-owner (does the label exist?)"
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      # With GITHUB_TOKEN (pull-requests: write): link the docs PR on the release PR, and close the
+      # superseded bot PRs (docs/release-sync-<sha7>; a local docs/release-sync-<YYYYMMDD> never matches).
+      - name: Link the docs PR and close superseded ones
+        if: ${{ !cancelled() && steps.push.outputs.url != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          URL: ${{ steps.push.outputs.url }}
+          DRAFT: ${{ steps.gate.outputs.draft }}
+          BRANCH: ${{ steps.prepare.outputs.branch }}
+          RELEASE_PR: ${{ inputs.release_pr }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          [[ "$URL" =~ ^https://[^[:space:]]+/pull/[0-9]+$ ]] || { echo "::error::unexpected PR URL"; exit 1; }
+          [[ "$BRANCH" =~ ^docs/release-sync-[0-9a-f]{7}$ ]] || { echo "::error::unexpected branch name"; exit 1; }
+          [[ "$RELEASE_PR" =~ ^([1-9][0-9]{0,9})?$ ]] || { echo "::error::release_pr is not a PR number"; exit 1; }
+          gh pr list --repo "$REPO" --base develop --state open --limit 100 --json number,headRefName \
+            --jq '.[] | select(.headRefName | test("^docs/release-sync-[0-9a-f]{7}$")) | "\(.number) \(.headRefName)"' \
+            | while read -r n ref; do
+                [ "$ref" = "$BRANCH" ] || gh pr close "$n" --repo "$REPO" --comment "Superseded by $URL" \
+                  || echo "::warning::could not close #$n"
+              done \
+            || echo "::warning::could not list the older docs PRs"
+          if [ -n "$RELEASE_PR" ]; then
+            note=""
+            [ "$DRAFT" = false ] || note=" (a draft: a post-checks run failed or the model's run did not complete; see its body)"
+            gh pr comment "$RELEASE_PR" --repo "$REPO" --body "Docs sync for this release: $URL$note" \
+              || echo "::warning::could not comment on #$RELEASE_PR"
+          fi
+
+      - name: Fail unless post-checks passed and the sync completed
+        if: ${{ !cancelled() }}
+        env:
+          POST_RC: ${{ steps.post.outputs.rc }}
+          DRAFT: ${{ steps.gate.outputs.draft }}
+        run: |
+          case "$POST_RC" in
+            0) ;;
+            1) echo "::error::post-checks failed: the report is in the job summary, and the docs PR (if one was opened) is a draft labelled needs-owner"; exit 1 ;;
+            *) echo "::error::post-checks exit '${POST_RC:-none}': nothing was committed or pushed"; exit 1 ;;
+          esac
+          [ "$DRAFT" = false ] || { echo "::error::the model job's post-checks failed or its run did not complete: the docs PR is a draft labelled needs-owner"; exit 1; }
+          echo "post-checks passed."

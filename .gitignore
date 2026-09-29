@@ -45,5 +45,9 @@ docs/
 .claude/worktrees/
 .claude/matali/state/
 
+# /release-docs run scratch (.release-docs/run/: obligations, verifier output, screenshots).
+# Outside .claude/ because the unattended CI model can't write under that protected path.
+.release-docs/
+
 # matali worktree seed-file manifest — local tooling config, not marketplace content
 .worktreeinclude

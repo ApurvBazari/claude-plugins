@@ -1,0 +1,34 @@
+"""Assemble every obligation check into one report (docs-detect's JSON)."""
+import changelog
+import inventory
+import ledger
+import pages
+import prereqs
+import stale
+import surfaces
+from kinds import ob
+
+
+def changelog_obligations(ctx, led):
+    obs = []
+    for p in ctx.plugins():
+        rel = p["dir"] + "/CHANGELOG.md"
+        if not ctx.exists(rel):
+            continue
+        for eid, ver, text in changelog.new_entries(p["name"], ctx.read(rel),
+                                                   ctx.base_version(p["dir"])):
+            decl = led["entries"].get(eid)
+            why = "undeclared in the ledger" if decl is None else ledger.entry_problem(ctx, decl)
+            if why:
+                obs.append(ob("changelog-entry", p["name"], rel, "%s %s: %s" % (p["name"], ver, why),
+                              id=eid, version=ver, text=" ".join(text.split())[:200]))
+    return obs
+
+
+def collect(ctx):
+    led = ledger.load(ctx)
+    surf = surfaces.load(ctx)
+    obs = (pages.check(ctx, surf) + inventory.check(ctx, surf) + prereqs.check(ctx, surf)
+           + stale.check(ctx, surf, led) + changelog_obligations(ctx, led))
+    return {"schemaVersion": 1, "range": {"base": ctx.base, "head": ctx.head},
+            "open": len(obs), "obligations": obs}

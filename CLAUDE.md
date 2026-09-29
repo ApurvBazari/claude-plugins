@@ -104,6 +104,13 @@ Two branches: `develop` (integration) and `main` (release). **`main` is the GitH
 
 - Feature branches → PR to `develop` (squash merge). Pass `--base develop` explicitly — `gh pr create` targets `main` by default now.
 - When ready to ship: PR from `develop` → `main` (**merge commit, never squash**)
+- **Docs ship with the release.** Opening or updating the `develop` → `main` PR runs `release-docs.yml`:
+  - it detects the docs obligations the release leaves open (stale badges and counts, new CHANGELOG entries not yet documented, retired names). When there are none, it stops;
+  - otherwise it dispatches the docs bot on `develop`. The bot runs `/release-docs mode=ci` unattended, in a job with no publishing credentials. A separate job that never runs the model applies the bot's patch to a fresh checkout, re-runs the deterministic post-checks, and opens a `docs/release-sync-*` PR to `develop`, linked on the release PR. A failed check makes that PR a draft labelled `needs-owner`;
+  - review the docs PR and squash-merge it. The release PR then refreshes and detects again;
+  - the required **Docs Obligations** check (`validate.yml`) blocks the merge to `main` until the docs match.
+
+  Run `/release-docs` locally to do the same by hand. Coverage is declared in `.github/docs-ledger.json`, and `waived` is owner-only.
 - After shipping: merge `main` back into `develop` (merge commit) to keep them in sync
 
 Version bumps are manual — bump `plugin.json` + `marketplace.json` + `CHANGELOG.md` in the feature PR. No release-please or automated version management.

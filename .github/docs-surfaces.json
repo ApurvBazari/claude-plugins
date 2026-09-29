@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    "site/index.html",
+    "site/*/index.html",
+    "README.md",
+    "CLAUDE.md",
+    "{plugin}/README.md",
+    "{plugin}/CONVENTIONS.md",
+    "{plugin}/references/**/*.md",
+    "{plugin}/skills/*/references/**/*.md"
+  ],
+  "frozen": [
+    "site/walkthrough/examples/**"
+  ],
+  "landing": "site/index.html",
+  "pages": {
+    "onboard": "site/onboard/index.html",
+    "notify": "site/notify/index.html",
+    "handoff": "site/handoff/index.html",
+    "walkthrough": "site/walkthrough/index.html",
+    "lens": "site/lens/index.html"
+  },
+  "og": {
+    "site/index.html": {
+      "title": "claude-plugins — marketplace",
+      "description": "Sharp, honest Claude Code tooling — see what a session did (walkthrough), check it against intent (lens), set a repo up right (onboard).",
+      "og:title": "claude-plugins — sharp, honest tooling that makes Claude Code's work visible and verifiable",
+      "og:description": "Sharp, honest Claude Code tooling — see what a session did (walkthrough), check it against intent (lens), set a repo up right (onboard).",
+      "og:image:alt": "claude-plugins — sharp, honest tooling that makes Claude Code's work visible and verifiable. Five plugins: walkthrough, lens, onboard, notify, handoff.",
+      "twitter:title": "claude-plugins — sharp, honest tooling that makes Claude Code's work visible and verifiable",
+      "twitter:description": "Sharp, honest Claude Code tooling — see what a session did (walkthrough), check it against intent (lens), set a repo up right (onboard).",
+      "twitter:image:alt": "claude-plugins — sharp, honest tooling that makes Claude Code's work visible and verifiable. Five plugins: walkthrough, lens, onboard, notify, handoff."
+    },
+    "site/onboard/index.html": {
+      "title": "onboard — claude-plugins",
+      "description": "Point it at a codebase and it generates the full Claude Code tooling stack — skills, agents, hooks, contracts — not just a CLAUDE.md.",
+      "og:title": "onboard — generate a codebase's full Claude Code tooling stack",
+      "og:description": "Point it at a codebase and it generates the full Claude Code tooling stack — skills, agents, hooks, contracts — not just a CLAUDE.md.",
+      "og:image:alt": "claude-plugins — sharp, honest tooling that makes Claude Code's work visible and verifiable. Five plugins: walkthrough, lens, onboard, notify, handoff.",
+      "twitter:title": "onboard — generate a codebase's full Claude Code tooling stack",
+      "twitter:description": "Point it at a codebase and it generates the full Claude Code tooling stack — skills, agents, hooks, contracts — not just a CLAUDE.md.",
+      "twitter:image:alt": "claude-plugins — sharp, honest tooling that makes Claude Code's work visible and verifiable. Five plugins: walkthrough, lens, onboard, notify, handoff."
+    },
+    "site/notify/index.html": {
+      "title": "notify — claude-plugins",
+      "description": "Desktop notifications when Claude finishes or needs you. Cross-platform, intentionally minimal.",
+      "og:title": "notify — desktop notifications when Claude finishes or needs you",
+      "og:description": "Desktop notifications when Claude finishes or needs you. Cross-platform, intentionally minimal.",
+      "og:image:alt": "claude-plugins — sharp, honest tooling that makes Claude Code's work visible and verifiable. Five plugins: walkthrough, lens, onboard, notify, handoff.",
+      "twitter:title": "notify — desktop notifications when Claude finishes or needs you",
+      "twitter:description": "Desktop notifications when Claude finishes or needs you. Cross-platform, intentionally minimal.",
+      "twitter:image:alt": "claude-plugins — sharp, honest tooling that makes Claude Code's work visible and verifiable. Five plugins: walkthrough, lens, onboard, notify, handoff."
+    },
+    "site/handoff/index.html": {
+      "title": "handoff — claude-plugins",
+      "description": "Save a session's intent and resurface it the next time you open the project.",
+      "og:title": "handoff — carry a session's intent into the next session",
+      "og:description": "Save a session's intent and resurface it the next time you open the project.",
+      "og:image:alt": "claude-plugins — sharp, honest tooling that makes Claude Code's work visible and verifiable. Five plugins: walkthrough, lens, onboard, notify, handoff.",
+      "twitter:title": "handoff — carry a session's intent into the next session",
+      "twitter:description": "Save a session's intent and resurface it the next time you open the project.",
+      "twitter:image:alt": "claude-plugins — sharp, honest tooling that makes Claude Code's work visible and verifiable. Five plugins: walkthrough, lens, onboard, notify, handoff."
+    },
+    "site/walkthrough/index.html": {
+      "title": "walkthrough — claude-plugins",
+      "description": "Turn any Claude Code session into a self-contained, interactive HTML document you can explore and share.",
+      "og:title": "walkthrough — turn a Claude Code session into explorable HTML",
+      "og:description": "Turn any Claude Code session into a self-contained, interactive HTML document you can explore and share.",
+      "og:image:alt": "claude-plugins — sharp, honest tooling that makes Claude Code's work visible and verifiable. Five plugins: walkthrough, lens, onboard, notify, handoff.",
+      "twitter:title": "walkthrough — turn a Claude Code session into explorable HTML",
+      "twitter:description": "Turn any Claude Code session into a self-contained, interactive HTML document you can explore and share.",
+      "twitter:image:alt": "claude-plugins — sharp, honest tooling that makes Claude Code's work visible and verifiable. Five plugins: walkthrough, lens, onboard, notify, handoff."
+    },
+    "site/lens/index.html": {
+      "title": "lens — claude-plugins",
+      "description": "Review a session against its spec and plan — did the change do what this task intended, built the way it was planned?",
+      "og:title": "lens — review a change against the spec and plan it was meant to follow",
+      "og:description": "Review a session against its spec and plan — did the change do what this task intended, built the way it was planned?",
+      "og:image:alt": "claude-plugins — sharp, honest tooling that makes Claude Code's work visible and verifiable. Five plugins: walkthrough, lens, onboard, notify, handoff.",
+      "twitter:title": "lens — review a change against the spec and plan it was meant to follow",
+      "twitter:description": "Review a session against its spec and plan — did the change do what this task intended, built the way it was planned?",
+      "twitter:image:alt": "claude-plugins — sharp, honest tooling that makes Claude Code's work visible and verifiable. Five plugins: walkthrough, lens, onboard, notify, handoff."
+    }
+  },
+  "retired": [
+    "--space-*",
+    ".claude/greenfield-drift.json",
+    "claude-onboard/.claude-plugin/plugin.json",
+    "claude-onboard/README.md",
+    "claude-onboard/agents/codebase-analyzer.md",
+    "claude-onboard/agents/config-generator.md",
+    "claude-onboard/commands/init.md",
+    "claude-onboard/commands/status.md",
+    "claude-onboard/commands/update.md",
+    "claude-onboard/scripts/analyze-structure.sh",
+    "claude-onboard/scripts/detect-stack.sh",
+    "claude-onboard/scripts/measure-complexity.sh",
+    "claude-onboard/skills/analysis/SKILL.md",
+    "claude-onboard/skills/analysis/references/model-recommendations.md",
+    "claude-onboard/skills/analysis/references/tech-stack-patterns.md",
+    "claude-onboard/skills/generation/SKILL.md",
+    "claude-onboard/skills/generation/references/agents-guide.md",
+    "claude-onboard/skills/generation/references/claude-md-guide.md",
+    "claude-onboard/skills/generation/references/hooks-guide.md",
+    "claude-onboard/skills/generation/references/rules-guide.md",
+    "claude-onboard/skills/generation/references/skills-guide.md",
+    "claude-onboard/skills/wizard/SKILL.md",
+    "claude-onboard/skills/wizard/references/question-bank.md",
+    "collect-git-context.sh",
+    "concepts[]",
+    "greenfield-drift.json",
+    "greenfield-meta.json",
+    "headlessMode",
+    "install-mcp-plugins.sh",
+    "scripts/install-mcp-plugins.sh",
+    "test-notification.sh",
+    "test_sp5_invariants.sh",
+    "trigger-phrases",
+    "wizardAnswers.model"
+  ]
+}
