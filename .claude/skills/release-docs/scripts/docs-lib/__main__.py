@@ -10,8 +10,12 @@ USAGE = ("usage: docs-detect.sh [--root DIR] [--range BASE..HEAD] (--out FILE | 
          "       docs-detect.sh [--root DIR] --candidates BASE..HEAD\n"
          "       docs-detect.sh [--root DIR] [--range BASE..HEAD] --pr-body --before FILE [--verifier FILE]\n"
          "       docs-detect.sh [--root DIR] --snapshot FILE | --render-pages\n"
-         "       docs-detect.sh [--root DIR] --fence --before FILE [--expect-clean]")
-VALUED = ("--root", "--range", "--out", "--candidates", "--before", "--verifier", "--snapshot")
+         "       docs-detect.sh [--root DIR] --fence --before FILE [--expect-clean]\n"
+         "       docs-detect.sh [--root DIR] --check-output FILE | --check-output-dir DIR\n"
+         "An output path (--out, --snapshot, --check-output*) inside a repository must be under its\n"
+         ".release-docs/ and never inside .git; outside every repository it is free.")
+VALUED = ("--root", "--range", "--out", "--candidates", "--before", "--verifier", "--snapshot",
+          "--check-output", "--check-output-dir")
 FLAGS = ("--gate", "--fix-mechanical", "--allowed-paths", "--pr-body", "--fence", "--render-pages",
          "--expect-clean")
 
@@ -32,6 +36,17 @@ def parse(argv):
 
 
 def run(opts):
+    # Output paths are checked before anything is computed or written (outputs.py says why). The
+    # --check-output modes serve the bash scripts (post-checks --report/--shots, render-check
+    # --shots) and need no repository at the working directory.
+    import outputs
+    roots = [opts.get("--root")]
+    for flag, is_dir in (("--check-output", False), ("--check-output-dir", True),
+                         ("--out", False), ("--snapshot", False)):
+        if flag in opts:
+            outputs.check(opts[flag], is_dir=is_dir, roots=roots)
+    if "--check-output" in opts or "--check-output-dir" in opts:
+        return 0
     ctx = repo.Context(opts.get("--root"), opts.get("--range", "origin/main..HEAD"))
     if opts.get("--fix-mechanical"):
         import mechanical

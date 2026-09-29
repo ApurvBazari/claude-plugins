@@ -28,6 +28,9 @@ while [ $# -gt 0 ]; do
   esac
 done
 [ ${#pages[@]} -gt 0 ] || { echo "usage: render-check.sh [--shots DIR] PAGE..." >&2; exit 2; }
+# A --shots dir inside the repository must be under .release-docs/ and never inside .git; it is
+# checked before anything is written (docs-lib/outputs.py).
+if [ -n "$shots" ]; then bash "$HERE/docs-detect.sh" --check-output-dir "$shots" >/dev/null || exit 2; fi
 
 # RENDER_TIMEOUT feeds arithmetic in chrome_run (limit=$(( RENDER_TIMEOUT * 2 ))); a malformed value
 # there errors under set -e in a way that can unwind past the page loop without ever printing a

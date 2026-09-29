@@ -163,7 +163,8 @@ def _tree(ctx, ref):
 
 
 def _is_ignore_file(rel):
-    return rel.rsplit("/", 1)[-1] == ".gitignore"
+    """Case-insensitive: with core.ignorecase (macOS, Windows) git honours `.GITIGNORE` too."""
+    return rel.rstrip("/").rsplit("/", 1)[-1].lower() == ".gitignore"
 
 
 def _revert(ctx, rel, tracked, owned):

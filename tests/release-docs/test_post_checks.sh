@@ -362,6 +362,61 @@ expect "T6-FIFO finishes (no hang) with exit 1" 1 "$RC"
 if [ -p .github/docs-surfaces.json ] || [ ! -f .github/docs-surfaces.json ]; then fail "T6-FIFO config not restored"; else echo "ok: T6-FIFO config restored as a regular file"; fi
 has "T6-FIFO reported" fifo.md 'FIFO at .github/docs-surfaces.json'
 
+# T6-IGNORE-CASE: with core.ignorecase (macOS) git honours `.GITIGNORE` too, so the fence treats
+# any case of the name as an ignore file: put back first, never able to expose an owner's file.
+fx_repo ignorecase
+printf '*.local\n' > .gitignore
+git add .gitignore && git commit -qm 'ignore local'
+put alpha/x.local 'owner local'
+snap b-icase
+printf '!*.local\n' > alpha/.GITIGNORE
+post b-icase icase.md
+expect "T6-IGNORE-CASE exit 1" 1 "$RC"
+kept "T6-IGNORE-CASE owner's ignored file kept" alpha/x.local
+gone "T6-IGNORE-CASE case-variant ignore file removed" alpha/.GITIGNORE
+has "T6-IGNORE-CASE reported as an ignore file" icase.md 'the run created alpha/.GITIGNORE (removed)'
+
+# T6-OUT: the output flags cannot write into the working tree outside .release-docs/, or into .git.
+# The CI model once emptied post-checks.sh itself with --report. Refused before any write, exit 2.
+fx_repo outputs
+printf '.release-docs/\n' >> .git/info/exclude
+snap b-out
+tool_sum="$(cksum < alpha/scripts/tool.sh)"
+RC=0; bash "$POST" --before "$SCRATCH/b-out" --report alpha/scripts/tool.sh >/dev/null 2>&1 || RC=$?
+expect "T6-OUT --report onto a tracked file -> exit 2" 2 "$RC"
+expect "T6-OUT the tracked file is untouched" "$tool_sum" "$(cksum < alpha/scripts/tool.sh)"
+excl_sum="$(cksum < .git/info/exclude)"
+RC=0; bash "$DETECT" --range main..HEAD --out .git/info/exclude >/dev/null 2>&1 || RC=$?
+expect "T6-OUT --out into .git/info/exclude -> exit 2" 2 "$RC"
+expect "T6-OUT .git/info/exclude untouched" "$excl_sum" "$(cksum < .git/info/exclude)"
+RC=0; bash "$DETECT" --range main..HEAD --out alpha/obligations.json >/dev/null 2>&1 || RC=$?
+expect "T6-OUT --out into the tree -> exit 2" 2 "$RC"
+gone "T6-OUT no --out file written in the tree" alpha/obligations.json
+RC=0; bash "$POST" --snapshot alpha/snap.json >/dev/null 2>&1 || RC=$?
+expect "T6-OUT --snapshot into the tree -> exit 2" 2 "$RC"
+gone "T6-OUT no snapshot written in the tree" alpha/snap.json
+RC=0; bash "$POST" --before "$SCRATCH/b-out" --shots site/shots >/dev/null 2>&1 || RC=$?
+expect "T6-OUT post-checks --shots into the tree -> exit 2" 2 "$RC"
+gone "T6-OUT post-checks created no shots dir" site/shots
+RC=0; bash "$RENDER" --shots alpha/shots site/alpha/index.html >/dev/null 2>"$SCRATCH/rc-err" || RC=$?
+expect "T6-OUT render-check --shots into the tree -> exit 2" 2 "$RC"
+has "T6-OUT render-check refuses it before looking for Chrome" rc-err 'refusing --shots directory'
+gone "T6-OUT render-check created no shots dir" alpha/shots
+mkdir -p .release-docs/run
+ln -s ../../alpha/scripts/tool.sh .release-docs/run/link.md
+RC=0; bash "$POST" --before "$SCRATCH/b-out" --report .release-docs/run/link.md >/dev/null 2>&1 || RC=$?
+expect "T6-OUT a symlink from .release-docs/ into the tree -> exit 2" 2 "$RC"
+ln alpha/scripts/tool.sh "$SCRATCH/hard.md"
+RC=0; bash "$POST" --before "$SCRATCH/b-out" --report "$SCRATCH/hard.md" >/dev/null 2>&1 || RC=$?
+expect "T6-OUT a hard link to a tracked file -> exit 2" 2 "$RC"
+expect "T6-OUT the tracked file is still untouched" "$tool_sum" "$(cksum < alpha/scripts/tool.sh)"
+RC=0; bash "$POST" --before "$SCRATCH/b-out" --report .release-docs/run/x.md >/dev/null 2>&1 || RC=$?
+expect "T6-OUT --report under .release-docs/run/ works" 0 "$RC"
+if grep -q 'ok: write fence' .release-docs/run/x.md 2>/dev/null; then echo "ok: T6-OUT .release-docs/run/x.md written"; else fail "T6-OUT .release-docs/run/x.md not written"; fi
+post b-out tmp-report.md
+expect "T6-OUT --report under \$TMPDIR works" 0 "$RC"
+has "T6-OUT the \$TMPDIR report is written" tmp-report.md 'ok: write fence'
+
 # T6-RENDER-SEL: only the landing page and plugin pages are rendered — never og-card.html, never
 # a frozen path.
 fx_repo render

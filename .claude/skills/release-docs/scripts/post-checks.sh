@@ -7,6 +7,9 @@
 #   --snapshot records HEAD and every path dirty before the run, with a digest of its content
 #   (JSON). It is taken once: an existing FILE is never overwritten (exit 2). --before takes that
 #   file; a plain `git status` text snapshot is refused (exit 2). Keep it where the run can't write.
+#   Output paths (--snapshot, --report, --shots) inside the repository must be under .release-docs/
+#   and never inside .git; outside it ($TMPDIR, $RUNNER_TEMP) they are free. A refused one exits 2
+#   before anything is written.
 #   --expect-clean is for CI, which starts from a fresh checkout: the snapshot must list no dirty
 #   path and name the current HEAD. Otherwise the run is reported, still fenced, and exits 2 — a
 #   snapshot re-taken after the apply would pass the run's files off as the owner's.
@@ -60,6 +63,15 @@ if [ -n "$snapshot" ]; then
   exec bash "$HERE/docs-detect.sh" --snapshot "$snapshot"
 fi
 [ -n "$before" ] && [ -f "$before" ] || usage "--before SNAPSHOT is required"
+# Output paths are checked before anything is written: inside the repository only under
+# .release-docs/, never inside .git (docs-lib/outputs.py). The CI model can call this script with
+# any --report or --shots, and a script's writes are not covered by Claude Code's .claude/ guard.
+out_ok() { # <flag> <path> — exit 2, before any write, when docs-detect refuses the path
+  local msg
+  msg="$(bash "$HERE/docs-detect.sh" "$1" "$2" 2>&1 >/dev/null)" || usage "${msg%%$'\n'*}"
+}
+[ "$report" = /dev/null ] || out_ok --check-output "$report"
+[ -z "$shots" ] || out_ok --check-output-dir "$shots"
 [ "$report" = /dev/null ] || { : > "$report"; } 2>/dev/null || usage "cannot write the report $report"
 
 skip() { case ",${RELEASE_DOCS_SKIP:-}," in *",$1,"*) return 0 ;; *) return 1 ;; esac; }

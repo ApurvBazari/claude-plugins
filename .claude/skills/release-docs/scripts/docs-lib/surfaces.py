@@ -111,9 +111,11 @@ class Allowlist:
             self.frozen = [globre(p) for p in surf["frozen"]]
 
     def __call__(self, rel):
-        # Never a .gitignore (it decides what the fence can see), never a name with a control
-        # character (no doc is named that way, and `**` would match a newline).
-        if rel.rsplit("/", 1)[-1] == ".gitignore" or any(ord(c) < 32 or ord(c) == 127 for c in rel):
+        # Never a .gitignore in any case (it decides what the fence can see, and with
+        # core.ignorecase git honours `.GITIGNORE` too), never a name with a control character
+        # (no doc is named that way, and `**` would match a newline).
+        if rel.rsplit("/", 1)[-1].lower() == ".gitignore" \
+                or any(ord(c) < 32 or ord(c) == 127 for c in rel):
             return False
         return rel in self.exact or (any(r.match(rel) for r in self.pats)
                                      and not any(r.match(rel) for r in self.frozen))
