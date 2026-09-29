@@ -3,26 +3,36 @@
 The CI model may call these scripts with any arguments, and a script's own writes are not covered by
 Claude Code's `.claude/` protection: `--report .claude/skills/release-docs/scripts/post-checks.sh`
 once emptied the very script CI then ran. So every output path (`--out`, `--snapshot`, `--report`,
-`--shots`) is checked before anything is written:
+`--shots`, og-regen's og.png) is checked before anything is written:
 
 - inside any `.git` directory (a `.git` path component in any case, or the repository's git dir or
   common dir, wherever they live) it is refused;
 - inside a repository's working tree it must sit under that tree's `.release-docs/` (exact name);
 - outside every repository (`$TMPDIR`, `$RUNNER_TEMP`) it is free.
 
-The path is resolved first (symlinks followed; for a path that does not exist yet, its nearest
-existing ancestor), and "inside" is decided by file identity, not by spelling, so a case variant or
-a symlinked route to the tree is still inside it. An existing file output must be a regular file
-with one link: a hard link would truncate whatever it shares its content with.
+og-regen's destination is the one output that belongs in the tree: `check(..., exact=OG_PNG)`
+replaces the `.release-docs/` rule with "exactly the toplevel's site/og.png", counts the repository
+the path itself resolves into as well, and refuses a symlink at og.png (og-regen replaces the file
+by rename, and `mv` onto a symlink to a directory moves into that directory).
+
+The path is resolved the way the OS resolves it: os.path.realpath follows each symlink before it
+applies the `..` after it, so `.release-docs/link/..` is the parent of the link's target, not
+`.release-docs` (os.path.abspath would collapse it as text first and check a different file than
+the one that gets written). A path that does not exist yet resolves through its nearest existing
+ancestor. "Inside" is decided by file identity, not by spelling, so a case variant or a symlinked
+route to the tree is still inside it. An existing file output must be a regular file with one
+link: a hard link would truncate whatever it shares its content with.
 """
+import errno
 import os
 import stat
 import subprocess
 
 import repo
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = os.path.dirname(os.path.realpath(__file__))
 RUN_DIR = ".release-docs"
+OG_PNG = "site/og.png"
 
 
 def _ident(path):
@@ -46,24 +56,46 @@ def _repository(start):
     return lines[0], [g if os.path.isabs(g) else os.path.join(start, g) for g in lines[1:3]]
 
 
-def check(path, is_dir=False, roots=()):
+def _resolve(path, what):
+    """The absolute path the OS reaches through `path`, and its components. realpath gives up on a
+    symlink loop and collapses whatever follows it as text, so a loop is refused here: its answer
+    would describe a path nobody can write."""
+    try:
+        os.stat(path)
+    except OSError as e:
+        if e.errno == errno.ELOOP:
+            raise repo.RepoError("refusing %s %s: a symlink on its path is a symlink loop"
+                                 % (what, path))
+    target = os.path.realpath(path)
+    return target, [c for c in target.split("/") if c]
+
+
+def check(path, is_dir=False, roots=(), exact=None):
     """Raise RepoError unless `path` is a safe place for a script to write. `roots` names extra
     directories whose repositories count (docs-detect's --root); the caller's working directory
-    and the scripts' own repository always count."""
+    and the scripts' own repository always count. `exact` (OG_PNG) is the one path the output may
+    take inside a repository, relative to its toplevel, in place of the `.release-docs/` rule."""
     what = "--shots directory" if is_dir else "output file"
-    target = os.path.realpath(os.path.abspath(path))
-    comps = [c for c in target.split("/") if c]
+    if exact and os.path.islink(path):
+        raise repo.RepoError("refusing %s %s: it is a symlink, and it is replaced by rename"
+                             % (what, path))
+    target, comps = _resolve(path, what)
     if any(c.lower() == ".git" for c in comps):
         raise repo.RepoError("refusing %s %s: it is inside a .git directory" % (what, path))
-    # Every existing ancestor of the resolved path (itself included), with the components below it.
+    # Every existing ancestor of the resolved path (itself included), nearest first, with the
+    # components below it.
     chain = []
     for i in range(len(comps), -1, -1):
-        ident = _ident("/" + "/".join(comps[:i]))
+        where = "/" + "/".join(comps[:i])
+        ident = _ident(where)
         if ident is not None:
-            chain.append((ident, comps[i:]))
-    idents = {ident for ident, _rest in chain}
+            chain.append((ident, where, comps[i:]))
+    idents = {ident for ident, _where, _rest in chain}
+    starts = [os.getcwd(), HERE] + [r for r in roots if r]
+    if exact:  # the repository the path lands in, wherever that is ("/" always ends the chain)
+        starts.append(next(where for _ident, where, _rest in chain if os.path.isdir(where)))
     seen = set()
-    for start in [os.getcwd(), HERE] + [r for r in roots if r]:
+    for start in starts:
         found = _repository(start)
         if found is None or found[0] in seen:
             continue
@@ -73,12 +105,18 @@ def check(path, is_dir=False, roots=()):
             raise repo.RepoError("refusing %s %s: it is inside the git directory of %s"
                                  % (what, path, top))
         top_ident = _ident(top)
-        for ident, rest in chain:
-            if ident == top_ident:
-                if not rest or rest[0] != RUN_DIR or (not is_dir and len(rest) < 2):
-                    raise repo.RepoError("refusing %s %s: inside the repository %s it must be "
-                                         "under %s/" % (what, path, top, RUN_DIR))
-                break
+        for ident, _where, rest in chain:
+            if ident != top_ident:
+                continue
+            if exact:
+                ok, rule = rest == exact.split("/"), "exactly its %s" % exact
+            else:
+                ok = bool(rest) and rest[0] == RUN_DIR and (is_dir or len(rest) >= 2)
+                rule = "under %s/" % RUN_DIR
+            if not ok:
+                raise repo.RepoError("refusing %s %s: inside the repository %s it must be %s"
+                                     % (what, path, top, rule))
+            break
     if os.path.lexists(target):
         st = os.stat(target)
         if is_dir and not stat.S_ISDIR(st.st_mode):

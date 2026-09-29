@@ -11,11 +11,12 @@ USAGE = ("usage: docs-detect.sh [--root DIR] [--range BASE..HEAD] (--out FILE | 
          "       docs-detect.sh [--root DIR] [--range BASE..HEAD] --pr-body --before FILE [--verifier FILE]\n"
          "       docs-detect.sh [--root DIR] --snapshot FILE | --render-pages\n"
          "       docs-detect.sh [--root DIR] --fence --before FILE [--expect-clean]\n"
-         "       docs-detect.sh [--root DIR] --check-output FILE | --check-output-dir DIR\n"
+         "       docs-detect.sh [--root DIR] --check-output FILE | --check-output-dir DIR | --check-og FILE\n"
          "An output path (--out, --snapshot, --check-output*) inside a repository must be under its\n"
-         ".release-docs/ and never inside .git; outside every repository it is free.")
+         ".release-docs/ and never inside .git; outside every repository it is free. --check-og is\n"
+         "og-regen's: inside a repository only exactly its site/og.png.")
 VALUED = ("--root", "--range", "--out", "--candidates", "--before", "--verifier", "--snapshot",
-          "--check-output", "--check-output-dir")
+          "--check-output", "--check-output-dir", "--check-og")
 FLAGS = ("--gate", "--fix-mechanical", "--allowed-paths", "--pr-body", "--fence", "--render-pages",
          "--expect-clean")
 
@@ -37,15 +38,17 @@ def parse(argv):
 
 def run(opts):
     # Output paths are checked before anything is computed or written (outputs.py says why). The
-    # --check-output modes serve the bash scripts (post-checks --report/--shots, render-check
-    # --shots) and need no repository at the working directory.
+    # --check-* modes serve the bash scripts (post-checks --report/--shots, render-check --shots,
+    # og-regen's site/og.png) and need no repository at the working directory.
     import outputs
     roots = [opts.get("--root")]
-    for flag, is_dir in (("--check-output", False), ("--check-output-dir", True),
-                         ("--out", False), ("--snapshot", False)):
+    checks = (("--check-output", False, None), ("--check-output-dir", True, None),
+              ("--check-og", False, outputs.OG_PNG), ("--out", False, None),
+              ("--snapshot", False, None))
+    for flag, is_dir, exact in checks:
         if flag in opts:
-            outputs.check(opts[flag], is_dir=is_dir, roots=roots)
-    if "--check-output" in opts or "--check-output-dir" in opts:
+            outputs.check(opts[flag], is_dir=is_dir, roots=roots, exact=exact)
+    if any(flag in opts for flag in ("--check-output", "--check-output-dir", "--check-og")):
         return 0
     ctx = repo.Context(opts.get("--root"), opts.get("--range", "origin/main..HEAD"))
     if opts.get("--fix-mechanical"):

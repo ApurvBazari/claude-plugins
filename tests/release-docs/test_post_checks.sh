@@ -410,6 +410,29 @@ ln alpha/scripts/tool.sh "$SCRATCH/hard.md"
 RC=0; bash "$POST" --before "$SCRATCH/b-out" --report "$SCRATCH/hard.md" >/dev/null 2>&1 || RC=$?
 expect "T6-OUT a hard link to a tracked file -> exit 2" 2 "$RC"
 expect "T6-OUT the tracked file is still untouched" "$tool_sum" "$(cksum < alpha/scripts/tool.sh)"
+# A `..` after a symlink climbs from the link's target, the way the OS resolves it, not from the
+# link's own directory the way a textual collapse reads it. With .release-docs/l -> alpha/scripts/d,
+# .release-docs/l/../tool.sh IS alpha/scripts/tool.sh, and .release-docs/l/.. IS alpha/scripts.
+mkdir -p alpha/scripts/d
+ln -s ../alpha/scripts/d .release-docs/l
+RC=0; bash "$POST" --before "$SCRATCH/b-out" --report .release-docs/l/../tool.sh >/dev/null 2>&1 || RC=$?
+expect "T6-OUT --report through a symlink's '..' onto a tracked file -> exit 2" 2 "$RC"
+expect "T6-OUT the tracked file behind the symlink's '..' is untouched" "$tool_sum" "$(cksum < alpha/scripts/tool.sh)"
+RC=0; bash "$DETECT" --check-output-dir .release-docs/l/.. >/dev/null 2>&1 || RC=$?
+expect "T6-OUT --check-output-dir through a symlink's '..' -> exit 2" 2 "$RC"
+RC=0; bash "$DETECT" --range main..HEAD --out .release-docs/l/../x.json >/dev/null 2>&1 || RC=$?
+expect "T6-OUT --out through a symlink's '..' -> exit 2" 2 "$RC"
+gone "T6-OUT no --out file written beside the symlink's target" alpha/scripts/x.json
+RC=0; bash "$RENDER" --shots .release-docs/l/../shots site/alpha/index.html >/dev/null 2>"$SCRATCH/rc-err2" || RC=$?
+expect "T6-OUT render-check --shots through a symlink's '..' -> exit 2" 2 "$RC"
+has "T6-OUT render-check refuses the symlink's '..' before looking for Chrome" rc-err2 'refusing --shots directory'
+gone "T6-OUT render-check created no shots dir beside the symlink's target" alpha/scripts/shots
+# A symlink loop: the OS can't resolve it, and realpath collapses what follows it as text, so the
+# check refuses it outright instead of answering for a path nobody can write.
+ln -s loop .release-docs/loop
+RC=0; bash "$DETECT" --check-output .release-docs/loop/../x.md >/dev/null 2>"$SCRATCH/loop-err" || RC=$?
+expect "T6-OUT --check-output through a symlink loop -> exit 2" 2 "$RC"
+has "T6-OUT the loop is named" loop-err 'symlink loop'
 RC=0; bash "$POST" --before "$SCRATCH/b-out" --report .release-docs/run/x.md >/dev/null 2>&1 || RC=$?
 expect "T6-OUT --report under .release-docs/run/ works" 0 "$RC"
 if grep -q 'ok: write fence' .release-docs/run/x.md 2>/dev/null; then echo "ok: T6-OUT .release-docs/run/x.md written"; else fail "T6-OUT .release-docs/run/x.md not written"; fi
