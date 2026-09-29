@@ -137,6 +137,12 @@ jobs:
       changed: ${{ steps.bundle.outputs.changed }}
       claude: ${{ steps.claude.outputs.conclusion }}
       rc: ${{ steps.post.outputs.rc }}
+    # The Claude CLI (2.1.283, pinned by the action; the scrub needs 2.1.209+) strips most variables,
+    # the OAuth token among them, from the environment of every subprocess it starts: Bash commands,
+    # hooks, MCP servers. It must come from the launch environment, which the action builds from its
+    # env context (action.yml's Run step); a settings `env` copy is ignored. Only Claude reads it.
+    env:
+      CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: '1'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -247,11 +253,21 @@ jobs:
           # playbook's page-missing path runs walkthrough:document, whose render contract runs it. It
           # can execute code (`-r`), like any write primitive here, which this job contains: no PAT,
           # contents: read, and publish re-verifies everything from its own checkout.
+          # Read(//proc/**) is denied (// is the filesystem root; Read deny rules also cover Grep
+          # and Glob): /proc/self/environ holds the OAuth token, and Read is otherwise unrestricted,
+          # so the model could copy it into a doc without running any code.
           claude_args: |
             --model claude-opus-5-5
             --max-turns 120
             --plugin-dir walkthrough
             --allowedTools "Read,Edit,Write,Glob,Grep,Agent,Task,Skill,Bash(bash .claude/skills/release-docs/scripts/docs-detect.sh:*),Bash(bash .claude/skills/release-docs/scripts/post-checks.sh:*),Bash(bash .claude/skills/release-docs/scripts/render-check.sh:*),Bash(bash .claude/skills/release-docs/scripts/og-regen.sh:*),Bash(node --check:*),Bash(git diff:*),Bash(git status:*)"
+            --disallowedTools "Read(//proc/**)"
+          # post-checks runs every belt in one Bash call, which the default 2-minute Bash timeout would
+          # kill. The action merges the settings input into ~/.claude/settings.json
+          # (setup-claude-code-settings.ts), and Claude Code writes that file's env entries into its
+          # own environment: a channel the action's source shows, where a step env: may not reach
+          # the CLI through the composite action.
+          settings: '{"env": {"BASH_DEFAULT_TIMEOUT_MS": "900000", "BASH_MAX_TIMEOUT_MS": "900000"}}'
           prompt: |
             /release-docs mode=ci
 
@@ -557,8 +573,12 @@ jobs:
           if [ "$POST_RC" != 0 ] || [ "$SYNC_RC" != 0 ] || [ "$SYNC_CLAUDE" != success ]; then draft=true; fi
           { echo "publish=true"; echo "draft=$draft"; } >> "$GITHUB_OUTPUT"
 
+      # Only once the gate has said publish: after a post-checks exit 2 the tree is untrusted, and
+      # --pr-body runs the checkout's audit-docs.sh. The post-checks report comes first, with its
+      # < and > escaped: it names files the run wrote, and nothing model-written can then open an
+      # HTML comment that hides it. --pr-body shows every value a run could write as code.
       - name: Build the PR body
-        if: ${{ !cancelled() && steps.post.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.gate.outputs.publish == 'true' }}
         env:
           POST_RC: ${{ steps.post.outputs.rc }}
           ARTIFACT: ${{ steps.prepare.outputs.artifact }}
@@ -571,13 +591,15 @@ jobs:
           # --verifier is always passed; a bundle without the model's verifier output says
           # "verifier output missing".
           {
+            printf '## Post-checks (exit %s, run by the publish job)\n\n' "${POST_RC:-none}"
+            sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' "$T/pc.md" 2>/dev/null \
+              || echo "- post-checks did not run"
+            echo ""
+            echo "The model job's own post-checks exited $SYNC_RC, and its Claude run was $SYNC_CLAUDE; its report is in its bundle."
+            echo ""
             bash "$T/rd/docs-detect.sh" --range origin/main..HEAD --pr-body \
               --before "$T/before.json" --verifier "$T/sync/verifier.json" \
               || echo "- docs-detect --pr-body failed; see the job log"
-            printf '\n### Post-checks (exit %s, run by the publish job)\n\n' "${POST_RC:-none}"
-            cat "$T/pc.md" 2>/dev/null || echo "- post-checks did not run"
-            echo ""
-            echo "The model job's own post-checks exited $SYNC_RC, and its Claude run was $SYNC_CLAUDE; its report is in its bundle."
             echo ""
             echo "Screenshots and this report: artifact \`$ARTIFACT\`. The model job's own bundle (patch, report, verifier output): artifact \`$SYNC_ARTIFACT\`. Both are on run $GITHUB_RUN_ID."
             printf '\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n'
@@ -614,7 +636,8 @@ jobs:
           T="$RUNNER_TEMP"
           git -c core.hooksPath=/dev/null -c core.fsmonitor=false add -A
           bash "$T/rd/docs-detect.sh" --allowed-paths > "$T/allowed.now.txt"
-          git -c core.hooksPath=/dev/null -c core.fsmonitor=false diff --cached --raw -z --no-renames HEAD > "$T/staged.raw"
+          git -c core.hooksPath=/dev/null -c core.fsmonitor=false \
+            diff --cached --raw -z --no-renames --no-abbrev --ignore-submodules=none HEAD > "$T/staged.raw"
           python3 - "$T/staged.raw" "$T/allowed.start.txt" "$T/allowed.now.txt" <<'PY'
           import json, sys
           raw = open(sys.argv[1], "rb").read().split(b"\0")
@@ -635,6 +658,35 @@ jobs:
               print("::error::staged entry refused, %s" % b)
           print("%d staged entries checked, %d refused" % (n, len(bad)))
           sys.exit(1 if bad else 0)
+          PY
+          # No credential-shaped string may be added by the run (I6): the model's job could read what
+          # it was never meant to, and a token in a doc or the PR body is public once pushed. Each
+          # staged blob is compared with HEAD's, so a pre-existing mention never trips it, binary
+          # files included. The string itself is never printed.
+          python3 - "$T/staged.raw" "$T/pr-body.md" <<'PY'
+          import collections, json, re, subprocess, sys
+          CRED = re.compile(rb"(sk-ant-)[A-Za-z0-9_-]*|(gh[pousr]_)[A-Za-z0-9]*|(github_pat_)[A-Za-z0-9_]*")
+          def creds(data):
+              return collections.Counter((next(g for g in m.groups() if g), m.group(0)) for m in CRED.finditer(data))
+          def blob(sha):
+              if not sha.strip("0"):
+                  return b""
+              p = subprocess.run(["git", "cat-file", "blob", sha], stdout=subprocess.PIPE)
+              if p.returncode != 0:
+                  sys.exit("::error::could not read the staged blob %s" % sha)
+              return p.stdout
+          raw = open(sys.argv[1], "rb").read().split(b"\0")
+          found, i = [], 0
+          while i + 1 < len(raw):
+              meta, path = raw[i].decode("ascii", "replace").split(), raw[i + 1].decode("utf-8", "replace")
+              i += 2
+              added = creds(blob(meta[3])) - creds(blob(meta[2]))
+              found += ["%s in %s" % (k.decode(), json.dumps(path)) for k in sorted({k for k, _t in added})]
+          with open(sys.argv[2], "rb") as f:
+              found += ["%s in the PR body" % k.decode() for k in sorted({k for k, _t in creds(f.read())})]
+          for x in found:
+              print("::error::refused, a credential-shaped string (%s...)" % x)
+          sys.exit(1 if found else 0)
           PY
           echo "tree=$(git write-tree)" >> "$GITHUB_OUTPUT"
 

@@ -15,7 +15,12 @@
 #   post-checks run from that copy with --expect-clean;
 # - a tree moves on only with post-checks exit 0 or 1 and a report that opens with the write fence's
 #   result; no force-add; --verifier is always passed; the action pin, model, token and tool
-#   allowlist are the probed ones.
+#   allowlist are the probed ones;
+# - final review I6, M1, M3: the model can't Read /proc, its subprocesses get a scrubbed environment
+#   and Bash calls long enough for the belts; publish builds its PR body only once its gate says
+#   publish, with the escaped post-checks report first; its staged-set check reads full object
+#   names with submodules seen, and refuses any credential-shaped string the run added (a check that
+#   runs the extracted scan on a scratch repo).
 #
 # The workflow is read with a small indentation-based reader, so the belt runs without PyYAML.
 # When PyYAML is importable (CI installs it), the reader is also checked against it, and the
@@ -27,9 +32,11 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 
 python3 - "$ROOT" <<'PY'
+import json
 import os
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 
@@ -801,7 +808,7 @@ def a33(c):
     sj = st.get("j") or ""
     order = [sj.find(x) for x in ("git -c core.hooksPath=/dev/null -c core.fsmonitor=false add -A",
                                   'bash "$RUNNER_TEMP/rd/docs-detect.sh" --allowed-paths > "$RUNNER_TEMP/allowed.now.txt"',
-                                  'diff --cached --raw -z --no-renames HEAD > "$RUNNER_TEMP/staged.raw"',
+                                  'diff --cached --raw -z --no-renames',
                                   'python3 - "$RUNNER_TEMP/staged.raw" "$RUNNER_TEMP/allowed.start.txt" "$RUNNER_TEMP/allowed.now.txt"',
                                   'echo "tree=$(git write-tree)" >> "$GITHUB_OUTPUT"')]
     if -1 in order or order != sorted(order):
@@ -829,6 +836,140 @@ def a33(c):
         f.append("the push step does not commit exactly the tree the stage step checked")
     if "secrets." in st.get("raw", ""):
         f.append("the stage step reads a secret")
+    return f
+
+
+def body_step(c):
+    return next((s for s in c.publish["steps"] if "--pr-body" in (s["j"] or "")), None)
+
+
+def heredoc(run, head):
+    """The body of the <<'PY' heredoc whose command line starts with head, or None."""
+    lines = (run or "").split("\n")
+    for k, ln in enumerate(lines):
+        if ln.startswith(head) and ln.endswith("<<'PY'"):
+            end = next((e for e in range(k + 1, len(lines)) if lines[e] == "PY"), None)
+            return None if end is None else "\n".join(lines[k + 1:end]) + "\n"
+    return None
+
+
+@check("A34", "the model can't Read /proc, where /proc/self/environ holds the OAuth token")
+def a34(c):
+    rules = [r.strip() for v in re.findall(r'--disallowedTools\s+"([^"]*)"', c.claude_args() or "")
+             for r in v.split(",")]
+    # // is the filesystem root; a single leading / is relative to the settings source.
+    return [] if "Read(//proc/**)" in rules else ["the Claude step does not deny Read(//proc/**): %s" % rules]
+
+
+@check("A35", "the Claude CLI's subprocesses get a scrubbed environment (from the job env)")
+def a35(c):
+    f = []
+    m = re.search(r"^    env:\n((?:      .*\n)+)", c.sync.get("head", "") + "\n", re.M)
+    if not m or not re.search(r"^      CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: '1'$", m.group(1), re.M):
+        f.append("sync's job env does not set CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: '1'")
+    for ln in code(c.text).split("\n"):
+        if "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB" in ln and ln.strip() != "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: '1'":
+            f.append("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB set otherwise: %s" % ln.strip())
+    return f
+
+
+@check("A36", "a Bash call outlives the belts: 15-minute Bash timeouts through the action's settings")
+def a36(c):
+    cl = c.claude()
+    raw = field(cl["raw"], "settings", "          ") if cl else None
+    try:
+        env = json.loads((raw or "").strip().strip("'"))["env"]
+    except (ValueError, KeyError, TypeError):
+        return ["the Claude step has no settings JSON with an env block: %r" % raw]
+    f = []
+    for k in ("BASH_DEFAULT_TIMEOUT_MS", "BASH_MAX_TIMEOUT_MS"):
+        v = str(env.get(k, ""))
+        if not v.isdigit() or int(v) < 900000:
+            f.append("settings env %s is %r, want at least 900000" % (k, v))
+    return f
+
+
+@check("A37", "publish builds a PR body only once its gate says publish")
+def a37(c):
+    b = body_step(c)
+    want = "!cancelled() && steps.gate.outputs.publish == 'true'"
+    if not b:
+        return ["publish has no PR-body step"]
+    return [] if unwrap(b["if"]) == want else ["the PR-body step's if: is %r, want %r" % (unwrap(b["if"]), want)]
+
+
+@check("A38", "publish's PR body opens with its post-checks report, < and > escaped")
+def a38(c):
+    bj = (body_step(c) or {}).get("j") or ""
+    esc = bj.find("""sed -e 's/&/\\&amp;/g' -e 's/</\\&lt;/g' -e 's/>/\\&gt;/g' "$RUNNER_TEMP/pc.md\"""")
+    f = []
+    if esc < 0:
+        f.append("the PR body does not include the post-checks report with < and > escaped")
+    elif not esc < bj.find("--pr-body"):
+        f.append("the post-checks report does not come before the --pr-body sections")
+    if re.search(r'\bcat "\$RUNNER_TEMP/pc\.md"', bj):
+        f.append("the post-checks report is also included unescaped")
+    return f
+
+
+@check("A39", "the staged-set check reads full object names, submodules included")
+def a39(c):
+    sj = (c.step("stage", "publish") or {}).get("j") or ""
+    ln = next((x for x in sj.split("\n") if 'diff --cached --raw -z' in x and "staged.raw" in x), "")
+    return ["the stage diff lacks %s: %s" % (flag, ln.strip()) for flag in ("--no-abbrev", "--ignore-submodules=none")
+            if flag not in ln.split()]
+
+
+@check("A40", "the stage step refuses a credential-shaped string the run added, or one in the PR body")
+def a40(c):
+    st = c.step("stage", "publish") or {}
+    sj = st.get("j") or ""
+    scan = heredoc(st.get("run"), 'python3 - "$T/staged.raw" "$T/pr-body.md"')
+    at, tree = sj.find('python3 - "$RUNNER_TEMP/staged.raw" "$RUNNER_TEMP/pr-body.md"'), sj.find('echo "tree=')
+    if scan is None or at < 0 or not at < tree:
+        return ["the stage step does not scan the staged blobs and the PR body before it outputs the tree"]
+    # Run the scan itself: a token added to a text file and to a binary one is refused, a mention
+    # HEAD already had is not, the token is never printed, and a clean change passes.
+    env = dict(os.environ, GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1")
+    f = []
+    with tempfile.TemporaryDirectory() as d:
+        def git(*a):
+            return subprocess.run(["git", "-c", "user.name=b", "-c", "user.email=b@x.invalid",
+                                   "-c", "commit.gpgsign=false"] + list(a), cwd=d, env=env,
+                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True).stdout
+
+        def put(rel, data):
+            with open(os.path.join(d, rel), "wb") as fh:
+                fh.write(data)
+
+        def scan_run(body=b"## body\n"):
+            put("pr-body.md", body)
+            git("add", "-A", "--", ".", ":!pr-body.md", ":!staged.raw")
+            put("staged.raw", git("diff", "--cached", "--raw", "-z", "--no-renames", "--no-abbrev", "HEAD"))
+            p = subprocess.run([sys.executable, "-", "staged.raw", "pr-body.md"], input=scan.encode(),
+                               cwd=d, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            return p.returncode, p.stdout.decode("utf-8", "replace")
+
+        git("init", "-q")
+        put("old.md", b"see ghp_OLDexample\n")
+        git("add", "old.md")
+        git("commit", "-qm", "base")
+        put("old.md", b"see ghp_OLDexample\nmore\n")
+        rc, out = scan_run()
+        if rc != 0:
+            f.append("the scan refused a mention HEAD already had (exit %d): %s" % (rc, out.strip()))
+        put("new.md", b"key sk-ant-api03-SECRETtail\n")
+        put("bin.png", b"\x89PNG\x00\x00github_pat_SECRETbin\x00")
+        rc, out = scan_run()
+        if rc != 1 or "new.md" not in out or "bin.png" not in out or "old.md" in out:
+            f.append("the scan did not refuse exactly the added tokens (exit %d): %s" % (rc, out.strip()))
+        if "SECRET" in out:
+            f.append("the scan printed the credential itself")
+        os.remove(os.path.join(d, "new.md"))
+        os.remove(os.path.join(d, "bin.png"))
+        rc, out = scan_run(b"claim: gho_SECRETinbody\n")
+        if rc != 1 or "PR body" not in out:
+            f.append("the scan did not refuse a token in the PR body (exit %d): %s" % (rc, out.strip()))
     return f
 
 
@@ -883,6 +1024,10 @@ PUB_IF = ("      github.event_name == 'workflow_dispatch' && needs.sync.result =
           "      inputs.dry_run == false && needs.sync.outputs.changed == 'true'\n")
 PUB_SNAP = S + 'bash .claude/skills/release-docs/scripts/post-checks.sh --snapshot "$T/p.snap"\n'
 PUB_APPLY = S + 'git -c core.hooksPath=/dev/null -c core.fsmonitor=false apply --binary "$patch"\n'
+BODY_PC = ("            printf '## Post-checks (exit %s, run by the publish job)\\n\\n' \"${POST_RC:-none}\"\n"
+           "            sed -e 's/&/\\&amp;/g' -e 's/</\\&lt;/g' -e 's/>/\\&gt;/g' \"$T/pc.md\" 2>/dev/null \\\n"
+           "              || echo \"- post-checks did not run\"\n")
+BODY_DD = ("              || echo \"- docs-detect --pr-body failed; see the job log\"\n")
 MUTANTS = [
     ("A1", [(WF, "    if: github.event_name == 'workflow_dispatch' && needs.detect.outputs.open != '0'\n",
              "    if: needs.detect.outputs.open != '0'\n", 1)], "sync also runs on pull_request"),
@@ -1016,6 +1161,26 @@ MUTANTS = [
      "the push step re-stages after the check"),
     ("A33", [(WF, S + 'bash "$T/rd/docs-detect.sh" --allowed-paths > "$T/allowed.start.txt"\n', "", 1)],
      "START's allowlist never listed"),
+    ("A34", [(WF, '            --disallowedTools "Read(//proc/**)"\n', "", 1)], "/proc readable"),
+    ("A34", [(WF, '"Read(//proc/**)"', '"Read(/proc/**)"', 1)], "a /proc rule anchored at the settings source"),
+    ("A35", [(WF, "      CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: '1'\n", "      CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: '0'\n", 1)],
+     "the scrub switched off"),
+    ("A35", [(WF, "    env:\n      CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: '1'\n", "", 1)], "no scrub"),
+    ("A36", [(WF, '"BASH_DEFAULT_TIMEOUT_MS": "900000", ', "", 1)], "the default Bash timeout left at 2 minutes"),
+    ("A36", [(WF, '"BASH_MAX_TIMEOUT_MS": "900000"', '"BASH_MAX_TIMEOUT_MS": "600000"', 1)], "a 10-minute Bash ceiling"),
+    ("A37", [(WF, "      - name: Build the PR body\n        if: ${{ !cancelled() && steps.gate.outputs.publish == 'true' }}\n",
+              "      - name: Build the PR body\n        if: ${{ !cancelled() && steps.post.outcome == 'success' }}\n", 1)],
+     "a PR body built after a post-checks exit 2"),
+    ("A38", [(WF, """sed -e 's/&/\\&amp;/g' -e 's/</\\&lt;/g' -e 's/>/\\&gt;/g' "$T/pc.md" 2>/dev/null""",
+              'cat "$T/pc.md" 2>/dev/null', 1)], "the post-checks report unescaped"),
+    ("A38", [(WF, BODY_PC, "", 1), (WF, BODY_DD, BODY_DD + BODY_PC, 1)], "the post-checks report after the model-fed sections"),
+    ("A39", [(WF, "--no-abbrev --ignore-submodules=none HEAD", "--no-abbrev HEAD", 1)], "the stage diff hides gitlinks"),
+    ("A39", [(WF, "--no-renames --no-abbrev --ignore-submodules", "--no-renames --ignore-submodules", 1)],
+     "the stage diff abbreviates object names"),
+    ("A40", [(WF, "          sys.exit(1 if found else 0)\n", "          sys.exit(0)\n", 1)], "the scan never refuses"),
+    ("A40", [(WF, "|(github_pat_)[A-Za-z0-9_]*", "", 1)], "fine-grained PATs not scanned"),
+    ("A40", [(WF, "              added = creds(blob(meta[3])) - creds(blob(meta[2]))\n",
+              "              added = creds(blob(meta[3]))\n", 1)], "a mention HEAD already had is refused too"),
     ("PARSE", [(WF, "        run: |\n          set +e\n          rm -rf \"$RUNNER_TEMP/post-checks.md\"",
                 "        run: |2\n          set +e\n          rm -rf \"$RUNNER_TEMP/post-checks.md\"", 1)],
      "an indentation indicator the reader does not know"),
