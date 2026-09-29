@@ -598,4 +598,121 @@ PY
 body="$(bash "$DETECT" --range main..HEAD --pr-body --before "$SCRATCH/before-id.json")"
 case "$body" in *"### Resolved (1)"*"$id0"*"### Still open"*) echo "ok: T6-PRBODY-ID the declared entry alone is resolved" ;; *) fail "T6-PRBODY-ID: $body" ;; esac
 
+# T7-PRBODY-* (final review I4, I5, I2/I3's listings, T6 M5/M6, T7, rehearsal #17-#19).
+prbody() { # <before.json> [verifier] — BODY and RC of docs-detect --pr-body
+  RC=0
+  if [ -n "${2:-}" ]; then
+    BODY="$(bash "$DETECT" --range main..HEAD --pr-body --before "$1" --verifier "$2" 2>"$SCRATCH/stderr")" || RC=$?
+  else
+    BODY="$(bash "$DETECT" --range main..HEAD --pr-body --before "$1" 2>"$SCRATCH/stderr")" || RC=$?
+  fi
+}
+body_has() { # <what> <text>
+  case "$BODY" in *"$2"*) echo "ok: $1" ;; *) fail "$1 — no [$2] in: $BODY" ;; esac
+}
+body_lacks() { # <what> <text>
+  case "$BODY" in *"$2"*) fail "$1 — [$2] in: $BODY" ;; *) echo "ok: $1" ;; esac
+}
+
+# T7-PRBODY-VERIFIER-BAD: a verifier.json that is code-fenced, not a list, or a list of non-objects is
+# one "unreadable" line; the body is still built (exit 0), never exit 2 and an empty body.
+fx_repo prbody-bad
+bump 1.1.0 '- New fly skill.'
+detect; cp "$OUT" "$SCRATCH/before-bad.json"
+n=0
+for v in '```json\n[{"verdict":"refuted"}]\n```' '{"verdict":"refuted"}' '["refuted"]'; do
+  n=$((n + 1))
+  printf "$v\n" > "$SCRATCH/vbad$n.json"
+  prbody "$SCRATCH/before-bad.json" "$SCRATCH/vbad$n.json"
+  expect "T7-PRBODY-VERIFIER-BAD $n exit 0" 0 "$RC"
+  body_has "T7-PRBODY-VERIFIER-BAD $n says unreadable" "verifier output unreadable:"
+  body_has "T7-PRBODY-VERIFIER-BAD $n the rest of the body is there" "### Still open"
+done
+
+# T7-PRBODY-INJECT: no model-written value (verifier fields, a ledger reason or disposition) renders as
+# markup: outside code spans the body holds no `<`, so a `<!--` can't hide the report after it.
+printf '%s\n' '[{"file":"site/alpha/index.html","claim":"a <!-- hidden `x` @owner","verdict":"refuted","evidence":"<script>e</script> | pipe"}]' > "$SCRATCH/vinj.json"
+eid="$(field changelog-entry id 0)"
+python3 - "$eid" <<'PY'
+import json, sys
+json.dump({"schemaVersion": 1, "intentional": [], "entries": {
+    sys.argv[1]: {"disposition": "not-user-facing", "reason": "internal <!-- swallow the rest"}}},
+    open(".github/docs-ledger.json", "w"))
+PY
+prbody "$SCRATCH/before-bad.json" "$SCRATCH/vinj.json"
+printf '%s\n' "$BODY" > "$SCRATCH/body-inj.md"
+python3 - "$SCRATCH/body-inj.md" <<'PY' && echo "ok: T7-PRBODY-INJECT nothing untrusted renders as markup" || fail "T7-PRBODY-INJECT: $BODY"
+import re, sys
+text = open(sys.argv[1]).read()
+bare = re.sub(r"`[^`\n]*`", "", text)
+sys.exit(0 if "<" not in bare and ">" not in bare and "hidden" in text and "swallow" in text else 1)
+PY
+git checkout -q -- .github/docs-ledger.json
+
+# T7-PRBODY-HEADER (#19): the header no longer claims every line comes from the detector and ledger.
+body_lacks "T7-PRBODY-HEADER no false provenance claim" "Every line below comes from"
+body_has "T7-PRBODY-HEADER names verifier.json as the verifier section's source" "verifier.json"
+body_has "T7-PRBODY-LASTROUND (#17) the verifier section says it is the last round's" "last round"
+
+# T7-PRBODY-SHIFT (T6 M5/M6): a stale-mention is matched by file and token, never its line. Deleting a
+# line above two mentions and fixing one resolves one of two, not both.
+fx_repo prbody-shift
+python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['retired']=['old-thing.json']; json.dump(d, open(p,'w'))"
+printf '%s\n' 'Intro line.' 'Uses `old-thing.json` here.' 'Middle.' 'And `old-thing.json` again.' >> alpha/README.md
+git commit -qam 'mentions'
+detect; cp "$OUT" "$SCRATCH/before-shift.json"
+python3 - <<'PY'
+p = "alpha/README.md"
+t = open(p).read().replace("Intro line.\n", "").replace("Uses `old-thing.json` here.", "Uses `new-thing.json` here.")
+open(p, "w").write(t)
+PY
+prbody "$SCRATCH/before-shift.json"
+body_has "T7-PRBODY-SHIFT one resolved" "### Resolved (1)"
+body_has "T7-PRBODY-SHIFT one still open" "### Still open (1)"
+body_has "T7-PRBODY-SHIFT counted by token" "1 of 2"
+
+# T7-PRBODY-INTENTIONAL (I3): a stale-mention closed by an intentional entry HEAD's ledger lacks says so.
+git checkout -q -- alpha/README.md
+python3 - <<'PY'
+import json
+json.dump({"schemaVersion": 1, "entries": {}, "intentional": [
+    {"file": "alpha/README.md", "token": "old-thing.json", "context": "again, on purpose",
+     "reason": "a deliberate legacy note"}]}, open(".github/docs-ledger.json", "w"))
+p = "alpha/README.md"
+open(p, "w").write(open(p).read().replace("And `old-thing.json` again.", "And `old-thing.json` again, on purpose."))
+PY
+prbody "$SCRATCH/before-shift.json"
+body_has "T7-PRBODY-INTENTIONAL marked" "resolved by a new intentional entry"
+body_has "T7-PRBODY-INTENTIONAL the new entry is listed" "new \`intentional\` entry"
+git checkout -q -- alpha/README.md .github/docs-ledger.json
+
+# T7-PRBODY-CONFIG (I2): retired[] additions and og changes are listed for review.
+python3 - <<'PY'
+import json
+p = ".github/docs-surfaces.json"
+d = json.load(open(p))
+d["retired"].append("gone-tool.sh")
+d["og"]["site/alpha/index.html"]["og:title"] = "alpha — retitled"
+json.dump(d, open(p, "w"))
+PY
+prbody "$SCRATCH/before-shift.json"
+body_has "T7-PRBODY-CONFIG retired addition listed" "gone-tool.sh"
+body_has "T7-PRBODY-CONFIG og change listed" "alpha — retitled"
+git checkout -q -- .github/docs-surfaces.json
+
+# T7-PRBODY-OTHER (I5): every changed file no obligation names is listed by class, a plugin reference
+# flagged as plugin-internal; the owner's file outside the surfaces is not.
+mkdir -p alpha/references && put alpha/references/guide.md '# Guide' 'Do this.'
+git add -A && git commit -qm guide
+detect; cp "$OUT" "$SCRATCH/before-other.json"
+put alpha/references/guide.md '# Guide' 'Do that.'
+sed -i.bak 's#<h1>alpha</h1>#<h1>alpha, retold</h1>#' site/alpha/index.html && rm -f site/alpha/index.html.bak
+put owner-notes.txt 'mine'
+prbody "$SCRATCH/before-other.json"
+body_has "T7-PRBODY-OTHER section" "### Other edits"
+body_has "T7-PRBODY-OTHER plugin reference flagged" "plugin-internal: needs a version bump + CHANGELOG if kept"
+body_has "T7-PRBODY-OTHER the reference is named" "alpha/references/guide.md"
+body_has "T7-PRBODY-OTHER the page is named" "site/alpha/index.html"
+body_lacks "T7-PRBODY-OTHER the owner's file is not" "owner-notes.txt"
+
 exit "$failures"

@@ -114,15 +114,18 @@ Resolve every open obligation whose `resolver` is `model`, in this order: plugin
 ## Step 6: Report
 
 - `mode=local`:
-  - Build the PR body. Always pass `--verifier`, even when the verifier didn't run:
+  - Build the PR body, with the post-checks report first (its `<` and `>` escaped, so no file name in it can hide what follows). Always pass `--verifier`, even when the verifier didn't run:
 
     ```bash
-    bash .claude/skills/release-docs/scripts/docs-detect.sh --pr-body \
-      --before .release-docs/run/obligations.before.json \
-      --verifier .release-docs/run/verifier.json > .release-docs/run/pr-body.md
+    { printf '### Post-checks\n\n'
+      sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' .release-docs/run/post-checks.md
+      printf '\n'
+      bash .claude/skills/release-docs/scripts/docs-detect.sh --pr-body \
+        --before .release-docs/run/obligations.before.json \
+        --verifier .release-docs/run/verifier.json; } > .release-docs/run/pr-body.md
     ```
 
-  - Show the owner the resolved, still-open and verifier-disagreement sections, and point them at `.release-docs/run/shots/`.
+  - Show the owner every section: post-checks, resolved, still open, other edits, ledger and config changes, and verifier disagreements. Point them at `.release-docs/run/shots/`. A file under "Other edits" marked plugin-internal needs a version bump and a CHANGELOG entry if the owner keeps it.
   - Commit on the branch when `post-checks.sh` exited 0, or when it exited 1 and the owner, shown what still fails, says to commit anyway. Never commit after exit 2.
     - `git add` each file this run changed, by name: the doc surfaces, `.github/docs-ledger.json`, `.github/docs-surfaces.json`, `site/og.png` and any new `site/<plugin>/index.html`. Never `git add -A` or `git add .`.
     - `git commit` as `docs(release): sync docs for <base7>..<head7>` (the 7-character SHAs of the report's `range`), with the repo's `Co-Authored-By` trailer.
