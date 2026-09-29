@@ -104,3 +104,18 @@ jobs:
         run: .github/scripts/check-skill-refs.sh
       - name: Ref-paths guard
         run: .github/scripts/check-ref-paths.sh
+
+  # The release gate (release-docs spec § 7, D10): a PR to main fails while the docs owe anything
+  # for the release. The owner makes this check required on main. release-docs.yml opens the PR
+  # that clears it; locally, /release-docs does the same.
+  docs-obligations:
+    name: Docs Obligations
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Block the release while docs obligations are open
+        run: bash .claude/skills/release-docs/scripts/docs-detect.sh --range origin/main..HEAD --gate
