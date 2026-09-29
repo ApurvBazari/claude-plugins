@@ -15,8 +15,12 @@ git -C "$ROOT" cat-file -e "$TIP^{commit}" 2>/dev/null || { echo "replay: $TIP i
 git -C "$ROOT" cat-file -e "$BASE^{commit}" 2>/dev/null || { echo "replay: $BASE is not in this clone's history"; exit 2; }
 
 W="$(mktemp -d "${TMPDIR:-/tmp}/replay.XXXXXX")" || { echo "replay: mktemp failed"; exit 2; }
-W="$(cd "$W" && pwd -P)"
+WREAL="$(cd "$W" && pwd -P)" || { rmdir "$W" 2>/dev/null; echo "replay: resolving \$W failed"; exit 2; }
+W="$WREAL"
 cleanup() {
+  # Only ever our own mktemp'd directory: an empty or foreign $W would aim the removals at /tree or "".
+  [ -n "${W:-}" ] || return 0
+  case "${W##*/}" in replay.??????) ;; *) return 0 ;; esac
   git -C "$ROOT" worktree remove --force "$W/tree" >/dev/null 2>&1 || true
   rm -rf "$W"
   # A worktree add that died half-way leaves its registration behind; drop only ours.
