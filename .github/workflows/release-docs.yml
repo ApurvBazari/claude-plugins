@@ -137,7 +137,8 @@ jobs:
       changed: ${{ steps.bundle.outputs.changed }}
       claude: ${{ steps.claude.outputs.conclusion }}
       rc: ${{ steps.post.outputs.rc }}
-    # The Claude CLI (2.1.283, pinned by the action; the scrub needs 2.1.209+) strips most variables,
+    # The Claude CLI (2.1.283, pinned by the action; the scrub needs 2.1.209+, and bubblewrap on
+    # Linux, which the bwrap step installs) strips most variables,
     # the OAuth token among them, from the environment of every subprocess it starts: Bash commands,
     # hooks, MCP servers. It must come from the launch environment, which the action builds from its
     # env context (action.yml's Run step); a settings `env` copy is ignored. Only Claude reads it.
@@ -162,6 +163,24 @@ jobs:
           python-version: '3.x'
       - name: Install belt dependencies
         run: pip install jsonschema pyyaml
+
+      # On Linux the scrub (the job env above) runs the CLI's subprocesses under bubblewrap, which
+      # ubuntu-latest lacks: without it the CLI refuses to start (dry run 36606371612). This step
+      # installs it and proves, before the model runs, that bwrap can give a process its own PID
+      # namespace here, so a runner image or AppArmor change fails by name here, not in the Claude step.
+      - id: bwrap
+        name: Install bubblewrap and prove it isolates
+        run: |
+          set -euo pipefail
+          sudo apt-get -o Acquire::Retries=3 -qq update
+          sudo apt-get -o Acquire::Retries=3 -qq install -y bubblewrap
+          bwrap --version
+          outside="$(readlink /proc/self/ns/pid)"
+          inside="$(bwrap --ro-bind / / --dev /dev --proc /proc --unshare-pid --die-with-parent readlink /proc/self/ns/pid)" \
+            || { echo "::error::bubblewrap cannot create namespaces on this runner (AppArmor's unprivileged user-namespace restriction?), and the scrub needs them"; exit 1; }
+          [ -n "$inside" ] && [ "$inside" != "$outside" ] \
+            || { echo "::error::bwrap ran, but not in a new PID namespace ($outside, $inside)"; exit 1; }
+          echo "bubblewrap isolates: PID namespace $outside -> $inside"
 
       # Everything the authoritative checks trust is made here, before the model runs, and outside
       # the checkout: the snapshot first (nothing has written to the checkout yet), a read-only copy

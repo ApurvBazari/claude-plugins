@@ -17,7 +17,8 @@
 #   result; no force-add; --verifier is always passed; the action pin, model, token and tool
 #   allowlist are the probed ones;
 # - final review I6, M1, M3: the model can't Read /proc, its subprocesses get a scrubbed environment
-#   and Bash calls long enough for the belts; publish builds its PR body only once its gate says
+#   (with bubblewrap installed and proved to isolate first, which the scrub needs on Linux) and Bash
+#   calls long enough for the belts; publish builds its PR body only once its gate says
 #   publish, with the escaped post-checks report first; its staged-set check reads full object
 #   names with submodules seen, and refuses any credential-shaped string the run added (a check that
 #   runs the extracted scan on a scratch repo).
@@ -973,6 +974,31 @@ def a40(c):
     return f
 
 
+@check("A41", "bubblewrap, which the scrub needs on Linux, is installed and proved to isolate before the model runs")
+def a41(c):
+    ci, i = c.claude_index(), c.index(lambda s: s["id"] == "bwrap")
+    if i is None or ci is None or not i < ci:
+        return ["sync has no bwrap step before the Claude step"]
+    s = c.sync["steps"][i]
+    f = []
+    if s["if"] is not None or re.search(r"^        continue-on-error:", s["raw"], re.M):
+        f.append("the bwrap step can be skipped, or can fail without stopping sync")
+    lines = [ln.strip() for ln in (s["j"] or "").split("\n")]
+    if lines[0] != "set -euo pipefail":
+        f.append("the bwrap step does not start with set -euo pipefail")
+    find = lambda rx: next((k for k, ln in enumerate(lines) if re.match(rx, ln)), None)
+    inst = find(r"sudo apt-get\b.* install -y bubblewrap$")
+    probe = find(r'inside="\$\(bwrap .*--unshare-pid .*readlink /proc/self/ns/pid\)" \|\| \{ echo "::error::.*exit 1; \}$')
+    cmp_ = find(r'\[ -n "\$inside" \] && \[ "\$inside" != "\$outside" \] \|\| \{ echo "::error::.*exit 1; \}$')
+    if inst is None:
+        f.append("the bwrap step does not install bubblewrap")
+    if probe is None or cmp_ is None:
+        f.append("the bwrap step does not prove, failing, that bwrap opens a new PID namespace")
+    elif inst is not None and not inst < probe < cmp_:
+        f.append("the bwrap step probes before it installs, or compares before it probes")
+    return f
+
+
 @check("PARSE", "the belt's reader agrees with PyYAML on every job and step", yaml_only=True)
 def parse(c):
     f = []
@@ -1028,6 +1054,23 @@ BODY_PC = ("            printf '## Post-checks (exit %s, run by the publish job)
            "            sed -e 's/&/\\&amp;/g' -e 's/</\\&lt;/g' -e 's/>/\\&gt;/g' \"$T/pc.md\" 2>/dev/null \\\n"
            "              || echo \"- post-checks did not run\"\n")
 BODY_DD = ("              || echo \"- docs-detect --pr-body failed; see the job log\"\n")
+BWRAP_INSTALL = S + "sudo apt-get -o Acquire::Retries=3 -qq install -y bubblewrap\n"
+BWRAP_CMP = (S + '[ -n "$inside" ] && [ "$inside" != "$outside" ] \\\n'
+             + S + '  || { echo "::error::bwrap ran, but not in a new PID namespace ($outside, $inside)"; exit 1; }\n')
+BWRAP = ("      - id: bwrap\n"
+         "        name: Install bubblewrap and prove it isolates\n"
+         "        run: |\n"
+         + S + "set -euo pipefail\n"
+         + S + "sudo apt-get -o Acquire::Retries=3 -qq update\n"
+         + BWRAP_INSTALL
+         + S + "bwrap --version\n"
+         + S + 'outside="$(readlink /proc/self/ns/pid)"\n'
+         + S + 'inside="$(bwrap --ro-bind / / --dev /dev --proc /proc --unshare-pid --die-with-parent'
+         ' readlink /proc/self/ns/pid)" \\\n'
+         + S + "  || { echo \"::error::bubblewrap cannot create namespaces on this runner (AppArmor's"
+         " unprivileged user-namespace restriction?), and the scrub needs them\"; exit 1; }\n"
+         + BWRAP_CMP
+         + S + 'echo "bubblewrap isolates: PID namespace $outside -> $inside"\n')
 MUTANTS = [
     ("A1", [(WF, "    if: github.event_name == 'workflow_dispatch' && needs.detect.outputs.open != '0'\n",
              "    if: needs.detect.outputs.open != '0'\n", 1)], "sync also runs on pull_request"),
@@ -1181,6 +1224,15 @@ MUTANTS = [
     ("A40", [(WF, "|(github_pat_)[A-Za-z0-9_]*", "", 1)], "fine-grained PATs not scanned"),
     ("A40", [(WF, "              added = creds(blob(meta[3])) - creds(blob(meta[2]))\n",
               "              added = creds(blob(meta[3]))\n", 1)], "a mention HEAD already had is refused too"),
+    ("A41", [(WF, BWRAP, "", 1)], "no bwrap step"),
+    ("A41", [(WF, BWRAP, "", 1), (WF, "      - id: seal\n", BWRAP + "      - id: seal\n", 1)],
+     "bubblewrap installed only after the model ran"),
+    ("A41", [(WF, BWRAP_INSTALL, "", 1)], "bubblewrap never installed"),
+    ("A41", [(WF, " --unshare-pid ", " ", 1)], "the probe opens no PID namespace"),
+    ("A41", [(WF, BWRAP_CMP, "", 1)], "the namespaces never compared"),
+    ("A41", [(WF, BWRAP_CMP, BWRAP_CMP.replace("exit 1; }", "true; }"), 1)], "a shared PID namespace only reported"),
+    ("A41", [(WF, BWRAP, BWRAP.replace("        run: |\n", "        continue-on-error: true\n        run: |\n"), 1)],
+     "a failed probe does not stop sync"),
     ("PARSE", [(WF, "        run: |\n          set +e\n          rm -rf \"$RUNNER_TEMP/post-checks.md\"",
                 "        run: |2\n          set +e\n          rm -rf \"$RUNNER_TEMP/post-checks.md\"", 1)],
      "an indentation indicator the reader does not know"),
