@@ -68,10 +68,17 @@ def head(ctx):
     return p.stdout.decode("ascii").strip()
 
 
+# Every read of the index or tree state sees submodule entries whatever .gitmodules or the config
+# says: the run can write a .gitmodules with `ignore = all`, which git status and git diff-index
+# honour, and a gitlink it staged would then be invisible to the fence.
+SEE_SUBMODULES = "--ignore-submodules=none"
+
+
 def status(ctx):
     """[(XY, path)] for every changed, staged or untracked path. Renames are off, so a rename is a
     deletion plus an addition; a rename record, should one appear anyway, yields both its paths."""
-    p = _git(ctx, "status", "--porcelain", "-z", "--untracked-files=all", "--no-renames")
+    p = _git(ctx, "status", "--porcelain", "-z", "--untracked-files=all", "--no-renames",
+             SEE_SUBMODULES)
     if p.returncode != 0:
         raise repo.RepoError("git status failed: %s" % _err(p))
     fields, out, i = p.stdout.split(b"\0"), [], 0
@@ -212,7 +219,7 @@ def _unstage_non_files(ctx, owner_dirty, tree):
     it), or a symlink (120000), staged with or without a link in the tree. The entry goes back to
     HEAD's version (tracked) or out of the index (new); the empty directory or the link the run left
     there goes too. An entry dirty before the run is the owner's and is left alone."""
-    p = _git(ctx, "diff-index", "--cached", "-z", "--no-renames", "HEAD")
+    p = _git(ctx, "diff-index", "--cached", "-z", "--no-renames", SEE_SUBMODULES, "HEAD")
     if p.returncode != 0:
         raise Incomplete("git diff-index --cached failed: %s" % _err(p))
     fields, lines, i = p.stdout.split(b"\0"), [], 0

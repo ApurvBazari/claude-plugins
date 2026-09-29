@@ -375,6 +375,27 @@ has "T6-GITLINK index-only symlink reported" gitlink.md 'symlink at alpha/refere
 expect "T6-GITLINK git add -A stages nothing odd afterwards" "" \
   "$(git add -A && git diff --cached --raw --no-renames HEAD | awk '$2 != "100644" && $2 != "000000"')"
 
+# T6-GITLINK-IGNORED: the same gitlinks, with a .gitmodules the run wrote saying `ignore = all` for
+# both. git diff-index and git status honour it and would hide the entries, so the fence must read
+# with --ignore-submodules=none: the gitlinks are still unstaged and reported, and .gitmodules goes.
+fx_repo gitlink-ignored
+snap b-gitlink-ignored
+git update-index --add --cacheinfo 160000,1111111111111111111111111111111111111111,site/zzz/index.html
+mkdir -p site/zzz/index.html
+git update-index --add --cacheinfo 160000,2222222222222222222222222222222222222222,alpha/zzz
+mkdir -p alpha/zzz
+printf '[submodule "a"]\n\tpath = site/zzz/index.html\n\turl = ./a\n\tignore = all\n[submodule "b"]\n\tpath = alpha/zzz\n\turl = ./b\n\tignore = all\n' > .gitmodules
+post b-gitlink-ignored gitlink-ignored.md
+expect "T6-GITLINK-IGNORED exit 1" 1 "$RC"
+expect "T6-GITLINK-IGNORED no gitlink left staged" "" "$(git ls-files -s | awk '$1 == "160000"')"
+gone "T6-GITLINK-IGNORED the empty directory at an allowed path is removed" site/zzz/index.html
+gone "T6-GITLINK-IGNORED the empty directory outside the surfaces is removed" alpha/zzz
+gone "T6-GITLINK-IGNORED the run's .gitmodules is removed" .gitmodules
+has "T6-GITLINK-IGNORED reported at an allowed path" gitlink-ignored.md 'gitlink at site/zzz/index.html'
+has "T6-GITLINK-IGNORED reported outside the surfaces" gitlink-ignored.md 'gitlink at alpha/zzz'
+expect "T6-GITLINK-IGNORED git add -A stages no gitlink afterwards" "" \
+  "$(git add -A && git ls-files -s | awk '$1 == "160000"')"
+
 # T6-FIFO: a FIFO at the config path is reverted, never opened — the fence finishes, no hang.
 fx_repo fifo
 snap b-fifo
