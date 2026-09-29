@@ -94,6 +94,38 @@ sed -i.bak 's/Writes `.claude\/old-log.json`./Reads the legacy `.claude\/old-log
 detect
 expect "T4-INTENTIONAL context on the line -> resolved" 0 "$(count stale-mention)"
 
+# T4-INTENTIONAL-CONTEXT (final review I3): a context that is the token (give or take punctuation)
+# is on every line naming it, so one entry would silence the whole file, today's lines and future
+# ones. The context needs 6+ non-space characters besides the token: bad input, exit 2, named.
+for ctx in '.claude/old-log.json' '`.claude/old-log.json` t' 'the `.claude/old-log.json`'; do
+  python3 - "$ctx" <<'PY'
+import json, sys
+json.dump({"schemaVersion": 1, "entries": {}, "intentional": [
+    {"file": "alpha/README.md", "token": ".claude/old-log.json", "context": sys.argv[1],
+     "reason": "legacy name is still read"}]}, open(".github/docs-ledger.json", "w"))
+PY
+  detect
+  expect "T4-INTENTIONAL-CONTEXT [$ctx] exits 2" 2 "$RC"
+  expect "T4-INTENTIONAL-CONTEXT [$ctx] no traceback" 0 "$(grep -c Traceback "$SCRATCH/stderr")"
+  grep -qF "6 non-space characters" "$SCRATCH/stderr" \
+    && echo "ok: T4-INTENTIONAL-CONTEXT [$ctx] says why" || fail "T4-INTENTIONAL-CONTEXT [$ctx] stderr: $(cat "$SCRATCH/stderr")"
+done
+python3 - <<'PY'
+import json
+json.dump({"schemaVersion": 1, "entries": {}, "intentional": [
+    {"file": "alpha/README.md", "token": ".claude/old-log.json", "context": "Reads the legacy",
+     "reason": "legacy name is still read"}]}, open(".github/docs-ledger.json", "w"))
+PY
+detect
+expect "T4-INTENTIONAL-CONTEXT non-vacuous: a real phrase still resolves" "0 0" "$RC $(count stale-mention)"
+python3 - "$ROOT/.github/docs-ledger.json" <<'PY' && echo "ok: T4-INTENTIONAL-CONTEXT the seeded ledger passes" || fail "T4-INTENTIONAL-CONTEXT the seeded ledger fails"
+import json, sys
+bad = [i for i in json.load(open(sys.argv[1]))["intentional"]
+       if len("".join(i["context"].replace(i["token"], "").split())) < 6]
+print(bad or "")
+sys.exit(1 if bad else 0)
+PY
+
 # T4-RETIRED + T4-BOUNDARY: a retired token is flagged on a page; /alpha:ru does not match /alpha:run.
 fx_repo retired
 python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['retired']=['/alpha:ru','old-thing.json']; json.dump(d, open(p,'w'))"

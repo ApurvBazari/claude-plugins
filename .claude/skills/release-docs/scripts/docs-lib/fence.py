@@ -35,7 +35,7 @@ import surfaces
 
 KIND = "release-docs-snapshot"
 MARKER = "FENCE-COMPLETE"
-MUTABLE = ("og", "retired")  # the only docs-surfaces.json keys a run may change
+MUTABLE = ("og", "retired")  # the only docs-surfaces.json keys a run may change; retired only grows
 
 
 class Incomplete(Exception):
@@ -326,8 +326,28 @@ def _plain(ctx, rel):
     return kind(ctx, rel) == "file"
 
 
+def _retired_shrink(was, now):
+    """Report lines when the run dropped a token from retired[], which only grows (spec § 5): a
+    dropped token silently closes every stale-mention of it without making a doc true."""
+    old = was.get("retired")
+    if not isinstance(old, list):
+        return []  # the committed config is broken; the gate reports it
+    new = now.get("retired")
+    if not isinstance(new, list):
+        return ["- FAIL: in %s, retired[] is no longer a list; retired names only grow"
+                % surfaces.SURFACES]
+    gone = [t for t in old if t not in new]
+    if not gone:
+        return []
+    shown = ", ".join(json.dumps(t, ensure_ascii=False) for t in gone[:10])
+    return ["- FAIL: the run dropped %s from %s retired[]%s; retired names only grow, and a dropped "
+            "one closes its stale-mentions without fixing a doc"
+            % (shown, surfaces.SURFACES, " (and %d more)" % (len(gone) - 10) if len(gone) > 10 else "")]
+
+
 def surfaces_drift(ctx, ref):
-    """Report lines when the run changed docs-surfaces.json beyond og and retired."""
+    """Report lines when the run changed docs-surfaces.json beyond og and retired, or dropped a
+    retired token."""
     try:
         raw = ctx.show(ref, surfaces.SURFACES)
         was = json.loads(raw) if raw is not None else None
@@ -349,10 +369,11 @@ def surfaces_drift(ctx, ref):
     if not isinstance(now, dict):
         return ["- FAIL: the run left %s not a JSON object" % surfaces.SURFACES]
     changed = sorted(k for k in set(was) | set(now) if k not in MUTABLE and was.get(k) != now.get(k))
-    if not changed:
-        return []
-    return ["- FAIL: the run changed %s key(s) %s; only og and retired may change"
-            % (surfaces.SURFACES, ", ".join(changed))]
+    out = _retired_shrink(was, now)
+    if changed:
+        out.insert(0, "- FAIL: the run changed %s key(s) %s; only og and retired may change"
+                   % (surfaces.SURFACES, ", ".join(changed)))
+    return out
 
 
 def fence(ctx, before_path, expect_clean=False):

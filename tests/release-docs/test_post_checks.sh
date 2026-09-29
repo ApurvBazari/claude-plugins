@@ -105,6 +105,40 @@ gone "T6-WIDEN phantom-plugin README removed" alpha/scripts/README.md
 has "T6-WIDEN marketplace restored" widen.md 'FENCE: restored .claude-plugin/marketplace.json'
 has "T6-WIDEN config change reported" widen.md 'changed .github/docs-surfaces.json key(s) pages, surfaces'
 
+# T6-RETIRED-SHRINK (final review I2): retired[] only grows (spec § 5). Dropping a token silently
+# closes every stale-mention of it without making a doc true, so the fence fails the run and names
+# it. Adding a token, reordering the list and editing og stay allowed (T6-RETIRED-GROW).
+fx_repo shrink
+python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['retired']=['old-a.json','old-b.json']; json.dump(d, open(p,'w'))"
+git commit -qam 'seed retired'
+snap b-shrink
+python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['retired']=['old-b.json','new-c.json']; json.dump(d, open(p,'w'))"
+post b-shrink shrink.md
+expect "T6-RETIRED-SHRINK exit 1" 1 "$RC"
+has "T6-RETIRED-SHRINK names the dropped token" shrink.md 'dropped "old-a.json" from .github/docs-surfaces.json retired[]'
+fx_repo grow
+python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['retired']=['old-a.json','old-b.json']; json.dump(d, open(p,'w'))"
+git commit -qam 'seed retired'
+snap b-grow
+python3 - <<'PY'
+import json
+p = ".github/docs-surfaces.json"
+d = json.load(open(p))
+d["retired"] = ["new-c.json", "old-b.json", "old-a.json"]
+d["og"]["site/alpha/index.html"]["title"] = "alpha — renamed"
+json.dump(d, open(p, "w"))
+PY
+post b-grow grow.md
+expect "T6-RETIRED-GROW exit 0 (grown, reordered, og edited)" 0 "$RC"
+has "T6-RETIRED-GROW fence ok" grow.md '- ok: write fence'
+# A retired that is no longer a list is a shrink too, and reported, never a crash.
+fx_repo notlist
+snap b-notlist
+python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['retired']={'a': 1}; json.dump(d, open(p,'w'))"
+post b-notlist notlist.md
+expect "T6-RETIRED-NOTLIST exit 1" 1 "$RC"
+has "T6-RETIRED-NOTLIST reported" notlist.md 'retired[] is no longer a list'
+
 # T6-SURF-BROKEN: a malformed working-tree docs-surfaces.json still gets fenced around, and reported.
 fx_repo broken
 snap b-broken

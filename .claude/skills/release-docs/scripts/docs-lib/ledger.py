@@ -9,6 +9,10 @@ import repo
 LEDGER = ".github/docs-ledger.json"
 DISPOSITIONS = ("covered", "not-user-facing", "waived")
 INTENTIONAL_KEYS = ("file", "token", "context", "reason")
+# An intentional context must say more than its token: one that is the token (give or take
+# punctuation) is on every line naming it, so one entry would silence the whole file, future lines
+# included. Every seeded entry has 11 or more.
+MIN_CONTEXT = 6
 EMPTY = {"schemaVersion": 1, "entries": {}, "intentional": []}
 
 
@@ -29,6 +33,10 @@ def load(ctx):
             raise repo.RepoError("%s: every intentional entry must be an object whose %s are "
                                  "non-empty strings, got %s"
                                  % (LEDGER, "/".join(INTENTIONAL_KEYS), json.dumps(i)[:120]))
+        if len("".join(i["context"].replace(i["token"], "").split())) < MIN_CONTEXT:
+            raise repo.RepoError("%s: an intentional context needs at least %d non-space characters "
+                                 "besides its token (a phrase only that line has), got %s"
+                                 % (LEDGER, MIN_CONTEXT, json.dumps(i)[:160]))
     return d
 
 
@@ -50,7 +58,8 @@ def anchor_ok(ctx, target):
     if rel.endswith(".md"):
         return any(slug(m.group(1)) == anchor
                    for m in re.finditer(r"^#{1,6}\s+(.+?)\s*#*\s*$", text, re.M))
-    return re.search(r'\bid="%s"' % re.escape(anchor), text) is not None
+    # Never data-id="x" (or any other *-id): only an id attribute is a fragment target.
+    return re.search(r'(?<![\w-])id="%s"' % re.escape(anchor), text) is not None
 
 
 def entry_problem(ctx, decl):

@@ -124,6 +124,25 @@ PY
 detect
 expect "T2-MDANCHOR all resolved" 0 "$(count changelog-entry)"
 
+# T2-DATAID (final review I3, deferred T2): `data-id="x"` is not an anchor — no URL fragment reaches
+# it — so a `covered` pointer at it stays open; a real id="x" on the same page resolves.
+sed -i.bak 's#<section id="top">#<section id="top"><div data-id="rowx">r</div>#' site/alpha/index.html
+python3 - "$id0" "$id1" "$id2" <<'PY'
+import json, sys
+a, b, c = sys.argv[1:]
+json.dump({"schemaVersion": 1, "intentional": [], "entries": {
+    a: {"disposition": "covered", "at": ["site/alpha/index.html#rowx"]},
+    b: {"disposition": "not-user-facing", "reason": "internal"},
+    c: {"disposition": "covered", "at": ["alpha/README.md#prerequisites"]}}},
+    open(".github/docs-ledger.json", "w"))
+PY
+detect
+expect "T2-DATAID a data-id is not an anchor" 1 "$(count changelog-entry)"
+sed -i.bak 's#<div data-id="rowx">#<div data-id="q" id="rowx">#' site/alpha/index.html
+rm -f site/alpha/index.html.bak
+detect
+expect "T2-DATAID non-vacuous: a real id resolves" 0 "$(count changelog-entry)"
+
 # T2-REWORD: rewording a declared bullet reopens it.
 sed -i.bak 's/Faster run/Much faster run/' alpha/CHANGELOG.md && rm -f alpha/CHANGELOG.md.bak
 detect
