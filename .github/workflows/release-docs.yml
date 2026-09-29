@@ -168,6 +168,10 @@ jobs:
       # ubuntu-latest lacks: without it the CLI refuses to start (dry run 36606371612). This step
       # installs it and proves, before the model runs, that bwrap can give a process its own PID
       # namespace here, so a runner image or AppArmor change fails by name here, not in the Claude step.
+      # ubuntu-24.04's AppArmor denies unprivileged user namespaces ("setting up uid map: Permission
+      # denied", dry run 36610466219), so bwrap alone gets Ubuntu's per-program userns exception; the
+      # restriction stays on for every other process. bwrap sets no_new_privs, so the runner's
+      # passwordless sudo is out of reach inside the sandbox.
       - id: bwrap
         name: Install bubblewrap and prove it isolates
         run: |
@@ -175,9 +179,15 @@ jobs:
           sudo apt-get -o Acquire::Retries=3 -qq update
           sudo apt-get -o Acquire::Retries=3 -qq install -y bubblewrap
           bwrap --version
+          echo "AppArmor profiles naming /usr/bin/bwrap before this one:"
+          grep -rls -- /usr/bin/bwrap /etc/apparmor.d || true
+          printf '%s\n' 'abi <abi/4.0>,' 'include <tunables/global>' \
+            'profile bwrap /usr/bin/bwrap flags=(unconfined) {' '  userns,' '}' \
+            | sudo tee /etc/apparmor.d/bwrap > /dev/null
+          sudo apparmor_parser -r /etc/apparmor.d/bwrap
           outside="$(readlink /proc/self/ns/pid)"
           inside="$(bwrap --ro-bind / / --dev /dev --proc /proc --unshare-pid --die-with-parent readlink /proc/self/ns/pid)" \
-            || { echo "::error::bubblewrap cannot create namespaces on this runner (AppArmor's unprivileged user-namespace restriction?), and the scrub needs them"; exit 1; }
+            || { echo "::error::bubblewrap cannot create namespaces on this runner, even with its AppArmor profile loaded, and the scrub needs them"; exit 1; }
           [ -n "$inside" ] && [ "$inside" != "$outside" ] \
             || { echo "::error::bwrap ran, but not in a new PID namespace ($outside, $inside)"; exit 1; }
           echo "bubblewrap isolates: PID namespace $outside -> $inside"

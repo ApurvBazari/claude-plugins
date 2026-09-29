@@ -988,14 +988,24 @@ def a41(c):
         f.append("the bwrap step does not start with set -euo pipefail")
     find = lambda rx: next((k for k, ln in enumerate(lines) if re.match(rx, ln)), None)
     inst = find(r"sudo apt-get\b.* install -y bubblewrap$")
+    # ubuntu-24.04's AppArmor denies unprivileged user namespaces ("setting up uid map: Permission
+    # denied", dry run 36610466219); the owner's call is a userns exception for bwrap alone.
+    prof = find(r"printf '%s\\n' 'abi <abi/4\.0>,' 'include <tunables/global>'"
+                r" 'profile bwrap /usr/bin/bwrap flags=\(unconfined\) \{' '  userns,' '\}'"
+                r" \| sudo tee /etc/apparmor\.d/bwrap > /dev/null$")
+    load = find(r"sudo apparmor_parser -r /etc/apparmor\.d/bwrap$")
     probe = find(r'inside="\$\(bwrap .*--unshare-pid .*readlink /proc/self/ns/pid\)" \|\| \{ echo "::error::.*exit 1; \}$')
     cmp_ = find(r'\[ -n "\$inside" \] && \[ "\$inside" != "\$outside" \] \|\| \{ echo "::error::.*exit 1; \}$')
     if inst is None:
         f.append("the bwrap step does not install bubblewrap")
+    if prof is None or load is None:
+        f.append("the bwrap step does not write and load an AppArmor profile granting bwrap userns")
     if probe is None or cmp_ is None:
         f.append("the bwrap step does not prove, failing, that bwrap opens a new PID namespace")
-    elif inst is not None and not inst < probe < cmp_:
-        f.append("the bwrap step probes before it installs, or compares before it probes")
+    if None not in (inst, prof, load, probe, cmp_) and not inst < prof < load < probe < cmp_:
+        f.append("the bwrap step is out of order: install, profile, load, probe, compare")
+    if "apparmor_restrict_unprivileged_userns" in code(c.text):
+        f.append("the user-namespace restriction is lifted for every process, not just bwrap")
     return f
 
 
@@ -1057,6 +1067,10 @@ BODY_DD = ("              || echo \"- docs-detect --pr-body failed; see the job 
 BWRAP_INSTALL = S + "sudo apt-get -o Acquire::Retries=3 -qq install -y bubblewrap\n"
 BWRAP_CMP = (S + '[ -n "$inside" ] && [ "$inside" != "$outside" ] \\\n'
              + S + '  || { echo "::error::bwrap ran, but not in a new PID namespace ($outside, $inside)"; exit 1; }\n')
+BWRAP_PROFILE = (S + "printf '%s\\n' 'abi <abi/4.0>,' 'include <tunables/global>' \\\n"
+                 + S + "  'profile bwrap /usr/bin/bwrap flags=(unconfined) {' '  userns,' '}' \\\n"
+                 + S + "  | sudo tee /etc/apparmor.d/bwrap > /dev/null\n")
+BWRAP_LOAD = S + "sudo apparmor_parser -r /etc/apparmor.d/bwrap\n"
 BWRAP = ("      - id: bwrap\n"
          "        name: Install bubblewrap and prove it isolates\n"
          "        run: |\n"
@@ -1064,11 +1078,15 @@ BWRAP = ("      - id: bwrap\n"
          + S + "sudo apt-get -o Acquire::Retries=3 -qq update\n"
          + BWRAP_INSTALL
          + S + "bwrap --version\n"
+         + S + 'echo "AppArmor profiles naming /usr/bin/bwrap before this one:"\n'
+         + S + "grep -rls -- /usr/bin/bwrap /etc/apparmor.d || true\n"
+         + BWRAP_PROFILE
+         + BWRAP_LOAD
          + S + 'outside="$(readlink /proc/self/ns/pid)"\n'
          + S + 'inside="$(bwrap --ro-bind / / --dev /dev --proc /proc --unshare-pid --die-with-parent'
          ' readlink /proc/self/ns/pid)" \\\n'
-         + S + "  || { echo \"::error::bubblewrap cannot create namespaces on this runner (AppArmor's"
-         " unprivileged user-namespace restriction?), and the scrub needs them\"; exit 1; }\n"
+         + S + "  || { echo \"::error::bubblewrap cannot create namespaces on this runner, even with its"
+         " AppArmor profile loaded, and the scrub needs them\"; exit 1; }\n"
          + BWRAP_CMP
          + S + 'echo "bubblewrap isolates: PID namespace $outside -> $inside"\n')
 MUTANTS = [
@@ -1233,6 +1251,12 @@ MUTANTS = [
     ("A41", [(WF, BWRAP_CMP, BWRAP_CMP.replace("exit 1; }", "true; }"), 1)], "a shared PID namespace only reported"),
     ("A41", [(WF, BWRAP, BWRAP.replace("        run: |\n", "        continue-on-error: true\n        run: |\n"), 1)],
      "a failed probe does not stop sync"),
+    ("A41", [(WF, BWRAP_PROFILE, "", 1)], "no AppArmor exception for bwrap"),
+    ("A41", [(WF, BWRAP_LOAD, "", 1)], "the profile written but never loaded"),
+    ("A41", [(WF, "'  userns,' ", "", 1)], "the profile grants no userns"),
+    ("A41", [(WF, BWRAP_LOAD, "", 1), (WF, BWRAP_CMP, BWRAP_CMP + BWRAP_LOAD, 1)], "the profile loaded after the probe"),
+    ("A41", [(WF, BWRAP_LOAD, BWRAP_LOAD + S + "sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0\n", 1)],
+     "the restriction lifted for every process"),
     ("PARSE", [(WF, "        run: |\n          set +e\n          rm -rf \"$RUNNER_TEMP/post-checks.md\"",
                 "        run: |2\n          set +e\n          rm -rf \"$RUNNER_TEMP/post-checks.md\"", 1)],
      "an indentation indicator the reader does not know"),
