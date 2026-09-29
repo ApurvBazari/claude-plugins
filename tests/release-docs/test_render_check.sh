@@ -95,6 +95,31 @@ RENDER_TIMEOUT=abc run "$SCRATCH/good.html"
 expect "T5-BADTIMEOUT exit 2" 2 "$RC"
 case "$OUTTXT" in *"RENDER_TIMEOUT"*) echo "ok: T5-BADTIMEOUT names the var" ;; *) fail "T5-BADTIMEOUT output: $OUTTXT" ;; esac
 
+# RENDER_TIMEOUT feeds bash arithmetic (limit=$(( RENDER_TIMEOUT * 2 ))), which reads a leading 0 as
+# octal: "08" is not valid octal and used to crash (exit 1, no per-page line — the digit check let it
+# through); "017" is valid octal 15 and used to silently run as if RENDER_TIMEOUT were 15, not 17.
+RENDER_TIMEOUT=08 run "$SCRATCH/good.html"
+expect "T5-BADTIMEOUT-08 exit 0, no crash" 0 "$RC"
+case "$OUTTXT" in *"ok   "*) echo "ok: T5-BADTIMEOUT-08 ran (no octal crash)" ;; *) fail "T5-BADTIMEOUT-08 output: $OUTTXT" ;; esac
+
+# "017" must be read as decimal 17 (limit=34), not octal 15 (limit=30) — traced directly from the
+# real script's own `limit=$(( RENDER_TIMEOUT * 2 ))` line via bash -x, then killed immediately
+# (this case does not need Chrome to actually finish, only that first arithmetic step).
+xtrace="$SCRATCH/xtrace017.log"
+: > "$xtrace"
+RENDER_TIMEOUT=017 bash -x "$RENDER" "$SCRATCH/good.html" >/dev/null 2>"$xtrace" &
+xpid=$!
+i=0
+while [ $i -lt 20 ] && ! grep -q '++ limit=' "$xtrace" 2>/dev/null; do sleep 0.2; i=$((i + 1)); done
+limit_line="$(grep -m1 '++ limit=' "$xtrace" 2>/dev/null)"
+kill "$xpid" 2>/dev/null
+wait "$xpid" 2>/dev/null
+pkill -f "render-check\." 2>/dev/null
+case "$limit_line" in
+  *"limit=34"*) echo "ok: T5-BADTIMEOUT-017 reads 017 as decimal 17 (limit=34), not octal 15 (limit=30)" ;;
+  *) fail "T5-BADTIMEOUT-017 limit line: $limit_line" ;;
+esac
+
 # spec § 10's single retry: a CHROME= stand-in distinguishes the retry attempt (its profile dir
 # carries a "-r2" suffix — see render-check.sh's probe_verdict/shot) so the retry path can be
 # exercised deterministically, without depending on real Chrome flakiness. It logs one line per

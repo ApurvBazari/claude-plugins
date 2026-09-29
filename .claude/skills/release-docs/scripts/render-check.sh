@@ -31,13 +31,17 @@ done
 
 # RENDER_TIMEOUT feeds arithmetic in chrome_run (limit=$(( RENDER_TIMEOUT * 2 ))); a malformed value
 # there errors under set -e in a way that can unwind past the page loop without ever printing a
-# per-page line, so it is validated and normalized once, up front, instead of defaulted inline.
+# per-page line, so it is validated and normalized once, up front, instead of defaulted inline. The
+# digit check alone isn't enough: that arithmetic is bash arithmetic, which reads a leading 0 as
+# octal ("08" then crashes the same way — "value too great for base"; "017" is silently 15, not 17).
+# 10#$RENDER_TIMEOUT forces the base-10 reading, so it is applied once, right here, before -gt 0.
 if [ -n "${RENDER_TIMEOUT:-}" ]; then
   case "$RENDER_TIMEOUT" in
     ''|*[!0-9]*)
       echo "render-check: RENDER_TIMEOUT must be a positive integer (seconds): $RENDER_TIMEOUT" >&2
       exit 2 ;;
   esac
+  RENDER_TIMEOUT=$((10#$RENDER_TIMEOUT))
   [ "$RENDER_TIMEOUT" -gt 0 ] || {
     echo "render-check: RENDER_TIMEOUT must be a positive integer (seconds): $RENDER_TIMEOUT" >&2
     exit 2
