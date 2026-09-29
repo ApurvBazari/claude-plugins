@@ -1,68 +1,76 @@
 #!/usr/bin/env bash
 # post-checks.sh — the deterministic checks after a /release-docs apply (release-docs spec § 6–7).
 #
-# Usage: post-checks.sh --before SNAPSHOT [--report FILE.md] [--shots DIR]
-#   SNAPSHOT is `git status --porcelain --untracked-files=all`, taken before the apply.
+# Usage:
+#   post-checks.sh --snapshot FILE                                 # BEFORE the apply
+#   post-checks.sh --before FILE [--report FILE.md] [--shots DIR]  # after it
+#   --snapshot records HEAD and every path dirty before the run, with a digest of its content
+#   (JSON). --before takes that file; a plain `git status` text snapshot is refused (exit 2).
+#   Keep the snapshot outside the checkout, where the run cannot rewrite it.
 # In order:
-#   1. the write fence — each path the run changed that is outside the doc surfaces is restored
-#      from HEAD (tracked) or removed (new); paths already dirty before the run are left alone;
+#   1. the write fence (docs-detect.sh --fence) — each path the run changed outside the doc
+#      surfaces is restored from HEAD (tracked) or removed (new). The allowlist comes from HEAD's
+#      docs-surfaces.json and marketplace, and the run may change only og and retired in that file.
+#      A path dirty before the run is never restored or removed: the run touching one outside the
+#      surfaces fails, and is left for the owner;
 #   2. no "waived" disposition added to the ledger (waivers are owner-only);
 #   3. docs-detect --gate;
-#   4. render-check on every changed site page;
+#   4. render-check on the changed landing and plugin pages (never og-card.html or frozen paths);
 #   5. tests/run-all.sh and the .github/scripts guards.
 # RELEASE_DOCS_SKIP=gate,render,belts skips steps 3–5 (belts only; CI never sets it).
-# Exit: 0 all passed, 1 any failed, 2 bad input.
+# Exit: 0 all passed, 1 any failed, 2 bad input — the fence did not run on a bad snapshot, so a
+# caller must never commit the tree after an exit 2.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
-usage() { echo "post-checks: $*" >&2; echo "usage: post-checks.sh --before SNAPSHOT [--report FILE.md] [--shots DIR]" >&2; exit 2; }
+usage() {
+  echo "post-checks: $*" >&2
+  echo "usage: post-checks.sh --snapshot FILE | --before FILE [--report FILE.md] [--shots DIR]" >&2
+  exit 2
+}
+snapshot=""
 before=""
 report="/dev/null"
 shots=""
 while [ $# -gt 0 ]; do
   case "$1" in
-    --before|--report|--shots) [ $# -ge 2 ] && [ -n "$2" ] || usage "$1 needs a value" ;;
+    --snapshot|--before|--report|--shots) [ $# -ge 2 ] && [ -n "$2" ] || usage "$1 needs a value" ;;
   esac
   case "$1" in
+    --snapshot) snapshot="$2"; shift 2 ;;
     --before) before="$2"; shift 2 ;;
     --report) report="$2"; shift 2 ;;
     --shots) shots="$2"; shift 2 ;;
     *) usage "unknown argument $1" ;;
   esac
 done
+if [ -n "$snapshot" ]; then
+  [ -z "$before" ] && [ "$report" = /dev/null ] && [ -z "$shots" ] \
+    || usage "--snapshot runs alone, before the apply"
+  exec bash "$HERE/docs-detect.sh" --snapshot "$snapshot"
+fi
 [ -n "$before" ] && [ -f "$before" ] || usage "--before SNAPSHOT is required"
 [ "$report" = /dev/null ] || { : > "$report"; } 2>/dev/null || usage "cannot write the report $report"
 
 skip() { case ",${RELEASE_DOCS_SKIP:-}," in *",$1,"*) return 0 ;; *) return 1 ;; esac; }
 say() { printf '%s\n' "$*"; [ "$report" = /dev/null ] || printf '%s\n' "$*" >> "$report"; }
+indent() { printf '%s\n' "$1" | sed 's/^/    /'; }
 fails=0
 
-# 1. write fence
-allowed="$(bash "$HERE/docs-detect.sh" --allowed-paths)"
-fenced=0
-while IFS= read -r line; do
-  [ -n "$line" ] || continue
-  grep -qxF -- "$line" "$before" && continue
-  path="${line:3}"
-  case "$path" in *" -> "*) path="${path##* -> }" ;; esac
-  path="${path#\"}"
-  path="${path%\"}"
-  printf '%s\n' "$allowed" | grep -qxF -- "$path" && continue
-  fenced=$((fenced + 1))
-  if git cat-file -e "HEAD:$path" 2>/dev/null; then
-    git checkout -q HEAD -- "$path"
-    say "- FENCE: restored $path (outside the doc surfaces)"
-  else
-    rm -f -- "$path"
-    say "- FENCE: removed new file $path (outside the doc surfaces)"
-  fi
-done <<EOF
-$(git status --porcelain --untracked-files=all)
-EOF
-if [ "$fenced" -eq 0 ]; then say "- ok: write fence"; else fails=1; fi
+# 1. write fence. Exit 1 = something fenced or failed (reported line by line); anything above 1
+# means it could not run at all (bad snapshot, git failing), so nothing was restored or removed.
+frc=0
+fence_out="$(bash "$HERE/docs-detect.sh" --fence --before "$before" 2>&1)" || frc=$?
+if [ "$frc" -gt 1 ]; then
+  say "- FAIL: the write fence could not run, so nothing was restored or removed (exit $frc)"
+  say "$(indent "$fence_out")"
+  exit 2
+fi
+say "$fence_out"
+[ "$frc" -eq 0 ] || fails=1
 
 # 2. no waiver added. Both ledger versions are parsed, not line-diffed: a re-dumped or reformatted
 # ledger shows the owner's existing waivers as "+" lines without adding any. Fails on a waived id
@@ -97,7 +105,7 @@ with open(rel, encoding="utf-8", errors="replace") as f:
 if isinstance(now, str):
     print(now)
     sys.exit(1)
-bad =["%s (added)" % k for k in sorted(now) if k not in was]
+bad = ["%s (added)" % k for k in sorted(now) if k not in was]
 bad += ["%s (changed)" % k for k in sorted(now) if k in was and now[k] != was[k]]
 for b in bad:
     print(b)
@@ -108,7 +116,7 @@ if waiver_out="$(waiver_changes .github/docs-ledger.json 2>&1)"; then
   say "- ok: no waiver added"
 else
   say "- FAIL: the run added or changed a \"waived\" disposition — waivers are owner-only"
-  say "$(printf '%s\n' "$waiver_out" | sed 's/^/    /')"
+  say "$(indent "$waiver_out")"
   fails=1
 fi
 
@@ -118,26 +126,35 @@ if ! skip gate; then
     say "- ok: docs-detect gate (0 open)"
   else
     say "- FAIL: docs-detect gate"
-    say "$(printf '%s\n' "$gate_out" | sed 's/^/    /')"
+    say "$(indent "$gate_out")"
     fails=1
   fi
 fi
 
-# 4. render
+# 4. render — the changed landing and plugin pages, as HEAD's config names them (docs-detect.sh
+# --render-pages): never og-card.html (a 1200px card, not a page), never a frozen path.
 if ! skip render; then
+  prc=0
+  page_list="$(bash "$HERE/docs-detect.sh" --render-pages 2>&1)" || prc=$?
   pages=()
-  while IFS= read -r p; do
-    [ -n "$p" ] && [ -f "$p" ] && pages+=("$p")
-  done <<EOF
-$(git status --porcelain --untracked-files=all | cut -c4- | grep -E '^site/.*\.html$' | grep -v '^site/walkthrough/examples/' || true)
+  if [ "$prc" -eq 0 ]; then
+    while IFS= read -r p; do
+      [ -z "$p" ] || pages+=("$p")
+    done <<EOF
+$page_list
 EOF
-  if [ ${#pages[@]} -eq 0 ]; then
+  fi
+  if [ "$prc" -ne 0 ]; then
+    say "- FAIL: render-check could not select the changed pages"
+    say "$(indent "$page_list")"
+    fails=1
+  elif [ ${#pages[@]} -eq 0 ]; then
     say "- ok: render-check (no site page changed)"
   elif render_out="$(bash "$HERE/render-check.sh" ${shots:+--shots "$shots"} "${pages[@]}" 2>&1)"; then
     say "- ok: render-check (${#pages[@]} page(s))"
   else
     say "- FAIL: render-check"
-    say "$(printf '%s\n' "$render_out" | sed 's/^/    /')"
+    say "$(indent "$render_out")"
     fails=1
   fi
 fi

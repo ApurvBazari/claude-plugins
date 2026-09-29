@@ -1,6 +1,5 @@
 """--pr-body: the docs PR description, built from the detector and the ledger — never model prose."""
 import json
-import os
 
 import changelog
 import ledger
@@ -66,8 +65,14 @@ def render(ctx, before_path, verifier_path):
             rows += 1
     if not rows:
         out.append("| — | no new CHANGELOG entries in this range | — |")
-    if verifier_path and os.path.exists(verifier_path):
-        verdicts = _load(verifier_path)
+    if verifier_path:
+        # Disagreements are never dropped silently (spec § 6): a missing file is said so.
+        try:
+            verdicts = _load(verifier_path)
+        except OSError:
+            out += ["", "### Verifier disagreements", "",
+                    "- verifier output missing: %s" % verifier_path]
+            return "\n".join(out)
         if not isinstance(verdicts, list) or not all(isinstance(v, dict) for v in verdicts):
             raise repo.RepoError("--verifier %s must be a JSON list of objects" % verifier_path)
         disputes = [v for v in verdicts if v.get("verdict") != "ok"]

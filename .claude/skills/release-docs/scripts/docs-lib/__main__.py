@@ -8,9 +8,10 @@ import repo
 USAGE = ("usage: docs-detect.sh [--root DIR] [--range BASE..HEAD] (--out FILE | --gate)\n"
          "       docs-detect.sh [--root DIR] --fix-mechanical | --allowed-paths\n"
          "       docs-detect.sh [--root DIR] --candidates BASE..HEAD\n"
-         "       docs-detect.sh [--root DIR] [--range BASE..HEAD] --pr-body --before FILE [--verifier FILE]")
-VALUED = ("--root", "--range", "--out", "--candidates", "--before", "--verifier")
-FLAGS = ("--gate", "--fix-mechanical", "--allowed-paths", "--pr-body")
+         "       docs-detect.sh [--root DIR] [--range BASE..HEAD] --pr-body --before FILE [--verifier FILE]\n"
+         "       docs-detect.sh [--root DIR] --snapshot FILE | --fence --before FILE | --render-pages")
+VALUED = ("--root", "--range", "--out", "--candidates", "--before", "--verifier", "--snapshot")
+FLAGS = ("--gate", "--fix-mechanical", "--allowed-paths", "--pr-body", "--fence", "--render-pages")
 
 
 def parse(argv):
@@ -49,6 +50,22 @@ def run(opts):
         if "--before" not in opts:
             raise repo.RepoError("--pr-body needs --before FILE")
         print(prbody.render(ctx, opts["--before"], opts.get("--verifier")))
+        return 0
+    if "--snapshot" in opts:
+        import fence
+        fence.snapshot(ctx, opts["--snapshot"])
+        return 0
+    if opts.get("--fence"):
+        import fence
+        if "--before" not in opts:
+            raise repo.RepoError("--fence needs --before SNAPSHOT")
+        lines, rc = fence.fence(ctx, opts["--before"])
+        print("\n".join(lines))
+        return rc
+    if opts.get("--render-pages"):
+        import fence
+        for rel in fence.render_pages(ctx):
+            print(rel)
         return 0
     if "--out" not in opts and "--gate" not in opts:
         raise repo.RepoError("say what to do: --out FILE or --gate")

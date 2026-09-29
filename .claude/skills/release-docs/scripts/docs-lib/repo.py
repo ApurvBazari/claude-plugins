@@ -95,6 +95,21 @@ class Context:
             self._plugins = out
         return self._plugins
 
+    def plugins_at(self, ref):
+        """[{name, dir}] from the marketplace as committed at ref (the write fence reads this, not
+        the working tree, which the run may edit)."""
+        raw = self.show(ref, ".claude-plugin/marketplace.json")
+        if raw is None:
+            raise RepoError("cannot read %s:.claude-plugin/marketplace.json" % ref)
+        try:
+            out = [{"name": e["name"], "dir": os.path.normpath(e["source"])}
+                   for e in json.loads(raw)["plugins"]]
+        except (ValueError, KeyError, TypeError, AttributeError) as e:
+            raise RepoError("cannot read %s:.claude-plugin/marketplace.json: %s" % (ref, e))
+        if not all(isinstance(p["name"], str) for p in out):
+            raise RepoError("%s:.claude-plugin/marketplace.json: plugin names must be strings" % ref)
+        return out
+
     def base_version(self, plugin_dir):
         """plugin.json's version at the range base, or None for a plugin the base lacks."""
         raw = self.show(self.base, plugin_dir + "/.claude-plugin/plugin.json")
