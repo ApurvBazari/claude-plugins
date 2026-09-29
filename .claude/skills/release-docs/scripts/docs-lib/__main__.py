@@ -44,6 +44,12 @@ def run(opts):
         import stale
         print(json.dumps(stale.range_candidates(ctx.with_range(opts["--candidates"])), indent=2))
         return 0
+    if opts.get("--pr-body"):
+        import prbody
+        if "--before" not in opts:
+            raise repo.RepoError("--pr-body needs --before FILE")
+        print(prbody.render(ctx, opts["--before"], opts.get("--verifier")))
+        return 0
     if "--out" not in opts and "--gate" not in opts:
         raise repo.RepoError("say what to do: --out FILE or --gate")
     report = obligations.collect(ctx)
