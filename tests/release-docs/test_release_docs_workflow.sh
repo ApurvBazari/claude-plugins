@@ -50,7 +50,7 @@ CCA = "anthropics/claude-code-action@756cc22e19660d20e8cc9496b4f242475a7f7790"
 RD = ".claude/skills/release-docs/scripts/"
 SCRIPT_RULES = ["Bash(bash %s%s:*)" % (RD, s)
                 for s in ("docs-detect.sh", "post-checks.sh", "render-check.sh", "og-regen.sh")]
-OTHER_BASH = ["Bash(git diff:*)", "Bash(git status:*)"]
+OTHER_BASH = ["Bash(node --check:*)", "Bash(git diff:*)", "Bash(git status:*)"]
 TOOLS = ["Read", "Edit", "Write", "Glob", "Grep", "Agent", "Task", "Skill"]
 STEP = r"(?:      - |        )"
 BLOCK = re.compile(r"^[|>][-+]?$")
@@ -343,7 +343,8 @@ def a6(c):
     if len(pushers) != 1 or pushers[0][0] != "publish":
         return ["the steps that push are %s, want exactly one, in publish" % [(j, s["name"]) for j, s in pushers]]
     ps = pushers[0][1]
-    want = "!cancelled() && steps.gate.outputs.publish == 'true' && (steps.post.outputs.rc == '0' || steps.post.outputs.rc == '1')"
+    want = ("!cancelled() && steps.gate.outputs.publish == 'true' && steps.stage.outcome == 'success' && "
+            "(steps.post.outputs.rc == '0' || steps.post.outputs.rc == '1')")
     if unwrap(ps["if"]) != want:
         f.append("the push step's if: is %r, want %r" % (unwrap(ps["if"]), want))
     if not re.search(r'^case "\$POST_RC" in 0\|1\) ;; \*\) .*exit 1 ;; esac$', ps["j"] or "", re.M):
@@ -552,7 +553,7 @@ def a19(c):
     return f
 
 
-@check("A20", "the scripts are allowed one by one: no directory-prefix rule, no run-all, no node --check")
+@check("A20", "the scripts are allowed one by one, plus node --check: no directory-prefix rule, no run-all")
 def a20(c):
     have = c.allowed()
     f = []
@@ -561,8 +562,8 @@ def a20(c):
         f.append("the Bash rules are %s, want %s" % (bash, SCRIPT_RULES + OTHER_BASH))
     if any(t.endswith("/:*)") for t in have):
         f.append("a directory-prefix rule is allowed")
-    if any("node" in t for t in have):
-        f.append("node --check is allowed")
+    if "Bash(node --check:*)" not in have:
+        f.append("node --check is not allowed: walkthrough:document's render contract (page-missing) runs it")
     if any("run-all" in t for t in have):
         f.append("tests/run-all.sh is allowed: an edited belt would run code of the model's choosing")
     if sorted(t for t in have if not t.startswith("Bash(")) != sorted(TOOLS):
@@ -782,8 +783,52 @@ def a32(c):
     if len(dl) != 1 or "name: ${{ needs.sync.outputs.artifact }}" not in dl[0]["raw"] or \
             "path: ${{ runner.temp }}/sync" not in dl[0]["raw"]:
         f.append("publish does not download the sync bundle into $RUNNER_TEMP/sync")
-    if not lines_of(c.publish["steps"], 'apply --index --binary "$RUNNER_TEMP/sync/sync.patch"'):
-        f.append("publish does not apply the bundle's patch with apply --index --binary")
+    if not lines_of(c.publish["steps"], 'false apply --binary "$patch"') or \
+            'patch="$RUNNER_TEMP/sync/sync.patch"' not in "".join(s["j"] or "" for s in c.publish["steps"]):
+        f.append("publish does not apply the bundle's patch with apply --binary")
+    if any(re.search(GITC + r"apply\b[^\n]*--(index|cached)\b", ln) for ln in joined(c.text).split("\n")):
+        f.append("an apply stages the patch (--index/--cached): a gitlink in it would be staged")
+    return f
+
+
+@check("A33", "publish commits only what a staged-set check passed: plain files at allowlisted paths")
+def a33(c):
+    f, steps = [], c.publish["steps"]
+    ids = [s["id"] for s in steps]
+    if "stage" not in ids or "push" not in ids or not ids.index("stage") < ids.index("push"):
+        return ["there is no stage step before the push step"]
+    st, ps, pr = c.step("stage", "publish"), c.step("push", "publish"), c.step("prepare", "publish") or {}
+    sj = st.get("j") or ""
+    order = [sj.find(x) for x in ("git -c core.hooksPath=/dev/null -c core.fsmonitor=false add -A",
+                                  'bash "$RUNNER_TEMP/rd/docs-detect.sh" --allowed-paths > "$RUNNER_TEMP/allowed.now.txt"',
+                                  'diff --cached --raw -z --no-renames HEAD > "$RUNNER_TEMP/staged.raw"',
+                                  'python3 - "$RUNNER_TEMP/staged.raw" "$RUNNER_TEMP/allowed.start.txt" "$RUNNER_TEMP/allowed.now.txt"',
+                                  'echo "tree=$(git write-tree)" >> "$GITHUB_OUTPUT"')]
+    if -1 in order or order != sorted(order):
+        f.append("the stage step does not stage, list the allowlist, read the staged set, check it, then output its tree")
+    for need in ('elif meta[1] not in ("100644", "000000"):', 'elif path not in allowed:',
+                 'if len(meta) != 5 or not meta[0].startswith(":"):', "sys.exit(1 if bad else 0)"):
+        if need not in sj:
+            f.append("the staged-set check lacks %r" % need)
+    pj = pr.get("j") or ""
+    at, ap = pj.find('--allowed-paths > "$RUNNER_TEMP/allowed.start.txt"'), \
+        pos(steps, GITC + r"apply\b")
+    if at < 0 or ap is None or not ids.index("prepare") < ap[0]:
+        f.append("START's allowlist is not listed before the patch is applied")
+    aj = next((s["j"] for s in steps if re.search(GITC + r"apply --binary", s["j"] or "")), "")
+    summ = aj.find("odd=\"$(git -c core.hooksPath=/dev/null -c core.fsmonitor=false apply --summary \"$patch\" | "
+                   "grep -vE '^ (create|delete) mode 100644 ' || true)\"")
+    if summ < 0 or not re.search(r'if \[ -n "\$odd" \]; then\n(.*\n){2}\s*exit 1\n', aj) or summ > aj.find("apply --binary"):
+        f.append("publish applies a patch without first refusing non-plain files and mode changes in it")
+    pjj = ps.get("j") or ""
+    if re.search(GITC + r"add\b", pjj):
+        f.append("the push step stages on its own, after the check")
+    chk = pjj.find('[ -n "$TREE" ] && [ "$(git write-tree)" = "$TREE" ] || {')
+    if "TREE: ${{ steps.stage.outputs.tree }}" not in ps.get("raw", "") or chk < 0 or \
+            chk > pjj.find("commit -q -F"):
+        f.append("the push step does not commit exactly the tree the stage step checked")
+    if "secrets." in st.get("raw", ""):
+        f.append("the stage step reads a secret")
     return f
 
 
@@ -837,7 +882,7 @@ S = "          "
 PUB_IF = ("      github.event_name == 'workflow_dispatch' && needs.sync.result == 'success' &&\n"
           "      inputs.dry_run == false && needs.sync.outputs.changed == 'true'\n")
 PUB_SNAP = S + 'bash .claude/skills/release-docs/scripts/post-checks.sh --snapshot "$T/p.snap"\n'
-PUB_APPLY = S + 'git -c core.hooksPath=/dev/null -c core.fsmonitor=false apply --index --binary "$RUNNER_TEMP/sync/sync.patch"\n'
+PUB_APPLY = S + 'git -c core.hooksPath=/dev/null -c core.fsmonitor=false apply --binary "$patch"\n'
 MUTANTS = [
     ("A1", [(WF, "    if: github.event_name == 'workflow_dispatch' && needs.detect.outputs.open != '0'\n",
              "    if: needs.detect.outputs.open != '0'\n", 1)], "sync also runs on pull_request"),
@@ -856,9 +901,13 @@ MUTANTS = [
      "sync's post-checks without --expect-clean"),
     ("A5", [(WF, '--report "$RUNNER_TEMP/post-checks.md"', '--report .release-docs/run/post-checks.md', 1)],
      "sync's report inside the checkout"),
-    ("A6", [(WF, "steps.post.outputs.rc == '1') }}", "steps.post.outputs.rc == '2') }}", 1)], "push on rc 2"),
-    ("A6", [(WF, "if: ${{ !cancelled() && steps.gate.outputs.publish == 'true' && (steps.post",
-             "if: ${{ !cancelled() && (steps.post", 1)], "push without the gate"),
+    ("A6", [(WF, "steps.stage.outcome == 'success' && (steps.post.outputs.rc == '0' || steps.post.outputs.rc == '1') }}",
+             "steps.stage.outcome == 'success' && (steps.post.outputs.rc == '0' || steps.post.outputs.rc == '2') }}", 1)],
+     "push on rc 2"),
+    ("A6", [(WF, "if: ${{ !cancelled() && steps.gate.outputs.publish == 'true' && steps.stage.outcome",
+             "if: ${{ !cancelled() && steps.stage.outcome", 1)], "push without the gate"),
+    ("A6", [(WF, " && steps.stage.outcome == 'success' && (steps.post", " && (steps.post", 1)],
+     "push without the staged-set check"),
     ("A6", [(WF, "        if: ${{ !cancelled() && steps.push.outputs.url != '' }}\n",
              "        if: ${{ !cancelled() }}\n", 1)], "PR comments without a pushed docs PR"),
     ("A7", [(WF, S + "if git diff --cached --quiet; then\n",
@@ -891,7 +940,7 @@ MUTANTS = [
               'for f in "$HOME/.config/git/config"; do', 2)], "global .gitconfig not hashed"),
     ("A18", [(WF, "git -c core.hooksPath=/dev/null -c core.fsmonitor=false \\\n            push -q",
               "git -c core.fsmonitor=false \\\n            push -q", 1)], "push with hooks on"),
-    ("A18", [(WF, PUB_APPLY, S + 'git apply --index --binary "$RUNNER_TEMP/sync/sync.patch"\n', 1)],
+    ("A18", [(WF, PUB_APPLY, S + 'git apply --binary "$patch"\n', 1)],
      "apply with hooks on"),
     ("A19", [(WF, "*) refuse \"the post-checks report does not open with the write fence's result\" ;;\n"
               "          esac\n          echo \"The fenced tree", "*) ;;\n          esac\n          echo \"The fenced tree", 1)],
@@ -901,7 +950,7 @@ MUTANTS = [
      "publish's gate accepts any report"),
     ("A20", [(WF, ",".join(SCRIPT_RULES), "Bash(bash .claude/skills/release-docs/scripts/:*)", 1)],
      "directory-prefix rule"),
-    ("A20", [(WF, "og-regen.sh:*),Bash(git diff:*)", "og-regen.sh:*),Bash(bash tests/run-all.sh),Bash(git diff:*)", 1)],
+    ("A20", [(WF, "og-regen.sh:*),Bash(node --check:*)", "og-regen.sh:*),Bash(bash tests/run-all.sh),Bash(node --check:*)", 1)],
      "run-all allowed"),
     ("A21", [(WF, "allowed_bots: 'github-actions[bot]'", "allowed_bots: '*'", 1)], "every bot allowed"),
     ("A22", [(WF, "          GH_TOKEN: ${{ github.token }}\n          REPO:", "          GH_TOKEN: ${{ secrets.DOCS_BOT_TOKEN }}\n          REPO:", 1)],
@@ -956,6 +1005,17 @@ MUTANTS = [
     ("A32", [(WF, S + 'git read-tree "$START"\n', "", 1)], "the patch not taken against START"),
     ("A32", [(WF, "          path: ${{ runner.temp }}/sync\n", "          path: ${{ runner.temp }}/other\n", 1)],
      "publish downloads elsewhere"),
+    ("A20", [(WF, "Bash(node --check:*),", "", 1)], "node --check dropped"),
+    ("A32", [(WF, PUB_APPLY, PUB_APPLY.replace("apply --binary", "apply --index --binary"), 1)], "publish applies with --index"),
+    ("A33", [(WF, 'elif meta[1] not in ("100644", "000000"):', "elif False:", 1)], "any mode staged"),
+    ("A33", [(WF, "elif path not in allowed:", "elif False:", 1)], "any path staged"),
+    ("A33", [(WF, "grep -vE '^ (create|delete) mode 100644 '", "grep -vE '^ (create|delete) mode 1[0-9]+ '", 1)],
+     "the patch may create a gitlink"),
+    ("A33", [(WF, S + '[ -n "$TREE" ] && [ "$(git write-tree)" = "$TREE" ] || { echo "::error::the staged tree is not the one the stage step checked"; exit 1; }\n',
+              S + "git -c core.hooksPath=/dev/null -c core.fsmonitor=false add -A\n", 1)],
+     "the push step re-stages after the check"),
+    ("A33", [(WF, S + 'bash "$T/rd/docs-detect.sh" --allowed-paths > "$T/allowed.start.txt"\n', "", 1)],
+     "START's allowlist never listed"),
     ("PARSE", [(WF, "        run: |\n          set +e\n          rm -rf \"$RUNNER_TEMP/post-checks.md\"",
                 "        run: |2\n          set +e\n          rm -rf \"$RUNNER_TEMP/post-checks.md\"", 1)],
      "an indentation indicator the reader does not know"),

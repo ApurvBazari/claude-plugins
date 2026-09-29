@@ -243,13 +243,15 @@ jobs:
           # Stricter than spec § 7's list. The scripts are allowed one by one: a directory prefix
           # would also match `scripts/../../<any file the model wrote>.sh`. No `bash tests/run-all.sh`:
           # the model can Edit a tracked belt, so that rule would run code of its choosing; post-checks
-          # runs the belts itself, after the fence has reverted such edits. No `node --check`: the
-          # playbook never runs it.
+          # runs the belts itself, after the fence has reverted such edits. `node --check` stays: the
+          # playbook's page-missing path runs walkthrough:document, whose render contract runs it. It
+          # can execute code (`-r`), like any write primitive here, which this job contains: no PAT,
+          # contents: read, and publish re-verifies everything from its own checkout.
           claude_args: |
             --model claude-opus-5-5
             --max-turns 120
             --plugin-dir walkthrough
-            --allowedTools "Read,Edit,Write,Glob,Grep,Agent,Task,Skill,Bash(bash .claude/skills/release-docs/scripts/docs-detect.sh:*),Bash(bash .claude/skills/release-docs/scripts/post-checks.sh:*),Bash(bash .claude/skills/release-docs/scripts/render-check.sh:*),Bash(bash .claude/skills/release-docs/scripts/og-regen.sh:*),Bash(git diff:*),Bash(git status:*)"
+            --allowedTools "Read,Edit,Write,Glob,Grep,Agent,Task,Skill,Bash(bash .claude/skills/release-docs/scripts/docs-detect.sh:*),Bash(bash .claude/skills/release-docs/scripts/post-checks.sh:*),Bash(bash .claude/skills/release-docs/scripts/render-check.sh:*),Bash(bash .claude/skills/release-docs/scripts/og-regen.sh:*),Bash(node --check:*),Bash(git diff:*),Bash(git status:*)"
           prompt: |
             /release-docs mode=ci
 
@@ -456,8 +458,9 @@ jobs:
         run: pip install jsonschema pyyaml
 
       # Before anything from the bundle touches the tree: the snapshot, a copy of the scripts the
-      # checks run from (the patch cannot rewrite them), and the before-report. Then the bundle is
-      # checked against the commit detect saw, which reaches this job only through env.
+      # checks run from (the patch cannot rewrite them), the before-report, and the allowlist as it
+      # lists START's files. Then the bundle is checked against the commit detect saw, which reaches
+      # this job only through env.
       - id: prepare
         name: Snapshot, copy the scripts, check the bundle
         env:
@@ -468,6 +471,7 @@ jobs:
           bash .claude/skills/release-docs/scripts/post-checks.sh --snapshot "$T/p.snap"
           cp -R .claude/skills/release-docs/scripts "$T/rd"
           bash "$T/rd/docs-detect.sh" --range origin/main..HEAD --out "$T/before.json"
+          bash "$T/rd/docs-detect.sh" --allowed-paths > "$T/allowed.start.txt"
           refuse() { echo "::error::$*"; exit 1; }
           [[ "$START" =~ ^[0-9a-f]{40}$ ]] || refuse "the detected commit is not a 40-hex SHA"
           [ "$(git rev-parse HEAD)" = "$START" ] || refuse "the checkout is not the detected commit"
@@ -492,13 +496,25 @@ jobs:
             echo "artifact=release-docs-${START:0:7}-publish-attempt$GITHUB_RUN_ATTEMPT"
           } >> "$GITHUB_OUTPUT"
 
+      # A patch that creates or deletes anything but a plain file (a gitlink, a symlink, an
+      # executable) or changes a mode is refused whole: the model's job can't produce one, so it
+      # means the bundle was tampered with. Then the patch goes to the working tree only: without
+      # --index, apply stages nothing, so even a gitlink would leave at most an empty directory,
+      # which git add ignores.
       - name: Apply the sync patch
         env:
           BRANCH: ${{ steps.prepare.outputs.branch }}
         run: |
           set -euo pipefail
+          patch="$RUNNER_TEMP/sync/sync.patch"
+          odd="$(git -c core.hooksPath=/dev/null -c core.fsmonitor=false apply --summary "$patch" | grep -vE '^ (create|delete) mode 100644 ' || true)"
+          if [ -n "$odd" ]; then
+            echo "::error::the patch holds something other than plain files; nothing is applied:"
+            printf '%s\n' "$odd"
+            exit 1
+          fi
           git switch -c "$BRANCH"
-          git -c core.hooksPath=/dev/null -c core.fsmonitor=false apply --index --binary "$RUNNER_TEMP/sync/sync.patch"
+          git -c core.hooksPath=/dev/null -c core.fsmonitor=false apply --binary "$patch"
           git status --short
 
       # Authoritative: this job's own full post-checks (fence, waiver, gate, render, belts), from the
@@ -584,11 +600,49 @@ jobs:
             ${{ runner.temp }}/pr-body.md
           if-no-files-found: ignore
 
+      # The last word on what is committed, and independent of the fence's internals: every staged
+      # entry must be a plain file (mode 100644, or 000000 for a deletion) at a path the trusted
+      # copy's allowlist lists, built from START's docs-surfaces.json and marketplace: START's files
+      # (so a deletion passes) or the fenced tree's (so a new page passes). Anything else fails the
+      # job, before the PAT step, with every offending entry listed. The staged tree's id goes to the
+      # push step, which commits exactly that tree.
+      - id: stage
+        name: Stage the fenced tree and refuse anything but plain in-fence files
+        if: ${{ !cancelled() && steps.gate.outputs.publish == 'true' && (steps.post.outputs.rc == '0' || steps.post.outputs.rc == '1') }}
+        run: |
+          set -euo pipefail
+          T="$RUNNER_TEMP"
+          git -c core.hooksPath=/dev/null -c core.fsmonitor=false add -A
+          bash "$T/rd/docs-detect.sh" --allowed-paths > "$T/allowed.now.txt"
+          git -c core.hooksPath=/dev/null -c core.fsmonitor=false diff --cached --raw -z --no-renames HEAD > "$T/staged.raw"
+          python3 - "$T/staged.raw" "$T/allowed.start.txt" "$T/allowed.now.txt" <<'PY'
+          import json, sys
+          raw = open(sys.argv[1], "rb").read().split(b"\0")
+          allowed = set()
+          for listing in sys.argv[2:]:
+              allowed |= set(open(listing, encoding="utf-8").read().splitlines())
+          bad, n, i = [], 0, 0
+          while i + 1 < len(raw):
+              meta, path = raw[i].decode("ascii", "replace").split(), raw[i + 1].decode("utf-8", "replace")
+              i, n = i + 2, n + 1
+              if len(meta) != 5 or not meta[0].startswith(":"):
+                  bad.append("unreadable entry %s" % json.dumps(raw[i - 2].decode("ascii", "replace")))
+              elif meta[1] not in ("100644", "000000"):
+                  bad.append("mode %s at %s" % (meta[1], json.dumps(path)))
+              elif path not in allowed:
+                  bad.append("outside the allowlist: %s" % json.dumps(path))
+          for b in bad:
+              print("::error::staged entry refused, %s" % b)
+          print("%d staged entries checked, %d refused" % (n, len(bad)))
+          sys.exit(1 if bad else 0)
+          PY
+          echo "tree=$(git write-tree)" >> "$GITHUB_OUTPUT"
+
       # The only step that holds DOCS_BOT_TOKEN (a GITHUB_TOKEN PR would not trigger CI): the commit,
       # the push, the PR and its label. Every git write runs with hooks and fsmonitor off.
       - id: push
         name: Push the docs branch and open the PR
-        if: ${{ !cancelled() && steps.gate.outputs.publish == 'true' && (steps.post.outputs.rc == '0' || steps.post.outputs.rc == '1') }}
+        if: ${{ !cancelled() && steps.gate.outputs.publish == 'true' && steps.stage.outcome == 'success' && (steps.post.outputs.rc == '0' || steps.post.outputs.rc == '1') }}
         env:
           GH_TOKEN: ${{ secrets.DOCS_BOT_TOKEN }}
           POST_RC: ${{ steps.post.outputs.rc }}
@@ -597,13 +651,14 @@ jobs:
           START: ${{ needs.detect.outputs.sha }}
           RELEASE_PR: ${{ inputs.release_pr }}
           REPO: ${{ github.repository }}
+          TREE: ${{ steps.stage.outputs.tree }}
         run: |
           set -euo pipefail
           case "$POST_RC" in 0|1) ;; *) echo "::error::post-checks exit '${POST_RC:-none}': not publishing"; exit 1 ;; esac
           [[ "$BRANCH" =~ ^docs/release-sync-[0-9a-f]{7}$ ]] || { echo "::error::unexpected branch name"; exit 1; }
           [[ "$START" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::the start commit is not a 40-hex SHA"; exit 1; }
           [[ "$RELEASE_PR" =~ ^([1-9][0-9]{0,9})?$ ]] || { echo "::error::release_pr is not a PR number"; exit 1; }
-          git -c core.hooksPath=/dev/null -c core.fsmonitor=false add -A
+          [ -n "$TREE" ] && [ "$(git write-tree)" = "$TREE" ] || { echo "::error::the staged tree is not the one the stage step checked"; exit 1; }
           if git diff --cached --quiet; then
             echo "Nothing is left once fenced: no docs PR."
             exit 0
