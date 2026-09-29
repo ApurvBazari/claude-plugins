@@ -106,7 +106,7 @@ Two branches: `develop` (integration) and `main` (release). **`main` is the GitH
 - When ready to ship: PR from `develop` → `main` (**merge commit, never squash**)
 - **Docs ship with the release.** Opening or updating the `develop` → `main` PR runs `release-docs.yml`:
   - it detects the docs obligations the release leaves open (stale badges and counts, new CHANGELOG entries not yet documented, retired names). When there are none, it stops;
-  - otherwise it dispatches the docs bot on `develop`. The bot runs `/release-docs mode=ci` unattended, deterministic post-checks judge its result, and it opens a `docs/release-sync-*` PR to `develop` and links it on the release PR. A failed check makes that PR a draft labelled `needs-owner`;
+  - otherwise it dispatches the docs bot on `develop`. The bot runs `/release-docs mode=ci` unattended, in a job with no publishing credentials. A separate job that never runs the model applies the bot's patch to a fresh checkout, re-runs the deterministic post-checks, and opens a `docs/release-sync-*` PR to `develop`, linked on the release PR. A failed check makes that PR a draft labelled `needs-owner`;
   - review the docs PR and squash-merge it. The release PR then refreshes and detects again;
   - the required **Docs Obligations** check (`validate.yml`) blocks the merge to `main` until the docs match.
 
