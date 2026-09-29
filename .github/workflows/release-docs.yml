@@ -172,13 +172,19 @@ jobs:
       # denied", dry run 36610466219), so bwrap alone gets Ubuntu's per-program userns exception; the
       # restriction stays on for every other process. bwrap sets no_new_privs, so the runner's
       # passwordless sudo is out of reach inside the sandbox.
+      # The scrub also makes Claude Code's Bash sandbox mandatory, and sandbox-runtime needs socat and
+      # ripgrep too: without socat every Bash call failed (dry run 36616561018). The sandbox mounts
+      # over ~/.gitconfig read-only and, when there is none, makes an empty one to mount on, which it
+      # can leave behind; created here, before prepare hashes the git state, it is the file hashed.
       - id: bwrap
-        name: Install bubblewrap and prove it isolates
+        name: Install the Bash sandbox's requirements and prove bwrap isolates
         run: |
           set -euo pipefail
           sudo apt-get -o Acquire::Retries=3 -qq update
-          sudo apt-get -o Acquire::Retries=3 -qq install -y bubblewrap
+          sudo apt-get -o Acquire::Retries=3 -qq install -y bubblewrap socat ripgrep
+          command -v bwrap socat rg
           bwrap --version
+          [ -e "$HOME/.gitconfig" ] || : > "$HOME/.gitconfig"
           echo "AppArmor profiles naming /usr/bin/bwrap before this one:"
           grep -rls -- /usr/bin/bwrap /etc/apparmor.d || true
           printf '%s\n' 'abi <abi/4.0>,' 'include <tunables/global>' \

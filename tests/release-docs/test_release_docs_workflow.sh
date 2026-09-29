@@ -975,11 +975,14 @@ def a40(c):
     return f
 
 
-@check("A41", "bubblewrap, which the scrub needs on Linux, is installed and proved to isolate before the model runs")
+@check("A41", "the Bash sandbox the scrub brings (bubblewrap, socat, ripgrep) is ready and proved to isolate before prepare")
 def a41(c):
     ci, i = c.claude_index(), c.index(lambda s: s["id"] == "bwrap")
+    pi = c.index(lambda s: s["id"] == "prepare")
     if i is None or ci is None or not i < ci:
         return ["sync has no bwrap step before the Claude step"]
+    if pi is None or not i < pi:
+        return ["the bwrap step runs after prepare, so the git state is hashed before ~/.gitconfig exists"]
     s = c.sync["steps"][i]
     f = []
     if s["if"] is not None or re.search(r"^        continue-on-error:", s["raw"], re.M):
@@ -988,7 +991,13 @@ def a41(c):
     if lines[0] != "set -euo pipefail":
         f.append("the bwrap step does not start with set -euo pipefail")
     find = lambda rx: next((k for k, ln in enumerate(lines) if re.match(rx, ln)), None)
-    inst = find(r"sudo apt-get\b.* install -y bubblewrap$")
+    # On Linux the scrub makes Claude Code's Bash sandbox mandatory, and sandbox-runtime needs all
+    # three ("socat not installed", dry run 36616561018).
+    inst = find(r"sudo apt-get\b.* install -y bubblewrap socat ripgrep$")
+    have = find(r"command -v bwrap socat rg$")
+    # The sandbox mounts over ~/.gitconfig read-only, and makes an empty file to mount on when there
+    # is none, which it may leave behind: present from the start, it is the file gitstate hashed.
+    home = find(r'\[ -e "\$HOME/\.gitconfig" \] \|\| : > "\$HOME/\.gitconfig"$')
     # ubuntu-24.04's AppArmor denies unprivileged user namespaces ("setting up uid map: Permission
     # denied", dry run 36610466219); the owner's call is a userns exception for bwrap alone.
     prof = find(r"printf '%s\\n' 'abi <abi/4\.0>,' 'include <tunables/global>'"
@@ -997,14 +1006,16 @@ def a41(c):
     load = find(r"sudo apparmor_parser -r /etc/apparmor\.d/bwrap$")
     probe = find(r'inside="\$\(bwrap .*--unshare-pid .*readlink /proc/self/ns/pid\)" \|\| \{ echo "::error::.*exit 1; \}$')
     cmp_ = find(r'\[ -n "\$inside" \] && \[ "\$inside" != "\$outside" \] \|\| \{ echo "::error::.*exit 1; \}$')
-    if inst is None:
-        f.append("the bwrap step does not install bubblewrap")
+    if inst is None or have is None:
+        f.append("the bwrap step does not install, and check for, bubblewrap, socat and ripgrep")
+    if home is None:
+        f.append("the bwrap step does not create an empty ~/.gitconfig when there is none")
     if prof is None or load is None:
         f.append("the bwrap step does not write and load an AppArmor profile granting bwrap userns")
     if probe is None or cmp_ is None:
         f.append("the bwrap step does not prove, failing, that bwrap opens a new PID namespace")
-    if None not in (inst, prof, load, probe, cmp_) and not inst < prof < load < probe < cmp_:
-        f.append("the bwrap step is out of order: install, profile, load, probe, compare")
+    if None not in (inst, have, prof, load, probe, cmp_) and not inst < have < prof < load < probe < cmp_:
+        f.append("the bwrap step is out of order: install, check, profile, load, probe, compare")
     if "apparmor_restrict_unprivileged_userns" in code(c.text):
         f.append("the user-namespace restriction is lifted for every process, not just bwrap")
     return f
@@ -1133,7 +1144,9 @@ BODY_PC = ("            printf '## Post-checks (exit %s, run by the publish job)
            "            sed -e 's/&/\\&amp;/g' -e 's/</\\&lt;/g' -e 's/>/\\&gt;/g' \"$T/pc.md\" 2>/dev/null \\\n"
            "              || echo \"- post-checks did not run\"\n")
 BODY_DD = ("              || echo \"- docs-detect --pr-body failed; see the job log\"\n")
-BWRAP_INSTALL = S + "sudo apt-get -o Acquire::Retries=3 -qq install -y bubblewrap\n"
+BWRAP_INSTALL = S + "sudo apt-get -o Acquire::Retries=3 -qq install -y bubblewrap socat ripgrep\n"
+BWRAP_HAVE = S + "command -v bwrap socat rg\n"
+HOME_GITCONFIG = S + '[ -e "$HOME/.gitconfig" ] || : > "$HOME/.gitconfig"\n'
 BWRAP_CMP = (S + '[ -n "$inside" ] && [ "$inside" != "$outside" ] \\\n'
              + S + '  || { echo "::error::bwrap ran, but not in a new PID namespace ($outside, $inside)"; exit 1; }\n')
 BWRAP_PROFILE = (S + "printf '%s\\n' 'abi <abi/4.0>,' 'include <tunables/global>' \\\n"
@@ -1149,12 +1162,14 @@ TRAIL_HEAD = ("      - name: List the model's tool calls\n"
               "        env:\n"
               "          CLAUDE_EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}\n")
 BWRAP = ("      - id: bwrap\n"
-         "        name: Install bubblewrap and prove it isolates\n"
+         "        name: Install the Bash sandbox's requirements and prove bwrap isolates\n"
          "        run: |\n"
          + S + "set -euo pipefail\n"
          + S + "sudo apt-get -o Acquire::Retries=3 -qq update\n"
          + BWRAP_INSTALL
+         + BWRAP_HAVE
          + S + "bwrap --version\n"
+         + HOME_GITCONFIG
          + S + 'echo "AppArmor profiles naming /usr/bin/bwrap before this one:"\n'
          + S + "grep -rls -- /usr/bin/bwrap /etc/apparmor.d || true\n"
          + BWRAP_PROFILE
@@ -1323,6 +1338,11 @@ MUTANTS = [
     ("A41", [(WF, BWRAP, "", 1), (WF, "      - id: seal\n", BWRAP + "      - id: seal\n", 1)],
      "bubblewrap installed only after the model ran"),
     ("A41", [(WF, BWRAP_INSTALL, "", 1)], "bubblewrap never installed"),
+    ("A41", [(WF, " bubblewrap socat ripgrep\n", " bubblewrap ripgrep\n", 1)], "socat never installed"),
+    ("A41", [(WF, BWRAP_HAVE, "", 1)], "the tools never checked"),
+    ("A41", [(WF, HOME_GITCONFIG, "", 1)], "~/.gitconfig left for the sandbox to create"),
+    ("A41", [(WF, BWRAP, "", 1), (WF, "      - id: claude\n", BWRAP + "      - id: claude\n", 1)],
+     "the sandbox prepared only after prepare hashed the git state"),
     ("A41", [(WF, " --unshare-pid ", " ", 1)], "the probe opens no PID namespace"),
     ("A41", [(WF, BWRAP_CMP, "", 1)], "the namespaces never compared"),
     ("A41", [(WF, BWRAP_CMP, BWRAP_CMP.replace("exit 1; }", "true; }"), 1)], "a shared PID namespace only reported"),
