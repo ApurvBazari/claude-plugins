@@ -162,21 +162,15 @@ check_manifest_sync() { # name dir mp_version mp_description   (layer ③)
 }
 
 check_site_parity() { # name dir   (layer ④, flag-only)
-  local name="$1" rt st
+  local name="$1"
   local site="$ROOT/site/$name"
   if [[ ! -e "$site" ]]; then
     add_finding WARN 4 "$name" SITE_PAGE_MISSING \
       "no site/$name page — run /walkthrough:document $name to generate it"
-    return 0
   fi
-  command -v git >/dev/null 2>&1 || return 0
-  git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1 || return 0
-  rt="$(git -C "$ROOT" log -1 --format=%ct -- "$name/README.md" 2>/dev/null || echo 0)"
-  st="$(git -C "$ROOT" log -1 --format=%ct -- "site/$name" 2>/dev/null || echo 0)"
-  if [[ "$rt" -gt 0 && "$st" -gt 0 && "$rt" -gt "$st" ]]; then
-    add_finding WARN 4 "$name" SITE_PAGE_STALE \
-      "$name/README.md was committed after site/$name — run /walkthrough:document $name to refresh"
-  fi
+  # Content drift (a page behind its README/CHANGELOG) is the release-docs gate's job:
+  # .claude/skills/release-docs/scripts/docs-detect.sh. A commit-time heuristic here fired on
+  # every README typo fix, so it was retired.
 }
 
 # ---- report ----------------------------------------------------------------
