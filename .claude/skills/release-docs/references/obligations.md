@@ -21,21 +21,7 @@
 3. **"root CLAUDE.md tree has no entry for `<plugin>`"** means the plugin's whole block is missing from the root `CLAUDE.md` architecture tree. Add a `├──→ <dir>/` line with a short `← role` note, followed by its `skills/ (…)` and `agents/ (…)` lists, in the same shape as the other plugins' blocks. The lists name every skill and agent directory on disk, hidden ones included.
 4. **`intentional` entries.** Copy the `token` from the obligation itself. It must be the *longest* retired token that matches on that line: a shorter retired token inside it (`greenfield-drift.json` inside `.claude/greenfield-drift.json`) is collapsed into the longer one, so an entry naming the shorter token never matches. The `context` must be a phrase that appears on that exact line, not the line before or after it.
 5. **No prerequisites area yet.** If the README has no Prerequisites section, add one: a `## Prerequisites` heading with `- **name** — why` bullets. If the page has no prerequisites area, add a section with an `.edge-grid` of `edge` cards, following `page-style.md` rule 3 (a unique `id`, a nav link, and renumbered section labels).
-6. **Regenerating `site/og.png`.** Headless Chrome writes the PNG and then never exits, so every Chrome run here is wrapped in a hard kill (`perl`'s `alarm`, since macOS has no `timeout`). If `magick` is on the `PATH`, run the command in `site/og-card.html`'s header comment, with its Chrome step wrapped that way. Otherwise (the CI runner has no ImageMagick), take the screenshot at 1× with Chrome alone. It goes to a fresh temporary file first, and replaces `site/og.png` only if it isn't empty:
-
-   ```bash
-   CHROME=google-chrome   # macOS: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-   P="$(mktemp -d)"
-   perl -e 'alarm 30; exec @ARGV' "$CHROME" --headless=new --disable-gpu --no-sandbox --hide-scrollbars \
-     --no-first-run --user-data-dir="$P/prof" --virtual-time-budget=8000 \
-     --window-size=1200,630 --force-device-scale-factor=1 --screenshot="$P/og.png" \
-     "file://$PWD/site/og-card.html" || true
-   pkill -f "$P/prof" || true
-   test -s "$P/og.png" && mv "$P/og.png" site/og.png || echo "og.png NOT regenerated"
-   rm -rf "$P"
-   ```
-
-   If it says `og.png NOT regenerated`, list that in the report as needing the owner.
+6. **Regenerating `site/og.png`.** Run `bash .claude/skills/release-docs/scripts/og-regen.sh`. It shoots `site/og-card.html` in headless Chrome: with ImageMagick, the 2× shot from the card's header comment, downscaled; without it (the CI runner has none), a 1× shot at 1200×630. It replaces `site/og.png` only with a complete 1200×630 PNG. If it prints `og.png NOT regenerated: <why>`, `site/og.png` is untouched: list that in the report as needing the owner.
 
    The card's alt text in every `og` entry (`og:image:alt`, `twitter:image:alt`) names the plugins ("Five plugins: …"). When the card's plugin list changes, update those entries and then each page's `<head>` to match; that is `og-copy`.
 7. **In `.github/docs-surfaces.json`, change only `og` and `retired`.** The write fence fails the run if `surfaces`, `frozen`, `pages` or `landing` change. A new plugin needs no `pages` entry: its page defaults to `site/<plugin>/index.html`.

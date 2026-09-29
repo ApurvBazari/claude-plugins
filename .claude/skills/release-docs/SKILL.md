@@ -12,7 +12,7 @@ Arguments: `mode=local` (the default) or `mode=ci`. In `mode=ci`, nobody will an
 
 Paths used below:
 
-- scripts: `.claude/skills/release-docs/scripts/docs-detect.sh`, `.claude/skills/release-docs/scripts/post-checks.sh` and `.claude/skills/release-docs/scripts/render-check.sh`
+- scripts: `.claude/skills/release-docs/scripts/docs-detect.sh`, `.claude/skills/release-docs/scripts/post-checks.sh`, `.claude/skills/release-docs/scripts/render-check.sh` and `.claude/skills/release-docs/scripts/og-regen.sh`
 - surfaces: `.github/docs-surfaces.json` (at the repo root, not under this skill)
 - ledger: `.github/docs-ledger.json`
 - run directory: `.release-docs/run/` (gitignored). It holds `before.snap`, `obligations.before.json`, `verifier.json`, `post-checks.md`, `pr-body.md` and `shots/`.
@@ -22,7 +22,7 @@ Paths used below:
 - `.claude-plugin/marketplace.json` must exist in the working directory. If it doesn't, you're not at the claude-plugins root: stop.
 - Tracked files must be clean (`git diff --quiet HEAD`). If they aren't, stop and say which files are dirty. Untracked files belong to the owner: never touch them.
 - `mode=local`: if the current branch is `main` or `develop`, run `git switch -c docs/release-sync-<YYYYMMDD>` first. Never commit on `main` or `develop`.
-- `mode=ci`: the workflow has already created the branch and written the snapshot to `.release-docs/run/before.snap`. Never create or switch branches, commit, or push.
+- `mode=ci`: the workflow has already created the branch and written the snapshot to `.release-docs/run/before.snap`. Never create or switch branches, commit, or push. Never run `post-checks.sh --snapshot`: the workflow owns the snapshot, and `--snapshot` refuses to overwrite an existing file.
 
 ## Step 0: Snapshot
 
@@ -62,6 +62,7 @@ Resolve every open obligation whose `resolver` is `model`, in this order: plugin
 
   Never state a capability, count, path or behaviour that no source states.
 - **`page-missing` for a site page:** invoke the walkthrough document skill (`Skill` tool, `walkthrough:document`, arguments `<plugin> site/<plugin>/index.html`) from this main session. It can't be dispatched to a subagent. Then follow the `page-missing` row of `references/obligations.md`.
+- **`site/og.png`:** when `site/og-card.html` changes, regenerate the card with `bash .claude/skills/release-docs/scripts/og-regen.sh`, never by hand. If it prints `og.png NOT regenerated`, `site/og.png` is untouched; put that in the report for the owner.
 - Follow `references/page-style.md` on every page edit.
 
 ## Step 4: Ledger
@@ -76,7 +77,7 @@ Resolve every open obligation whose `resolver` is `model`, in this order: plugin
 
 ## Step 5: Verify
 
-1. Re-detect with `bash .claude/skills/release-docs/scripts/docs-detect.sh --gate`. Fix and repeat until it exits 0, or until you can't resolve what remains. In that case, say what remains and why.
+1. Re-detect with `bash .claude/skills/release-docs/scripts/docs-detect.sh --gate`. If obligations are still open, fix what can be fixed inside the doc surfaces and re-detect, at most 2 more times. Then list every obligation still open, and why, in the report and go on. Some are the owner's by rule, such as a manifest `inventory-row` (`references/obligations.md` note 1).
 2. Dispatch the `docs-verifier` agent. Its prompt is two things:
    - the output of `git diff HEAD` over the changed doc files. A new file (such as a generated page) is untracked, so `git diff HEAD` leaves it out: add `git diff --no-index -- /dev/null <file>` for each one;
    - the source paths: each changed plugin's `CHANGELOG.md`, `README.md`, `skills/`, `agents/` and `scripts/`.
@@ -86,7 +87,7 @@ Resolve every open obligation whose `resolver` is `model`, in this order: plugin
    - Cut each `unsupported` claim, or rewrite it to what a source states.
    - Dispatch the verifier once more on the new diff (at most 2 rounds). Keep the final array in `verifier.json`; any non-`ok` items left are reported, not hidden.
 
-   If the verifier can't be dispatched, or returns no JSON array, don't write `verifier.json` and say so in the report. Step 6 still passes the path, and the PR body then shows "verifier output missing" rather than leaving the section out.
+   If the verifier can't be dispatched, or returns no JSON array, don't write `verifier.json` and say so in the report. The PR body is still built with that path (by Step 6 locally, by the workflow in CI), so it shows "verifier output missing" rather than leaving the section out.
 3. Run the deterministic checks:
 
    ```bash
@@ -97,26 +98,30 @@ Resolve every open obligation whose `resolver` is `model`, in this order: plugin
    `post-checks.sh` runs the write fence, the no-waiver check, the gate, `render-check.sh` on the changed pages, and every belt and guard. Its exit code decides what happens next:
 
    - **0:** everything passed.
-   - **1:** read `post-checks.md`, fix, and run it again. A render failure that `references/page-style.md` rule 11 calls pre-existing is reported, not fixed.
+   - **1:** read `post-checks.md`. Fix only what is inside the doc surfaces, and run it again, at most 2 more times. Then list every failure that can't be fixed inside the fence in the report, and go on to Step 6. Those include:
+     - obligations that are the owner's by rule;
+     - belts and guards that fail outside the surfaces;
+     - an overflow that `references/page-style.md` rule 11 calls pre-existing;
+     - a fence failure on a path the owner had dirty before the run.
    - **2:** bad input. The fence didn't run, so the tree is unchecked. Stop, and never commit it.
 
 ## Step 6: Report
 
-```bash
-bash .claude/skills/release-docs/scripts/docs-detect.sh --pr-body \
-  --before .release-docs/run/obligations.before.json \
-  --verifier .release-docs/run/verifier.json > .release-docs/run/pr-body.md
-```
-
-Always pass `--verifier`, even when the verifier didn't run.
-
 - `mode=local`:
+  - Build the PR body. Always pass `--verifier`, even when the verifier didn't run:
+
+    ```bash
+    bash .claude/skills/release-docs/scripts/docs-detect.sh --pr-body \
+      --before .release-docs/run/obligations.before.json \
+      --verifier .release-docs/run/verifier.json > .release-docs/run/pr-body.md
+    ```
+
   - Show the owner the resolved, still-open and verifier-disagreement sections, and point them at `.release-docs/run/shots/`.
   - Commit on the branch when `post-checks.sh` exited 0, or when it exited 1 and the owner, shown what still fails, says to commit anyway. Never commit after exit 2.
     - `git add` each file this run changed, by name: the doc surfaces, `.github/docs-ledger.json`, `.github/docs-surfaces.json`, `site/og.png` and any new `site/<plugin>/index.html`. Never `git add -A` or `git add .`.
     - `git commit` as `docs(release): sync docs for <base7>..<head7>` (the 7-character SHAs of the report's `range`), with the repo's `Co-Authored-By` trailer.
   - Ask before pushing or opening a PR. A docs PR targets `develop`: `gh pr create --base develop`.
-- `mode=ci`: reply with one line of counts (resolved / still open / verifier disagreements). The workflow re-runs post-checks independently, then commits, pushes and opens the PR.
+- `mode=ci`: don't run the `--pr-body` command. Reply with one line of counts (resolved / still open / verifier disagreements). The workflow builds the PR body itself, re-runs post-checks independently, then commits, pushes and opens the PR.
 
 ## Key Rules
 
@@ -125,5 +130,6 @@ Always pass `--verifier`, even when the verifier didn't run.
 - **`.github/docs-surfaces.json`: `og` and `retired` only.** A change to `surfaces`, `frozen`, `pages` or `landing` fails the write fence.
 - **Never `waived`, never `<head>` except `og-copy` (or a new page's head block under `page-missing`), never frozen docs.**
 - **Sources, not memory.** Every new claim traces to a CHANGELOG entry, a README, frontmatter or the diff; the verifier checks that.
-- **The snapshot is the fence's record.** Never write `.release-docs/run/before.snap` after Step 0, and never commit after `post-checks.sh` exits 2.
+- **The snapshot is the fence's record.** Never write `.release-docs/run/before.snap` after Step 0, and never commit after `post-checks.sh` exits 2. In `mode=ci`, never run `post-checks.sh --snapshot` at all: the workflow owns the snapshot.
+- **Bounded loops.** The re-detect and post-checks loops each get at most 2 more runs. After that, report what is left instead of retrying.
 - **`mode=ci`:** no questions, no branch changes, no commits, no pushes.

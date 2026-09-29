@@ -26,7 +26,7 @@ PY
 
 cites_before=$failures
 for f in references/obligations.md references/page-style.md scripts/docs-detect.sh scripts/post-checks.sh \
-         scripts/render-check.sh; do
+         scripts/render-check.sh scripts/og-regen.sh; do
   grep -qF "$f" "$S/SKILL.md" 2>/dev/null || fail "SKILL.md does not cite $f"
   [ -e "$S/$f" ] || fail "SKILL.md cites a missing file: $f"
 done
