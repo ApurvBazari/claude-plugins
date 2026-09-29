@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 # render-check.sh — render-verify site pages in headless Chrome (release-docs spec § 6).
 #
-# Usage: render-check.sh [--shots DIR] PAGE...
+# Usage: render-check.sh [--shots DIR] [--baseline DIR] PAGE...
 #   For each page: node --check on its inline scripts; then a Chrome probe at 1400px for uncaught
 #   errors, sections that never show or are empty, nav links / data-d keys that do not resolve and
 #   openD() throwing; and at 500px for horizontal overflow. --shots writes dark + light screenshots.
+#   --baseline DIR holds HEAD's copy of each PAGE at DIR/PAGE (post-checks.sh passes it). Then an
+#   overflow fails only when HEAD's copy had none or the page's grew past it; one that didn't grow
+#   is printed as a note, "pre-existing overflow (unchanged: Npx)", never a failure. A PAGE with no
+#   copy there (a new page) is judged strictly.
 #   Env: CHROME (binary), RENDER_TIMEOUT (seconds per Chrome run, default 30).
 # Exit: 0 all clean, 1 any page failed, 2 bad input or no Chrome.
 # Chrome writes its output and then never exits on its own, so every run is polled and killed.
@@ -19,15 +23,18 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 shots=""
+baseline=""
 pages=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --shots) shots="${2:?--shots needs a directory}"; shift 2 ;;
+    --baseline) baseline="${2:?--baseline needs a directory}"; shift 2 ;;
     -*) echo "render-check: unknown option $1" >&2; exit 2 ;;
     *) pages+=("$1"); shift ;;
   esac
 done
-[ ${#pages[@]} -gt 0 ] || { echo "usage: render-check.sh [--shots DIR] PAGE..." >&2; exit 2; }
+[ ${#pages[@]} -gt 0 ] || { echo "usage: render-check.sh [--shots DIR] [--baseline DIR] PAGE..." >&2; exit 2; }
+[ -z "$baseline" ] || [ -d "$baseline" ] || { echo "render-check: --baseline is not a directory: $baseline" >&2; exit 2; }
 # A --shots dir inside the repository must be under .release-docs/ and never inside .git; it is
 # checked before anything is written (docs-lib/outputs.py).
 if [ -n "$shots" ]; then bash "$HERE/docs-detect.sh" --check-output-dir "$shots" >/dev/null || exit 2; fi
@@ -97,23 +104,48 @@ chrome_run() {
 }
 
 # probe_verdict <tag> <width> <html file> — the dom check for one width, printing judge's verdict
-# (empty when clean). Retried exactly once, and only when the probe itself never reported (Chrome
-# never wrote the console marker before RENDER_TIMEOUT) — spec § 10's single retry. A failure the
-# probe DID report (a real hidden section, bad nav link, openD() throw, overflow, ...) is never
-# retried; it is judge's verdict on the first, real attempt.
+# (empty when clean) and keeping the probe's JSON at $WORK/<tag>.json. Retried exactly once, and
+# only when the probe itself never reported (Chrome never wrote the console marker before
+# RENDER_TIMEOUT) — spec § 10's single retry. A failure the probe DID report (a real hidden
+# section, bad nav link, openD() throw, overflow, ...) is never retried; it is judge's verdict on
+# the first, real attempt.
 probe_verdict() {
   local tag="$1" width="$2" html="$3" verdict
   chrome_run "$tag" "$width,30000" dom "$WORK/$tag.log" --enable-logging=stderr --v=1 "file://$html"
-  verdict="$(python3 "$HERE/render_probe.py" read "$WORK/$tag.log" \
-    | python3 "$HERE/render_probe.py" judge "$width")"
+  python3 "$HERE/render_probe.py" read "$WORK/$tag.log" > "$WORK/$tag.json"
+  verdict="$(python3 "$HERE/render_probe.py" judge "$width" < "$WORK/$tag.json")"
   case "$verdict" in
     "the probe never reported"*)
       chrome_run "$tag-r2" "$width,30000" dom "$WORK/$tag-r2.log" --enable-logging=stderr --v=1 "file://$html"
-      verdict="$(python3 "$HERE/render_probe.py" read "$WORK/$tag-r2.log" \
-        | python3 "$HERE/render_probe.py" judge "$width")"
+      python3 "$HERE/render_probe.py" read "$WORK/$tag-r2.log" > "$WORK/$tag.json"
+      verdict="$(python3 "$HERE/render_probe.py" judge "$width" < "$WORK/$tag.json")"
       ;;
   esac
   printf '%s' "$verdict"
+}
+
+# rejudge_overflow <n> <page> — only when page n overflowed at 500px and HEAD's copy is in
+# --baseline: render that copy the same way (injected into $WORK, as the page itself is), then judge
+# the page's 500px probe again against its scrollWidth. Sets verdict500, and note when the overflow
+# is pre-existing. A copy that does not render leaves the strict verdict, saying so.
+rejudge_overflow() {
+  local n="$1" page="$2" base_sw sw
+  python3 "$HERE/render_probe.py" inject "$baseline/$page" "$WORK/b$n.html" probe
+  probe_verdict "b$n-500" 500 "$WORK/b$n.html" > /dev/null
+  base_sw="$(python3 "$HERE/render_probe.py" width < "$WORK/b$n-500.json")"
+  if [ -z "$base_sw" ]; then
+    verdict500="$verdict500 (HEAD's copy did not render, so there is no baseline)"
+    return 0
+  fi
+  verdict500="$(python3 "$HERE/render_probe.py" judge 500 "$base_sw" < "$WORK/p$n-500.json")"
+  sw="$(python3 "$HERE/render_probe.py" width < "$WORK/p$n-500.json")"
+  case "$verdict500" in
+    *overflow*) ;;
+    *)
+      if [ "$sw" = "$base_sw" ]; then note="pre-existing overflow (unchanged: ${sw}px)"
+      else note="pre-existing overflow (${sw}px; HEAD's copy ${base_sw}px)"; fi
+      ;;
+  esac
 }
 
 # shot <tag> <win> <out> <chrome args...> — a screenshot, retried once if it comes out missing or
@@ -140,10 +172,15 @@ for page in "${pages[@]}"; do
     bad="inline script does not parse: $(head -n 3 "$WORK/p$n.node" | tr '\n' ' ')"
   fi
   python3 "$HERE/render_probe.py" inject "$page" "$WORK/p$n.html" probe
-  for width in 1400 500; do
-    verdict="$(probe_verdict "p$n-$width" "$width" "$WORK/p$n.html")"
-    [ -z "$verdict" ] || bad="${bad:+$bad; }$verdict"
-  done
+  verdict="$(probe_verdict "p$n-1400" 1400 "$WORK/p$n.html")"
+  [ -z "$verdict" ] || bad="${bad:+$bad; }$verdict"
+  note=""
+  verdict500="$(probe_verdict "p$n-500" 500 "$WORK/p$n.html")"
+  case "$verdict500" in
+    *"horizontal overflow"*)
+      if [ -n "$baseline" ] && [ -f "$baseline/$page" ]; then rejudge_overflow "$n" "$page"; fi ;;
+  esac
+  [ -z "$verdict500" ] || bad="${bad:+$bad; }$verdict500"
   if [ -n "$shots" ]; then
     mkdir -p "$shots"
     case "$(basename "$page")" in
@@ -154,6 +191,7 @@ for page in "${pages[@]}"; do
     python3 "$HERE/render_probe.py" inject "$page" "$WORK/p$n-light.html" light
     shot "p$n-light" "1400,9000" "$shots/$name-light.png" --screenshot="$shots/$name-light.png" "file://$WORK/p$n-light.html"
   fi
-  if [ -n "$bad" ]; then echo "FAIL $page: $bad"; fail=1; else echo "ok   $page"; fi
+  if [ -n "$bad" ]; then echo "FAIL $page: $bad${note:+; note: $note}"; fail=1
+  else echo "ok   $page${note:+ — note: $note}"; fi
 done
 exit "$fail"

@@ -159,4 +159,49 @@ lines="$(wc -l < "$SCRATCH/fake-chrome-hangs.log" | tr -d ' ')"
 run "$SCRATCH/nope.html"
 expect "T5-BADINPUT exit 2" 2 "$RC"
 
+# T5-BASELINE (final review R16, rehearsal #12/#20): the handoff, lens and notify pages already
+# overflow at 500px, so a strict check made every run that edits them a needs-owner draft. With
+# --baseline DIR (HEAD's copy of each PAGE at DIR/PAGE), an overflow fails only when it grows, or when
+# HEAD had none; one that didn't grow is a note, never a failure.
+mkdir -p "$SCRATCH/bl/base" "$SCRATCH/bl/tree"
+page "$SCRATCH/bl/base/same.html" '<div style="width:700px">wide</div>' "fine" two
+page "$SCRATCH/bl/tree/same.html" '<div style="width:700px">wide, and edited</div>' "fine" two
+cp "$SCRATCH/bl/base/same.html" "$SCRATCH/bl/base/grow.html"
+page "$SCRATCH/bl/tree/grow.html" '<div style="width:800px">wider</div>' "fine" two
+page "$SCRATCH/bl/base/fresh.html" "" "fine" two
+page "$SCRATCH/bl/tree/fresh.html" '<div style="width:700px">new overflow</div>' "fine" two
+page "$SCRATCH/bl/tree/nobase.html" '<div style="width:700px">no HEAD copy</div>' "fine" two
+cd "$SCRATCH/bl/tree" || exit 1
+run --baseline "$SCRATCH/bl/base" same.html
+expect "T5-BASELINE unchanged overflow passes" 0 "$RC"
+case "$OUTTXT" in *"ok   same.html"*"pre-existing overflow (unchanged: "*) echo "ok: T5-BASELINE unchanged overflow is a note" ;; *) fail "T5-BASELINE note: $OUTTXT" ;; esac
+run --baseline "$SCRATCH/bl/base" grow.html
+expect "T5-BASELINE grown overflow fails" 1 "$RC"
+case "$OUTTXT" in *"FAIL grow.html"*"grew"*) echo "ok: T5-BASELINE says it grew" ;; *) fail "T5-BASELINE grow: $OUTTXT" ;; esac
+run --baseline "$SCRATCH/bl/base" fresh.html
+expect "T5-BASELINE overflow HEAD lacked fails" 1 "$RC"
+run --baseline "$SCRATCH/bl/base" nobase.html
+expect "T5-BASELINE no HEAD copy: strict" 1 "$RC"
+run same.html
+expect "T5-BASELINE non-vacuous: without --baseline the same page fails" 1 "$RC"
+cd "$ROOT" || exit 1
+
+# T5-POST-BASELINE: post-checks renders against HEAD's site/ itself, so the real flow gets the rule.
+fx_repo overflow
+sed -i.bak 's#<h1>alpha</h1>#<h1>alpha</h1><div style="width:700px">wide nav</div>#' site/alpha/index.html
+rm -f site/alpha/index.html.bak
+git commit -qam 'an overflowing page'
+bash "$POST" --snapshot "$SCRATCH/ov.snap" >/dev/null 2>&1 || fail "T5-POST-BASELINE snapshot"
+sed -i.bak 's#<h1>alpha</h1>#<h1>alpha, edited</h1>#' site/alpha/index.html && rm -f site/alpha/index.html.bak
+RC=0
+RELEASE_DOCS_SKIP=gate,belts bash "$POST" --before "$SCRATCH/ov.snap" --report "$SCRATCH/ov.md" >/dev/null 2>&1 || RC=$?
+expect "T5-POST-BASELINE unchanged overflow passes post-checks" 0 "$RC"
+grep -qF 'pre-existing overflow (unchanged: ' "$SCRATCH/ov.md" \
+  && echo "ok: T5-POST-BASELINE the note is in the report" || fail "T5-POST-BASELINE report: $(cat "$SCRATCH/ov.md")"
+sed -i.bak 's#width:700px#width:900px#' site/alpha/index.html && rm -f site/alpha/index.html.bak
+RC=0
+RELEASE_DOCS_SKIP=gate,belts bash "$POST" --before "$SCRATCH/ov.snap" --report "$SCRATCH/ov2.md" >/dev/null 2>&1 || RC=$?
+expect "T5-POST-BASELINE grown overflow fails post-checks" 1 "$RC"
+cd "$ROOT" || exit 1
+
 exit "$failures"

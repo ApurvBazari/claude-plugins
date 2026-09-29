@@ -101,14 +101,15 @@ Resolve every open obligation whose `resolver` is `model`, in this order: plugin
      --report .release-docs/run/post-checks.md --shots .release-docs/run/shots
    ```
 
-   `post-checks.sh` runs the write fence, the no-waiver check, the gate, `render-check.sh` on the changed pages, and every belt and guard. Its exit code decides what happens next:
+   `post-checks.sh` runs the write fence, the no-waiver check, the gate, `render-check.sh` on the changed pages (against HEAD's copy of each), and every belt and guard. A failing belt or guard is named in `post-checks.md` with its `FAIL` lines. Its exit code decides what happens next:
 
-   - **0:** everything passed.
+   - **0:** everything passed, unless the report has a `- SKIPPED:` line. That line means `RELEASE_DOCS_SKIP` is set and a step never ran: unset it and run again. Never commit on a report with one.
    - **1:** read `post-checks.md`. Fix only what is inside the doc surfaces, and run it again, at most 2 more times. Then list every failure that can't be fixed inside the fence in the report, and go on to Step 6. Those include:
      - obligations that are the owner's by rule;
      - belts and guards that fail outside the surfaces;
-     - an overflow that `references/page-style.md` rule 11 calls pre-existing;
      - a fence failure on a path the owner had dirty before the run.
+
+     An overflow at 500px that HEAD's copy of the page already had, and that didn't grow, is not a failure: the report lists it as a note (`references/page-style.md` rule 11).
    - **2:** bad input. The fence didn't run, so the tree is unchecked. Stop, and never commit it.
 
 ## Step 6: Report

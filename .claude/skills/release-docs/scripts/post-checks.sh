@@ -23,9 +23,13 @@
 #      line must be `FENCE-COMPLETE ok|fail|untrusted`; without it the fence did not complete;
 #   2. no "waived" disposition added to the ledger (waivers are owner-only);
 #   3. docs-detect --gate;
-#   4. render-check on the changed landing and plugin pages (never og-card.html or frozen paths);
-#   5. tests/run-all.sh and the .github/scripts guards.
-# RELEASE_DOCS_SKIP=gate,render,belts skips steps 3–5 (belts only; CI never sets it).
+#   4. render-check on the changed landing and plugin pages (never og-card.html or frozen paths),
+#      with HEAD's copy of each as the baseline: an overflow at 500px fails only when it is new or
+#      grew (page-style rule 11); one that didn't grow is a note in the report;
+#   5. tests/run-all.sh and the .github/scripts guards. A failure names each failing belt with its
+#      FAIL lines, and each failing guard with its last lines of output.
+# RELEASE_DOCS_SKIP=gate,render,belts skips steps 3–5 (belts only; CI never sets it). Each skipped
+# step prints a `- SKIPPED:` line, so an exit 0 with one is never read as a full pass.
 # Exit: 0 all passed; 1 any failed; 2 do not trust or commit this tree — bad input, a fence that
 # did not complete, or an --expect-clean snapshot that is not clean.
 set -euo pipefail
@@ -83,8 +87,9 @@ untrusted=0
 # 1. write fence. Only a run that printed FENCE-COMPLETE as its last line completed: exit 0 with
 # `ok`, or exit 1 with `fail`/`untrusted`. Anything else — a crash, a missing marker, exit 2 — means
 # the fence did not complete, so nothing it reports can be trusted, and neither can the tree.
-errf="$(mktemp "${TMPDIR:-/tmp}/post-checks.XXXXXX")"
-trap 'rm -f "$errf"' EXIT
+TMPW="$(mktemp -d "${TMPDIR:-/tmp}/post-checks.XXXXXX")"
+trap 'rm -rf "$TMPW"' EXIT
+errf="$TMPW/fence.err"
 frc=0
 fence_out="$(bash "$HERE/docs-detect.sh" --fence --before "$before" ${expect_clean:+--expect-clean} 2>"$errf")" \
   || frc=$?
@@ -154,7 +159,9 @@ else
 fi
 
 # 3. gate
-if ! skip gate; then
+if skip gate; then
+  say "- SKIPPED: docs-detect gate (RELEASE_DOCS_SKIP): this report is not a full pass"
+else
   if gate_out="$(bash "$HERE/docs-detect.sh" --gate 2>&1)"; then
     say "- ok: docs-detect gate (0 open)"
   else
@@ -165,8 +172,11 @@ if ! skip gate; then
 fi
 
 # 4. render — the changed landing and plugin pages, as HEAD's config names them (docs-detect.sh
-# --render-pages): never og-card.html (a 1200px card, not a page), never a frozen path.
-if ! skip render; then
+# --render-pages): never og-card.html (a 1200px card, not a page), never a frozen path. HEAD's copy
+# of each page (git cat-file: no filters, no attributes) goes to a baseline dir for --baseline.
+if skip render; then
+  say "- SKIPPED: render-check (RELEASE_DOCS_SKIP): this report is not a full pass"
+else
   prc=0
   page_list="$(bash "$HERE/docs-detect.sh" --render-pages 2>&1)" || prc=$?
   pages=()
@@ -183,23 +193,60 @@ EOF
     fails=1
   elif [ ${#pages[@]} -eq 0 ]; then
     say "- ok: render-check (no site page changed)"
-  elif render_out="$(bash "$HERE/render-check.sh" ${shots:+--shots "$shots"} "${pages[@]}" 2>&1)"; then
-    say "- ok: render-check (${#pages[@]} page(s))"
   else
-    say "- FAIL: render-check"
-    say "$(indent "$render_out")"
-    fails=1
+    base="$TMPW/head"
+    for p in "${pages[@]}"; do
+      mkdir -p "$base/$(dirname "$p")"
+      git cat-file blob "HEAD:$p" > "$base/$p" 2>/dev/null || rm -f "$base/$p"
+    done
+    if render_out="$(bash "$HERE/render-check.sh" ${shots:+--shots "$shots"} --baseline "$base" "${pages[@]}" 2>&1)"; then
+      say "- ok: render-check (${#pages[@]} page(s))"
+      notes="$(printf '%s\n' "$render_out" | grep -F 'note: ' || true)"
+      [ -z "$notes" ] || say "$(indent "$notes")"
+    else
+      say "- FAIL: render-check"
+      say "$(indent "$render_out")"
+      fails=1
+    fi
   fi
 fi
 
-# 5. belts + guards
-if ! skip belts; then
-  if bash tests/run-all.sh >/dev/null 2>&1; then say "- ok: tests/run-all.sh"; else say "- FAIL: tests/run-all.sh"; fails=1; fi
+# 5. belts + guards. A failure says which belt or guard, and what it printed, so the model can tell
+# whether it is inside the doc surfaces without re-running the suite (rehearsal #14).
+belt_failures() { # <run-all output> — each failed belt (run-all names it under tests/), then its FAIL lines
+  awk '
+    /^=== .* ===$/ { name = substr($0, 5, length($0) - 8); nb = 0; next }
+    /^  \^ FAILED$/ {
+      print "tests/" name
+      if (nb == 0) print "  (it printed no FAIL line; run it for its output)"
+      for (i = 1; i <= nb; i++) print "  " buf[i]
+      nb = 0; next
+    }
+    /FAIL/ { if (nb < 20) buf[++nb] = $0 }
+  ' "$1"
+}
+if skip belts; then
+  say "- SKIPPED: tests/run-all.sh and the .github/scripts guards (RELEASE_DOCS_SKIP): this report is not a full pass"
+else
+  if bash tests/run-all.sh > "$TMPW/belts.out" 2>&1; then
+    say "- ok: tests/run-all.sh"
+  else
+    summary="$(grep -E '^(Ran [0-9]+ belt script|No belts discovered)' "$TMPW/belts.out" | tail -n 1 || true)"
+    say "- FAIL: tests/run-all.sh${summary:+ ($summary)}"
+    failed="$(belt_failures "$TMPW/belts.out")"
+    [ -z "$failed" ] || say "$(indent "$failed")"
+    fails=1
+  fi
   guard_fails=0
   for g in validate-manifests check-structure check-references check-action-pinning check-version-sync \
            check-state-gitignore check-notify-delegation check-phase-numbering check-phase-tracking \
            check-skill-refs check-ref-paths; do
-    bash ".github/scripts/$g.sh" >/dev/null 2>&1 || { say "- FAIL: guard $g"; guard_fails=1; fails=1; }
+    if ! gout="$(bash ".github/scripts/$g.sh" 2>&1)"; then
+      say "- FAIL: guard $g"
+      [ -z "$gout" ] || say "$(indent "$(printf '%s\n' "$gout" | tail -n 10)")"
+      guard_fails=1
+      fails=1
+    fi
   done
   [ "$guard_fails" -ne 0 ] || say "- ok: every .github/scripts guard"
 fi

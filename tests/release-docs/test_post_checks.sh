@@ -131,6 +131,26 @@ PY
 post b-grow grow.md
 expect "T6-RETIRED-GROW exit 0 (grown, reordered, og edited)" 0 "$RC"
 has "T6-RETIRED-GROW fence ok" grow.md '- ok: write fence'
+# M5 (final review): a skipped step says so, so a local run's exit 0 is never read as a full pass.
+has "M5-SKIPPED gate" grow.md '- SKIPPED: docs-detect gate'
+has "M5-SKIPPED render" grow.md '- SKIPPED: render-check'
+has "M5-SKIPPED belts" grow.md '- SKIPPED: tests/run-all.sh and the .github/scripts guards'
+
+# T6-BELT-NAMES (rehearsal #14): a failing run-all names each failing belt with its FAIL lines, so the
+# model can tell whether the failure is inside the doc surfaces; a passing belt is not named.
+fx_repo beltnames
+mkdir -p tests/a tests/b
+cp "$ROOT/tests/run-all.sh" tests/run-all.sh
+put tests/a/test_one.sh 'echo "ok: fine"'
+put tests/b/test_two.sh 'echo "ok: first"' 'echo "FAIL: AC25 the belt count is stale"' 'exit 1'
+git add -A && git commit -qm belts
+snap b-beltnames
+RC=0
+RELEASE_DOCS_SKIP=gate,render bash "$POST" --before "$SCRATCH/b-beltnames" --report "$SCRATCH/beltnames.md" >/dev/null 2>&1 || RC=$?
+expect "T6-BELT-NAMES exit 1" 1 "$RC"
+has "T6-BELT-NAMES names the failing belt" beltnames.md 'tests/b/test_two.sh'
+has "T6-BELT-NAMES carries its FAIL line" beltnames.md 'FAIL: AC25 the belt count is stale'
+lacks "T6-BELT-NAMES a passing belt is not named" beltnames.md 'tests/a/test_one.sh'
 # A retired that is no longer a list is a shrink too, and reported, never a crash.
 fx_repo notlist
 snap b-notlist

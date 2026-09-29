@@ -3,7 +3,10 @@
   scripts PAGE OUT.js            the page's inline, non-JSON scripts joined, for node --check
   inject  PAGE OUT.html MODE     a copy with the probe (MODE=probe) or the light theme (MODE=light)
   read    LOG                    the probe's JSON from a real-time console-log capture
-  judge   WIDTH                  reads probe JSON on stdin; prints failures (nothing when clean)
+  judge   WIDTH [HEAD]           reads probe JSON on stdin; prints failures (nothing when clean).
+                                 HEAD is the scrollWidth of HEAD's copy at WIDTH: an overflow fails
+                                 only when HEAD's copy had none or it grew past HEAD's
+  width                          reads probe JSON on stdin; prints its scrollWidth (nothing if none)
 
 Deviation from the original design (release-docs spec task 5): the probe was specified to append
 its JSON to the DOM and read it back from a `--dump-dom` capture taken after a fixed
@@ -70,7 +73,7 @@ def read(log):
     print(m.group(1) if m else json.dumps({"error": "the probe never reported (load failed or timed out)"}))
 
 
-def judge(width):
+def judge(width, base=None):
     r = json.loads(sys.stdin.read() or "{}")
     out = []
     if "error" in r:
@@ -84,11 +87,28 @@ def judge(width):
             if r.get(key):
                 out.append("%s: %s" % (label, ", ".join(r[key])))
     elif r.get("scrollWidth", 0) > r.get("width", 0) + 1:
-        out.append("%dpx: horizontal overflow (scrollWidth %d)" % (r["width"], r["scrollWidth"]))
+        sw, w = r["scrollWidth"], r["width"]
+        if base is None:
+            out.append("%dpx: horizontal overflow (scrollWidth %d)" % (w, sw))
+        elif base <= w + 1:
+            out.append("%dpx: horizontal overflow (scrollWidth %d; HEAD's copy had none)" % (w, sw))
+        elif sw > base:
+            out.append("%dpx: horizontal overflow grew (scrollWidth %d, HEAD's copy %d)" % (w, sw, base))
+        # else: HEAD's copy overflowed at least as far, so this is pre-existing, not a failure;
+        # render-check.sh reports it as a note.
     print("; ".join(out))
+
+
+def width():
+    r = json.loads(sys.stdin.read() or "{}")
+    sw = r.get("scrollWidth")
+    if isinstance(sw, int) and "error" not in r:
+        print(sw)
 
 
 if __name__ == "__main__":
     a = sys.argv[1:]
     {"scripts": lambda: scripts(a[1], a[2]), "inject": lambda: inject(a[1], a[2], a[3]),
-     "read": lambda: read(a[1]), "judge": lambda: judge(int(a[1]))}[a[0]]()
+     "read": lambda: read(a[1]),
+     "judge": lambda: judge(int(a[1]), int(a[2]) if len(a) > 2 else None),
+     "width": width}[a[0]]()
