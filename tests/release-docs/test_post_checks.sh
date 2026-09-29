@@ -351,6 +351,30 @@ if [ -L .github/docs-surfaces.json ] || [ ! -f .github/docs-surfaces.json ]; the
 has "T6-SYMCONF reported" symconf.md 'symlink at .github/docs-surfaces.json'
 kept "T6-SYMCONF the ignored target is not touched" .release-docs/run/s.json
 
+# T6-GITLINK: index-only entries that aren't regular files. `git apply --index` of a submodule entry
+# stages a 160000 gitlink and leaves an empty directory, which git add -A then keeps staged; a
+# symlink can be staged with no file in the tree. Each is unstaged (its empty directory removed),
+# at an allowed path as outside the surfaces, and reported.
+fx_repo gitlink
+snap b-gitlink
+git update-index --add --cacheinfo 160000,1111111111111111111111111111111111111111,site/zzz/index.html
+mkdir -p site/zzz/index.html
+git update-index --add --cacheinfo 160000,2222222222222222222222222222222222222222,alpha/zzz
+mkdir -p alpha/zzz
+mkdir -p alpha/references
+link_blob="$(printf '/etc/passwd' | git hash-object -w --stdin)"
+git update-index --add --cacheinfo "120000,$link_blob,alpha/references/creds.md"
+post b-gitlink gitlink.md
+expect "T6-GITLINK exit 1" 1 "$RC"
+expect "T6-GITLINK nothing but regular files left staged" "" "$(git ls-files -s | awk '$1 != "100644" && $1 != "100755"')"
+gone "T6-GITLINK the empty directory at an allowed path is removed" site/zzz/index.html
+gone "T6-GITLINK the empty directory outside the surfaces is removed" alpha/zzz
+has "T6-GITLINK reported at an allowed path" gitlink.md 'gitlink at site/zzz/index.html'
+has "T6-GITLINK reported outside the surfaces" gitlink.md 'gitlink at alpha/zzz'
+has "T6-GITLINK index-only symlink reported" gitlink.md 'symlink at alpha/references/creds.md'
+expect "T6-GITLINK git add -A stages nothing odd afterwards" "" \
+  "$(git add -A && git diff --cached --raw --no-renames HEAD | awk '$2 != "100644" && $2 != "000000"')"
+
 # T6-FIFO: a FIFO at the config path is reverted, never opened — the fence finishes, no hang.
 fx_repo fifo
 snap b-fifo

@@ -11,8 +11,10 @@
 - `git status --porcelain -z` is parsed, never the quoted text form, so every file name is the path
   it names; git takes paths literally, so a file named `*` is not a pathspec;
 - only regular files may change. A symlink, FIFO, device, directory or type change the run left
-  anywhere — an allowed path included — is reverted and fails. Nothing is ever read or hashed
-  through a symlink, and nothing but a regular file is ever opened;
+  anywhere — an allowed path included — is reverted and fails. So is a gitlink or symlink the run
+  staged, which the index alone may hold (a staged gitlink leaves only an empty directory, and git
+  status shows none). Nothing is ever read or hashed through a symlink, and nothing but a regular
+  file is ever opened;
 - the snapshot (--snapshot, never overwritten) records each path dirty before the run with a digest
   of its content. Such a path is never restored or removed: the run changing one outside the
   allowlist fails, and is left for the owner. --expect-clean (CI) requires an empty snapshot at
@@ -203,6 +205,47 @@ def _revert(ctx, rel, tracked, owned):
     return None
 
 
+def _unstage_non_files(ctx, owner_dirty, tree):
+    """Take out of the index every entry the run staged that is not a regular file: a gitlink
+    (160000), which `git apply --index` stages with only an empty directory in the tree (git add -A
+    then keeps it, and git status shows no empty directory, so the status-based reverts never see
+    it), or a symlink (120000), staged with or without a link in the tree. The entry goes back to
+    HEAD's version (tracked) or out of the index (new); the empty directory or the link the run left
+    there goes too. An entry dirty before the run is the owner's and is left alone."""
+    p = _git(ctx, "diff-index", "--cached", "-z", "--no-renames", "HEAD")
+    if p.returncode != 0:
+        raise Incomplete("git diff-index --cached failed: %s" % _err(p))
+    fields, lines, i = p.stdout.split(b"\0"), [], 0
+    while i + 1 < len(fields):
+        meta, rel = fields[i].decode("ascii", "replace").split(), os.fsdecode(fields[i + 1])
+        i += 2
+        if len(meta) != 5 or not meta[0].startswith(":"):
+            raise Incomplete("unreadable git diff-index record %r" % fields[i - 2][:80])
+        if meta[1] in ("100644", "100755", "000000") or owner_dirty(rel):
+            continue
+        what = {"160000": "gitlink", "120000": "symlink"}.get(meta[1], "mode %s entry" % meta[1])
+        k = kind(ctx, rel)  # "absent" when a parent is a symlink: nothing is touched through one
+        try:
+            if k == "symlink":
+                os.remove(ctx.path(rel))
+            elif k == "dir" and not os.listdir(ctx.path(rel)):
+                os.rmdir(ctx.path(rel))
+        except OSError as e:
+            lines.append("- FAIL: the fence could not remove what the run left at %s: %s" % (show(rel), e))
+        tracked = rel in tree
+        if tracked:
+            q = _git(ctx, "checkout", "-q", "HEAD", "--", rel)
+        else:
+            q = _git(ctx, "rm", "-q", "--cached", "--ignore-unmatch", "--", rel)
+        if q.returncode != 0:
+            lines.append("- FAIL: the fence could not unstage the %s the run staged at %s: %s"
+                         % (what, show(rel), _err(q) or "git failed"))
+        else:
+            lines.append("- FAIL: the run staged a %s at %s (%s); only regular files may change"
+                         % (what, show(rel), "restored" if tracked else "unstaged"))
+    return lines
+
+
 def _restore_ignores(ctx, before, owner_dirty, tree):
     """Put every .gitignore back as HEAD has it, before anything else reads `git status`: under the
     run's rules an owner's ignored file looks new, and the fence would delete it. A restored rule
@@ -325,7 +368,10 @@ def fence(ctx, before_path, expect_clean=False):
                      "static minimum: %s" % (describe(e), ", ".join(surfaces.EXTRA_ALLOWED)))
     tree = _tree(ctx, "HEAD")
     # 2. The original ignore rules, then 3. the reverts. Nothing run-written is parsed before this.
+    # The index goes first: a staged gitlink has only an empty directory in the tree, which the
+    # status-based reverts cannot see.
     lines += _restore_ignores(ctx, before, owner_dirty, tree)
+    lines += _unstage_non_files(ctx, owner_dirty, tree)
     lines += _revert_run_changes(ctx, allow, before, owner_dirty, tree)
 
     # 4. Diagnostics, each of which fails on its own rather than crashing the fence.
