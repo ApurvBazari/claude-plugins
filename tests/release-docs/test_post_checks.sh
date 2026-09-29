@@ -29,6 +29,19 @@ gone() { # <what> <path>
 kept() { # <what> <path>
   if [ -e "$2" ]; then echo "ok: $1"; else fail "$1 — $2 is gone"; fi
 }
+within() { # <seconds> <cmd...> — a hard timeout, so a hang fails the belt; RC is 124 on timeout
+  RC=0
+  python3 - "$@" <<'PY' || RC=$?
+import os, signal, subprocess, sys
+p = subprocess.Popen(sys.argv[2:], start_new_session=True,
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+try:
+    sys.exit(p.wait(timeout=float(sys.argv[1])))
+except subprocess.TimeoutExpired:
+    os.killpg(p.pid, signal.SIGKILL)
+    sys.exit(124)
+PY
+}
 
 fx_repo fence
 put owner-scratch.txt 'mine'                       # untracked before the run: must survive
@@ -137,6 +150,9 @@ printf 'x\n' > 'alpha/back\slash.sh'
 printf 'x\n' > "alpha/new
 line.sh"
 printf 'x\n' > 'alpha/scripts/*'
+mkdir -p alpha/references
+printf 'x\n' > "alpha/references/c
+d.md"
 post b-names names.md
 expect "T6-NAMES exit 1" 1 "$RC"
 gone "T6-NAMES café removed" "alpha/café.sh"
@@ -145,6 +161,8 @@ gone "T6-NAMES backslash removed" 'alpha/back\slash.sh'
 gone "T6-NAMES newline removed" "alpha/new
 line.sh"
 gone "T6-NAMES star removed" 'alpha/scripts/*'
+gone "T6-NAMES newline name under an allowed doc dir removed" "alpha/references/c
+d.md"
 has "T6-NAMES café reported as itself" names.md 'removed new file alpha/café.sh'
 has "T6-NAMES newline name quoted on one line" names.md 'removed new file "alpha/new\nline.sh"'
 expect "T6-NAMES tool.sh still tracked and clean" "" "$(git status --porcelain -- alpha/scripts/tool.sh)"
@@ -191,6 +209,158 @@ git commit -qam 'the run commits'
 post b-moved moved.md
 expect "T6-HEADMOVED exit 1" 1 "$RC"
 has "T6-HEADMOVED reported" moved.md 'HEAD moved during the run'
+
+# T6-DEEP: a working-tree config nested past Python's recursion limit cannot crash the fence before
+# it reverts — the reverts come first, and the unreadable config is a FAIL line.
+fx_repo deep
+snap b-deep
+python3 -c "print('[' * 200000 + ']' * 200000)" > .github/docs-surfaces.json
+put alpha/scripts/tool.sh 'echo evil'
+put alpha/evil.py 'x=1'
+put .github/workflows/pwn.yml 'on: push'
+post b-deep deep.md
+expect "T6-DEEP exit 1" 1 "$RC"
+expect "T6-DEEP tool.sh restored" "echo tool" "$(tail -n 1 alpha/scripts/tool.sh)"
+gone "T6-DEEP new file removed" alpha/evil.py
+gone "T6-DEEP new workflow removed" .github/workflows/pwn.yml
+has "T6-DEEP reported" deep.md 'left .github/docs-surfaces.json unreadable'
+lacks "T6-DEEP no traceback" deep.md 'Traceback'
+
+# T6-HEADCONF: a committed config that is not UTF-8, or nested too deep, still yields the static
+# minimum fence — never "no fence".
+fx_repo nonutf8
+printf '{"schemaVersion":1, "x":"\377\376"}\n' > .github/docs-surfaces.json
+git commit -qam 'non-UTF-8 config'
+snap b-nonutf8
+put alpha/scripts/tool.sh 'echo evil'
+post b-nonutf8 nonutf8.md
+expect "T6-HEADCONF non-UTF-8: exit 1" 1 "$RC"
+expect "T6-HEADCONF non-UTF-8: tool.sh restored" "echo tool" "$(tail -n 1 alpha/scripts/tool.sh)"
+has "T6-HEADCONF non-UTF-8: static minimum" nonutf8.md 'static minimum'
+fx_repo headdeep
+python3 -c "print('{\"schemaVersion\":1,\"x\":' + '[' * 200000 + ']' * 200000 + '}')" > .github/docs-surfaces.json
+git commit -qam 'nested config'
+snap b-headdeep
+put alpha/scripts/tool.sh 'echo evil'
+post b-headdeep headdeep.md
+expect "T6-HEADCONF deep: exit 1" 1 "$RC"
+expect "T6-HEADCONF deep: tool.sh restored" "echo tool" "$(tail -n 1 alpha/scripts/tool.sh)"
+has "T6-HEADCONF deep: static minimum" headdeep.md 'static minimum'
+
+# T6-NOMARKER: a fence that never printed FENCE-COMPLETE did not complete, whatever it said and
+# whatever it exited with: exit 2, never "fenced".
+fx_repo nomarker
+snap b-nomarker
+mkdir -p "$SCRATCH/stub"
+cp "$POST" "$SCRATCH/stub/post-checks.sh"
+printf '#!/usr/bin/env bash\necho "- ok: write fence"\n' > "$SCRATCH/stub/docs-detect.sh"
+RC=0; bash "$SCRATCH/stub/post-checks.sh" --before "$SCRATCH/b-nomarker" --report "$SCRATCH/nm1.md" >/dev/null 2>&1 || RC=$?
+expect "T6-NOMARKER 'ok' without the marker -> exit 2" 2 "$RC"
+has "T6-NOMARKER reported" nm1.md 'did not run to completion'
+printf '#!/usr/bin/env bash\necho "Traceback (most recent call last):" >&2\nexit 1\n' > "$SCRATCH/stub/docs-detect.sh"
+RC=0; bash "$SCRATCH/stub/post-checks.sh" --before "$SCRATCH/b-nomarker" --report "$SCRATCH/nm2.md" >/dev/null 2>&1 || RC=$?
+expect "T6-NOMARKER a crash exiting 1 -> exit 2" 2 "$RC"
+
+# T6-RESNAP: the run cannot re-take the snapshot to launder its changes as the owner's.
+fx_repo resnap
+snap b-resnap
+put alpha/scripts/tool.sh 'echo evil'
+put .github/workflows/pwn.yml 'on: push'
+RC=0; bash "$POST" --snapshot "$SCRATCH/b-resnap" >/dev/null 2>&1 || RC=$?
+expect "T6-RESNAP a second --snapshot to the same file is refused" 2 "$RC"
+post b-resnap resnap.md
+expect "T6-RESNAP exit 1" 1 "$RC"
+expect "T6-RESNAP tool.sh restored" "echo tool" "$(tail -n 1 alpha/scripts/tool.sh)"
+gone "T6-RESNAP new workflow removed" .github/workflows/pwn.yml
+
+# T6-EXPECT-CLEAN: CI's snapshot must be empty (a fresh checkout). A dirty one is reported, still
+# fenced, and exits 2 — without deleting what it lists.
+fx_repo cleanci
+snap b-cleanci
+put alpha/README.md '# alpha' '' 'edited'
+RC=0; bash "$POST" --before "$SCRATCH/b-cleanci" --expect-clean --report "$SCRATCH/ci0.md" >/dev/null 2>&1 || RC=$?
+expect "T6-EXPECT-CLEAN a clean snapshot and an allowed edit -> exit 0" 0 "$RC"
+fx_repo dirtyci
+put owner-scratch.txt 'mine'
+snap b-dirtyci
+put alpha/scripts/tool.sh 'echo evil'
+RC=0; bash "$POST" --before "$SCRATCH/b-dirtyci" --expect-clean --report "$SCRATCH/ci1.md" >/dev/null 2>&1 || RC=$?
+expect "T6-EXPECT-CLEAN a dirty snapshot -> exit 2" 2 "$RC"
+has "T6-EXPECT-CLEAN reported" ci1.md '--expect-clean: the snapshot lists 1 dirty path(s)'
+expect "T6-EXPECT-CLEAN still fenced" "echo tool" "$(tail -n 1 alpha/scripts/tool.sh)"
+kept "T6-EXPECT-CLEAN the listed file is not deleted" owner-scratch.txt
+
+# T6-IGNORE: .gitignore edits are put back before anything reads `git status`, so the owner's
+# ignored files never look like the run's and are never deleted.
+fx_repo ignore
+printf 'private/\n*.local\n' > .gitignore
+git add .gitignore && git commit -qm 'ignore private'
+put private/plan.md 'owner plan'
+put alpha/settings.local 'owner local'
+snap b-ignore
+printf '# tidied\n' > .gitignore
+post b-ignore ignore.md
+expect "T6-IGNORE-BLANK exit 1" 1 "$RC"
+kept "T6-IGNORE-BLANK owner's ignored dir file kept" private/plan.md
+kept "T6-IGNORE-BLANK owner's ignored *.local kept" alpha/settings.local
+expect "T6-IGNORE-BLANK .gitignore restored" "*.local" "$(tail -n 1 .gitignore)"
+has "T6-IGNORE-BLANK reported" ignore.md 'the run changed .gitignore (restored)'
+fx_repo ignoreneg
+printf '*.local\n' > .gitignore
+git add .gitignore && git commit -qm 'ignore local'
+put alpha/settings.local 'owner local'
+snap b-ignoreneg
+printf '!*.local\n' > alpha/.gitignore
+post b-ignoreneg ignoreneg.md
+expect "T6-IGNORE-NEG exit 1" 1 "$RC"
+kept "T6-IGNORE-NEG owner's ignored file kept" alpha/settings.local
+gone "T6-IGNORE-NEG new .gitignore removed" alpha/.gitignore
+has "T6-IGNORE-NEG reported" ignoreneg.md 'the run created alpha/.gitignore (removed)'
+fx_repo ignorehide
+snap b-ignorehide
+printf 'alpha/evil.py\n' > .gitignore
+put alpha/evil.py 'x=1'
+post b-ignorehide ignorehide.md
+expect "T6-IGNORE-HIDE exit 1" 1 "$RC"
+gone "T6-IGNORE-HIDE the file it hid is removed" alpha/evil.py
+
+# T6-SYMLINK: only regular files may change, even at an allowed path; a symlink is never followed.
+fx_repo symlink
+snap b-symlink
+mkdir -p alpha/references
+ln -s /etc/passwd alpha/references/creds.md
+rm site/alpha/index.html
+ln -s ../../alpha/scripts/tool.sh site/alpha/index.html
+post b-symlink symlink.md
+expect "T6-SYMLINK exit 1" 1 "$RC"
+gone "T6-SYMLINK new symlink at an allowed path removed" alpha/references/creds.md
+if [ -L site/alpha/index.html ]; then fail "T6-SYMLINK page is still a symlink"; else echo "ok: T6-SYMLINK page is a regular file again"; fi
+has "T6-SYMLINK page content restored" symlink.md 'symlink at site/alpha/index.html (restored)'
+has "T6-SYMLINK reported" symlink.md 'symlink at alpha/references/creds.md (removed)'
+fx_repo symconf
+printf '.release-docs/\n' > .gitignore
+git add .gitignore && git commit -qm 'ignore run dir'
+snap b-symconf
+mkdir -p .release-docs/run
+cp .github/docs-surfaces.json .release-docs/run/s.json
+rm .github/docs-surfaces.json
+ln -s ../.release-docs/run/s.json .github/docs-surfaces.json
+post b-symconf symconf.md
+expect "T6-SYMCONF exit 1" 1 "$RC"
+if [ -L .github/docs-surfaces.json ] || [ ! -f .github/docs-surfaces.json ]; then fail "T6-SYMCONF config not a regular file"; else echo "ok: T6-SYMCONF config is a regular file again"; fi
+has "T6-SYMCONF reported" symconf.md 'symlink at .github/docs-surfaces.json'
+kept "T6-SYMCONF the ignored target is not touched" .release-docs/run/s.json
+
+# T6-FIFO: a FIFO at the config path is reverted, never opened — the fence finishes, no hang.
+fx_repo fifo
+snap b-fifo
+put alpha/scripts/tool.sh 'echo evil'
+rm .github/docs-surfaces.json
+mkfifo .github/docs-surfaces.json
+within 30 bash "$POST" --before "$SCRATCH/b-fifo" --report "$SCRATCH/fifo.md"
+expect "T6-FIFO finishes (no hang) with exit 1" 1 "$RC"
+if [ -p .github/docs-surfaces.json ] || [ ! -f .github/docs-surfaces.json ]; then fail "T6-FIFO config not restored"; else echo "ok: T6-FIFO config restored as a regular file"; fi
+has "T6-FIFO reported" fifo.md 'FIFO at .github/docs-surfaces.json'
 
 # T6-RENDER-SEL: only the landing page and plugin pages are rendered — never og-card.html, never
 # a frozen path.

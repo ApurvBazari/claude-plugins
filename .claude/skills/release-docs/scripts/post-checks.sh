@@ -2,24 +2,29 @@
 # post-checks.sh — the deterministic checks after a /release-docs apply (release-docs spec § 6–7).
 #
 # Usage:
-#   post-checks.sh --snapshot FILE                                 # BEFORE the apply
-#   post-checks.sh --before FILE [--report FILE.md] [--shots DIR]  # after it
+#   post-checks.sh --snapshot FILE                                                # BEFORE the apply
+#   post-checks.sh --before FILE [--expect-clean] [--report FILE.md] [--shots DIR]  # after it
 #   --snapshot records HEAD and every path dirty before the run, with a digest of its content
-#   (JSON). --before takes that file; a plain `git status` text snapshot is refused (exit 2).
-#   Keep the snapshot outside the checkout, where the run cannot rewrite it.
+#   (JSON). It is taken once: an existing FILE is never overwritten (exit 2). --before takes that
+#   file; a plain `git status` text snapshot is refused (exit 2). Keep it where the run can't write.
+#   --expect-clean is for CI, which starts from a fresh checkout: the snapshot must list no dirty
+#   path and name the current HEAD. Otherwise the run is reported, still fenced, and exits 2 — a
+#   snapshot re-taken after the apply would pass the run's files off as the owner's.
 # In order:
-#   1. the write fence (docs-detect.sh --fence) — each path the run changed outside the doc
-#      surfaces is restored from HEAD (tracked) or removed (new). The allowlist comes from HEAD's
-#      docs-surfaces.json and marketplace, and the run may change only og and retired in that file.
-#      A path dirty before the run is never restored or removed: the run touching one outside the
-#      surfaces fails, and is left for the owner;
+#   1. the write fence (docs-detect.sh --fence). It puts back every .gitignore the run changed
+#      first, then restores from HEAD (tracked) or removes (new) each path the run changed outside
+#      the doc surfaces, and any symlink, FIFO, device, directory or type change anywhere. The
+#      allowlist comes from HEAD's docs-surfaces.json and marketplace, and the run may change only
+#      og and retired in that file. A path dirty before the run is never restored or removed: the
+#      run touching one outside the surfaces fails, and is left for the owner. The fence's last
+#      line must be `FENCE-COMPLETE ok|fail|untrusted`; without it the fence did not complete;
 #   2. no "waived" disposition added to the ledger (waivers are owner-only);
 #   3. docs-detect --gate;
 #   4. render-check on the changed landing and plugin pages (never og-card.html or frozen paths);
 #   5. tests/run-all.sh and the .github/scripts guards.
 # RELEASE_DOCS_SKIP=gate,render,belts skips steps 3–5 (belts only; CI never sets it).
-# Exit: 0 all passed, 1 any failed, 2 bad input — the fence did not run on a bad snapshot, so a
-# caller must never commit the tree after an exit 2.
+# Exit: 0 all passed; 1 any failed; 2 do not trust or commit this tree — bad input, a fence that
+# did not complete, or an --expect-clean snapshot that is not clean.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -28,11 +33,12 @@ cd "$ROOT"
 
 usage() {
   echo "post-checks: $*" >&2
-  echo "usage: post-checks.sh --snapshot FILE | --before FILE [--report FILE.md] [--shots DIR]" >&2
+  echo "usage: post-checks.sh --snapshot FILE | --before FILE [--expect-clean] [--report FILE.md] [--shots DIR]" >&2
   exit 2
 }
 snapshot=""
 before=""
+expect_clean=""
 report="/dev/null"
 shots=""
 while [ $# -gt 0 ]; do
@@ -42,13 +48,14 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --snapshot) snapshot="$2"; shift 2 ;;
     --before) before="$2"; shift 2 ;;
+    --expect-clean) expect_clean=1; shift ;;
     --report) report="$2"; shift 2 ;;
     --shots) shots="$2"; shift 2 ;;
     *) usage "unknown argument $1" ;;
   esac
 done
 if [ -n "$snapshot" ]; then
-  [ -z "$before" ] && [ "$report" = /dev/null ] && [ -z "$shots" ] \
+  [ -z "$before" ] && [ -z "$expect_clean" ] && [ "$report" = /dev/null ] && [ -z "$shots" ] \
     || usage "--snapshot runs alone, before the apply"
   exec bash "$HERE/docs-detect.sh" --snapshot "$snapshot"
 fi
@@ -59,18 +66,32 @@ skip() { case ",${RELEASE_DOCS_SKIP:-}," in *",$1,"*) return 0 ;; *) return 1 ;;
 say() { printf '%s\n' "$*"; [ "$report" = /dev/null ] || printf '%s\n' "$*" >> "$report"; }
 indent() { printf '%s\n' "$1" | sed 's/^/    /'; }
 fails=0
+untrusted=0
 
-# 1. write fence. Exit 1 = something fenced or failed (reported line by line); anything above 1
-# means it could not run at all (bad snapshot, git failing), so nothing was restored or removed.
+# 1. write fence. Only a run that printed FENCE-COMPLETE as its last line completed: exit 0 with
+# `ok`, or exit 1 with `fail`/`untrusted`. Anything else — a crash, a missing marker, exit 2 — means
+# the fence did not complete, so nothing it reports can be trusted, and neither can the tree.
+errf="$(mktemp "${TMPDIR:-/tmp}/post-checks.XXXXXX")"
+trap 'rm -f "$errf"' EXIT
 frc=0
-fence_out="$(bash "$HERE/docs-detect.sh" --fence --before "$before" 2>&1)" || frc=$?
-if [ "$frc" -gt 1 ]; then
-  say "- FAIL: the write fence could not run, so nothing was restored or removed (exit $frc)"
-  say "$(indent "$fence_out")"
-  exit 2
-fi
-say "$fence_out"
-[ "$frc" -eq 0 ] || fails=1
+fence_out="$(bash "$HERE/docs-detect.sh" --fence --before "$before" ${expect_clean:+--expect-clean} 2>"$errf")" \
+  || frc=$?
+fence_err="$(cat "$errf")"
+marker="$(printf '%s\n' "$fence_out" | tail -n 1)"
+body="$(printf '%s\n' "$fence_out" | sed '$d')"
+case "$frc:$marker" in
+  "0:FENCE-COMPLETE ok") ;;
+  "1:FENCE-COMPLETE fail") fails=1 ;;
+  "1:FENCE-COMPLETE untrusted") fails=1; untrusted=1 ;;
+  *)
+    say "- FAIL: the write fence did not run to completion (exit $frc, no FENCE-COMPLETE line): do not trust or commit this tree"
+    [ -z "$fence_out" ] || say "$(indent "$fence_out")"
+    [ -z "$fence_err" ] || say "$(indent "$fence_err")"
+    exit 2
+    ;;
+esac
+say "$body"
+[ -z "$fence_err" ] || say "$(indent "$fence_err")"
 
 # 2. no waiver added. Both ledger versions are parsed, not line-diffed: a re-dumped or reformatted
 # ledger shows the owner's existing waivers as "+" lines without adding any. Fails on a waived id
@@ -171,4 +192,8 @@ if ! skip belts; then
   [ "$guard_fails" -ne 0 ] || say "- ok: every .github/scripts guard"
 fi
 
+if [ "$untrusted" -ne 0 ]; then
+  say "- FAIL: --expect-clean: the snapshot is not trusted, so neither is this tree (exit 2)"
+  exit 2
+fi
 exit "$fails"

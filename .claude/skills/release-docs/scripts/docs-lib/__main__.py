@@ -9,9 +9,11 @@ USAGE = ("usage: docs-detect.sh [--root DIR] [--range BASE..HEAD] (--out FILE | 
          "       docs-detect.sh [--root DIR] --fix-mechanical | --allowed-paths\n"
          "       docs-detect.sh [--root DIR] --candidates BASE..HEAD\n"
          "       docs-detect.sh [--root DIR] [--range BASE..HEAD] --pr-body --before FILE [--verifier FILE]\n"
-         "       docs-detect.sh [--root DIR] --snapshot FILE | --fence --before FILE | --render-pages")
+         "       docs-detect.sh [--root DIR] --snapshot FILE | --render-pages\n"
+         "       docs-detect.sh [--root DIR] --fence --before FILE [--expect-clean]")
 VALUED = ("--root", "--range", "--out", "--candidates", "--before", "--verifier", "--snapshot")
-FLAGS = ("--gate", "--fix-mechanical", "--allowed-paths", "--pr-body", "--fence", "--render-pages")
+FLAGS = ("--gate", "--fix-mechanical", "--allowed-paths", "--pr-body", "--fence", "--render-pages",
+         "--expect-clean")
 
 
 def parse(argv):
@@ -59,9 +61,14 @@ def run(opts):
         import fence
         if "--before" not in opts:
             raise repo.RepoError("--fence needs --before SNAPSHOT")
-        lines, rc = fence.fence(ctx, opts["--before"])
+        try:
+            lines, verdict = fence.fence(ctx, opts["--before"], bool(opts.get("--expect-clean")))
+        except Exception as e:  # anything unexpected: the fence did not complete, never "fenced"
+            sys.stderr.write("docs-detect: fence did not complete: %s\n" % fence.describe(e))
+            return 2
         print("\n".join(lines))
-        return rc
+        print("%s %s" % (fence.MARKER, verdict))
+        return 0 if verdict == "ok" else 1
     if opts.get("--render-pages"):
         import fence
         for rel in fence.render_pages(ctx):
