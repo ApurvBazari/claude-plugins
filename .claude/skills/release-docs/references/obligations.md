@@ -1,0 +1,41 @@
+# Obligation kinds
+
+`docs-detect.sh` opens these obligations. The table order is the contract: `tests/release-docs/test_release_docs_contract.sh` checks it against `docs-lib/kinds.py`. The surfaces config is `.github/docs-surfaces.json` and the ledger is `.github/docs-ledger.json`.
+
+| Kind | Resolver | How to resolve it |
+|---|---|---|
+| `badge-version` | script | `docs-detect.sh --fix-mechanical` rewrites the nav, footer and landing badges. Never edit a badge by hand, and never *only* the badge: the `changelog-entry` obligations say what the release changed. |
+| `card-description` | script | `--fix-mechanical` rewrites the landing grid card from `plugin.json`, verbatim. If the new text contradicts the page's own narrative, fix the narrative too. |
+| `inventory-count` | model | Change the stat, and every prose count that says the same thing ("Ten skills" → "Eleven skills", "the four internal steps" → "five"). Agents are counted here too (note 2). |
+| `inventory-row` | model | Add or remove the table row, the README Skills entry, the root command index line or the root `CLAUDE.md` tree entry named in `detail`. The row text comes from the SKILL.md `description` and the README; never invent a capability. A row on `.claude-plugin/marketplace.json` is the owner's (note 1); a missing root tree entry is a whole block (note 3). |
+| `prerequisite-new` | model | Add the dependency to the README Prerequisites list (as a `- **name** — why` bullet) and to the page's prerequisites grid (as an `edge` card: `n` = name, `t` = when it's required, `p` = what needs it). If either place has no prerequisites area yet, add one (note 5). |
+| `stale-mention` | model | Rewrite the line to the current name or behaviour. Only when the mention is deliberately historical (a legacy name that's still read, a migration note), leave it and add an `intentional` ledger entry: `file`, `token`, a `context` phrase that is on that line, and a `reason`. The `token` and `context` have exact rules (note 4). |
+| `changelog-entry` | model | Make sure the docs cover the entry, then declare it in `.github/docs-ledger.json` under its `id`: `covered` with `at: ["<file>#<anchor>", …]` pointing at where it's documented, or `not-user-facing` with a `reason` (tests, CI, internal refactors). Never `waived`. |
+| `page-missing` | model | For a missing site page, run `Skill(walkthrough:document <plugin> site/<plugin>/index.html)`, then draft the page's `og` entry (as `og-copy` says), add the `<head>` block from it (canonical link plus the OG and Twitter tags, in the order an existing plugin page uses), and add the nav and footer badges (`page-style.md` rule 10). For a missing landing card, add the grid card (description = `plugin.json`, verbatim), the "Compose together" card, and the plugin-count words. Update `site/og-card.html`'s plugin list and regenerate `site/og.png` (note 6). |
+| `og-copy` | model | Make the page's `<head>` strings equal its `.github/docs-surfaces.json` `og` entry. For a new page with no entry, draft one from `plugin.json`'s description, add it to `og` in `.github/docs-surfaces.json`, and list it in the report as needing owner review. |
+
+## Notes
+
+1. **Manifest rows are the owner's.** An `inventory-row` whose `file` is `.claude-plugin/marketplace.json` comes from doc-audit's manifest-sync layer (`PLUGIN_JSON_MISSING`, `VERSION_MISMATCH`, `DESC_MISMATCH`). Manifests are outside the write fence, so never edit one: leave the obligation open and list it in the report as needing the owner.
+2. **Agents are checked in two places only:** the page stats (`inventory-count`) and the root `CLAUDE.md` tree's `agents/` list (`inventory-row`). No page has an agent reference table, so nothing flags a page whose prose still names a removed agent or omits a new one. When a plugin's `agents/` changed in the range, read its page's prose yourself.
+3. **"root CLAUDE.md tree has no entry for `<plugin>`"** means the plugin's whole block is missing from the root `CLAUDE.md` architecture tree. Add a `├──→ <dir>/` line with a short `← role` note, followed by its `skills/ (…)` and `agents/ (…)` lists, in the same shape as the other plugins' blocks. The lists name every skill and agent directory on disk, hidden ones included.
+4. **`intentional` entries.** Copy the `token` from the obligation itself. It must be the *longest* retired token that matches on that line: a shorter retired token inside it (`greenfield-drift.json` inside `.claude/greenfield-drift.json`) is collapsed into the longer one, so an entry naming the shorter token never matches. The `context` must be a phrase that appears on that exact line, not the line before or after it.
+5. **No prerequisites area yet.** If the README has no Prerequisites section, add one: a `## Prerequisites` heading with `- **name** — why` bullets. If the page has no prerequisites area, add a section with an `.edge-grid` of `edge` cards, following `page-style.md` rule 3 (a unique `id`, a nav link, and renumbered section labels).
+6. **Regenerating `site/og.png`.** Headless Chrome writes the PNG and then never exits, so every Chrome run here is wrapped in a hard kill (`perl`'s `alarm`, since macOS has no `timeout`). If `magick` is on the `PATH`, run the command in `site/og-card.html`'s header comment, with its Chrome step wrapped that way. Otherwise (the CI runner has no ImageMagick), take the screenshot at 1× with Chrome alone. It goes to a fresh temporary file first, and replaces `site/og.png` only if it isn't empty:
+
+   ```bash
+   CHROME=google-chrome   # macOS: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+   P="$(mktemp -d)"
+   perl -e 'alarm 30; exec @ARGV' "$CHROME" --headless=new --disable-gpu --no-sandbox --hide-scrollbars \
+     --no-first-run --user-data-dir="$P/prof" --virtual-time-budget=8000 \
+     --window-size=1200,630 --force-device-scale-factor=1 --screenshot="$P/og.png" \
+     "file://$PWD/site/og-card.html" || true
+   pkill -f "$P/prof" || true
+   test -s "$P/og.png" && mv "$P/og.png" site/og.png || echo "og.png NOT regenerated"
+   rm -rf "$P"
+   ```
+
+   If it says `og.png NOT regenerated`, list that in the report as needing the owner.
+
+   The card's alt text in every `og` entry (`og:image:alt`, `twitter:image:alt`) names the plugins ("Five plugins: …"). When the card's plugin list changes, update those entries and then each page's `<head>` to match; that is `og-copy`.
+7. **In `.github/docs-surfaces.json`, change only `og` and `retired`.** The write fence fails the run if `surfaces`, `frozen`, `pages` or `landing` change. A new plugin needs no `pages` entry: its page defaults to `site/<plugin>/index.html`.
