@@ -37,6 +37,39 @@ for f in .github/docs-surfaces.json .github/docs-ledger.json; do
 done
 [ "$failures" -eq "$cites_before" ] && echo "ok: SKILL.md cites its files and they exist"
 
+# Playbook duties with an owner (final review I1, I5, rehearsal #15). A duty with no owning step is
+# never performed: the card-description narrative check fell between Step 2 (runs the fixer) and
+# Step 3 (model obligations only), and the page it means was never named.
+python3 - "$S" <<'PY' && echo "ok: playbook duties have owning steps (I1 card narrative, I5 plugin references, #15 sources)" || fail "playbook duties"
+import re, sys
+skill = open(sys.argv[1] + "/SKILL.md").read()
+obl = open(sys.argv[1] + "/references/obligations.md").read()
+def section(title):
+    m = re.search(r"^## %s.*?(?=^## |\Z)" % re.escape(title), skill, re.S | re.M)
+    return m.group(0) if m else ""
+bad = []
+card = re.search(r"^\| `card-description` \|.*$", obl, re.M)
+if not card or "site/<plugin>/index.html" not in card.group(0):
+    bad.append("obligations.md card-description row does not name site/<plugin>/index.html")
+step2 = section("Step 2")
+if "card-description" not in step2 or "site/<plugin>/index.html" not in step2:
+    bad.append("SKILL.md Step 2 does not own the card-description narrative check")
+step3 = section("Step 3")
+if not all(g in step3 for g in ("<plugin>/references/**", "<plugin>/skills/*/references/**")) \
+        or "never its instructions" not in step3:
+    bad.append("SKILL.md Step 3 lacks the plugin-references rule (both globs, instructions untouched)")
+rule = [l for l in section("Key Rules").splitlines() if l.startswith("- **Sources, not memory.**")]
+verifier = section("Step 5")
+for src in ("CHANGELOG", "README", "scripts/", "skills/", "agents/"):
+    if not rule or src not in rule[0]:
+        bad.append("Key Rules' sources omit %s, which Step 5.2 gives the verifier" % src)
+    if src not in verifier:
+        bad.append("Step 5.2's verifier source paths omit %s" % src)
+for b in bad:
+    print(b)
+sys.exit(1 if bad else 0)
+PY
+
 head -n 5 "$S/SKILL.md" 2>/dev/null | grep -qx 'disable-model-invocation: true' \
   && echo "ok: /release-docs is user/CI-invoked only" || fail "SKILL.md must set disable-model-invocation: true"
 

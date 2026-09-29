@@ -50,17 +50,22 @@ Read the report. If `open` is 0, reply "nothing to sync" and stop.
 bash .claude/skills/release-docs/scripts/docs-detect.sh --fix-mechanical
 ```
 
+The fixer rewrites the version badges and the landing grid cards from `plugin.json`, which closes those obligations. It never reads the page a card links to, and nothing re-detects what a new card text makes false there. So this step owns it: for each `card-description` obligation in `.release-docs/run/obligations.before.json`, read that plugin's own page, `site/<plugin>/index.html`, and fix any narrative the new card text contradicts. Use Step 3's sources and rules.
+
 ## Step 3: Content edits
 
-Resolve every open obligation whose `resolver` is `model`, in this order: plugin pages, then the landing page, then READMEs and the root `CLAUDE.md`, then cross-plugin references.
+Resolve every open obligation whose `resolver` is `model`, in this order: plugin pages, then the landing page, then READMEs and the root `CLAUDE.md`, then plugin references (`<plugin>/references/**` and `<plugin>/skills/*/references/**`) that an obligation names.
 
 - **Sources, in order of authority:**
-  1. The CHANGELOG entries in the range. Each `changelog-entry` obligation carries its `text`, cut at 200 characters, so read the whole bullet in the CHANGELOG.
+  1. The plugin's CHANGELOG. The entries in the range come first. Each `changelog-entry` obligation carries its `text`, cut at 200 characters, so read the whole bullet in the CHANGELOG. Older entries for the same plugin are valid sources too, for debt from before the range: a `stale-mention` of a `retired[]` token has no entry in the range by construction.
   2. The plugin's README.
   3. SKILL.md frontmatter.
   4. The range diff: `git diff <base>..HEAD -- <plugin>/`, where `base` is the report's `range.base`.
 
-  Never state a capability, count, path or behaviour that no source states.
+  - **Behaviour: the code wins.** For what a plugin does, its code (`scripts/`, the `SKILL.md` bodies and `agents/`) is authoritative. When the README contradicts it, follow the code and cite `file:line`. If that README is a doc surface, fix it from the code too.
+  - **Sources that disagree.** When a lower source contradicts a higher one (say, frontmatter against the README or a CHANGELOG entry), follow the higher one and report the stale lower one for the owner. Frontmatter, SKILL.md bodies, scripts and CHANGELOGs are outside the fence: never edit them.
+  - Never state a capability, count, path or behaviour that no source states.
+- **Plugin references are plugin behaviour.** `<plugin>/references/**` and `<plugin>/skills/*/references/**` are doc surfaces, but they are also the instructions a skill or agent runs on. Touch one only to resolve an obligation that names it, and then change only the stale name or claim: never its instructions.
 - **`page-missing` for a site page:** invoke the walkthrough document skill (`Skill` tool, `walkthrough:document`, arguments `<plugin> site/<plugin>/index.html`) from this main session. It can't be dispatched to a subagent. Then follow the `page-missing` row of `references/obligations.md`.
 - **`site/og.png`:** when `site/og-card.html` changes, regenerate the card with `bash .claude/skills/release-docs/scripts/og-regen.sh`, never by hand. If it prints `og.png NOT regenerated`, `site/og.png` is untouched; put that in the report for the owner.
 - Follow `references/page-style.md` on every page edit.
@@ -84,7 +89,7 @@ Resolve every open obligation whose `resolver` is `model`, in this order: plugin
    - the source paths: each changed plugin's `CHANGELOG.md`, `README.md`, `skills/`, `agents/` and `scripts/`.
 
    Write the JSON array it returns to `.release-docs/run/verifier.json` yourself (the agent is read-only).
-   - Fix each `refuted` claim.
+   - Fix each `refuted` claim everywhere it appears on that page, including lines you didn't change (the verifier also judges claims carried over on a changed line). Fix it as well in the page's own source doc when that is a doc surface (the plugin's README, for its site page). Anywhere else it appears, don't fix it: list each place in the report.
    - Cut each `unsupported` claim, or rewrite it to what a source states.
    - Dispatch the verifier once more on the new diff (at most 2 rounds). Keep the final array in `verifier.json`; any non-`ok` items left are reported, not hidden.
 
@@ -127,10 +132,10 @@ Resolve every open obligation whose `resolver` is `model`, in this order: plugin
 ## Key Rules
 
 - **Truth over green.** A badge-only edit, a `covered` pointer at an unrelated anchor, or an `intentional` on a genuinely stale line makes the gate pass without making the docs true. That's the exact failure this skill exists to prevent.
-- **Doc surfaces only.** Never edit CHANGELOGs, SKILL.md, agents, scripts, manifests or workflows. `post-checks.sh` restores anything outside the surfaces and fails the run.
+- **Doc surfaces only.** Never edit CHANGELOGs, SKILL.md, agents, scripts, manifests or workflows. `post-checks.sh` restores anything outside the surfaces and fails the run. A plugin reference is a surface, but touch one only for an obligation that names it, and never change its instructions.
 - **`.github/docs-surfaces.json`: `og` and `retired` only.** A change to `surfaces`, `frozen`, `pages` or `landing` fails the write fence.
 - **Never `waived`, never `<head>` except `og-copy` (or a new page's head block under `page-missing`), never frozen docs.**
-- **Sources, not memory.** Every new claim traces to a CHANGELOG entry, a README, frontmatter or the diff; the verifier checks that.
+- **Sources, not memory.** Every new claim traces to a source Step 3 lists: a CHANGELOG entry, the README, the code (`scripts/`, `skills/` and `agents/`), frontmatter or the range diff. Those are the paths Step 5.2 gives the verifier, which checks every claim against them.
 - **The snapshot is the fence's record.** Never write `.release-docs/run/before.snap` after Step 0, and never commit after `post-checks.sh` exits 2. In `mode=ci`, never run `post-checks.sh --snapshot` at all: the workflow owns the snapshot.
 - **Bounded loops.** The re-detect and post-checks loops each get at most 2 more runs. After that, report what is left instead of retrying.
 - **`mode=ci`:** no questions, no branch changes, no commits, no pushes.
