@@ -100,7 +100,7 @@ chrome_run() {
   kill "$pid" 2>/dev/null || true
   pkill -f "$WORK/prof-$tag" 2>/dev/null || true
   wait "$pid" 2>/dev/null || true
-  if [ "$test" = dom ]; then mv "$WORK/$tag.log" "$out"; fi
+  if [ "$test" = dom ] && [ "$WORK/$tag.log" != "$out" ]; then mv "$WORK/$tag.log" "$out"; fi
 }
 
 # probe_verdict <tag> <width> <html file> — the dom check for one width, printing judge's verdict

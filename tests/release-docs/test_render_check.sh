@@ -9,6 +9,29 @@ fail() { echo "FAIL: $*"; failures=$((failures + 1)); }
 # shellcheck source=tests/release-docs/helpers.sh
 . "$ROOT/tests/release-docs/helpers.sh"
 
+# GNU-behaviour mv shim: GNU mv (the CI runner, ubuntu-latest) exits 1 on a same-file move; BSD mv
+# (macOS) exits 0, which is why this class of difference only ever showed up in CI. Put ahead of
+# PATH for the whole belt so every case here — not just the baseline ones below — sees mv the way
+# CI's runner does.
+mkdir -p "$SCRATCH/gnu-bin"
+cat > "$SCRATCH/gnu-bin/mv" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+args=("$@")
+n=${#args[@]}
+if [ "$n" -ge 2 ]; then
+  a="${args[$((n - 2))]}"
+  b="${args[$((n - 1))]}"
+  if [ -e "$a" ] && [ -e "$b" ] && [ "$a" -ef "$b" ]; then
+    echo "mv: '$a' and '$b' are the same file" >&2
+    exit 1
+  fi
+fi
+exec /bin/mv "$@"
+EOF
+chmod +x "$SCRATCH/gnu-bin/mv"
+export PATH="$SCRATCH/gnu-bin:$PATH"
+
 have_chrome=""
 for c in "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" google-chrome google-chrome-stable chromium chromium-browser; do
   if [ -x "$c" ] || command -v "$c" >/dev/null 2>&1; then have_chrome=1; break; fi
