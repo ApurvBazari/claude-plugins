@@ -140,6 +140,55 @@ bash "$DETECT" --candidates main..HEAD > "$SCRATCH/c.json"
 python3 -c "import json,sys; c=json.load(open('$SCRATCH/c.json')); sys.exit(0 if 'schema.json' not in c and 'alpha/old/' in c else 1)" \
   && echo "ok: T4-ALIVE live file dropped, retired dir kept" || fail "T4-ALIVE $(cat "$SCRATCH/c.json")"
 
+# T4-LIVE (final review C1): a live skill or agent named in a retirement sentence is never a
+# candidate. The verb retires something of it (a flag, an output, a prompt), not the name, and on
+# the real repo one such line opened 29 stale-mentions of `/onboard:evolve` on correct docs. Each
+# phrasing reads the name (after a past verb, or under `### Removed`), so only liveness drops it.
+# live_case <label> <live token> <changelog line...>
+live_case() {
+  local label="$1" tok="$2"
+  shift 2
+  fx_repo "live-$label"
+  put alpha/skills/render-view/SKILL.md '---' 'name: render-view' 'description: Renders.' '---'
+  printf '%s\n' '' 'Use `render-view`, and `alpha:checker` reviews.' >> alpha/README.md
+  git add -A && git commit -qm live && git branch -f main HEAD
+  bump 1.1.0 "$@"
+  bash "$DETECT" --candidates main..HEAD > "$SCRATCH/c.json"
+  python3 -c "import json,sys; sys.exit(1 if sys.argv[1] in json.load(open(sys.argv[2])) else 0)" \
+    "$tok" "$SCRATCH/c.json" \
+    && echo "ok: T4-LIVE $label: live $tok is not a candidate" || fail "T4-LIVE $label $(tr -d '\n' < "$SCRATCH/c.json")"
+  detect
+  expect "T4-LIVE $label: no stale-mention of the live $tok" 0 "$(count stale-mention)"
+}
+live_case removed-from /alpha:run '- Removed the `--xx` flag from `/alpha:run`.'
+live_case moved render-view '- Moved `render-view` output to a new path.'
+live_case removed-heading /alpha:run '### Removed' '- `/alpha:run` no longer offers the `--yy` prompt.'
+live_case agent alpha:checker '- Removed the `--zz` option from `alpha:checker`.'
+# The retired name itself is still a candidate: a removed skill stays one beside a live sibling.
+fx_repo live-removed
+put alpha/skills/old-view/SKILL.md '---' 'name: old-view' 'description: Old.' '---'
+git add -A && git commit -qm old && git branch -f main HEAD
+git rm -rq alpha/skills/old-view && git commit -qm "remove old-view"
+bump 1.1.0 '- Removed `old-view`; `/alpha:run` covers it.'
+bash "$DETECT" --candidates main..HEAD > "$SCRATCH/c.json"
+python3 -c "import json,sys; c=json.load(open(sys.argv[1])); sys.exit(0 if 'old-view' in c and '/alpha:old-view' in c and '/alpha:run' not in c else 1)" \
+  "$SCRATCH/c.json" && echo "ok: T4-LIVE non-vacuous: the removed skill is still a candidate" \
+  || fail "T4-LIVE removed $(tr -d '\n' < "$SCRATCH/c.json")"
+
+# T4-ACTOR (final review C1, deferred T4 item): before a present-tense or base-form verb stands its
+# actor, not the thing retired — "`/onboard:evolve` now removes …", "`newKey` replaces `oldKey`" —
+# while a past form still reads both sides ("`x` is removed", "Removed `x`"). T4-HYPHEN: a verb
+# glued behind a hyphen ("unanimous-drop") is part of a compound name, not a verb.
+fx_repo actor
+bump 1.1.0 '- `newKey` replaces `oldKey` in the config.' '- `stayKey` now drops stale rows.' \
+  '- The unanimous-drop rule in `x-rule.md` is clarified.' '- `gone-key` is removed.'
+bash "$DETECT" --candidates main..HEAD > "$SCRATCH/c.json"
+python3 -c "import json,sys; c=json.load(open(sys.argv[1])); sys.exit(0 if 'oldKey' in c and 'gone-key' in c and 'newKey' not in c and 'stayKey' not in c else 1)" \
+  "$SCRATCH/c.json" && echo "ok: T4-ACTOR the actor of a present verb is not a candidate; its object is" \
+  || fail "T4-ACTOR $(tr -d '\n' < "$SCRATCH/c.json")"
+python3 -c "import json,sys; sys.exit(1 if 'x-rule.md' in json.load(open(sys.argv[1])) else 0)" "$SCRATCH/c.json" \
+  && echo "ok: T4-HYPHEN unanimous-drop is not a verb" || fail "T4-HYPHEN $(tr -d '\n' < "$SCRATCH/c.json")"
+
 # V4 tuning, pinned with the exact entry shapes the full history produced.
 # T4-CLAUSE: a retirement verb reads only its own clause (`:`, `—`, `–` and parentheses bound it).
 # Live names in a lead-in, an aside or a parenthetical were the history's false candidates

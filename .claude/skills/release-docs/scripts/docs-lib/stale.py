@@ -5,8 +5,10 @@ file also as its plugin-relative path and basename), skills it removed (`/plugin
 backticked identifiers that new CHANGELOG entries say are renamed / removed / retired / dropped /
 replaced / deleted / relocated / moved / superseded, in any tense (the verb's clause, up to its
 `to` / `with` / `→`), or that sit in a bullet under a `### Removed`-style heading. Anything that
-still exists as a tracked path is dropped. surfaces.json `retired[]` carries confirmed tokens
-forward across releases."""
+still exists is dropped: a tracked path, or a current skill or agent of any plugin (`/p:s`, `p:s`,
+the skill's name or directory, the agent's name or `p:agent`), since "Removed the `--x` flag from
+`/lens:review`" retires the flag, not the skill. surfaces.json `retired[]` carries confirmed tokens
+forward across releases, and is never filtered: a retired name is the owner's call."""
 import os
 import re
 import subprocess
@@ -17,7 +19,8 @@ import ledger
 import surfaces
 from kinds import ob
 
-VERB = re.compile(r"\b(renam(?:e|es|ed)|remov(?:e|es|ed)|retir(?:e|es|ed)|drop(?:s|ped)?|"
+# Not behind a hyphen: "unanimous-drop" is a compound name, not a verb.
+VERB = re.compile(r"(?<!-)\b(renam(?:e|es|ed)|remov(?:e|es|ed)|retir(?:e|es|ed)|drop(?:s|ped)?|"
                   r"replac(?:e|es|ed)|delet(?:e|es|ed)|relocat(?:e|es|ed)|mov(?:e|es|ed)|"
                   r"supersed(?:e|es|ed))\b(?!-)", re.I)
 # A `###` heading that retires every bullet under it; anchored, so "Fixes — … the rename" is not one.
@@ -49,27 +52,38 @@ def sentence_candidates(text, section=None):
     parenthetical of the same sentence is context, not the thing retired (V4: 10 of the full
     history's 13 false candidates were exactly that). A clause that names nothing, beside a colon
     or dash (`**Removed**: …`, `` `x` — removed``), reads the clause across that edge instead. Under
-    a retiring `###` heading the first sentence reads as if it opened with the verb."""
+    a retiring `###` heading the first sentence reads as if it opened with the verb.
+
+    Only a past form (`removed`, `dropped`, …) reads the names before the verb in its clause, as its
+    object ("`x` is removed", "`x` — removed"). Before a present or base form stands the actor
+    ("`/onboard:evolve` now removes …", "`new-api` replaces `old-api`"), so that verb reads only
+    what follows it. On the full CHANGELOG history, this and VERB's hyphen guard lost no true
+    candidate and dropped two false ones (`detect-{config,dep,structure}-changes.sh`, `pipeline.md`)."""
     out = set()
     retiring = section is not None and RETIRING.match(section.strip("*_` ")) is not None
     for n, sent in enumerate(re.split(r"(?<=[.;])\s+", " ".join(text.split()))):
         # Same offsets with backticked text blanked, so no edge, verb or split is read inside a token.
         bare = TICK.sub(lambda m: "`%s`" % ("x" * len(m.group(1))), sent)
         edges = [m.start() for m in BOUND.finditer(bare)]
-        anchors = [(v.start(), v.end()) for v in VERB.finditer(bare)]
+        # (start, end, past): a past form reads its whole clause, any other form only what follows.
+        anchors = [(v.start(), v.end(), v.group(1).lower().endswith("ed"))
+                   for v in VERB.finditer(bare)]
         if retiring and n == 0:
-            anchors.insert(0, (0, 0))  # the heading's verb, an empty span at the sentence start (ve == 0)
-        for vs, ve in anchors:
+            # the heading's verb, an empty span at the sentence start (ve == 0)
+            anchors.insert(0, (0, 0, True))
+        for vs, ve, past in anchors:
             left = [e for e in edges if e < vs]
             right = [e for e in edges if e >= ve]
             lo = left[-1] + 1 if left else 0
             hi = right[0] if right else len(sent)
+            if not past:
+                lo = ve  # the actor before a present or base form is never the thing retired
             toks, later = _names(sent, bare, lo, hi, ve)
             if not TICK.search(sent[lo:hi]):
                 if right and bare[hi] in HANDOFF and (ve == 0 or MARKUP.match(bare, ve, hi)):
                     nxt = [e for e in edges if e > hi]
                     toks, later = _names(sent, bare, hi + 1, nxt[0] if nxt else len(sent), hi + 1)
-                elif left and bare[left[-1]] in HANDOFF and MARKUP.match(bare, lo, vs):
+                elif past and left and bare[left[-1]] in HANDOFF and MARKUP.match(bare, lo, vs):
                     start = left[-2] + 1 if len(left) > 1 else 0
                     toks, later = _names(sent, bare, start, left[-1], start)
             for tok in toks:
@@ -102,9 +116,24 @@ def _short_names(path, dirs):
     return set()
 
 
+def _live_names(ctx):
+    """Every current skill and agent of every marketplace plugin, in each form a doc names it."""
+    live = set()
+    for p in ctx.plugins():
+        root = ctx.path(p["dir"] + "/skills")
+        on_disk = [d for d in os.listdir(root)
+                   if os.path.isfile(os.path.join(root, d, "SKILL.md"))] if os.path.isdir(root) else []
+        for s in set(inventory.skills(ctx, p["dir"])) | set(on_disk):
+            live |= {"/%s:%s" % (p["name"], s), "%s:%s" % (p["name"], s), s}
+        for a in inventory.agents(ctx, p["dir"]):
+            live |= {"%s:%s" % (p["name"], a), a}
+    return live
+
+
 def range_candidates(ctx):
     files, basenames = _tracked(ctx)
     dirs = [p["dir"] for p in ctx.plugins()]
+    live = _live_names(ctx)
     cands = set()
     for st, old, _new in ctx.name_status():
         if st in ("D", "R"):  # name_status reports a deletion as (D, old, old)
@@ -124,6 +153,8 @@ def range_candidates(ctx):
 
     def alive(tok):
         t = tok.rstrip("/")
+        if t in live:
+            return True
         roots = [t] + ["%s/%s" % (d, t) for d in dirs]
         if any(r in files or any(f.startswith(r + "/") for f in files) for r in roots):
             return True
