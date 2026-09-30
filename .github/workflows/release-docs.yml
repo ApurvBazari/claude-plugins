@@ -306,7 +306,11 @@ jobs:
           # (setup-claude-code-settings.ts), and Claude Code writes that file's env entries into its
           # own environment: a channel the action's source shows, where a step env: may not reach
           # the CLI through the composite action.
-          settings: '{"env": {"BASH_DEFAULT_TIMEOUT_MS": "900000", "BASH_MAX_TIMEOUT_MS": "900000"}}'
+          # The scrub makes the Bash sandbox mandatory on Linux, and the sandbox's default auto-allow
+          # approves every sandboxed command without reading --allowedTools (dry run 5 ran cat, sed
+          # and python3). autoAllowBashIfSandboxed: false keeps the sandbox and puts every Bash call
+          # back through the allowlist.
+          settings: '{"env": {"BASH_DEFAULT_TIMEOUT_MS": "900000", "BASH_MAX_TIMEOUT_MS": "900000"}, "sandbox": {"autoAllowBashIfSandboxed": false}}'
           prompt: |
             /release-docs mode=ci
 

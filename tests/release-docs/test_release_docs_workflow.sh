@@ -18,7 +18,8 @@
 #   allowlist are the probed ones;
 # - final review I6, M1, M3: the model can't Read /proc, its subprocesses get a scrubbed environment
 #   (with bubblewrap installed and proved to isolate first, which the scrub needs on Linux) and Bash
-#   calls long enough for the belts; a git-state mismatch prints a diff and still fails, and the
+#   calls long enough for the belts; the sandbox the scrub brings does not auto-allow, so every
+#   Bash call still needs the allowlist; a git-state mismatch prints a diff and still fails, and the
 #   model's tool calls are listed, JSON-quoted, past any malformed record, without ever failing
 #   sync; publish builds its PR body only once its gate says
 #   publish, with the escaped post-checks report first; its staged-set check reads full object
@@ -1091,6 +1092,26 @@ def a43(c):
     return f
 
 
+@check("A44", "a sandboxed Bash call still needs the allowlist: autoAllowBashIfSandboxed is false")
+def a44(c):
+    cl = c.claude()
+    raw = field(cl["raw"], "settings", "          ") if cl else None
+    # The scrub makes the sandbox mandatory on Linux, and its default auto-allow approves every
+    # sandboxed command without reading --allowedTools. The action writes this JSON to the user
+    # scope; no project settings file is tracked, so nothing checked out outranks it.
+    try:
+        sandbox = json.loads((raw or "").strip().strip("'"))["sandbox"]
+    except (ValueError, KeyError, TypeError):
+        return ["the Claude step has no settings JSON with a sandbox block: %r" % raw]
+    f = []
+    if not isinstance(sandbox, dict) or sandbox.get("autoAllowBashIfSandboxed") is not False:
+        f.append("settings sandbox is %r: autoAllowBashIfSandboxed must be false" % (sandbox,))
+    for ln in code(c.text).split("\n"):
+        if "autoAllowBashIfSandboxed" in ln and not ln.strip().startswith("settings: '"):
+            f.append("autoAllowBashIfSandboxed set outside the Claude step's settings: %s" % ln.strip())
+    return f
+
+
 @check("PARSE", "the belt's reader agrees with PyYAML on every job and step", yaml_only=True)
 def parse(c):
     f = []
@@ -1375,6 +1396,15 @@ MUTANTS = [
               + S + '        content = msg.get("content") if isinstance(msg, dict) else None\n',
               S + '        content = ((m if isinstance(m, dict) else {}).get("message") or {}).get("content")\n', 1)],
      "a string message stops the listing"),
+    ("A44", [(WF, ', "sandbox": {"autoAllowBashIfSandboxed": false}}\'', "}'", 1)], "no sandbox block"),
+    ("A44", [(WF, '"autoAllowBashIfSandboxed": false', '"autoAllowBashIfSandboxed": true', 1)],
+     "sandboxed Bash auto-allowed"),
+    ("A44", [(WF, '"autoAllowBashIfSandboxed": false', '"autoAllowBashIfSandboxed": "false"', 1)],
+     "the setting quoted as a string"),
+    ("A44", [(WF, '            --disallowedTools "Read(//proc/**)"\n',
+              '            --disallowedTools "Read(//proc/**)"\n'
+              '            --settings \'{"sandbox": {"autoAllowBashIfSandboxed": true}}\'\n', 1)],
+     "auto-allow turned back on through a higher-precedence --settings"),
     ("PARSE", [(WF, "        run: |\n          set +e\n          rm -rf \"$RUNNER_TEMP/post-checks.md\"",
                 "        run: |2\n          set +e\n          rm -rf \"$RUNNER_TEMP/post-checks.md\"", 1)],
      "an indentation indicator the reader does not know"),
