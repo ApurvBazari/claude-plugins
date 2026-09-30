@@ -388,7 +388,8 @@ jobs:
           n = 0
           try:
               for m in msgs if isinstance(msgs, list) else []:
-                  content = ((m if isinstance(m, dict) else {}).get("message") or {}).get("content")
+                  msg = m.get("message") if isinstance(m, dict) else None
+                  content = msg.get("content") if isinstance(msg, dict) else None
                   for b in content if isinstance(content, list) else []:
                       if not isinstance(b, dict):
                           continue

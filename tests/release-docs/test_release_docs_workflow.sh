@@ -19,7 +19,8 @@
 # - final review I6, M1, M3: the model can't Read /proc, its subprocesses get a scrubbed environment
 #   (with bubblewrap installed and proved to isolate first, which the scrub needs on Linux) and Bash
 #   calls long enough for the belts; a git-state mismatch prints a diff and still fails, and the
-#   model's tool calls are listed, JSON-quoted, without ever failing sync; publish builds its PR body only once its gate says
+#   model's tool calls are listed, JSON-quoted, past any malformed record, without ever failing
+#   sync; publish builds its PR body only once its gate says
 #   publish, with the escaped post-checks report first; its staged-set check reads full object
 #   names with submodules seen, and refuses any credential-shaped string the run added (a check that
 #   runs the extracted scan on a scratch repo).
@@ -1061,7 +1062,7 @@ def a43(c):
         return f + ["the listing has no python heredoc"]
     # Run it. The runner reads a workflow command at the start of a line after trimming leading
     # space, so a model-chosen string must never start one; a failed call shows; a missing record
-    # and a malformed one are not errors.
+    # is not an error, and a malformed entry is skipped: the calls after it are still listed.
     rec = [{"type": "assistant", "message": {"content": [
                {"type": "tool_use", "name": "Bash", "input": {"command": "echo hi\n::add-mask::cmd"}},
                {"type": "tool_use", "name": "Read", "input": {"file_path": "README.md"}}]}},
@@ -1073,10 +1074,11 @@ def a43(c):
         with open(good, "w", encoding="utf-8") as fh:
             json.dump(rec, fh)
         with open(bad, "w", encoding="utf-8") as fh:
-            json.dump([{"message": "not a dict"}, 7], fh)
+            json.dump([{"message": "not a dict"}, 7, {"type": "assistant", "message": {"content": [
+                {"type": "tool_use", "name": "Grep", "input": {"pattern": "after a bad record"}}]}}], fh)
         for path, want in ((good, ("2 tool call(s)", '"README.md"', "failed:", "boom")),
                            (os.path.join(d, "none.json"), ("no readable execution record",)),
-                           (bad, ())):
+                           (bad, ("1 tool call(s)", '"after a bad record"'))):
             p = subprocess.run([sys.executable, "-"], input=body.encode(), stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT, env=dict(os.environ, CLAUDE_EXECUTION_FILE=path))
             out = p.stdout.decode("utf-8", "replace")
@@ -1369,6 +1371,10 @@ MUTANTS = [
     ("A43", [(WF, "json.dumps(arg[:300])", "arg[:300]", 1)], "a command printed raw"),
     ("A43", [(WF, 'json.dumps(str(c or "").strip()[:300])', 'str(c or "").strip()[:300]', 1)],
      "a failed call's output printed raw"),
+    ("A43", [(WF, S + '        msg = m.get("message") if isinstance(m, dict) else None\n'
+              + S + '        content = msg.get("content") if isinstance(msg, dict) else None\n',
+              S + '        content = ((m if isinstance(m, dict) else {}).get("message") or {}).get("content")\n', 1)],
+     "a string message stops the listing"),
     ("PARSE", [(WF, "        run: |\n          set +e\n          rm -rf \"$RUNNER_TEMP/post-checks.md\"",
                 "        run: |2\n          set +e\n          rm -rf \"$RUNNER_TEMP/post-checks.md\"", 1)],
      "an indentation indicator the reader does not know"),
