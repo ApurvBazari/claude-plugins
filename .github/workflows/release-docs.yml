@@ -368,10 +368,12 @@ jobs:
           echo "Seal and git state verified."
 
       # What the model did, from the action's execution record: each tool call with its command or
-      # path, and the start of each failed call's output. A diagnosis only: nothing reads it, and it
-      # can't fail sync. The runner reads a workflow command at the start of a line once leading
-      # space is trimmed, so every string the model chose is JSON-quoted (no raw newline) after a
-      # fixed prefix.
+      # path, the start of each failed call's output, and each call the permission rules denied. The
+      # action writes the SDK's messages raw, so the result record carries permission_denials, the
+      # SDK's authoritative list; the action's log shows only their count. A diagnosis only: nothing
+      # reads it, and it can't fail sync. The runner reads a workflow command at the start of a line
+      # once leading space is trimmed, so every string the model chose is JSON-quoted (no raw
+      # newline) after a fixed prefix.
       - name: List the model's tool calls
         if: ${{ !cancelled() && steps.claude.outcome != 'skipped' }}
         continue-on-error: true
@@ -390,7 +392,15 @@ jobs:
               raise SystemExit(0)
           keys = ("command", "file_path", "path", "pattern", "skill", "subagent_type", "description")
           n = 0
+          seen = {}
+          # Unknown, not 0, unless a result record lists them.
+          denials = None
           try:
+              for m in msgs if isinstance(msgs, list) else []:
+                  if isinstance(m, dict) and m.get("type") == "result" and isinstance(m.get("permission_denials"), list):
+                      denials = m["permission_denials"]
+              denied = {d.get("tool_use_id") for d in denials or []
+                        if isinstance(d, dict) and isinstance(d.get("tool_use_id"), str)}
               for m in msgs if isinstance(msgs, list) else []:
                   msg = m.get("message") if isinstance(m, dict) else None
                   content = msg.get("content") if isinstance(msg, dict) else None
@@ -399,9 +409,14 @@ jobs:
                           continue
                       if b.get("type") == "tool_use":
                           n += 1
+                          tid = b.get("id") if isinstance(b.get("id"), str) else None
+                          if tid:
+                              seen[tid] = n
                           inp = b.get("input") if isinstance(b.get("input"), dict) else {}
                           arg = next((inp[k] for k in keys if isinstance(inp.get(k), str)), "")
                           print("%3d %s %s" % (n, json.dumps(str(b.get("name"))), json.dumps(arg[:300])))
+                          if tid in denied:
+                              print("    denied")
                       elif b.get("type") == "tool_result" and b.get("is_error"):
                           c = b.get("content")
                           if isinstance(c, list):
@@ -410,6 +425,17 @@ jobs:
           except Exception as e:  # a diagnosis never fails the job
               print("listing stopped early (%s)" % type(e).__name__)
           print("%d tool call(s)" % n)
+          if denials is None:
+              print("permission denials unknown (no result record lists them)")
+          else:
+              # Every denial, numbered when the listing saw its call (#? when it didn't).
+              print("%d permission denial(s)" % len(denials))
+              for d in denials:
+                  d = d if isinstance(d, dict) else {}
+                  di = d.get("tool_input") if isinstance(d.get("tool_input"), dict) else {}
+                  darg = next((di[k] for k in keys if isinstance(di.get(k), str)), "")
+                  num = seen.get(d.get("tool_use_id"), "?") if isinstance(d.get("tool_use_id"), str) else "?"
+                  print("    denied #%s %s %s" % (num, json.dumps(str(d.get("tool_name"))), json.dumps(darg[:300])))
           PY
 
       # The completion guard, from its sealed copy: the checkout's copy is the model's to write. An

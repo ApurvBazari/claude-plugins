@@ -20,7 +20,8 @@
 #   (with bubblewrap installed and proved to isolate first, which the scrub needs on Linux) and Bash
 #   calls long enough for the belts; the sandbox the scrub brings does not auto-allow, so every
 #   Bash call still needs the allowlist; a git-state mismatch prints a diff and still fails, and the
-#   model's tool calls are listed, JSON-quoted, past any malformed record, without ever failing
+#   model's tool calls are listed, JSON-quoted, past any malformed record, with each permission
+#   denial marked in place and summed up from the result record, without ever failing
 #   sync; publish builds its PR body only once its gate says
 #   publish, with the escaped post-checks report first; its staged-set check reads full object
 #   names with submodules seen, and refuses any credential-shaped string the run added (a check that
@@ -1063,23 +1064,39 @@ def a43(c):
         return f + ["the listing has no python heredoc"]
     # Run it. The runner reads a workflow command at the start of a line after trimming leading
     # space, so a model-chosen string must never start one; a failed call shows; a missing record
-    # is not an error, and a malformed entry is skipped: the calls after it are still listed.
-    rec = [{"type": "assistant", "message": {"content": [
-               {"type": "tool_use", "name": "Bash", "input": {"command": "echo hi\n::add-mask::cmd"}},
-               {"type": "tool_use", "name": "Read", "input": {"file_path": "README.md"}}]}},
+    # is not an error, and a malformed entry is skipped: the calls after it are still listed. The
+    # result record's permission_denials (the SDK's authoritative list) mark each denied call in
+    # place and are summed up after, a denial the listing never numbered included; with no result
+    # record listing them, the denials are unknown, never 0.
+    rec = [{"type": "system", "subtype": "init", "message": "Claude Code initialized"},
+           {"type": "assistant", "message": {"content": [
+               {"type": "tool_use", "id": "t1", "name": "Bash", "input": {"command": "echo hi\n::add-mask::cmd"}},
+               {"type": "tool_use", "id": "t2", "name": "Read", "input": {"file_path": "README.md"}}]}},
            {"type": "user", "message": {"content": [
                {"type": "tool_result", "is_error": True, "content": [{"type": "text", "text": "boom\n::error::out"}]}]}},
-           {"type": "result", "subtype": "success"}]
+           {"type": "result", "subtype": "success", "permission_denials": [
+               {"tool_name": "Bash", "tool_use_id": "t1", "tool_input": {"command": "echo hi\n::add-mask::cmd"}},
+               {"tool_name": "Write", "tool_use_id": "t9", "tool_input": {"file_path": "x\n::error::y"}}]}]
+    bad_rec = [{"message": "not a dict"}, 7, {"type": "assistant", "message": {"content": [
+                   {"type": "tool_use", "id": ["not", "a", "string"], "name": "Grep",
+                    "input": {"pattern": "after a bad record"}}]}},
+               {"type": "result", "permission_denials": [7, {"tool_use_id": ["x"], "tool_name": "Bash",
+                                                              "tool_input": "not a dict"}]}]
+    no_result = [{"type": "assistant", "message": {"content": [
+                     {"type": "tool_use", "id": "t1", "name": "Bash", "input": {"command": "ls"}}]}}]
     with tempfile.TemporaryDirectory() as d:
-        good, bad = os.path.join(d, "exec.json"), os.path.join(d, "bad.json")
-        with open(good, "w", encoding="utf-8") as fh:
-            json.dump(rec, fh)
-        with open(bad, "w", encoding="utf-8") as fh:
-            json.dump([{"message": "not a dict"}, 7, {"type": "assistant", "message": {"content": [
-                {"type": "tool_use", "name": "Grep", "input": {"pattern": "after a bad record"}}]}}], fh)
-        for path, want in ((good, ("2 tool call(s)", '"README.md"', "failed:", "boom")),
-                           (os.path.join(d, "none.json"), ("no readable execution record",)),
-                           (bad, ("1 tool call(s)", '"after a bad record"'))):
+        good, bad, nores = (os.path.join(d, n) for n in ("exec.json", "bad.json", "nores.json"))
+        for path, data in ((good, rec), (bad, bad_rec), (nores, no_result)):
+            with open(path, "w", encoding="utf-8") as fh:
+                json.dump(data, fh)
+        for path, want, reject in (
+                (good, ("2 tool call(s)", '"README.md"', "failed:", "boom",
+                        '  1 "Bash" "echo hi\\n::add-mask::cmd"\n    denied\n',
+                        "2 permission denial(s)", '    denied #1 "Bash" ', '    denied #? "Write" '),
+                 ('"README.md"\n    denied',)),
+                (os.path.join(d, "none.json"), ("no readable execution record",), ()),
+                (bad, ("1 tool call(s)", '"after a bad record"', "2 permission denial(s)"), ()),
+                (nores, ("1 tool call(s)", "permission denials unknown"), ("0 permission denial(s)",))):
             p = subprocess.run([sys.executable, "-"], input=body.encode(), stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT, env=dict(os.environ, CLAUDE_EXECUTION_FILE=path))
             out = p.stdout.decode("utf-8", "replace")
@@ -1087,6 +1104,7 @@ def a43(c):
             if p.returncode != 0:
                 f.append("the listing exits %d on %s: %s" % (p.returncode, name, out.strip()[-200:]))
             f += ["the listing of %s lacks %r" % (name, w) for w in want if w not in out]
+            f += ["the listing of %s has %r" % (name, r) for r in reject if r in out]
             f += ["the listing of %s starts a line with a workflow command: %r" % (name, ln)
                   for ln in out.split("\n") if ln.lstrip().startswith("::")]
     return f
@@ -1396,6 +1414,10 @@ MUTANTS = [
               + S + '        content = msg.get("content") if isinstance(msg, dict) else None\n',
               S + '        content = ((m if isinstance(m, dict) else {}).get("message") or {}).get("content")\n', 1)],
      "a string message stops the listing"),
+    ("A43", [(WF, "if tid in denied:\n", "if False:\n", 1)], "a denied call not marked in place"),
+    ("A43", [(WF, "for d in denials:\n", "for d in []:\n", 1)], "the denials only counted, never listed"),
+    ("A43", [(WF, "json.dumps(darg[:300])", "darg[:300]", 1)], "a denied call's input printed raw"),
+    ("A43", [(WF, "denials = None\n", "denials = []\n", 1)], "no result record read as 0 denials"),
     ("A44", [(WF, ', "sandbox": {"autoAllowBashIfSandboxed": false}}\'', "}'", 1)], "no sandbox block"),
     ("A44", [(WF, '"autoAllowBashIfSandboxed": false', '"autoAllowBashIfSandboxed": true', 1)],
      "sandboxed Bash auto-allowed"),
