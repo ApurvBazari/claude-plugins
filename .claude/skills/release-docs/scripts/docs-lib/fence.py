@@ -18,11 +18,15 @@
 - the snapshot (--snapshot, never overwritten) records each path dirty before the run with a digest
   of its content. Such a path is never restored or removed: the run changing one outside the
   allowlist fails, and is left for the owner. --expect-clean (CI) requires an empty snapshot at
-  HEAD, so a snapshot re-taken after the apply cannot pass the run's files off as the owner's.
+  HEAD, so a snapshot re-taken after the apply cannot pass the run's files off as the owner's;
+- inside Claude Code's Linux Bash sandbox, the /dev/null the sandbox mounts over each missing path
+  it denies is a note, not a run change (_sandbox_mount). Only such a mount qualifies, and CI's
+  trusted run, outside any sandbox, never sees one.
 
 `--fence` prints its report lines, then a last line `FENCE-COMPLETE <ok|fail|untrusted>`; without
 that line (a crash, exit 2) the fence did not complete, and the tree must not be trusted.
 """
+import errno
 import hashlib
 import json
 import os
@@ -287,9 +291,38 @@ def _odd(xy, k):
     return "T" in xy or k not in ("file", "absent")
 
 
+def _devnull_node(ctx, rel):
+    """rel is a character device with /dev/null's device number, reached through no symlink."""
+    if kind(ctx, rel) != "special file":
+        return False
+    try:
+        st, null = os.lstat(ctx.path(rel)), os.stat("/dev/null")
+    except OSError:
+        return False
+    return stat.S_ISCHR(st.st_mode) and st.st_rdev == null.st_rdev
+
+
+def _sandbox_mount(ctx, rel):
+    """Whether rel is a mount Claude Code's Linux Bash sandbox made, not a run change. For the length
+    of a sandboxed command, bwrap mounts /dev/null over every missing path it denies (.vscode,
+    .claude/commands, .bashrc, ...): git lists the empty file under the mount as untracked, lstat
+    shows /dev/null, and unlink fails with EBUSY. CI's trusted post-checks runs outside any sandbox,
+    after the model has exited, so nothing is mounted there and this never holds; only the model's
+    own run inside the sandbox can see one. A remove that works took away a real device node, which
+    the caller then reports as it always has."""
+    if not _devnull_node(ctx, rel):
+        return False
+    try:
+        os.remove(ctx.path(rel))
+    except OSError as e:
+        return e.errno == errno.EBUSY
+    return False
+
+
 def _revert_run_changes(ctx, allow, before, owner_dirty, tree):
-    """Revert every run-made change outside the allowlist, and every non-regular one anywhere."""
-    lines, handled = [], set()
+    """Revert every run-made change outside the allowlist, and every non-regular one anywhere. The
+    sandbox's own mounts stay, as notes: (lines, notes, the mounts' paths)."""
+    lines, notes, mounts, handled = [], [], set(), set()
     for _pass in range(5):
         todo = []
         for xy, rel in status(ctx):
@@ -303,6 +336,11 @@ def _revert_run_changes(ctx, allow, before, owner_dirty, tree):
         for rel, k, odd in sorted(todo):
             handled.add(rel)
             tracked = rel in tree
+            if not tracked and _sandbox_mount(ctx, rel):
+                mounts.add(rel)
+                notes.append("    note: %s is the Bash sandbox's /dev/null mount, not a run change "
+                             "(it goes when the sandboxed command ends)" % show(rel))
+                continue
             why = _revert(ctx, rel, tracked, before)
             if why:
                 lines.append("- FAIL: the fence could not %s %s: %s"
@@ -318,7 +356,7 @@ def _revert_run_changes(ctx, allow, before, owner_dirty, tree):
                 lines.append("- FENCE: restored %s (outside the doc surfaces)" % show(rel))
             else:
                 lines.append("- FENCE: removed new file %s (outside the doc surfaces)" % show(rel))
-    return lines
+    return lines, notes, mounts
 
 
 def _plain(ctx, rel):
@@ -400,7 +438,8 @@ def fence(ctx, before_path, expect_clean=False):
     # status-based reverts cannot see.
     lines += _restore_ignores(ctx, before, owner_dirty, tree)
     lines += _unstage_non_files(ctx, owner_dirty, tree)
-    lines += _revert_run_changes(ctx, allow, before, owner_dirty, tree)
+    reverted, notes, mounts = _revert_run_changes(ctx, allow, before, owner_dirty, tree)
+    lines += reverted
 
     # 4. Diagnostics, each of which fails on its own rather than crashing the fence.
     untrusted = []
@@ -442,15 +481,18 @@ def fence(ctx, before_path, expect_clean=False):
     lines += check("owner-file", owner_touched)
     lines += check("--expect-clean", clean_snapshot)
 
-    # 5. Trust the result, not the actions: anything still outside the fence is reported.
+    # 5. Trust the result, not the actions: anything still outside the fence is reported, except a
+    # sandbox mount that is still one. The notes go after the verdict's first line, which callers read.
     for xy, rel in status(ctx):
+        if rel in mounts and _devnull_node(ctx, rel):
+            continue
         if not owner_dirty(rel) and (_odd(xy, kind(ctx, rel)) or not allow(rel)):
             lines.append("- FAIL: still outside the doc surfaces after the fence: %s" % show(rel))
     if expect_clean and untrusted:
-        return lines, "untrusted"
+        return lines + notes, "untrusted"
     if not lines:
-        return ["- ok: write fence"], "ok"
-    return lines, "fail"
+        return ["- ok: write fence"] + notes, "ok"
+    return lines + notes, "fail"
 
 
 def render_pages(ctx):

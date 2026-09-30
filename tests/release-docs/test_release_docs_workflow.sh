@@ -554,8 +554,9 @@ def a18(c):
 def a19(c):
     f = gate_checks(c.step("gate"), "post-checks.md", "sync")
     f += gate_checks(c.step("gate", "publish"), "pc.md", "publish")
-    # The strings the gates trust are the ones the fence and post-checks write.
-    if '["- ok: write fence"], "ok"' not in c.fence:
+    # The strings the gates trust are the ones the fence and post-checks write. A clean fence opens
+    # with its ok line; the sandbox-mount notes can only follow it (test_post_checks.sh pins that).
+    if 'return ["- ok: write fence"] + notes, "ok"' not in c.fence:
         f.append('fence.py no longer reports a clean fence as "- ok: write fence"')
     if not re.search(r'"- FENCE: ', c.fence) or not re.search(r'"- FAIL: ', c.fence):
         f.append("fence.py no longer opens its lines with - FENCE: / - FAIL:")
