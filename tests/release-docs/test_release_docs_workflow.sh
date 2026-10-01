@@ -991,6 +991,9 @@ def a41(c):
         return ["the bwrap step runs after prepare, so the git state is hashed before ~/.gitconfig exists"]
     s = c.sync["steps"][i]
     f = []
+    # The AppArmor profile (abi 4.0) and the per-program userns exception are ubuntu-24.04's.
+    if not re.search(r"^    runs-on: ubuntu-24\.04$", c.sync.get("head", ""), re.M):
+        f.append("sync does not run on ubuntu-24.04, the image the bwrap step's AppArmor profile is for")
     if s["if"] is not None or re.search(r"^        continue-on-error:", s["raw"], re.M):
         f.append("the bwrap step can be skipped, or can fail without stopping sync")
     lines = [ln.strip() for ln in (s["j"] or "").split("\n")]
@@ -1407,6 +1410,7 @@ MUTANTS = [
     ("A42", [(WF, GS_SAVE, GS_SAVE.replace("\n" + S + 'chmod a-w "$T/gitstate.before"', ""), 1)],
      "the copy left writable"),
     ("A42", [(WF, GS_DIFF, "", 1)], "a mismatch prints nothing"),
+    ("A41", [(WF, "    runs-on: ubuntu-24.04\n", "    runs-on: ubuntu-latest\n", 1)], "sync on whatever image is latest"),
     ("A16", [(WF, " obligations.before.json gitstate.before\n", " obligations.before.json\n", 2)],
      "the git-state copy left out of the seal"),
     ("A42", [(WF, S + 's="$(seal | sha256sum | cut -c1-64)"\n', "", 1),

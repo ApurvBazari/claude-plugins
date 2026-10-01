@@ -128,7 +128,9 @@ jobs:
     name: Sync docs (the model; no publishing credentials)
     needs: detect
     if: github.event_name == 'workflow_dispatch' && needs.detect.outputs.open != '0'
-    runs-on: ubuntu-latest
+    # Pinned: the bwrap step's AppArmor profile (abi 4.0, a per-program userns exception) is for
+    # ubuntu-24.04's restrictions. A new image is a deliberate change here, not a silent one.
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     permissions:
       contents: read
