@@ -228,7 +228,7 @@ jobs:
           chmod -R a-w "$T/rd" "$T/assert-claude-run-complete.sh" "$T/before.snap" "$T/obligations.before.json"
           seal() (
             cd "$RUNNER_TEMP"
-            set -- rd assert-claude-run-complete.sh before.snap obligations.before.json
+            set -- rd assert-claude-run-complete.sh before.snap obligations.before.json gitstate.before
             find "$@" -printf '%y %m %s %p\n' | LC_ALL=C sort
             find "$@" -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum
           )
@@ -254,12 +254,14 @@ jobs:
             git symbolic-ref -q HEAD || echo detached
             git for-each-ref --format='%(objectname) %(refname)'
           }
-          s="$(seal | sha256sum | cut -c1-64)"
           g="$(gitstate | sha256sum | cut -c1-64)"
-          # A readable copy, for the seal step's diff on a mismatch. The run can reach it, so only
-          # the hash in the step outputs decides; global config shows by key name, never by value.
+          # A readable copy, for the seal step's diff on a mismatch. The hash in the step outputs
+          # decides, not the copy; global config shows by key name, never by value. The run can
+          # reach the copy, so the seal covers it: one swapped (say, for a symlink to a secret)
+          # fails the seal, which is checked first, and the diff never reads it.
           { gitstate; echo "-- global keys"; git config --global --list --name-only 2>/dev/null || true; } > "$T/gitstate.before"
           chmod a-w "$T/gitstate.before"
+          s="$(seal | sha256sum | cut -c1-64)"
           {
             echo "start=$start"
             echo "artifact=release-docs-${start:0:7}-sync-attempt$GITHUB_RUN_ATTEMPT"
@@ -327,7 +329,7 @@ jobs:
           shopt -s inherit_errexit
           seal() (
             cd "$RUNNER_TEMP"
-            set -- rd assert-claude-run-complete.sh before.snap obligations.before.json
+            set -- rd assert-claude-run-complete.sh before.snap obligations.before.json gitstate.before
             find "$@" -printf '%y %m %s %p\n' | LC_ALL=C sort
             find "$@" -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum
           )

@@ -10,9 +10,9 @@
 #   its one product is a bundle (a binary patch against the start commit); a fresh publish job that
 #   runs no model checks out the commit detect saw, snapshots and copies its scripts before applying
 #   the patch, re-runs the full post-checks with --expect-clean, and alone holds DOCS_BOT_TOKEN;
-# - in sync: the snapshot, a read-only copy of the scripts and the before-report are made in
-#   $RUNNER_TEMP before the model runs, sealed, and verified afterwards with git's state; its
-#   post-checks run from that copy with --expect-clean;
+# - in sync: the snapshot, a read-only copy of the scripts, the before-report and the git-state copy
+#   are made in $RUNNER_TEMP before the model runs, sealed, and verified afterwards with git's
+#   state; its post-checks run from that copy with --expect-clean;
 # - a tree moves on only with post-checks exit 0 or 1 and a report that opens with the write fence's
 #   result; no force-add; --verifier is always passed; the action pin, model, token and tool
 #   allowlist are the probed ones;
@@ -501,8 +501,10 @@ def a16(c):
         a, b = fn_text(prep["j"], name), fn_text(seal["j"], name)
         if not a or a != b:
             f.append("%s() differs between the prepare and seal steps" % name)
-    if "set -- rd assert-claude-run-complete.sh before.snap obligations.before.json" not in (fn_text(prep["j"], "seal") or ""):
-        f.append("seal() does not cover rd, the guard copy, the snapshot and the before-report")
+    if "set -- rd assert-claude-run-complete.sh before.snap obligations.before.json gitstate.before" \
+            not in (fn_text(prep["j"], "seal") or ""):
+        f.append("seal() does not cover rd, the guard copy, the snapshot, the before-report and the "
+                 "git-state copy")
     for need in ('echo "seal=$s"', 'echo "git=$g"'):
         if need not in prep["j"]:
             f.append("the prepare step does not output %s" % need)
@@ -1036,6 +1038,11 @@ def a42(c):
     if at < 0 or not pj.find('g="$(gitstate | sha256sum | cut -c1-64)"') < at \
             < pj.find('chmod a-w "$RUNNER_TEMP/gitstate.before"'):
         f.append("prepare does not save a read-only copy of the git state after hashing it")
+    # The diff reads the copy, which the run can reach: the seal covers it (A16), so the seal is
+    # taken once the copy exists, and a swapped copy fails the seal before the diff reads it.
+    if not 0 <= pj.find('chmod a-w "$RUNNER_TEMP/gitstate.before"') < pj.find('s="$(seal | sha256sum | cut -c1-64)"'):
+        f.append("prepare takes the seal before the git-state copy is made read-only, so the copy "
+                 "the diff reads is not sealed")
     sj = (c.step("seal") or {}).get("j") or ""
     m = re.search(r'\[ -n "\$GITSTATE" \] && \[ "\$g" = "\$GITSTATE" \] \|\| \{\n(.*?)\n\s*\}$', sj, re.S | re.M)
     lines = [ln.strip() for ln in (m.group(1) if m else "").split("\n")
@@ -1400,6 +1407,12 @@ MUTANTS = [
     ("A42", [(WF, GS_SAVE, GS_SAVE.replace("\n" + S + 'chmod a-w "$T/gitstate.before"', ""), 1)],
      "the copy left writable"),
     ("A42", [(WF, GS_DIFF, "", 1)], "a mismatch prints nothing"),
+    ("A16", [(WF, " obligations.before.json gitstate.before\n", " obligations.before.json\n", 2)],
+     "the git-state copy left out of the seal"),
+    ("A42", [(WF, S + 's="$(seal | sha256sum | cut -c1-64)"\n', "", 1),
+             (WF, S + 'g="$(gitstate | sha256sum | cut -c1-64)"\n',
+              S + 's="$(seal | sha256sum | cut -c1-64)"\n' + S + 'g="$(gitstate | sha256sum | cut -c1-64)"\n', 1)],
+     "the seal taken before the git-state copy exists"),
     ("A42", [(WF, GS_DIFF + "            exit 1\n", GS_DIFF + "            exit 0\n", 1)],
      "a mismatch that passes once it has printed"),
     ("A43", [(WF, "      - name: List the model's tool calls\n", "      - name: Something else\n", 1)], "no listing"),
