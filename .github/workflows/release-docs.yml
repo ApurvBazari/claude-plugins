@@ -128,7 +128,9 @@ jobs:
     name: Sync docs (the model; no publishing credentials)
     needs: detect
     if: github.event_name == 'workflow_dispatch' && needs.detect.outputs.open != '0'
-    runs-on: ubuntu-latest
+    # Pinned: the bwrap step's AppArmor profile (abi 4.0, a per-program userns exception) is for
+    # ubuntu-24.04's restrictions. A new image is a deliberate change here, not a silent one.
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     permissions:
       contents: read
@@ -137,7 +139,8 @@ jobs:
       changed: ${{ steps.bundle.outputs.changed }}
       claude: ${{ steps.claude.outputs.conclusion }}
       rc: ${{ steps.post.outputs.rc }}
-    # The Claude CLI (2.1.283, pinned by the action; the scrub needs 2.1.209+) strips most variables,
+    # The Claude CLI (2.1.283, pinned by the action; the scrub needs 2.1.209+, and bubblewrap on
+    # Linux, which the bwrap step installs) strips most variables,
     # the OAuth token among them, from the environment of every subprocess it starts: Bash commands,
     # hooks, MCP servers. It must come from the launch environment, which the action builds from its
     # env context (action.yml's Run step); a settings `env` copy is ignored. Only Claude reads it.
@@ -162,6 +165,40 @@ jobs:
           python-version: '3.x'
       - name: Install belt dependencies
         run: pip install jsonschema pyyaml
+
+      # On Linux the scrub (the job env above) runs the CLI's subprocesses under bubblewrap, which
+      # ubuntu-latest lacks: without it the CLI refuses to start (dry run 36606371612). This step
+      # installs it and proves, before the model runs, that bwrap can give a process its own PID
+      # namespace here, so a runner image or AppArmor change fails by name here, not in the Claude step.
+      # ubuntu-24.04's AppArmor denies unprivileged user namespaces ("setting up uid map: Permission
+      # denied", dry run 36610466219), so bwrap alone gets Ubuntu's per-program userns exception; the
+      # restriction stays on for every other process. bwrap sets no_new_privs, so the runner's
+      # passwordless sudo is out of reach inside the sandbox.
+      # The scrub also makes Claude Code's Bash sandbox mandatory, and sandbox-runtime needs socat and
+      # ripgrep too: without socat every Bash call failed (dry run 36616561018). The sandbox mounts
+      # over ~/.gitconfig read-only and, when there is none, makes an empty one to mount on, which it
+      # can leave behind; created here, before prepare hashes the git state, it is the file hashed.
+      - id: bwrap
+        name: Install the Bash sandbox's requirements and prove bwrap isolates
+        run: |
+          set -euo pipefail
+          sudo apt-get -o Acquire::Retries=3 -qq update
+          sudo apt-get -o Acquire::Retries=3 -qq install -y bubblewrap socat ripgrep
+          command -v bwrap socat rg
+          bwrap --version
+          [ -e "$HOME/.gitconfig" ] || : > "$HOME/.gitconfig"
+          echo "AppArmor profiles naming /usr/bin/bwrap before this one:"
+          grep -rls -- /usr/bin/bwrap /etc/apparmor.d || true
+          printf '%s\n' 'abi <abi/4.0>,' 'include <tunables/global>' \
+            'profile bwrap /usr/bin/bwrap flags=(unconfined) {' '  userns,' '}' \
+            | sudo tee /etc/apparmor.d/bwrap > /dev/null
+          sudo apparmor_parser -r /etc/apparmor.d/bwrap
+          outside="$(readlink /proc/self/ns/pid)"
+          inside="$(bwrap --ro-bind / / --dev /dev --proc /proc --unshare-pid --die-with-parent readlink /proc/self/ns/pid)" \
+            || { echo "::error::bubblewrap cannot create namespaces on this runner, even with its AppArmor profile loaded, and the scrub needs them"; exit 1; }
+          [ -n "$inside" ] && [ "$inside" != "$outside" ] \
+            || { echo "::error::bwrap ran, but not in a new PID namespace ($outside, $inside)"; exit 1; }
+          echo "bubblewrap isolates: PID namespace $outside -> $inside"
 
       # Everything the authoritative checks trust is made here, before the model runs, and outside
       # the checkout: the snapshot first (nothing has written to the checkout yet), a read-only copy
@@ -193,7 +230,7 @@ jobs:
           chmod -R a-w "$T/rd" "$T/assert-claude-run-complete.sh" "$T/before.snap" "$T/obligations.before.json"
           seal() (
             cd "$RUNNER_TEMP"
-            set -- rd assert-claude-run-complete.sh before.snap obligations.before.json
+            set -- rd assert-claude-run-complete.sh before.snap obligations.before.json gitstate.before
             find "$@" -printf '%y %m %s %p\n' | LC_ALL=C sort
             find "$@" -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum
           )
@@ -219,8 +256,14 @@ jobs:
             git symbolic-ref -q HEAD || echo detached
             git for-each-ref --format='%(objectname) %(refname)'
           }
-          s="$(seal | sha256sum | cut -c1-64)"
           g="$(gitstate | sha256sum | cut -c1-64)"
+          # A readable copy, for the seal step's diff on a mismatch. The hash in the step outputs
+          # decides, not the copy; global config shows by key name, never by value. The run can
+          # reach the copy, so the seal covers it: one swapped (say, for a symlink to a secret)
+          # fails the seal, which is checked first, and the diff never reads it.
+          { gitstate; echo "-- global keys"; git config --global --list --name-only 2>/dev/null || true; } > "$T/gitstate.before"
+          chmod a-w "$T/gitstate.before"
+          s="$(seal | sha256sum | cut -c1-64)"
           {
             echo "start=$start"
             echo "artifact=release-docs-${start:0:7}-sync-attempt$GITHUB_RUN_ATTEMPT"
@@ -267,7 +310,11 @@ jobs:
           # (setup-claude-code-settings.ts), and Claude Code writes that file's env entries into its
           # own environment: a channel the action's source shows, where a step env: may not reach
           # the CLI through the composite action.
-          settings: '{"env": {"BASH_DEFAULT_TIMEOUT_MS": "900000", "BASH_MAX_TIMEOUT_MS": "900000"}}'
+          # The scrub makes the Bash sandbox mandatory on Linux, and the sandbox's default auto-allow
+          # approves every sandboxed command without reading --allowedTools (dry run 5 ran cat, sed
+          # and python3). autoAllowBashIfSandboxed: false keeps the sandbox and puts every Bash call
+          # back through the allowlist.
+          settings: '{"env": {"BASH_DEFAULT_TIMEOUT_MS": "900000", "BASH_MAX_TIMEOUT_MS": "900000"}, "sandbox": {"autoAllowBashIfSandboxed": false}}'
           prompt: |
             /release-docs mode=ci
 
@@ -284,7 +331,7 @@ jobs:
           shopt -s inherit_errexit
           seal() (
             cd "$RUNNER_TEMP"
-            set -- rd assert-claude-run-complete.sh before.snap obligations.before.json
+            set -- rd assert-claude-run-complete.sh before.snap obligations.before.json gitstate.before
             find "$@" -printf '%y %m %s %p\n' | LC_ALL=C sort
             find "$@" -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum
           )
@@ -318,9 +365,82 @@ jobs:
           g="$(gitstate | sha256sum | cut -c1-64)" || g=""
           [ -n "$GITSTATE" ] && [ "$g" = "$GITSTATE" ] || {
             echo "::error::git's config, hooks or refs changed during the run: no bundle is published"
+            echo "What changed since prepare (< before, > after); a diagnosis only, the hash decided:"
+            diff "$RUNNER_TEMP/gitstate.before" <({ gitstate; echo "-- global keys"; git config --global --list --name-only 2>/dev/null || true; }) || true
             exit 1
           }
           echo "Seal and git state verified."
+
+      # What the model did, from the action's execution record: each tool call with its command or
+      # path, the start of each failed call's output, and each call the permission rules denied. The
+      # action writes the SDK's messages raw, so the result record carries permission_denials, the
+      # SDK's authoritative list; the action's log shows only their count. A diagnosis only: nothing
+      # reads it, and it can't fail sync. The runner reads a workflow command at the start of a line
+      # once leading space is trimmed, so every string the model chose is JSON-quoted (no raw
+      # newline) after a fixed prefix.
+      - name: List the model's tool calls
+        if: ${{ !cancelled() && steps.claude.outcome != 'skipped' }}
+        continue-on-error: true
+        env:
+          CLAUDE_EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          path = os.environ.get("CLAUDE_EXECUTION_FILE") or ""
+          try:
+              with open(path, encoding="utf-8") as fh:
+                  msgs = json.load(fh)
+          except (OSError, ValueError) as e:
+              print("no readable execution record at %s (%s)" % (json.dumps(path), type(e).__name__))
+              raise SystemExit(0)
+          keys = ("command", "file_path", "path", "pattern", "skill", "subagent_type", "description")
+          n = 0
+          seen = {}
+          # Unknown, not 0, unless a result record lists them.
+          denials = None
+          try:
+              for m in msgs if isinstance(msgs, list) else []:
+                  if isinstance(m, dict) and m.get("type") == "result" and isinstance(m.get("permission_denials"), list):
+                      denials = m["permission_denials"]
+              denied = {d.get("tool_use_id") for d in denials or []
+                        if isinstance(d, dict) and isinstance(d.get("tool_use_id"), str)}
+              for m in msgs if isinstance(msgs, list) else []:
+                  msg = m.get("message") if isinstance(m, dict) else None
+                  content = msg.get("content") if isinstance(msg, dict) else None
+                  for b in content if isinstance(content, list) else []:
+                      if not isinstance(b, dict):
+                          continue
+                      if b.get("type") == "tool_use":
+                          n += 1
+                          tid = b.get("id") if isinstance(b.get("id"), str) else None
+                          if tid:
+                              seen[tid] = n
+                          inp = b.get("input") if isinstance(b.get("input"), dict) else {}
+                          arg = next((inp[k] for k in keys if isinstance(inp.get(k), str)), "")
+                          print("%3d %s %s" % (n, json.dumps(str(b.get("name"))), json.dumps(arg[:300])))
+                          if tid in denied:
+                              print("    denied")
+                      elif b.get("type") == "tool_result" and b.get("is_error"):
+                          c = b.get("content")
+                          if isinstance(c, list):
+                              c = " ".join(str(x.get("text", "")) for x in c if isinstance(x, dict))
+                          print("    failed: %s" % json.dumps(str(c or "").strip()[:300]))
+          except Exception as e:  # a diagnosis never fails the job
+              print("listing stopped early (%s)" % type(e).__name__)
+          print("%d tool call(s)" % n)
+          if denials is None:
+              print("permission denials unknown (no result record lists them)")
+          else:
+              # Every denial, numbered when the listing saw its call (#? when it didn't).
+              print("%d permission denial(s)" % len(denials))
+              for d in denials:
+                  d = d if isinstance(d, dict) else {}
+                  di = d.get("tool_input") if isinstance(d.get("tool_input"), dict) else {}
+                  darg = next((di[k] for k in keys if isinstance(di.get(k), str)), "")
+                  num = seen.get(d.get("tool_use_id"), "?") if isinstance(d.get("tool_use_id"), str) else "?"
+                  print("    denied #%s %s %s" % (num, json.dumps(str(d.get("tool_name"))), json.dumps(darg[:300])))
+          PY
 
       # The completion guard, from its sealed copy: the checkout's copy is the model's to write. An
       # incomplete run does not stop the bundle: publish opens it as a draft labelled needs-owner
