@@ -461,6 +461,234 @@ expect "T6-FIFO finishes (no hang) with exit 1" 1 "$RC"
 if [ -p .github/docs-surfaces.json ] || [ ! -f .github/docs-surfaces.json ]; then fail "T6-FIFO config not restored"; else echo "ok: T6-FIFO config restored as a regular file"; fi
 has "T6-FIFO reported" fifo.md 'FIFO at .github/docs-surfaces.json'
 
+# T6-SANDBOX-MOUNT: inside Claude Code's Linux Bash sandbox, bwrap mounts /dev/null over every
+# missing deny path (.vscode, .claude/commands, the protected dotfiles, ...). git lists the empty
+# file under it as untracked; lstat shows /dev/null's character device; unlink fails with EBUSY.
+# Only all of that, on an untracked path reached through no symlink, is a note and not a run
+# change: a regular file, another device, a block device, another errno, a symlink or a tracked
+# path fails as before, and a mount never hides a real change. Mounts can't be made here, so lstat
+# and remove are faked for chosen paths while git sees the real empty files underneath, as it does
+# in the sandbox. Then each guard is taken out of a scratch copy of the fence, and every such
+# mutant must fail a case.
+fx_repo sbmount
+python3 - "$ROOT/.claude/skills/release-docs/scripts/docs-lib" "$REPO" <<'PY' || fail "T6-SANDBOX-MOUNT (see the lines above)"
+import contextlib, errno, os, shutil, stat, sys, tempfile
+LIB, FX = sys.argv[1], sys.argv[2]
+DEVNULL = os.stat("/dev/null").st_rdev
+real_lstat, real_remove = os.lstat, os.remove
+
+
+def load(lib):
+    """The docs-lib modules from lib, freshly imported (a mutant's copy, or the real one)."""
+    dirs = {os.path.realpath(LIB), os.path.realpath(lib)}
+    for name, mod in list(sys.modules.items()):
+        if os.path.dirname(os.path.realpath(getattr(mod, "__file__", None) or "/")) in dirs:
+            del sys.modules[name]
+    sys.path.insert(0, lib)
+    try:
+        import fence, repo
+    finally:
+        sys.path.pop(0)
+    return fence, repo
+
+
+@contextlib.contextmanager
+def faked(fakes, used):
+    """fakes: {abs path: (file type, rdev, errno)}. lstat shows a device of that type and number;
+    remove raises that errno. Every other path is real."""
+    def lstat(p, *a, **k):
+        if os.fspath(p) in fakes:
+            mode, rdev, _ = fakes[os.fspath(p)]
+            return os.stat_result((mode | 0o666, 0, 0, 1, 0, 0, 0, 0, 0, 0), {"st_rdev": rdev})
+        return real_lstat(p, *a, **k)
+
+    def remove(p, *a, **k):
+        if os.fspath(p) in fakes:
+            used.add(os.fspath(p))
+            e = fakes[os.fspath(p)][2]
+            raise OSError(e, os.strerror(e), os.fspath(p))
+        return real_remove(p, *a, **k)
+    os.lstat, os.remove = lstat, remove
+    try:
+        yield
+    finally:
+        os.lstat, os.remove = real_lstat, real_remove
+
+
+def put(root, rel, text=""):
+    os.makedirs(os.path.dirname(os.path.join(root, rel)) or root, exist_ok=True)
+    with open(os.path.join(root, rel), "a", encoding="utf-8") as fh:
+        fh.write(text)
+
+
+MOUNTS = (".vscode", ".claude/commands")
+BUSY = (stat.S_IFCHR, DEVNULL, errno.EBUSY)
+
+
+def mounts(root, how=BUSY):
+    for rel in MOUNTS:
+        put(root, rel)  # the empty file bwrap leaves under its mount
+    return {os.path.join(root, rel): how for rel in MOUNTS}
+
+
+def notes(lines):
+    return [ln for ln in lines if ln.startswith("    note: ")]
+
+
+def as_mounts(root, lines, verdict):
+    f = [] if verdict == "ok" and lines[0] == "- ok: write fence" else ["verdict %s, first line %r" % (verdict, lines[0])]
+    f += ["no note for %s" % rel for rel in MOUNTS if not any(rel in n and "sandbox" in n for n in notes(lines))]
+    f += ["a FAIL or FENCE line: %r" % ln for ln in lines if ln.startswith(("- FAIL", "- FENCE"))]
+    if not open(os.path.join(root, "alpha/README.md"), encoding="utf-8").read().endswith("docs edit\n"):
+        f.append("the doc edit beside the mounts was not kept")
+    return f
+
+
+def mounts_and_real(root, lines, verdict):
+    f = [] if verdict == "fail" else ["verdict %s, want fail" % verdict]
+    if not lines[0].startswith(("- FAIL", "- FENCE")):
+        f.append("the first line %r is not the fence's failure" % lines[0])
+    if "- FENCE: removed new file alpha/new-code.py (outside the doc surfaces)" not in lines:
+        f.append("the real new file was not removed and reported")
+    if os.path.lexists(os.path.join(root, "alpha/new-code.py")):
+        f.append("alpha/new-code.py survived")
+    f += ["no note for %s" % rel for rel in MOUNTS if not any(rel in n for n in notes(lines))]
+    f += ["a mount reported as a failure: %r" % ln for ln in lines
+          if ln.startswith("- FAIL") and any(rel in ln for rel in MOUNTS)]
+    return f
+
+
+def fails_plain(rel):
+    def want(root, lines, verdict):
+        f = [] if verdict == "fail" else ["verdict %s, want fail" % verdict]
+        f += ["a note: %r" % n for n in notes(lines)]
+        if not any(rel in ln and ln.startswith(("- FAIL", "- FENCE")) for ln in lines):
+            f.append("no FAIL or FENCE line names %s" % rel)
+        return f
+    return want
+
+
+def edit_readme(root):
+    put(root, "alpha/README.md", "docs edit\n")
+
+
+def regular(root):
+    put(root, ".vscode")
+    return {}
+
+
+def symlink(root):
+    os.symlink("/dev/null", os.path.join(root, ".vscode"))
+    return {}
+
+
+def tracked(root):
+    put(root, "alpha/scripts/tool.sh", "echo evil\n")
+    return {os.path.join(root, "alpha/scripts/tool.sh"): BUSY}
+
+
+CASES = [
+    ("mounts are notes", lambda r: (edit_readme(r), mounts(r))[1], as_mounts),
+    ("a mount never hides a real change", lambda r: (put(r, "alpha/new-code.py", "x = 1\n"), mounts(r))[1],
+     mounts_and_real),
+    ("a plain empty file is removed", regular, fails_plain(".vscode")),
+    ("another device fails", lambda r: mounts(r, (stat.S_IFCHR, DEVNULL + 1, errno.EBUSY)), fails_plain(".vscode")),
+    ("a block device fails", lambda r: mounts(r, (stat.S_IFBLK, DEVNULL, errno.EBUSY)), fails_plain(".vscode")),
+    ("another errno fails", lambda r: mounts(r, (stat.S_IFCHR, DEVNULL, errno.EACCES)), fails_plain(".vscode")),
+    ("a symlink to /dev/null fails", symlink, fails_plain(".vscode")),
+    ("a tracked path fails", tracked, fails_plain("alpha/scripts/tool.sh")),
+]
+
+
+def suite(lib):
+    """[(case, [problems])] for the fence in lib."""
+    fence, repo = load(lib)
+    out = []
+    for name, setup, want in CASES:
+        tmp = os.path.realpath(tempfile.mkdtemp())  # the fence's paths come from git, symlinks resolved
+        lines = []
+        try:
+            root = os.path.join(tmp, "r")
+            shutil.copytree(FX, root, symlinks=True)
+            ctx = repo.Context(root, "HEAD..HEAD")
+            fence.snapshot(ctx, os.path.join(tmp, "snap"))
+            fakes, used = setup(root), set()
+            with faked(fakes, used):
+                lines, verdict = fence.fence(ctx, os.path.join(tmp, "snap"))
+            problems = want(root, lines, verdict)
+            problems += ["the fake remove was never reached for %s" % os.path.relpath(p, root)
+                         for p in sorted(set(fakes) - used)]
+        except Exception as e:
+            problems = ["raised %s: %s" % (type(e).__name__, e)]
+        finally:
+            shutil.rmtree(tmp)
+        out.append((name, ["%s — report: %r" % (p, lines) for p in problems]))
+    # Called directly: a path under a symlinked directory is never a mount, whatever lstat says
+    # through the link (git lists no such path, so only a direct call reaches it).
+    tmp = os.path.realpath(tempfile.mkdtemp())
+    try:
+        root = os.path.join(tmp, "r")
+        shutil.copytree(FX, root, symlinks=True)
+        os.makedirs(os.path.join(root, "real"))
+        os.symlink("real", os.path.join(root, "link"))
+        put(root, "real/null")
+        with faked({os.path.join(root, "link/null"): BUSY}, set()):
+            got = fence._sandbox_mount(repo.Context(root, "HEAD..HEAD"), "link/null")
+        problems = [] if got is False else ["_sandbox_mount says %r" % got]
+    except Exception as e:
+        problems = ["raised %s: %s" % (type(e).__name__, e)]
+    finally:
+        shutil.rmtree(tmp)
+    out.append(("a path under a symlinked directory is not a mount", problems))
+    return out
+
+
+results = suite(LIB)
+for name, problems in results:
+    for p in problems:
+        print("FAIL: T6-SANDBOX-MOUNT %s: %s" % (name, p))
+    if not problems:
+        print("ok: T6-SANDBOX-MOUNT %s" % name)
+if any(p for _, p in results):
+    sys.exit(1)
+
+MUTANTS = [
+    ("not only /dev/null's number",
+     '    if not _devnull_node(ctx, rel):\n        return False\n    try:\n        os.remove',
+     '    try:\n        os.remove'),
+    ("any device number", "st.st_rdev == null.st_rdev", "True"),
+    ("any device type", "stat.S_ISCHR(st.st_mode) and ", ""),
+    ("any errno", "return e.errno == errno.EBUSY", "return True"),
+    ("through a symlinked directory", '    if kind(ctx, rel) != "special file":\n        return False\n', ""),
+    ("tracked paths too", "if not tracked and _sandbox_mount(ctx, rel):", "if _sandbox_mount(ctx, rel):"),
+    ("the final sweep skips nothing", "rel in mounts and _devnull_node(ctx, rel)", "False"),
+    ("notes before the fence's first line", '["- ok: write fence"] + notes', 'notes + ["- ok: write fence"]'),
+    ("notes before a failure", 'return lines + notes, "fail"', 'return notes + lines, "fail"'),
+]
+src = open(os.path.join(LIB, "fence.py"), encoding="utf-8").read()
+missed = []
+for label, old, new in MUTANTS:
+    if src.count(old) != 1:
+        missed.append("the anchor for mutant %r is found %d times, want 1" % (label, src.count(old)))
+        continue
+    tmp = os.path.realpath(tempfile.mkdtemp())
+    try:
+        lib = os.path.join(tmp, "docs-lib")
+        shutil.copytree(LIB, lib, ignore=shutil.ignore_patterns("__pycache__"))
+        with open(os.path.join(lib, "fence.py"), "w", encoding="utf-8") as fh:
+            fh.write(src.replace(old, new))
+        if not any(p for _, p in suite(lib)):
+            missed.append("no case fails the mutant %r" % label)
+    finally:
+        shutil.rmtree(tmp)
+load(LIB)
+for m in missed:
+    print("FAIL: T6-SANDBOX-MOUNT %s" % m)
+if missed:
+    sys.exit(1)
+print("ok: T6-SANDBOX-MOUNT every guard is needed (%d mutants fail a case)" % len(MUTANTS))
+PY
+
 # T6-IGNORE-CASE: with core.ignorecase (macOS) git honours `.GITIGNORE` too, so the fence treats
 # any case of the name as an ignore file: put back first, never able to expose an owner's file.
 fx_repo ignorecase

@@ -110,6 +110,8 @@ Resolve every open obligation whose `resolver` is `model`, in this order: plugin
      - a fence failure on a path the owner had dirty before the run.
 
      An overflow at 500px that HEAD's copy of the page already had, and that didn't grow, is not a failure: the report lists it as a note (`references/page-style.md` rule 11).
+
+     In `mode=ci`, a `note:` under the write fence naming the Bash sandbox's /dev/null mount (`.vscode`, `.claude/commands`, `.bashrc`, …) is not a failure either: the sandbox makes that file for each command and removes it afterwards. Leave it alone.
    - **2:** bad input. The fence didn't run, so the tree is unchecked. Stop, and never commit it.
 
 ## Step 6: Report

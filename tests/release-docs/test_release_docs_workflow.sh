@@ -10,14 +10,19 @@
 #   its one product is a bundle (a binary patch against the start commit); a fresh publish job that
 #   runs no model checks out the commit detect saw, snapshots and copies its scripts before applying
 #   the patch, re-runs the full post-checks with --expect-clean, and alone holds DOCS_BOT_TOKEN;
-# - in sync: the snapshot, a read-only copy of the scripts and the before-report are made in
-#   $RUNNER_TEMP before the model runs, sealed, and verified afterwards with git's state; its
-#   post-checks run from that copy with --expect-clean;
+# - in sync: the snapshot, a read-only copy of the scripts, the before-report and the git-state copy
+#   are made in $RUNNER_TEMP before the model runs, sealed, and verified afterwards with git's
+#   state; its post-checks run from that copy with --expect-clean;
 # - a tree moves on only with post-checks exit 0 or 1 and a report that opens with the write fence's
 #   result; no force-add; --verifier is always passed; the action pin, model, token and tool
 #   allowlist are the probed ones;
 # - final review I6, M1, M3: the model can't Read /proc, its subprocesses get a scrubbed environment
-#   and Bash calls long enough for the belts; publish builds its PR body only once its gate says
+#   (with bubblewrap installed and proved to isolate first, which the scrub needs on Linux) and Bash
+#   calls long enough for the belts; the sandbox the scrub brings does not auto-allow, so every
+#   Bash call still needs the allowlist; a git-state mismatch prints a diff and still fails, and the
+#   model's tool calls are listed, JSON-quoted, past any malformed record, with each permission
+#   denial marked in place and summed up from the result record, without ever failing
+#   sync; publish builds its PR body only once its gate says
 #   publish, with the escaped post-checks report first; its staged-set check reads full object
 #   names with submodules seen, and refuses any credential-shaped string the run added (a check that
 #   runs the extracted scan on a scratch repo).
@@ -496,8 +501,10 @@ def a16(c):
         a, b = fn_text(prep["j"], name), fn_text(seal["j"], name)
         if not a or a != b:
             f.append("%s() differs between the prepare and seal steps" % name)
-    if "set -- rd assert-claude-run-complete.sh before.snap obligations.before.json" not in (fn_text(prep["j"], "seal") or ""):
-        f.append("seal() does not cover rd, the guard copy, the snapshot and the before-report")
+    if "set -- rd assert-claude-run-complete.sh before.snap obligations.before.json gitstate.before" \
+            not in (fn_text(prep["j"], "seal") or ""):
+        f.append("seal() does not cover rd, the guard copy, the snapshot, the before-report and the "
+                 "git-state copy")
     for need in ('echo "seal=$s"', 'echo "git=$g"'):
         if need not in prep["j"]:
             f.append("the prepare step does not output %s" % need)
@@ -549,8 +556,9 @@ def a18(c):
 def a19(c):
     f = gate_checks(c.step("gate"), "post-checks.md", "sync")
     f += gate_checks(c.step("gate", "publish"), "pc.md", "publish")
-    # The strings the gates trust are the ones the fence and post-checks write.
-    if '["- ok: write fence"], "ok"' not in c.fence:
+    # The strings the gates trust are the ones the fence and post-checks write. A clean fence opens
+    # with its ok line; the sandbox-mount notes can only follow it (test_post_checks.sh pins that).
+    if 'return ["- ok: write fence"] + notes, "ok"' not in c.fence:
         f.append('fence.py no longer reports a clean fence as "- ok: write fence"')
     if not re.search(r'"- FENCE: ', c.fence) or not re.search(r'"- FAIL: ', c.fence):
         f.append("fence.py no longer opens its lines with - FENCE: / - FAIL:")
@@ -973,6 +981,166 @@ def a40(c):
     return f
 
 
+@check("A41", "the Bash sandbox the scrub brings (bubblewrap, socat, ripgrep) is ready and proved to isolate before prepare")
+def a41(c):
+    ci, i = c.claude_index(), c.index(lambda s: s["id"] == "bwrap")
+    pi = c.index(lambda s: s["id"] == "prepare")
+    if i is None or ci is None or not i < ci:
+        return ["sync has no bwrap step before the Claude step"]
+    if pi is None or not i < pi:
+        return ["the bwrap step runs after prepare, so the git state is hashed before ~/.gitconfig exists"]
+    s = c.sync["steps"][i]
+    f = []
+    # The AppArmor profile (abi 4.0) and the per-program userns exception are ubuntu-24.04's.
+    if not re.search(r"^    runs-on: ubuntu-24\.04$", c.sync.get("head", ""), re.M):
+        f.append("sync does not run on ubuntu-24.04, the image the bwrap step's AppArmor profile is for")
+    if s["if"] is not None or re.search(r"^        continue-on-error:", s["raw"], re.M):
+        f.append("the bwrap step can be skipped, or can fail without stopping sync")
+    lines = [ln.strip() for ln in (s["j"] or "").split("\n")]
+    if lines[0] != "set -euo pipefail":
+        f.append("the bwrap step does not start with set -euo pipefail")
+    find = lambda rx: next((k for k, ln in enumerate(lines) if re.match(rx, ln)), None)
+    # On Linux the scrub makes Claude Code's Bash sandbox mandatory, and sandbox-runtime needs all
+    # three ("socat not installed", dry run 36616561018).
+    inst = find(r"sudo apt-get\b.* install -y bubblewrap socat ripgrep$")
+    have = find(r"command -v bwrap socat rg$")
+    # The sandbox mounts over ~/.gitconfig read-only, and makes an empty file to mount on when there
+    # is none, which it may leave behind: present from the start, it is the file gitstate hashed.
+    home = find(r'\[ -e "\$HOME/\.gitconfig" \] \|\| : > "\$HOME/\.gitconfig"$')
+    # ubuntu-24.04's AppArmor denies unprivileged user namespaces ("setting up uid map: Permission
+    # denied", dry run 36610466219); the owner's call is a userns exception for bwrap alone.
+    prof = find(r"printf '%s\\n' 'abi <abi/4\.0>,' 'include <tunables/global>'"
+                r" 'profile bwrap /usr/bin/bwrap flags=\(unconfined\) \{' '  userns,' '\}'"
+                r" \| sudo tee /etc/apparmor\.d/bwrap > /dev/null$")
+    load = find(r"sudo apparmor_parser -r /etc/apparmor\.d/bwrap$")
+    probe = find(r'inside="\$\(bwrap .*--unshare-pid .*readlink /proc/self/ns/pid\)" \|\| \{ echo "::error::.*exit 1; \}$')
+    cmp_ = find(r'\[ -n "\$inside" \] && \[ "\$inside" != "\$outside" \] \|\| \{ echo "::error::.*exit 1; \}$')
+    if inst is None or have is None:
+        f.append("the bwrap step does not install, and check for, bubblewrap, socat and ripgrep")
+    if home is None:
+        f.append("the bwrap step does not create an empty ~/.gitconfig when there is none")
+    if prof is None or load is None:
+        f.append("the bwrap step does not write and load an AppArmor profile granting bwrap userns")
+    if probe is None or cmp_ is None:
+        f.append("the bwrap step does not prove, failing, that bwrap opens a new PID namespace")
+    if None not in (inst, have, prof, load, probe, cmp_) and not inst < have < prof < load < probe < cmp_:
+        f.append("the bwrap step is out of order: install, check, profile, load, probe, compare")
+    if "apparmor_restrict_unprivileged_userns" in code(c.text):
+        f.append("the user-namespace restriction is lifted for every process, not just bwrap")
+    return f
+
+
+GS_COPY = '{ gitstate; echo "-- global keys"; git config --global --list --name-only 2>/dev/null || true; }'
+
+
+@check("A42", "a git-state mismatch prints what changed, and still fails")
+def a42(c):
+    f = []
+    pj = (c.step("prepare") or {}).get("j") or ""
+    at = pj.find(GS_COPY + ' > "$RUNNER_TEMP/gitstate.before"')
+    if at < 0 or not pj.find('g="$(gitstate | sha256sum | cut -c1-64)"') < at \
+            < pj.find('chmod a-w "$RUNNER_TEMP/gitstate.before"'):
+        f.append("prepare does not save a read-only copy of the git state after hashing it")
+    # The diff reads the copy, which the run can reach: the seal covers it (A16), so the seal is
+    # taken once the copy exists, and a swapped copy fails the seal before the diff reads it.
+    if not 0 <= pj.find('chmod a-w "$RUNNER_TEMP/gitstate.before"') < pj.find('s="$(seal | sha256sum | cut -c1-64)"'):
+        f.append("prepare takes the seal before the git-state copy is made read-only, so the copy "
+                 "the diff reads is not sealed")
+    sj = (c.step("seal") or {}).get("j") or ""
+    m = re.search(r'\[ -n "\$GITSTATE" \] && \[ "\$g" = "\$GITSTATE" \] \|\| \{\n(.*?)\n\s*\}$', sj, re.S | re.M)
+    lines = [ln.strip() for ln in (m.group(1) if m else "").split("\n")
+             if ln.strip() and not ln.strip().startswith("#")]
+    if 'diff "$RUNNER_TEMP/gitstate.before" <(%s) || true' % GS_COPY not in lines:
+        f.append("the seal step does not diff the git state on a mismatch")
+    if not lines or lines[-1] != "exit 1" or any(re.search(r"\bexit 0\b|\breturn\b", ln) for ln in lines):
+        f.append("a git-state mismatch no longer ends in exit 1")
+    return f
+
+
+@check("A43", "the model's tool calls are listed after it runs, JSON-quoted, and the listing can't fail sync")
+def a43(c):
+    ci, i = c.claude_index(), c.index(lambda s: (s["name"] or "") == "List the model's tool calls")
+    if i is None or ci is None or not i > ci:
+        return ["sync lists no tool calls after the Claude step"]
+    s = c.sync["steps"][i]
+    f = []
+    if unwrap(s["if"]) != "!cancelled() && steps.claude.outcome != 'skipped'":
+        f.append("the listing's if: is %r: it must run whenever the model ran, seal or not" % unwrap(s["if"]))
+    if not re.search(r"^        continue-on-error: true$", s["raw"], re.M):
+        f.append("a failed listing can stop sync (no continue-on-error: true)")
+    if "CLAUDE_EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}" not in s["raw"]:
+        f.append("the listing does not read the action's execution record")
+    body = heredoc(s["run"], "python3 - ")
+    if body is None:
+        return f + ["the listing has no python heredoc"]
+    # Run it. The runner reads a workflow command at the start of a line after trimming leading
+    # space, so a model-chosen string must never start one; a failed call shows; a missing record
+    # is not an error, and a malformed entry is skipped: the calls after it are still listed. The
+    # result record's permission_denials (the SDK's authoritative list) mark each denied call in
+    # place and are summed up after, a denial the listing never numbered included; with no result
+    # record listing them, the denials are unknown, never 0.
+    rec = [{"type": "system", "subtype": "init", "message": "Claude Code initialized"},
+           {"type": "assistant", "message": {"content": [
+               {"type": "tool_use", "id": "t1", "name": "Bash", "input": {"command": "echo hi\n::add-mask::cmd"}},
+               {"type": "tool_use", "id": "t2", "name": "Read", "input": {"file_path": "README.md"}}]}},
+           {"type": "user", "message": {"content": [
+               {"type": "tool_result", "is_error": True, "content": [{"type": "text", "text": "boom\n::error::out"}]}]}},
+           {"type": "result", "subtype": "success", "permission_denials": [
+               {"tool_name": "Bash", "tool_use_id": "t1", "tool_input": {"command": "echo hi\n::add-mask::cmd"}},
+               {"tool_name": "Write", "tool_use_id": "t9", "tool_input": {"file_path": "x\n::error::y"}}]}]
+    bad_rec = [{"message": "not a dict"}, 7, {"type": "assistant", "message": {"content": [
+                   {"type": "tool_use", "id": ["not", "a", "string"], "name": "Grep",
+                    "input": {"pattern": "after a bad record"}}]}},
+               {"type": "result", "permission_denials": [7, {"tool_use_id": ["x"], "tool_name": "Bash",
+                                                              "tool_input": "not a dict"}]}]
+    no_result = [{"type": "assistant", "message": {"content": [
+                     {"type": "tool_use", "id": "t1", "name": "Bash", "input": {"command": "ls"}}]}}]
+    with tempfile.TemporaryDirectory() as d:
+        good, bad, nores = (os.path.join(d, n) for n in ("exec.json", "bad.json", "nores.json"))
+        for path, data in ((good, rec), (bad, bad_rec), (nores, no_result)):
+            with open(path, "w", encoding="utf-8") as fh:
+                json.dump(data, fh)
+        for path, want, reject in (
+                (good, ("2 tool call(s)", '"README.md"', "failed:", "boom",
+                        '  1 "Bash" "echo hi\\n::add-mask::cmd"\n    denied\n',
+                        "2 permission denial(s)", '    denied #1 "Bash" ', '    denied #? "Write" '),
+                 ('"README.md"\n    denied',)),
+                (os.path.join(d, "none.json"), ("no readable execution record",), ()),
+                (bad, ("1 tool call(s)", '"after a bad record"', "2 permission denial(s)"), ()),
+                (nores, ("1 tool call(s)", "permission denials unknown"), ("0 permission denial(s)",))):
+            p = subprocess.run([sys.executable, "-"], input=body.encode(), stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT, env=dict(os.environ, CLAUDE_EXECUTION_FILE=path))
+            out = p.stdout.decode("utf-8", "replace")
+            name = os.path.basename(path)
+            if p.returncode != 0:
+                f.append("the listing exits %d on %s: %s" % (p.returncode, name, out.strip()[-200:]))
+            f += ["the listing of %s lacks %r" % (name, w) for w in want if w not in out]
+            f += ["the listing of %s has %r" % (name, r) for r in reject if r in out]
+            f += ["the listing of %s starts a line with a workflow command: %r" % (name, ln)
+                  for ln in out.split("\n") if ln.lstrip().startswith("::")]
+    return f
+
+
+@check("A44", "a sandboxed Bash call still needs the allowlist: autoAllowBashIfSandboxed is false")
+def a44(c):
+    cl = c.claude()
+    raw = field(cl["raw"], "settings", "          ") if cl else None
+    # The scrub makes the sandbox mandatory on Linux, and its default auto-allow approves every
+    # sandboxed command without reading --allowedTools. The action writes this JSON to the user
+    # scope; no project settings file is tracked, so nothing checked out outranks it.
+    try:
+        sandbox = json.loads((raw or "").strip().strip("'"))["sandbox"]
+    except (ValueError, KeyError, TypeError):
+        return ["the Claude step has no settings JSON with a sandbox block: %r" % raw]
+    f = []
+    if not isinstance(sandbox, dict) or sandbox.get("autoAllowBashIfSandboxed") is not False:
+        f.append("settings sandbox is %r: autoAllowBashIfSandboxed must be false" % (sandbox,))
+    for ln in code(c.text).split("\n"):
+        if "autoAllowBashIfSandboxed" in ln and not ln.strip().startswith("settings: '"):
+            f.append("autoAllowBashIfSandboxed set outside the Claude step's settings: %s" % ln.strip())
+    return f
+
+
 @check("PARSE", "the belt's reader agrees with PyYAML on every job and step", yaml_only=True)
 def parse(c):
     f = []
@@ -1028,6 +1196,43 @@ BODY_PC = ("            printf '## Post-checks (exit %s, run by the publish job)
            "            sed -e 's/&/\\&amp;/g' -e 's/</\\&lt;/g' -e 's/>/\\&gt;/g' \"$T/pc.md\" 2>/dev/null \\\n"
            "              || echo \"- post-checks did not run\"\n")
 BODY_DD = ("              || echo \"- docs-detect --pr-body failed; see the job log\"\n")
+BWRAP_INSTALL = S + "sudo apt-get -o Acquire::Retries=3 -qq install -y bubblewrap socat ripgrep\n"
+BWRAP_HAVE = S + "command -v bwrap socat rg\n"
+HOME_GITCONFIG = S + '[ -e "$HOME/.gitconfig" ] || : > "$HOME/.gitconfig"\n'
+BWRAP_CMP = (S + '[ -n "$inside" ] && [ "$inside" != "$outside" ] \\\n'
+             + S + '  || { echo "::error::bwrap ran, but not in a new PID namespace ($outside, $inside)"; exit 1; }\n')
+BWRAP_PROFILE = (S + "printf '%s\\n' 'abi <abi/4.0>,' 'include <tunables/global>' \\\n"
+                 + S + "  'profile bwrap /usr/bin/bwrap flags=(unconfined) {' '  userns,' '}' \\\n"
+                 + S + "  | sudo tee /etc/apparmor.d/bwrap > /dev/null\n")
+BWRAP_LOAD = S + "sudo apparmor_parser -r /etc/apparmor.d/bwrap\n"
+GS_SAVE = (S + GS_COPY + ' > "$T/gitstate.before"\n'
+           + S + 'chmod a-w "$T/gitstate.before"\n')
+GS_DIFF = "            diff \"$RUNNER_TEMP/gitstate.before\" <(%s) || true\n" % GS_COPY
+TRAIL_HEAD = ("      - name: List the model's tool calls\n"
+              "        if: ${{ !cancelled() && steps.claude.outcome != 'skipped' }}\n"
+              "        continue-on-error: true\n"
+              "        env:\n"
+              "          CLAUDE_EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}\n")
+BWRAP = ("      - id: bwrap\n"
+         "        name: Install the Bash sandbox's requirements and prove bwrap isolates\n"
+         "        run: |\n"
+         + S + "set -euo pipefail\n"
+         + S + "sudo apt-get -o Acquire::Retries=3 -qq update\n"
+         + BWRAP_INSTALL
+         + BWRAP_HAVE
+         + S + "bwrap --version\n"
+         + HOME_GITCONFIG
+         + S + 'echo "AppArmor profiles naming /usr/bin/bwrap before this one:"\n'
+         + S + "grep -rls -- /usr/bin/bwrap /etc/apparmor.d || true\n"
+         + BWRAP_PROFILE
+         + BWRAP_LOAD
+         + S + 'outside="$(readlink /proc/self/ns/pid)"\n'
+         + S + 'inside="$(bwrap --ro-bind / / --dev /dev --proc /proc --unshare-pid --die-with-parent'
+         ' readlink /proc/self/ns/pid)" \\\n'
+         + S + "  || { echo \"::error::bubblewrap cannot create namespaces on this runner, even with its"
+         " AppArmor profile loaded, and the scrub needs them\"; exit 1; }\n"
+         + BWRAP_CMP
+         + S + 'echo "bubblewrap isolates: PID namespace $outside -> $inside"\n')
 MUTANTS = [
     ("A1", [(WF, "    if: github.event_name == 'workflow_dispatch' && needs.detect.outputs.open != '0'\n",
              "    if: needs.detect.outputs.open != '0'\n", 1)], "sync also runs on pull_request"),
@@ -1181,6 +1386,65 @@ MUTANTS = [
     ("A40", [(WF, "|(github_pat_)[A-Za-z0-9_]*", "", 1)], "fine-grained PATs not scanned"),
     ("A40", [(WF, "              added = creds(blob(meta[3])) - creds(blob(meta[2]))\n",
               "              added = creds(blob(meta[3]))\n", 1)], "a mention HEAD already had is refused too"),
+    ("A41", [(WF, BWRAP, "", 1)], "no bwrap step"),
+    ("A41", [(WF, BWRAP, "", 1), (WF, "      - id: seal\n", BWRAP + "      - id: seal\n", 1)],
+     "bubblewrap installed only after the model ran"),
+    ("A41", [(WF, BWRAP_INSTALL, "", 1)], "bubblewrap never installed"),
+    ("A41", [(WF, " bubblewrap socat ripgrep\n", " bubblewrap ripgrep\n", 1)], "socat never installed"),
+    ("A41", [(WF, BWRAP_HAVE, "", 1)], "the tools never checked"),
+    ("A41", [(WF, HOME_GITCONFIG, "", 1)], "~/.gitconfig left for the sandbox to create"),
+    ("A41", [(WF, BWRAP, "", 1), (WF, "      - id: claude\n", BWRAP + "      - id: claude\n", 1)],
+     "the sandbox prepared only after prepare hashed the git state"),
+    ("A41", [(WF, " --unshare-pid ", " ", 1)], "the probe opens no PID namespace"),
+    ("A41", [(WF, BWRAP_CMP, "", 1)], "the namespaces never compared"),
+    ("A41", [(WF, BWRAP_CMP, BWRAP_CMP.replace("exit 1; }", "true; }"), 1)], "a shared PID namespace only reported"),
+    ("A41", [(WF, BWRAP, BWRAP.replace("        run: |\n", "        continue-on-error: true\n        run: |\n"), 1)],
+     "a failed probe does not stop sync"),
+    ("A41", [(WF, BWRAP_PROFILE, "", 1)], "no AppArmor exception for bwrap"),
+    ("A41", [(WF, BWRAP_LOAD, "", 1)], "the profile written but never loaded"),
+    ("A41", [(WF, "'  userns,' ", "", 1)], "the profile grants no userns"),
+    ("A41", [(WF, BWRAP_LOAD, "", 1), (WF, BWRAP_CMP, BWRAP_CMP + BWRAP_LOAD, 1)], "the profile loaded after the probe"),
+    ("A41", [(WF, BWRAP_LOAD, BWRAP_LOAD + S + "sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0\n", 1)],
+     "the restriction lifted for every process"),
+    ("A42", [(WF, GS_SAVE, "", 1)], "no readable copy of the git state"),
+    ("A42", [(WF, GS_SAVE, GS_SAVE.replace("\n" + S + 'chmod a-w "$T/gitstate.before"', ""), 1)],
+     "the copy left writable"),
+    ("A42", [(WF, GS_DIFF, "", 1)], "a mismatch prints nothing"),
+    ("A41", [(WF, "    runs-on: ubuntu-24.04\n", "    runs-on: ubuntu-latest\n", 1)], "sync on whatever image is latest"),
+    ("A16", [(WF, " obligations.before.json gitstate.before\n", " obligations.before.json\n", 2)],
+     "the git-state copy left out of the seal"),
+    ("A42", [(WF, S + 's="$(seal | sha256sum | cut -c1-64)"\n', "", 1),
+             (WF, S + 'g="$(gitstate | sha256sum | cut -c1-64)"\n',
+              S + 's="$(seal | sha256sum | cut -c1-64)"\n' + S + 'g="$(gitstate | sha256sum | cut -c1-64)"\n', 1)],
+     "the seal taken before the git-state copy exists"),
+    ("A42", [(WF, GS_DIFF + "            exit 1\n", GS_DIFF + "            exit 0\n", 1)],
+     "a mismatch that passes once it has printed"),
+    ("A43", [(WF, "      - name: List the model's tool calls\n", "      - name: Something else\n", 1)], "no listing"),
+    ("A43", [(WF, TRAIL_HEAD, TRAIL_HEAD.replace("        continue-on-error: true\n", ""), 1)],
+     "a listing that can fail sync"),
+    ("A43", [(WF, TRAIL_HEAD, TRAIL_HEAD.replace("steps.claude.outcome != 'skipped'",
+                                                 "steps.seal.outcome == 'success'"), 1)],
+     "no listing when the seal fails"),
+    ("A43", [(WF, "json.dumps(arg[:300])", "arg[:300]", 1)], "a command printed raw"),
+    ("A43", [(WF, 'json.dumps(str(c or "").strip()[:300])', 'str(c or "").strip()[:300]', 1)],
+     "a failed call's output printed raw"),
+    ("A43", [(WF, S + '        msg = m.get("message") if isinstance(m, dict) else None\n'
+              + S + '        content = msg.get("content") if isinstance(msg, dict) else None\n',
+              S + '        content = ((m if isinstance(m, dict) else {}).get("message") or {}).get("content")\n', 1)],
+     "a string message stops the listing"),
+    ("A43", [(WF, "if tid in denied:\n", "if False:\n", 1)], "a denied call not marked in place"),
+    ("A43", [(WF, "for d in denials:\n", "for d in []:\n", 1)], "the denials only counted, never listed"),
+    ("A43", [(WF, "json.dumps(darg[:300])", "darg[:300]", 1)], "a denied call's input printed raw"),
+    ("A43", [(WF, "denials = None\n", "denials = []\n", 1)], "no result record read as 0 denials"),
+    ("A44", [(WF, ', "sandbox": {"autoAllowBashIfSandboxed": false}}\'', "}'", 1)], "no sandbox block"),
+    ("A44", [(WF, '"autoAllowBashIfSandboxed": false', '"autoAllowBashIfSandboxed": true', 1)],
+     "sandboxed Bash auto-allowed"),
+    ("A44", [(WF, '"autoAllowBashIfSandboxed": false', '"autoAllowBashIfSandboxed": "false"', 1)],
+     "the setting quoted as a string"),
+    ("A44", [(WF, '            --disallowedTools "Read(//proc/**)"\n',
+              '            --disallowedTools "Read(//proc/**)"\n'
+              '            --settings \'{"sandbox": {"autoAllowBashIfSandboxed": true}}\'\n', 1)],
+     "auto-allow turned back on through a higher-precedence --settings"),
     ("PARSE", [(WF, "        run: |\n          set +e\n          rm -rf \"$RUNNER_TEMP/post-checks.md\"",
                 "        run: |2\n          set +e\n          rm -rf \"$RUNNER_TEMP/post-checks.md\"", 1)],
      "an indentation indicator the reader does not know"),
