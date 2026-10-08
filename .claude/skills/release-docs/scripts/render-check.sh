@@ -8,7 +8,9 @@
 #   --baseline DIR holds HEAD's copy of each PAGE at DIR/PAGE (post-checks.sh passes it). Then an
 #   overflow fails only when HEAD's copy had none or the page's grew past it; one that didn't grow
 #   is printed as a note, "pre-existing overflow (unchanged: Npx)", never a failure. A PAGE with no
-#   copy there (a new page) is judged strictly.
+#   copy there (a new page) is judged strictly. The probe measures after the page's fonts settle,
+#   and the two widths are compared only when both renders got their fonts the same way; if a
+#   second render of the pair still differs, the page fails as not comparable, with the reason.
 #   Env: CHROME (binary), RENDER_TIMEOUT (seconds per Chrome run, default 30).
 # Exit: 0 all clean, 1 any page failed, 2 bad input or no Chrome.
 # Chrome writes its output and then never exits on its own, so every run is polled and killed.
@@ -124,21 +126,46 @@ probe_verdict() {
   printf '%s' "$verdict"
 }
 
+# fonts_of <probe json> — the state that render's fonts ended in (see render_probe.py).
+fonts_of() { python3 "$HERE/render_probe.py" fonts < "$1"; }
+
 # rejudge_overflow <n> <page> — only when page n overflowed at 500px and HEAD's copy is in
 # --baseline: render that copy the same way (injected into $WORK, as the page itself is), then judge
 # the page's 500px probe again against its scrollWidth. Sets verdict500, and note when the overflow
 # is pre-existing. A copy that does not render leaves the strict verdict, saying so.
+# The two widths are comparable only when both renders got their fonts the same way: a web font
+# that arrives in one and not the other moves the width by itself (the handoff page: 547px with
+# its fonts, 536px without). When the two probes report different fonts, the pair is rendered once
+# more; if they still differ, the strict verdict stands with the reason, and is never called growth.
 rejudge_overflow() {
-  local n="$1" page="$2" base_sw sw
+  local n="$1" page="$2" strict base_sw sw pf bf
+  local pj="$WORK/p$n-500.json" bj="$WORK/b$n-500.json"
   python3 "$HERE/render_probe.py" inject "$baseline/$page" "$WORK/b$n.html" probe
   probe_verdict "b$n-500" 500 "$WORK/b$n.html" > /dev/null
-  base_sw="$(python3 "$HERE/render_probe.py" width < "$WORK/b$n-500.json")"
+  if [ "$(fonts_of "$pj")" != "$(fonts_of "$bj")" ]; then
+    pj="$WORK/p$n-500-f2.json"
+    bj="$WORK/b$n-500-f2.json"
+    probe_verdict "p$n-500-f2" 500 "$WORK/p$n.html" > /dev/null
+    probe_verdict "b$n-500-f2" 500 "$WORK/b$n.html" > /dev/null
+  fi
+  strict="$(python3 "$HERE/render_probe.py" judge 500 < "$pj")"
+  case "$strict" in
+    *"horizontal overflow"*) ;;
+    *) verdict500="$strict"; return 0 ;;  # the second render of the page does not overflow (or failed)
+  esac
+  base_sw="$(python3 "$HERE/render_probe.py" width < "$bj")"
   if [ -z "$base_sw" ]; then
-    verdict500="$verdict500 (HEAD's copy did not render, so there is no baseline)"
+    verdict500="$strict (HEAD's copy did not render, so there is no baseline)"
     return 0
   fi
-  verdict500="$(python3 "$HERE/render_probe.py" judge 500 "$base_sw" < "$WORK/p$n-500.json")"
-  sw="$(python3 "$HERE/render_probe.py" width < "$WORK/p$n-500.json")"
+  pf="$(fonts_of "$pj")"
+  bf="$(fonts_of "$bj")"
+  if [ "$pf" != "$bf" ]; then
+    verdict500="$strict; not comparable with HEAD's copy (${base_sw}px): the two renders did not get the same fonts (page: ${pf:-nothing reported}; HEAD's copy: ${bf:-nothing reported})"
+    return 0
+  fi
+  verdict500="$(python3 "$HERE/render_probe.py" judge 500 "$base_sw" < "$pj")"
+  sw="$(python3 "$HERE/render_probe.py" width < "$pj")"
   case "$verdict500" in
     *overflow*) ;;
     *)
