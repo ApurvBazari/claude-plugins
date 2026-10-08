@@ -11,6 +11,7 @@ import subprocess
 import changelog
 import fence
 import ledger
+import live
 import obligations
 import repo
 import surfaces
@@ -144,8 +145,17 @@ def _other_edits(ctx, named, cited):
     return out
 
 
+def _live_sources(ctx):
+    """The plugin sources as HEAD's config and marketplace define them, which is the fence's view,
+    or none when HEAD's config cannot be read."""
+    try:
+        return live.sources(ctx, surfaces.load_at(ctx, "HEAD"), ctx.plugins_at("HEAD"))
+    except repo.RepoError:
+        return []
+
+
 def _config_changes(ctx, led, added):
-    """What the run changed in docs-surfaces.json (retired[] and og, the keys it may change) and the
+    """What the run changed in docs-surfaces.json (retired[], live[] and og, the keys it may change) and the
     intentional entries it added: each one silences or renames something, so each is listed."""
     out = []
     was = _head_json(ctx, surfaces.SURFACES)
@@ -161,6 +171,16 @@ def _config_changes(ctx, led, added):
         out += ["- `retired[]` added %s" % _code(t, 200) for t in nr if t not in wr]
         out += ["- `retired[]` dropped %s (the write fence fails this)" % _code(t, 200)
                 for t in wr if t not in nr]
+        wl = was.get("live") if isinstance(was.get("live"), list) else []
+        nl = now.get("live") if isinstance(now.get("live"), list) else []
+        new_live = [t for t in nl if t not in wl]
+        srcs = _live_sources(ctx) if new_live else []
+        for t in new_live:
+            where = live.proof(srcs, t)
+            out.append("- `live[]` added %s (still in %s)" % (_code(t, 200), _code("%s:%d" % where))
+                       if where else
+                       "- `live[]` added %s: not accepted, no plugin source mentions it" % _code(t, 200))
+        out += ["- `live[]` dropped %s" % _code(t, 200) for t in wl if t not in nl]
         wo = was.get("og") if isinstance(was.get("og"), dict) else {}
         no = now.get("og") if isinstance(now.get("og"), dict) else {}
         for page in sorted(set(wo) | set(no)):

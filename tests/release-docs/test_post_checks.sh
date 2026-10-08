@@ -1019,4 +1019,25 @@ body_has "T7-PRBODY-OTHER the reference is named" "alpha/references/guide.md"
 body_has "T7-PRBODY-OTHER the page is named" "site/alpha/index.html"
 body_lacks "T7-PRBODY-OTHER the owner's file is not" "owner-notes.txt"
 
+# T7-PRBODY-LIVE (SDD ruling R30 f): each live[] change is listed. An accepted addition names the
+# plugin source and the line that proved it, so the owner can read whether that line is a live use
+# or a legacy mention. A refused one says so. A dropped one is listed.
+fx_repo prbody-live
+printf '%s\n' '' 'Reads `defaultMode` from the config.' >> alpha/skills/run/SKILL.md
+python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['live']=['old-live']; json.dump(d, open(p,'w'))"
+git commit -qam 'a live key and a seeded entry'
+detect; cp "$OUT" "$SCRATCH/before-live.json"
+python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['live']=['defaultMode','no-such-key']; json.dump(d, open(p,'w'))"
+prbody "$SCRATCH/before-live.json"
+body_has "T7-PRBODY-LIVE an accepted addition names the proving file and line" '`live[]` added `defaultMode` (still in `alpha/skills/run/SKILL.md:8`)'
+body_has "T7-PRBODY-LIVE a refused addition says so" '`live[]` added `no-such-key`: not accepted, no plugin source mentions it'
+body_has "T7-PRBODY-LIVE a dropped entry is listed" '`live[]` dropped `old-live`'
+
+# T7-PRBODY-LIVE-OWNCONFIG: the body judges an addition as the fence does, from HEAD's config. A run
+# that edits `surfaces` so that a doc it wrote the token into stops being a doc is not believed.
+printf '%s\n' '' 'Set `madeUpKey`.' >> alpha/README.md
+python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['live']=['madeUpKey']; d['surfaces'].remove('{plugin}/README.md'); json.dump(d, open(p,'w'))"
+prbody "$SCRATCH/before-live.json"
+body_has "T7-PRBODY-LIVE-OWNCONFIG a doc the run wrote is not proof" '`live[]` added `madeUpKey`: not accepted, no plugin source mentions it'
+
 exit "$failures"
