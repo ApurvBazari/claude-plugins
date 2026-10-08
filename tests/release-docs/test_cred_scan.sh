@@ -43,6 +43,11 @@ def pat(n=22, rest=True):
     return b"github" + b"_pat_" + tail(n) + (b"_" + tail(59) if rest else b"")
 
 
+def pat_secret(secret):
+    """A fine-grained token with a fixed first segment: github_pat_<22>_<59>."""
+    return b"github" + b"_pat_" + tail(22) + b"_" + secret + tail(58)
+
+
 def ant(n=95):
     """n characters after the prefix, shaped like an OAuth token."""
     return b"sk" + b"-ant-" + b"oat01-" + tail(n - 6, b"-_")
@@ -96,8 +101,8 @@ class Scratch:
         return self.other("staged.raw", self.git("diff", "--cached", "--raw", "-z", "--no-renames",
                                                  "--no-abbrev", "HEAD"))
 
-    def scan(self, script, *args):
-        p = subprocess.run([sys.executable, "-B", script] + list(args), cwd=self.r, env=ENV,
+    def scan(self, script, *args, env=ENV):
+        p = subprocess.run([sys.executable, "-B", script] + list(args), cwd=self.r, env=env,
                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         return p.returncode, p.stdout.decode("utf-8", "replace")
 
@@ -128,6 +133,24 @@ def added_text(token, label):
     return case
 
 
+def case_changed_name(s, script):
+    # The name reaches the patch's header and the commit, so it is scanned; it is never printed. What
+    # is cut from a message runs as far as the token could: here it takes the extension with it.
+    s.put("docs/" + gh(b"s").decode() + ".md", b"nothing here\n")
+    return judge(*s.scan(script, "--staged", s.staged()), 1, "(ghs_...) in the name of", '"docs/ghs_..."', "1 refused")
+
+
+def case_name_and_content(s, script):
+    s.put("docs/" + gh(b"s").decode() + ".md", b"key " + gh(b"o") + b"\n")
+    return judge(*s.scan(script, "--staged", s.staged()), 1, "(ghs_...) in the name of", "(gho_...) in", '"docs/ghs_...", line 1',
+                 "1 changed and 0 other files scanned, 1 refused")
+
+
+def case_walked_name(s, script):
+    s.other("bundle/shots/" + gh(b"s").decode() + ".png", b"\x89PNG\x00clean")
+    return judge(*s.scan(script, os.path.join(s.x, "bundle")), 1, "(ghs_...) in the name of", 'shots/ghs_..."', "1 refused")
+
+
 def case_binary(s, script):
     s.put("site/og.png", b"\x89PNG\r\n\x1a\n\x00\x00" + gh(b"s") + b"\x00\x00IEND")
     f = judge(*s.scan(script, "--staged", s.staged()), 1, "(ghs_...)", '"site/og.png"', "binary")
@@ -150,6 +173,24 @@ def case_other_stateless(s, script):
     # Two stateless tokens differ only after the first dot: the dot is part of the token.
     s.put("old.md", b"see " + stateless(b"B") + b"\n")
     return judge(*s.scan(script, "--staged", s.staged()), 1, '"old.md"', "(ghs_...)")
+
+
+def case_other_fine_grained(s, script):
+    # The whole token is the token: one that shares only its first segment with the earlier
+    # copy's is a new one.
+    s.put("old.md", b"see " + pat_secret(b"B") + b"\n")
+    return judge(*s.scan(script, "--staged", s.staged()), 1, '"old.md"', "(github_pat_...)")
+
+
+def case_crash(s, script):
+    # Without git the scan cannot read a blob. Whatever stops it, it says so in one line, with
+    # nothing of its input in it, and exits 2: a traceback's last line can carry a path.
+    s.put("docs/" + gh(b"s").decode() + ".md", b"one\n")
+    empty = os.path.join(s.x, "no-tools")
+    os.makedirs(empty)
+    rc, out = s.scan(script, "--staged", s.staged(), env=dict(ENV, PATH=empty))
+    return judge(rc, out, 2, "cred-scan: stopped on an unexpected FileNotFoundError") + (
+        ["a traceback — output: %r" % out] if "Traceback" in out else [])
 
 
 def case_head_had_it(s, script):
@@ -243,9 +284,9 @@ def case_skip(s, script):
     return f + (["the skipped file is reported — output: %r" % out] if "sync.patch" in out else [])
 
 
-def bad_input(build):
+def bad_input(build, said="cred-scan:"):
     def case(s, script):
-        return judge(*s.scan(script, *build(s)), 2, "cred-scan:")
+        return judge(*s.scan(script, *build(s)), 2, said)
     return case
 
 
@@ -278,9 +319,10 @@ def trailing_bytes(s):
 
 
 def cut_mid_entry(s):
+    # The half entry names a blob that can be read, so only the whole-entry rule stops it.
     s.put("a.md", b"one\ntwo\n")
     with open(s.staged(), "ab") as fh:
-        fh.write(entry(b"a" * 40).split(b"\0")[0] + b"\0")
+        fh.write(entry(s.git("hash-object", "a.md").strip()).split(b"\0")[0] + b"\0")
     return os.path.join(s.x, "staged.raw")
 
 
@@ -293,7 +335,13 @@ CASES = [
     ("an added stateless installation token is refused", {}, added_text(stateless(), "ghs_")),
     ("another stateless token than the one HEAD's copy had is refused", {"old.md": b"see " + stateless(b"A") + b"\n"},
      case_other_stateless),
+    ("a token in a changed file's name is refused, and not printed", {}, case_changed_name),
+    ("a token in a name and another in the content are both refused", {}, case_name_and_content),
+    ("a token in the name of a file under a named directory is refused", {}, case_walked_name),
     ("a token in a binary file is refused", {}, case_binary),
+    ("another fine-grained token with the first segment HEAD's copy had is refused", {"old.md": b"see " + pat_secret(b"A") + b"\n"},
+     case_other_fine_grained),
+    ("a scan that cannot run exits 2 in one line, with no traceback", {}, case_crash),
     ("a replace ref does not hide a token", {}, case_replace_ref),
     ("a token HEAD's copy already had is not refused", OLD, case_head_had_it),
     ("a second copy of a token the file already had is refused", OLD, case_second_copy),
@@ -317,9 +365,17 @@ CASES = [
     ("a malformed listing is bad input", {}, bad_input(lambda s: ["--staged", s.other("staged.raw", b"junk\0a.md\0")])),
     ("an unreadable blob is bad input", {}, bad_input(lambda s: ["--staged", no_such_blob(s)])),
     ("a listing entry that names no object id is bad input", OLD, bad_input(lambda s: ["--staged", not_an_object_id(s)])),
-    ("bytes after the last listing entry are bad input", {"a.md": b"one\n"}, bad_input(lambda s: ["--staged", trailing_bytes(s)])),
-    ("a listing cut mid-entry is bad input", {"a.md": b"one\n"}, bad_input(lambda s: ["--staged", cut_mid_entry(s)])),
+    ("bytes after the last listing entry are bad input", {"a.md": b"one\n"}, bad_input(lambda s: ["--staged", trailing_bytes(s)], "does not end on a whole entry")),
+    ("a listing cut mid-entry is bad input", {"a.md": b"one\n"}, bad_input(lambda s: ["--staged", cut_mid_entry(s)], "does not end on a whole entry")),
     ("an unknown option is bad input", {}, bad_input(lambda s: ["--stagd", s.staged()])),
+    ("a second --skip is bad input", {}, bad_input(lambda s: ["--skip", s.other("a.md", b"a\n"), "--skip", s.other("b.md", b"b\n"), s.x])),
+    ("a second --staged is bad input", {}, bad_input(lambda s: ["--staged", s.staged(), "--staged", s.staged()])),
+    ("a path the scan cannot read is not printed with a token in it", {},
+     bad_input(lambda s: [link(s, "b/" + gh(b"s").decode() + ".png")])),
+    ("a missing path is not printed with a token in it", {}, bad_input(lambda s: [os.path.join(s.x, gh(b"p").decode() + ".md")])),
+    ("a missing listing is not printed with a token in it", {},
+     bad_input(lambda s: ["--staged", os.path.join(s.x, gh(b"p").decode() + ".raw")])),
+    ("an unknown option is not printed with a token in it", {}, bad_input(lambda s: ["--token=" + gh(b"p").decode()])),
 ]
 
 
@@ -348,10 +404,13 @@ if failed:
 
 # Each rule, taken out of a scratch copy of the script, must fail the case that is there for it:
 # (what the mutant does, the text replaced, its replacement, the case).
+GH_TAIL = 'GH_TAIL = rb"(?:[A-Za-z0-9]{20,}|[A-Za-z0-9._-]{36,})[A-Za-z0-9._-]*"'
 NARROW, WIDE, ANT_RULE = "(?:[A-Za-z0-9]{20,}|", "|[A-Za-z0-9._-]{36,})", "(sk-ant-)[A-Za-z0-9_-]{40,}"
 ADDED = "if len(lines) > len(was.get(k, ()))"
 LSTAT = ('        mode = os.lstat(path).st_mode\n    except OSError as e:\n'
-         '        bad("could not read %s (%s)" % (json.dumps(path), type(e).__name__))\n')
+         '        bad("could not read %s (%s)" % (shown(path), type(e).__name__))\n')
+NAMED = "named = sorted({prefix for prefix, _token in creds(path if isinstance(path, bytes) else os.fsencode(path))})"
+CUT = 'cut = CRED.sub(lambda m: next(g for g in m.groups() if g) + b"...", raw)'
 MUTANTS = [
     ("a bare GitHub prefix is a token", NARROW, NARROW.replace("{20,}", "*"), "prefixes, placeholders and near-misses pass"),
     ("a GitHub token needs 21 letters or digits", NARROW, NARROW.replace("20", "21"), "20 characters after a GitHub prefix is a token"),
@@ -359,8 +418,13 @@ MUTANTS = [
     ("only the classic shape is a token", WIDE, ")", "an added stateless installation token is refused"),
     ("the wider set needs 37 characters", WIDE, WIDE.replace("36", "37"), "36 characters of the wider set after a GitHub prefix is a token"),
     ("20 characters of the wider set is a token", WIDE, WIDE.replace("36", "20"), "prefixes, placeholders and near-misses pass"),
-    ("a token ends at its first dot", WIDE, WIDE.replace("._-", "_-"),
+    ("a token ends at its first dot", GH_TAIL, GH_TAIL.replace("._-", "_-"),
      "another stateless token than the one HEAD's copy had is refused"),
+    ("a token ends where its first run of letters and digits does", ')[A-Za-z0-9._-]*"', ')"',
+     "another fine-grained token with the first segment HEAD's copy had is refused"),
+    ("a crash is a traceback", '    except Exception as e:  # a traceback\'s last line can carry a path, and a crash is no pass either\n'
+     '        bad("stopped on an unexpected %s" % type(e).__name__)\n', "    finally:\n        pass\n",
+     "a scan that cannot run exits 2 in one line, with no traceback"),
     ("fine-grained tokens are not scanned", '\n    + rb"|(github_pat_)" + GH_TAIL)', ")", "an added fine-grained token is refused"),
     ("the wider set is for installation tokens only", '\n    + rb"|(github_pat_)" + GH_TAIL)',
      '\n    + rb"|(github_pat_)[A-Za-z0-9]{20,}")', "36 characters of the wider set after github_pat_ is a token"),
@@ -396,9 +460,9 @@ MUTANTS = [
      "a symlink under a directory is bad input"),
     ("a missing path is skipped", LSTAT, LSTAT.split("        bad(")[0] + "        return []\n", "a missing path is bad input"),
     ("nothing to scan passes", '        bad("nothing to scan")\n', "        pass\n", "nothing to scan is bad input"),
-    ("a missing listing is an empty one", '        bad("could not read the listing %s (%s)" % (json.dumps(listing), type(e).__name__))\n',
+    ("a missing listing is an empty one", '        bad("could not read the listing %s (%s)" % (shown(listing), type(e).__name__))\n',
      "        return []\n", "a missing listing is bad input"),
-    ("a malformed entry is skipped", '            bad("unreadable listing entry %s" % json.dumps(raw[i].decode("ascii", "replace")))\n',
+    ("a malformed entry is skipped", '            bad("unreadable listing entry %s" % shown(raw[i]))\n',
      "            continue\n", "a malformed listing is bad input"),
     ("anything git can resolve is read", ' or not all(re.fullmatch(r"[0-9a-f]{40,64}", s) for s in meta[2:4])', "",
      "a listing entry that names no object id is bad input"),
@@ -408,8 +472,21 @@ MUTANTS = [
      "bytes after the last listing entry are bad input"),
     ("a half entry is not noticed", 'if raw.pop() != b"" or len(raw) % 2:', 'if raw.pop() != b"":',
      "a listing cut mid-entry is bad input"),
-    ("an unknown option is skipped", '            bad("unknown or incomplete option %s" % json.dumps(argv[i]))\n', "            i += 1\n",
+    ("an unknown option is skipped", '            bad("unknown, repeated or incomplete option %s" % shown(argv[i]))\n', "            i += 1\n",
      "an unknown option is bad input"),
+    ("a second --skip replaces the first", " and skip is None", "", "a second --skip is bad input"),
+    ("a second --staged replaces the first", " and listing is None", "", "a second --staged is bad input"),
+    ("a changed file's name is not scanned", NAMED, "named = []", "a token in a changed file's name is refused, and not printed"),
+    ("a walked file's name is not scanned", NAMED, "named = []", "a token in the name of a file under a named directory is refused"),
+    ("a name is printed as it is", CUT, "cut = raw", "a token in a name and another in the content are both refused"),
+    ("a path that cannot be read is printed as it is", LSTAT, LSTAT.replace("shown(path)", "json.dumps(path)"),
+     "a missing path is not printed with a token in it"),
+    ("a path of the wrong kind is printed as it is", 'bad("%s is not a regular file or a directory" % shown(path))',
+     'bad("%s is not a regular file or a directory" % json.dumps(path))', "a path the scan cannot read is not printed with a token in it"),
+    ("a listing's path is printed as it is", "shown(listing), type(e).__name__", "json.dumps(listing), type(e).__name__",
+     "a missing listing is not printed with a token in it"),
+    ("an option is printed as it is", "option %s\" % shown(argv[i])", "option %s\" % json.dumps(argv[i])",
+     "an unknown option is not printed with a token in it"),
 ]
 with open(SCRIPT, encoding="utf-8") as fh:
     src = fh.read()
