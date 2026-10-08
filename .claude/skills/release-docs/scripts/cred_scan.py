@@ -9,8 +9,8 @@
   PATH               a file, or a directory walked in full. Scanned whole: it has no earlier copy.
   A file's name is scanned too, in a listing and in a walk: it reaches a patch's header, a commit
   and an artifact's listing as surely as the content does.
-  --skip PATH        one path a walk leaves out: a patch file, whose added lines --staged already
-                     reads as blobs, and whose other lines are the earlier copy's.
+  --skip PATH        one regular file a walk leaves out: a patch file, whose added lines --staged
+                     already reads as blobs, and whose other lines are the earlier copy's.
 
 Exit 0 when nothing is refused, 1 when something is, and 2 on anything the scan cannot read (no
 input, a missing path, a symlink, a malformed listing, an unreadable blob): a scan that did not
@@ -105,12 +105,14 @@ def staged(listing):
 def plain_files(path, skip):
     """Every file at or under path, but skip. A symlink, or anything else that is not a regular file
     or a directory, is bad input: an upload would follow it to content this scan never read."""
-    if skip is not None and os.path.normpath(path) == os.path.normpath(skip):
-        return []
     try:
         mode = os.lstat(path).st_mode
     except OSError as e:
         bad("could not read %s (%s)" % (shown(path), type(e).__name__))
+    if skip is not None and os.path.normpath(path) == os.path.normpath(skip):
+        if not stat.S_ISREG(mode):  # one file is left out, never a directory and all under it
+            bad("--skip names something other than a regular file: %s" % shown(path))
+        return []
     if stat.S_ISREG(mode):
         return [path]
     if not stat.S_ISDIR(mode):
