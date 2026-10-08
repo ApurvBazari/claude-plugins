@@ -29,14 +29,20 @@ import subprocess
 import sys
 
 # A prefix alone is a mention, and docs do name them; a prefix with this much after it is a token.
-# Each minimum sits well under the real length (36 after gh?_, 22 before github_pat_'s next
-# underscore, about 100 after sk-ant-), so a token cut short or wrapped is still refused, and above
-# anything prose, a placeholder or an identifier produces. Nothing is required on the left: a
-# token glued to an escape (%3D, \u003d) is still a token.
+# After a GitHub prefix that is either of two shapes:
+# - 20 letters or digits in a row. A classic token has 36 and a fine-grained one opens with 22, so
+#   one cut short or wrapped is still refused, and no snake_case identifier gets there.
+# - 36 characters of the wider set GitHub's guidance gives for installation tokens. Since 2026 they
+#   are ghs_<app id>_<JWT>, about 520 characters, the Actions GITHUB_TOKEN included: an underscore
+#   after a few digits, then dots and hyphens, so the first shape alone would pass them.
+# After sk-ant-, 40 characters (a real one has about 100). Each minimum is above anything prose, a
+# placeholder or an identifier produces. Nothing is required on the left: a token glued to an
+# escape (%3D, \u003d) is still a token.
+GH_TAIL = rb"(?:[A-Za-z0-9]{20,}|[A-Za-z0-9._-]{36,})"
 CRED = re.compile(
     rb"(sk-ant-)[A-Za-z0-9_-]{40,}"
-    rb"|(gh[pousr]_)[A-Za-z0-9]{20,}"
-    rb"|(github_pat_)[A-Za-z0-9]{20,}[A-Za-z0-9_]*")
+    rb"|(gh[pousr]_)" + GH_TAIL
+    + rb"|(github_pat_)" + GH_TAIL)
 
 
 def bad(msg):

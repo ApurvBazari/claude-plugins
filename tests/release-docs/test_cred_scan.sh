@@ -48,6 +48,18 @@ def ant(n=95):
     return b"sk" + b"-ant-" + b"oat01-" + tail(n - 6, b"-_")
 
 
+def stateless(payload=b"A"):
+    """An installation token in the shape GitHub has issued since 2026, the Actions GITHUB_TOKEN
+    included: ghs_<app id>_<JWT>. Every such token opens with the same app id and JWT header."""
+    header = b"eyJ" + tail(33)
+    return b"gh" + b"s_" + b"15368_" + header + b"." + b"eyJ" + payload + tail(180, b"-_") + b"." + tail(86, b"-_")
+
+
+def wide(n):
+    """n characters of the wider set, with no 20 letters or digits in a row."""
+    return ((ALNUM[:9] + b"_" + ALNUM[9:17] + b"-" + ALNUM[17:25] + b".") * (n // 28 + 1))[:n]
+
+
 class Scratch:
     """A scratch repository (r/) with one base commit, and a directory beside it (x/) for the
     listing and the named files, which a run's `git add -A` must not see."""
@@ -134,6 +146,12 @@ def case_replace_ref(s, script):
     return judge(*s.scan(script, "--staged", listing), 1, "(ghs_...)", '"docs/new.md"')
 
 
+def case_other_stateless(s, script):
+    # Two stateless tokens differ only after the first dot: the dot is part of the token.
+    s.put("old.md", b"see " + stateless(b"B") + b"\n")
+    return judge(*s.scan(script, "--staged", s.staged()), 1, '"old.md"', "(ghs_...)")
+
+
 def case_head_had_it(s, script):
     s.put("old.md", b"see " + gh(b"p") + b"\nand a new line\n")
     return judge(*s.scan(script, "--staged", s.staged()), 0, "0 refused")
@@ -162,6 +180,10 @@ HARMLESS = [
     b"one short: " + gh(b"p", 19),
     b"one short: " + pat(19, rest=False),
     b"one short: " + ant(39),
+    b"weighs_total_bytes_per_request is a longer counter",
+    b"the ghs_installation_token placeholder, or ghp_your_personal_access_token",
+    b"one short: gh" + b"p_" + wide(35),
+    b"one short: github" + b"_pat_" + wide(35),
 ]
 
 
@@ -268,6 +290,9 @@ CASES = [
     ("an added GitHub token is refused, by file and line", {}, added_text(gh(b"s"), "ghs_")),
     ("an added fine-grained token is refused", {}, added_text(pat(), "github_pat_")),
     ("an added Anthropic token is refused", {}, added_text(ant(), "sk-ant-")),
+    ("an added stateless installation token is refused", {}, added_text(stateless(), "ghs_")),
+    ("another stateless token than the one HEAD's copy had is refused", {"old.md": b"see " + stateless(b"A") + b"\n"},
+     case_other_stateless),
     ("a token in a binary file is refused", {}, case_binary),
     ("a replace ref does not hide a token", {}, case_replace_ref),
     ("a token HEAD's copy already had is not refused", OLD, case_head_had_it),
@@ -277,6 +302,8 @@ CASES = [
     ("20 characters after a GitHub prefix is a token", {}, at_minimum(gh(b"p", 20), "ghp_")),
     ("20 characters after github_pat_ is a token", {}, at_minimum(pat(20, rest=False), "github_pat_")),
     ("40 characters after sk-ant- is a token", {}, at_minimum(ant(40), "sk-ant-")),
+    ("36 characters of the wider set after a GitHub prefix is a token", {}, at_minimum(b"gh" + b"p_" + wide(36), "ghp_")),
+    ("36 characters of the wider set after github_pat_ is a token", {}, at_minimum(b"github" + b"_pat_" + wide(36), "github_pat_")),
     ("a token glued to an escape is refused", {}, case_glued),
     ("a token in a named file is refused, by line", {}, case_named_file),
     ("a named file is scanned whole, whatever HEAD held", OLD, case_named_file_is_whole),
@@ -321,18 +348,22 @@ if failed:
 
 # Each rule, taken out of a scratch copy of the script, must fail the case that is there for it:
 # (what the mutant does, the text replaced, its replacement, the case).
-GH_RULE, PAT_RULE, ANT_RULE = "(gh[pousr]_)[A-Za-z0-9]{20,}", "(github_pat_)[A-Za-z0-9]{20,}", "(sk-ant-)[A-Za-z0-9_-]{40,}"
+NARROW, WIDE, ANT_RULE = "(?:[A-Za-z0-9]{20,}|", "|[A-Za-z0-9._-]{36,})", "(sk-ant-)[A-Za-z0-9_-]{40,}"
 ADDED = "if len(lines) > len(was.get(k, ()))"
 LSTAT = ('        mode = os.lstat(path).st_mode\n    except OSError as e:\n'
          '        bad("could not read %s (%s)" % (json.dumps(path), type(e).__name__))\n')
 MUTANTS = [
-    ("a bare GitHub prefix is a token", GH_RULE, GH_RULE.replace("{20,}", "*"), "prefixes, placeholders and near-misses pass"),
-    ("a GitHub token needs 21 characters", GH_RULE, GH_RULE.replace("20", "21"), "20 characters after a GitHub prefix is a token"),
-    ("a bare github_pat_ is a token", PAT_RULE, PAT_RULE.replace("{20,}", "*"), "prefixes, placeholders and near-misses pass"),
-    ("underscores count toward github_pat_'s minimum", PAT_RULE, PAT_RULE.replace("9]{", "9_]{"),
-     "prefixes, placeholders and near-misses pass"),
-    ("a fine-grained token needs 21 characters", PAT_RULE, PAT_RULE.replace("20", "21"), "20 characters after github_pat_ is a token"),
-    ("fine-grained tokens are not scanned", '\n    rb"|' + PAT_RULE + '[A-Za-z0-9_]*"', "", "an added fine-grained token is refused"),
+    ("a bare GitHub prefix is a token", NARROW, NARROW.replace("{20,}", "*"), "prefixes, placeholders and near-misses pass"),
+    ("a GitHub token needs 21 letters or digits", NARROW, NARROW.replace("20", "21"), "20 characters after a GitHub prefix is a token"),
+    ("a fine-grained token needs 21 letters or digits", NARROW, NARROW.replace("20", "21"), "20 characters after github_pat_ is a token"),
+    ("only the classic shape is a token", WIDE, ")", "an added stateless installation token is refused"),
+    ("the wider set needs 37 characters", WIDE, WIDE.replace("36", "37"), "36 characters of the wider set after a GitHub prefix is a token"),
+    ("20 characters of the wider set is a token", WIDE, WIDE.replace("36", "20"), "prefixes, placeholders and near-misses pass"),
+    ("a token ends at its first dot", WIDE, WIDE.replace("._-", "_-"),
+     "another stateless token than the one HEAD's copy had is refused"),
+    ("fine-grained tokens are not scanned", '\n    + rb"|(github_pat_)" + GH_TAIL)', ")", "an added fine-grained token is refused"),
+    ("the wider set is for installation tokens only", '\n    + rb"|(github_pat_)" + GH_TAIL)',
+     '\n    + rb"|(github_pat_)[A-Za-z0-9]{20,}")', "36 characters of the wider set after github_pat_ is a token"),
     ("a bare sk-ant- is a token", ANT_RULE, ANT_RULE.replace("{40,}", "*"), "prefixes, placeholders and near-misses pass"),
     ("an Anthropic token needs 41 characters", ANT_RULE, ANT_RULE.replace("40", "41"), "40 characters after sk-ant- is a token"),
     ("Anthropic tokens are not scanned", '    rb"' + ANT_RULE + '"\n    rb"|', '    rb"', "an added Anthropic token is refused"),
