@@ -159,6 +159,62 @@ post b-notlist notlist.md
 expect "T6-RETIRED-NOTLIST exit 1" 1 "$RC"
 has "T6-RETIRED-NOTLIST reported" notlist.md 'retired[] is no longer a list'
 
+# T6-LIVE (SDD ruling R30 f): live[] is the third docs-surfaces.json key a run may change. It may
+# grow by a token a plugin source still has, and shrink freely: a dropped entry only reopens flags.
+# An added token that no plugin source has fails the run and is named. The detector ignores such an
+# entry anyway; the line is there so the owner sees it was tried.
+livecfg() { # <python statements over d> — edit the working docs-surfaces.json
+  python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); $1; json.dump(d, open(p,'w'))"
+}
+fx_repo live-grow                      # HEAD's config has no live key at all
+printf '%s\n' '' 'Reads `defaultMode` from the config.' >> alpha/skills/run/SKILL.md
+git commit -qam 'a live key'
+snap b-live-grow
+livecfg "d['live']=['defaultMode']"
+post b-live-grow live-grow.md
+expect "T6-LIVE-GROW a proven entry, added where HEAD had no live key -> exit 0" 0 "$RC"
+has "T6-LIVE-GROW fence ok" live-grow.md '- ok: write fence'
+
+fx_repo live-unproven
+snap b-live-unproven
+livecfg "d['live']=['no-such-key', '']"
+post b-live-unproven live-unproven.md
+expect "T6-LIVE-UNPROVEN exit 1" 1 "$RC"
+has "T6-LIVE-UNPROVEN names the entries, a blank one included" live-unproven.md 'added "no-such-key", "" to .github/docs-surfaces.json live[]'
+has "T6-LIVE-UNPROVEN says why" live-unproven.md 'no plugin source mentions it'
+
+# T6-LIVE-SELFPROOF: a run cannot write its own proof. A token it wrote into a plugin source is
+# reverted before the check reads the sources. A token it wrote into a doc it may edit is no proof,
+# even when it also edits the config's `surfaces` so that the doc stops being one: what a plugin
+# source is comes from HEAD's config.
+fx_repo live-selfproof
+snap b-live-selfproof
+put alpha/scripts/tool.sh '#!/usr/bin/env bash' 'echo "$madeUpKey"'
+printf '%s\n' '' 'Set `madeUpKey`.' >> alpha/README.md
+livecfg "d['live']=['madeUpKey']; d['surfaces'].remove('{plugin}/README.md')"
+post b-live-selfproof live-selfproof.md
+expect "T6-LIVE-SELFPROOF exit 1" 1 "$RC"
+has "T6-LIVE-SELFPROOF the source is put back" live-selfproof.md 'FENCE: restored alpha/scripts/tool.sh'
+has "T6-LIVE-SELFPROOF the entry is refused" live-selfproof.md 'added "madeUpKey" to .github/docs-surfaces.json live[]'
+
+fx_repo live-shrink
+livecfg "d['live']=['old-live', 'other-live']"
+git commit -qam 'seed live'
+snap b-live-shrink
+livecfg "d['live']=['other-live']"
+post b-live-shrink live-shrink.md
+expect "T6-LIVE-SHRINK dropping an entry is allowed -> exit 0" 0 "$RC"
+livecfg "d.pop('live')"
+post b-live-shrink live-keygone.md
+expect "T6-LIVE-KEYGONE removing the key drops every entry, which is allowed -> exit 0" 0 "$RC"
+
+fx_repo live-notlist
+snap b-live-notlist
+livecfg "d['live']={'a': 1}"
+post b-live-notlist live-notlist.md
+expect "T6-LIVE-NOTLIST exit 1" 1 "$RC"
+has "T6-LIVE-NOTLIST reported" live-notlist.md 'live[] is no longer a list'
+
 # T6-SURF-BROKEN: a malformed working-tree docs-surfaces.json still gets fenced around, and reported.
 fx_repo broken
 snap b-broken

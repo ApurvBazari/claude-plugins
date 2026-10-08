@@ -34,12 +34,13 @@ import shutil
 import stat
 import subprocess
 
+import live
 import repo
 import surfaces
 
 KIND = "release-docs-snapshot"
 MARKER = "FENCE-COMPLETE"
-MUTABLE = ("og", "retired")  # the only docs-surfaces.json keys a run may change; retired only grows
+MUTABLE = ("og", "retired", "live")  # the only docs-surfaces.json keys a run may change; retired only grows
 
 
 class Incomplete(Exception):
@@ -384,7 +385,7 @@ def _retired_shrink(was, now):
 
 
 def surfaces_drift(ctx, ref):
-    """Report lines when the run changed docs-surfaces.json beyond og and retired, or dropped a
+    """Report lines when the run changed docs-surfaces.json beyond og, retired and live, or dropped a
     retired token."""
     try:
         raw = ctx.show(ref, surfaces.SURFACES)
@@ -402,16 +403,48 @@ def surfaces_drift(ctx, ref):
     try:
         now = json.loads(ctx.read(surfaces.SURFACES))
     except (OSError, ValueError, RecursionError) as e:
-        return ["- FAIL: the run left %s unreadable (%s); only og and retired may change"
+        return ["- FAIL: the run left %s unreadable (%s); only og, retired and live may change"
                 % (surfaces.SURFACES, describe(e))]
     if not isinstance(now, dict):
         return ["- FAIL: the run left %s not a JSON object" % surfaces.SURFACES]
     changed = sorted(k for k in set(was) | set(now) if k not in MUTABLE and was.get(k) != now.get(k))
     out = _retired_shrink(was, now)
     if changed:
-        out.insert(0, "- FAIL: the run changed %s key(s) %s; only og and retired may change"
+        out.insert(0, "- FAIL: the run changed %s key(s) %s; only og, retired and live may change"
                    % (surfaces.SURFACES, ", ".join(changed)))
     return out
+
+
+def live_drift(ctx, ref):
+    """Report lines when the run left live[] not a list, or added a token that no plugin source has.
+    Dropping an entry is allowed: it only reopens flags. What a plugin source is comes from the
+    config and marketplace committed at ref, never from the working tree, and this check runs after
+    the reverts, so nothing the run wrote can prove its own entry. The detector ignores an unproven
+    entry in any case; the line is there so that the owner sees it was tried."""
+    try:
+        raw = ctx.show(ref, surfaces.SURFACES)
+        was = json.loads(raw) if raw is not None else None
+        now = json.loads(ctx.read(surfaces.SURFACES)) if _plain(ctx, surfaces.SURFACES) else None
+    except Exception:  # a config that cannot be read, at ref or in the tree: surfaces_drift reports it
+        return []
+    if not isinstance(was, dict) or not isinstance(now, dict):
+        return []
+    old, new = was.get("live", []), now.get("live", [])
+    if not isinstance(old, list):
+        return []  # the committed config is broken; the gate reports it
+    if not isinstance(new, list):
+        return ["- FAIL: in %s, live[] is no longer a list" % surfaces.SURFACES]
+    added = [t for t in new if t not in old]
+    if not added:
+        return []
+    srcs = live.sources(ctx, surfaces.load_at(ctx, ref), ctx.plugins_at(ref))
+    bad = [t for t in added if live.proof(srcs, t) is None]
+    if not bad:
+        return []
+    shown = ", ".join(json.dumps(t, ensure_ascii=False)[:200] for t in bad[:10])
+    return ["- FAIL: the run added %s to %s live[]%s, but no plugin source mentions it; a live name "
+            "must still be in a plugin's sources"
+            % (shown, surfaces.SURFACES, " (and %d more)" % (len(bad) - 10) if len(bad) > 10 else "")]
 
 
 def fence(ctx, before_path, expect_clean=False):
@@ -478,6 +511,7 @@ def fence(ctx, before_path, expect_clean=False):
 
     lines += check("HEAD", head_moved)
     lines += check("docs-surfaces.json", lambda: surfaces_drift(ctx, ref))
+    lines += check("live[]", lambda: live_drift(ctx, ref))
     lines += check("owner-file", owner_touched)
     lines += check("--expect-clean", clean_snapshot)
 
