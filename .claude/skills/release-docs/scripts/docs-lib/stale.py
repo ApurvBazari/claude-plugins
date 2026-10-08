@@ -4,7 +4,8 @@ Candidates for one range: repo paths the range deleted or renamed away (a remove
 file also as its plugin-relative path and basename), skills it removed (`/plugin:name`), and
 backticked identifiers that new CHANGELOG entries say are renamed / removed / retired / dropped /
 replaced / deleted / relocated / moved / superseded, in any tense (the verb's clause, up to its
-`to` / `with` / `→`), or that sit in a bullet under a `### Removed`-style heading. Anything that
+`to` / `with` / `→`; the subject of a present form that has no object), or that sit in a bullet
+under a `### Removed`-style heading. Anything that
 still exists is dropped: a tracked path, or a current skill or agent of any plugin (`/p:s`, `p:s`,
 the skill's name or directory, the agent's name or `p:agent`), since "Removed the `--x` flag from
 `/lens:review`" retires the flag, not the skill. surfaces.json `retired[]` carries confirmed tokens
@@ -30,6 +31,9 @@ TICK = re.compile(r"`([^`\n]+)`")
 BOUND = re.compile(r"[:—–()]")  # clause edges, looked for outside backticks only
 HANDOFF = ":—–"  # the edges across which a name-less verb clause hands over to its neighbour
 MARKUP = re.compile(r"[\s*_]*\Z")
+# What follows a present or base form used without an object: nothing, or a word that says where the
+# subject goes.
+NO_OBJECT = re.compile(r"\s*(?:(?:to|into|out|from|away)\b|→|[\s*_.;!?]*\Z)")
 
 
 def _keep(tok):
@@ -58,7 +62,14 @@ def sentence_candidates(text, section=None):
     object ("`x` is removed", "`x` — removed"). Before a present or base form stands the actor
     ("`/onboard:evolve` now removes …", "`new-api` replaces `old-api`"), so that verb reads only
     what follows it. On the full CHANGELOG history, this and VERB's hyphen guard lost no true
-    candidate and dropped two false ones (`detect-{config,dep,structure}-changes.sh`, `pipeline.md`)."""
+    candidate and dropped two false ones (`detect-{config,dep,structure}-changes.sh`, `pipeline.md`).
+
+    A present or base form with no object has no actor either ("`oldKey` renames to `newKey`",
+    "`old-flag` drops out"): its subject is the thing retired. So when nothing follows the verb in
+    its clause, or a word that says where the subject goes, the verb reads the names before it, back
+    to the previous verb of the clause (in "`a` replaces `b` and moves to the top", `a` is still the
+    actor of the first verb), and none after it: those name where the thing went. No entry in the
+    history has this shape; the rule is there so that the first one is not missed."""
     out = set()
     retiring = section is not None and RETIRING.match(section.strip("*_` ")) is not None
     for n, sent in enumerate(re.split(r"(?<=[.;])\s+", " ".join(text.split()))):
@@ -76,9 +87,14 @@ def sentence_candidates(text, section=None):
             right = [e for e in edges if e >= ve]
             lo = left[-1] + 1 if left else 0
             hi = right[0] if right else len(sent)
-            if not past:
-                lo = ve  # the actor before a present or base form is never the thing retired
-            toks, later = _names(sent, bare, lo, hi, ve)
+            if not past and NO_OBJECT.match(bare, ve, hi):
+                # no object, so no actor: the subject, back to the previous verb, is the thing retired
+                lo = max([e for _s, e, _p in anchors if lo <= e <= vs], default=lo)
+                toks, later = TICK.findall(sent[lo:vs]), set()
+            else:
+                if not past:
+                    lo = ve  # the actor before a present or base form with an object is never retired
+                toks, later = _names(sent, bare, lo, hi, ve)
             if not TICK.search(sent[lo:hi]):
                 if right and bare[hi] in HANDOFF and (ve == 0 or MARKUP.match(bare, ve, hi)):
                     nxt = [e for e in edges if e > hi]
