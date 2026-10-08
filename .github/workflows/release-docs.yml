@@ -555,13 +555,20 @@ jobs:
       # START already had. The command is fixed: a missing input is the scan's exit 2, never an
       # argument left out. Without a verified seal the copy is not trusted, so the scan does not
       # run and nothing is uploaded.
+      # This is the model's job, where a later step's PATH and variables are the model's to poison
+      # (see the job's header). So the interpreter is named in full and isolated (-I), and it starts
+      # in an empty environment with a fixed PATH for the git it calls. That narrows what the scan
+      # takes from this job; it does not make the job a trusted place, and nothing checks the
+      # bundle again before it is public. The scan stops a token written out as it is. It is not a
+      # defence against a run that sets out to get one past it.
       - id: scan
         name: Refuse a credential-shaped string in the bundle
         if: ${{ !cancelled() && steps.seal.outcome == 'success' && steps.bundle.outcome == 'success' }}
         run: |
           set -euo pipefail
           B="$RUNNER_TEMP/bundle"
-          python3 -B "$RUNNER_TEMP/rd/cred_scan.py" --staged "$RUNNER_TEMP/bundle.raw" --skip "$B/sync.patch" "$B"
+          /usr/bin/env -i PATH=/usr/bin:/bin /usr/bin/python3 -I -B "$RUNNER_TEMP/rd/cred_scan.py" \
+            --staged "$RUNNER_TEMP/bundle.raw" --skip "$B/sync.patch" "$B"
 
       - name: Upload the bundle
         if: ${{ !cancelled() && steps.scan.outcome == 'success' }}
@@ -797,23 +804,34 @@ jobs:
       # doc, the report or the PR body is public once published. The staged blobs are compared with
       # HEAD's, so a mention a doc already had never trips it; the report, the PR body and the
       # screenshots are read whole. Only after it does the PR body reach the job summary, and the
-      # upload and the push each need this step's success. Both commands are fixed: a missing input
-      # is the scan's exit 2, never an argument left out. Without the gate's publish there is no
-      # staged set and no PR body, and no push either: the report alone is scanned, for the upload.
+      # upload and the push each need this step's success. Every command is fixed: a missing input
+      # is the scan's exit 2, never an argument left out. There are three states:
+      # - the gate did not say publish: no staged set, no PR body, no push. The report is scanned;
+      # - it did, and the staged-set check passed: everything is scanned. Only this state can push;
+      # - it did, and the stage step failed: no push. The report and the PR body are scanned, so
+      #   the run still leaves its diagnostics.
+      # The interpreter is named in full, isolated (-I) and started in an empty environment with a
+      # fixed PATH, as in sync, where it matters more.
       - id: scan
         name: Refuse a credential-shaped string before anything is made public
         if: ${{ !cancelled() && steps.post.outcome == 'success' }}
         env:
           PUBLISH: ${{ steps.gate.outputs.publish }}
+          STAGED: ${{ steps.stage.outcome }}
         run: |
           set -euo pipefail
           T="$RUNNER_TEMP"
+          scan() { /usr/bin/env -i PATH=/usr/bin:/bin /usr/bin/python3 -I -B "$T/rd/cred_scan.py" "$@"; }
           mkdir -p "$T/shots"
-          if [ "$PUBLISH" = true ]; then
-            python3 -B "$T/rd/cred_scan.py" --staged "$T/staged.raw" "$T/shots" "$T/pc.md" "$T/pr-body.md"
-            cat "$T/pr-body.md" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$PUBLISH" != true ]; then
+            scan "$T/shots" "$T/pc.md"
           else
-            python3 -B "$T/rd/cred_scan.py" "$T/shots" "$T/pc.md"
+            if [ "$STAGED" = success ]; then
+              scan --staged "$T/staged.raw" "$T/shots" "$T/pc.md" "$T/pr-body.md"
+            else
+              scan "$T/shots" "$T/pc.md" "$T/pr-body.md"
+            fi
+            cat "$T/pr-body.md" >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Upload the screenshots and the report

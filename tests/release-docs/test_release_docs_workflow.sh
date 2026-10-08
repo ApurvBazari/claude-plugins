@@ -931,15 +931,23 @@ def a39(c):
             if flag not in ln.split()]
 
 
-SCAN = 'python3 -B "$RUNNER_TEMP/rd/cred_scan.py"'
+# The scan is run by a named interpreter, isolated (-I: no PYTHON* variable, no user site), in an
+# empty environment with a fixed PATH for the git it calls. In sync, the model's job, a later
+# step's PATH and variables are the model's to poison (the job's header says so).
+SCAN = '/usr/bin/env -i PATH=/usr/bin:/bin /usr/bin/python3 -I -B "$RUNNER_TEMP/rd/cred_scan.py"'
 PUB_SCAN_RUN = ('set -euo pipefail\n'
                 'T="$RUNNER_TEMP"\n'
+                'scan() { ' + SCAN + ' "$@"; }\n'
                 'mkdir -p "$RUNNER_TEMP/shots"\n'
-                'if [ "$PUBLISH" = true ]; then\n'
-                '  ' + SCAN + ' --staged "$RUNNER_TEMP/staged.raw" "$RUNNER_TEMP/shots" "$RUNNER_TEMP/pc.md" "$RUNNER_TEMP/pr-body.md"\n'
-                '  cat "$RUNNER_TEMP/pr-body.md" >> "$GITHUB_STEP_SUMMARY"\n'
+                'if [ "$PUBLISH" != true ]; then\n'
+                '  scan "$RUNNER_TEMP/shots" "$RUNNER_TEMP/pc.md"\n'
                 'else\n'
-                '  ' + SCAN + ' "$RUNNER_TEMP/shots" "$RUNNER_TEMP/pc.md"\n'
+                '  if [ "$STAGED" = success ]; then\n'
+                '    scan --staged "$RUNNER_TEMP/staged.raw" "$RUNNER_TEMP/shots" "$RUNNER_TEMP/pc.md" "$RUNNER_TEMP/pr-body.md"\n'
+                '  else\n'
+                '    scan "$RUNNER_TEMP/shots" "$RUNNER_TEMP/pc.md" "$RUNNER_TEMP/pr-body.md"\n'
+                '  fi\n'
+                '  cat "$RUNNER_TEMP/pr-body.md" >> "$GITHUB_STEP_SUMMARY"\n'
                 'fi\n')
 SYNC_SCAN_RUN = ('set -euo pipefail\n'
                  'B="$RUNNER_TEMP/bundle"\n'
@@ -950,12 +958,10 @@ def uploads(job):
     return [i for i, s in enumerate(job["steps"]) if (s["uses"] or "").startswith("actions/upload-artifact@")]
 
 
-def scanned(run, staged):
-    """The $RUNNER_TEMP names the scan command that takes (or does not take) --staged reads whole."""
-    for ln in run.split("\n"):
-        if SCAN in ln and ("--staged" in ln) == staged:
-            return set(re.findall(r' "\$RUNNER_TEMP/([^"]+)"', ln.split(".raw", 1)[-1]))
-    return set()
+def scans(run):
+    """Each `scan ...` call of publish's scan step: (takes --staged, the $RUNNER_TEMP names it reads whole)."""
+    return [("--staged" in ln, set(re.findall(r' "\$RUNNER_TEMP/([^"]+)"', ln.split(".raw", 1)[-1])))
+            for ln in run.split("\n") if ln.strip().startswith("scan ")]
 
 
 @check("A40", "publish scans the staged blobs, the report and the PR body before any of it is public")
@@ -967,14 +973,18 @@ def a40(c):
         return ["publish lacks a scan step, a stage step, a push step or its one upload step"]
     si, sc = ids.index("scan"), c.step("scan", "publish")
     f = []
-    # Fixed commands, from the pre-apply copy, each alone on its line: a missing input is the
-    # scan's exit 2, never an argument quietly left out, and the scan's exit is the step's. The PR
-    # body reaches the summary after the scan, in the same step.
+    # Fixed commands, from the pre-apply copy: a missing input is the scan's exit 2, never an
+    # argument quietly left out, and the scan's exit is the step's. Three states, three commands:
+    # no publish from the gate (the report); publish and a passed staged-set check (the staged
+    # blobs, the report, the PR body); publish and a failed one (the report and the PR body, so a
+    # failed stage step still leaves its diagnostics). The PR body reaches the summary after its scan.
     if sc["j"] != PUB_SCAN_RUN:
         f.append("publish's scan step runs %r, want %r" % (sc["j"], PUB_SCAN_RUN))
-    # The full scan is chosen by the output the push step needs: no push after the report-only one.
-    if not re.search(r"^          PUBLISH: \$\{\{ steps\.gate\.outputs\.publish \}\}$", sc["raw"], re.M):
-        f.append("publish's scan step does not take PUBLISH from the gate's publish output")
+    # The full scan is chosen by exactly what the push step needs: the gate's publish and a
+    # successful stage step. No push can follow one of the narrower scans.
+    for var, src in (("PUBLISH", "steps.gate.outputs.publish"), ("STAGED", "steps.stage.outcome")):
+        if not re.search(r"^          %s: \$\{\{ %s \}\}$" % (var, re.escape(src)), sc["raw"], re.M):
+            f.append("publish's scan step does not take %s from %s" % (var, src))
     if not ids.index("stage") < si:
         f.append("publish's scan step runs before the stage step writes the staged set")
     if not si < up[0] or not si < ids.index("push"):
@@ -985,15 +995,16 @@ def a40(c):
         f.append("publish's upload step's if: is %r: it must need the scan" % unwrap(steps[up[0]]["if"]))
     if "steps.scan.outcome == 'success'" not in unwrap(c.step("push", "publish")["if"]):
         f.append("the push step does not need the scan")
-    # Every path the upload step names is read by both scans; the PR body by the full one only,
-    # since no PR body exists unless the gate said publish (A37).
+    # Every path the upload step names is read by each scan; the PR body by the two that run once
+    # the gate said publish, since none exists before that (A37).
     uploaded = set(re.findall(r"^            \$\{\{ runner\.temp \}\}/(\S+)$", steps[up[0]]["raw"], re.M))
     if "pr-body.md" not in uploaded:
         f.append("publish's upload step no longer names pr-body.md: this check reads its path list")
-    f += ["publish uploads $RUNNER_TEMP/%s, which its full scan never reads" % p
-          for p in sorted(uploaded - scanned(sc["j"] or "", True))]
-    f += ["publish uploads $RUNNER_TEMP/%s, which its report-only scan never reads" % p
-          for p in sorted(uploaded - {"pr-body.md"} - scanned(sc["j"] or "", False))]
+    calls = scans(sc["j"] or "")
+    if [staged for staged, _ in calls] != [False, True, False]:
+        f.append("publish's scan step does not make its three scans: the report, the full one, the report and PR body")
+    for (staged, names), needs in zip(calls, (uploaded - {"pr-body.md"}, uploaded, uploaded)):
+        f += ["publish uploads $RUNNER_TEMP/%s, which one of its scans never reads" % p for p in sorted(needs - names)]
     f += ["%r writes to the job summary before the scan" % (s["name"] or s["id"])
           for s in steps[:si] if "GITHUB_STEP_SUMMARY" in (s["j"] or "")]
     return f
@@ -1286,23 +1297,29 @@ BWRAP = ("      - id: bwrap\n"
          " AppArmor profile loaded, and the scrub needs them\"; exit 1; }\n"
          + BWRAP_CMP
          + S + 'echo "bubblewrap isolates: PID namespace $outside -> $inside"\n')
-SCAN_CMD = 'python3 -B "$T/rd/cred_scan.py"'
-PUB_FULL = S + "  " + SCAN_CMD + ' --staged "$T/staged.raw" "$T/shots" "$T/pc.md" "$T/pr-body.md"\n'
+RUN_SCAN = '/usr/bin/env -i PATH=/usr/bin:/bin /usr/bin/python3 -I -B'
+PUB_FN = S + 'scan() { ' + RUN_SCAN + ' "$T/rd/cred_scan.py" "$@"; }\n'
+PUB_REPORT = S + '  scan "$T/shots" "$T/pc.md"\n'
+PUB_FULL = S + '    scan --staged "$T/staged.raw" "$T/shots" "$T/pc.md" "$T/pr-body.md"\n'
+PUB_BODY = S + '    scan "$T/shots" "$T/pc.md" "$T/pr-body.md"\n'
+PUB_CHOICE = S + '  if [ "$STAGED" = success ]; then\n'
+PUB_INNER = PUB_CHOICE + PUB_FULL + S + "  else\n" + PUB_BODY + S + "  fi\n"
 PUB_SUMMARY = S + '  cat "$T/pr-body.md" >> "$GITHUB_STEP_SUMMARY"\n'
-PUB_REPORT = S + "  " + SCAN_CMD + ' "$T/shots" "$T/pc.md"\n'
 PUB_SCAN_HEAD = ("      - id: scan\n"
                  "        name: Refuse a credential-shaped string before anything is made public\n"
                  "        if: ${{ !cancelled() && steps.post.outcome == 'success' }}\n")
 PUB_SCAN_ENV = "          PUBLISH: ${{ steps.gate.outputs.publish }}\n"
-PUB_SCAN = (PUB_SCAN_HEAD + "        env:\n" + PUB_SCAN_ENV + "        run: |\n" + S + "set -euo pipefail\n"
-            + S + 'T="$RUNNER_TEMP"\n' + S + 'mkdir -p "$T/shots"\n' + S + 'if [ "$PUBLISH" = true ]; then\n'
-            + PUB_FULL + PUB_SUMMARY + S + "else\n" + PUB_REPORT + S + "fi\n")
+PUB_SCAN_STAGED = "          STAGED: ${{ steps.stage.outcome }}\n"
+PUB_SCAN = (PUB_SCAN_HEAD + "        env:\n" + PUB_SCAN_ENV + PUB_SCAN_STAGED + "        run: |\n" + S + "set -euo pipefail\n"
+            + S + 'T="$RUNNER_TEMP"\n' + PUB_FN + S + 'mkdir -p "$T/shots"\n' + S + 'if [ "$PUBLISH" != true ]; then\n'
+            + PUB_REPORT + S + "else\n" + PUB_INNER + PUB_SUMMARY + S + "fi\n")
 PUB_UPLOAD = "      - name: Upload the screenshots and the report\n        if: ${{ !cancelled() && steps.%s.outcome == 'success' }}\n"
 BODY_END = S + '  mv "$T/pr-body.cut" "$T/pr-body.md"\n' + S + "fi\n"
 SYNC_SCAN_HEAD = ("      - id: scan\n"
                   "        name: Refuse a credential-shaped string in the bundle\n"
                   "        if: ${{ !cancelled() && steps.seal.outcome == 'success' && steps.bundle.outcome == 'success' }}\n")
-SYNC_CMD = S + 'python3 -B "$RUNNER_TEMP/rd/cred_scan.py" --staged "$RUNNER_TEMP/bundle.raw" --skip "$B/sync.patch" "$B"\n'
+SYNC_CMD = (S + RUN_SCAN + ' "$RUNNER_TEMP/rd/cred_scan.py" \\\n'
+            + S + '  --staged "$RUNNER_TEMP/bundle.raw" --skip "$B/sync.patch" "$B"\n')
 SYNC_SCAN = (SYNC_SCAN_HEAD + "        run: |\n" + S + "set -euo pipefail\n" + S + 'B="$RUNNER_TEMP/bundle"\n' + SYNC_CMD)
 SYNC_UPLOAD = "      - name: Upload the bundle\n        if: ${{ !cancelled() && steps.%s.outcome == 'success' }}\n"
 SYNC_LISTING = (S + "git -c core.hooksPath=/dev/null -c core.fsmonitor=false \\\n"
@@ -1466,17 +1483,24 @@ MUTANTS = [
      "no scan, so no report upload, once any earlier step failed"),
     ("A40", [(WF, PUB_SCAN_ENV, PUB_SCAN_ENV.replace("outputs.publish", "outputs.draft"), 1)],
      "the report-only scan chosen while the push still goes ahead"),
+    ("A40", [(WF, PUB_SCAN_STAGED, PUB_SCAN_STAGED.replace("steps.stage.outcome", "steps.stage.outputs.tree"), 1)],
+     "the full scan never chosen while the push still goes ahead"),
+    ("A40", [(WF, PUB_CHOICE, S + "  if true; then\n", 1)], "no report upload after a failed stage step"),
     ("A40", [(WF, PUB_UPLOAD % "scan", PUB_UPLOAD % "post", 1)], "the report uploaded whatever the scan said"),
     ("A40", [(WF, "steps.stage.outcome == 'success' && steps.scan.outcome == 'success' && (steps.post",
               "steps.stage.outcome == 'success' && (steps.post", 1)], "push without the scan"),
     ("A40", [(WF, PUB_SUMMARY, "", 1), (WF, BODY_END, BODY_END + S + 'cat "$T/pr-body.md" >> "$GITHUB_STEP_SUMMARY"\n', 1)],
      "the PR body in the summary before the scan"),
-    ("A40", [(WF, PUB_FULL + PUB_SUMMARY, PUB_SUMMARY + PUB_FULL, 1)], "the summary written before the scan, in its own step"),
-    ("A40", [(WF, PUB_FULL, PUB_FULL.replace('"$T/rd/cred_scan.py"', ".claude/skills/release-docs/scripts/cred_scan.py"), 1)],
+    ("A40", [(WF, PUB_INNER + PUB_SUMMARY, PUB_SUMMARY + PUB_INNER, 1)], "the summary written before the scan, in its own step"),
+    ("A40", [(WF, PUB_FN, PUB_FN.replace('"$T/rd/cred_scan.py"', ".claude/skills/release-docs/scripts/cred_scan.py"), 1)],
      "publish's scan from the patched checkout"),
-    ("A40", [(WF, PUB_FULL, PUB_FULL.rstrip("\n") + " || true\n", 1)], "publish's refusal ignored"),
+    ("A40", [(WF, PUB_FN, PUB_FN.replace('"$@"; }', '"$@" || true; }'), 1)], "publish's refusal ignored"),
+    ("A40", [(WF, PUB_FN, PUB_FN.replace("/usr/bin/python3", "python3"), 1)], "publish's interpreter found through PATH"),
+    ("A40", [(WF, PUB_FN, PUB_FN.replace("/usr/bin/env -i PATH=/usr/bin:/bin ", ""), 1)], "publish's scan in the job's environment"),
+    ("A40", [(WF, PUB_FN, PUB_FN.replace(" -I -B", " -B"), 1)], "publish's scan not isolated from PYTHON* variables"),
     ("A40", [(WF, PUB_FULL, PUB_FULL.replace(' --staged "$T/staged.raw"', ""), 1)], "the staged blobs not scanned"),
     ("A40", [(WF, PUB_FULL, PUB_FULL.replace(' "$T/pr-body.md"', ""), 1)], "the PR body not scanned"),
+    ("A40", [(WF, PUB_BODY, PUB_BODY.replace(' "$T/pr-body.md"', ""), 1)], "the PR body not scanned after a failed stage step"),
     ("A40", [(WF, PUB_REPORT, PUB_REPORT.replace(' "$T/pc.md"', ""), 1)], "the report not scanned after a refused gate"),
     ("A40", [(WF, "            ${{ runner.temp }}/pr-body.md\n",
               "            ${{ runner.temp }}/pr-body.md\n            ${{ runner.temp }}/sync\n", 1)],
@@ -1490,6 +1514,9 @@ MUTANTS = [
     ("A45", [(WF, SYNC_CMD, SYNC_CMD.replace('"$RUNNER_TEMP/rd/cred_scan.py"', ".claude/skills/release-docs/scripts/cred_scan.py"), 1)],
      "sync's scan from the model's checkout"),
     ("A45", [(WF, SYNC_CMD, SYNC_CMD.rstrip("\n") + " || true\n", 1)], "sync's refusal ignored"),
+    ("A45", [(WF, SYNC_CMD, SYNC_CMD.replace("/usr/bin/python3", "python3"), 1)], "sync's interpreter found through the model's PATH"),
+    ("A45", [(WF, SYNC_CMD, SYNC_CMD.replace("/usr/bin/env -i PATH=/usr/bin:/bin ", ""), 1)], "sync's scan in the model's environment"),
+    ("A45", [(WF, SYNC_CMD, SYNC_CMD.replace(" -I -B", " -B"), 1)], "sync's scan not isolated from PYTHON* variables"),
     ("A45", [(WF, SYNC_CMD, SYNC_CMD.replace(' --staged "$RUNNER_TEMP/bundle.raw"', ""), 1)], "the patch's blobs not scanned"),
     ("A45", [(WF, SYNC_CMD, SYNC_CMD.replace('--skip "$B/sync.patch" "$B"', '--skip "$B" "$B"'), 1)], "the whole bundle skipped"),
     ("A45", [(WF, SYNC_CMD, SYNC_CMD.replace('--skip "$B/sync.patch" "$B"', '"$B/post-checks.md"'), 1)],
