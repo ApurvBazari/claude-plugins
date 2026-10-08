@@ -5,7 +5,7 @@
 #   docs-detect.sh [--root DIR] [--range BASE..HEAD] --out FILE      # report; exit 0
 #   docs-detect.sh [--root DIR] [--range BASE..HEAD] --gate          # exit 0 clean, 1 open obligations
 #   docs-detect.sh [--root DIR] --fix-mechanical                      # rewrite badges + landing cards
-#   docs-detect.sh [--root DIR] --candidates BASE..HEAD               # stale-mention candidates (JSON)
+#   docs-detect.sh [--root DIR] --candidates BASE..HEAD               # undecided stale-mention candidates (JSON)
 #   docs-detect.sh [--root DIR] --allowed-paths                       # write-fence allowlist
 #   docs-detect.sh [--root DIR] [--range BASE..HEAD] --pr-body --before FILE [--verifier FILE]
 #   docs-detect.sh [--root DIR] --snapshot FILE                       # pre-apply snapshot (JSON)
