@@ -18,6 +18,12 @@ import subprocess
 
 import surfaces
 
+# How many entries one run may add. Any phrase of a plugin source is provable, the PR body shows the
+# evidence for each addition, and that body is cut at a fixed size: without a bound, a flood of
+# provable entries would push the evidence out of the body. The write fence fails a run above it,
+# so the body never has to leave out an entry that was accepted. The whole history has two.
+MAX_ADDED = 20
+
 
 def whole(tok):
     """tok as a whole name. A name ends where the next char cannot continue it: `/lens:render`

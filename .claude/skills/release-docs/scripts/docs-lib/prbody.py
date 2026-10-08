@@ -174,12 +174,16 @@ def _config_changes(ctx, led, added):
         wl = was.get("live") if isinstance(was.get("live"), list) else []
         nl = now.get("live") if isinstance(now.get("live"), list) else []
         new_live = [t for t in nl if t not in wl]
-        srcs = _live_sources(ctx) if new_live else []
-        for t in new_live:
+        shown = new_live[:live.MAX_ADDED]  # the fence fails a run that adds more, so nothing left out was accepted
+        srcs = _live_sources(ctx) if shown else []
+        for t in shown:
             where = live.proof(srcs, t)
             out.append("- `live[]` added %s (still in %s)" % (_code(t, 200), _code("%s:%d" % where))
                        if where else
                        "- `live[]` added %s: not accepted, no plugin source mentions it" % _code(t, 200))
+        if len(new_live) > len(shown):
+            out.append("- `live[]`: %d more addition(s) not shown; the write fence fails a run that "
+                       "adds more than %d" % (len(new_live) - len(shown), live.MAX_ADDED))
         out += ["- `live[]` dropped %s" % _code(t, 200) for t in wl if t not in nl]
         wo = was.get("og") if isinstance(was.get("og"), dict) else {}
         no = now.get("og") if isinstance(now.get("og"), dict) else {}

@@ -215,6 +215,25 @@ post b-live-notlist live-notlist.md
 expect "T6-LIVE-NOTLIST exit 1" 1 "$RC"
 has "T6-LIVE-NOTLIST reported" live-notlist.md 'live[] is no longer a list'
 
+# T6-LIVE-FLOOD: one run may add at most 20 entries. The PR body is cut at 60000 bytes and shows the
+# evidence for each addition, and any phrase of a plugin source is provable: a flood of them would
+# push that evidence, and the sections after it, out of the body. So the bound is the fence's, never
+# only the display's.
+fx_repo live-flood
+python3 - <<'PY'
+with open("alpha/skills/run/SKILL.md", "a") as f:
+    f.write("\nReads " + " ".join("key%02d-x" % i for i in range(1, 22)) + ".\n")
+PY
+git commit -qam '21 live keys'
+snap b-live-flood
+livecfg "d['live']=['key%02d-x' % i for i in range(1, 21)]"
+post b-live-flood live-20.md
+expect "T6-LIVE-FLOOD 20 proven additions -> exit 0" 0 "$RC"
+livecfg "d['live']=['key%02d-x' % i for i in range(1, 22)]"
+post b-live-flood live-21.md
+expect "T6-LIVE-FLOOD 21 additions, all proven -> exit 1" 1 "$RC"
+has "T6-LIVE-FLOOD says the bound" live-21.md 'added 21 entries to .github/docs-surfaces.json live[]; a run may add at most 20'
+
 # T6-SURF-BROKEN: a malformed working-tree docs-surfaces.json still gets fenced around, and reported.
 fx_repo broken
 snap b-broken
@@ -1039,5 +1058,19 @@ printf '%s\n' '' 'Set `madeUpKey`.' >> alpha/README.md
 python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['live']=['madeUpKey']; d['surfaces'].remove('{plugin}/README.md'); json.dump(d, open(p,'w'))"
 prbody "$SCRATCH/before-live.json"
 body_has "T7-PRBODY-LIVE-OWNCONFIG a doc the run wrote is not proof" '`live[]` added `madeUpKey`: not accepted, no plugin source mentions it'
+
+# T7-PRBODY-LIVE-FLOOD: the body shows the evidence for at most 20 additions and counts the rest.
+# The write fence has already failed a run that adds more.
+fx_repo prbody-live-flood
+python3 - <<'PY'
+with open("alpha/skills/run/SKILL.md", "a") as f:
+    f.write("\nReads " + " ".join("key%02d-x" % i for i in range(1, 22)) + ".\n")
+PY
+git commit -qam '21 live keys'
+detect; cp "$OUT" "$SCRATCH/before-flood.json"
+python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['live']=['key%02d-x' % i for i in range(1, 22)]; json.dump(d, open(p,'w'))"
+prbody "$SCRATCH/before-flood.json"
+expect "T7-PRBODY-LIVE-FLOOD 20 additions are shown with their evidence" 20 "$(printf '%s\n' "$BODY" | grep -c '`live\[\]` added `key')"
+body_has "T7-PRBODY-LIVE-FLOOD the rest is counted, not listed" '`live[]`: 1 more addition(s) not shown'
 
 exit "$failures"

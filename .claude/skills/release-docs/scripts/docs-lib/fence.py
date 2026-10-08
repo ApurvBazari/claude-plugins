@@ -416,7 +416,8 @@ def surfaces_drift(ctx, ref):
 
 
 def live_drift(ctx, ref):
-    """Report lines when the run left live[] not a list, or added a token that no plugin source has.
+    """Report lines when the run left live[] not a list, added more entries than live.MAX_ADDED, or
+    added a token that no plugin source has.
     Dropping an entry is allowed: it only reopens flags. What a plugin source is comes from the
     config and marketplace committed at ref, never from the working tree, and this check runs after
     the reverts, so nothing the run wrote can prove its own entry. The detector ignores an unproven
@@ -437,6 +438,10 @@ def live_drift(ctx, ref):
     added = [t for t in new if t not in old]
     if not added:
         return []
+    if len(added) > live.MAX_ADDED:
+        return ["- FAIL: the run added %d entries to %s live[]; a run may add at most %d, so that "
+                "the PR body can show the evidence for each"
+                % (len(added), surfaces.SURFACES, live.MAX_ADDED)]
     srcs = live.sources(ctx, surfaces.load_at(ctx, ref), ctx.plugins_at(ref))
     bad = [t for t in added if live.proof(srcs, t) is None]
     if not bad:
