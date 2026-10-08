@@ -19,11 +19,14 @@ name: Release Docs Sync
 #               prepare: the snapshot, then a sealed read-only copy of the scripts, all in $RUNNER_TEMP
 #               → /release-docs mode=ci (Opus, unattended)
 #               → verify the seal and git's state → post-checks from the copy
-#               → post-checks exit 0 or 1 and a fenced report: upload the bundle (a binary patch
-#                 against the start commit, the report, the screenshots, the verifier output);
+#               → post-checks exit 0 or 1 and a fenced report: bundle a binary patch against the
+#                 start commit, the report, the screenshots, the verifier output;
 #                 anything else: the job fails, and nothing is published
+#               → the credential scan over the bundle, then its upload
 #     publish   a fresh runner, no model ("trusted publish"): check out the detected commit,
 #               snapshot and copy the scripts, apply the patch, run the full post-checks itself
+#               → the credential scan over the staged tree, the report and the PR body, ahead of
+#                 the summary, the upload and the push
 #               → rc 0: docs PR to develop; rc 1: a draft labelled needs-owner;
 #                 anything else: nothing is committed or pushed, and the job fails.
 #               DOCS_BOT_TOKEN exists only in its push step, never in a job the model ran in.
@@ -500,7 +503,8 @@ jobs:
 
       # The one hand-off to publish: the fenced tree as a binary patch against the start commit (new
       # files included, through a throwaway index), with the report, the screenshots and the model's
-      # verifier output for the reviewer. Without a passing gate it carries no patch.
+      # verifier output for the reviewer. Without a passing gate it carries no patch. The same index
+      # gives the scan step its listing of the patch's blobs.
       - id: bundle
         name: Bundle the patch and the report
         if: ${{ !cancelled() && steps.claude.outcome != 'skipped' }}
@@ -512,8 +516,10 @@ jobs:
         run: |
           set -euo pipefail
           B="$RUNNER_TEMP/bundle"
-          rm -rf "$B"
+          rm -rf "$B" "$RUNNER_TEMP/bundle.raw"
           mkdir "$B"
+          # Empty until the patch is built: a bundle without a patch has no blobs to scan.
+          : > "$RUNNER_TEMP/bundle.raw"
           if [ -f "$RUNNER_TEMP/post-checks.md" ]; then cp "$RUNNER_TEMP/post-checks.md" "$B/"; fi
           if [ -d "$RUNNER_TEMP/shots" ]; then cp -R "$RUNNER_TEMP/shots" "$B/shots"; fi
           # The model's verifier output: untrusted data, taken only as a regular file reached through
@@ -530,6 +536,8 @@ jobs:
           git -c core.hooksPath=/dev/null -c core.fsmonitor=false add -A
           git -c core.hooksPath=/dev/null -c core.fsmonitor=false \
             diff --cached --binary --no-renames --no-ext-diff --no-textconv "$START" > "$B/sync.patch"
+          git -c core.hooksPath=/dev/null -c core.fsmonitor=false \
+            diff --cached --raw -z --no-renames --no-abbrev --ignore-submodules=none "$START" > "$RUNNER_TEMP/bundle.raw"
           python3 - "$B/meta.json" "$START" "$POST_RC" "$CLAUDE_CONCLUSION" <<'PY'
           import json, sys
           path, start, rc, claude = sys.argv[1:]
@@ -540,8 +548,30 @@ jobs:
           echo "changed=$changed" >> "$GITHUB_OUTPUT"
           echo "Bundled: patch $(wc -c < "$B/sync.patch") bytes (changed=$changed), post-checks exit $POST_RC."
 
+      # The bundle is public once uploaded, dry runs included, and it carries what the model wrote:
+      # the patch, the verifier output, the report, the screenshots. The scan reads it first, from
+      # the sealed copy: the patch's blobs against START's (so a mention a doc already had never
+      # trips it), and every other member whole. The patch file itself is left out: it repeats lines
+      # START already had. The command is fixed: a missing input is the scan's exit 2, never an
+      # argument left out. Without a verified seal the copy is not trusted, so the scan does not
+      # run and nothing is uploaded.
+      # This is the model's job, where a later step's PATH and variables are the model's to poison
+      # (see the job's header). So the interpreter is named in full and isolated (-I), and it starts
+      # in an empty environment with a fixed PATH for the git it calls. That narrows what the scan
+      # takes from this job; it does not make the job a trusted place, and nothing checks the
+      # bundle again before it is public. The scan stops a token written out as it is. It is not a
+      # defence against a run that sets out to get one past it.
+      - id: scan
+        name: Refuse a credential-shaped string in the bundle
+        if: ${{ !cancelled() && steps.seal.outcome == 'success' && steps.bundle.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          B="$RUNNER_TEMP/bundle"
+          /usr/bin/env -i PATH=/usr/bin:/bin /usr/bin/python3 -I -B "$RUNNER_TEMP/rd/cred_scan.py" \
+            --staged "$RUNNER_TEMP/bundle.raw" --skip "$B/sync.patch" "$B"
+
       - name: Upload the bundle
-        if: ${{ !cancelled() && steps.bundle.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.scan.outcome == 'success' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ steps.prepare.outputs.artifact }}
@@ -729,18 +759,6 @@ jobs:
             printf '\n\n… cut at 60000 bytes; the full report is in the artifact.\n' >> "$T/pr-body.cut"
             mv "$T/pr-body.cut" "$T/pr-body.md"
           fi
-          cat "$T/pr-body.md" >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload the screenshots and the report
-        if: ${{ !cancelled() && steps.post.outcome == 'success' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: ${{ steps.prepare.outputs.artifact }}
-          path: |
-            ${{ runner.temp }}/shots
-            ${{ runner.temp }}/pc.md
-            ${{ runner.temp }}/pr-body.md
-          if-no-files-found: ignore
 
       # The last word on what is committed, and independent of the fence's internals: every staged
       # entry must be a plain file (mode 100644, or 000000 for a deletion) at a path the trusted
@@ -779,42 +797,59 @@ jobs:
           print("%d staged entries checked, %d refused" % (n, len(bad)))
           sys.exit(1 if bad else 0)
           PY
-          # No credential-shaped string may be added by the run (I6): the model's job could read what
-          # it was never meant to, and a token in a doc or the PR body is public once pushed. Each
-          # staged blob is compared with HEAD's, so a pre-existing mention never trips it, binary
-          # files included. The string itself is never printed.
-          python3 - "$T/staged.raw" "$T/pr-body.md" <<'PY'
-          import collections, json, re, subprocess, sys
-          CRED = re.compile(rb"(sk-ant-)[A-Za-z0-9_-]*|(gh[pousr]_)[A-Za-z0-9]*|(github_pat_)[A-Za-z0-9_]*")
-          def creds(data):
-              return collections.Counter((next(g for g in m.groups() if g), m.group(0)) for m in CRED.finditer(data))
-          def blob(sha):
-              if not sha.strip("0"):
-                  return b""
-              p = subprocess.run(["git", "cat-file", "blob", sha], stdout=subprocess.PIPE)
-              if p.returncode != 0:
-                  sys.exit("::error::could not read the staged blob %s" % sha)
-              return p.stdout
-          raw = open(sys.argv[1], "rb").read().split(b"\0")
-          found, i = [], 0
-          while i + 1 < len(raw):
-              meta, path = raw[i].decode("ascii", "replace").split(), raw[i + 1].decode("utf-8", "replace")
-              i += 2
-              added = creds(blob(meta[3])) - creds(blob(meta[2]))
-              found += ["%s in %s" % (k.decode(), json.dumps(path)) for k in sorted({k for k, _t in added})]
-          with open(sys.argv[2], "rb") as f:
-              found += ["%s in the PR body" % k.decode() for k in sorted({k for k, _t in creds(f.read())})]
-          for x in found:
-              print("::error::refused, a credential-shaped string (%s...)" % x)
-          sys.exit(1 if found else 0)
-          PY
           echo "tree=$(git write-tree)" >> "$GITHUB_OUTPUT"
+
+      # Nothing this run produced is public yet, and the scan reads all of it first, from the
+      # pre-apply copy (I6): the model's job could read what it was never meant to, and a token in a
+      # doc, the report or the PR body is public once published. The staged blobs are compared with
+      # HEAD's, so a mention a doc already had never trips it; the report, the PR body and the
+      # screenshots are read whole. Only after it does the PR body reach the job summary, and the
+      # upload and the push each need this step's success. Every command is fixed: a missing input
+      # is the scan's exit 2, never an argument left out. There are three states:
+      # - the gate did not say publish: no staged set, no PR body, no push. The report is scanned;
+      # - it did, and the staged-set check passed: everything is scanned. Only this state can push;
+      # - it did, and the stage step failed: no push. The report and the PR body are scanned, so
+      #   the run still leaves its diagnostics.
+      # The interpreter is named in full, isolated (-I) and started in an empty environment with a
+      # fixed PATH, as in sync, where it matters more.
+      - id: scan
+        name: Refuse a credential-shaped string before anything is made public
+        if: ${{ !cancelled() && steps.post.outcome == 'success' }}
+        env:
+          PUBLISH: ${{ steps.gate.outputs.publish }}
+          STAGED: ${{ steps.stage.outcome }}
+        run: |
+          set -euo pipefail
+          T="$RUNNER_TEMP"
+          scan() { /usr/bin/env -i PATH=/usr/bin:/bin /usr/bin/python3 -I -B "$T/rd/cred_scan.py" "$@"; }
+          mkdir -p "$T/shots"
+          if [ "$PUBLISH" != true ]; then
+            scan "$T/shots" "$T/pc.md"
+          else
+            if [ "$STAGED" = success ]; then
+              scan --staged "$T/staged.raw" "$T/shots" "$T/pc.md" "$T/pr-body.md"
+            else
+              scan "$T/shots" "$T/pc.md" "$T/pr-body.md"
+            fi
+            cat "$T/pr-body.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload the screenshots and the report
+        if: ${{ !cancelled() && steps.scan.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ steps.prepare.outputs.artifact }}
+          path: |
+            ${{ runner.temp }}/shots
+            ${{ runner.temp }}/pc.md
+            ${{ runner.temp }}/pr-body.md
+          if-no-files-found: ignore
 
       # The only step that holds DOCS_BOT_TOKEN (a GITHUB_TOKEN PR would not trigger CI): the commit,
       # the push, the PR and its label. Every git write runs with hooks and fsmonitor off.
       - id: push
         name: Push the docs branch and open the PR
-        if: ${{ !cancelled() && steps.gate.outputs.publish == 'true' && steps.stage.outcome == 'success' && (steps.post.outputs.rc == '0' || steps.post.outputs.rc == '1') }}
+        if: ${{ !cancelled() && steps.gate.outputs.publish == 'true' && steps.stage.outcome == 'success' && steps.scan.outcome == 'success' && (steps.post.outputs.rc == '0' || steps.post.outputs.rc == '1') }}
         env:
           GH_TOKEN: ${{ secrets.DOCS_BOT_TOKEN }}
           POST_RC: ${{ steps.post.outputs.rc }}
