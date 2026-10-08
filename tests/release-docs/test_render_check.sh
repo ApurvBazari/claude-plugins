@@ -207,6 +207,125 @@ run --baseline "$SCRATCH/bl/base" nobase.html
 expect "T5-BASELINE no HEAD copy: strict" 1 "$RC"
 run same.html
 expect "T5-BASELINE non-vacuous: without --baseline the same page fails" 1 "$RC"
+
+# T5-FONTS (SDD ruling R30 d): a page's width depends on whether its web fonts arrived (the handoff
+# page is 547px wide at 500px with them and 536px without), and the page and HEAD's copy are two
+# separate renders. So the comparison holds only when both got their fonts the same way: the probe
+# reports what did not load, and when the two reports differ the pair is rendered once more. If
+# they still differ the page fails as not comparable, never as "grew", and a narrower page is never
+# passed on the strength of a render that lacked its fonts.
+# A Chrome stand-in prints one probe line per call, chosen by what is rendered (the page p1 or
+# HEAD's copy b1), at which width, and on which attempt (-f2 is the second render of the pair).
+cat > "$SCRATCH/fake-fonts.sh" <<'EOF'
+#!/usr/bin/env bash
+args="$*"
+echo "$args" >> "${FAKE_CHROME_LOG:?}"
+probe() {
+  echo "RCPROBE:{\"errors\":[],\"hidden\":[],\"empty\":[],\"badNav\":[],\"badKeys\":[],\"openErrors\":[],\"width\":$1,\"scrollWidth\":$2,\"fonts\":\"$3\"}:ENDPROBE"
+}
+case "$args" in
+  *"--window-size=1400,"*) probe 1400 1400 "" ;;
+  *)
+    case "$args" in *"/b1.html"*) who=B ;; *) who=P ;; esac
+    case "$args" in *"-f2"*) try=2 ;; *) try=1 ;; esac
+    v="FAKE_${who}${try}"
+    v="${!v:?}"
+    probe 500 "${v%%|*}" "${v#*|}"
+    ;;
+esac
+exec sleep 9999
+EOF
+chmod +x "$SCRATCH/fake-fonts.sh"
+NOCSS="1 stylesheet(s) not loaded"
+fonts_run() { # <page, 1st render> <HEAD's copy, 1st> <page, 2nd> <HEAD's copy, 2nd>, each "scrollWidth|fonts"
+  : > "$SCRATCH/fake-fonts.log"
+  CHROME="$SCRATCH/fake-fonts.sh" FAKE_CHROME_LOG="$SCRATCH/fake-fonts.log" RENDER_TIMEOUT=2 \
+    FAKE_P1="$1" FAKE_B1="$2" FAKE_P2="$3" FAKE_B2="$4" run --baseline "$SCRATCH/bl/base" same.html
+  CALLS="$(wc -l < "$SCRATCH/fake-fonts.log" | tr -d ' ')"
+}
+fonts_run "547|" "547|" "0|unused" "0|unused"
+expect "T5-FONTS same fonts, same width: passes" 0 "$RC"
+expect "T5-FONTS same fonts: the pair is rendered once (3 calls)" 3 "$CALLS"
+fonts_run "547|" "536|$NOCSS" "547|" "547|"
+expect "T5-FONTS lopsided once, then alike: passes" 0 "$RC"
+case "$OUTTXT" in *"ok   same.html"*"pre-existing overflow (unchanged: 547px)"*) echo "ok: T5-FONTS judged on the second pair" ;; *) fail "T5-FONTS second pair: $OUTTXT" ;; esac
+expect "T5-FONTS lopsided once: the pair is rendered exactly once more (5 calls)" 5 "$CALLS"
+fonts_run "547|" "536|$NOCSS" "547|" "536|$NOCSS"
+expect "T5-FONTS lopsided twice: fails" 1 "$RC"
+case "$OUTTXT" in
+  *grew*) fail "T5-FONTS lopsided twice is called growth: $OUTTXT" ;;
+  *"FAIL same.html"*"not comparable"*"HEAD's copy: $NOCSS"*) echo "ok: T5-FONTS not comparable, with the reason, never 'grew'" ;;
+  *) fail "T5-FONTS lopsided twice: $OUTTXT" ;;
+esac
+expect "T5-FONTS lopsided twice: no third render (5 calls)" 5 "$CALLS"
+fonts_run "536|$NOCSS" "536|$NOCSS" "0|unused" "0|unused"
+expect "T5-FONTS neither render got its fonts: comparable, passes" 0 "$RC"
+expect "T5-FONTS neither got its fonts: the pair is rendered once (3 calls)" 3 "$CALLS"
+fonts_run "536|$NOCSS" "547|" "560|" "547|"
+expect "T5-FONTS a narrower page without its fonts is not passed: the second pair shows the growth" 1 "$RC"
+case "$OUTTXT" in *"FAIL same.html"*"grew (scrollWidth 560, HEAD's copy 547)"*) echo "ok: T5-FONTS the growth is reported from the second pair" ;; *) fail "T5-FONTS hidden growth: $OUTTXT" ;; esac
+fonts_run "547|" "536|$NOCSS" "490|" "490|"
+expect "T5-FONTS the second pair no longer overflows: passes" 0 "$RC"
+case "$OUTTXT" in *"pre-existing"*) fail "T5-FONTS a note about an overflow that is not there: $OUTTXT" ;; *"ok   same.html"*) echo "ok: T5-FONTS no overflow, no note" ;; *) fail "T5-FONTS no overflow: $OUTTXT" ;; esac
+
+# T5-FONTS-REAL, in real Chrome: the probe waits for the fonts and reports the state they ended in.
+# One page, three things HEAD's copy does not share, each of which must show in the reason:
+# - a font that takes 3 seconds to fail, longer than the probe's fixed 2-second settle: the report
+#   says it failed, so the probe waited for it; one that measured at 2 seconds would say pending;
+# - a linked stylesheet that cannot be reached (nothing listens on port 9);
+# - the site pages' own way, an @import in a <style> block, reachable in the page and not in HEAD's
+#   copy. A failed import raises no error anywhere and leaves no font to fail: what tells the two
+#   renders apart is how many font faces their CSS declared (here two against none).
+python3 - "$SCRATCH/slow.port" <<'PY' &
+import http.server, os, sys, time
+class Slow(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path.endswith(".css"):  # a font stylesheet, served at once: one face, used by nothing
+            body = b"@font-face{font-family:Web;src:url(/unused.woff2)}"
+            self.send_response(200)
+            self.send_header("Content-Type", "text/css")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+        time.sleep(3)
+        self.send_error(404)
+    def log_message(self, *a):
+        pass
+s = http.server.HTTPServer(("127.0.0.1", 0), Slow)
+open(sys.argv[1] + ".tmp", "w").write(str(s.server_address[1]))
+os.rename(sys.argv[1] + ".tmp", sys.argv[1])
+s.serve_forever()
+PY
+slow_pid=$!
+i=0
+while [ $i -lt 50 ] && [ ! -s "$SCRATCH/slow.port" ]; do sleep 0.1; i=$((i + 1)); done
+port="$(cat "$SCRATCH/slow.port" 2>/dev/null)"
+sed "s#<style>#<link rel=\"stylesheet\" href=\"http://127.0.0.1:9/x.css\"><style>@import url('http://127.0.0.1:${port:-1}/fonts.css');@font-face{font-family:SlowFace;src:url(http://127.0.0.1:${port:-1}/f.woff2)}body{font-family:SlowFace,sans-serif}#" \
+  "$SCRATCH/bl/base/same.html" > "$SCRATCH/bl/tree/webfonts.html"
+sed "s#<style>#<style>@import url('http://127.0.0.1:9/fonts.css');#" \
+  "$SCRATCH/bl/base/same.html" > "$SCRATCH/bl/base/webfonts.html"
+run --baseline "$SCRATCH/bl/base" webfonts.html
+expect "T5-FONTS-REAL fonts that ended differently in the page and in HEAD's copy: fails" 1 "$RC"
+case "$OUTTXT" in
+  *grew*) fail "T5-FONTS-REAL a font difference is called growth: $OUTTXT" ;;
+  *"not comparable"*) echo "ok: T5-FONTS-REAL not comparable, never 'grew'" ;;
+  *) fail "T5-FONTS-REAL not comparable: $OUTTXT" ;;
+esac
+case "$OUTTXT" in
+  *"page: 2 font face(s) declared; "*"; HEAD's copy: no font faces declared)"*) echo "ok: T5-FONTS-REAL a failed @import shows as no font faces declared" ;;
+  *) fail "T5-FONTS-REAL @import: $OUTTXT" ;;
+esac
+case "$OUTTXT" in
+  *"page: "*"; 1 stylesheet(s) not loaded; "*"; HEAD's copy: "*) echo "ok: T5-FONTS-REAL the unreachable stylesheet is reported" ;;
+  *) fail "T5-FONTS-REAL stylesheet: $OUTTXT" ;;
+esac
+case "$OUTTXT" in
+  *"page: "*"; failed: SlowFace "*"; HEAD's copy: "*) echo "ok: T5-FONTS-REAL the probe waited for the slow font, and names it as failed" ;;
+  *) fail "T5-FONTS-REAL slow font: $OUTTXT" ;;
+esac
+kill "$slow_pid" 2>/dev/null
+wait "$slow_pid" 2>/dev/null
 cd "$ROOT" || exit 1
 
 # T5-POST-BASELINE: post-checks renders against HEAD's site/ itself, so the real flow gets the rule.

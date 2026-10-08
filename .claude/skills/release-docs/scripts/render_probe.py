@@ -7,6 +7,18 @@
                                  HEAD is the scrollWidth of HEAD's copy at WIDTH: an overflow fails
                                  only when HEAD's copy had none or it grew past HEAD's
   width                          reads probe JSON on stdin; prints its scrollWidth (nothing if none)
+  fonts                          reads probe JSON on stdin; prints the state the render's fonts
+                                 ended in
+
+The probe measures once the page's fonts have settled (document.fonts.ready, at most 10 seconds
+after its 2-second settle), because a page's width depends on them: with its web fonts the handoff
+page is 547px wide at 500px, without them 536px. It reports the state they ended in, so
+render-check.sh compares a page with HEAD's copy only when both renders got their fonts the same
+way. That state is how many font faces the page's CSS declared, then whatever went wrong: linked
+stylesheets that did not load, faces that failed, faces still loading at the 10 seconds. The count
+is what shows a font stylesheet that never arrived when it is an @import in a <style> block, as
+on the site's pages: that raises no error and leaves no face to fail, only none declared. It is the
+faces declared, not the ones loaded, so it does not move with the text an edit touched.
 
 Deviation from the original design (release-docs spec task 5): the probe was specified to append
 its JSON to the DOM and read it back from a `--dump-dom` capture taken after a fixed
@@ -24,10 +36,25 @@ import json
 import re
 import sys
 
-EARLY = ("<script>window.__errs=[];addEventListener('error',function(e){"
-         "__errs.push(String(e.message||e))});</script>")
+# A stylesheet that fails to load fires an error event at its <link>, which does not bubble: the
+# capturing listener counts those. Chrome leaves link.sheet set either way, so it cannot be asked.
+EARLY = ("<script>window.__errs=[];window.__css=0;addEventListener('error',function(e){"
+         "__errs.push(String(e.message||e))});addEventListener('error',function(e){"
+         "var t=e.target;if(t&&t.tagName==='LINK')window.__css++;},true);</script>")
 LATE = """<script>setTimeout(function(){
+var done=false;
+function fonts(){var out=[],css=window.__css||0,failed=[],pending=[],n=document.fonts?document.fonts.size:0;
+ out.push(n?n+' font face(s) declared':'no font faces declared');
+ if(css)out.push(css+' stylesheet(s) not loaded');
+ if(document.fonts)document.fonts.forEach(function(f){
+  var face=String(f.family).replace(/["']/g,'')+' '+f.weight+' '+f.style;
+  if(f.status==='error')failed.push(face);else if(f.status==='loading')pending.push(face);});
+ if(failed.length)out.push('failed: '+failed.sort().join(', '));
+ if(pending.length)out.push('pending: '+pending.sort().join(', '));
+ return out.join('; ');}
+function report(){if(done)return;done=true;
 var r={errors:window.__errs.slice(),hidden:[],empty:[],badNav:[],badKeys:[],openErrors:[]};
+r.fonts=fonts();
 document.querySelectorAll('section[id]').forEach(function(s){var c=getComputedStyle(s);
  if(parseFloat(c.opacity)<0.5||c.display==='none'||c.visibility==='hidden')r.hidden.push(s.id);
  if(!s.textContent.trim())r.empty.push(s.id);});
@@ -44,7 +71,9 @@ if(det&&typeof openD==='function'){Object.keys(det).forEach(function(k){if(teste
  try{openD(k);if(typeof closeD==='function')closeD();}
  catch(e){r.openErrors.push(k+': '+e.message);}});}
 r.width=window.innerWidth;r.scrollWidth=document.documentElement.scrollWidth;
-console.log('RCPROBE:'+JSON.stringify(r)+':ENDPROBE');},2000);</script>"""
+console.log('RCPROBE:'+JSON.stringify(r)+':ENDPROBE');}
+if(document.fonts&&document.fonts.ready){document.fonts.ready.then(report,report);setTimeout(report,10000);}
+else report();},2000);</script>"""
 LIGHT = "<script>document.documentElement.setAttribute('data-theme','light');</script>"
 
 
@@ -106,9 +135,14 @@ def width():
         print(sw)
 
 
+def fonts():
+    r = json.loads(sys.stdin.read() or "{}")
+    print(r.get("fonts") or "")
+
+
 if __name__ == "__main__":
     a = sys.argv[1:]
     {"scripts": lambda: scripts(a[1], a[2]), "inject": lambda: inject(a[1], a[2], a[3]),
      "read": lambda: read(a[1]),
      "judge": lambda: judge(int(a[1]), int(a[2]) if len(a) > 2 else None),
-     "width": width}[a[0]]()
+     "width": width, "fonts": fonts}[a[0]]()
