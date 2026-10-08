@@ -182,16 +182,34 @@ def range_candidates(ctx):
     return sorted(c for c in cands if not alive(c))
 
 
+def _proven_live(ctx, surf, cands):
+    """{token: (path, line)} for the live[] entries among cands that a plugin source still has.
+    Plugin sources are read only when live[] names a candidate."""
+    declared = [t for t in surf["live"] if t in cands]
+    if not declared:
+        return {}
+    srcs = live.sources(ctx, surf, ctx.plugins())
+    found = ((t, live.proof(srcs, t)) for t in declared)
+    return {t: where for t, where in found if where}
+
+
 def undecided(ctx, surf):
     """The range candidates that no proven live[] entry covers: what --candidates lists and what
     check() flags. An entry that no plugin source has is ignored, so it stops working by itself on
-    the day the code drops the name. Plugin sources are read only when live[] names a candidate."""
+    the day the code drops the name."""
     cands = range_candidates(ctx)
-    declared = [t for t in surf["live"] if t in cands]
-    if not declared:
-        return cands
-    ok = live.proven(live.sources(ctx, surf, ctx.plugins()), declared)
+    ok = _proven_live(ctx, surf, cands)
     return [c for c in cands if c not in ok]
+
+
+def dismissed(ctx, surf):
+    """{candidate: (path, line)} for the range candidates a live[] entry dismisses in this range,
+    each with the plugin source line that proves it. retired[] wins, so a name in both lists is not
+    one. An entry keeps dismissing for as long as the code names the token, also when a later
+    release retires the name and leaves a fallback behind, so the PR body lists these in every
+    range: a dismissal is never silent."""
+    ok = _proven_live(ctx, surf, range_candidates(ctx))
+    return {t: ok[t] for t in sorted(ok) if t not in surf["retired"]}
 
 
 def _plugin_of(ctx, rel):

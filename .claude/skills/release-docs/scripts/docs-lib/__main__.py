@@ -71,7 +71,11 @@ def run(opts):
         import prbody
         if "--before" not in opts:
             raise repo.RepoError("--pr-body needs --before FILE")
-        print(prbody.render(ctx, opts["--before"], opts.get("--verifier")))
+        body = prbody.render(ctx, opts["--before"], opts.get("--verifier"))
+        # A run-written lone surrogate ("\ud800" in a retired[] token) cannot be encoded, and the
+        # crash left CI an empty body in a PR it still opened. Escape it and keep the body.
+        sys.stdout.reconfigure(errors="backslashreplace")
+        print(body)
         return 0
     if "--snapshot" in opts:
         import fence

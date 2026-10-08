@@ -1073,4 +1073,60 @@ prbody "$SCRATCH/before-flood.json"
 expect "T7-PRBODY-LIVE-FLOOD 20 additions are shown with their evidence" 20 "$(printf '%s\n' "$BODY" | grep -c '`live\[\]` added `key')"
 body_has "T7-PRBODY-LIVE-FLOOD the rest is counted, not listed" '`live[]`: 1 more addition(s) not shown'
 
+# T7-PRBODY-LIVE-FIRST: CI cuts the PR body at 60000 bytes from the tail, and a run can lengthen the
+# config section at will: retired[] only grows, and a junk token that no doc names opens nothing. So
+# the live[] lines come first, ahead of every list a run can lengthen. 400 retired additions make a
+# body the cut would bite, and do not move the evidence line.
+fx_repo prbody-live-first
+printf '%s\n' '' 'Reads `defaultMode` from the config.' >> alpha/skills/run/SKILL.md
+git commit -qam 'a live key'
+detect; cp "$OUT" "$SCRATCH/before-first.json"
+python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['live']=['defaultMode']; d['retired']=['junk-%03d-' % i + 'x' * 150 for i in range(400)]; json.dump(d, open(p,'w'))"
+prbody "$SCRATCH/before-first.json"
+printf '%s\n' "$BODY" > "$SCRATCH/body-first.md"
+python3 - "$SCRATCH/body-first.md" <<'PY' && echo "ok: T7-PRBODY-LIVE-FIRST the evidence line is in the first 4000 bytes of a body over 60000" || fail "T7-PRBODY-LIVE-FIRST: $(wc -c < "$SCRATCH/body-first.md") bytes, evidence at byte $(grep -ob 'live\[\]` added `defaultMode' "$SCRATCH/body-first.md" | head -n 1 | cut -d: -f1)"
+import sys
+body = open(sys.argv[1], encoding="utf-8").read().encode("utf-8")
+at = body.find("`live[]` added `defaultMode` (still in `alpha/skills/run/SKILL.md:8`)".encode("utf-8"))
+sys.exit(0 if len(body) > 60000 and 0 <= at < 4000 else 1)
+PY
+body_has "T7-PRBODY-LIVE-FIRST the retired additions are still listed" 'junk-399-'
+
+# T7-PRBODY-LIVE-DISMISSED: every range candidate a proven live[] entry dismisses is listed with its
+# evidence, in every range where the entry has an effect, not only in the one that adds it: an entry
+# accepted once would otherwise dismiss a later, real retirement of that name with nothing shown. A
+# mention it closed is marked as closed by the entry, never shown as a doc fix. And an addition that
+# dismisses nothing in the range says so: nothing needed it.
+fx_repo prbody-live-dismissed
+printf '%s\n' '' 'Reads `defaultMode` from the config.' >> alpha/skills/run/SKILL.md
+printf '%s\n' '' 'Set `defaultMode` in the config.' >> alpha/README.md
+git add -A && git commit -qm key && git branch -f main HEAD
+bump 1.1.0 '- Removed the `fast` alias from `defaultMode`.'
+detect; cp "$OUT" "$SCRATCH/before-dismissed.json"
+python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['live']=['defaultMode','Checker']; json.dump(d, open(p,'w'))"
+prbody "$SCRATCH/before-dismissed.json"
+body_has "T7-PRBODY-LIVE-DISMISSED the dismissal is listed with its evidence" '`live[]` dismisses `defaultMode` in this range (still in `alpha/skills/run/SKILL.md:8`)'
+body_has "T7-PRBODY-LIVE-DISMISSED the mention it closed is not shown as a doc fix" 'closed by a `live[]` entry, not by a doc edit'
+body_has "T7-PRBODY-LIVE-DISMISSED an addition nothing needed says so" '`live[]` added `Checker` (still in `alpha/agents/checker.md:1`); it dismisses nothing in this range'
+body_lacks "T7-PRBODY-LIVE-DISMISSED a needed addition is not called unneeded" 'SKILL.md:8`); it dismisses nothing'
+# A later range: the entry is HEAD's now and nothing is added, yet the dismissal is still listed.
+git commit -qam 'the entry is merged'
+detect; cp "$OUT" "$SCRATCH/before-later.json"
+prbody "$SCRATCH/before-later.json"
+body_has "T7-PRBODY-LIVE-DISMISSED a later range still lists the dismissal" '`live[]` dismisses `defaultMode` in this range (still in `alpha/skills/run/SKILL.md:8`)'
+body_lacks "T7-PRBODY-LIVE-DISMISSED nothing is added in the later range" '`live[]` added'
+# retired[] wins, so a name in both lists is dismissed by nothing.
+python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['retired']=['defaultMode']; json.dump(d, open(p,'w'))"
+prbody "$SCRATCH/before-later.json"
+body_lacks "T7-PRBODY-LIVE-DISMISSED a retired name is not listed as dismissed" '`live[]` dismisses'
+git checkout -q -- .github/docs-surfaces.json
+
+# T7-PRBODY-SURROGATE: a run-written lone surrogate must not blank the body. --pr-body exited 2 with
+# no output, CI put one "failed" line in its place, and the PR was still opened without the evidence.
+python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['retired']=['zz\ud800']; json.dump(d, open(p,'w'))"
+prbody "$SCRATCH/before-later.json"
+expect "T7-PRBODY-SURROGATE exit 0" 0 "$RC"
+body_has "T7-PRBODY-SURROGATE the body is still there" '`live[]` dismisses `defaultMode` in this range'
+body_has "T7-PRBODY-SURROGATE the surrogate is shown escaped" 'zz\ud800'
+
 exit "$failures"

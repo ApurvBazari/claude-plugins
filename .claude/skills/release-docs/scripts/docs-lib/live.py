@@ -77,8 +77,3 @@ def proof(srcs, tok):
             if rx.search(line):
                 return rel, n
     return None
-
-
-def proven(srcs, tokens):
-    """The tokens a plugin source still has."""
-    return {t for t in tokens if proof(srcs, t) is not None}
