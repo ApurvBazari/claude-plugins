@@ -20,6 +20,7 @@ import changelog
 import inventory
 import ledger
 import live
+import repo
 import surfaces
 from kinds import ob
 
@@ -184,11 +185,15 @@ def range_candidates(ctx):
 
 def _proven_live(ctx, surf, cands):
     """{token: (path, line)} for the live[] entries among cands that a plugin source still has.
-    Plugin sources are read only when live[] names a candidate."""
+    Plugin sources are read only when live[] names a candidate, and what one is comes from HEAD's
+    config, as for the fence: the entries are the working tree's, the proof never is."""
     declared = [t for t in surf["live"] if t in cands]
     if not declared:
         return {}
-    srcs = live.sources(ctx, surf, ctx.plugins())
+    try:
+        srcs = live.sources_at(ctx, "HEAD")
+    except repo.RepoError:
+        return {}  # no committed config says what a plugin source is, so nothing is proven
     found = ((t, live.proof(srcs, t)) for t in declared)
     return {t: where for t, where in found if where}
 

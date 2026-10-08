@@ -42,8 +42,7 @@ def _regular(ctx, rel):
 
 def sources(ctx, surf, plugins):
     """[(path, text)] for every plugin source, in path order. `surf` and `plugins` say what a doc
-    surface and a plugin directory are: the working tree's for the detector, HEAD's for the fence
-    and the PR body, which must not take a run's word for either."""
+    surface and a plugin directory are; callers take both from a commit (sources_at)."""
     dirs = [p["dir"] for p in plugins]
     allow = surfaces.Allowlist(surf, plugins)  # the doc surfaces, the landing page, each plugin's page
     frozen = [surfaces.globre(p) for p in surf["frozen"]]
@@ -64,6 +63,15 @@ def sources(ctx, surf, plugins):
         except OSError:
             continue
     return out
+
+
+def sources_at(ctx, ref):
+    """sources(), with a doc surface and a plugin directory as the config and marketplace committed
+    at ref define them. The detector, the fence and the PR body all judge from a commit, never from
+    the working tree: its config is the run's to edit, and one that drops a doc from `surfaces`
+    would turn a doc the run wrote into the proof of its own entry. Raises repo.RepoError when ref
+    has no readable config."""
+    return sources(ctx, surfaces.load_at(ctx, ref), ctx.plugins_at(ref))
 
 
 def proof(srcs, tok):

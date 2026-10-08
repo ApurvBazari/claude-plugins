@@ -153,7 +153,7 @@ def _live_sources(ctx):
     """The plugin sources as HEAD's config and marketplace define them, which is the fence's view,
     or none when HEAD's config cannot be read."""
     try:
-        return live.sources(ctx, surfaces.load_at(ctx, "HEAD"), ctx.plugins_at("HEAD"))
+        return live.sources_at(ctx, "HEAD")
     except repo.RepoError:
         return []
 

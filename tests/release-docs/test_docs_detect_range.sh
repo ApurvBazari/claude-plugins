@@ -407,6 +407,21 @@ git add -A && git commit -qm "a page and a frozen doc inside the plugin"
 detect
 expect "T4-LIVELIST-ALLOWED neither a writable page nor a frozen doc proves" "0 1" "$RC $(count stale-mention alpha/README.md)"
 
+# T4-LIVELIST-OWNCONFIG: what a plugin source is comes from HEAD's config, for the detector as for
+# the fence and the PR body. The working tree's config is the run's to edit: one that drops the
+# README from `surfaces` would turn a doc the run may write into the proof of its own entry, and the
+# gate would close flags that the fence, judging from HEAD, refuses to close.
+fx_repo livelist-ownconfig
+printf '%s\n' '' 'Set `defaultMode` in the config.' >> alpha/README.md
+put alpha/references/guide.md 'Set `defaultMode`.'
+git add -A && git commit -qm docs && git branch -f main HEAD
+bump 1.1.0 '- Removed the `fast` alias from `defaultMode`.'
+python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['live']=['defaultMode']; d['surfaces'].remove('{plugin}/README.md'); json.dump(d, open(p,'w'))"
+detect
+expect "T4-LIVELIST-OWNCONFIG a doc dropped from the working config's surfaces proves nothing" "0 1" "$RC $(count stale-mention alpha/references/guide.md)"
+if in_candidates defaultMode; then echo "ok: T4-LIVELIST-OWNCONFIG --candidates still lists the name"
+else fail "T4-LIVELIST-OWNCONFIG --candidates hides the name: $(tr -d '\n' < "$SCRATCH/c.json")"; fi
+
 # T4-LIVELIST-META: a token is matched as written (`modes[]` is not a character class), and a
 # plugin source that is not UTF-8 is read without a crash.
 fx_repo livelist-meta

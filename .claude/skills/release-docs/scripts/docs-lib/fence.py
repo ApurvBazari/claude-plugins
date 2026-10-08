@@ -442,7 +442,7 @@ def live_drift(ctx, ref):
         return ["- FAIL: the run added %d entries to %s live[]; a run may add at most %d, so that "
                 "the PR body can show the evidence for each"
                 % (len(added), surfaces.SURFACES, live.MAX_ADDED)]
-    srcs = live.sources(ctx, surfaces.load_at(ctx, ref), ctx.plugins_at(ref))
+    srcs = live.sources_at(ctx, ref)
     bad = [t for t in added if live.proof(srcs, t) is None]
     if not bad:
         return []
