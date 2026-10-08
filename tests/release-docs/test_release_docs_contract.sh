@@ -97,6 +97,9 @@ for name, lines, needs in (
     for need in needs:
         if not lines or need not in lines[0]:
             bad.append("%s does not say %s" % (name, need))
+verify = [l for l in skill.splitlines() if l.startswith("1. Re-detect with")]
+if not verify or "of a live name (Step 3)" in verify[0] or "no plugin source has" not in verify[0]:
+    bad.append("SKILL.md's Step 5.1 still calls every stale-mention of a live name the owner's by rule")
 if not isinstance(json.load(open(sys.argv[2] + "/.github/docs-surfaces.json")).get("live"), list):
     bad.append(".github/docs-surfaces.json has no live list")
 for b in bad:

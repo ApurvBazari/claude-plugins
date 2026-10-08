@@ -83,7 +83,7 @@ Resolve every open obligation whose `resolver` is `model`, in this order: plugin
 
 ## Step 5: Verify
 
-1. Re-detect with `bash .claude/skills/release-docs/scripts/docs-detect.sh --gate`. If obligations are still open, fix what can be fixed inside the doc surfaces and re-detect, at most 2 more times. Then list every obligation still open, and why, in the report and go on. Some are the owner's by rule, such as a manifest `inventory-row` (`references/obligations.md` note 1) or a `stale-mention` of a live name (Step 3).
+1. Re-detect with `bash .claude/skills/release-docs/scripts/docs-detect.sh --gate`. If obligations are still open, fix what can be fixed inside the doc surfaces and re-detect, at most 2 more times. Then list every obligation still open, and why, in the report and go on. Some are the owner's by rule, such as a manifest `inventory-row` (`references/obligations.md` note 1) or a `stale-mention` of a name that still looks live when no plugin source has it (Step 3).
 2. Dispatch the `docs-verifier` agent. Its prompt is two things:
    - the output of `git diff HEAD` over the changed doc files. A new file (such as a generated page) is untracked, so `git diff HEAD` leaves it out: add `git diff --no-index -- /dev/null <file>` for each one;
    - the source paths: each changed plugin's `CHANGELOG.md`, `README.md`, `skills/`, `agents/` and `scripts/`.
