@@ -4,7 +4,7 @@ Candidates for one range: repo paths the range deleted or renamed away (a remove
 file also as its plugin-relative path and basename), skills it removed (`/plugin:name`), and
 backticked identifiers that new CHANGELOG entries say are renamed / removed / retired / dropped /
 replaced / deleted / relocated / moved / superseded, in any tense (the verb's clause, up to its
-`to` / `with` / `→`; the subject of a present form that has no object), or that sit in a bullet
+`to` / `with` / `in favor of` / `→`; the subject of a present form that has no object), or that sit in a bullet
 under a `### Removed`-style heading. Anything that
 still exists is dropped: a tracked path, or a current skill or agent of any plugin (`/p:s`, `p:s`,
 the skill's name or directory, the agent's name or `p:agent`), since "Removed the `--x` flag from
@@ -29,7 +29,7 @@ VERB = re.compile(r"(?<!-)\b(renam(?:e|es|ed)|remov(?:e|es|ed)|retir(?:e|es|ed)|
                   r"supersed(?:e|es|ed))\b(?!-)", re.I)
 # A `###` heading that retires every bullet under it; anchored, so "Fixes — … the rename" is not one.
 RETIRING = re.compile(r"(?:removed|deprecated|renamed|retired|dropped|deleted)\b", re.I)
-SPLIT = re.compile(r"\s(?:to|with|by|into|→)\s")
+SPLIT = re.compile(r"\s(?:to|with|by|into|→|in favou?r of)\s")
 TICK = re.compile(r"`([^`\n]+)`")
 BOUND = re.compile(r"[:—–()]")  # clause edges, looked for outside backticks only
 HANDOFF = ":—–"  # the edges across which a name-less verb clause hands over to its neighbour

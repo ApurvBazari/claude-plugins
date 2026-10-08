@@ -421,6 +421,17 @@ setlive '["modes[]"]'
 detect
 expect "T4-LIVELIST-META proven as written, beside a non-UTF-8 source" "0 0" "$RC $(count stale-mention)"
 
+# T4-FAVOR (SDD ruling R30 f): "in favor of" / "in favour of" hands over to the new name, as `to`
+# and `with` do. onboard's "drop the `eval …` pattern in favor of a literal `__TEST_CMD__`
+# placeholder" made the new placeholder a candidate, and three correct doc lines false flags.
+fx_repo favor
+bump 1.1.0 '- Hardened the template: drop the `--old-flag` option in favor of a literal `__NEW_CMD__` placeholder.' \
+  '- Removed `old-mode.json` in favour of `new-mode.json`.'
+bash "$DETECT" --candidates main..HEAD > "$SCRATCH/c.json"
+python3 -c "import json,sys; c=set(json.load(open(sys.argv[1]))); sys.exit(0 if {'--old-flag','old-mode.json'} <= c and not {'__NEW_CMD__','new-mode.json'} & c else 1)" \
+  "$SCRATCH/c.json" && echo "ok: T4-FAVOR the old names are candidates, the names after 'in favo(u)r of' are not" \
+  || fail "T4-FAVOR $(tr -d '\n' < "$SCRATCH/c.json")"
+
 # T4-BADDATA: malformed retired[] / intentional[] (the unattended model writes both) exits 2 with a
 # message, never a traceback and never a pile of bogus obligations.
 fx_repo baddata
