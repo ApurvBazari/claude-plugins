@@ -16,8 +16,7 @@ page is 547px wide at 500px, without them 536px. It reports the state they ended
 render-check.sh compares a page with HEAD's copy only when both renders got their fonts the same
 way. That state is how many font faces the page's CSS declared, then whatever went wrong: linked
 stylesheets that did not load, faces that failed, faces still loading at the 10 seconds. A face is
-named by its family, weight and style, each once, and with plain characters only: the page chose
-the name, and the report it lands in reaches a PR body. The count
+named by its family, weight and style, each once. The count
 is what shows a font stylesheet that never arrived when it is an @import in a <style> block, as
 on the site's pages: that raises no error and leaves no face to fail, only none declared. It is the
 faces declared, not the ones loaded, so it does not move with the text an edit touched.
@@ -49,7 +48,7 @@ function fonts(){var out=[],css=window.__css||0,failed=[],pending=[],n=document.
  out.push(n?n+' font face(s) declared':'no font faces declared');
  if(css)out.push(css+' stylesheet(s) not loaded');
  if(document.fonts)document.fonts.forEach(function(f){
-  var face=(String(f.family)+' '+f.weight+' '+f.style).replace(/[^A-Za-z0-9 _-]/g,'').slice(0,60);
+  var face=String(f.family).replace(/["']/g,'')+' '+f.weight+' '+f.style;
   var list=f.status==='error'?failed:f.status==='loading'?pending:null;
   if(list&&list.indexOf(face)<0)list.push(face);});
  if(failed.length)out.push('failed: '+failed.sort().join(', '));
@@ -139,8 +138,13 @@ def width():
 
 
 def fonts():
+    """The font state, cut down to plain characters. The probe runs inside the page, so the page can
+    make it report anything (a font's name is the page's to choose, and so is the script
+    environment the probe runs in); nothing done in there can be relied on. The text is compared,
+    printed, and carried into a PR body, so the cut is made here: no markup, no links, one line."""
     r = json.loads(sys.stdin.read() or "{}")
-    print(r.get("fonts") or "")
+    text = re.sub(r"[^A-Za-z0-9 ();:,-]", "", str(r.get("fonts") or ""))
+    print(" ".join(text.split())[:300])
 
 
 if __name__ == "__main__":

@@ -264,6 +264,16 @@ expect "T5-FONTS neither got its fonts: the pair is rendered once (3 calls)" 3 "
 fonts_run "536|$NOCSS" "547|" "560|" "547|"
 expect "T5-FONTS a narrower page without its fonts is not passed: the second pair shows the growth" 1 "$RC"
 case "$OUTTXT" in *"FAIL same.html"*"grew (scrollWidth 560, HEAD's copy 547)"*) echo "ok: T5-FONTS the growth is reported from the second pair" ;; *) fail "T5-FONTS hidden growth: $OUTTXT" ;; esac
+# The probe runs inside the page, so everything it reports is the page's to write, the font state
+# included. What reads the report cuts it down to plain characters before it is compared or printed:
+# it ends up in a PR body.
+fonts_run "547|" "536|bad](http://x.invalid) *x* _y_ <b> # h" "547|" "536|bad](http://x.invalid) *x* _y_ <b> # h"
+expect "T5-FONTS a font state written to break out of the report: still fails as not comparable" 1 "$RC"
+case "$OUTTXT" in
+  *"]("*|*"*x*"*|*"_y_"*|*"<b>"*|*"# h"*|*"http://"*) fail "T5-FONTS the state reaches the report as written: $OUTTXT" ;;
+  *"not comparable"*"HEAD's copy: bad(http:xinvalid) x y b h)"*) echo "ok: T5-FONTS the state is reduced to plain characters where it is read" ;;
+  *) fail "T5-FONTS plain characters: $OUTTXT" ;;
+esac
 fonts_run "547|" "536|$NOCSS" "490|" "490|"
 expect "T5-FONTS the second pair no longer overflows: passes" 0 "$RC"
 case "$OUTTXT" in *"pre-existing"*) fail "T5-FONTS a note about an overflow that is not there: $OUTTXT" ;; *"ok   same.html"*) echo "ok: T5-FONTS no overflow, no note" ;; *) fail "T5-FONTS no overflow: $OUTTXT" ;; esac
@@ -277,9 +287,8 @@ case "$OUTTXT" in *"pre-existing"*) fail "T5-FONTS a note about an overflow that
 #   copy. A failed import raises no error anywhere and leaves no font to fail: what tells the two
 #   renders apart is how many font faces their CSS declared (here four against none).
 # The heading's font has a name written to break out of the report it ends up in (markup, a link,
-# emphasis). The report reaches a PR body, so a name keeps only letters, digits, spaces, hyphens
-# and underscores. It is declared twice, one face per character range as a web font service does,
-# and both fail: the report names it once.
+# emphasis), and comes out in plain characters. It is declared twice, one face per character range
+# as a web font service does, and both fail: the report names it once.
 python3 - "$SCRATCH/slow.port" <<'PY' &
 import http.server, os, sys, time
 class Slow(http.server.BaseHTTPRequestHandler):
@@ -330,7 +339,7 @@ case "$OUTTXT" in
 esac
 case "$OUTTXT" in
   *"<b>"*|*"]("*|*"*_"*) fail "T5-FONTS-REAL a font's name reaches the report as written: $OUTTXT" ;;
-  *"; failed: Badb_xy normal normal, SlowFace normal normal; "*) echo "ok: T5-FONTS-REAL a font's name is reduced to plain characters, and listed once" ;;
+  *"; failed: Badbx(y) normal normal, SlowFace normal normal; "*) echo "ok: T5-FONTS-REAL a font's name is reduced to plain characters, and listed once" ;;
   *) fail "T5-FONTS-REAL font name: $OUTTXT" ;;
 esac
 kill "$slow_pid" 2>/dev/null
