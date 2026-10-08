@@ -15,7 +15,9 @@ after its 2-second settle), because a page's width depends on them: with its web
 page is 547px wide at 500px, without them 536px. It reports the state they ended in, so
 render-check.sh compares a page with HEAD's copy only when both renders got their fonts the same
 way. That state is how many font faces the page's CSS declared, then whatever went wrong: linked
-stylesheets that did not load, faces that failed, faces still loading at the 10 seconds. The count
+stylesheets that did not load, faces that failed, faces still loading at the 10 seconds. A face is
+named by its family, weight and style, each once, and with plain characters only: the page chose
+the name, and the report it lands in reaches a PR body. The count
 is what shows a font stylesheet that never arrived when it is an @import in a <style> block, as
 on the site's pages: that raises no error and leaves no face to fail, only none declared. It is the
 faces declared, not the ones loaded, so it does not move with the text an edit touched.
@@ -47,8 +49,9 @@ function fonts(){var out=[],css=window.__css||0,failed=[],pending=[],n=document.
  out.push(n?n+' font face(s) declared':'no font faces declared');
  if(css)out.push(css+' stylesheet(s) not loaded');
  if(document.fonts)document.fonts.forEach(function(f){
-  var face=String(f.family).replace(/["']/g,'')+' '+f.weight+' '+f.style;
-  if(f.status==='error')failed.push(face);else if(f.status==='loading')pending.push(face);});
+  var face=(String(f.family)+' '+f.weight+' '+f.style).replace(/[^A-Za-z0-9 _-]/g,'').slice(0,60);
+  var list=f.status==='error'?failed:f.status==='loading'?pending:null;
+  if(list&&list.indexOf(face)<0)list.push(face);});
  if(failed.length)out.push('failed: '+failed.sort().join(', '));
  if(pending.length)out.push('pending: '+pending.sort().join(', '));
  return out.join('; ');}

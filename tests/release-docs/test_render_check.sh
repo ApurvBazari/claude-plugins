@@ -275,7 +275,11 @@ case "$OUTTXT" in *"pre-existing"*) fail "T5-FONTS a note about an overflow that
 # - a linked stylesheet that cannot be reached (nothing listens on port 9);
 # - the site pages' own way, an @import in a <style> block, reachable in the page and not in HEAD's
 #   copy. A failed import raises no error anywhere and leaves no font to fail: what tells the two
-#   renders apart is how many font faces their CSS declared (here two against none).
+#   renders apart is how many font faces their CSS declared (here four against none).
+# The heading's font has a name written to break out of the report it ends up in (markup, a link,
+# emphasis). The report reaches a PR body, so a name keeps only letters, digits, spaces, hyphens
+# and underscores. It is declared twice, one face per character range as a web font service does,
+# and both fail: the report names it once.
 python3 - "$SCRATCH/slow.port" <<'PY' &
 import http.server, os, sys, time
 class Slow(http.server.BaseHTTPRequestHandler):
@@ -301,7 +305,7 @@ slow_pid=$!
 i=0
 while [ $i -lt 50 ] && [ ! -s "$SCRATCH/slow.port" ]; do sleep 0.1; i=$((i + 1)); done
 port="$(cat "$SCRATCH/slow.port" 2>/dev/null)"
-sed "s#<style>#<link rel=\"stylesheet\" href=\"http://127.0.0.1:9/x.css\"><style>@import url('http://127.0.0.1:${port:-1}/fonts.css');@font-face{font-family:SlowFace;src:url(http://127.0.0.1:${port:-1}/f.woff2)}body{font-family:SlowFace,sans-serif}#" \
+sed "s#<style>#<link rel=\"stylesheet\" href=\"http://127.0.0.1:9/x.css\"><style>@import url('http://127.0.0.1:${port:-1}/fonts.css');@font-face{font-family:SlowFace;src:url(http://127.0.0.1:${port:-1}/f.woff2)}body{font-family:SlowFace,sans-serif}@font-face{font-family:\"Bad<b>*_[x](y)\";src:url(http://127.0.0.1:9/b.woff2);unicode-range:U+0-7F}@font-face{font-family:\"Bad<b>*_[x](y)\";src:url(http://127.0.0.1:9/c.woff2);unicode-range:U+80-FF}h1{font-family:\"Bad<b>*_[x](y)\",serif}h1::after{content:\"é\"}#" \
   "$SCRATCH/bl/base/same.html" > "$SCRATCH/bl/tree/webfonts.html"
 sed "s#<style>#<style>@import url('http://127.0.0.1:9/fonts.css');#" \
   "$SCRATCH/bl/base/same.html" > "$SCRATCH/bl/base/webfonts.html"
@@ -313,7 +317,7 @@ case "$OUTTXT" in
   *) fail "T5-FONTS-REAL not comparable: $OUTTXT" ;;
 esac
 case "$OUTTXT" in
-  *"page: 2 font face(s) declared; "*"; HEAD's copy: no font faces declared)"*) echo "ok: T5-FONTS-REAL a failed @import shows as no font faces declared" ;;
+  *"page: 4 font face(s) declared; "*"; HEAD's copy: no font faces declared)"*) echo "ok: T5-FONTS-REAL a failed @import shows as no font faces declared" ;;
   *) fail "T5-FONTS-REAL @import: $OUTTXT" ;;
 esac
 case "$OUTTXT" in
@@ -321,8 +325,13 @@ case "$OUTTXT" in
   *) fail "T5-FONTS-REAL stylesheet: $OUTTXT" ;;
 esac
 case "$OUTTXT" in
-  *"page: "*"; failed: SlowFace "*"; HEAD's copy: "*) echo "ok: T5-FONTS-REAL the probe waited for the slow font, and names it as failed" ;;
+  *"page: "*"; failed: "*"SlowFace normal normal"*"; HEAD's copy: "*) echo "ok: T5-FONTS-REAL the probe waited for the slow font, and names it as failed" ;;
   *) fail "T5-FONTS-REAL slow font: $OUTTXT" ;;
+esac
+case "$OUTTXT" in
+  *"<b>"*|*"]("*|*"*_"*) fail "T5-FONTS-REAL a font's name reaches the report as written: $OUTTXT" ;;
+  *"; failed: Badb_xy normal normal, SlowFace normal normal; "*) echo "ok: T5-FONTS-REAL a font's name is reduced to plain characters, and listed once" ;;
+  *) fail "T5-FONTS-REAL font name: $OUTTXT" ;;
 esac
 kill "$slow_pid" 2>/dev/null
 wait "$slow_pid" 2>/dev/null
