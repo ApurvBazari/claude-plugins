@@ -179,7 +179,7 @@ def _live_lines(ctx, gone):
         return out
     wl = was.get("live") if isinstance(was.get("live"), list) else []
     nl = now.get("live") if isinstance(now.get("live"), list) else []
-    new_live = [t for t in nl if t not in wl]
+    new_live = live.added(wl, nl)
     shown = new_live[:live.MAX_ADDED]
     srcs = _live_sources(ctx) if shown else []
     for t in shown:
@@ -192,8 +192,8 @@ def _live_lines(ctx, gone):
         out.append("- `live[]` added %s (still in %s)%s" % (
             _code(t, 200), _code("%s:%d" % where), "" if needed else "; it dismisses nothing in this range"))
     if len(new_live) > len(shown):
-        out.append("- `live[]`: %d more addition(s) not shown; the write fence fails a run that "
-                   "adds more than %d" % (len(new_live) - len(shown), live.MAX_ADDED))
+        out.append("- `live[]`: more additions are not shown; the write fence fails a run that "
+                   "adds more than %d" % live.MAX_ADDED)
     return out + _capped(["- `live[]` dropped %s" % _code(t, 200) for t in wl if t not in nl],
                          "dropped `live[]` entries")
 

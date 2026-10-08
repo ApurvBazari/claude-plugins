@@ -25,6 +25,20 @@ import surfaces
 MAX_ADDED = 20
 
 
+def added(old, new):
+    """The distinct entries of new that old lacks, in order, cut off one past MAX_ADDED. A repeated
+    name is one entry, for the fence's bound and the PR body alike: if only the bound ignored
+    repeats, copies of one name would fill the body and hide the next entry. The cut-off is enough
+    to know that a run is over the bound, and keeps the work from growing with what the run wrote."""
+    out = []
+    for t in new:
+        if t not in old and t not in out:
+            out.append(t)
+            if len(out) > MAX_ADDED:
+                break
+    return out
+
+
 def whole(tok):
     """tok as a whole name. A name ends where the next char cannot continue it: `/lens:render`
     never matches `/lens:render-review`, nor `foo` `foo.json`, while sentence punctuation still

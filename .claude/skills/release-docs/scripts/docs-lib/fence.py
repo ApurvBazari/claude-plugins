@@ -435,18 +435,19 @@ def live_drift(ctx, ref):
         return []  # the committed config is broken; the gate reports it
     if not isinstance(new, list):
         return ["- FAIL: in %s, live[] is no longer a list" % surfaces.SURFACES]
-    added = [t for t in new if t not in old]
+    added = live.added(old, new)
     if not added:
         return []
     if len(added) > live.MAX_ADDED:
-        return ["- FAIL: the run added %d entries to %s live[]; a run may add at most %d, so that "
-                "the PR body can show the evidence for each"
-                % (len(added), surfaces.SURFACES, live.MAX_ADDED)]
+        return ["- FAIL: the run added more than %d entries to %s live[]; a run may add at most %d, "
+                "so that the PR body can show the evidence for each"
+                % (live.MAX_ADDED, surfaces.SURFACES, live.MAX_ADDED)]
     srcs = live.sources_at(ctx, ref)
     bad = [t for t in added if live.proof(srcs, t) is None]
     if not bad:
         return []
-    shown = ", ".join(json.dumps(t, ensure_ascii=False)[:200] for t in bad[:10])
+    # ASCII-escaped: these are run-written, and a lone surrogate would crash the print of this report
+    shown = ", ".join(json.dumps(t)[:200] for t in bad[:10])
     return ["- FAIL: the run added %s to %s live[]%s, but no plugin source mentions it; a live name "
             "must still be in a plugin's sources"
             % (shown, surfaces.SURFACES, " (and %d more)" % (len(bad) - 10) if len(bad) > 10 else "")]

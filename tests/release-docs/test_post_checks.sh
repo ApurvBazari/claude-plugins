@@ -232,7 +232,23 @@ expect "T6-LIVE-FLOOD 20 proven additions -> exit 0" 0 "$RC"
 livecfg "d['live']=['key%02d-x' % i for i in range(1, 22)]"
 post b-live-flood live-21.md
 expect "T6-LIVE-FLOOD 21 additions, all proven -> exit 1" 1 "$RC"
-has "T6-LIVE-FLOOD says the bound" live-21.md 'added 21 entries to .github/docs-surfaces.json live[]; a run may add at most 20'
+has "T6-LIVE-FLOOD says the bound" live-21.md 'added more than 20 entries to .github/docs-surfaces.json live[]; a run may add at most 20'
+# T6-LIVE-DUPLICATES: a repeated name is one entry, for the bound and for the PR body alike. If only
+# the bound ignored repeats, 20 copies of one name would fill the body and hide the next entry.
+livecfg "d['live']=['key01-x'] * 25 + ['key02-x']"
+post b-live-flood live-dups.md
+expect "T6-LIVE-DUPLICATES 25 copies of one proven name and one other -> exit 0" 0 "$RC"
+# T6-LIVE-HUGE: the count stops one past the bound, so the fence's work does not grow with what the
+# run wrote.
+python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['live']=['junk-%06d-x' % i for i in range(200000)]; json.dump(d, open(p,'w'))"
+within 60 bash "$POST" --before "$SCRATCH/b-live-flood" --report "$SCRATCH/live-huge.md"
+expect "T6-LIVE-HUGE 200000 distinct entries are refused within 60 s" 1 "$RC"
+# T6-LIVE-SURROGATE: an unproven entry holding a lone surrogate is reported escaped. It used to crash
+# the fence's print, and a run that should have left a draft PR with a FAIL line left no PR at all.
+livecfg "d['live']=['x\ud800y']"
+post b-live-flood live-surrogate.md
+expect "T6-LIVE-SURROGATE exit 1" 1 "$RC"
+has "T6-LIVE-SURROGATE the entry is named, escaped" live-surrogate.md 'added "x\ud800y" to .github/docs-surfaces.json live[]'
 
 # T6-SURF-BROKEN: a malformed working-tree docs-surfaces.json still gets fenced around, and reported.
 fx_repo broken
@@ -1071,7 +1087,11 @@ detect; cp "$OUT" "$SCRATCH/before-flood.json"
 python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['live']=['key%02d-x' % i for i in range(1, 22)]; json.dump(d, open(p,'w'))"
 prbody "$SCRATCH/before-flood.json"
 expect "T7-PRBODY-LIVE-FLOOD 20 additions are shown with their evidence" 20 "$(printf '%s\n' "$BODY" | grep -c '`live\[\]` added `key')"
-body_has "T7-PRBODY-LIVE-FLOOD the rest is counted, not listed" '`live[]`: 1 more addition(s) not shown'
+body_has "T7-PRBODY-LIVE-FLOOD the rest is said to be left out" '`live[]`: more additions are not shown'
+python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['live']=['key01-x'] * 25 + ['key02-x']; json.dump(d, open(p,'w'))"
+prbody "$SCRATCH/before-flood.json"
+expect "T7-PRBODY-LIVE-DUPLICATES a repeated name is listed once" 1 "$(printf '%s\n' "$BODY" | grep -c '`live\[\]` added `key01-x`')"
+body_has "T7-PRBODY-LIVE-DUPLICATES the other name is not crowded out" '`live[]` added `key02-x` (still in `alpha/skills/run/SKILL.md:8`)'
 
 # T7-PRBODY-LIVE-FIRST: CI cuts the PR body at 60000 bytes from the tail, and a run can lengthen the
 # config section at will: retired[] only grows, and a junk token that no doc names opens nothing. So
