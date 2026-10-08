@@ -91,7 +91,8 @@ row = [l for l in obl.splitlines() if l.startswith("| `stale-mention` |")]
 bullet = [l for l in skill.splitlines() if l.startswith("- **A `stale-mention` of a live name")]
 step = [l for l in skill.splitlines() if l.startswith("- List the range candidates with")]
 for name, lines, needs in (
-        ("obligations.md's stale-mention row", row, ("`live[]`", "plugin source", "migrated-from")),
+        ("obligations.md's stale-mention row", row,
+         ("`live[]`", "plugin source", "migrated-from", "frozen doc", "fixture")),
         ("SKILL.md's false-positive bullet", bullet, ("`live[]`", "plugin source", "migrated-from")),
         ("SKILL.md's candidates step", step, ("`live[]`", "plugin source"))):
     for need in needs:
