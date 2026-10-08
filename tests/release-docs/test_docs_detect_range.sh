@@ -221,6 +221,40 @@ python3 -c "import json,sys; c=json.load(open(sys.argv[1])); sys.exit(0 if 'oldK
 python3 -c "import json,sys; sys.exit(1 if 'x-rule.md' in json.load(open(sys.argv[1])) else 0)" "$SCRATCH/c.json" \
   && echo "ok: T4-HYPHEN unanimous-drop is not a verb" || fail "T4-HYPHEN $(tr -d '\n' < "$SCRATCH/c.json")"
 
+# T4-INTRANS (SDD ruling R30 c): a present-tense or base-form verb used without an object has no
+# actor before it. Its subject is the thing retired: "`oldKey` renames to `newKey`", "`old-flag`
+# drops out". That is a verb followed by nothing, or by to / into / → / out / from / away. Only
+# the names back to the previous verb of the clause are read (a compound predicate's actor stays
+# out), and a name after the verb is where the thing went, never a candidate.
+intrans() { # <what> <names that must be candidates> <names that must not be>
+  python3 - "$SCRATCH/c.json" "$2" "$3" <<'PY' && echo "ok: T4-INTRANS $1" || fail "T4-INTRANS $1 — $(tr -d '\n' < "$SCRATCH/c.json")"
+import json, sys
+c = json.load(open(sys.argv[1]))
+missing = [t for t in sys.argv[2].split() if t not in c]
+extra = [t for t in sys.argv[3].split() if t in c]
+if missing or extra:
+    print("missing %s, unwanted %s" % (missing, extra))
+sys.exit(1 if missing or extra else 0)
+PY
+}
+fx_repo intrans
+bump 1.1.0 '- `oldKey` renames to `newKey`.' '- `old-flag` drops out.' '- `gone-key` drops from the schema.' \
+  '- `past-knob` retires.' '- `old-page.md` moves into `new-dir/`.' '- `arrow-old` moves → `arrow-new`.' \
+  '- `first-key` and `second-key` drop away.' '- `dash-flag` retires — nothing read it.' \
+  '- `actorKey` replaces `objKey` and moves to the top.' '- `out-key` drops out of `kept-file.md`.' \
+  '- `busy-tool` moves `moved-old` to `moved-new`.' '- `side-tool` moves in a new direction.' \
+  '- `keep-tool` now removes stale rows.'
+bash "$DETECT" --candidates main..HEAD > "$SCRATCH/c.json"
+intrans "renames to: the subject, not the new name" "oldKey" "newKey"
+intrans "drops out, drops from" "old-flag gone-key" ""
+intrans "a verb that ends its clause" "past-knob dash-flag" ""
+intrans "moves into, moves →: the subject, not where it went" "old-page.md arrow-old" "new-dir/ arrow-new"
+intrans "every name of a list subject" "first-key second-key" ""
+intrans "a compound predicate reads back to the previous verb only" "objKey" "actorKey"
+intrans "a name after the verb is not a candidate" "out-key" "kept-file.md"
+intrans "a verb with an object still reads only its object" "moved-old" "busy-tool moved-new keep-tool"
+intrans "a follower outside the list leaves the actor alone" "" "side-tool"
+
 # V4 tuning, pinned with the exact entry shapes the full history produced.
 # T4-CLAUSE: a retirement verb reads only its own clause (`:`, `—`, `–` and parentheses bound it).
 # Live names in a lead-in, an aside or a parenthetical were the history's false candidates
