@@ -1,5 +1,5 @@
 """.github/docs-surfaces.json: which files are doc surfaces, the page map, OG strings, retired
-identifiers. It lives outside .claude/ because the unattended CI model must be able to write it."""
+and live identifiers. It lives outside .claude/ because the unattended CI model must be able to write it."""
 import json
 import re
 import subprocess
@@ -36,19 +36,21 @@ def parse(raw, where):
         raise repo.RepoError("cannot read %s: %s" % (where, e))
     if not isinstance(d, dict) or d.get("schemaVersion") != 1:
         raise repo.RepoError("%s: schemaVersion must be 1" % where)
+    d.setdefault("live", [])  # optional: a config written before live[] existed still loads
     for key, typ in (("surfaces", list), ("frozen", list), ("landing", str), ("pages", dict),
-                     ("og", dict), ("retired", list)):
+                     ("og", dict), ("retired", list), ("live", list)):
         if not isinstance(d.get(key), typ):
             raise repo.RepoError("%s: %r must be a %s" % (where, key, typ.__name__))
     # The fence turns these into path patterns: a non-string would crash it.
     if not all(isinstance(t, str) for t in d["surfaces"] + d["frozen"] + list(d["pages"].values())):
         raise repo.RepoError("%s: surfaces, frozen and pages must hold strings" % where)
-    # The unattended model appends to retired[]: a non-string would crash the matcher, and an
-    # empty or blank one would match every line of every surface.
-    bad = [t for t in d["retired"] if not isinstance(t, str) or not t.strip()]
-    if bad:
-        raise repo.RepoError("%s: every 'retired' entry must be a non-empty string, got %s"
-                             % (where, ", ".join(json.dumps(t) for t in bad)))
+    # The unattended model appends to retired[] and live[]: a non-string would crash the matcher,
+    # and an empty or blank retired one would match every line of every surface.
+    for key in ("retired", "live"):
+        bad = [t for t in d[key] if not isinstance(t, str) or not t.strip()]
+        if bad:
+            raise repo.RepoError("%s: every %r entry must be a non-empty string, got %s"
+                                 % (where, key, ", ".join(json.dumps(t) for t in bad)))
     return d
 
 

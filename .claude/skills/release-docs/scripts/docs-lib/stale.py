@@ -9,7 +9,9 @@ under a `### Removed`-style heading. Anything that
 still exists is dropped: a tracked path, or a current skill or agent of any plugin (`/p:s`, `p:s`,
 the skill's name or directory, the agent's name or `p:agent`), since "Removed the `--x` flag from
 `/lens:review`" retires the flag, not the skill. surfaces.json `retired[]` carries confirmed tokens
-forward across releases, and is never filtered: a retired name is the owner's call."""
+forward across releases, and is never filtered: a retired name is the owner's call. `live[]` is
+its opposite, for a name a retirement sentence only mentions: a declared name that a plugin source
+still has (live.py) is dropped from the range's candidates. A name in both lists is retired."""
 import os
 import re
 import subprocess
@@ -17,6 +19,7 @@ import subprocess
 import changelog
 import inventory
 import ledger
+import live
 import surfaces
 from kinds import ob
 
@@ -179,6 +182,18 @@ def range_candidates(ctx):
     return sorted(c for c in cands if not alive(c))
 
 
+def undecided(ctx, surf):
+    """The range candidates that no proven live[] entry covers: what --candidates lists and what
+    check() flags. An entry that no plugin source has is ignored, so it stops working by itself on
+    the day the code drops the name. Plugin sources are read only when live[] names a candidate."""
+    cands = range_candidates(ctx)
+    declared = [t for t in surf["live"] if t in cands]
+    if not declared:
+        return cands
+    ok = live.proven(live.sources(ctx, surf, ctx.plugins()), declared)
+    return [c for c in cands if c not in ok]
+
+
 def _plugin_of(ctx, rel):
     for p in ctx.plugins():
         if rel.startswith(p["dir"] + "/") or rel.startswith("site/%s/" % p["name"]):
@@ -187,12 +202,11 @@ def _plugin_of(ctx, rel):
 
 
 def check(ctx, surf, led):
-    tokens = set(surf["retired"]) | set(range_candidates(ctx))
+    # retired[] wins: a name in both lists stays flagged.
+    tokens = set(surf["retired"]) | set(undecided(ctx, surf))
     if not tokens:
         return []
-    # A name ends where the next char cannot continue it: `/lens:render` never matches
-    # `/lens:render-review`, nor `foo` `foo.json`, while sentence punctuation still ends a name.
-    rx = {t: re.compile(r"(?<![\w-])%s(?![\w-]|\.\w)" % re.escape(t)) for t in tokens}
+    rx = {t: live.whole(t) for t in tokens}
     obs = []
     for rel in surfaces.files(ctx, surf):
         for n, line in enumerate(ctx.read(rel).splitlines(), 1):

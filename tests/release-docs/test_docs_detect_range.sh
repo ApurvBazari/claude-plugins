@@ -321,6 +321,106 @@ bash "$DETECT" --candidates main..HEAD > "$SCRATCH/c.json"
 python3 -c "import json,sys; c=json.load(open('$SCRATCH/c.json')); sys.exit(0 if {'tool.sh','scripts/tool.sh','out.schema.json','schemas/out.schema.json'} <= set(c) else 1)" \
   && echo "ok: T4-SCRIPTREL relative path + basename for script and schema" || fail "T4-SCRIPTREL $(cat "$SCRATCH/c.json")"
 
+# T4-LIVELIST (SDD ruling R30 f): a retirement sentence that names a live config key makes the key
+# a candidate ("Removed the `fast` alias from `defaultMode`"), and alive() knows only paths, skills
+# and agents. A live[] entry in docs-surfaces.json drops the candidate, and only while a plugin
+# source still has the token: a tracked regular file under a plugin's directory that is not a doc
+# surface, a frozen doc, a CHANGELOG.md, a fixture, or a path the write fence lets a run change.
+setlive() { # <live json> [retired json] — write live[] (and retired[]) into the working config
+  python3 - "$1" "${2:-}" <<'PY'
+import json, sys
+p = ".github/docs-surfaces.json"
+d = json.load(open(p))
+d["live"] = json.loads(sys.argv[1])
+if sys.argv[2]:
+    d["retired"] = json.loads(sys.argv[2])
+json.dump(d, open(p, "w"))
+PY
+}
+in_candidates() { # <token> — exit 0 when --candidates lists it
+  bash "$DETECT" --candidates main..HEAD > "$SCRATCH/c.json" 2>"$SCRATCH/stderr"
+  python3 -c "import json,sys; sys.exit(0 if sys.argv[1] in json.load(open(sys.argv[2])) else 1)" "$1" "$SCRATCH/c.json"
+}
+fx_repo livelist
+printf '%s\n' '' 'Reads `defaultMode` from the config.' >> alpha/skills/run/SKILL.md
+printf '%s\n' '' 'Set `defaultMode` in the config.' >> alpha/README.md
+git add -A && git commit -qm key && git branch -f main HEAD
+bump 1.1.0 '- Removed the `fast` alias from `defaultMode`.'
+detect
+expect "T4-LIVELIST with no live key in the config, the live name is flagged" 1 "$(count stale-mention alpha/README.md)"
+setlive '["defaultMode", "never-a-candidate"]'
+detect
+expect "T4-LIVELIST a proven entry closes the flag" "0 0" "$RC $(count stale-mention)"
+if in_candidates defaultMode; then fail "T4-LIVELIST --candidates still lists the proven name: $(tr -d '\n' < "$SCRATCH/c.json")"
+else echo "ok: T4-LIVELIST --candidates lists only what is undecided"; fi
+
+# T4-LIVELIST-BOTH: retired[] wins. A name in both lists stays flagged.
+setlive '["defaultMode"]' '["defaultMode"]'
+detect
+expect "T4-LIVELIST-BOTH retired[] wins over live[]" 1 "$(count stale-mention alpha/README.md)"
+setlive '["defaultMode"]' '[]'
+
+# T4-LIVELIST-UNPROVEN: the code drops the key. The entry is still in live[] and does nothing. The
+# README, a plugin reference, the CHANGELOG, a test outside the plugin, a file beside the ledger and
+# a fixture inside the plugin all still name it, and none of them is a plugin source.
+put alpha/skills/run/SKILL.md '---' 'name: run' 'description: Runs.' '---' '' '# Run'
+put alpha/references/guide.md 'Set `defaultMode`.'
+put tests/test_mode.sh 'echo defaultMode'
+put .github/notes.json '{"defaultMode": 1}'
+put alpha/tests/fixtures/legacy/config.json '{"defaultMode": "fast"}'
+git add -A && git commit -qm "the code drops the key"
+detect
+expect "T4-LIVELIST-UNPROVEN an entry no plugin source has does nothing" 1 "$(count stale-mention alpha/README.md)"
+if in_candidates defaultMode; then echo "ok: T4-LIVELIST-UNPROVEN --candidates lists it again"
+else fail "T4-LIVELIST-UNPROVEN --candidates hides an unproven name: $(tr -d '\n' < "$SCRATCH/c.json")"; fi
+
+# T4-LIVELIST-WHOLE: the proof is on the whole token, by the rule the doc lines are matched with.
+put alpha/scripts/tool.sh '#!/usr/bin/env bash' 'echo "$defaultModeLegacy" defaultMode-v2 defaultMode.json'
+detect
+expect "T4-LIVELIST-WHOLE a longer name is not the token" 1 "$(count stale-mention alpha/README.md)"
+put alpha/scripts/tool.sh '#!/usr/bin/env bash' 'echo "$defaultMode".'
+detect
+expect "T4-LIVELIST-WHOLE non-vacuous: the exact name before punctuation proves it" 0 "$(count stale-mention alpha/README.md)"
+git checkout -q -- alpha/scripts/tool.sh
+
+# T4-LIVELIST-SYMLINK: only a regular file proves. A tracked symlink into a doc surface would let a
+# run write its own proof, since it may edit the doc.
+ln -s ../../README.md alpha/skills/run/notes.md
+git add -A && git commit -qm "a symlink to the README"
+detect
+expect "T4-LIVELIST-SYMLINK a symlink to a doc proves nothing" 1 "$(count stale-mention alpha/README.md)"
+git rm -q alpha/skills/run/notes.md && git commit -qm "no symlink"
+
+# T4-LIVELIST-ALLOWED: a path the write fence lets a run change is never a plugin source, even
+# inside a plugin's directory (here the plugin's page), and neither is a frozen doc there.
+python3 - <<'PY'
+import json
+p = ".github/docs-surfaces.json"
+d = json.load(open(p))
+d["pages"]["alpha"] = "alpha/page.html"
+d["frozen"].append("alpha/history/**")
+json.dump(d, open(p, "w"))
+PY
+{ fx_page 1.1.0; echo '<p>defaultMode</p>'; } > alpha/page.html
+put alpha/history/2025.md 'It was `defaultMode` then.'
+git add -A && git commit -qm "a page and a frozen doc inside the plugin"
+detect
+expect "T4-LIVELIST-ALLOWED neither a writable page nor a frozen doc proves" "0 1" "$RC $(count stale-mention alpha/README.md)"
+
+# T4-LIVELIST-META: a token is matched as written (`modes[]` is not a character class), and a
+# plugin source that is not UTF-8 is read without a crash.
+fx_repo livelist-meta
+printf '%s\n' '' 'Reads `modes[]` from the config.' >> alpha/skills/run/SKILL.md
+printf '\377\376\000binary\n' > alpha/skills/run/blob.bin
+printf '%s\n' '' 'Set `modes[]` in the config.' >> alpha/README.md
+git add -A && git commit -qm key && git branch -f main HEAD
+bump 1.1.0 '- Removed the `fast` value from `modes[]`.'
+detect
+expect "T4-LIVELIST-META non-vacuous: flagged without an entry" 1 "$(count stale-mention alpha/README.md)"
+setlive '["modes[]"]'
+detect
+expect "T4-LIVELIST-META proven as written, beside a non-UTF-8 source" "0 0" "$RC $(count stale-mention)"
+
 # T4-BADDATA: malformed retired[] / intentional[] (the unattended model writes both) exits 2 with a
 # message, never a traceback and never a pile of bogus obligations.
 fx_repo baddata
@@ -331,6 +431,19 @@ for bad in "retired=[5]" 'retired=[""]' 'retired=["  "]'; do
   expect "T4-BADDATA $bad no traceback" 0 "$(grep -c Traceback "$SCRATCH/stderr")"
 done
 python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['retired']=[]; json.dump(d, open(p,'w'))"
+# live[] is validated as retired[] is, and --candidates reads it too. Absent is not malformed.
+for bad in '5' '[5]' '[""]' '["  "]'; do
+  python3 -c "import json,sys; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['live']=json.loads(sys.argv[1]); json.dump(d, open(p,'w'))" "$bad"
+  detect
+  expect "T4-BADDATA live=$bad exits 2" 2 "$RC"
+  expect "T4-BADDATA live=$bad no traceback" 0 "$(grep -c Traceback "$SCRATCH/stderr")"
+  RC=0; bash "$DETECT" --candidates main..HEAD >/dev/null 2>"$SCRATCH/stderr" || RC=$?
+  expect "T4-BADDATA live=$bad --candidates exits 2" 2 "$RC"
+  expect "T4-BADDATA live=$bad --candidates no traceback" 0 "$(grep -c Traceback "$SCRATCH/stderr")"
+done
+python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d.pop('live'); json.dump(d, open(p,'w'))"
+detect
+expect "T4-BADDATA a config with no live key loads" 0 "$RC"
 for bad in '["oops"]' '[{"file": "alpha/README.md", "token": "x-y", "context": "", "reason": "r"}]' \
   '[{"file": "alpha/README.md", "token": "x-y", "context": "c", "reason": 5}]'; do
   python3 -c "import json,sys; json.dump({'schemaVersion': 1, 'entries': {}, 'intentional': json.loads(sys.argv[1])}, open('.github/docs-ledger.json', 'w'))" "$bad"

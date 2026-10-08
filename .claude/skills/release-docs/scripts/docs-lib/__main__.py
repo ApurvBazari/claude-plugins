@@ -63,7 +63,9 @@ def run(opts):
         return 0
     if "--candidates" in opts:
         import stale
-        print(json.dumps(stale.range_candidates(ctx.with_range(opts["--candidates"])), indent=2))
+        import surfaces
+        rctx = ctx.with_range(opts["--candidates"])
+        print(json.dumps(stale.undecided(rctx, surfaces.load(rctx)), indent=2))
         return 0
     if opts.get("--pr-body"):
         import prbody
