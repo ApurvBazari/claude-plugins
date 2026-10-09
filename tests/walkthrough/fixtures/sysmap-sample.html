@@ -1,0 +1,859 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>System map sample — walkthrough</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root{
+  --bg-deep:#08090c; --bg-card:#0f1117; --bg-card-hover:#151821; --bg-elevated:#1a1d28; --bg-inset:#060709;
+  --border:#1e2230; --border-active:#2d3348; --border-strong:#3a4159;
+  --tp:#e8eaf0; --ts:#7d8399; --tm:#4a5068; --tf:#2e3349;
+  --blue:#3b82f6; --green:#22c55e; --amber:#f59e0b; --rose:#f43f5e; --purple:#a78bfa;
+  --accent:#22d3ee; --accent-glow:rgba(34,211,238,.16); --accent-soft:rgba(34,211,238,.08);
+  --blue-soft:rgba(59,130,246,.1); --green-soft:rgba(34,197,94,.1); --amber-soft:rgba(245,158,11,.1); --rose-soft:rgba(244,63,94,.1); --purple-soft:rgba(167,139,250,.1);
+  --mono:'JetBrains Mono',monospace; --serif:'Instrument Serif',serif; --sans:'DM Sans',sans-serif;
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+html[data-theme="light"]{
+  --bg-deep:#faf8f4; --bg-card:#fff; --bg-card-hover:#f5f1ea; --bg-elevated:#fff; --bg-inset:#f5f1ea;
+  --border:#e5dfd6; --border-active:#d8cfc1; --border-strong:#c9c0b3;
+  --tp:#2a2520; --ts:#6b6157; --tm:#9e9486; --tf:#c9c0b3;
+  --blue:#2d5fa0; --green:#2d7a3a; --amber:#b87333; --rose:#b83a3a; --purple:#7a3b8f;
+  --accent:#c05e2b; --accent-glow:rgba(192,94,43,.16); --accent-soft:rgba(192,94,43,.09);
+  --blue-soft:rgba(45,95,160,.1); --green-soft:rgba(45,122,58,.1); --amber-soft:rgba(184,115,51,.1); --rose-soft:rgba(184,58,58,.1); --purple-soft:rgba(122,59,143,.1);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg-deep);color:var(--tp);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .3s,color .3s;}
+body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+/* nav */
+nav{position:fixed;top:0;left:0;right:0;height:54px;z-index:100;backdrop-filter:blur(20px) saturate(180%);background:color-mix(in srgb,var(--bg-deep) 82%,transparent);border-bottom:1px solid var(--border);}
+.nav-in{max-width:1180px;margin:0 auto;height:100%;display:flex;align-items:center;justify-content:space-between;padding:0 1.6rem;}
+.logo{font-family:var(--mono);font-size:.82rem;font-weight:600;letter-spacing:.02em;}
+.logo span{color:var(--accent);}
+.nav-links{display:flex;gap:.3rem;font-family:var(--mono);font-size:.68rem;}
+.nav-links a{color:var(--ts);text-decoration:none;padding:.3rem .55rem;border-radius:6px;transition:.2s;}
+.nav-links a:hover,.nav-links a.on{color:var(--tp);background:var(--accent-soft);}
+.nav-meta{display:flex;align-items:center;gap:.45rem;font-family:var(--mono);font-size:.62rem;color:var(--tm);text-transform:uppercase;letter-spacing:.12em;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2.5s infinite;}
+.theme-btn{cursor:pointer;font-family:var(--mono);font-size:.62rem;color:var(--ts);border:1px solid var(--border);padding:.28rem .6rem;border-radius:6px;background:none;}
+footer.wt-credit{border-top:1px solid var(--border);margin-top:4rem;padding:1.6rem 2rem 2rem;text-align:center;font-family:var(--mono);font-size:.62rem;color:var(--tm);text-transform:uppercase;letter-spacing:.12em;}
+footer.wt-credit a{color:var(--tm);text-decoration:none;border-bottom:1px solid var(--border);transition:color .2s;}
+footer.wt-credit a:hover{color:var(--accent);}
+.progress{position:fixed;top:54px;left:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--blue));z-index:101;width:0;box-shadow:0 0 8px var(--accent-glow);}
+main{max-width:1180px;margin:0 auto;padding:0 1.6rem;padding-top:78px;counter-reset:sec;}
+.eyebrow{font-family:var(--mono);font-size:.68rem;color:var(--accent);text-transform:uppercase;letter-spacing:.18em;display:inline-flex;align-items:center;gap:.6rem;margin-bottom:.8rem;}
+.eyebrow::before{content:'';width:26px;height:1px;background:var(--accent);}
+h1{font-family:var(--serif);font-size:clamp(2.4rem,6vw,4rem);font-weight:400;line-height:1.04;letter-spacing:-.025em;margin:.2rem 0;max-width:880px;}
+h1 em,h2 em{font-style:italic;color:var(--accent);}
+h2{font-family:var(--serif);font-size:clamp(1.7rem,3.5vw,2.4rem);font-weight:400;line-height:1.15;margin:.2rem 0 .3rem;}
+.lede{color:var(--ts);font-size:1.08rem;line-height:1.7;max-width:720px;margin:.6rem 0 0;}
+p{color:var(--ts);font-size:.92rem;line-height:1.7;max-width:720px;}
+p code,li code{font-family:var(--mono);font-size:.8rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
+section{padding:4rem 0 2rem;scroll-margin-top:70px;transition:opacity .7s var(--ease),transform .7s var(--ease);}
+html.js section:not(.vis){opacity:0;transform:translateY(24px);}
+section.vis{opacity:1;transform:none;}
+.sec-label{counter-increment:sec;font-family:var(--mono);font-size:.65rem;color:var(--tm);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.5rem;}
+.sec-label::before{content:counter(sec,decimal-leading-zero) " \2014 ";}
+/* hero stats */
+.hstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:1.8rem;}
+.hstat{background:var(--bg-card);padding:1.1rem 1.2rem;}
+.hstat .v{font-family:var(--serif);font-size:1.9rem;color:var(--tp);line-height:1;}
+.hstat .v em{font-style:italic;color:var(--accent);}
+.hstat .l{font-family:var(--mono);font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;margin-top:.4rem;}
+/* detail panel */
+.panel{position:fixed;top:0;right:0;width:300px;height:100vh;background:var(--bg-card);border-left:1px solid var(--border-active);padding:24px 20px;overflow:auto;transform:translateX(100%);transition:transform .25s var(--ease);box-shadow:-20px 0 50px rgba(0,0,0,.3);z-index:200;}
+.panel.open{transform:none;}
+.panel .x{position:absolute;top:14px;right:16px;color:var(--tm);cursor:pointer;font-size:18px;}
+.panel .pk{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);}
+.panel h3{font-family:var(--serif);font-weight:400;font-size:1.4rem;margin:.2rem 0 .6rem;}
+.panel .pb{font-size:.86rem;color:var(--ts);line-height:1.6;}
+.panel code{font-family:var(--mono);font-size:.72rem;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;}
+.panel .sf-h{font-family:var(--serif);font-weight:400;font-size:1.4rem;margin:.2rem 0 .5rem;}
+.sf-summary{font-size:.86rem;color:var(--ts);line-height:1.6;margin:0 0 .8rem;}
+.sf-where{display:flex;flex-wrap:wrap;gap:.35rem;margin:.2rem 0 .8rem;}
+.sf-loc{font-family:var(--mono);font-size:.7rem;background:var(--accent-soft);color:var(--accent);padding:1px 6px;border-radius:4px;}
+.sf-code{margin:.2rem 0 .8rem;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.sf-code figcaption{font-family:var(--mono);font-size:.6rem;color:var(--tm);background:var(--bg-inset);padding:.3rem .6rem;}
+.sf-code pre{margin:0;padding:.6rem;overflow:auto;font-family:var(--mono);font-size:.72rem;color:var(--tp);}
+.sf-points{margin:.2rem 0 .8rem;padding-left:1.1rem;}
+.sf-points li{font-size:.84rem;color:var(--ts);margin:.25rem 0;}
+.sf-related{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.6rem;}
+.sf-related .chip{cursor:pointer;border:none;}
+dialog.sheet{max-width:min(900px,92vw);width:100%;max-height:86vh;border:1px solid var(--border-active);border-radius:14px;background:var(--bg-card);color:var(--tp);padding:0;overflow:hidden;box-shadow:0 30px 80px -20px rgba(0,0,0,.5);}
+dialog.sheet::backdrop{background:color-mix(in srgb,var(--bg-deep) 70%,transparent);backdrop-filter:blur(6px) saturate(140%);}
+dialog.sheet>.x{position:absolute;top:12px;right:14px;color:var(--tm);cursor:pointer;font-size:18px;background:none;border:none;z-index:1;}
+dialog.sheet .sf-body{padding:26px 24px;overflow:auto;flex:1;min-height:0;}
+dialog.sheet .sf-kicker{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);}
+dialog.sheet[open]{display:flex;flex-direction:column;animation:sheetIn .26s var(--ease);}
+@keyframes sheetIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){dialog.sheet[open]{animation:none;}}
+dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;height:100vh;max-height:100vh;border-radius:0;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@media(max-width:780px){.nav-links{display:none}}
+.chip{display:inline-flex;align-items:center;gap:.35rem;font-family:var(--mono);font-size:.6rem;font-weight:500;text-transform:uppercase;letter-spacing:.06em;padding:.2rem .55rem;border-radius:20px;border:1px solid var(--border);background:var(--bg-card);color:var(--ts);}
+.chip::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;}
+.chip.ok{color:var(--green);background:var(--green-soft);border-color:color-mix(in srgb,var(--green) 30%,transparent);}
+.chip.info{color:var(--blue);background:var(--blue-soft);border-color:color-mix(in srgb,var(--blue) 30%,transparent);}
+.chip.warn{color:var(--amber);background:var(--amber-soft);border-color:color-mix(in srgb,var(--amber) 30%,transparent);}
+.chip.danger{color:var(--rose);background:var(--rose-soft);border-color:color-mix(in srgb,var(--rose) 30%,transparent);}
+.chip.neutral{color:var(--ts);background:var(--bg-elevated);border-color:var(--border);}
+.sysmap{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.4rem;margin:1.2rem 0;overflow-x:auto;}
+.sys-bar{display:none;gap:.4rem;margin:0 0 1rem;}
+.sys-bar button{font-family:var(--mono);font-size:.62rem;color:var(--ts);background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:.3rem .7rem;cursor:pointer;transition:all .25s var(--ease);}
+.sys-bar button:hover{border-color:var(--border-strong);color:var(--tp);}
+.sys-stage{display:flex;flex-wrap:wrap;gap:.8rem;align-items:flex-start;position:relative;}
+.sys-wires{display:none;}
+.sys-node{background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:.5rem .85rem .55rem;font-family:var(--mono);font-size:.7rem;color:var(--tp);line-height:1.35;transition:border-color .3s var(--ease),box-shadow .3s var(--ease),opacity .3s var(--ease);}
+.sys-node[role="button"],.sys-ghead .sys-label[role="button"]{cursor:pointer;}
+.sys-node[role="button"]:hover,.sys-node:focus-visible{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 8px 32px -8px var(--accent-glow);outline:none;}
+.sys-kind{display:block;font-size:.52rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;}
+.sys-label{display:block;white-space:nowrap;}
+.sys-sub{display:block;font-size:.58rem;color:var(--ts);white-space:nowrap;}
+.sys-node[data-kind="store"]{border-color:color-mix(in srgb,var(--blue) 30%,transparent);background:linear-gradient(135deg,var(--bg-elevated),var(--blue-soft));}
+.sys-node[data-kind="queue"]{border-color:color-mix(in srgb,var(--purple) 30%,transparent);background:linear-gradient(135deg,var(--bg-elevated),var(--purple-soft));}
+.sys-node[data-kind="external"]{border-color:var(--border-strong);background:transparent;}
+.sys-node[data-kind="actor"]{border-radius:100px;padding-left:1.15rem;padding-right:1.15rem;border-color:color-mix(in srgb,var(--accent) 30%,transparent);background:linear-gradient(135deg,var(--bg-elevated),var(--accent-soft));}
+.sys-group{border:1px dashed var(--border-strong);border-radius:12px;background:var(--bg-inset);padding:.55rem .8rem .8rem;transition:border-color .3s var(--ease),background .3s var(--ease);}
+.sys-group .sys-group{background:var(--bg-card);}
+.sys-group .sys-group .sys-group{background:var(--bg-inset);}
+.sys-ghead{display:inline-flex;align-items:center;gap:.45rem;font-family:var(--mono);font-size:.58rem;text-transform:uppercase;letter-spacing:.13em;color:var(--ts);white-space:nowrap;}
+.sys-ghead .sys-label{display:inline;}
+.sys-tog,.sys-chg{display:none;}
+.sys-count,.sys-chg{font-size:.52rem;color:var(--tm);border:1px solid var(--border);border-radius:100px;padding:0 .4rem;letter-spacing:0;}
+.sys-chg{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 35%,transparent);}
+.sys-body{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:.55rem;}
+.sys-node[data-inferred],.sys-group[data-inferred]{border-style:dotted;border-color:var(--border-strong);}
+.sys-node[data-change="added"],.sys-group[data-change="added"]{box-shadow:0 0 0 2px var(--green);}
+.sys-node[data-change="modified"],.sys-group[data-change="modified"]{box-shadow:0 0 0 2px var(--amber);}
+.sys-node[data-change="deleted"],.sys-group[data-change="deleted"]{box-shadow:0 0 0 2px var(--rose);opacity:.6;}
+[data-change="deleted"]>.sys-label,[data-change="deleted"]>.sys-ghead>.sys-label{text-decoration:line-through;}
+.sys-mark{display:block;font-size:.5rem;text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;}
+.sys-ghead .sys-mark,.sys-links .sys-mark{display:inline;}
+.sys-mark[data-m="added"]{color:var(--green);}
+.sys-mark[data-m="modified"]{color:var(--amber);}
+.sys-mark[data-m="deleted"]{color:var(--rose);}
+.sys-conn{margin-top:1.1rem;border-top:1px dashed var(--border);padding-top:.9rem;}
+.sys-conn summary{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.14em;color:var(--tm);cursor:pointer;}
+.sys-links{list-style:none;margin:.6rem 0 0;padding:0;columns:3 240px;font-family:var(--mono);font-size:.64rem;color:var(--ts);}
+.sys-links li{padding:.14rem .3rem;break-inside:avoid;border-radius:5px;}
+.sys-links li.hot{background:var(--accent-soft);}
+.sys-links b{color:var(--tp);font-weight:500;}
+.sys-links i{font-style:normal;color:var(--tm);}
+.sys-links li[data-change="deleted"] b,.sys-links li[data-change="deleted"] i{text-decoration:line-through;}
+.sys-links .sf-loc{font-size:.56rem;margin-left:.3rem;}
+.sys-key{display:flex;flex-wrap:wrap;gap:.35rem .9rem;margin-top:.9rem;font-family:var(--mono);font-size:.54rem;color:var(--tm);text-transform:uppercase;letter-spacing:.08em;}
+.sys-key span{display:inline-flex;align-items:center;gap:.35rem;}
+.sys-key i{display:inline-block;width:14px;height:10px;border:1px solid var(--border-strong);border-radius:3px;background:var(--bg-elevated);}
+.sys-key i[data-k="store"]{border-color:color-mix(in srgb,var(--blue) 40%,transparent);background:var(--blue-soft);}
+.sys-key i[data-k="queue"]{border-color:color-mix(in srgb,var(--purple) 40%,transparent);background:var(--purple-soft);}
+.sys-key i[data-k="external"]{background:transparent;}
+.sys-key i[data-k="actor"]{border-radius:100px;border-color:color-mix(in srgb,var(--accent) 40%,transparent);background:var(--accent-soft);}
+.sys-key i[data-k="inferred"]{border-style:dotted;}
+.sys-key i[data-k="added"]{border-color:var(--green);box-shadow:0 0 0 1px var(--green);}
+.sys-key i[data-k="modified"]{border-color:var(--amber);box-shadow:0 0 0 1px var(--amber);}
+.sys-key i[data-k="deleted"]{border-color:var(--rose);box-shadow:0 0 0 1px var(--rose);}
+.sys-key i[data-k="async"]{width:18px;height:0;border:0;border-top:1.5px dashed var(--border-strong);border-radius:0;background:none;}
+/* upgraded by the engine: everything below applies only once the engine has turned the map on */
+.sysmap.on .sys-bar{display:flex;}
+.sysmap.on .sys-stage{display:block;margin:0 auto;}
+.sysmap.on .sys-wires{display:block;position:absolute;left:0;top:0;overflow:visible;pointer-events:none;z-index:3;}
+.sysmap.on .sys-node{position:absolute;width:max-content;margin:0;}
+.sysmap.on .sys-group{position:absolute;padding:0;margin:0;}
+.sysmap.on .sys-ghead{position:absolute;left:11px;top:4px;z-index:4;background:inherit;border-radius:6px;padding:2px 4px;}
+.sysmap.on .sys-body{display:block;margin:0;}
+.sysmap.on .sys-tog{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;padding:0;border:1px solid var(--border-strong);border-radius:4px;background:var(--bg-elevated);color:var(--ts);font-family:var(--mono);font-size:.62rem;line-height:1;cursor:pointer;}
+.sysmap.on .sys-tog::before{content:"\2212";}
+.sysmap.on .sys-tog[aria-expanded="false"]::before{content:"+";}
+.sysmap.on .sys-tog:hover,.sysmap.on .sys-tog:focus-visible{border-color:var(--accent);color:var(--accent);outline:none;}
+.sysmap.on .sys-group.closed{border-style:solid;border-color:var(--border-active);background:var(--bg-elevated);cursor:pointer;box-shadow:4px 4px 0 -1px var(--bg-card),4px 4px 0 0 var(--border-active);}
+.sysmap.on .sys-group.closed:hover{border-color:var(--accent);}
+.sysmap.on .sys-group.closed>.sys-ghead{top:7px;color:var(--tp);}
+.sysmap.on .sys-group.closed>.sys-ghead .sys-chg{display:inline;}
+.sysmap.on .sys-group.closed>.sys-body{display:none;}
+.sysmap.anim .sys-node,.sysmap.anim .sys-group{transition:left .4s var(--ease),top .4s var(--ease),width .4s var(--ease),height .4s var(--ease),border-color .3s var(--ease);}
+.sysmap.anim .sys-body{animation:sysfade .3s var(--ease) .3s both;}
+@keyframes sysfade{from{opacity:0}to{opacity:1}}
+.sys-w{fill:none;stroke:var(--border-strong);stroke-width:1.4;transition:stroke .2s,opacity .2s;}
+.sys-w.async{stroke-dasharray:5 4;}
+.sys-w.inferred{stroke-dasharray:1 5;stroke-linecap:round;}
+.sys-w.async.inferred{stroke-dasharray:5 4 1 4;stroke-linecap:round;}
+.sys-w.multi{stroke-width:2.3;}
+.sys-w.chg-added{stroke:var(--green);}
+.sys-w.chg-modified{stroke:var(--amber);}
+.sys-w.chg-deleted{stroke:var(--rose);opacity:.6;}
+.sys-w.hot{stroke:var(--accent);opacity:1;}
+.sys-arr{fill:var(--border-strong);}
+.sys-arr-hot{fill:var(--accent);}
+.sys-arr-added{fill:var(--green);}
+.sys-arr-modified{fill:var(--amber);}
+.sys-arr-deleted{fill:var(--rose);}
+.sys-wl{font-family:var(--mono);font-size:10px;fill:var(--ts);paint-order:stroke;stroke:var(--bg-card);stroke-width:5px;stroke-linejoin:round;transition:opacity .2s,fill .2s;}
+.sys-wl.multi{pointer-events:auto;cursor:pointer;text-decoration:underline;}
+.sys-wl.hot{fill:var(--tp);}
+.sys-wires.dimmed .sys-w:not(.hot),.sys-wires.dimmed .sys-wl:not(.hot){opacity:.16;}
+.sys-node.peer,.sys-group.peer{border-color:var(--accent);}
+@media (prefers-reduced-motion:reduce){.sysmap.anim .sys-node,.sysmap.anim .sys-group{transition:none}.sysmap.anim .sys-body{animation:none}}
+/* back-compat: the 1.5.0 architecture map and dependency graph, for old markup that update could not upgrade */
+.archmap{display:flex;align-items:center;flex-wrap:wrap;gap:.4rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1.2rem 0;justify-content:center;}
+.flow-node{background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:.85rem 1.25rem;font-family:var(--mono);font-size:.72rem;color:var(--tp);text-align:center;position:relative;cursor:pointer;min-width:140px;}
+.flow-node .node-label{font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.3rem;display:block;}
+.flow-arrow{color:var(--tm);font-size:1.2rem;padding:0 .75rem;opacity:.4;flex-shrink:0;}
+.depgraph{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1.2rem 0;overflow-x:auto;}
+.depgraph svg{display:block;min-width:560px;max-width:100%;height:auto;}
+.dg-edge line{stroke:var(--border-strong);stroke-width:1.5;}
+.dg-node rect{fill:var(--bg-elevated);stroke:var(--border);}
+.dg-node text{font-family:var(--mono);font-size:11px;fill:var(--tp);}
+</style></head>
+<body>
+  <nav><div class="nav-in">
+    <div class="logo">◆ walk<span>through</span></div>
+    <div class="nav-links"><a href="#system" class="on">the system</a><a href="#before">before</a><a href="#after">after</a><a href="#imports">imports</a></div>
+    <div style="display:flex;align-items:center;gap:.8rem">
+      <div class="nav-meta"><span class="dot"></span> FIXTURE &middot; SYSTEM MAP</div>
+      <button class="theme-btn" onclick="tgl()">◑ THEME</button></div>
+  </div></nav>
+  <div class="progress" id="prog"></div>
+  <main>
+    <section id="top" class="vis"><div class="eyebrow">golden fixture</div><h1>System map <em>sample</em></h1><p class="lede">Four maps built from the fixture graphs: nested boundaries, a cycle, async and inferred wires, change marks and a plain import graph.</p></section>
+    <section id="system"><div class="sec-label">the system</div><h2>The <em>system</em></h2><p class="lede">Eighteen boxes in four boundaries, with one cycle: the payments webhook comes back into the gateway.</p><div class="sysmap" data-graph="medium"><div class="sys-bar"><button data-act="all">expand all</button><button data-act="none">collapse all</button><button data-act="auto">reset</button></div><div class="sys-stage"><svg class="sys-wires" aria-hidden="true"></svg><div class="sys-node" data-id="customer" data-kind="actor" role="button" tabindex="0" aria-label="Customer" onclick="openSurface('customer')"><span class="sys-kind">actor</span><span class="sys-label">Customer</span><span class="sys-sub">browser</span></div><div class="sys-node" data-id="admin" data-kind="actor" role="button" tabindex="0" aria-label="Admin" onclick="openSurface('admin')"><span class="sys-kind">actor</span><span class="sys-label">Admin</span><span class="sys-sub">back office</span></div><div class="sys-group" data-id="edge"><div class="sys-ghead"><button class="sys-tog" aria-expanded="true" aria-label="Expand or collapse Edge"></button><span class="sys-label">Edge</span><span class="sys-count">2</span></div><div class="sys-body"><div class="sys-node" data-id="cdn" data-kind="service" role="button" tabindex="0" aria-label="CDN" onclick="openSurface('cdn')"><span class="sys-kind">service</span><span class="sys-label">CDN</span><span class="sys-sub">static + cache</span></div><div class="sys-node" data-id="gw" data-kind="service" role="button" tabindex="0" aria-label="API gateway" onclick="openSurface('gw')"><span class="sys-kind">service</span><span class="sys-label">API gateway</span><span class="sys-sub">Envoy</span></div></div></div><div class="sys-group" data-id="shop"><div class="sys-ghead"><button class="sys-tog" aria-expanded="true" aria-label="Expand or collapse Shop services"></button><span class="sys-label">Shop services</span><span class="sys-count">5</span></div><div class="sys-body"><div class="sys-node" data-id="web" data-kind="service" role="button" tabindex="0" aria-label="Storefront" onclick="openSurface('web')"><span class="sys-kind">service</span><span class="sys-label">Storefront</span><span class="sys-sub">Next.js</span></div><div class="sys-node" data-id="catalog" data-kind="service" role="button" tabindex="0" aria-label="Catalog" onclick="openSurface('catalog')"><span class="sys-kind">service</span><span class="sys-label">Catalog</span><span class="sys-sub">Node</span></div><div class="sys-node" data-id="cart" data-kind="service" role="button" tabindex="0" aria-label="Cart" onclick="openSurface('cart')"><span class="sys-kind">service</span><span class="sys-label">Cart</span><span class="sys-sub">Node</span></div><div class="sys-node" data-id="checkout" data-kind="service" role="button" tabindex="0" aria-label="Checkout" onclick="openSurface('checkout')"><span class="sys-kind">service</span><span class="sys-label">Checkout</span><span class="sys-sub">Kotlin</span></div><div class="sys-node" data-id="auth" data-kind="service" role="button" tabindex="0" aria-label="Auth" onclick="openSurface('auth')"><span class="sys-kind">service</span><span class="sys-label">Auth</span><span class="sys-sub">Go</span></div></div></div><div class="sys-group" data-id="data"><div class="sys-ghead"><button class="sys-tog" aria-expanded="true" aria-label="Expand or collapse Data"></button><span class="sys-label">Data</span><span class="sys-count">4</span></div><div class="sys-body"><div class="sys-node" data-id="catalogdb" data-kind="store" role="button" tabindex="0" aria-label="Catalog DB" onclick="openSurface('catalogdb')"><span class="sys-kind">store</span><span class="sys-label">Catalog DB</span><span class="sys-sub">Postgres</span></div><div class="sys-node" data-id="ordersdb" data-kind="store" role="button" tabindex="0" aria-label="Orders DB" onclick="openSurface('ordersdb')"><span class="sys-kind">store</span><span class="sys-label">Orders DB</span><span class="sys-sub">Postgres</span></div><div class="sys-node" data-id="sessions" data-kind="store" role="button" tabindex="0" aria-label="Sessions" onclick="openSurface('sessions')"><span class="sys-kind">store</span><span class="sys-label">Sessions</span><span class="sys-sub">Redis</span></div><div class="sys-node" data-id="search" data-kind="store" role="button" tabindex="0" aria-label="Search index" onclick="openSurface('search')"><span class="sys-kind">store</span><span class="sys-label">Search index</span><span class="sys-sub">OpenSearch</span></div></div></div><div class="sys-group" data-id="async"><div class="sys-ghead"><button class="sys-tog" aria-expanded="true" aria-label="Expand or collapse Async"></button><span class="sys-label">Async</span><span class="sys-count">3</span></div><div class="sys-body"><div class="sys-node" data-id="bus" data-kind="queue" role="button" tabindex="0" aria-label="Event bus" onclick="openSurface('bus')"><span class="sys-kind">queue</span><span class="sys-label">Event bus</span><span class="sys-sub">Kafka</span></div><div class="sys-node" data-id="emailw" data-kind="service" role="button" tabindex="0" aria-label="Email worker" onclick="openSurface('emailw')"><span class="sys-kind">service</span><span class="sys-label">Email worker</span><span class="sys-sub">Node</span></div><div class="sys-node" data-id="invw" data-kind="service" role="button" tabindex="0" aria-label="Inventory worker" onclick="openSurface('invw')"><span class="sys-kind">service</span><span class="sys-label">Inventory worker</span><span class="sys-sub">Kotlin</span></div></div></div><div class="sys-node" data-id="payments" data-kind="external" role="button" tabindex="0" aria-label="Payments" onclick="openSurface('payments')"><span class="sys-kind">external</span><span class="sys-label">Payments</span><span class="sys-sub">PSP</span></div><div class="sys-node" data-id="emailp" data-kind="external" role="button" tabindex="0" aria-label="Email provider" onclick="openSurface('emailp')"><span class="sys-kind">external</span><span class="sys-label">Email provider</span><span class="sys-sub">SMTP API</span></div></div><details class="sys-conn" open><summary>connections (21)</summary><ol class="sys-links"><li data-from="customer" data-to="cdn" data-label="HTTPS" data-flow="sync"><b>Customer</b> &rarr; <b>CDN</b> <i>HTTPS</i></li><li data-from="admin" data-to="gw" data-label="admin API" data-flow="sync"><b>Admin</b> &rarr; <b>API gateway</b> <i>admin API</i></li><li data-from="cdn" data-to="gw" data-label="dynamic" data-flow="sync"><b>CDN</b> &rarr; <b>API gateway</b> <i>dynamic</i></li><li data-from="gw" data-to="web" data-label="route" data-flow="sync"><b>API gateway</b> &rarr; <b>Storefront</b> <i>route</i></li><li data-from="gw" data-to="auth" data-label="verify token" data-flow="sync"><b>API gateway</b> &rarr; <b>Auth</b> <i>verify token</i></li><li data-from="web" data-to="catalog" data-label="browse" data-flow="sync"><b>Storefront</b> &rarr; <b>Catalog</b> <i>browse</i></li><li data-from="web" data-to="cart" data-label="add item" data-flow="sync"><b>Storefront</b> &rarr; <b>Cart</b> <i>add item</i></li><li data-from="web" data-to="checkout" data-label="place order" data-flow="sync"><b>Storefront</b> &rarr; <b>Checkout</b> <i>place order</i></li><li data-from="catalog" data-to="catalogdb" data-label="read" data-flow="sync"><b>Catalog</b> &rarr; <b>Catalog DB</b> <i>read</i></li><li data-from="catalog" data-to="search" data-label="query" data-flow="sync"><b>Catalog</b> &rarr; <b>Search index</b> <i>query</i></li><li data-from="cart" data-to="sessions" data-label="cart state" data-flow="sync"><b>Cart</b> &rarr; <b>Sessions</b> <i>cart state</i></li><li data-from="auth" data-to="sessions" data-label="session" data-flow="sync"><b>Auth</b> &rarr; <b>Sessions</b> <i>session</i></li><li data-from="checkout" data-to="ordersdb" data-label="write order" data-flow="sync"><b>Checkout</b> &rarr; <b>Orders DB</b> <i>write order</i></li><li data-from="checkout" data-to="payments" data-label="charge" data-flow="sync"><b>Checkout</b> &rarr; <b>Payments</b> <i>charge</i></li><li data-from="checkout" data-to="bus" data-label="order.placed" data-flow="async"><b>Checkout</b> &rarr; <b>Event bus</b> <i>order.placed (async)</i></li><li data-from="bus" data-to="emailw" data-label="fan-out" data-flow="async"><b>Event bus</b> &rarr; <b>Email worker</b> <i>fan-out (async)</i></li><li data-from="bus" data-to="invw" data-label="fan-out" data-flow="async"><b>Event bus</b> &rarr; <b>Inventory worker</b> <i>fan-out (async)</i></li><li data-from="emailw" data-to="emailp" data-label="send" data-flow="sync"><b>Email worker</b> &rarr; <b>Email provider</b> <i>send</i></li><li data-from="invw" data-to="catalogdb" data-label="decrement stock" data-flow="sync"><b>Inventory worker</b> &rarr; <b>Catalog DB</b> <i>decrement stock</i></li><li data-from="payments" data-to="gw" data-label="webhook" data-flow="sync"><b>Payments</b> &rarr; <b>API gateway</b> <i>webhook</i></li><li data-from="checkout" data-to="cart" data-label="clear cart" data-flow="sync"><b>Checkout</b> &rarr; <b>Cart</b> <i>clear cart</i></li></ol></details><div class="sys-key"><span><i data-k="actor"></i>actor</span><span><i data-k="service"></i>service</span><span><i data-k="store"></i>store</span><span><i data-k="queue"></i>queue</span><span><i data-k="external"></i>external</span><span><i data-k="async"></i>async</span></div></div></section>
+    <section id="before"><div class="sec-label">before</div><h2>Before the <em>change</em></h2><p class="lede">The shop before search was rebuilt.</p><div class="sysmap" data-graph="before"><div class="sys-bar"><button data-act="all">expand all</button><button data-act="none">collapse all</button><button data-act="auto">reset</button></div><div class="sys-stage"><svg class="sys-wires" aria-hidden="true"></svg><div class="sys-node" data-id="customer" data-kind="actor"><span class="sys-kind">actor</span><span class="sys-label">Customer</span><span class="sys-sub">browser</span></div><div class="sys-group" data-id="shop"><div class="sys-ghead"><button class="sys-tog" aria-expanded="true" aria-label="Expand or collapse Shop"></button><span class="sys-label">Shop</span><span class="sys-count">3</span></div><div class="sys-body"><div class="sys-node" data-id="web" data-kind="service"><span class="sys-kind">service</span><span class="sys-label">Storefront</span><span class="sys-sub">Next.js</span></div><div class="sys-node" data-id="catalog" data-kind="service"><span class="sys-kind">service</span><span class="sys-label">Catalog</span><span class="sys-sub">Node</span></div><div class="sys-node" data-id="legacy" data-kind="service"><span class="sys-kind">service</span><span class="sys-label">Legacy search</span><span class="sys-sub">PHP</span></div></div></div><div class="sys-group" data-id="data"><div class="sys-ghead"><button class="sys-tog" aria-expanded="true" aria-label="Expand or collapse Data"></button><span class="sys-label">Data</span><span class="sys-count">2</span></div><div class="sys-body"><div class="sys-node" data-id="catalogdb" data-kind="store"><span class="sys-kind">store</span><span class="sys-label">Catalog DB</span><span class="sys-sub">Postgres</span></div><div class="sys-node" data-id="sessions" data-kind="store"><span class="sys-kind">store</span><span class="sys-label">Sessions</span><span class="sys-sub">Redis</span></div></div></div><div class="sys-node" data-id="mail" data-kind="external"><span class="sys-kind">external</span><span class="sys-label">Email provider</span><span class="sys-sub">SMTP API</span></div></div><details class="sys-conn" open><summary>connections (7)</summary><ol class="sys-links"><li data-from="customer" data-to="web" data-label="HTTPS" data-flow="sync"><b>Customer</b> &rarr; <b>Storefront</b> <i>HTTPS</i></li><li data-from="web" data-to="catalog" data-label="browse" data-flow="sync"><b>Storefront</b> &rarr; <b>Catalog</b> <i>browse</i></li><li data-from="web" data-to="legacy" data-label="search" data-flow="sync"><b>Storefront</b> &rarr; <b>Legacy search</b> <i>search</i></li><li data-from="catalog" data-to="catalogdb" data-label="read" data-flow="sync"><b>Catalog</b> &rarr; <b>Catalog DB</b> <i>read</i></li><li data-from="legacy" data-to="catalogdb" data-label="LIKE query" data-flow="sync"><b>Legacy search</b> &rarr; <b>Catalog DB</b> <i>LIKE query</i></li><li data-from="web" data-to="sessions" data-label="session" data-flow="sync"><b>Storefront</b> &rarr; <b>Sessions</b> <i>session</i></li><li data-from="web" data-to="mail" data-label="receipts" data-flow="sync"><b>Storefront</b> &rarr; <b>Email provider</b> <i>receipts</i></li></ol></details><div class="sys-key"><span><i data-k="actor"></i>actor</span><span><i data-k="service"></i>service</span><span><i data-k="store"></i>store</span><span><i data-k="external"></i>external</span></div></div></section>
+    <section id="after"><div class="sec-label">after</div><h2>After the <em>change</em></h2><p class="lede">The same shop afterwards. Marks show what was added, modified and deleted; dotted items are inferred.</p><div class="sysmap" data-graph="after" data-compare="before"><div class="sys-bar"><button data-act="all">expand all</button><button data-act="none">collapse all</button><button data-act="auto">reset</button></div><div class="sys-stage"><svg class="sys-wires" aria-hidden="true"></svg><div class="sys-node" data-id="customer" data-kind="actor"><span class="sys-kind">actor</span><span class="sys-label">Customer</span><span class="sys-sub">browser</span></div><div class="sys-group" data-id="shop" data-open="true"><div class="sys-ghead"><button class="sys-tog" aria-expanded="true" aria-label="Expand or collapse Shop"></button><span class="sys-label">Shop</span><span class="sys-count">4</span><span class="sys-chg">5 changed</span></div><div class="sys-body"><div class="sys-node" data-id="web" data-kind="service"><span class="sys-kind">service</span><span class="sys-label">Storefront</span><span class="sys-sub">Next.js</span></div><div class="sys-node" data-id="catalog" data-kind="service" data-change="modified"><span class="sys-mark" data-m="modified">~ modified</span><span class="sys-kind">service</span><span class="sys-label">Catalog</span><span class="sys-sub">Node</span></div><div class="sys-node" data-id="legacy" data-kind="service" data-change="deleted"><span class="sys-mark" data-m="deleted">- deleted</span><span class="sys-kind">service</span><span class="sys-label">Legacy search</span><span class="sys-sub">PHP</span></div><div class="sys-node" data-id="search" data-kind="service" data-change="added"><span class="sys-mark" data-m="added">+ added</span><span class="sys-kind">service</span><span class="sys-label">Search</span><span class="sys-sub">Go</span></div></div></div><div class="sys-group" data-id="data" data-open="false"><div class="sys-ghead"><button class="sys-tog" aria-expanded="true" aria-label="Expand or collapse Data"></button><span class="sys-label">Data</span><span class="sys-count">3</span><span class="sys-chg">1 changed</span></div><div class="sys-body"><div class="sys-node" data-id="catalogdb" data-kind="store"><span class="sys-kind">store</span><span class="sys-label">Catalog DB</span><span class="sys-sub">Postgres</span></div><div class="sys-node" data-id="sessions" data-kind="store"><span class="sys-kind">store</span><span class="sys-label">Sessions</span><span class="sys-sub">Redis</span></div><div class="sys-node" data-id="searchidx" data-kind="store" data-change="added"><span class="sys-mark" data-m="added">+ added</span><span class="sys-kind">store</span><span class="sys-label">Search index</span><span class="sys-sub">OpenSearch</span></div></div></div><div class="sys-node" data-id="bus" data-kind="queue" data-change="added" data-inferred><span class="sys-mark" data-m="added">+ added</span><span class="sys-kind">queue &middot; inferred</span><span class="sys-label">Change feed</span><span class="sys-sub">Kafka</span></div><div class="sys-node" data-id="mail" data-kind="external"><span class="sys-kind">external</span><span class="sys-label">Email provider</span><span class="sys-sub">SMTP API</span></div></div><details class="sys-conn" open><summary>connections (11)</summary><ol class="sys-links"><li data-from="customer" data-to="web" data-label="HTTPS" data-flow="sync"><b>Customer</b> &rarr; <b>Storefront</b> <i>HTTPS</i></li><li data-from="web" data-to="catalog" data-label="browse" data-flow="sync"><b>Storefront</b> &rarr; <b>Catalog</b> <i>browse</i></li><li data-from="web" data-to="legacy" data-label="search" data-flow="sync" data-change="deleted"><b>Storefront</b> &rarr; <b>Legacy search</b> <i>search</i><span class="sys-mark" data-m="deleted">- deleted</span></li><li data-from="web" data-to="search" data-label="search" data-flow="sync" data-change="added"><b>Storefront</b> &rarr; <b>Search</b> <i>search</i><span class="sys-mark" data-m="added">+ added</span></li><li data-from="catalog" data-to="catalogdb" data-label="read + write" data-flow="sync" data-change="modified"><b>Catalog</b> &rarr; <b>Catalog DB</b> <i>read + write</i><span class="sys-mark" data-m="modified">~ modified</span></li><li data-from="legacy" data-to="catalogdb" data-label="LIKE query" data-flow="sync" data-change="deleted"><b>Legacy search</b> &rarr; <b>Catalog DB</b> <i>LIKE query</i><span class="sys-mark" data-m="deleted">- deleted</span></li><li data-from="search" data-to="searchidx" data-label="query" data-flow="sync" data-change="added"><b>Search</b> &rarr; <b>Search index</b> <i>query</i><span class="sys-mark" data-m="added">+ added</span></li><li data-from="catalog" data-to="bus" data-label="product changed" data-flow="async" data-change="added" data-inferred><b>Catalog</b> &rarr; <b>Change feed</b> <i>product changed (async) (inferred)</i><span class="sys-mark" data-m="added">+ added</span></li><li data-from="bus" data-to="search" data-label="reindex" data-flow="async" data-change="added" data-inferred><b>Change feed</b> &rarr; <b>Search</b> <i>reindex (async) (inferred)</i><span class="sys-mark" data-m="added">+ added</span></li><li data-from="web" data-to="sessions" data-label="session" data-flow="sync"><b>Storefront</b> &rarr; <b>Sessions</b> <i>session</i></li><li data-from="web" data-to="mail" data-label="receipts" data-flow="sync"><b>Storefront</b> &rarr; <b>Email provider</b> <i>receipts</i></li></ol></details><div class="sys-key"><span><i data-k="actor"></i>actor</span><span><i data-k="service"></i>service</span><span><i data-k="store"></i>store</span><span><i data-k="queue"></i>queue</span><span><i data-k="external"></i>external</span><span><i data-k="async"></i>async</span><span><i data-k="inferred"></i>inferred</span><span><i data-k="added"></i>added</span><span><i data-k="modified"></i>modified</span><span><i data-k="deleted"></i>deleted</span></div></div></section>
+    <section id="imports"><div class="sec-label">imports</div><h2>Package <em>imports</em></h2><p class="lede">A module dependency graph: unlabelled import wires with shared leaves.</p><div class="sysmap" data-graph="deps"><div class="sys-bar"><button data-act="all">expand all</button><button data-act="none">collapse all</button><button data-act="auto">reset</button></div><div class="sys-stage"><svg class="sys-wires" aria-hidden="true"></svg><div class="sys-node" data-id="cli"><span class="sys-label">cli</span></div><div class="sys-node" data-id="plugins"><span class="sys-label">plugins</span></div><div class="sys-node" data-id="core"><span class="sys-label">core</span></div><div class="sys-node" data-id="config"><span class="sys-label">config</span></div><div class="sys-node" data-id="parser"><span class="sys-label">parser</span></div><div class="sys-node" data-id="utils"><span class="sys-label">utils</span></div></div><details class="sys-conn" open><summary>connections (8)</summary><ol class="sys-links"><li data-from="cli" data-to="core" data-label="" data-flow="sync"><b>cli</b> &rarr; <b>core</b></li><li data-from="cli" data-to="config" data-label="" data-flow="sync"><b>cli</b> &rarr; <b>config</b></li><li data-from="plugins" data-to="core" data-label="" data-flow="sync"><b>plugins</b> &rarr; <b>core</b></li><li data-from="plugins" data-to="utils" data-label="" data-flow="sync"><b>plugins</b> &rarr; <b>utils</b></li><li data-from="core" data-to="parser" data-label="" data-flow="sync"><b>core</b> &rarr; <b>parser</b></li><li data-from="core" data-to="utils" data-label="" data-flow="sync"><b>core</b> &rarr; <b>utils</b></li><li data-from="config" data-to="utils" data-label="" data-flow="sync"><b>config</b> &rarr; <b>utils</b></li><li data-from="parser" data-to="utils" data-label="" data-flow="sync"><b>parser</b> &rarr; <b>utils</b></li></ol></details></div></section>
+  </main>
+  <footer class="wt-credit">generated by <a href="https://github.com/ApurvBazari/claude-plugins" target="_blank" rel="noopener">walkthrough</a></footer>
+  <aside class="panel" id="panel"><span class="x" role="button" tabindex="0" aria-label="Close detail" onclick="closeD()">✕</span>
+    <div class="pk" id="panelKicker">Detail</div>
+    <div class="pb" id="panelBody"></div></aside>
+  <div id="sheets"></div>
+  <dialog class="sheet pane-dialog" id="paneDialog"><button class="x" onclick="this.closest('dialog').close()">✕</button><div class="sf-body" id="paneDialogBody"></div></dialog>
+  <script type="application/json" id="wt-data">{"DET":{"customer":{"k":"actor","h":"Customer","summary":"Customer is a actor in the online shop fixture, built on browser.","where":["tests/walkthrough/sysmap/fixtures.js"]},"admin":{"k":"actor","h":"Admin","summary":"Admin is a actor in the online shop fixture, built on back office.","where":["tests/walkthrough/sysmap/fixtures.js"]},"cdn":{"k":"service","h":"CDN","summary":"CDN is a service in the online shop fixture, built on static + cache.","where":["tests/walkthrough/sysmap/fixtures.js"]},"gw":{"k":"service","h":"API gateway","summary":"API gateway is a service in the online shop fixture, built on Envoy.","where":["tests/walkthrough/sysmap/fixtures.js"]},"web":{"k":"service","h":"Storefront","summary":"Storefront is a service in the online shop fixture, built on Next.js.","where":["tests/walkthrough/sysmap/fixtures.js"]},"catalog":{"k":"service","h":"Catalog","summary":"Catalog is a service in the online shop fixture, built on Node.","where":["tests/walkthrough/sysmap/fixtures.js"]},"cart":{"k":"service","h":"Cart","summary":"Cart is a service in the online shop fixture, built on Node.","where":["tests/walkthrough/sysmap/fixtures.js"]},"checkout":{"k":"service","h":"Checkout","summary":"Checkout is a service in the online shop fixture, built on Kotlin.","where":["tests/walkthrough/sysmap/fixtures.js"]},"auth":{"k":"service","h":"Auth","summary":"Auth is a service in the online shop fixture, built on Go.","where":["tests/walkthrough/sysmap/fixtures.js"]},"catalogdb":{"k":"store","h":"Catalog DB","summary":"Catalog DB is a store in the online shop fixture, built on Postgres.","where":["tests/walkthrough/sysmap/fixtures.js"]},"ordersdb":{"k":"store","h":"Orders DB","summary":"Orders DB is a store in the online shop fixture, built on Postgres.","where":["tests/walkthrough/sysmap/fixtures.js"]},"sessions":{"k":"store","h":"Sessions","summary":"Sessions is a store in the online shop fixture, built on Redis.","where":["tests/walkthrough/sysmap/fixtures.js"]},"search":{"k":"store","h":"Search index","summary":"Search index is a store in the online shop fixture, built on OpenSearch.","where":["tests/walkthrough/sysmap/fixtures.js"]},"bus":{"k":"queue","h":"Event bus","summary":"Event bus is a queue in the online shop fixture, built on Kafka.","where":["tests/walkthrough/sysmap/fixtures.js"]},"emailw":{"k":"service","h":"Email worker","summary":"Email worker is a service in the online shop fixture, built on Node.","where":["tests/walkthrough/sysmap/fixtures.js"]},"invw":{"k":"service","h":"Inventory worker","summary":"Inventory worker is a service in the online shop fixture, built on Kotlin.","where":["tests/walkthrough/sysmap/fixtures.js"]},"payments":{"k":"external","h":"Payments","summary":"Payments is a external in the online shop fixture, built on PSP.","where":["tests/walkthrough/sysmap/fixtures.js"]},"emailp":{"k":"external","h":"Email provider","summary":"Email provider is a external in the online shop fixture, built on SMTP API.","where":["tests/walkthrough/sysmap/fixtures.js"]}},"SURF":{"customer":"pane","admin":"pane","cdn":"pane","gw":"pane","web":"pane","catalog":"pane","cart":"pane","checkout":"pane","auth":"pane","catalogdb":"pane","ordersdb":"pane","sessions":"pane","search":"pane","bus":"pane","emailw":"pane","invw":"pane","payments":"pane","emailp":"pane"}}</script>
+  <script>// progressive-enhancement gate + inert-data load (must be first)
+document.documentElement.classList.add('js');
+const _WT=(()=>{try{return JSON.parse(document.getElementById('wt-data').textContent||'{}');}catch(e){return{};}})();
+const DET=_WT.DET||{}, SURF=_WT.SURF||{};
+// renderSurface — build a structured detail DOM from a DET record into `host`
+function renderSurface(d,host){if(!d||!host)return;let h='';
+ if(d.h)h+=`<h3 class="sf-h">${d.h}</h3>`;
+ if(d.summary)h+=`<p class="sf-summary">${d.summary}</p>`;
+ if(d.where&&d.where.length)h+=`<div class="sf-where">${d.where.map(w=>`<code class="sf-loc">${w}</code>`).join('')}</div>`;
+ if(d.code&&d.code.length)h+=d.code.map(c=>`<figure class="sf-code"><figcaption>${c.file||''}</figcaption><pre><code>${c.snippet||''}</code></pre></figure>`).join('');
+ if(d.points&&d.points.length)h+=`<ul class="sf-points">${d.points.map(p=>`<li>${p}</li>`).join('')}</ul>`;
+ if(d.components)h+=d.components;
+ if(d.related&&d.related.length)h+=`<div class="sf-related">${d.related.map(r=>`<button class="chip neutral" onclick="openSurface('${r}')">${r}</button>`).join('')}</div>`;
+ host.innerHTML=h;}
+const panel=document.getElementById('panel');
+function openPane(id){const d=DET[id];if(!d)return;
+ const k=document.getElementById('panelKicker');if(k)k.textContent=d.k||'Detail';
+ renderSurface(d,document.getElementById('panelBody'));panel.classList.add('open');}
+// Phase ③ router: pane vs sheet via SURF; sheets and nested panes stack as native <dialog>s in the top layer, capped at MAX_DEPTH (replace-topmost)
+const _stack=[]; const MAX_DEPTH=3;
+function _capPush(el){if(!el||el.open)return;if(_stack.length>=MAX_DEPTH){const t=_stack.pop();if(t)t.close();}el.showModal();_stack.push(el);}
+function openSurface(id){const k=(typeof SURF!=='undefined'&&SURF[id])||'pane';
+ if(k==='sheet'){const el=document.getElementById('sheet-'+id);_capPush(el);return;}
+ if(_stack.length){const pd=document.getElementById('paneDialog'),d=DET[id],b=document.getElementById('paneDialogBody');
+  // nested pane → shared paneDialog: render kicker + body, then stack it. Re-opening swaps content in place (no new depth level; _capPush no-ops on el.open).
+  renderSurface(d,b);if(d&&d.k)b.insertAdjacentHTML('afterbegin',`<div class="sf-kicker">${d.k}</div>`);_capPush(pd);}
+ else openPane(id);}
+// dialog housekeeping: pop on close, close on backdrop click
+document.querySelectorAll('dialog.sheet').forEach(dlg=>{
+ dlg.addEventListener('close',()=>{const i=_stack.indexOf(dlg);if(i>-1)_stack.splice(i,1);});
+ dlg.addEventListener('click',e=>{if(e.target===dlg)dlg.close();});});
+function openCard(el){if(!el)return;openPane(el.dataset.id||'');}
+function openD(id){openSurface(id);} // deprecated alias
+function closeD(){panel.classList.remove('open');}
+// keyboard: Escape closes the topmost surface; Enter/Space activates any focused [role="button"] (div/span interactives) — native <button>s are excluded (no role) and fire themselves
+document.addEventListener('keydown',e=>{
+ if(e.key==='Escape'&&!_stack.length){closeD();return;}
+ if(e.key==='Enter'||e.key===' '){const b=e.target&&e.target.closest&&e.target.closest('[role="button"]');if(b){if(e.key===' ')e.preventDefault();b.click();}}});
+function setTab(app){document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.app===app));
+ document.querySelectorAll('.detail').forEach(d=>{const on=d.dataset.app===app;d.classList.toggle('show',on);if(on)animate(d);});}
+function animate(scope){scope.querySelectorAll('.fil').forEach(f=>{f.style.width='0';requestAnimationFrame(()=>requestAnimationFrame(()=>{f.style.width=f.dataset.w+'%';}));});}
+function tog(el){el.classList.toggle('on');const set=new Set([...document.querySelectorAll('.pill.on')].map(p=>p.dataset.f));
+ document.querySelectorAll('.tcard').forEach(c=>c.classList.toggle('hidden',!set.has(c.dataset.cat)));}
+function tgl(){const h=document.documentElement;const t=h.getAttribute('data-theme')==='dark'?'light':'dark';h.setAttribute('data-theme',t);try{localStorage.setItem('wt-theme',t);}catch(e){}}
+(function(){try{const t=localStorage.getItem('wt-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+// reveal + progress + animate-on-view
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vis');const d=e.target.querySelector('.detail.show');if(d)animate(d);}}),{threshold:.1});
+document.querySelectorAll('section').forEach(s=>io.observe(s));
+// failsafe: if the IO never fires (runtime error, detached observer), reveal everything after 2.5s
+setTimeout(()=>document.querySelectorAll('section').forEach(s=>s.classList.add('vis')),2500);
+addEventListener('scroll',()=>{const sc=scrollY/(document.body.scrollHeight-innerHeight)*100;if(prog)prog.style.width=sc+'%';
+ let cur='';document.querySelectorAll('section[id]').forEach(s=>{if(scrollY>=s.offsetTop-120)cur=s.id;});
+ document.querySelectorAll('.nav-links a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+cur));},{passive:true});
+// initial bar animation for the shown tab
+setTimeout(()=>{const d=document.querySelector('.detail.show');if(d)animate(d);},300);</script>
+  <script></script>
+  <script id="wt-sysmap">
+/* walkthrough system-map engine v1 */
+/* Reads a .sysmap block, places its boxes and draws its wires. Layout is pure and runs under node;
+   init() is the page code. Any error leaves the plain view in place. */
+(function (G) {
+'use strict';
+const ROOT = '\u0000';
+const K = { GAP_LR: 24, GAP_TB: 20, NODE_GAP: 16, MIX_GAP: 11, SLOT: 10, SLOT_GAP: 5, PADX: 16, PADY: 14,
+  LABEL_H: 14, LABEL_PAD: 10, HEAD_PAD: 12, CLOSED_PAD: 20, BUDGET: 16, PASS2: true };
+const O = () => Object.create(null);
+const last = a => a[a.length - 1];
+
+/* ---- model ---- */
+// nodes: [{id, parent, group, open}]   edges: [{from, to, label, flow, change, inferred}]
+function buildModel(nodes, edges) {
+  const m = { ids: [], parent: O(), kids: O(), group: O(), forced: O(), edges: edges || [] };
+  m.kids[ROOT] = [];
+  (nodes || []).forEach(n => {
+    if (n.id == null || n.id === ROOT || n.id in m.parent) return;  // first declaration of an id wins
+    m.ids.push(n.id); m.parent[n.id] = n.parent == null ? ROOT : n.parent; m.group[n.id] = !!n.group; m.kids[n.id] = [];
+    if (n.open === true || n.open === false) m.forced[n.id] = n.open;
+  });
+  m.ids.forEach(id => { if (!(m.parent[id] in m.kids)) m.parent[id] = ROOT; });
+  m.ids.forEach(id => {  // a parent loop cannot reach the root: cut it
+    let p = m.parent[id], steps = 0;
+    while (p !== ROOT && steps <= m.ids.length) { p = m.parent[p]; steps++; }
+    if (p !== ROOT) m.parent[id] = ROOT;
+  });
+  m.ids.forEach(id => { m.kids[m.parent[id]].push(id); });
+  m.ids.forEach(id => { if (m.kids[id].length) m.group[id] = true; });
+  return m;
+}
+
+// boxes on show under g when the groups in `open` are open (no `open`: every group open, so the leaf count)
+function visible(m, open, g) { let n = 0; m.kids[g].forEach(c => { n += m.group[c] && (!open || open[c] === true) ? visible(m, open, c) : 1; }); return n; }
+const leaves = (m, g) => visible(m, null, g);
+
+// Which groups start open: forced ones as set; all, if every leaf fits the budget; else breadth-first within it.
+function defaultOpen(m, budget) {
+  const open = O(), groups = m.ids.filter(id => m.group[id]);
+  groups.forEach(g => { if (m.forced[g] === true) open[g] = true; });
+  if (leaves(m, ROOT) <= budget) { groups.forEach(g => { if (m.forced[g] !== false) open[g] = true; }); return open; }
+  const q = m.kids[ROOT].filter(id => m.group[id]);
+  while (q.length) {
+    const g = q.shift();
+    if (m.forced[g] === false) continue;
+    if (open[g] !== true) { open[g] = true; if (visible(m, open, ROOT) > budget) { delete open[g]; continue; } }
+    m.kids[g].forEach(c => { if (m.group[c]) q.push(c); });
+  }
+  return open;
+}
+
+// Least-squares fit that keeps the order (pool adjacent violators).
+function monotone(d) {
+  const v = [], c = [], out = [];
+  d.forEach(x => {
+    v.push(x); c.push(1);
+    while (v.length > 1 && v[v.length - 2] > v[v.length - 1]) {
+      const a = v.pop(), ca = c.pop(), k = v.length - 1;
+      v[k] = (v[k] * c[k] + a * ca) / (c[k] + ca); c[k] += ca;
+    }
+  });
+  v.forEach((x, i) => { for (let j = 0; j < c[i]; j++) out.push(x); });
+  return out;
+}
+
+/* ---- layout ---- */
+// size(id, header) -> {w, h}: a leaf or closed group, or (header) an open group's title strip.
+// textW(label) -> width of a wire label. dir: 'LR' or 'TB'. Returns boxes and routed wires.
+function layout(m, open, size, textW, dir) {
+  const TB = dir === 'TB', GAP = TB ? K.GAP_TB : K.GAP_LR, par = m.parent;
+  const main = s => TB ? s.h : s.w, cross = s => TB ? s.w : s.h;
+  const isOpen = id => open[id] === true;
+  const rep = id => { let r = id, p = par[id]; while (p !== ROOT) { if (!isOpen(p)) r = p; p = par[p]; } return r; };
+  const up = id => { const a = [id]; let p = par[id]; while (p !== ROOT) { a.push(p); p = par[p]; } a.push(ROOT); return a; };
+  const same = (items, k) => items.every(e => (e[k] || '') === (items[0][k] || '')) ? (items[0][k] || '') : '';
+  const labelOf = v => {
+    if (v.items.length > 1) return v.items.length + ' links';
+    const t = v.items[0].label || '';
+    return v.items[0].inferred ? (t ? t + ' ?' : '?') : t;
+  };
+  const loc = O();
+  const at = g => loc[g] || (loc[g] = { edges: [], E: O(), W: O(), chE: O(), chW: O() });
+
+  // 1. visible wires: one per pair of visible ends, owned by the lowest group that holds both ends
+  const wires = [], byKey = O();
+  m.edges.forEach(e => {
+    if (!(e.from in par) || !(e.to in par)) return;
+    const a = rep(e.from), b = rep(e.to);
+    if (a === b) return;
+    const pa = up(a), pb = up(b);
+    if (pa.indexOf(b) > -1 || pb.indexOf(a) > -1) return;
+    const key = a + '\u0001' + b;
+    let v = byKey[key];
+    if (!v) {
+      let ia = 1; while (pb.indexOf(pa[ia]) < 0) ia++;
+      const L = pa[ia];
+      v = byKey[key] = { key, a, b, L, pa: pa.slice(0, ia), pb: pb.slice(0, pb.indexOf(L)), items: [], rev: false };
+      wires.push(v); at(L).edges.push(v);
+    }
+    v.items.push(e);
+  });
+
+  // 2. per shown group: a wire that closes a cycle is reversed for ranking only; it is still drawn
+  const shown = [ROOT].concat(m.ids.filter(id => m.group[id] && isOpen(id) && rep(id) === id));
+  shown.forEach(g => {
+    const out = O(), col = O();
+    at(g).edges.forEach(v => { const s = last(v.pa); (out[s] || (out[s] = [])).push(v); });
+    const dfs = u => {
+      col[u] = 1;
+      (out[u] || []).forEach(v => { const t = last(v.pb); if (col[t] === 1) v.rev = true; else if (!col[t]) dfs(t); });
+      col[u] = 2;
+    };
+    m.kids[g].forEach(u => { if (!col[u]) dfs(u); });
+  });
+
+  // 3. where a wire has to cross a group border: a reserved exit (E) or entry (W) per item
+  wires.forEach(v => {
+    v.wp = v.rev ? v.pb : v.pa; v.ep = v.rev ? v.pa : v.pb;
+    for (let i = 0; i < v.wp.length - 1; i++) at(v.wp[i + 1]).E[v.wp[i]] = true;
+    for (let i = 0; i < v.ep.length - 1; i++) at(v.ep[i + 1]).W[v.ep[i]] = true;
+  });
+
+  // 4. one layered layout for the children of a single group
+  function flat(items, sz, lo) {
+    const rank = O(), ins = O(), outs = O(), memo = O();
+    items.forEach(id => { ins[id] = []; outs[id] = []; });
+    lo.edges.forEach(v => {
+      const s = last(v.pa), t = last(v.pb);
+      v.wI = v.rev ? t : s; v.eI = v.rev ? s : t;
+      outs[v.wI].push(v.eI); ins[v.eI].push(v.wI);
+    });
+    const rk = id => {
+      if (id in memo) return memo[id];
+      memo[id] = 0; let r = 0;
+      ins[id].forEach(p => { r = Math.max(r, rk(p) + 1); });
+      return (memo[id] = r);
+    };
+    let maxR = 0;
+    items.forEach(id => { rank[id] = rk(id); if (rank[id] > maxR) maxR = rank[id]; });
+    items.forEach(id => {
+      if (!ins[id].length && outs[id].length && !lo.W[id]) {  // a source sits next to its nearest target
+        let mn = Infinity; outs[id].forEach(s => { mn = Math.min(mn, rank[s]); }); rank[id] = mn - 1;
+      } else if (!ins[id].length && !outs[id].length) {  // no wire inside this group
+        const E = lo.E[id], W = lo.W[id];
+        rank[id] = E && !W ? maxR : W && !E ? 0 : E && W ? Math.round(maxR / 2) : -1;
+      }
+    });
+    const iso = items.filter(id => rank[id] === -1);
+    if (iso.length) {  // unwired boxes go in a grid
+      const all = iso.length === items.length, cols = all ? Math.ceil(Math.sqrt(iso.length)) : maxR + 1;
+      iso.forEach((id, i) => { rank[id] = i % cols; });
+      if (all) maxR = Math.min(cols, iso.length) - 1;
+    }
+
+    // boxes sit on even layers; odd layers hold wire labels and pass-through slots
+    const nL = 2 * maxR + 1, layers = [], ent = O();
+    for (let r = 0; r < nL; r++) layers.push([]);
+    items.forEach(id => {
+      const e = { id, m: main(sz[id]), c: cross(sz[id]), L: [], R: [], r: 2 * rank[id] };
+      ent[id] = e; layers[e.r].push(e);
+    });
+    const slot = (r, lw) => {
+      const d = { d: 1, lab: lw ? 1 : 0, L: [], R: [], r, m: 0, c: K.SLOT };
+      if (lw) { d.m = TB ? K.LABEL_H : lw + K.LABEL_PAD; d.c = TB ? lw + K.LABEL_PAD : K.LABEL_H; }
+      layers[r].push(d); return d;
+    };
+    const link = (a, b) => { a.R.push(b); b.L.push(a); };
+    lo.edges.forEach(v => {
+      let prev = ent[v.wI]; const ch = [], lw = textW(labelOf(v)); v.lab = null;
+      for (let r = 2 * rank[v.wI] + 1; r < 2 * rank[v.eI]; r++) {
+        const d = slot(r, ch.length ? 0 : lw);
+        if (d.lab) v.lab = d;
+        link(prev, d); prev = d; ch.push(d);
+      }
+      link(prev, ent[v.eI]); v.mid = ch;
+    });
+    items.forEach(id => {
+      if (lo.E[id]) {
+        let prev = ent[id]; const ch = [];
+        for (let r = 2 * rank[id] + 1; r < nL; r++) { const d = slot(r, 0); link(prev, d); prev = d; ch.push(d); }
+        lo.chE[id] = ch;
+      }
+      if (lo.W[id]) {
+        let next = ent[id]; const ch = [];
+        for (let r = 2 * rank[id] - 1; r >= 0; r--) { const d = slot(r, 0); link(d, next); next = d; ch.unshift(d); }
+        lo.chW[id] = ch;
+      }
+    });
+
+    // order inside each layer: neighbour-average sweeps, declaration order as the tie-break
+    const index = ly => ly.forEach((e, i) => { e.i = i; });
+    layers.forEach(index);
+    const sweep = (r, side) => {
+      const ly = layers[r];
+      ly.forEach(e => {
+        const nb = e[side];
+        if (nb.length) { let t = 0; nb.forEach(n => { t += n.i; }); e.b = t / nb.length; } else e.b = e.i;
+      });
+      ly.sort((a, b) => a.b - b.b || a.i - b.i); index(ly);
+    };
+    for (let it = 0; it < 4; it++) {
+      for (let r = 1; r < nL; r++) sweep(r, 'L');
+      for (let r = nL - 2; r >= 0; r--) sweep(r, 'R');
+    }
+    if (hint) {  // second pass: entries follow where their sources ended up
+      const heads = [];
+      items.forEach(id => {
+        if (!lo.W[id] || !(id in hint)) return;
+        const hd = lo.chW[id].length ? lo.chW[id][0] : ent[id];
+        hd.h = hint[id]; heads.push(hd);
+      });
+      if (heads.length > 1) {
+        const spots = heads.map(e => e.i).sort((a, b) => a - b), ly = layers[0];
+        heads.sort((a, b) => a.h - b.h || a.i - b.i).forEach((e, k) => { ly[spots[k]] = e; });
+        index(ly);
+        for (let r = 1; r < nL; r++) sweep(r, 'L');
+      }
+    }
+
+    // main axis: one column (or row) per layer
+    const colM = [], colU = []; let u = 0;
+    for (let r = 0; r < nL; r++) {
+      let w = 0; layers[r].forEach(e => { if (e.m > w) w = e.m; });
+      colM.push(w); colU.push(u); u += w + (r < nL - 1 ? GAP : 0);
+    }
+
+    // cross axis: pull each entry toward its neighbours while keeping the order and the gaps
+    const gapOf = (a, b) => a.d && b.d ? K.SLOT_GAP : (a.d || b.d) ? K.MIX_GAP : K.NODE_GAP;
+    layers.forEach(ly => { let y = 0; ly.forEach((e, i) => { if (i) y += gapOf(ly[i - 1], e); e.v = y; y += e.c; }); });
+    const place = (r, sides) => {
+      const ly = layers[r]; if (!ly.length) return;
+      const off = [], want = []; let o = 0;
+      ly.forEach((e, i) => {
+        if (i) o += ly[i - 1].c + gapOf(ly[i - 1], e);
+        off.push(o);
+        let t = 0, n = 0;
+        sides.forEach(sd => e[sd].forEach(nb => { t += nb.v + nb.c / 2; n++; }));
+        want.push((n ? t / n - e.c / 2 : e.v) - o);
+      });
+      const z = monotone(want);
+      ly.forEach((e, i) => { e.v = z[i] + off[i]; });
+    };
+    for (let it = 0; it < 3; it++) {
+      for (let r = 1; r < nL; r++) place(r, ['L']);
+      for (let r = nL - 2; r >= 0; r--) place(r, ['R']);
+    }
+    for (let r = 0; r < nL; r++) place(r, ['L', 'R']);
+    let mn = Infinity, mx = -Infinity;
+    layers.forEach(ly => ly.forEach(e => { mn = Math.min(mn, e.v); mx = Math.max(mx, e.v + e.c); }));
+    if (!items.length) { mn = 0; mx = 0; }
+    const pos = O();
+    layers.forEach((ly, r) => ly.forEach(e => {
+      e.v -= mn; e.cv = e.v + e.c / 2; e.u0 = colU[r]; e.u1 = colU[r] + colM[r];
+      if (!e.d) pos[e.id] = { u: colU[r] + (colM[r] - e.m) / 2, v: e.v, r };
+    }));
+    return { m: u, c: mx - mn, pos, colU, colM, sz };
+  }
+
+  // 5. inside-out: lay out the children, then treat the group as one box in its parent
+  const res = O();
+  let boxes = O(), hint = null;
+  function lay(g) {
+    const items = m.kids[g], sz = O();
+    items.forEach(id => {
+      if (m.group[id] && isOpen(id)) { lay(id); sz[id] = { w: res[id].W, h: res[id].H }; } else sz[id] = size(id, false);
+    });
+    const R = flat(items, sz, at(g)), root = g === ROOT;
+    const head = root ? { w: 0, h: 0 } : size(g, true), px = root ? 0 : K.PADX, py = root ? 0 : K.PADY;
+    R.ox = px; R.oy = head.h + py;
+    R.W = Math.max(TB ? R.c : R.m, head.w) + 2 * px; R.H = head.h + (TB ? R.m : R.c) + 2 * py;
+    res[g] = R;
+  }
+  function put(g, gx, gy) {
+    const R = res[g];
+    R.ax = gx + R.ox; R.ay = gy + R.oy; R.au = TB ? R.ay : R.ax; R.av = TB ? R.ax : R.ay;
+    m.kids[g].forEach(id => {
+      const p = R.pos[id];
+      const b = boxes[id] = { x: R.ax + (TB ? p.v : p.u), y: R.ay + (TB ? p.u : p.v), w: R.sz[id].w, h: R.sz[id].h };
+      if (m.group[id] && isOpen(id)) put(id, b.x, b.y);
+    });
+  }
+
+  // 6. routes: straight runs through the reserved slots, joined by curves that stay in the gaps
+  const f = n => Math.round(n * 10) / 10;
+  const P = (u, v) => TB ? f(v) + ' ' + f(u) : f(u) + ' ' + f(v);
+  const A = id => { const b = boxes[id]; return TB ? { u: b.y, m: b.h, v: b.x, c: b.w } : { u: b.x, m: b.w, v: b.y, c: b.h }; };
+  function route(v) {
+    const runs = [], wp = v.wp, ep = v.ep, R = res[v.L];
+    const add = (u0, u1, y) => {
+      const l = last(runs);
+      if (l && Math.abs(l.v - y) < 0.01 && u0 <= l.u1 + 0.01) { if (u1 > l.u1) l.u1 = u1; } else runs.push({ u0, u1, v: y });
+    };
+    const wb = A(wp[0]); let y = wb.v + wb.c / 2;
+    add(wb.u + wb.m, wb.u + wb.m, y);
+    for (let i = 0; i < wp.length - 1; i++) {  // climb out of the groups around the source
+      const it = wp[i], g = wp[i + 1], Rg = res[g], p = Rg.pos[it], gb = A(g);
+      add(last(runs).u1, Rg.au + Rg.colU[p.r] + Rg.colM[p.r], y);
+      (loc[g].chE[it] || []).forEach(d => { y = Rg.av + d.cv; add(Rg.au + d.u0, Rg.au + d.u1, y); });
+      add(last(runs).u1, gb.u + gb.m, y);
+    }
+    const pw = R.pos[last(wp)], pe = R.pos[last(ep)];
+    add(last(runs).u1, R.au + R.colU[pw.r] + R.colM[pw.r], y);
+    v.mid.forEach(d => add(R.au + d.u0, R.au + d.u1, R.av + d.cv));
+    v.hy = last(runs).v;  // where the wire runs just before it reaches its target
+    const eb = A(ep[0]), yin = []; let cur = eb.v + eb.c / 2;
+    for (let i = 0; i < ep.length - 1; i++) {
+      const g = ep[i + 1], ch = loc[g].chW[ep[i]] || [];
+      if (ch.length) cur = res[g].av + ch[0].cv;
+      yin[i] = cur;
+    }
+    add(R.au + R.colU[pe.r], A(last(ep)).u, cur);
+    for (let i = ep.length - 2; i >= 0; i--) {  // descend into the groups around the target
+      const g = ep[i + 1], it = ep[i], Rg = res[g], p = Rg.pos[it];
+      add(A(g).u, Rg.au, yin[i]);
+      (loc[g].chW[it] || []).forEach(d => add(Rg.au + d.u0, Rg.au + d.u1, Rg.av + d.cv));
+      add(Rg.au + Rg.colU[p.r], A(it).u, i ? yin[i - 1] : eb.v + eb.c / 2);
+    }
+    let d = 'M' + P(runs[0].u0, runs[0].v);
+    runs.forEach((s, k) => {
+      if (k) {
+        const p = runs[k - 1], du = (s.u0 - p.u1) / 2;
+        d += ' C' + P(p.u1 + du, p.v) + ' ' + P(s.u0 - du, s.v) + ' ' + P(s.u0, s.v);
+      }
+      if (s.u1 > s.u0) d += ' L' + P(s.u1, s.v);
+    });
+    const lab = v.lab, lu = lab ? R.au + (lab.u0 + lab.u1) / 2 : 0, lv = lab ? R.av + lab.cv : 0;
+    const segs = runs.map(s => TB ? { x0: s.v, y0: s.u0, x1: s.v, y1: s.u1 } : { x0: s.u0, y0: s.v, x1: s.u1, y1: s.v });
+    return { d, runs: segs, lx: f(TB ? lv : lu), ly: f(TB ? lu : lv), hasLabel: !!lab };
+  }
+
+  // 7. how often the routed wires cross each other (touching ends and shared runs do not count)
+  const turn = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+  const cuts = (a, b, c, d) => turn(a, b, c) * turn(a, b, d) < -1e-6 && turn(c, d, a) * turn(c, d, b) < -1e-6;
+  function tangle(rs) {
+    const ln = rs.map(r => { const p = []; r.runs.forEach(s => { p.push([s.x0, s.y0], [s.x1, s.y1]); }); return p; });
+    let n = 0;
+    for (let i = 0; i < ln.length; i++) for (let j = i + 1; j < ln.length; j++) {
+      const a = ln[i], b = ln[j];
+      for (let p = 0; p + 1 < a.length; p++) for (let q = 0; q + 1 < b.length; q++) if (cuts(a[p], a[p + 1], b[q], b[q + 1])) n++;
+    }
+    return n;
+  }
+
+  lay(ROOT); put(ROOT, 0, 0);
+  let pick = { boxes, routed: wires.map(route), W: res[ROOT].W, H: res[ROOT].H };
+  pick.cross = tangle(pick.routed);
+  // second pass: order each group's entries by where their sources ended up; keep it only if it crosses less
+  if (K.PASS2 && pick.cross && wires.length < 200 && wires.some(v => v.ep.length > 1)) {
+    const sum = O(), cnt = O();
+    wires.forEach(v => {
+      for (let i = 0; i < v.ep.length - 1; i++) { const id = v.ep[i]; sum[id] = (sum[id] || 0) + v.hy; cnt[id] = (cnt[id] || 0) + 1; }
+    });
+    hint = O(); Object.keys(sum).forEach(id => { hint[id] = sum[id] / cnt[id]; });
+    boxes = O(); lay(ROOT); put(ROOT, 0, 0);
+    const second = { boxes, routed: wires.map(route), W: res[ROOT].W, H: res[ROOT].H };
+    second.cross = tangle(second.routed);
+    if (second.cross < pick.cross) pick = second;
+  }
+  const edges = wires.map((v, k) => {
+    const r = pick.routed[k];
+    return { key: v.key, a: v.a, b: v.b, d: r.d, runs: r.runs, lx: r.lx, ly: r.ly, label: r.hasLabel ? labelOf(v) : '',
+      n: v.items.length, items: v.items, async: v.items.every(e => e.flow === 'async'), inferred: v.items.every(e => !!e.inferred),
+      change: same(v.items, 'change'), rev: v.rev, path: up(v.a).concat(up(v.b)) };
+  });
+  return { boxes: pick.boxes, W: pick.W, H: pick.H, edges, cross: pick.cross, dir: TB ? 'TB' : 'LR' };
+}
+
+// Checks a layout result. Returns a list of problems; empty means it is safe to paint.
+function verify(out, m) {
+  const errs = [], B = out.boxes, ids = Object.keys(B), fin = Number.isFinite, T = 0.5;
+  if (!fin(out.W) || !fin(out.H)) errs.push('size');
+  ids.forEach(id => { const b = B[id]; if (!(fin(b.x) && fin(b.y) && fin(b.w) && fin(b.h))) errs.push('box ' + id); });
+  ids.forEach((a, i) => {
+    for (let j = i + 1; j < ids.length; j++) {
+      const b = ids[j]; if (m.parent[a] !== m.parent[b]) continue;
+      const p = B[a], q = B[b];
+      if (p.x < q.x + q.w - T && q.x < p.x + p.w - T && p.y < q.y + q.h - T && q.y < p.y + p.h - T) errs.push('overlap ' + a + ' ' + b);
+    }
+  });
+  ids.forEach(id => {
+    const g = m.parent[id]; if (g === ROOT || !B[g]) return;
+    const b = B[id], q = B[g];
+    if (b.x < q.x - T || b.y < q.y - T || b.x + b.w > q.x + q.w + T || b.y + b.h > q.y + q.h + T) errs.push('escape ' + id);
+  });
+  out.edges.forEach(e => { if (/NaN|Infinity/.test(e.d)) errs.push('wire ' + e.key); });
+  return errs;
+}
+
+/* ---- page ---- */
+let seq = 0;
+function init(el) {
+  if (el.__wtsm) return;
+  const stage = el.querySelector('.sys-stage'), svg = el.querySelector('.sys-wires');
+  if (!stage || !svg) return;
+  el.__wtsm = true;
+  const NS = 'http://www.w3.org/2000/svg', uid = 'wtsm' + (seq++), els = O(), nodes = [];
+  const mk = (tag, attrs, host) => {
+    const n = document.createElementNS(NS, tag);
+    Object.keys(attrs).forEach(k => n.setAttribute(k, attrs[k]));
+    if (host) host.appendChild(n);
+    return n;
+  };
+  stage.querySelectorAll('.sys-node[data-id],.sys-group[data-id]').forEach(n => {
+    const id = n.dataset.id; if (id in els) return;
+    const p = n.parentElement.closest('.sys-group[data-id]'), o = n.dataset.open;
+    els[id] = n;
+    nodes.push({ id, parent: p ? p.dataset.id : null, group: n.classList.contains('sys-group'),
+      open: o === 'true' ? true : o === 'false' ? false : undefined });
+  });
+  const rows = Array.from(el.querySelectorAll('.sys-links li'));
+  const edges = rows.map(li => ({ from: li.dataset.from, to: li.dataset.to, label: li.dataset.label || '', flow: li.dataset.flow || 'sync',
+    change: li.dataset.change || '', inferred: li.hasAttribute('data-inferred'), li }));
+  const m = buildModel(nodes, edges), conn = el.querySelector('details.sys-conn');
+  let open = defaultOpen(m, K.BUDGET), shown = null, dead = false, ready = false, width = -1, tw = O();
+  const box = O(), head = O(), headC = O();
+
+  // wire layer: arrowheads, a hidden probe that measures label text, and a group that holds the wires
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  const defs = mk('defs', {}, svg);
+  ['', '-hot', '-added', '-modified', '-deleted'].forEach(s => {
+    const mkr = mk('marker', { id: uid + s, viewBox: '0 0 8 8', refX: '7.2', refY: '4', markerWidth: '7', markerHeight: '7',
+      orient: 'auto-start-reverse' }, defs);
+    mk('path', { 'class': 'sys-arr' + (s ? ' sys-arr' + s : ''), d: 'M0,0.6 L8,4 L0,7.4 z' }, mkr);
+  });
+  const probe = mk('text', { 'class': 'sys-wl', visibility: 'hidden' }, svg), wg = mk('g', {}, svg);
+  const textW = s => {
+    if (!s) return 0;
+    if (!(s in tw)) { probe.textContent = s; tw[s] = probe.getComputedTextLength(); }
+    return tw[s];
+  };
+  const rect = n => { const r = n.getBoundingClientRect(); return { w: Math.ceil(r.width), h: Math.ceil(r.height) }; };
+  const groupHead = id => els[id].querySelector(':scope > .sys-ghead');
+  function measure() {  // natural sizes: every box, and each group title both open and closed
+    const gs = m.ids.filter(id => m.group[id]);
+    el.classList.remove('anim');
+    m.ids.forEach(id => { const n = els[id]; n.style.width = ''; n.style.height = ''; n.classList.remove('closed'); });
+    m.ids.forEach(id => { if (m.group[id]) head[id] = rect(groupHead(id)); else box[id] = rect(els[id]); });
+    gs.forEach(id => els[id].classList.add('closed'));
+    gs.forEach(id => { headC[id] = rect(groupHead(id)); });
+    gs.forEach(id => els[id].classList.remove('closed'));
+  }
+  const size = (id, header) => header ? { w: head[id].w, h: head[id].h + K.HEAD_PAD }
+    : m.group[id] ? { w: headC[id].w + 2 * K.PADX, h: headC[id].h + K.CLOSED_PAD } : box[id];
+
+  function draw(out, anim) {
+    while (wg.firstChild) wg.removeChild(wg.firstChild);
+    svg.setAttribute('width', Math.ceil(out.W)); svg.setAttribute('height', Math.ceil(out.H));
+    out.edges.forEach(e => {
+      const cls = 'sys-w' + (e.async ? ' async' : '') + (e.inferred ? ' inferred' : '') + (e.n > 1 ? ' multi' : '') +
+        (e.change ? ' chg-' + e.change : '');
+      const p = mk('path', { d: e.d, 'class': cls }, wg);
+      p.setAttribute(e.rev ? 'marker-start' : 'marker-end', 'url(#' + uid + (e.change ? '-' + e.change : '') + ')');
+      p.dataset.a = e.a; p.dataset.b = e.b; p.dataset.mk = e.change ? '-' + e.change : '';
+    });
+    out.edges.forEach(e => {
+      if (!e.label) return;
+      const t = mk('text', { x: e.lx, y: e.ly + 3.5, 'text-anchor': 'middle', 'class': 'sys-wl' + (e.n > 1 ? ' multi' : '') }, wg);
+      t.textContent = e.label; t.dataset.a = e.a; t.dataset.b = e.b; t.dataset.key = e.key;
+    });
+    if (anim) {  // wires return once the boxes have moved
+      wg.style.transition = 'none'; wg.style.opacity = 0;
+      setTimeout(() => { wg.style.transition = 'opacity .25s'; wg.style.opacity = 1; }, 400);
+    }
+  }
+  function paint(out, anim) {
+    el.dataset.dir = out.dir;
+    el.classList.toggle('anim', !!anim);
+    stage.style.width = Math.ceil(out.W) + 'px'; stage.style.height = Math.ceil(out.H) + 'px';
+    m.ids.forEach(id => {
+      const n = els[id], b = out.boxes[id];
+      if (m.group[id]) {
+        n.classList.toggle('closed', open[id] !== true);
+        const t = n.querySelector(':scope > .sys-ghead .sys-tog');
+        if (t) t.setAttribute('aria-expanded', open[id] === true ? 'true' : 'false');
+      }
+      if (!b) return;
+      const g = m.parent[id], pb = g === ROOT ? { x: 0, y: 0 } : out.boxes[g], bw = g === ROOT ? 0 : 1;
+      n.style.left = (b.x - pb.x - bw) + 'px'; n.style.top = (b.y - pb.y - bw) + 'px';
+      n.style.width = b.w + 'px'; n.style.height = b.h + 'px';
+    });
+    draw(out, anim);
+  }
+  function off() {  // back to the plain view, for good
+    dead = true; el.classList.remove('on', 'anim'); el.removeAttribute('data-dir');
+    stage.style.width = ''; stage.style.height = '';
+    m.ids.forEach(id => {
+      const n = els[id]; n.classList.remove('closed', 'peer');
+      n.style.left = ''; n.style.top = ''; n.style.width = ''; n.style.height = '';
+    });
+    while (wg.firstChild) wg.removeChild(wg.firstChild);
+    if (conn) conn.open = true;
+  }
+  function run(anim) {
+    if (dead) return;
+    try {
+      const cs = getComputedStyle(el), avail = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      if (!(avail > 0)) return;  // not shown yet (a closed sheet): wait for a width
+      if (!ready) { el.classList.add('on'); measure(); ready = true; if (conn) conn.open = false; }
+      let out = layout(m, open, size, textW, 'LR');
+      if (out.W > avail) out = layout(m, open, size, textW, 'TB');
+      if (verify(out, m).length) throw new Error('layout');
+      const still = G.matchMedia && G.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      paint(out, anim && !still); shown = out; width = el.clientWidth;
+    } catch (e) { off(); }
+  }
+
+  function hot(id) {
+    const set = O(), mark = x => { set[x] = 1; m.kids[x].forEach(mark); };
+    if (id != null && id in m.kids) mark(id); else id = null;
+    svg.classList.toggle('dimmed', id != null);
+    m.ids.forEach(x => els[x].classList.remove('peer'));
+    [].forEach.call(wg.children, p => {
+      const on = id != null && (p.dataset.a in set || p.dataset.b in set);
+      p.classList.toggle('hot', on);
+      if (p.tagName !== 'path') return;
+      p.setAttribute(p.hasAttribute('marker-start') ? 'marker-start' : 'marker-end', 'url(#' + uid + (on ? '-hot' : p.dataset.mk) + ')');
+      if (on) [p.dataset.a, p.dataset.b].forEach(x => { if (!(x in set) && els[x]) els[x].classList.add('peer'); });
+    });
+  }
+  const idAt = t => { const n = t.closest('.sys-node[data-id],.sys-group[data-id]'); return n ? n.dataset.id : null; };
+  ['mouseover', 'focusin'].forEach(k => stage.addEventListener(k, e => { if (!dead) hot(idAt(e.target)); }));
+  ['mouseleave', 'focusout'].forEach(k => stage.addEventListener(k, () => { if (!dead) hot(null); }));
+  stage.addEventListener('click', e => {
+    if (dead) return;
+    const wired = e.target.closest('[onclick]');
+    if (wired && stage.contains(wired)) return;  // a wired label or box opens its detail instead
+    const t = e.target.closest('.sys-tog'), g = t ? t.closest('.sys-group') : e.target.closest('.sys-group.closed');
+    if (!g) return;
+    const id = g.dataset.id;
+    if (open[id] === true) delete open[id]; else open[id] = true;
+    hot(null); run(true);
+  });
+  el.querySelectorAll('.sys-bar [data-act]').forEach(b => b.addEventListener('click', () => {
+    if (dead) return;
+    const a = b.dataset.act;
+    if (a === 'auto') open = defaultOpen(m, K.BUDGET);
+    else { open = O(); if (a === 'all') m.ids.forEach(id => { if (m.group[id]) open[id] = true; }); }
+    hot(null); run(true);
+  }));
+  svg.addEventListener('click', e => {  // "N links": show which rows it stands for
+    const t = e.target.closest('.sys-wl.multi');
+    if (dead || !t || !shown) return;
+    const w = shown.edges.filter(x => x.key === t.dataset.key)[0];
+    if (!w) return;
+    rows.forEach(li => li.classList.remove('hot'));
+    w.items.forEach(x => { if (x.li) x.li.classList.add('hot'); });
+    if (conn) { conn.open = true; if (conn.scrollIntoView) conn.scrollIntoView({ block: 'nearest' }); }
+  });
+
+  let queued = false;
+  const again = () => {
+    if (queued || dead) return;
+    queued = true;
+    requestAnimationFrame(() => { queued = false; if (el.clientWidth !== width) run(false); });
+  };
+  if (G.ResizeObserver) new G.ResizeObserver(again).observe(el); else G.addEventListener('resize', again);
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => { if (dead || !ready) return; tw = O(); try { measure(); } catch (e) { off(); return; } run(false); });
+  }
+  run(false);
+}
+
+const api = { ROOT, K, buildModel, leaves, defaultOpen, layout, verify, init };
+if (typeof module !== 'undefined' && module.exports) module.exports = api;
+else if (typeof document !== 'undefined') {
+  G.WtSysMap = api;
+  const boot = () => document.querySelectorAll('.sysmap').forEach(el => { try { init(el); } catch (e) { el.classList.remove('on', 'anim'); } });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+}
+})(typeof window !== 'undefined' ? window : globalThis);
+/* end walkthrough system-map engine */
+</script>
+</body></html>

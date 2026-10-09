@@ -11,7 +11,8 @@ It contains **no component CSS or markup** — that lives in the `components/` c
 materialized here once — this file is the base-CSS home; `design-system.md` and the component recipes defer to it.
 
 Slots to fill: `{{TITLE}}`, `{{NAV_LINKS}}`, `{{KICKER}}`, `{{HERO}}`, `{{SECTIONS}}`,
-`{{COMPONENT_CSS}}`, `{{INTERACTIVITY_JS}}`, `{{COMPONENT_JS}}`, `{{DATA_JSON}}`, `{{SHEETS}}`.
+`{{COMPONENT_CSS}}`, `{{INTERACTIVITY_JS}}`, `{{COMPONENT_JS}}`, `{{DATA_JSON}}`, `{{SHEETS}}`,
+`{{SYSMAP_ENGINE}}`.
 
 ```html
 <!DOCTYPE html><html lang="en" data-theme="dark"><head>
@@ -137,6 +138,7 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
   <script type="application/json" id="wt-data">{{DATA_JSON}}</script>
   <script>{{INTERACTIVITY_JS}}</script>
   <script>{{COMPONENT_JS}}</script>
+  {{SYSMAP_ENGINE}}
 </body></html>
 ```
 
@@ -156,6 +158,23 @@ Fill each marker below. Leave a marker empty (delete it) only when its content d
 | `{{INTERACTIVITY_JS}}` | The full shared behaviour bundle from `interactivity.md` — theme toggle (`tgl`), detail surfaces (`renderSurface` + `openSurface`/`openPane`, with `openD`/`openCard` aliases and `closeD`), scroll progress, and the IntersectionObserver reveal. |
 | `{{DATA_JSON}}` | The inert detail payload: `JSON.stringify({ DET:{…}, SURF:{…} })`. `DET` maps each pane-kind id to its `{k,h,summary,where,code,points,related}` record; `SURF` maps every `openSurface` target to `'pane'`/`'sheet'`. Sheet-kind details are NOT in `DET` — they are pre-rendered dialogs in `{{SHEETS}}`. Emit `{"DET":{},"SURF":{}}` when no detail is wired. This block is parsed once at runtime by the interactivity bundle; it is never executed as JS. |
 | `{{SHEETS}}` | Pre-rendered sheet dialogs — one `<dialog class="sheet" id="sheet-<id>">` per **sheet-kind** detail (see the Sheet pattern below), placed in the `#sheets` container. Delete the marker when no detail routes to a sheet. |
+| `{{SYSMAP_ENGINE}}` | The system-map engine block (see below) when the page has at least one `.sysmap`; once per page, however many maps it has. Delete the marker when the page has none. |
+
+**The engine block (`{{SYSMAP_ENGINE}}`).** A page with a system map ends with a fourth script block. At
+assemble time it holds one marker line and nothing else:
+
+```html
+<script id="wt-sysmap">
+/*@@SYSMAP-ENGINE@@*/
+</script>
+```
+
+The marker stands alone on its line with no leading spaces. After the file is written, the write stage of
+`../../render/references/render-contract.md` replaces that line with the content of
+`system-map-engine.js`. The engine has its own block so that a fault in it cannot stop the
+interactivity bundle or the component script: the page then simply keeps the map's plain view. The
+block is scaffold-owned, like the provenance footer. `update` never recovers it and always inserts the
+current engine afresh.
 
 **The provenance footer is not a slot.** `<footer class="wt-credit">` is emitted verbatim by every
 render path, with no substitution. It records which tool generated the file and links to the
