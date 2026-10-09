@@ -35,23 +35,118 @@ if [ -f "CLAUDE.md" ]; then
 fi
 
 # --- Check 2: Rule file path targets exist ---
+# Prints one drift line per `paths:` glob that matches nothing. python3 reads the frontmatter and
+# matches the globs itself, so the result is the same under bash 3.2 and 5 and under BSD and GNU sed:
+# `**` spans directories, `*` and `?` stay inside one path segment, a dot-directory matches like any
+# other, and `{a,b}` lists expand. .git and node_modules are not searched.
+check_rule_paths() {
+  python3 - <<'PY'
+import glob
+import os
+import re
+
+
+def rule_paths(text):
+    """The `paths:` list of a rule file's frontmatter, unquoted."""
+    lines = text.split("\n")
+    if lines[0].rstrip() != "---":
+        return []
+    paths, in_paths = [], False
+    for line in lines[1:]:
+        if line.rstrip() == "---":
+            break
+        if re.match(r"paths:\s*$", line):
+            in_paths = True
+            continue
+        if not in_paths or not line.strip() or line.lstrip().startswith("#"):
+            continue
+        item = re.match(r"\s*-\s+(.*)$", line)
+        if not item:
+            in_paths = False
+            continue
+        value = item.group(1).strip()
+        if value[:1] in ("'", '"'):
+            end = value.find(value[0], 1)
+            value = value[1:end] if end > 0 else value[1:]
+        else:
+            value = re.sub(r"\s+#.*$", "", value)
+        paths.append(value)
+    return paths
+
+
+def glob_regex(pattern):
+    braces = pattern.count("{") == pattern.count("}")
+    out, i, depth = [], 0, 0
+    while i < len(pattern):
+        c = pattern[i]
+        if c == "*":
+            j = i
+            while j < len(pattern) and pattern[j] == "*":
+                j += 1
+            if j - i == 1:
+                out.append("[^/]*")
+            elif pattern[j:j + 1] == "/" and (i == 0 or pattern[i - 1] == "/"):
+                out.append("(?:.*/)?")
+                j += 1
+            else:
+                out.append(".*")
+            i = j
+            continue
+        close = pattern.find("]", i + 2) if c == "[" else -1
+        if c == "?":
+            out.append("[^/]")
+        elif close != -1:
+            body = pattern[i + 1:close]
+            if body[0] in "!^":
+                body = "^" + body[1:]
+            out.append("[" + body.replace("\\", "\\\\") + "]")
+            i = close
+        elif braces and c == "{":
+            out.append("(?:")
+            depth += 1
+        elif braces and depth and c == ",":
+            out.append("|")
+        elif braces and depth and c == "}":
+            out.append(")")
+            depth -= 1
+        else:
+            out.append(re.escape(c))
+        i += 1
+    return re.compile("".join(out) + r"\Z")
+
+
+entries = []
+for top, dirs, files in os.walk("."):
+    dirs[:] = [d for d in dirs if d not in (".git", "node_modules")]
+    rel = os.path.relpath(top, ".")
+    for name in dirs + files:
+        entries.append(name if rel == "." else rel.replace(os.sep, "/") + "/" + name)
+
+for rule_file in sorted(glob.glob(".claude/rules/*.md")):
+    with open(rule_file, encoding="utf-8", errors="replace") as f:
+        text = f.read()
+    for path in rule_paths(text):
+        if not path:
+            continue
+        target = path[2:] if path.startswith("./") else path.lstrip("/")
+        regex = glob_regex(target)
+        if not any(regex.match(e) for e in entries):
+            print("Rule '%s' targets path '%s' but no matching files found" % (rule_file, path))
+PY
+}
+
 echo "### Checking rule path targets..."
 if [ -d ".claude/rules" ]; then
-  for rule_file in .claude/rules/*.md; do
-    [ -f "$rule_file" ] || continue
-    # Extract paths from YAML frontmatter
-    while IFS= read -r rule_path; do
-      rule_path=$(echo "$rule_path" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | tr -d '"' | tr -d "'")
-      if [ -n "$rule_path" ] && [ "$rule_path" != "**" ]; then
-        # Check if the glob pattern matches any files.
-        # `compgen -G` expands the glob internally from a single quoted
-        # argument — no unquoted shell expansion, no ls invocation.
-        if ! compgen -G "$rule_path" >/dev/null 2>&1; then
-          add_drift "Rule '$rule_file' targets path '$rule_path' but no matching files found"
-        fi
+  # A check that cannot run is drift too: a silent pass here is what hid this check on macOS.
+  if rule_drift="$(check_rule_paths)"; then
+    while IFS= read -r drift_line; do
+      if [ -n "$drift_line" ]; then
+        add_drift "$drift_line"
       fi
-    done < <(sed -n '/^---$/,/^---$/{ /^paths:/,/^[^ ]/{ /^  *- /s/^  *- //p } }' "$rule_file" 2>/dev/null || true)
-  done
+    done <<< "$rule_drift"
+  else
+    add_drift "Rule path check could not run (python3 missing or failed)"
+  fi
 fi
 
 # --- Check 3: Hook scripts exist ---

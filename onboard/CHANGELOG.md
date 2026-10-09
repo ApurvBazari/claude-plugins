@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.2.1 — 2026-10-09
+
+### Fixed
+- **The audit's rule-path check finds dot-directories and follows `**`.** `scripts/audit-tooling.sh` matched each rule's `paths:` glob with `compgen -G`, where `**` is one level and `*` skips dot-directories, so a rule targeting `**/marketplace.json` was reported as matching nothing while `.claude-plugin/marketplace.json` existed. One inline `python3` pass now matches the globs: `**` spans directories, `*` and `?` stay inside one path segment, a dot-directory matches like any other, and `{a,b}` lists expand. `.git` and `node_modules` are not searched.
+- **The same check now runs on macOS.** Its frontmatter was read with a `sed` expression BSD `sed` rejects, and the error was discarded, so on macOS the check read no paths and reported no drift for any project. The `python3` pass reads the frontmatter too, and only from the file's opening `---` block.
+- **A rule-path check that cannot run is reported.** When `python3` is missing or fails, the audit lists `Rule path check could not run` as drift instead of passing.
+
+### Tests
+- New belt `tests/onboard/test_audit_tooling_rule_paths.sh` covers the glob forms, the frontmatter shapes, the step outputs and the failed-run case.
+
+The drift line's wording and the `has_drift` / `report` step outputs are unchanged. A project generated earlier keeps its own copy at `.github/scripts/audit-tooling.sh`; replace it with this script to get the fix.
+
 ## 3.2.0 — 2026-09-27
 
 ### Added — the maintain entry (for orchestrators)
