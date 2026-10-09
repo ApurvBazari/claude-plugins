@@ -3,6 +3,10 @@
 # Usage: bash install-plugins.sh <plugin1> [plugin2] ...
 # Output: JSON object on stdout summarizing install results.
 #
+# Callers pass ONLY names a person accepted in an offer that named them, or a programmatic
+# caller's explicit list. This script does not ask. The rule, the offer shape and what happens
+# when nobody answers live in references/plugin-install-consent.md.
+#
 # Schema:
 #   {
 #     "installed": ["vercel"],

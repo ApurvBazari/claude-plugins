@@ -80,8 +80,8 @@ User-facing skills (show in `/onboard:` autocomplete):
 - `skills/update/SKILL.md` — align with latest best practices (`disable-model-invocation: true`)
 - `skills/adopt/SKILL.md` — retrofit foreign hand-crafted tooling into an onboard baseline; writes meta + snapshots only, never modifies a hand-crafted file (`disable-model-invocation: true`)
 - `skills/check/SKILL.md` — tooling health check (auto-invocable)
-- `skills/verify/SKILL.md` — independent feature verification via feature-evaluator agent (auto-invocable)
-- `skills/evolve/SKILL.md` — apply pending tooling drift updates (auto-invocable)
+- `skills/verify/SKILL.md` — independent feature verification via feature-evaluator agent (auto-invocable; writes results under `docs/`)
+- `skills/evolve/SKILL.md` — apply pending tooling drift updates (auto-invocable; writes and may delete generated tooling, asks before any plugin install)
 
 Internal building blocks (`user-invocable: false` — hidden from menu):
 
@@ -98,6 +98,7 @@ Internal building blocks (`user-invocable: false` — hidden from menu):
 - Recon is **script-free** (native Glob/Grep/Read + git one-liners) as of v3.
 - Evolution scripts: `detect-dep-changes.sh`, `detect-config-changes.sh`, `detect-structure-changes.sh`
 - CI audit script: `audit-tooling.sh`
+- **Plugin installs need an accepted, named offer.** `install-plugins.sh` is called only with names a person accepted, or a programmatic caller's explicit list. The rule (R1 to R4), the offer shape and the no-answer floor are single-sourced in `references/plugin-install-consent.md`, and every file that names the script cites it. `tests/onboard/test_onboard_install_consent.sh` enforces this.
 - Maintain entry: `maintain-detect.sh` (detect + read-only query modes), `maintain-guard.sh` (R9 fence), `maintain-write.sh` (writes under the protected `.claude/` path). Each is a thin bash wrapper over `scripts/maintain-lib/` — python3 standard library only, 3.9-compatible, always run with `-B` so no bytecode lands in the plugin.
 - `maintain-lib/tables.py` copies the language / vendor / config / MCP-signal tables of the `detect-*` scripts rather than refactoring them; `tests/onboard/test_maintain_tables_parity.sh` fails when a copy drifts.
 
