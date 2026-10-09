@@ -73,7 +73,10 @@ Compare `.mcp.json`, the drift snapshot `.claude/onboard-mcp-snapshot.json`, and
    - **in-sync** — present in all three and unchanged. No action.
 3. **Pre-existing guard** — if `mcpStatus.existedPreOnboard: true`, onboard treats the whole file as user-owned. Suggest only additions (`newly-suggested`), never removals or edits. In `mode:"retrofit"` repos, `.mcp.json` is always treated as user-owned regardless of `mcpStatus.existedPreOnboard` — adopt only catalogs it; update suggests additions only, never rewrites or removals.
 
-Record the classification as `mcpDrift.{userEdited, userRemoved, newlySuggested, staleCandidate}[]` for Step 7.
+4. **Offer ledger** — read `onboard-meta.json.mcpStatus.pluginOffers` (`{ offered, accepted }`). If it is absent (a project onboarded before 3.3.0), treat every plugin of an existing server as already offered: seed `offered` with the `plugin` of each server in `mcpStatus.generated` and `accepted` with `[]`, and write the seed back in Step 8. Those plugins were installed without an offer at the time; seeding stops onboard asking about them again or reinstalling one the developer removed.
+5. **Derive install offers** — for each `newly-suggested` server whose catalog row has a `plugin`: if the plugin is not in `pluginOffers.offered` and is not currently installed (`claude plugin list --json`, best-effort), record an install-offer candidate `{ plugin, server }`. A plugin-delivered server (no command or URL in the catalog; see `../../generation/references/catalogs/mcp-guide.md` § Catalog) produces only the install offer, never a server addition.
+
+Record the classification as `mcpDrift.{userEdited, userRemoved, newlySuggested, staleCandidate, pluginOffers}[]` for Step 7.
 
 ---
 
@@ -160,7 +163,7 @@ Compare the fresh `detect-lsp-signals.sh` output against the `onboard-lsp-snapsh
 1. **Read the inputs**:
    - `.claude/onboard-lsp-snapshot.json` — `{ recommended, accepted }`. Missing file → treat as `recommended: [], accepted: []` (pre-1.8.0 project).
    - `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"` — fresh JSON array.
-   - `claude plugin list --json` (via `install-plugins.sh`'s probe, or direct call) — current install state.
+   - `claude plugin list --json` — current install state (the same probe `install-plugins.sh` runs; installs themselves follow `../../../references/plugin-install-consent.md`).
 
 2. **Classify** per candidate plugin from the fresh scan:
    - **newLanguage** — plugin name in fresh scan but not in `snapshot.recommended`. A new language was added to the project since last onboard/evolve run. Surface as a suggested addition.

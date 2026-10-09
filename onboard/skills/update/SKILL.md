@@ -142,7 +142,7 @@ Follow `references/drift-classification.md` § 4b.2. Record gap candidates (miss
 Follow `references/drift-classification.md` § 4b.3. Surface only items that match stack/complexity, are absent from `generatedArtifacts`, and are absent from disk under `.claude/`.
 
 #### 4b.4: MCP Drift
-Follow `references/drift-classification.md` § 4b.4. Record as `mcpDrift.{userEdited, userRemoved, newlySuggested, staleCandidate}[]` for Step 7.
+Follow `references/drift-classification.md` § 4b.4. Record as `mcpDrift.{userEdited, userRemoved, newlySuggested, staleCandidate, pluginOffers}[]` for Step 7.
 
 #### 4b.5: Skill Frontmatter Drift
 Follow `references/drift-classification.md` § 4b.5. Record as `skillDrift.{userEdited, missingFiles, newFieldCandidates}[]` for Step 7.
@@ -213,6 +213,7 @@ Organize findings into categories:
 > - **Stale candidates** (signal no longer fires): [list or "none"]
 > - **User edits detected**: [list or "none"] — informational only; onboard never rewrites your `.mcp.json`
 > - **User removals detected**: [list or "none"] — informational only
+> - **Plugins available for install**: [plugin (for server) pairs or "none"] — each is its own offer in the next step; nothing is installed unless you select it
 > - Impact: additions can be applied on approval; removals require explicit user instruction.
 >
 > ### Skill Frontmatter Drift (from Step 4b.5)
@@ -293,7 +294,7 @@ Group offers into these categories (each becomes one `multiSelect: true` questio
 |---|---|
 | `artifact-gaps` | Files in `generatedArtifacts` missing from disk; user-customized files that need merge/replace decision |
 | `user-edit-detections` | Files where the maintenance header was modified, an adopted artifact awaiting its first maintenance header, or other edits detected |
-| `new-dependencies-or-languages` | New dep additions (e.g., `@anthropic-ai/sdk`), new languages (Rust → `rust-analyzer-lsp`), built-in skills newly relevant. **LSP plugins for newly detected languages are `autoChecked: true` by default**, matching wizard Step 6 pre-check behavior. |
+| `new-dependencies-or-languages` | New dep additions (e.g., `@anthropic-ai/sdk`), new languages (Rust → `rust-analyzer-lsp`), built-in skills newly relevant. **LSP plugins for newly detected languages are `autoChecked: true` by default**, matching wizard Step 6 pre-check behavior. **MCP additions are two independent offers, both `autoChecked: false`**: `add-mcp-server-<server>` for the server, and `install-plugin-<plugin>` labelled ``Install plugin `<plugin>` (for MCP server `<server>`)`` for each install-offer candidate from Step 4b.4. |
 | `best-practice-suggestions` | Reference guide recommendations (e.g., `observability.md` rule for the detected stack) |
 | `enriched-capabilities` | CI/CD, harness, evolution, sprint contracts, verification |
 | `plugin-drift` | Wire-in / remove offers from Step 4b.1 |
@@ -308,7 +309,7 @@ Issue a **single AskUserQuestion call** containing the pre-question + up to 3 of
 | Label | Effect |
 |---|---|
 | `Review and pick` | Default. Proceed to per-group multiSelect questions in this same call. |
-| `Apply all` | Skip per-group selection, apply every offer accumulated. |
+| `Apply all` | Skip per-group selection, apply every offer accumulated. **When the offer set contains `install-plugin-*` offers, this option's description MUST name the plugins it would install** (for example "Apply everything, including installing: vercel, supabase"), so choosing it is an acceptance of named plugins. |
 | `Apply later` | Write `.claude/onboard-pending-updates.json` snapshot of all offers (with their `id` and metadata) and exit. The next `/onboard:update` re-presents pending items + any newly detected drift. |
 | `Skip / dismiss` | Discard offers, do not remind again this session. (Re-running `/onboard:update` re-detects from scratch.) |
 
@@ -342,6 +343,8 @@ Written when the developer picks "Apply later" in the pre-question:
   ]
 }
 ```
+
+Install offers are saved like any other offer and are never applied without a later selection.
 
 Next `/onboard:update`:
 1. If `.claude/onboard-pending-updates.json` exists, read it. Re-validate each offer against current state (e.g., the missing file may have been restored manually).
@@ -387,7 +390,7 @@ For each approved update:
 Apply the full application procedure for each approved drift type — verbatim from `references/drift-application.md`. Each section there is authoritative; do not paraphrase the step-by-step instructions, guard rules, or snapshot update contracts.
 
 - **Plugin drift** (4b.1): Follow `references/drift-application.md` § Plugin drift application (additions, removals, subdirectory skill-annotation refresh, standalone ↔ plugin reconciliation — including pre-item-approval guard before any deletion).
-- **MCP drift** (4b.4): Follow `references/drift-application.md` § MCP drift application.
+- **MCP drift** (4b.4): Follow `references/drift-application.md` § MCP drift application. A plugin is installed only when its own `install-plugin-*` offer was selected (`../../references/plugin-install-consent.md`).
 - **Skill frontmatter drift** (4b.5): Follow `references/drift-application.md` § Skill frontmatter drift application.
 - **Agent frontmatter drift** (4b.6): Follow `references/drift-application.md` § Agent frontmatter drift application.
 - **Output style drift** (4b.7): Follow `references/drift-application.md` § Output style drift application.
@@ -405,7 +408,7 @@ Update `.claude/onboard-meta.json`:
 - Update `generatedArtifacts` list (add any new files, drop any whose deletion was explicitly approved)
 - Preserve `wizardAnswers` (don't re-ask wizard questions during update)
 - **If plugin drift was applied in Step 7** — refresh `detectedPlugins.installedPlugins` to `driftReport.currentPlugins`, and recompute `detectedPlugins.coveredCapabilities`, `detectedPlugins.qualityGates`, `detectedPlugins.phaseSkills` per `../generation/references/plugins/plugin-detection-guide.md`. Update the top-level `hookStatus` to reflect added/removed hook scripts.
-- **If MCP drift was applied in Step 7** — refresh top-level `mcpStatus`: add newly-applied servers to `mcpStatus.generated[]`, drop removed servers. Re-run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh"` for any newly-applied server with a `plugin` field; merge results into `mcpStatus.autoInstalled[]` and `mcpStatus.autoInstallFailed[]`. Always keep `mcpStatus.existedPreOnboard` sticky — once true, it stays true for the life of the project.
+- **If MCP drift was applied in Step 7** — refresh top-level `mcpStatus`: add newly-applied servers to `mcpStatus.generated[]`, drop removed servers. Write `mcpStatus.pluginOffers`: the seed from Step 4b.4 if one was made; every plugin whose `install-plugin-*` offer the developer actually saw and answered (per-group selection, or `Apply all`) in `offered`; every selected one in `accepted`. An offer that was deferred with `Apply later` or discarded with `Skip / dismiss` is not recorded. For the selected `install-plugin-*` offers only, merge the results of `install-plugins.sh` (run in Step 7 per `references/drift-application.md` § MCP drift application) into `mcpStatus.autoInstalled[]` and `mcpStatus.autoInstallFailed[]`. Never run the installer for a plugin whose offer was not selected. Always keep `mcpStatus.existedPreOnboard` sticky — once true, it stays true for the life of the project.
 - **If skill frontmatter drift was applied in Step 7** — refresh top-level `skillStatus.frontmatterFields[<skill>]` to match the applied state, including the refreshed `source` value (`user-confirmed` / `user-tweaked`). Update `.claude/onboard-skill-snapshot.json` to reflect the new baseline. Keep `skillStatus.existedPreOnboard[]` sticky.
 - **If agent frontmatter drift was applied in Step 7** — refresh top-level `agentStatus.frontmatterFields[<agent>]` to match the applied state, including the refreshed `source` value (`user-confirmed` / `user-tweaked` / `wizard-default` for legacy migrations). Update `.claude/onboard-agent-snapshot.json` to reflect the new baseline. Keep `agentStatus.existedPreOnboard[]` sticky. Append `legacy-skipped:<agent>` entries to `agentStatus.warnings` for any `legacyNoFrontmatter` declined by the developer.
 - **If output style drift was applied in Step 7** — refresh top-level `outputStyleStatus.frontmatterFields[<style>]` to match the applied state, including the refreshed `source` value (`user-confirmed` / `user-tweaked` / `wizard-default` for legacy migrations). Update `.claude/onboard-output-style-snapshot.json` to reflect the new baseline. Keep `outputStyleStatus.existedPreOnboard[]` sticky. Append `legacy-skipped:<style>` or `legacy-no-archetype-match:<style>` entries to `outputStyleStatus.warnings` for any `legacyNoFrontmatter` declined or unclassifiable. Preserve `outputStyleStatus.activationDefault`, `settingsLocalWritten`, and `settingsLocalWarning` from the prior state — `update` does NOT touch settings.local.json.
@@ -452,3 +455,4 @@ Update `.claude/onboard-meta.json`:
 - **All upgrades require explicit approval** — never apply a detected drift item without the developer selecting it in the Step 6 `AskUserQuestion` call. "Apply later" is a valid answer; "Apply all" still requires the pre-question selection, not a silent auto-apply.
 - **Never overwrite user-customized files without per-item choice** — files with a modified or absent maintenance header are flagged and require a merge/replace/skip decision before any change is made.
 - **User-edits in frontmatter are display-only, never rewritten** — for skill, agent, and output-style frontmatter drift, `userEdit` items are shown for awareness only. Onboard updates the snapshot to accept the edit but never overwrites the hand-edited value.
+- **No plugin install without its own selected offer** — approving a server never installs a plugin. Each plugin has an `install-plugin-*` offer that names it, unchecked by default, and `Apply all` names the plugins in its description. See `../../references/plugin-install-consent.md`.
