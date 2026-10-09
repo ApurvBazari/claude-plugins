@@ -1,5 +1,36 @@
 # Changelog
 
+## 3.3.0 — 2026-10-10
+
+Responds to the claude.ai directory review of 3.2.0: onboard installed other plugins without offering them, and its README and description did not match what it does.
+
+### Changed — no plugin is installed without an accepted, named offer
+- **`/onboard:start` offers the plugins behind MCP servers by name.** The wizard has a new multiSelect, every row unchecked, listing the plugin that goes with each detected MCP server. The Phase 5 preview has a "Plugins to install" line, and generation installs exactly that list. Before, the plugin behind every emitted server was installed without being named (context7 on every project).
+- **Skipping the LSP question installs nothing.** The skip default was the full detected list, so a skipped question installed every detected LSP plugin. It is now an empty list. LSP rows are still pre-checked at 10 or more files; a row you submit is an acceptance.
+- **`/onboard:update` gives each plugin its own row.** Approving a new MCP server no longer installs its plugin. "Apply all" names the plugins it would install.
+- **`/onboard:evolve` asks before installing the plugin behind a new MCP server**, the same way it already asks for LSP plugins. If the prompt cannot be shown or nobody answers, nothing is installed and nothing is recorded as offered. The server entry is still merged automatically.
+- **Repair runs never install.** A `regenerateOnly` or `reResearch` generation installs nothing, even when stored answers carry an earlier accepted list.
+- **Only catalog names can be installed.** A plugin name that is not in onboard's MCP or LSP catalog is dropped with a warning.
+- **`/onboard:update`'s live docs check is detect-only.** The fetch yields a list of feature names and links, shown as information. It never supplies wording for a proposal or a file; every proposal comes from the bundled guides.
+
+### Added
+- `references/plugin-install-consent.md` — the rule (R1 to R4), the offer shape, what happens when nobody answers, and what is recorded. Every file that names `install-plugins.sh` cites it.
+- `wizardAnswers.mcpPlugins`, `callerExtras.mcpPlugins`, `decisions.pluginInstalls` (generation manifest) and `mcpStatus.pluginOffers` (`{ offered, accepted }`, the ledger that stops a declined plugin being asked about again). All optional and additive.
+- A server whose catalog row has no command or URL (`prisma`) is plugin-delivered: it gets no `.mcp.json` entry and exists only as a plugin offer.
+
+### Fixed — README and description say what onboard does
+- `verify` and `evolve` are no longer described as read-only. The README states what each writes, that `evolve` applies most drift without asking and can remove generated files a plugin made redundant, and what it stops to ask about.
+- A new "What onboard changes" section says up front that onboard writes a project `.mcp.json` and installs plugins only on acceptance.
+- The example transcript no longer shows an `Apply all? [Y/n]` prompt that `evolve` does not have.
+- The `plugin.json` and marketplace description discloses the `.mcp.json` write and the install rule.
+
+### Tests
+- New belt `tests/onboard/test_onboard_install_consent.sh` (12 assertions) pins the rule at every caller, the README and description claims, the schema fields and the detect-only rule.
+
+### Upgrading
+- A project onboarded on 3.2.x or earlier has no `mcpStatus.pluginOffers`. `update` and `evolve` seed it on first read: the plugins of existing servers count as already offered, so you are not asked about them and a plugin you removed is not reinstalled.
+- `install-plugins.sh` behaves as before; only what callers pass to it changed. The telemetry keys `autoInstalled` / `autoInstallFailed` keep their names.
+
 ## 3.2.1 — 2026-10-09
 
 ### Fixed

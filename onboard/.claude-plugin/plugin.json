@@ -1,6 +1,6 @@
 {
   "name": "onboard",
-  "version": "3.2.1",
+  "version": "3.3.0",
   "description": "Analyze a codebase with verified research and generate evidence-grounded Claude tooling: CLAUDE.md, path-scoped rules, skills, agents, hooks and a project .mcp.json. Offers companion LSP and MCP plugins and installs only the ones you accept, then keeps the tooling current as the code changes.",
   "author": {
     "name": "Apurv Bazari"

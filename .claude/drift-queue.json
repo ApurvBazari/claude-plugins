@@ -435,6 +435,60 @@
       "status": "deferred",
       "rationale": "Claude Code reads only paths: from a rule; a rule scoped with globs: is silently loaded in every session (villasa: 7 of 8 rules). Not a maintain concern — not diff-caused (D2).",
       "resolution": "Add a warning to /onboard:check in a later onboard release."
+    },
+    {
+      "id": "DIR-1",
+      "title": "onboard directory listing has no icon",
+      "source": "onboard install-consent spec section 10 (claude.ai directory review of 3.2.0, 2026-10-08)",
+      "raisedAt": "2026-10-09",
+      "status": "deferred",
+      "rationale": "The listing falls back to the publisher's GitHub avatar. The portal reads .claude-plugin/icon.png once, at first save or submit; whether the first submission used that up is not stated.",
+      "resolution": "Owner supplies a square PNG, 512 to 2048 px, under 2 MB; add it and check the Listing tab."
+    },
+    {
+      "id": "DIR-2",
+      "title": "Directory scanner warning: uses a credential from the user's machine (4 findings)",
+      "source": "onboard install-consent spec section 10 (claude.ai directory review of 3.2.0, 2026-10-08)",
+      "raisedAt": "2026-10-09",
+      "status": "deferred",
+      "rationale": "Hits are sample text in hooks-guide.md, ci-cd-templates.md and hooks-generation.md, plus a plugin-wide flag. onboard never reads or sends a token; http hooks need allowHttpHooks and a URL. The portal says to leave it for a reviewer to confirm.",
+      "resolution": "No change unless a reviewer asks. The trigger line in hooks-generation.md was not found."
+    },
+    {
+      "id": "DIR-3",
+      "title": "Directory scanner warning: contains a download-and-run command (3 findings)",
+      "source": "onboard install-consent spec section 10 (claude.ai directory review of 3.2.0, 2026-10-08)",
+      "raisedAt": "2026-10-09",
+      "status": "deferred",
+      "rationale": "Flagged in CHANGELOG.md, hooks-guide.md (npx prettier / npx eslint in sample hook commands) and specialist-roster.md (no trigger found). The portal says documentation-only cases need no change.",
+      "resolution": "No change unless a reviewer asks."
+    },
+    {
+      "id": "DIR-4",
+      "title": "An MCP server can be registered twice, by .mcp.json and by its plugin",
+      "source": "onboard install-consent spec section 10 (claude.ai directory review of 3.2.0, 2026-10-08)",
+      "raisedAt": "2026-10-09",
+      "status": "deferred",
+      "rationale": "When a person accepts the plugin behind a server onboard also wrote to .mcp.json, the same server may be registered from both places.",
+      "resolution": "Design call: when the plugin is accepted, should onboard skip the .mcp.json entry, as it does for a plugin-delivered server?"
+    },
+    {
+      "id": "DIR-5",
+      "title": "Telemetry keys autoInstalled / autoInstallFailed no longer describe an automatic install",
+      "source": "onboard install-consent spec section 10 (claude.ai directory review of 3.2.0, 2026-10-08)",
+      "raisedAt": "2026-10-09",
+      "status": "deferred",
+      "rationale": "Since 3.3.0 these record installs that followed an acceptance. They are stored in existing projects' onboard-meta.json, so renaming needs a read-both migration.",
+      "resolution": "Rename with a migration in a later onboard release, or leave and keep the note in the consent reference."
+    },
+    {
+      "id": "DIR-6",
+      "title": "GitHub's default branch is develop; CLAUDE.md says main",
+      "source": "onboard install-consent spec section 10 (claude.ai directory review of 3.2.0, 2026-10-08)",
+      "raisedAt": "2026-10-09",
+      "status": "deferred",
+      "rationale": "The claude.ai directory reviews the latest commit of the default branch, so in-flight develop work is what gets reviewed and listed. CLAUDE.md's Branching section states main is the default.",
+      "resolution": "Owner decides: flip the default to main and resubmit pinned there, or correct CLAUDE.md."
     }
   ]
 }
