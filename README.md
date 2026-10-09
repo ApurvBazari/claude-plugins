@@ -20,7 +20,7 @@ Built on top of [Claude Code](https://code.claude.com/docs/en) by Anthropic. Dis
 
 | Plugin | What it does | Reach for it when… |
 |---|---|---|
-| **[onboard](./onboard/)** | Lifecycle manager for AI configs — generates initial tooling, then **detects code-vs-config drift** as the project evolves and offers to fix it. | You have an existing repo, OR your AI configs are starting to lag behind the code. |
+| **[onboard](./onboard/)** | Lifecycle manager for AI configs — generates initial tooling, then **detects code-vs-config drift** as the project evolves and updates the tooling to match. | You have an existing repo, OR your AI configs are starting to lag behind the code. |
 | **[notify](./notify/)** | macOS / Linux system notifications when Claude finishes a task. A cooldown keeps rapid back-to-back notifications from spamming you. | You leave Claude running long jobs in the background. |
 | **[handoff](./handoff/)** | Save the directive of a wrap-up session, then auto-surface it at the next SessionStart with an Execute / Edit / Discard / Save-for-later prompt. | You end sessions by pasting "continue this work in the new window" prompts into the next session. |
 | **[walkthrough](./walkthrough/)** | Render the current session as a self-contained interactive HTML document with diagrams and clickable detail. | You want a readable, shareable artifact of a session instead of scrolling back through the transcript. |
@@ -89,7 +89,7 @@ claude plugin install lens@apurvbazari-plugins
 
 Each plugin's README contains a runnable transcript so you can see what a real session looks like before you install:
 
-- **onboard** — initial `/onboard:start` on a Next.js 15 project, then `/onboard:evolve` two weeks later detecting drift and proposing updates → [onboard/README.md#example](./onboard/README.md#example)
+- **onboard** — initial `/onboard:start` on a Next.js 15 project, then `/onboard:evolve` two weeks later detecting drift and applying updates → [onboard/README.md#example](./onboard/README.md#example)
 - **notify** — `/notify:setup` followed by the cooldown suppressing a rapid second notification while the first is delivered → [notify/README.md#example](./notify/README.md#example)
 - **handoff** — saying "save handoff" mid-conversation, confirming the auto-save, then a fresh session starting with the four-option resume prompt → [handoff/README.md](./handoff/README.md)
 - **walkthrough** — running `/walkthrough:create` after a feature, getting one self-contained HTML file with diagrams, decision records, and a dark/light toggle → [walkthrough/README.md](./walkthrough/README.md)
@@ -103,7 +103,7 @@ The lifecycle manager for AI-assisted development. Generates Claude tooling on d
 **Two capabilities, one plugin:**
 
 - **Initial generation** — analyse the codebase, run an adaptive wizard, then emit a full Claude tooling package: `CLAUDE.md` files, path-scoped rules, project-specific skills/agents, hook entries, plugin integration recommendations, and an `.mcp.json` wired to relevant servers.
-- **Drift detection (`/onboard:evolve`)** — snapshot the project state at init time, then compare against current state on demand and surface what's out of date: new languages added, new dependencies, structural changes, missing hooks. Propose updates and apply on approval.
+- **Drift detection (`/onboard:evolve`)** — snapshot the project state at init time, then compare against current state on demand and surface what's out of date: new languages added, new dependencies, structural changes, missing hooks. Most updates are applied directly and shown as a diff; anything that installs a plugin waits for your answer.
 
 The drift loop is onboard's focus. Generating `CLAUDE.md` is well-covered in 2026 — Claude Code's `/init`, GitHub Copilot, OpenAI Codex, Cursor, and several web tools all do it. onboard's emphasis is the step after: keeping those configs aligned as the code grows.
 
