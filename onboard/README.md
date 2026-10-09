@@ -16,8 +16,8 @@ claude plugin install onboard@apurvbazari-plugins
 
 Know this before you run it:
 
-- **It writes Claude tooling files into your project**: `CLAUDE.md`, `.claude/rules/`, `.claude/skills/`, `.claude/agents/`, hook entries in `.claude/settings.json`, and its own state files under `.claude/`. `/onboard:start` shows every file in a preview and writes nothing until you approve it.
-- **It writes a project `.mcp.json`** with MCP servers matched to your stack. `context7` is added on every project; others (GitHub, Vercel, Prisma, Supabase, Chrome DevTools) are added when your stack calls for them. Some of these start an `npx` package and some connect to a vendor URL. An existing `.mcp.json` is never overwritten. The preview lists the servers.
+- **It writes Claude tooling files into your project**: `CLAUDE.md`, `.claude/rules/`, `.claude/skills/`, `.claude/agents/`, hook entries in `.claude/settings.json`, and its own state files under `.claude/`. `/onboard:start` shows every one of them in a preview and writes none of them until you approve it. Before that point it writes only its research notes (`.claude/onboard-research.json`, plus `docs/onboard/` if you choose to keep the research docs in the repo) and the preview page itself.
+- **It writes a project `.mcp.json`** with MCP servers matched to your stack. `context7` is added on every project; others (GitHub, Vercel, Supabase, Chrome DevTools) are added when your stack calls for them. Some of these start an `npx` package and some connect to a vendor URL. Prisma's server ships inside the `prisma` plugin, so onboard writes no entry for it and offers the plugin instead. An existing `.mcp.json` is never overwritten. The preview lists the servers.
 - **It installs other Claude Code plugins only when you accept an offer that names them.** That covers language-server (LSP) plugins, the plugins that go with those MCP servers, `walkthrough` and `notify`. The MCP-plugin rows start unchecked, a skipped question installs nothing, and the preview lists every plugin that will be installed.
 - **`/onboard:evolve` and `/onboard:verify` write files, and Claude can start them.** Each skill's section below says exactly what it changes.
 
@@ -33,7 +33,9 @@ All skills are invoked with the `/onboard:<name>` slash syntax. They fall into t
 
 Reads `.claude/onboard-drift.json` (populated by the auto-evolution hooks `onboard:start` writes during initial setup), compares its snapshots against the current project, and brings the tooling back in line. (Legacy projects: the old `greenfield-drift.json` is still read; `/onboard:evolve` migrates it.)
 
-**It applies most drift without asking.** That includes updating `CLAUDE.md`, rules, hook scripts and `settings.json` entries, adding newly relevant MCP servers to `.mcp.json`, and removing generated files that an installed plugin has made redundant (for example a standalone TDD skill once `superpowers` is installed). It never touches your own edits, and it shows a diff of everything it changed when it finishes.
+**It applies most drift without asking.** That includes updating `CLAUDE.md`, rules, hook scripts and `settings.json` entries, and adding newly relevant MCP servers to `.mcp.json`.
+
+**It also removes tooling that no longer applies:** rules that reference a package you removed, the `CLAUDE.md` of a directory you deleted, hook scripts for a plugin you uninstalled, and generated files that an installed plugin has made redundant (for example a standalone TDD skill once `superpowers` is installed). In `CLAUDE.md` it changes only the sections affected and keeps your own additions. It shows a diff of everything it changed when it finishes.
 
 **It stops and asks before** installing any plugin, adding a built-in-skill recommendation, or creating a new subdirectory `CLAUDE.md`. If nobody answers, none of those happen.
 
@@ -49,7 +51,7 @@ Main entry point. Runs a grounded, research-first guided workflow:
 2. **Profile select** — pick Minimal / Standard / Comprehensive. The profile sets how deep the research goes and how much tooling is generated (no Custom path).
 3. **Deep Research** — `onboard:research` fans out specialists, adversarially verifies, and synthesizes a research dossier plus 4 artifacts (research-dossier, architecture, risk-register, glossary).
 4. **Grounded Wizard** — instead of cold Q&A, you confirm or override the wizard answers the research already inferred (`research.wizardInferences`). Autonomy level is always asked cold, never inferred. The wizard also offers plugins by name (LSP plugins, and the plugins that go with detected MCP servers); only the ones you select are installed.
-5. **Preview & gate** — onboard computes a generation plan and shows a full preview (research findings, the blueprint of every file it will write, the MCP servers it will add and every plugin it will install) behind a hard Approve / Adjust / Cancel gate. Nothing is written until you approve.
+5. **Preview & gate** — onboard computes a generation plan and shows a full preview (research findings, the blueprint of every file it will write, the MCP servers it will add and every plugin it will install) behind a hard Approve / Adjust / Cancel gate. No tooling file is written until you approve; only the research notes and the preview page exist before that.
 6. **Generation** — config-generator agent emits Core artifacts (always) and Enriched artifacts (when enabled): see [Generated artifacts](#generated-artifacts).
 7. **Education & Handoff** — explains what was generated and how to use it.
 

@@ -49,6 +49,8 @@ Follow `../catalogs/mcp-guide.md` for emission rules, catalog, and transport sha
 }
 ```
 
+Write `pluginOffers` here on every full `write` run, whether or not anything was accepted: a declined offer has to be remembered. What goes in it is defined under § Install accepted plugins below. On a `regenerateOnly` or `reResearch` run, leave the stored `pluginOffers` exactly as it is.
+
 **Step 6 — Write `.claude/rules/mcp-setup.md`** (conditional on at least one server requiring auth OR on `existedPreOnboard: true`). Use the template in `../catalogs/mcp-guide.md` § mcp-setup.md Template. Include per-server env-var requirements and OAuth steps. Omit when no auth is needed and no pre-existing file existed.
 
 **Step 7 — Install accepted plugins** (after the metadata-write step, see § Install accepted plugins below). Running after metadata ensures telemetry is persisted even if an install fails.
@@ -64,6 +66,6 @@ Follow `../../../../references/plugin-install-consent.md`: the rule (R1 to R4), 
 3. If the context carries `callerExtras.regenerateOnly` or `callerExtras.reResearch`, stop here. A repair run never installs.
 4. If the list is empty, stop here. Nothing was accepted, so nothing is installed.
 5. After the metadata file is written, invoke `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <accepted1> <accepted2> ...`. The script probes `claude plugin list --json` once, skips plugins already installed, installs the rest, and always exits 0: an install failure must never fail emission Step 1.
-6. Update `onboard-meta.json`, re-writing these fields only: `mcpStatus.pluginOffers`, `mcpStatus.autoInstalled`, `mcpStatus.autoInstallFailed`.
+6. Update `onboard-meta.json`, re-writing the install results only: `mcpStatus.autoInstalled`, `mcpStatus.autoInstallFailed`. `mcpStatus.pluginOffers` was already written in Step 5 and is not touched here.
 
 `mcpStatus.pluginOffers.offered` is every candidate server's plugin **when an answer exists**, meaning `callerExtras.mcpPlugins` or `wizardAnswers.mcpPlugins` is present. When neither is present no offer was made, so `offered` is `[]` and `update` or `evolve` may offer those plugins later. `accepted` is the list from step 2. Both arrays are sorted alphabetically.

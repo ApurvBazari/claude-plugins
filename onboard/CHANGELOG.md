@@ -16,10 +16,11 @@ Responds to the claude.ai directory review of 3.2.0: onboard installed other plu
 ### Added
 - `references/plugin-install-consent.md` — the rule (R1 to R4), the offer shape, what happens when nobody answers, and what is recorded. Every file that names `install-plugins.sh` cites it.
 - `wizardAnswers.mcpPlugins`, `callerExtras.mcpPlugins`, `decisions.pluginInstalls` (generation manifest) and `mcpStatus.pluginOffers` (`{ offered, accepted }`, the ledger that stops a declined plugin being asked about again). All optional and additive.
-- A server whose catalog row has no command or URL (`prisma`) is plugin-delivered: it gets no `.mcp.json` entry and exists only as a plugin offer.
+- A server whose catalog row has no command or URL (`prisma`) is plugin-delivered: it gets no `.mcp.json` entry, exists only as a plugin offer, and is never counted as MCP drift.
 
 ### Fixed — README and description say what onboard does
-- `verify` and `evolve` are no longer described as read-only. The README states what each writes, that `evolve` applies most drift without asking and can remove generated files a plugin made redundant, and what it stops to ask about.
+- `verify` and `evolve` are no longer described as read-only. The README states what each writes, that `evolve` applies most drift without asking, every kind of tooling it removes (rules for a removed package, the `CLAUDE.md` of a deleted directory, hook scripts of an uninstalled plugin, generated files a plugin made redundant), and what it stops to ask about.
+- The README says what `/onboard:start` writes before you approve: its research notes and the preview page. No tooling file is written before approval.
 - A new "What onboard changes" section says up front that onboard writes a project `.mcp.json` and installs plugins only on acceptance.
 - The example transcript no longer shows an `Apply all? [Y/n]` prompt that `evolve` does not have.
 - The `plugin.json` and marketplace description discloses the `.mcp.json` write and the install rule.

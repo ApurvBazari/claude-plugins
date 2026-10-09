@@ -66,6 +66,16 @@ remembered as declined.
 A project onboarded before 3.3.0 has no `mcpStatus.pluginOffers`. `update` and `evolve` seed it on
 first read; see `../skills/update/references/drift-classification.md` § 4b.4.
 
+### Who writes `mcpStatus.pluginOffers`
+
+| Flow | Written by | When |
+|---|---|---|
+| `start`, full `write` generation | MCP emission Step 5 | Every time, including when nothing was accepted. |
+| Repair run (`regenerateOnly` / `reResearch`) | nobody | Never. The stored ledger is left as it is. |
+| `update` | Step 8 | When Step 4b.4 seeded it, or an `install-plugin-*` offer was shown and answered. A deferred or dismissed offer is not recorded. |
+| `evolve` | Step 2c | The pre-3.3.0 seed at once; `offered` and `accepted` after an answer; nothing for a plugin nobody answered about. |
+| `adopt` | baseline synthesis | `offered` = the plugins of catalog servers already in `.mcp.json`; `accepted` = `[]`. |
+
 ## The call
 
 Only after an acceptance, and only with the accepted names:

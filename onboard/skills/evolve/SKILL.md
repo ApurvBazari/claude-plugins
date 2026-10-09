@@ -166,7 +166,7 @@ The `mcpStatus`, `skillStatus`, `agentStatus`, `outputStyleStatus`, `lspStatus`,
 Run the same drift classification as `../update/SKILL.md` § 4b.4 MCP Drift:
 
 1. Read `.mcp.json`, `.claude/onboard-mcp-snapshot.json`, and fresh output from `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh"`.
-2. Classify each server as `userEdited` / `userRemoved` / `newlySuggested` / `staleCandidate` / `inSync`.
+2. Classify each server as `userEdited` / `userRemoved` / `newlySuggested` / `staleCandidate` / `inSync`. A plugin-delivered candidate (no command or URL in the catalog) is none of these and is not drift; it only feeds the plugin offer below.
 3. Respect the pre-existing guard — if `onboard-meta.json.mcpStatus.existedPreOnboard` is true, the whole file is user-owned; only additions may be applied.
 
 **Auto-apply rules** (evolve's "drain drift without asking" philosophy applies to the server entry, with two hard floors: user-owned edits are never touched, and no plugin is installed without an accepted, named offer):
@@ -178,13 +178,13 @@ Run the same drift classification as `../update/SKILL.md` § 4b.4 MCP Drift:
 
 **Plugin offer** (per `../../references/plugin-install-consent.md`; Claude can start evolve on its own, so this is never skipped and an answer is never assumed):
 
-1. Read `onboard-meta.json.mcpStatus.pluginOffers`. If it is absent (a project onboarded before 3.3.0), seed it per `../update/references/drift-classification.md` § 4b.4. Every plugin of an existing server then counts as already offered.
+1. Read `onboard-meta.json.mcpStatus.pluginOffers`. If it is absent (a project onboarded before 3.3.0), seed it per `../update/references/drift-classification.md` § 4b.4. Every plugin of an existing server then counts as already offered. Write the seed to `onboard-meta.json` straight away, from `mcpStatus.generated` as it stood before this run merged anything, so a server added in this run is never mistaken for a pre-3.3.0 one.
 2. Build the offer set: the `plugin` of each server onboard manages (snapshot servers, plus plugin-delivered candidates from the fresh scan) that is not in `pluginOffers.offered` and is not currently installed.
 3. Empty set → skip the offer.
 4. Otherwise ask once with `AskUserQuestion` (`multiSelect: true`, every row unchecked): "New MCP server(s) since last run: `<list>`. Install the plugins that go with them?" One option per plugin: label = the plugin name, description = what it adds and the server it belongs to. Apply the option-count rule from the reference.
 5. Accepted plugins → `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <accepted>`; add them to `pluginOffers.offered` and `pluginOffers.accepted`; merge the results into `mcpStatus.autoInstalled[]` / `mcpStatus.autoInstallFailed[]`.
 6. Declined plugins → add to `pluginOffers.offered` only. They are not asked about again.
-7. If the prompt cannot be shown, is dismissed, or returns no selection (for example Claude started evolve with nobody at the keyboard): install nothing and record nothing. List each plugin under "Not auto-applied" in Step 3 with its manual command.
+7. If the prompt cannot be shown, is dismissed, or returns no selection (for example Claude started evolve with nobody at the keyboard): install nothing and record nothing for those plugins (the seed from item 1 stays written). List each plugin under "Not auto-applied" in Step 3 with its manual command.
 
 **Programmatic mode** (`callerExtras.mcpPlugins` set): no prompt fires; the caller's list is the acceptance. An absent caller value falls through to the offer above.
 

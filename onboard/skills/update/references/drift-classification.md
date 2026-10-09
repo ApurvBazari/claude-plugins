@@ -53,7 +53,7 @@ Compare the current project against the built-in generation reference guides (`.
 - Are not present in `onboard-meta.json.generatedArtifacts`, AND
 - Are not present on disk under `.claude/`
 
-Keep this narrow — do not parse the live WebFetch output to infer new recommendations. The reference guides are the stable source. WebFetch continues to drive wording/pattern updates as before.
+Keep this narrow — do not parse the live WebFetch output to infer new recommendations. The reference guides are the stable source for recommendations and for wording alike: the live docs check is detect-only (`../SKILL.md` Step 4) and never supplies wording or patterns.
 
 ---
 
@@ -71,10 +71,11 @@ Compare `.mcp.json`, the drift snapshot `.claude/onboard-mcp-snapshot.json`, and
    - **newly-suggested** — in the fresh candidate list but neither in snapshot nor `.mcp.json`. Surface as a suggested addition.
    - **stale-candidate** — in snapshot/`.mcp.json` but the underlying signal no longer fires (e.g., `vercel.json` was deleted). Surface as a suggested removal.
    - **in-sync** — present in all three and unchanged. No action.
+   - **plugin-delivered** — a candidate whose catalog row has no command or URL of its own (today: `prisma`). It never has a `.mcp.json` or snapshot entry, so it is never `newly-suggested` and is never counted as MCP drift (it does not make `evolve`'s Guard proceed). It only feeds the install offer in item 5.
 3. **Pre-existing guard** — if `mcpStatus.existedPreOnboard: true`, onboard treats the whole file as user-owned. Suggest only additions (`newly-suggested`), never removals or edits. In `mode:"retrofit"` repos, `.mcp.json` is always treated as user-owned regardless of `mcpStatus.existedPreOnboard` — adopt only catalogs it; update suggests additions only, never rewrites or removals.
 
 4. **Offer ledger** — read `onboard-meta.json.mcpStatus.pluginOffers` (`{ offered, accepted }`). If it is absent (a project onboarded before 3.3.0), treat every plugin of an existing server as already offered: seed `offered` with the `plugin` of each server in `mcpStatus.generated` and `accepted` with `[]`, and write the seed back in Step 8. Those plugins were installed without an offer at the time; seeding stops onboard asking about them again or reinstalling one the developer removed.
-5. **Derive install offers** — for each `newly-suggested` server whose catalog row has a `plugin`: if the plugin is not in `pluginOffers.offered` and is not currently installed (`claude plugin list --json`, best-effort), record an install-offer candidate `{ plugin, server }`. A plugin-delivered server (no command or URL in the catalog; see `../../generation/references/catalogs/mcp-guide.md` § Catalog) produces only the install offer, never a server addition.
+5. **Derive install offers** — for each `newly-suggested` server, and each plugin-delivered candidate, whose catalog row has a `plugin`: if the plugin is not in `pluginOffers.offered` and is not currently installed (`claude plugin list --json`, best-effort), record an install-offer candidate `{ plugin, server }`. A plugin-delivered server (no command or URL in the catalog; see `../../generation/references/catalogs/mcp-guide.md` § Catalog) produces only the install offer, never a server addition.
 
 Record the classification as `mcpDrift.{userEdited, userRemoved, newlySuggested, staleCandidate, pluginOffers}[]` for Step 7.
 
