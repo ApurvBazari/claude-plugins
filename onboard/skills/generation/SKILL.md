@@ -79,7 +79,7 @@ When dispatched with `planOnly: true`, run the front half of generation — all 
 
 1. Compute the artifact set exactly as write mode would (Core tier always; Enriched tiers per wizard flags; rules/skills/agents from detected patterns + research claims; hooks from autonomy; MCP/LSP from signals; plugin integration from detection).
 2. For each artifact emit one `changes[]` entry: `path`, `action` (`create` for a new file, `merge` for a merge-aware write into an existing file such as `.claude/settings.json`), `purpose` (one line), `outline` (section list for CLAUDE.md and multi-section artifacts), `tier`, `origin: "generated"`.
-3. Populate `decisions` from the resolved context: `model`, `autonomy`, `profile`, `hooks`, `mcp`, `lsp`, `pluginIntegration`.
+3. Populate `decisions` from the resolved context: `model`, `autonomy`, `profile`, `hooks`, `mcp`, `lsp`, `pluginIntegration`, and `pluginInstalls` — the plugins write mode will install: the accepted LSP list (per `references/emission/lsp-emission.md` Step 2) plus the accepted MCP-plugin list (per `references/emission/mcp-emission.md` § Install accepted plugins), each name checked against the catalogs. An empty array is valid and means nothing will be installed.
 4. Return `{ mode: "plan", flow: "start", changes, decisions, warnings }`. **Write nothing.** Do not run emission Step 1–4 writes; only their planned outcomes appear as `changes[]` entries.
 
 ## Artifact Generation Rules

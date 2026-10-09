@@ -44,7 +44,7 @@ Map it to a walkthrough `session-model` with these sections, in order:
 1. **Overview** — one paragraph: flow + profile + what the gate is asking.
 2. **What I learned** (only when `research` ≠ null) — architecture map, top risks, glossary highlights.
 3. **What I'll build** — `changes[]` grouped by `tier`, each artifact a node titled by `path` with its `purpose` + `outline` + an `action`/`origin` badge.
-4. **Key decisions** — `decisions` as a labelled list (model, autonomy, profile, hooks, MCP, LSP, plugin integration).
+4. **Key decisions** — `decisions` as a labelled list (model, autonomy, profile, hooks, MCP, LSP, plugin integration), followed by a **Plugins to install** line built from `decisions.pluginInstalls`. Always render the line: name each plugin, or write `none` when the array is empty or absent. For `flow:"update"` label it **Plugins offered for install (you choose in the next step)**. For `flow:"adopt"` it is always `none`. This line is where the developer confirms the offer, per `../../../references/plugin-install-consent.md`.
 5. **Risks / warnings** — `warnings[]` plus research risks.
 
 Populators: **start** fills `changes`/`decisions` from `generate(plan)`; **update** from its offer-set + re-research delta; **adopt** from its record-set. One adapter, three populators.

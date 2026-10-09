@@ -35,6 +35,7 @@
         "hooks": { "type": "array", "items": { "type": "string" } },
         "mcp": { "type": "array", "items": { "type": "string" } },
         "lsp": { "type": "array", "items": { "type": "string" } },
+        "pluginInstalls": { "type": "array", "items": { "type": "string" }, "description": "Every plugin the write run will install: accepted LSP plus accepted MCP-server plugins, catalog names only. Empty means none. Rendered in the preview as 'Plugins to install'." },
         "pluginIntegration": { "type": "array", "items": { "type": "string" } }
       }
     },
