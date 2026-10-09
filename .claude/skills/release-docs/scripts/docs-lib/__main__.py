@@ -63,13 +63,19 @@ def run(opts):
         return 0
     if "--candidates" in opts:
         import stale
-        print(json.dumps(stale.range_candidates(ctx.with_range(opts["--candidates"])), indent=2))
+        import surfaces
+        rctx = ctx.with_range(opts["--candidates"])
+        print(json.dumps(stale.undecided(rctx, surfaces.load(rctx)), indent=2))
         return 0
     if opts.get("--pr-body"):
         import prbody
         if "--before" not in opts:
             raise repo.RepoError("--pr-body needs --before FILE")
-        print(prbody.render(ctx, opts["--before"], opts.get("--verifier")))
+        body = prbody.render(ctx, opts["--before"], opts.get("--verifier"))
+        # A run-written lone surrogate ("\ud800" in a retired[] token) cannot be encoded, and the
+        # crash left CI an empty body in a PR it still opened. Escape it and keep the body.
+        sys.stdout.reconfigure(errors="backslashreplace")
+        print(body)
         return 0
     if "--snapshot" in opts:
         import fence

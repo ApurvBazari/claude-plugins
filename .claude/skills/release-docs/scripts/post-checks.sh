@@ -18,7 +18,7 @@
 #      first, then restores from HEAD (tracked) or removes (new) each path the run changed outside
 #      the doc surfaces, and any symlink, FIFO, device, directory or type change anywhere. The
 #      allowlist comes from HEAD's docs-surfaces.json and marketplace, and the run may change only
-#      og and retired in that file. A path dirty before the run is never restored or removed: the
+#      og, retired and live in that file. A path dirty before the run is never restored or removed: the
 #      run touching one outside the surfaces fails, and is left for the owner. The fence's last
 #      line must be `FENCE-COMPLETE ok|fail|untrusted`; without it the fence did not complete;
 #   2. no "waived" disposition added to the ledger (waivers are owner-only);

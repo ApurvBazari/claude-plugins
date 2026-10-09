@@ -11,8 +11,10 @@ import subprocess
 import changelog
 import fence
 import ledger
+import live
 import obligations
 import repo
+import stale
 import surfaces
 
 PLUGIN_INTERNAL = "plugin-internal: needs a version bump + CHANGELOG if kept"
@@ -72,9 +74,10 @@ def _new_intentional(ctx, led):
     return [i for i in led["intentional"] if i not in old]
 
 
-def _resolved(before, now, added):
+def _resolved(before, now, added, gone):
     """The Resolved lines. A stale-mention counts per file and token ("1 of 2 mentions"), and says
-    when a new intentional entry covers it, so the owner can check that it is truly historical."""
+    when a new intentional entry covers it, so the owner can check that it is truly historical, or
+    when a live[] entry dismissed its token (gone): no doc was edited for those."""
     left = collections.Counter(_key(o) for o in now)
     done = []
     for o in before:
@@ -97,6 +100,8 @@ def _resolved(before, now, added):
         how = [i for i in added if i.get("file") == o["file"] and i.get("token") == o["token"]]
         note = ", resolved by a new intentional entry (reason %s)" % _code(how[0].get("reason"), 200) \
             if how else ""
+        if o["token"] in gone:
+            note = ", closed by a `live[]` entry, not by a doc edit"
         lines.append("- `stale-mention` %s — retired %s: %d of %d mention(s) resolved%s"
                      % (_code(o["file"]), _code(o["token"]), fixed[k], total[k], note))
     return len(done), lines
@@ -144,9 +149,59 @@ def _other_edits(ctx, named, cited):
     return out
 
 
+def _live_sources(ctx):
+    """The plugin sources as HEAD's config and marketplace define them, which is the fence's view,
+    or none when HEAD's config cannot be read."""
+    try:
+        return live.sources_at(ctx, "HEAD")
+    except repo.RepoError:
+        return []
+
+
+def _live_lines(ctx, gone):
+    """The live[] section: what the list dismissed in this range (gone, from stale.dismissed), then
+    what the run changed in it. A dismissal closes every flag that a retirement sentence would have
+    opened for the name, so each is listed with the plugin source line that proves the entry, for
+    the owner to read: a legacy or migrated-from mention there is not a live use. An entry already
+    in HEAD's list is listed too, in every range where it dismisses something.
+
+    render() puts these lines first, ahead of every list a run can lengthen: CI cuts the body at a
+    fixed size from the tail, and retired[] additions placed before them would push them out. The
+    fence fails a run that adds more than live.MAX_ADDED, so no accepted entry is left out here."""
+    out = ["- `live[]` dismisses %s in this range (still in %s)" % (_code(t, 200), _code("%s:%d" % w))
+           for t, w in gone.items()]
+    was = _head_json(ctx, surfaces.SURFACES)
+    try:
+        now = json.loads(ctx.read(surfaces.SURFACES))
+    except (OSError, ValueError, RecursionError):
+        return out  # _config_changes says that the config is unreadable
+    if not isinstance(was, dict) or not isinstance(now, dict):
+        return out
+    wl = was.get("live") if isinstance(was.get("live"), list) else []
+    nl = now.get("live") if isinstance(now.get("live"), list) else []
+    new_live = live.added(wl, nl)
+    shown = new_live[:live.MAX_ADDED]
+    srcs = _live_sources(ctx) if shown else []
+    for t in shown:
+        where = live.proof(srcs, t)
+        if not where:
+            out.append("- `live[]` added %s: not accepted, no plugin source mentions it" % _code(t, 200))
+            continue
+        # isinstance: a list is not hashable, and gone holds only strings
+        needed = isinstance(t, str) and t in gone
+        out.append("- `live[]` added %s (still in %s)%s" % (
+            _code(t, 200), _code("%s:%d" % where), "" if needed else "; it dismisses nothing in this range"))
+    if len(new_live) > len(shown):
+        out.append("- `live[]`: more additions are not shown; the write fence fails a run that "
+                   "adds more than %d" % live.MAX_ADDED)
+    return out + _capped(["- `live[]` dropped %s" % _code(t, 200) for t in wl if t not in nl],
+                         "dropped `live[]` entries")
+
+
 def _config_changes(ctx, led, added):
-    """What the run changed in docs-surfaces.json (retired[] and og, the keys it may change) and the
-    intentional entries it added: each one silences or renames something, so each is listed."""
+    """What the run changed in docs-surfaces.json beside live[], which has its own section (retired[]
+    and og), and the intentional entries it added: each one silences or renames something, so each is
+    listed."""
     out = []
     was = _head_json(ctx, surfaces.SURFACES)
     try:
@@ -249,7 +304,8 @@ def render(ctx, before_path, verifier_path):
     now = obligations.collect(ctx)["obligations"]
     led = ledger.load(ctx)
     added = _new_intentional(ctx, led)
-    n_done, done = _resolved(before, now, added)
+    gone = stale.dismissed(ctx, surfaces.load(ctx))
+    n_done, done = _resolved(before, now, added, gone)
     named = {o["file"] for o in before + now}
     cited = {t.split("#", 1)[0] for d in led["entries"].values() if isinstance(d, dict)
              and isinstance(d.get("at"), list) for t in d["at"] if isinstance(t, str)}
@@ -257,8 +313,16 @@ def render(ctx, before_path, verifier_path):
            "Range `%s..%s`. `docs-detect.sh --pr-body` builds this, not the model: the obligations "
            "come from the detector, the coverage table from the ledger, and the edit and config "
            "lists from git. Only the verifier section comes from the model's `verifier.json`. "
-           "Anything a run could have written is shown as code." % (ctx.base[:7], ctx.head[:7]), "",
-           "### Resolved (%d)" % n_done, ""]
+           "Anything a run could have written is shown as code." % (ctx.base[:7], ctx.head[:7]), ""]
+    live_lines = _live_lines(ctx, gone)
+    if live_lines:
+        out += ["### `live[]`: names declared still alive", "",
+                "A dismissal closes every flag that a retirement sentence in this range would have "
+                "opened for the name. Read the plugin source line shown as its evidence: a legacy "
+                "or migrated-from mention there is not a live use, and the name belongs in "
+                "`retired[]`. This section comes first so that nothing below can push it past the "
+                "size cut.", ""] + live_lines + [""]
+    out += ["### Resolved (%d)" % n_done, ""]
     out += _capped(done, "obligation(s)") or ["- none"]
     out += ["", "### Still open (%d)" % len(now), ""]
     out += _capped([_line(o) for o in now], "obligation(s)") or ["- none"]

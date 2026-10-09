@@ -118,5 +118,6 @@
     "test_sp5_invariants.sh",
     "trigger-phrases",
     "wizardAnswers.model"
-  ]
+  ],
+  "live": []
 }

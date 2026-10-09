@@ -69,7 +69,7 @@ Resolve every open obligation whose `resolver` is `model`, in this order: plugin
 - **`page-missing` for a site page:** invoke the walkthrough document skill (`Skill` tool, `walkthrough:document`, arguments `<plugin> site/<plugin>/index.html`) from this main session. It can't be dispatched to a subagent. Then follow the `page-missing` row of `references/obligations.md`.
 - **`site/og.png`:** when `site/og-card.html` changes, regenerate the card with `bash .claude/skills/release-docs/scripts/og-regen.sh`, never by hand. If it prints `og.png NOT regenerated`, `site/og.png` is untouched; put that in the report for the owner.
 - Follow `references/page-style.md` on every page edit.
-- **A `stale-mention` of a live name is a false positive.** The detector reads retirement sentences in the range's CHANGELOG entries, and one that names a live thing ("Removed the `--x` flag from `<name>`") can make that name a candidate. When the token is a range candidate (listed by `--candidates`, not in `retired[]`) and the sources show it still exists, never rewrite the line: the docs are right. Leave the obligation open, and list it in the report for the owner.
+- **A `stale-mention` of a live name is a false positive.** The detector reads retirement sentences in the range's CHANGELOG entries, and one that names a live thing ("Removed the `--x` flag from `<name>`") can make that name a candidate. When the token is a range candidate (listed by `--candidates`, not in `retired[]`) and a plugin source still has it as a live name, never rewrite the line: the docs are right. Add the token to `live[]` in `.github/docs-surfaces.json`, and name the plugin source in the report. A plugin source that has it only as a legacy, fallback or migrated-from name does not make it live: treat it as retired. When no plugin source has it and it still looks live, leave the obligation open, and list it in the report for the owner.
 
 ## Step 4: Ledger
 
@@ -78,12 +78,12 @@ Resolve every open obligation whose `resolver` is `model`, in this order: plugin
   - or `{"disposition": "not-user-facing", "reason": "…"}`.
 - Never write `waived`: that disposition is the owner's.
 - For a `stale-mention` you decide is deliberately historical, add an `intentional` entry: `file`, `token` (the obligation's own `token`), `context` (a phrase on that exact line) and `reason`.
-- List the range candidates with `bash .claude/skills/release-docs/scripts/docs-detect.sh --candidates origin/main..HEAD`. Append each one you confirmed as retired to `retired[]` in `.github/docs-surfaces.json`, and leave out any that are still live names.
-- In `.github/docs-surfaces.json`, change only the `og` and `retired` keys. The write fence fails the run if `surfaces`, `frozen`, `pages` or `landing` change.
+- List the range candidates with `bash .claude/skills/release-docs/scripts/docs-detect.sh --candidates origin/main..HEAD`. Append each one you confirmed as retired to `retired[]` in `.github/docs-surfaces.json`. Append each one that is still a live name to `live[]`, and only when a plugin source still has it: the write fence fails an entry that no plugin source has.
+- In `.github/docs-surfaces.json`, change only the `og`, `retired` and `live` keys. The write fence fails the run if `surfaces`, `frozen`, `pages` or `landing` change.
 
 ## Step 5: Verify
 
-1. Re-detect with `bash .claude/skills/release-docs/scripts/docs-detect.sh --gate`. If obligations are still open, fix what can be fixed inside the doc surfaces and re-detect, at most 2 more times. Then list every obligation still open, and why, in the report and go on. Some are the owner's by rule, such as a manifest `inventory-row` (`references/obligations.md` note 1) or a `stale-mention` of a live name (Step 3).
+1. Re-detect with `bash .claude/skills/release-docs/scripts/docs-detect.sh --gate`. If obligations are still open, fix what can be fixed inside the doc surfaces and re-detect, at most 2 more times. Then list every obligation still open, and why, in the report and go on. Some are the owner's by rule, such as a manifest `inventory-row` (`references/obligations.md` note 1) or a `stale-mention` of a name that still looks live when no plugin source has it (Step 3).
 2. Dispatch the `docs-verifier` agent. Its prompt is two things:
    - the output of `git diff HEAD` over the changed doc files. A new file (such as a generated page) is untracked, so `git diff HEAD` leaves it out: add `git diff --no-index -- /dev/null <file>` for each one;
    - the source paths: each changed plugin's `CHANGELOG.md`, `README.md`, `skills/`, `agents/` and `scripts/`.
@@ -139,7 +139,7 @@ Resolve every open obligation whose `resolver` is `model`, in this order: plugin
 
 - **Truth over green.** A badge-only edit, a `covered` pointer at an unrelated anchor, or an `intentional` on a genuinely stale line makes the gate pass without making the docs true. That's the exact failure this skill exists to prevent.
 - **Doc surfaces only.** Never edit CHANGELOGs, SKILL.md, agents, scripts, manifests or workflows. `post-checks.sh` restores anything outside the surfaces and fails the run. A plugin reference is a surface, but touch one only for an obligation that names it, and never change its instructions.
-- **`.github/docs-surfaces.json`: `og` and `retired` only.** A change to `surfaces`, `frozen`, `pages` or `landing` fails the write fence.
+- **`.github/docs-surfaces.json`: `og`, `retired` and `live` only.** A change to `surfaces`, `frozen`, `pages` or `landing` fails the write fence.
 - **Never `waived`, never `<head>` except `og-copy` (or a new page's head block under `page-missing`), never frozen docs.**
 - **Sources, not memory.** Every new claim traces to a source Step 3 lists: a CHANGELOG entry, the README, the code (`scripts/`, `skills/` and `agents/`), frontmatter or the range diff. Those are the paths Step 5.2 gives the verifier, which checks every claim against them.
 - **The snapshot is the fence's record.** Never write `.release-docs/run/before.snap` after Step 0, and never commit after `post-checks.sh` exits 2. In `mode=ci`, never run `post-checks.sh --snapshot` at all: the workflow owns the snapshot.

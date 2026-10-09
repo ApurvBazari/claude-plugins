@@ -4,12 +4,14 @@ Candidates for one range: repo paths the range deleted or renamed away (a remove
 file also as its plugin-relative path and basename), skills it removed (`/plugin:name`), and
 backticked identifiers that new CHANGELOG entries say are renamed / removed / retired / dropped /
 replaced / deleted / relocated / moved / superseded, in any tense (the verb's clause, up to its
-`to` / `with` / `→`; the subject of a present form that has no object), or that sit in a bullet
+`to` / `with` / `in favor of` / `→`; the subject of a present form that has no object), or that sit in a bullet
 under a `### Removed`-style heading. Anything that
 still exists is dropped: a tracked path, or a current skill or agent of any plugin (`/p:s`, `p:s`,
 the skill's name or directory, the agent's name or `p:agent`), since "Removed the `--x` flag from
 `/lens:review`" retires the flag, not the skill. surfaces.json `retired[]` carries confirmed tokens
-forward across releases, and is never filtered: a retired name is the owner's call."""
+forward across releases, and is never filtered: a retired name is the owner's call. `live[]` is
+its opposite, for a name a retirement sentence only mentions: a declared name that a plugin source
+still has (live.py) is dropped from the range's candidates. A name in both lists is retired."""
 import os
 import re
 import subprocess
@@ -17,6 +19,8 @@ import subprocess
 import changelog
 import inventory
 import ledger
+import live
+import repo
 import surfaces
 from kinds import ob
 
@@ -26,7 +30,7 @@ VERB = re.compile(r"(?<!-)\b(renam(?:e|es|ed)|remov(?:e|es|ed)|retir(?:e|es|ed)|
                   r"supersed(?:e|es|ed))\b(?!-)", re.I)
 # A `###` heading that retires every bullet under it; anchored, so "Fixes — … the rename" is not one.
 RETIRING = re.compile(r"(?:removed|deprecated|renamed|retired|dropped|deleted)\b", re.I)
-SPLIT = re.compile(r"\s(?:to|with|by|into|→)\s")
+SPLIT = re.compile(r"\s(?:to|with|by|into|→|in favou?r of)\s")
 TICK = re.compile(r"`([^`\n]+)`")
 BOUND = re.compile(r"[:—–()]")  # clause edges, looked for outside backticks only
 HANDOFF = ":—–"  # the edges across which a name-less verb clause hands over to its neighbour
@@ -179,6 +183,40 @@ def range_candidates(ctx):
     return sorted(c for c in cands if not alive(c))
 
 
+def _proven_live(ctx, surf, cands):
+    """{token: (path, line)} for the live[] entries among cands that a plugin source still has.
+    Plugin sources are read only when live[] names a candidate, and what one is comes from HEAD's
+    config, as for the fence: the entries are the working tree's, the proof never is."""
+    declared = [t for t in surf["live"] if t in cands]
+    if not declared:
+        return {}
+    try:
+        srcs = live.sources_at(ctx, "HEAD")
+    except repo.RepoError:
+        return {}  # no committed config says what a plugin source is, so nothing is proven
+    found = ((t, live.proof(srcs, t)) for t in declared)
+    return {t: where for t, where in found if where}
+
+
+def undecided(ctx, surf):
+    """The range candidates that no proven live[] entry covers: what --candidates lists and what
+    check() flags. An entry that no plugin source has is ignored, so it stops working by itself on
+    the day the code drops the name."""
+    cands = range_candidates(ctx)
+    ok = _proven_live(ctx, surf, cands)
+    return [c for c in cands if c not in ok]
+
+
+def dismissed(ctx, surf):
+    """{candidate: (path, line)} for the range candidates a live[] entry dismisses in this range,
+    each with the plugin source line that proves it. retired[] wins, so a name in both lists is not
+    one. An entry keeps dismissing for as long as the code names the token, also when a later
+    release retires the name and leaves a fallback behind, so the PR body lists these in every
+    range: a dismissal is never silent."""
+    ok = _proven_live(ctx, surf, range_candidates(ctx))
+    return {t: ok[t] for t in sorted(ok) if t not in surf["retired"]}
+
+
 def _plugin_of(ctx, rel):
     for p in ctx.plugins():
         if rel.startswith(p["dir"] + "/") or rel.startswith("site/%s/" % p["name"]):
@@ -187,12 +225,11 @@ def _plugin_of(ctx, rel):
 
 
 def check(ctx, surf, led):
-    tokens = set(surf["retired"]) | set(range_candidates(ctx))
+    # retired[] wins: a name in both lists stays flagged.
+    tokens = set(surf["retired"]) | set(undecided(ctx, surf))
     if not tokens:
         return []
-    # A name ends where the next char cannot continue it: `/lens:render` never matches
-    # `/lens:render-review`, nor `foo` `foo.json`, while sentence punctuation still ends a name.
-    rx = {t: re.compile(r"(?<![\w-])%s(?![\w-]|\.\w)" % re.escape(t)) for t in tokens}
+    rx = {t: live.whole(t) for t in tokens}
     obs = []
     for rel in surfaces.files(ctx, surf):
         for n, line in enumerate(ctx.read(rel).splitlines(), 1):

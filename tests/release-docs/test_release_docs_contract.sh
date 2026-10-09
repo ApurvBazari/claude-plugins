@@ -70,6 +70,44 @@ for b in bad:
 sys.exit(1 if bad else 0)
 PY
 
+# The live[] playbook (SDD ruling R30 f). The places that tell a run which docs-surfaces.json keys it
+# may change agree with the fence. The stale-mention rule carries both halves of the judgement: a
+# plugin source must still have the name, and a legacy or migrated-from mention is not a live use.
+python3 - "$S" "$ROOT" <<'PY' && echo "ok: the playbook names live[] and its two rules; the keys it lists are the fence's" || fail "live[] playbook"
+import json, sys
+sys.path.insert(0, sys.argv[1] + "/scripts/docs-lib")
+import fence
+skill = open(sys.argv[1] + "/SKILL.md").read()
+obl = open(sys.argv[1] + "/references/obligations.md").read()
+bad = []
+if fence.MUTABLE != ("og", "retired", "live"):
+    bad.append("fence.MUTABLE is %r" % (fence.MUTABLE,))
+for name, text in (("SKILL.md", skill), ("obligations.md", obl)):
+    if "`og` and `retired`" in text:
+        bad.append("%s still says only og and retired may change" % name)
+    if "`og`, `retired` and `live`" not in text:
+        bad.append("%s does not list og, retired and live as the keys a run may change" % name)
+row = [l for l in obl.splitlines() if l.startswith("| `stale-mention` |")]
+bullet = [l for l in skill.splitlines() if l.startswith("- **A `stale-mention` of a live name")]
+step = [l for l in skill.splitlines() if l.startswith("- List the range candidates with")]
+for name, lines, needs in (
+        ("obligations.md's stale-mention row", row,
+         ("`live[]`", "plugin source", "migrated-from", "frozen doc", "fixture")),
+        ("SKILL.md's false-positive bullet", bullet, ("`live[]`", "plugin source", "migrated-from")),
+        ("SKILL.md's candidates step", step, ("`live[]`", "plugin source"))):
+    for need in needs:
+        if not lines or need not in lines[0]:
+            bad.append("%s does not say %s" % (name, need))
+verify = [l for l in skill.splitlines() if l.startswith("1. Re-detect with")]
+if not verify or "of a live name (Step 3)" in verify[0] or "no plugin source has" not in verify[0]:
+    bad.append("SKILL.md's Step 5.1 still calls every stale-mention of a live name the owner's by rule")
+if not isinstance(json.load(open(sys.argv[2] + "/.github/docs-surfaces.json")).get("live"), list):
+    bad.append(".github/docs-surfaces.json has no live list")
+for b in bad:
+    print(b)
+sys.exit(1 if bad else 0)
+PY
+
 head -n 5 "$S/SKILL.md" 2>/dev/null | grep -qx 'disable-model-invocation: true' \
   && echo "ok: /release-docs is user/CI-invoked only" || fail "SKILL.md must set disable-model-invocation: true"
 

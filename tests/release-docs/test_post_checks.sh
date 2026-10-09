@@ -159,6 +159,97 @@ post b-notlist notlist.md
 expect "T6-RETIRED-NOTLIST exit 1" 1 "$RC"
 has "T6-RETIRED-NOTLIST reported" notlist.md 'retired[] is no longer a list'
 
+# T6-LIVE (SDD ruling R30 f): live[] is the third docs-surfaces.json key a run may change. It may
+# grow by a token a plugin source still has, and shrink freely: a dropped entry only reopens flags.
+# An added token that no plugin source has fails the run and is named. The detector ignores such an
+# entry anyway; the line is there so the owner sees it was tried.
+livecfg() { # <python statements over d> — edit the working docs-surfaces.json
+  python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); $1; json.dump(d, open(p,'w'))"
+}
+fx_repo live-grow                      # HEAD's config has no live key at all
+printf '%s\n' '' 'Reads `defaultMode` from the config.' >> alpha/skills/run/SKILL.md
+git commit -qam 'a live key'
+snap b-live-grow
+livecfg "d['live']=['defaultMode']"
+post b-live-grow live-grow.md
+expect "T6-LIVE-GROW a proven entry, added where HEAD had no live key -> exit 0" 0 "$RC"
+has "T6-LIVE-GROW fence ok" live-grow.md '- ok: write fence'
+
+fx_repo live-unproven
+snap b-live-unproven
+livecfg "d['live']=['no-such-key', '']"
+post b-live-unproven live-unproven.md
+expect "T6-LIVE-UNPROVEN exit 1" 1 "$RC"
+has "T6-LIVE-UNPROVEN names the entries, a blank one included" live-unproven.md 'added "no-such-key", "" to .github/docs-surfaces.json live[]'
+has "T6-LIVE-UNPROVEN says why" live-unproven.md 'no plugin source mentions it'
+
+# T6-LIVE-SELFPROOF: a run cannot write its own proof. A token it wrote into a plugin source is
+# reverted before the check reads the sources. A token it wrote into a doc it may edit is no proof,
+# even when it also edits the config's `surfaces` so that the doc stops being one: what a plugin
+# source is comes from HEAD's config.
+fx_repo live-selfproof
+snap b-live-selfproof
+put alpha/scripts/tool.sh '#!/usr/bin/env bash' 'echo "$madeUpKey"'
+printf '%s\n' '' 'Set `madeUpKey`.' >> alpha/README.md
+livecfg "d['live']=['madeUpKey']; d['surfaces'].remove('{plugin}/README.md')"
+post b-live-selfproof live-selfproof.md
+expect "T6-LIVE-SELFPROOF exit 1" 1 "$RC"
+has "T6-LIVE-SELFPROOF the source is put back" live-selfproof.md 'FENCE: restored alpha/scripts/tool.sh'
+has "T6-LIVE-SELFPROOF the entry is refused" live-selfproof.md 'added "madeUpKey" to .github/docs-surfaces.json live[]'
+
+fx_repo live-shrink
+livecfg "d['live']=['old-live', 'other-live']"
+git commit -qam 'seed live'
+snap b-live-shrink
+livecfg "d['live']=['other-live']"
+post b-live-shrink live-shrink.md
+expect "T6-LIVE-SHRINK dropping an entry is allowed -> exit 0" 0 "$RC"
+livecfg "d.pop('live')"
+post b-live-shrink live-keygone.md
+expect "T6-LIVE-KEYGONE removing the key drops every entry, which is allowed -> exit 0" 0 "$RC"
+
+fx_repo live-notlist
+snap b-live-notlist
+livecfg "d['live']={'a': 1}"
+post b-live-notlist live-notlist.md
+expect "T6-LIVE-NOTLIST exit 1" 1 "$RC"
+has "T6-LIVE-NOTLIST reported" live-notlist.md 'live[] is no longer a list'
+
+# T6-LIVE-FLOOD: one run may add at most 20 entries. The PR body is cut at 60000 bytes and shows the
+# evidence for each addition, and any phrase of a plugin source is provable: a flood of them would
+# push that evidence, and the sections after it, out of the body. So the bound is the fence's, never
+# only the display's.
+fx_repo live-flood
+python3 - <<'PY'
+with open("alpha/skills/run/SKILL.md", "a") as f:
+    f.write("\nReads " + " ".join("key%02d-x" % i for i in range(1, 22)) + ".\n")
+PY
+git commit -qam '21 live keys'
+snap b-live-flood
+livecfg "d['live']=['key%02d-x' % i for i in range(1, 21)]"
+post b-live-flood live-20.md
+expect "T6-LIVE-FLOOD 20 proven additions -> exit 0" 0 "$RC"
+livecfg "d['live']=['key%02d-x' % i for i in range(1, 22)]"
+post b-live-flood live-21.md
+expect "T6-LIVE-FLOOD 21 additions, all proven -> exit 1" 1 "$RC"
+has "T6-LIVE-FLOOD says the bound" live-21.md 'added more than 20 entries to .github/docs-surfaces.json live[]; a run may add at most 20'
+# T6-LIVE-DUPLICATES: a repeated name is one entry, for the bound and for the PR body alike. If only
+# the bound ignored repeats, 20 copies of one name would fill the body and hide the next entry.
+livecfg "d['live']=['key01-x'] * 25 + ['key02-x']"
+post b-live-flood live-dups.md
+expect "T6-LIVE-DUPLICATES 25 copies of one proven name and one other -> exit 0" 0 "$RC"
+# T6-LIVE-HUGE: the count stops one past the bound, so the fence's work does not grow with what the
+# run wrote.
+python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['live']=['junk-%06d-x' % i for i in range(200000)]; json.dump(d, open(p,'w'))"
+within 60 bash "$POST" --before "$SCRATCH/b-live-flood" --report "$SCRATCH/live-huge.md"
+expect "T6-LIVE-HUGE 200000 distinct entries are refused within 60 s" 1 "$RC"
+# T6-LIVE-SURROGATE: an unproven entry holding a lone surrogate is reported escaped. It used to crash
+# the fence's print, and a run that should have left a draft PR with a FAIL line left no PR at all.
+livecfg "d['live']=['x\ud800y']"
+post b-live-flood live-surrogate.md
+expect "T6-LIVE-SURROGATE exit 1" 1 "$RC"
+has "T6-LIVE-SURROGATE the entry is named, escaped" live-surrogate.md 'added "x\ud800y" to .github/docs-surfaces.json live[]'
+
 # T6-SURF-BROKEN: a malformed working-tree docs-surfaces.json still gets fenced around, and reported.
 fx_repo broken
 snap b-broken
@@ -962,5 +1053,100 @@ body_has "T7-PRBODY-OTHER plugin reference flagged" "plugin-internal: needs a ve
 body_has "T7-PRBODY-OTHER the reference is named" "alpha/references/guide.md"
 body_has "T7-PRBODY-OTHER the page is named" "site/alpha/index.html"
 body_lacks "T7-PRBODY-OTHER the owner's file is not" "owner-notes.txt"
+
+# T7-PRBODY-LIVE (SDD ruling R30 f): each live[] change is listed. An accepted addition names the
+# plugin source and the line that proved it, so the owner can read whether that line is a live use
+# or a legacy mention. A refused one says so. A dropped one is listed.
+fx_repo prbody-live
+printf '%s\n' '' 'Reads `defaultMode` from the config.' >> alpha/skills/run/SKILL.md
+python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['live']=['old-live']; json.dump(d, open(p,'w'))"
+git commit -qam 'a live key and a seeded entry'
+detect; cp "$OUT" "$SCRATCH/before-live.json"
+python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['live']=['defaultMode','no-such-key']; json.dump(d, open(p,'w'))"
+prbody "$SCRATCH/before-live.json"
+body_has "T7-PRBODY-LIVE an accepted addition names the proving file and line" '`live[]` added `defaultMode` (still in `alpha/skills/run/SKILL.md:8`)'
+body_has "T7-PRBODY-LIVE a refused addition says so" '`live[]` added `no-such-key`: not accepted, no plugin source mentions it'
+body_has "T7-PRBODY-LIVE a dropped entry is listed" '`live[]` dropped `old-live`'
+
+# T7-PRBODY-LIVE-OWNCONFIG: the body judges an addition as the fence does, from HEAD's config. A run
+# that edits `surfaces` so that a doc it wrote the token into stops being a doc is not believed.
+printf '%s\n' '' 'Set `madeUpKey`.' >> alpha/README.md
+python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['live']=['madeUpKey']; d['surfaces'].remove('{plugin}/README.md'); json.dump(d, open(p,'w'))"
+prbody "$SCRATCH/before-live.json"
+body_has "T7-PRBODY-LIVE-OWNCONFIG a doc the run wrote is not proof" '`live[]` added `madeUpKey`: not accepted, no plugin source mentions it'
+
+# T7-PRBODY-LIVE-FLOOD: the body shows the evidence for at most 20 additions and counts the rest.
+# The write fence has already failed a run that adds more.
+fx_repo prbody-live-flood
+python3 - <<'PY'
+with open("alpha/skills/run/SKILL.md", "a") as f:
+    f.write("\nReads " + " ".join("key%02d-x" % i for i in range(1, 22)) + ".\n")
+PY
+git commit -qam '21 live keys'
+detect; cp "$OUT" "$SCRATCH/before-flood.json"
+python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['live']=['key%02d-x' % i for i in range(1, 22)]; json.dump(d, open(p,'w'))"
+prbody "$SCRATCH/before-flood.json"
+expect "T7-PRBODY-LIVE-FLOOD 20 additions are shown with their evidence" 20 "$(printf '%s\n' "$BODY" | grep -c '`live\[\]` added `key')"
+body_has "T7-PRBODY-LIVE-FLOOD the rest is said to be left out" '`live[]`: more additions are not shown'
+python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['live']=['key01-x'] * 25 + ['key02-x']; json.dump(d, open(p,'w'))"
+prbody "$SCRATCH/before-flood.json"
+expect "T7-PRBODY-LIVE-DUPLICATES a repeated name is listed once" 1 "$(printf '%s\n' "$BODY" | grep -c '`live\[\]` added `key01-x`')"
+body_has "T7-PRBODY-LIVE-DUPLICATES the other name is not crowded out" '`live[]` added `key02-x` (still in `alpha/skills/run/SKILL.md:8`)'
+
+# T7-PRBODY-LIVE-FIRST: CI cuts the PR body at 60000 bytes from the tail, and a run can lengthen the
+# config section at will: retired[] only grows, and a junk token that no doc names opens nothing. So
+# the live[] lines come first, ahead of every list a run can lengthen. 400 retired additions make a
+# body the cut would bite, and do not move the evidence line.
+fx_repo prbody-live-first
+printf '%s\n' '' 'Reads `defaultMode` from the config.' >> alpha/skills/run/SKILL.md
+git commit -qam 'a live key'
+detect; cp "$OUT" "$SCRATCH/before-first.json"
+python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['live']=['defaultMode']; d['retired']=['junk-%03d-' % i + 'x' * 150 for i in range(400)]; json.dump(d, open(p,'w'))"
+prbody "$SCRATCH/before-first.json"
+printf '%s\n' "$BODY" > "$SCRATCH/body-first.md"
+python3 - "$SCRATCH/body-first.md" <<'PY' && echo "ok: T7-PRBODY-LIVE-FIRST the evidence line is in the first 4000 bytes of a body over 60000" || fail "T7-PRBODY-LIVE-FIRST: $(wc -c < "$SCRATCH/body-first.md") bytes, evidence at byte $(grep -ob 'live\[\]` added `defaultMode' "$SCRATCH/body-first.md" | head -n 1 | cut -d: -f1)"
+import sys
+body = open(sys.argv[1], encoding="utf-8").read().encode("utf-8")
+at = body.find("`live[]` added `defaultMode` (still in `alpha/skills/run/SKILL.md:8`)".encode("utf-8"))
+sys.exit(0 if len(body) > 60000 and 0 <= at < 4000 else 1)
+PY
+body_has "T7-PRBODY-LIVE-FIRST the retired additions are still listed" 'junk-399-'
+
+# T7-PRBODY-LIVE-DISMISSED: every range candidate a proven live[] entry dismisses is listed with its
+# evidence, in every range where the entry has an effect, not only in the one that adds it: an entry
+# accepted once would otherwise dismiss a later, real retirement of that name with nothing shown. A
+# mention it closed is marked as closed by the entry, never shown as a doc fix. And an addition that
+# dismisses nothing in the range says so: nothing needed it.
+fx_repo prbody-live-dismissed
+printf '%s\n' '' 'Reads `defaultMode` from the config.' >> alpha/skills/run/SKILL.md
+printf '%s\n' '' 'Set `defaultMode` in the config.' >> alpha/README.md
+git add -A && git commit -qm key && git branch -f main HEAD
+bump 1.1.0 '- Removed the `fast` alias from `defaultMode`.'
+detect; cp "$OUT" "$SCRATCH/before-dismissed.json"
+python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['live']=['defaultMode','Checker']; json.dump(d, open(p,'w'))"
+prbody "$SCRATCH/before-dismissed.json"
+body_has "T7-PRBODY-LIVE-DISMISSED the dismissal is listed with its evidence" '`live[]` dismisses `defaultMode` in this range (still in `alpha/skills/run/SKILL.md:8`)'
+body_has "T7-PRBODY-LIVE-DISMISSED the mention it closed is not shown as a doc fix" 'closed by a `live[]` entry, not by a doc edit'
+body_has "T7-PRBODY-LIVE-DISMISSED an addition nothing needed says so" '`live[]` added `Checker` (still in `alpha/agents/checker.md:1`); it dismisses nothing in this range'
+body_lacks "T7-PRBODY-LIVE-DISMISSED a needed addition is not called unneeded" 'SKILL.md:8`); it dismisses nothing'
+# A later range: the entry is HEAD's now and nothing is added, yet the dismissal is still listed.
+git commit -qam 'the entry is merged'
+detect; cp "$OUT" "$SCRATCH/before-later.json"
+prbody "$SCRATCH/before-later.json"
+body_has "T7-PRBODY-LIVE-DISMISSED a later range still lists the dismissal" '`live[]` dismisses `defaultMode` in this range (still in `alpha/skills/run/SKILL.md:8`)'
+body_lacks "T7-PRBODY-LIVE-DISMISSED nothing is added in the later range" '`live[]` added'
+# retired[] wins, so a name in both lists is dismissed by nothing.
+python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['retired']=['defaultMode']; json.dump(d, open(p,'w'))"
+prbody "$SCRATCH/before-later.json"
+body_lacks "T7-PRBODY-LIVE-DISMISSED a retired name is not listed as dismissed" '`live[]` dismisses'
+git checkout -q -- .github/docs-surfaces.json
+
+# T7-PRBODY-SURROGATE: a run-written lone surrogate must not blank the body. --pr-body exited 2 with
+# no output, CI put one "failed" line in its place, and the PR was still opened without the evidence.
+python3 -c "import json; p='.github/docs-surfaces.json'; d=json.load(open(p)); d['retired']=['zz\ud800']; json.dump(d, open(p,'w'))"
+prbody "$SCRATCH/before-later.json"
+expect "T7-PRBODY-SURROGATE exit 0" 0 "$RC"
+body_has "T7-PRBODY-SURROGATE the body is still there" '`live[]` dismisses `defaultMode` in this range'
+body_has "T7-PRBODY-SURROGATE the surrogate is shown escaped" 'zz\ud800'
 
 exit "$failures"
