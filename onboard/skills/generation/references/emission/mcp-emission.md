@@ -30,7 +30,7 @@ Follow `../catalogs/mcp-guide.md` for emission rules, catalog, and transport sha
 - Still emit `.claude/rules/mcp-setup.md` describing servers we *would* have emitted, so the user can reconcile manually
 - Skip the write in Step 3 and Step 4
 
-**Step 3 — Write `.mcp.json`**. Use the schema in `../catalogs/mcp-guide.md` § Config Shape. Secret references use the `${VAR}` substitution form — never inline real values.
+**Step 3 — Write `.mcp.json`**. Use the schema in `../catalogs/mcp-guide.md` § Config Shape. Secret references use the `${VAR}` substitution form — never inline real values. A catalog row with no command or URL of its own (today: `prisma`) is **plugin-delivered**: never write a `.mcp.json` entry for it. Record it in `mcpStatus.skipped` as `{ "server": "<name>", "reason": "plugin-delivered" }` when its plugin is in the accepted list, or with reason `"plugin-declined"` when it is not.
 
 **Step 4 — Write drift snapshot**. Write `.claude/onboard-mcp-snapshot.json` with the exact contents of `.mcp.json` as written. This is the baseline that `onboard:update` / `onboard:evolve` diff against. Do not include a maintenance header — the snapshot is pure JSON consumed by tooling.
 
@@ -41,6 +41,7 @@ Follow `../catalogs/mcp-guide.md` for emission rules, catalog, and transport sha
     "planned": ["context7", "vercel"],
     "generated": ["context7", "vercel"],
     "skipped": [{ "server": "github", "reason": "no-github-workflows-detected" }],
+    "pluginOffers": { "offered": ["context7", "vercel"], "accepted": ["vercel"] },
     "autoInstalled": [],
     "autoInstallFailed": [],
     "existedPreOnboard": false
@@ -50,17 +51,19 @@ Follow `../catalogs/mcp-guide.md` for emission rules, catalog, and transport sha
 
 **Step 6 — Write `.claude/rules/mcp-setup.md`** (conditional on at least one server requiring auth OR on `existedPreOnboard: true`). Use the template in `../catalogs/mcp-guide.md` § mcp-setup.md Template. Include per-server env-var requirements and OAuth steps. Omit when no auth is needed and no pre-existing file existed.
 
-**Step 7 — Auto-install matching plugins** (after the metadata-write step, see § Auto-install Plugins below). Running after metadata ensures telemetry is persisted even if install fails.
+**Step 7 — Install accepted plugins** (after the metadata-write step, see § Install accepted plugins below). Running after metadata ensures telemetry is persisted even if an install fails.
 
 **Step 8 — Post-emit stdout summary**. Print a terse block listing each emitted server and any pending auth steps. See `../catalogs/mcp-guide.md` § Post-emit Summary.
 
-#### Auto-install Plugins
+#### Install accepted plugins
 
-After the metadata file is written (the metadata-write step), invoke `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugin1> <plugin2> ...` for each server's `plugin` field (if present). The script:
+Follow `../../../../references/plugin-install-consent.md`: the rule (R1 to R4), the offer shape and what happens when nobody answers live there. This step never asks. The offer was made earlier, in wizard Exchange 3 for `start` or by the caller.
 
-1. Probes `claude plugin list --json` once
-2. Skips plugins already installed
-3. Calls `claude plugin install <plugin>` for each remaining plugin
-4. Logs failures to stdout but always exits 0 — install layer must never fail emission Step 1
+1. Resolve the accepted list: `callerExtras.mcpPlugins` → `wizardAnswers.mcpPlugins` → `[]`.
+2. Keep only names that are the `plugin` of a server in `../catalogs/mcp-guide.md` § Catalog. Drop anything else and add a warning.
+3. If the context carries `callerExtras.regenerateOnly` or `callerExtras.reResearch`, stop here. A repair run never installs.
+4. If the list is empty, stop here. Nothing was accepted, so nothing is installed.
+5. After the metadata file is written, invoke `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <accepted1> <accepted2> ...`. The script probes `claude plugin list --json` once, skips plugins already installed, installs the rest, and always exits 0: an install failure must never fail emission Step 1.
+6. Update `onboard-meta.json`, re-writing these fields only: `mcpStatus.pluginOffers`, `mcpStatus.autoInstalled`, `mcpStatus.autoInstallFailed`.
 
-On completion, update `mcpStatus.autoInstalled` and `mcpStatus.autoInstallFailed` in `onboard-meta.json` (re-write the single field; do not touch other keys).
+`mcpStatus.pluginOffers.offered` is every candidate server's plugin **when an answer exists**, meaning `callerExtras.mcpPlugins` or `wizardAnswers.mcpPlugins` is present. When neither is present no offer was made, so `offered` is `[]` and `update` or `evolve` may offer those plugins later. `accepted` is the list from step 2. Both arrays are sorted alphabetically.
