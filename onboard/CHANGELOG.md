@@ -1,5 +1,19 @@
 # Changelog
 
+## 3.2.1 — 2026-10-09
+
+### Fixed
+- **The audit's rule-path check matches the way Claude Code does.** `scripts/audit-tooling.sh` matched each rule's `paths:` pattern with `compgen -G`, a shell glob where `**` is one level and `*` skips dot-directories, so a rule targeting `**/marketplace.json` was reported as matching nothing while `.claude-plugin/marketplace.json` existed. Claude Code does not use a shell glob: it splits a `paths` value on commas, expands braces, drops a trailing `/**`, and matches with the `ignore` library, so the semantics are gitignore's. One inline `python3` pass now does the same. A pattern with no slash matches at any depth, one with a slash is anchored to the project root, `dir/**` and `dir/` cover the files under a directory, letter case is ignored, and a dot-directory matches like any other. `.git` and `node_modules` are not searched.
+- **Where the docs and Claude Code disagree, the audit follows Claude Code.** The docs say `*.md` matches Markdown files in the project root; Claude Code 2.1.294 applies such a rule at any depth, so the audit counts a nested match.
+- **The check reads every form of `paths` Claude Code reads**: a block list, a flow list or a comma-separated string, in rule files at any depth under `.claude/rules/`. A negated pattern (`!…`) is never reported.
+- **The same check now runs on macOS.** Its frontmatter was read with a `sed` expression BSD `sed` rejects, and the error was discarded, so on macOS the check read no paths and reported no drift for any project.
+- **A rule-path check that cannot run is reported.** When `python3` is missing or fails, the audit lists `Rule path check could not run` as drift instead of passing.
+
+### Tests
+- New belt `tests/onboard/test_audit_tooling_rule_paths.sh` covers the pattern forms, the frontmatter shapes, the step outputs and the failed-run case. Its expectations are what a headless Claude Code 2.1.294 run was seen to load, and what `ignore` 5.3.2 returns; the matcher is a port of that library's pattern rules and agreed with it on 7 million generated pattern and path pairs.
+
+The drift line's wording and the `has_drift` / `report` step outputs are unchanged. A project generated earlier keeps its own copy at `.github/scripts/audit-tooling.sh`; replace it with this script to get the fix.
+
 ## 3.2.0 — 2026-09-27
 
 ### Added — the maintain entry (for orchestrators)

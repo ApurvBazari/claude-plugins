@@ -14,8 +14,9 @@
 #   are made in $RUNNER_TEMP before the model runs, sealed, and verified afterwards with git's
 #   state; its post-checks run from that copy with --expect-clean;
 # - a tree moves on only with post-checks exit 0 or 1 and a report that opens with the write fence's
-#   result; no force-add; --verifier is always passed; the action pin, model, token and tool
-#   allowlist are the probed ones;
+#   result; no force-add; --verifier is always passed; the model, token and tool allowlist are the
+#   probed ones; the action is pinned to a commit, the one every other workflow pins. The belt holds
+#   no pin of its own, so a Dependabot bump that moves every workflow together passes untouched;
 # - final review I6, M1, M3: the model can't Read /proc, its subprocesses get a scrubbed environment
 #   (with bubblewrap installed and proved to isolate first, which the scrub needs on Linux) and Bash
 #   calls long enough for the belts; the sandbox the scrub brings does not auto-allow, so every
@@ -61,7 +62,12 @@ VAL = ".github/workflows/validate.yml"
 FENCE = ".claude/skills/release-docs/scripts/docs-lib/fence.py"
 POST = ".claude/skills/release-docs/scripts/post-checks.sh"
 FILES = (WF, VAL, FENCE, POST)
-CCA = "anthropics/claude-code-action@756cc22e19660d20e8cc9496b4f242475a7f7790"
+WFDIR = ".github/workflows/"
+CCA = "anthropics/claude-code-action@"
+PIN_RE = re.compile(r"uses: %s([0-9a-f]{40} # v\d+\.\d+\.\d+)$" % re.escape(CCA), re.M)
+# Any line that could be a claude-code-action step, however it is indented or quoted. A10 counts
+# these against the steps the reader parsed, so a step the reader skips cannot go unjudged.
+CCA_LOOSE = re.compile(r"^[ \t]*(?:-[ \t]+)?uses[ \t]*:[ \t]*[\"']?anthropics/claude-code-action\b", re.M)
 RD = ".claude/skills/release-docs/scripts/"
 SCRIPT_RULES = ["Bash(bash %s%s:*)" % (RD, s)
                 for s in ("docs-detect.sh", "post-checks.sh", "render-check.sh", "og-regen.sh")]
@@ -148,6 +154,18 @@ def read(root, rel):
         return f.read()
 
 
+def peers(root):
+    """The other workflows that run claude-code-action: the ones release-docs.yml's pin must match."""
+    names = sorted(n for n in os.listdir(os.path.join(root, WFDIR)) if n.endswith((".yml", ".yaml")))
+    return [WFDIR + n for n in names if WFDIR + n != WF and CCA_LOOSE.search(read(root, WFDIR + n))]
+
+
+def claude_uses(text):
+    """The whole `uses:` value, comment included, of each step that runs claude-code-action."""
+    return [field(s["raw"], "uses", STEP) for job in model(text).values() for s in job["steps"]
+            if (s["uses"] or "").startswith(CCA)]
+
+
 class Ctx:
     def __init__(self, root):
         self.text = read(root, WF)
@@ -156,6 +174,13 @@ class Ctx:
         self.val = model(self.vtext)
         self.fence = read(root, FENCE)
         self.post_sh = read(root, POST)
+        self.peer_uses, self.peer_unread = [], []
+        for rel in peers(root):
+            ptext = read(root, rel)
+            seen, loose = claude_uses(ptext), len(CCA_LOOSE.findall(ptext))
+            self.peer_uses += [(rel, u) for u in seen]
+            if len(seen) != loose:
+                self.peer_unread.append((rel, len(seen), loose))
         self.y = yaml.safe_load(self.text) if yaml else None
         self.yval = yaml.safe_load(self.vtext) if yaml else None
         empty = {"steps": [], "raw": "", "head": "", "if": None, "name": None}
@@ -411,13 +436,21 @@ def a9(c):
     return [] if v == "${{ github.token }}" else ["the Claude step's github_token is %r" % v]
 
 
-@check("A10", "claude-code-action is pinned to v1.0.235")
+@check("A10", "claude-code-action is pinned to a commit, the one every other workflow pins")
 def a10(c):
-    uses = [s for s in c.sync["steps"] if (s["uses"] or "").startswith("anthropics/claude-code-action@")]
+    uses = [s for s in c.sync["steps"] if (s["uses"] or "").startswith(CCA)]
     if len(uses) != 1:
         return ["%d Claude steps in sync, want 1" % len(uses)]
-    ok = uses[0]["uses"] == CCA and re.search(r"uses: %s # v1\.0\.235$" % re.escape(CCA), uses[0]["raw"], re.M)
-    return [] if ok else ["the Claude step is not %s # v1.0.235" % CCA]
+    # The step's own `uses:` value is judged, never the step's text: a pin left in a comment or in
+    # the prompt must not stand in for the line the runner reads.
+    mine = field(uses[0]["raw"], "uses", STEP) or ""
+    if not PIN_RE.fullmatch("uses: " + mine):
+        return ["the Claude step's uses is %r, not a 40-hex commit with a # vX.Y.Z comment" % mine]
+    f = ["%s: the reader sees %d of its %d claude-code-action steps" % x for x in c.peer_unread]
+    if not c.peer_uses:
+        f.append("no other workflow runs claude-code-action: the pin has nothing to agree with")
+    return f + ["%s uses %s, release-docs.yml uses %s" % (rel, u, mine)
+                for rel, u in sorted(set(c.peer_uses)) if u != mine]
 
 
 @check("A11", "the model is claude-opus-5-5")
@@ -1252,6 +1285,14 @@ def run_checks(root):
 # ---------------------------------------------------------------- self-test mutants
 # (check id, [(file, old, new, count)], label). Each must make its own check report.
 S = "          "
+# The pin and the peers are read from the live workflows, so the A10 mutants follow a bump. A file
+# that cannot be read leaves an anchor that is found 0 times, which the self-test reports.
+try:
+    PIN = (PIN_RE.search(read(ROOT, WF)) or [None, "no claude-code-action pin in release-docs.yml"])[1]
+    PEERS = [(rel, read(ROOT, rel).count("uses: " + CCA + PIN)) for rel in peers(ROOT)]
+except OSError:
+    PIN, PEERS = "no claude-code-action pin in release-docs.yml", []
+PEER0 = PEERS[0] if PEERS else (WF, 0)  # no peer: an anchor count that cannot hold, so it is reported
 PUB_IF = ("      github.event_name == 'workflow_dispatch' && needs.sync.result == 'success' &&\n"
           "      inputs.dry_run == false && needs.sync.outputs.changed == 'true'\n")
 PUB_SNAP = S + 'bash .claude/skills/release-docs/scripts/post-checks.sh --snapshot "$T/p.snap"\n'
@@ -1362,8 +1403,18 @@ MUTANTS = [
     ("A8", [(WF, '--before "$T/before.json" --verifier "$T/sync/verifier.json" \\\n',
              '--before "$T/before.json" \\\n', 1)], "PR body without --verifier"),
     ("A9", [(WF, S + "github_token: ${{ github.token }}\n", "", 1)], "no github_token"),
-    ("A10", [(WF, "756cc22e19660d20e8cc9496b4f242475a7f7790 # v1.0.235",
-              "0000000000000000000000000000000000000000 # v1.0.231", 1)], "another action pin"),
+    ("A10", [(WF, PIN, "0000000000000000000000000000000000000000 # v1.0.0", 1)],
+     "a pin the other workflows do not share"),
+    ("A10", [(WF, CCA + PIN, CCA + "v1", 1)], "a tag in place of a commit"),
+    ("A10", [(WF, PIN, PIN.split(" #")[0], 1)], "a commit with no version comment"),
+    ("A10", [(rel, "uses: " + CCA + PIN, "uses: someone/else@" + PIN, n) for rel, n in PEERS],
+     "no other workflow to agree with"),
+    ("A10", [(WF, "uses: " + CCA + PIN, "uses: " + CCA + "v1\n        # uses: " + CCA + PIN, 1)],
+     "a tag, with the commit pin left in a comment"),
+    ("A10", [(PEER0[0], PIN, "0000000000000000000000000000000000000000 # v1.0.0", PEER0[1])],
+     "another workflow pins another commit"),
+    ("A10", [(PEER0[0], "uses: " + CCA + PIN, 'uses: "' + CCA + 'v1"', PEER0[1])],
+     "another workflow's Claude step written so the reader does not see it"),
     ("A11", [(WF, "--model claude-opus-5-5", "--model claude-sonnet-5", 1)], "another model"),
     ("A12", [(WF, "Agent,Task,", "Agent,", 1)], "Task not allowed"),
     ("A13", [(VAL, "    if: github.event_name == 'pull_request' && github.base_ref == 'main'\n",
@@ -1426,7 +1477,7 @@ MUTANTS = [
               "    permissions:\n      contents: write\n      pull-requests: write\n    steps:", 1)],
      "publish gets contents: write"),
     ("A27", [(WF, "      - uses: actions/download-artifact@",
-              "      - uses: anthropics/claude-code-action@756cc22e19660d20e8cc9496b4f242475a7f7790 # v1.0.235\n"
+              "      - uses: " + CCA + PIN + "\n"
               "      - uses: actions/download-artifact@", 1)], "publish runs a Claude step"),
     ("A28", [(WF, PUB_SNAP, "", 1), (WF, PUB_APPLY, PUB_APPLY + PUB_SNAP.replace("$T/", "$RUNNER_TEMP/"), 1)],
      "publish's snapshot taken after the patch"),
@@ -1606,7 +1657,7 @@ for cid, edits, label in ([] if setup_failed else MUTANTS):
         continue
     with tempfile.TemporaryDirectory() as tmp:
         vacuous = False
-        for rel in FILES:
+        for rel in FILES + tuple(rel for rel, _ in PEERS):
             os.makedirs(os.path.dirname(os.path.join(tmp, rel)), exist_ok=True)
             shutil.copy(os.path.join(ROOT, rel), os.path.join(tmp, rel))
         for rel, old, new, count in edits:
