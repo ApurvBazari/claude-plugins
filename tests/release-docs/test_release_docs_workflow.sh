@@ -65,6 +65,9 @@ FILES = (WF, VAL, FENCE, POST)
 WFDIR = ".github/workflows/"
 CCA = "anthropics/claude-code-action@"
 PIN_RE = re.compile(r"uses: %s([0-9a-f]{40} # v\d+\.\d+\.\d+)$" % re.escape(CCA), re.M)
+# Any line that could be a claude-code-action step, however it is indented or quoted. A10 counts
+# these against the steps the reader parsed, so a step the reader skips cannot go unjudged.
+CCA_LOOSE = re.compile(r"^[ \t]*(?:-[ \t]+)?uses[ \t]*:[ \t]*[\"']?anthropics/claude-code-action\b", re.M)
 RD = ".claude/skills/release-docs/scripts/"
 SCRIPT_RULES = ["Bash(bash %s%s:*)" % (RD, s)
                 for s in ("docs-detect.sh", "post-checks.sh", "render-check.sh", "og-regen.sh")]
@@ -154,7 +157,13 @@ def read(root, rel):
 def peers(root):
     """The other workflows that run claude-code-action: the ones release-docs.yml's pin must match."""
     names = sorted(n for n in os.listdir(os.path.join(root, WFDIR)) if n.endswith((".yml", ".yaml")))
-    return [WFDIR + n for n in names if WFDIR + n != WF and "uses: " + CCA in read(root, WFDIR + n)]
+    return [WFDIR + n for n in names if WFDIR + n != WF and CCA_LOOSE.search(read(root, WFDIR + n))]
+
+
+def claude_uses(text):
+    """The whole `uses:` value, comment included, of each step that runs claude-code-action."""
+    return [field(s["raw"], "uses", STEP) for job in model(text).values() for s in job["steps"]
+            if (s["uses"] or "").startswith(CCA)]
 
 
 class Ctx:
@@ -165,8 +174,13 @@ class Ctx:
         self.val = model(self.vtext)
         self.fence = read(root, FENCE)
         self.post_sh = read(root, POST)
-        self.peer_pins = [(rel, pin.strip()) for rel in peers(root)
-                          for pin in re.findall(r"uses: %s(.*)$" % re.escape(CCA), read(root, rel), re.M)]
+        self.peer_uses, self.peer_unread = [], []
+        for rel in peers(root):
+            ptext = read(root, rel)
+            seen, loose = claude_uses(ptext), len(CCA_LOOSE.findall(ptext))
+            self.peer_uses += [(rel, u) for u in seen]
+            if len(seen) != loose:
+                self.peer_unread.append((rel, len(seen), loose))
         self.y = yaml.safe_load(self.text) if yaml else None
         self.yval = yaml.safe_load(self.vtext) if yaml else None
         empty = {"steps": [], "raw": "", "head": "", "if": None, "name": None}
@@ -427,13 +441,16 @@ def a10(c):
     uses = [s for s in c.sync["steps"] if (s["uses"] or "").startswith(CCA)]
     if len(uses) != 1:
         return ["%d Claude steps in sync, want 1" % len(uses)]
-    m = PIN_RE.search(uses[0]["raw"])
-    if not m:
-        return ["the Claude step is not pinned to a 40-hex commit with a # vX.Y.Z comment"]
-    if not c.peer_pins:
-        return ["no other workflow runs claude-code-action: the pin has nothing to agree with"]
-    return ["%s pins %s, release-docs.yml pins %s" % (rel, pin, m.group(1))
-            for rel, pin in sorted(set(c.peer_pins)) if pin != m.group(1)]
+    # The step's own `uses:` value is judged, never the step's text: a pin left in a comment or in
+    # the prompt must not stand in for the line the runner reads.
+    mine = field(uses[0]["raw"], "uses", STEP) or ""
+    if not PIN_RE.fullmatch("uses: " + mine):
+        return ["the Claude step's uses is %r, not a 40-hex commit with a # vX.Y.Z comment" % mine]
+    f = ["%s: the reader sees %d of its %d claude-code-action steps" % x for x in c.peer_unread]
+    if not c.peer_uses:
+        f.append("no other workflow runs claude-code-action: the pin has nothing to agree with")
+    return f + ["%s uses %s, release-docs.yml uses %s" % (rel, u, mine)
+                for rel, u in sorted(set(c.peer_uses)) if u != mine]
 
 
 @check("A11", "the model is claude-opus-5-5")
@@ -1272,9 +1289,10 @@ S = "          "
 # that cannot be read leaves an anchor that is found 0 times, which the self-test reports.
 try:
     PIN = (PIN_RE.search(read(ROOT, WF)) or [None, "no claude-code-action pin in release-docs.yml"])[1]
-    PEERS = [(rel, read(ROOT, rel).count("uses: " + CCA)) for rel in peers(ROOT)]
+    PEERS = [(rel, read(ROOT, rel).count("uses: " + CCA + PIN)) for rel in peers(ROOT)]
 except OSError:
     PIN, PEERS = "no claude-code-action pin in release-docs.yml", []
+PEER0 = PEERS[0] if PEERS else (WF, 0)  # no peer: an anchor count that cannot hold, so it is reported
 PUB_IF = ("      github.event_name == 'workflow_dispatch' && needs.sync.result == 'success' &&\n"
           "      inputs.dry_run == false && needs.sync.outputs.changed == 'true'\n")
 PUB_SNAP = S + 'bash .claude/skills/release-docs/scripts/post-checks.sh --snapshot "$T/p.snap"\n'
@@ -1389,8 +1407,14 @@ MUTANTS = [
      "a pin the other workflows do not share"),
     ("A10", [(WF, CCA + PIN, CCA + "v1", 1)], "a tag in place of a commit"),
     ("A10", [(WF, PIN, PIN.split(" #")[0], 1)], "a commit with no version comment"),
-    ("A10", [(rel, "uses: " + CCA, "uses: someone/else@", n) for rel, n in PEERS],
+    ("A10", [(rel, "uses: " + CCA + PIN, "uses: someone/else@" + PIN, n) for rel, n in PEERS],
      "no other workflow to agree with"),
+    ("A10", [(WF, "uses: " + CCA + PIN, "uses: " + CCA + "v1\n        # uses: " + CCA + PIN, 1)],
+     "a tag, with the commit pin left in a comment"),
+    ("A10", [(PEER0[0], PIN, "0000000000000000000000000000000000000000 # v1.0.0", PEER0[1])],
+     "another workflow pins another commit"),
+    ("A10", [(PEER0[0], "uses: " + CCA + PIN, 'uses: "' + CCA + 'v1"', PEER0[1])],
+     "another workflow's Claude step written so the reader does not see it"),
     ("A11", [(WF, "--model claude-opus-5-5", "--model claude-sonnet-5", 1)], "another model"),
     ("A12", [(WF, "Agent,Task,", "Agent,", 1)], "Task not allowed"),
     ("A13", [(VAL, "    if: github.event_name == 'pull_request' && github.base_ref == 'main'\n",
