@@ -223,6 +223,7 @@ These two detection groups are issued **together as two `multiSelect` questions 
 ### Q9.1: LSP Plugins
 - Run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"`.
 - Empty array → drop this group and record `wizardAnswers.lspPlugins = []`.
+- Skipped or dismissed → record `wizardAnswers.lspPlugins = []`. A skip is not an acceptance; nothing is installed.
 - Otherwise present detected plugins (pre-checked when `fileCount ≥ 10`) in fileCount-descending order; record accepted names in `wizardAnswers.lspPlugins`.
 
 ### Q9.2: Built-in Skills

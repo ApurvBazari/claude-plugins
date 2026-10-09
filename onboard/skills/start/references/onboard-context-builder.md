@@ -100,7 +100,7 @@ If all three probes yielded zero plugins: `installedPlugins: []`, `coveredCapabi
 **Critical for closing B1**: start passes these flags **explicitly as false**. Omitting the field would default to false at the generator, but passing explicitly makes the contract auditable.
 
 - `disableMCP` → **`false`** (always). emission Step 1's signal-driven path fires; `.mcp.json` emitted when `detect-mcp-signals.sh` returns ≥ 1 candidate. Pre-fix bug: start's absent callerExtras meant the generator never ran emission Step 1 → `reason: "no-candidates"` despite signals being present.
-- `disableLSP` → **`false`**. emission Step 3 runs if `lspPlugins` array from wizardAnswers is non-empty OR the builder's Static Defaults supply the detected candidate list (when the wizard did not confirm a selection).
+- `disableLSP` → **`false`**. emission Step 3 always runs: it documents the detected LSP plugins and installs only the ones in `wizardAnswers.lspPlugins`. When the wizard did not confirm a selection the Static Default is an empty list, so nothing is installed.
 - `disableBuiltInSkills` → **`false`**. emission Step 4 runs; output is `builtInSkillsStatus.status: "documented"` (CLAUDE.md subsection, no separate snapshot file — see C1.6).
 
 #### Generation-phase SUPPRESS-PROMPT flags — start-path defaults
@@ -113,7 +113,7 @@ Start is interactive by definition; never suppress confirmation prompts.
 
 #### Explicit selection arrays
 
-- `lspPlugins` → `wizardAnswers.lspPlugins` (empty array = "detected but declined"; absent = "no detection")
+- `lspPlugins` → `wizardAnswers.lspPlugins` (empty array = "declined or skipped"; absent = "no offer was made"; neither installs anything)
 - `builtInSkills` → `wizardAnswers.builtInSkills` (same semantics)
 
 #### Quality gates + phase skills
@@ -228,7 +228,7 @@ When the grounded wizard does not confirm a field (e.g. the Minimal profile skip
 | `wizardAnswers.autonomyLevel` | `"balanced"` |
 | `wizardAnswers.willDeploy` | `true` |
 | `wizardAnswers.painPoints` | `{ timeSinks: "", errorProne: "", automationWishes: "" }` |
-| `wizardAnswers.lspPlugins` | full detected list from `detect-lsp-signals.sh` |
+| `wizardAnswers.lspPlugins` | `[]` |
 | `wizardAnswers.builtInSkills` | `["/loop", "/simplify", "/debug", "/pr-summary"]` + detected extras |
 | `wizardAnswers.skillTuning` | `{ mode: "defaults" }` |
 | `wizardAnswers.agentTuning` | `{ mode: "defaults" }` |
@@ -246,7 +246,7 @@ Every default is populated explicitly — downstream generation should never nee
 
 4. **wizardAnswers includes `skillTuning.mode: "tuned"`** — builder passes the tuning object through; config-generator composes archetype defaults with the tuning overrides. `disableSkillTuning` stays `false` regardless of `mode` value.
 
-5. **`lspPlugins: []` (detected but all declined)** — valid state. `disableLSP: false` still. Generator's emission Step 3 emits `lspStatus.status: "declined"` with empty `planned[]` / `generated[]`.
+5. **`lspPlugins: []` (detected but all declined, or the question was skipped)** — valid state. `disableLSP: false` still. Generator's emission Step 3 emits `lspStatus.status: "declined"` with empty `planned[]` / `generated[]`.
 
 6. **User-edit preservation on re-run** — if `.claude/onboard-meta.json` already exists from a prior run, the builder still runs fresh. Generator handles merge semantics. Do NOT read prior onboard-meta to pre-populate context fields — source of truth is this run's wizard + analysis.
 

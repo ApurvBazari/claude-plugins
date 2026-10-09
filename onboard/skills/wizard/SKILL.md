@@ -127,7 +127,7 @@ Note: a `research.wizardInferences` value may be an enum *stem* (e.g. `teamSize:
 3. **Three-exchange shape** — the grounded wizard runs Exchange 1 (workflow/preferences) + Exchange 2 (cold asks) + Exchange 3 (tuning + detection), skipping any detection group with no candidates. No preset selection, no Custom path, no mid-wizard escape hatch (those were the v2 model).
 4. **Reference the analysis** — Always connect questions to what the analyzer found. This demonstrates value and reduces redundant questions.
 5. **Capture autonomy preference carefully** — This determines how much Claude asks vs acts independently. Get this right.
-6. **Always populate fields explicitly** — When the wizard skips a detection group (no signal, programmatic mode) or the developer accepts a default, populate the corresponding field in `wizardAnswers` with the explicit default value (full detected list, archetype default, etc.) rather than leaving the field `undefined`. This means downstream generation always receives explicit Path A data and never has to fall back to Path B (which is just the C1-introduced safety net).
+6. **Always populate fields explicitly** — When the wizard skips a detection group (no signal, programmatic mode) or the developer accepts a default, populate the corresponding field in `wizardAnswers` with the explicit default value (an empty list for the two plugin groups, the candidate list for built-in skills, archetype default, etc.) rather than leaving the field `undefined`. This means downstream generation always receives explicit Path A data and never has to fall back to Path B (which is just the C1-introduced safety net).
 7. **Canonical wizardStatus telemetry — Finalize step** — Before the Summary, emit `wizardStatus` to `onboard-meta.json` with **exactly** these 5 subkeys. Emission runs for every profile; no profile-specific shape variant is allowed.
 
    Track state throughout the wizard run:
@@ -169,7 +169,7 @@ When a developer skips a question or section:
    - `autonomyLevel` → `"balanced"`
    - `codeStyleStrictness` → `"moderate"`
    - `securitySensitivity` → `"standard"`
-   - `lspPlugins` → full detected list from `${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh` (accept-all default)
+   - `lspPlugins` → `[]` (a skipped question is not an acceptance, so nothing is installed; see `../../references/plugin-install-consent.md`)
    - `builtInSkills` → full candidate list (4 core + fired extras)
    - `outputStyleTuning` → `{ mode: "defaults" }`
    - `skillTuning` → `{ mode: "defaults" }`
@@ -262,7 +262,7 @@ The `advancedHookEvents` field is an array of event names the developer explicit
 
 The `advancedHookTypes` / `advancedHookTypeExtras` / `allowHttpHooks` fields come from Exchange 3 (per-event execution type). `advancedHookTypes` only contains entries for judgment-capable events the developer explicitly picked a non-default type for; events defaulting to `command` are omitted. `advancedHookTypeExtras` carries the auxiliary field (`agentRef` / `httpUrl` / `promptRef` / `promptInline`) required by the chosen type. `allowHttpHooks` is `true` only when the developer confirmed the HTTP data-leaves-machine prompt for at least one event. See `../generation/references/emission/hooks-generation.md` § Advanced Event Hooks § Per-event defaults and § Hook Type Validation for how these are consumed.
 
-The `lspPlugins` field is the developer-accepted list of marketplace LSP plugins from Exchange 3 (LSP detection prompt). An empty array means "detected candidates but developer declined all"; an absent field means "programmatic path — full detected list is the implicit accept". `../generation/SKILL.md` § LSP Plugin Recommendations consumes this alongside `callerExtras.lspPlugins` and `callerExtras.disableLSP`. See `../generation/references/catalogs/lsp-plugin-catalog.md` for the plugin→language mapping.
+The `lspPlugins` field is the developer-accepted list of marketplace LSP plugins from Exchange 3 (LSP detection prompt). An empty array means "detected candidates but the developer declined all, or skipped the question"; an absent field means "no offer was made". Neither installs anything. `../generation/SKILL.md` § LSP Plugin Recommendations consumes this alongside `callerExtras.lspPlugins` and `callerExtras.disableLSP`. See `../generation/references/catalogs/lsp-plugin-catalog.md` for the plugin→language mapping.
 
 The `builtInSkills` field is the developer-accepted list of built-in Claude Code skills from Exchange 3 (built-in skills detection prompt). An empty array means "candidates existed but developer declined all"; an absent field means "programmatic path — full candidate list (core + fired extras) is the implicit accept". `../generation/SKILL.md` § Built-in Claude Code Skills — emission Step 4 consumes this alongside `callerExtras.builtInSkills` and `callerExtras.disableBuiltInSkills`. See `../generation/references/catalogs/built-in-skills-catalog.md` for the skill tiers and detection signals.
 
