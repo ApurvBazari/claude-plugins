@@ -216,9 +216,9 @@ These cannot be inferred from research; they are cold free-form asks (or "skip" 
 
 ---
 
-## Category 9: Detection Prompts — LSP & Built-in Skills (Exchange 3)
+## Category 9: Detection Prompts — LSP, Built-in Skills & MCP-Server Plugins (Exchange 3)
 
-These two detection groups are issued **together as two `multiSelect` questions in one `AskUserQuestion` call** — the canonical two-block pattern. The single-option guard in `.claude/rules/ask-user-question-guard.md` applies to each dynamically-built group.
+These three detection groups are issued **together as three `multiSelect` questions in one `AskUserQuestion` call**. The single-option guard in `.claude/rules/ask-user-question-guard.md` applies to each dynamically-built group.
 
 ### Q9.1: LSP Plugins
 - Run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"`.
@@ -229,9 +229,16 @@ These two detection groups are issued **together as two `multiSelect` questions 
 ### Q9.2: Built-in Skills
 - Detect candidates from the analysis report (4 core always; extras when their signal fires); record accepted names in `wizardAnswers.builtInSkills`.
 
-### Canonical two-multiSelect-in-one-call example
+### Q9.3: MCP-Server Plugins
+- Run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh" "$PROJECT_ROOT"`.
+- `.mcp.json` already exists at the project root → drop this group and record `wizardAnswers.mcpPlugins = []`.
+- Leave out any plugin that is already installed (`claude plugin list --json`, best-effort; if the probe fails, keep every row).
+- Present the remaining plugins with every row unchecked; record accepted names in `wizardAnswers.mcpPlugins`.
+- Skipped or dismissed → `wizardAnswers.mcpPlugins = []`. Nothing is installed. Rule: `../../../references/plugin-install-consent.md`.
 
-Issue both groups in a single `AskUserQuestion` call (one user interaction, two grouped multi-selects). Apply the single-option guard per group: a standalone group that collapses to 1 candidate becomes a yes/no; a group inside this combined call is padded with an explicit `None / Skip` (envelope intact); a zero-candidate group is dropped.
+### Canonical multiSelect-groups-in-one-call example
+
+Issue all three groups in a single `AskUserQuestion` call (one user interaction, three grouped multi-selects). Apply the single-option guard per group: a standalone group that collapses to 1 candidate becomes a yes/no; a group inside this combined call is padded with an explicit `None / Skip` (envelope intact); a zero-candidate group is dropped.
 
 ```jsonc
 AskUserQuestion({
@@ -257,12 +264,22 @@ AskUserQuestion({
         { label: "/pr-summary", description: "Core — PR description generator" },
         { label: "/schedule",   description: "Extra — fired: CI/CD detected" }
       ]
+    },
+    {
+      header: "MCP Plugins",
+      question: "These plugins go with the MCP servers I will add to .mcp.json. Install any of them?",
+      multiSelect: true,
+      options: [
+        { label: "vercel",   description: "Vercel plugin — deploy skills and commands; goes with the vercel MCP server" },
+        { label: "context7", description: "context7 plugin — goes with the context7 docs-lookup MCP server" }
+        // every row starts unchecked; if this list collapsed to ONE candidate, pad with { label: "None / Skip", ... }
+      ]
     }
   ]
 })
 ```
 
-**Programmatic mode** (`callerExtras.lspPlugins` / `callerExtras.disableLSP` / `callerExtras.builtInSkills` / `callerExtras.disableBuiltInSkills`): the detection prompt never fires — generation reads the caller-supplied value directly.
+**Programmatic mode** (`callerExtras.lspPlugins` / `callerExtras.disableLSP` / `callerExtras.mcpPlugins` / `callerExtras.disableMCP` / `callerExtras.builtInSkills` / `callerExtras.disableBuiltInSkills`): the detection prompt never fires — generation reads the caller-supplied value directly. An absent caller list for either plugin group installs nothing.
 
 ---
 
@@ -283,7 +300,7 @@ Exchange 2 — Cold asks (never inferred):
 
 Exchange 3 — Tuning cards + detection:
   Tuning cards (advanced hooks / skill / agent / output-style) — static/preset defaults pre-selected.
-  Q8.1 ecosystem plugins; Q9.1 + Q9.2 LSP + built-in skills (two multiSelects in one call).
+  Q8.1 ecosystem plugins; Q9.1 + Q9.2 + Q9.3 LSP + built-in skills + MCP-server plugins (three multiSelects in one call).
   Skip any detection group with zero candidates. Accepting all defaults clears this in one pass.
 
 Summary & confirmation:

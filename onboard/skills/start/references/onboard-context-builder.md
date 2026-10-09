@@ -114,6 +114,7 @@ Start is interactive by definition; never suppress confirmation prompts.
 #### Explicit selection arrays
 
 - `lspPlugins` → `wizardAnswers.lspPlugins` (empty array = "declined or skipped"; absent = "no offer was made"; neither installs anything)
+- `mcpPlugins` → `wizardAnswers.mcpPlugins` (same semantics; the plugins behind MCP servers the developer accepted)
 - `builtInSkills` → `wizardAnswers.builtInSkills` (same semantics)
 
 #### Quality gates + phase skills
@@ -229,6 +230,7 @@ When the grounded wizard does not confirm a field (e.g. the Minimal profile skip
 | `wizardAnswers.willDeploy` | `true` |
 | `wizardAnswers.painPoints` | `{ timeSinks: "", errorProne: "", automationWishes: "" }` |
 | `wizardAnswers.lspPlugins` | `[]` |
+| `wizardAnswers.mcpPlugins` | `[]` |
 | `wizardAnswers.builtInSkills` | `["/loop", "/simplify", "/debug", "/pr-summary"]` + detected extras |
 | `wizardAnswers.skillTuning` | `{ mode: "defaults" }` |
 | `wizardAnswers.agentTuning` | `{ mode: "defaults" }` |

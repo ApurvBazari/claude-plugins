@@ -39,6 +39,9 @@ Based on what was generated, suggest what to try first:
 If ecosystem plugins were set up, add:
 > - Run `/notify:check` to verify notifications are working
 
+If any plugin was offered and not accepted (it is in `mcpStatus.pluginOffers.offered` but not in `.accepted`, or it is in `lspStatus.skipped`), add once:
+> - Plugins you did not take: `<name>`, `<name>`. Add any of them later with `claude plugin install <name>`.
+
 ## Closing
 
 > Your project is now set up for AI-assisted development with Claude Code. Happy coding!
