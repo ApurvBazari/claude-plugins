@@ -489,6 +489,93 @@
       "status": "deferred",
       "rationale": "The claude.ai directory reviews the latest commit of the default branch, so in-flight develop work is what gets reviewed and listed. CLAUDE.md's Branching section states main is the default.",
       "resolution": "Owner decides: flip the default to main and resubmit pinned there, or correct CLAUDE.md."
+    },
+    {
+      "id": "REV-1",
+      "title": "onboard 3.3.0 review: minor wording and consistency findings left open",
+      "source": "onboard 3.3.0 install-consent branch, fresh whole-branch review (2026-10-10)",
+      "raisedAt": "2026-10-10",
+      "status": "deferred",
+      "rationale": "The review's minor findings that were not fixed in the PR. None opens a path to an install nobody accepted.",
+      "items": [
+        "start/SKILL.md and question-bank.md summary templates lack the 'Plugins to install' line the wizard now requires.",
+        "The markdown-gate fallback sentence (start/SKILL.md, adopt/SKILL.md) does not name the Plugins to install line.",
+        "evolve Step 2c 'Programmatic mode (callerExtras.mcpPlugins set)' has no defined source; nothing passes it to evolve.",
+        "evolve's offer prompt says 'New MCP server(s)' for a set that can include older snapshot servers; the README example shows a one-row multiSelect where the reference wants Install / Skip.",
+        "update derives install offers only from newly-suggested servers, so a plugin left un-offered for an existing server is offered by evolve only (the spec said 'or by update').",
+        "config-generator step 8 is not gated by callerExtras.disableMCP, while mcp-guide § Caller Escape Hatch says no plugin is offered or installed.",
+        "The consent reference says 'do not offer a plugin that is already installed' for all offers, but the LSP prompts do not probe; it also omits the accepted-list resolution order and the plugin-delivered rule.",
+        "schemas/context-shape-v3.json's top description omits mcpPlugins; the example context uses typescript-language-server, a name R4 would drop.",
+        "question-bank.md still says 'Selected-but-missing plugins install in ... Phase 6' for ecosystem plugins.",
+        "README 'the preview lists every plugin that will be installed' does not cover notify and walkthrough, which have their own offers.",
+        "evolve Step 3's diff has no line for an accepted install that failed (spec 5.7).",
+        "Belt IC1 checks only the bold R1-R4 markers, not the rule text.",
+        "Belt IC2 does not cover files that run 'claude plugin install' directly (the walkthrough and notify offers in start, adopt and ecosystem-plugin-install.md)."
+      ],
+      "resolution": "Sweep in a later onboard patch release."
+    },
+    {
+      "id": "REV-2",
+      "title": "An LSP plugin that was never offered is remembered as recommended",
+      "source": "onboard 3.3.0 install-consent branch, fresh whole-branch review (2026-10-10)",
+      "raisedAt": "2026-10-10",
+      "status": "deferred",
+      "rationale": "LSP emission Path B writes every detected plugin to the snapshot's recommended list even when no offer was shown, and update offers only plugins missing from that list. The MCP side now records only rows actually shown (wizardAnswers.mcpPluginsOffered); the LSP side does not.",
+      "resolution": "Design call: give the LSP snapshot the same rows-shown rule, or let update re-offer a recommended plugin that was never accepted or declined."
+    },
+    {
+      "id": "REV-3",
+      "title": "evolve's removal steps have no user-edit check",
+      "source": "onboard 3.3.0 install-consent branch, fresh whole-branch review (2026-10-10)",
+      "raisedAt": "2026-10-10",
+      "status": "deferred",
+      "rationale": "evolve removes rules that reference a removed package, the CLAUDE.md of a deleted directory and the hook scripts of an uninstalled plugin without checking whether the file was hand-edited. The README now describes the removals instead of promising evolve never touches your edits; the behaviour is unchanged.",
+      "resolution": "Decide whether those steps should skip a file whose maintenance header was changed or removed, as update does."
+    },
+    {
+      "id": "REV-4",
+      "title": "A wizard plugin group can exceed AskUserQuestion's four options per question",
+      "source": "onboard 3.3.0 install-consent branch, fresh whole-branch review (2026-10-10)",
+      "raisedAt": "2026-10-10",
+      "status": "deferred",
+      "rationale": "The wizard's own Guard says each question takes up to four options. A Next.js + Vercel + Supabase + GitHub stack yields five MCP-plugin rows; the LSP and built-in-skills groups have the same pre-existing limit (the question bank's example shows five options).",
+      "resolution": "Add a split rule (consecutive questions of at most four rows, never drop a row) and reconcile it with the three-groups-in-one-call contract. Try a five-plugin stack in a real run."
+    },
+    {
+      "id": "REV-5",
+      "title": "start says nothing has been written before the gate, but the research notes exist",
+      "source": "onboard 3.3.0 install-consent branch, fresh whole-branch review (2026-10-10)",
+      "raisedAt": "2026-10-10",
+      "status": "deferred",
+      "rationale": "start/SKILL.md tells the model 'Nothing has been written yet' at the gate and prints 'Cancelled — no files were created' on Cancel. By then research has written .claude/onboard-research.json (and docs/onboard/ when chosen) and the gate has written the preview page. The README was corrected in 3.3.0; the skill text was not.",
+      "resolution": "Reword both lines to 'no tooling file', or remove the research notes and preview page on Cancel."
+    },
+    {
+      "id": "REV-6",
+      "title": "Plugin files cite .claude/rules/ask-user-question-guard.md, which does not ship with the plugin",
+      "source": "onboard 3.3.0 install-consent branch, fresh whole-branch review (2026-10-10)",
+      "raisedAt": "2026-10-10",
+      "status": "deferred",
+      "rationale": "The wizard, the question bank, start, research and the consent reference point at a rule file that exists only in this repository. An installed onboard has no such file; the reference restates the rule inline, the others do not.",
+      "resolution": "Move the rule's text into an onboard reference and cite that."
+    },
+    {
+      "id": "REV-7",
+      "title": "tests/release-docs/test_render_check.sh is flaky under load",
+      "source": "onboard 3.3.0 install-consent branch, fresh whole-branch review (2026-10-10)",
+      "raisedAt": "2026-10-10",
+      "status": "deferred",
+      "rationale": "Twice on 2026-10-10 a case in this belt (T5-GOOD, then T5-FONTS-REAL) got exit 143: headless Chrome was killed by the belt's timeout, once at the untouched baseline and once while other checks ran beside the suite. Alone, and in a quiet full run, it passes 56 of 56.",
+      "resolution": "Raise the belt's Chrome timeout or retry once on 143."
+    },
+    {
+      "id": "REV-8",
+      "title": "Not verified: what an untouched 'pre-checked' LSP row does",
+      "source": "onboard 3.3.0 install-consent branch, fresh whole-branch review (2026-10-10)",
+      "raisedAt": "2026-10-10",
+      "status": "deferred",
+      "rationale": "The wizard and update describe LSP rows as pre-checked (autoChecked: true). AskUserQuestion may have no pre-selected state, in which case the rows are simply unchecked and fewer LSP plugins are installed than the text implies. Not checked in this PR.",
+      "resolution": "Check in a real run; if rows cannot be pre-checked, drop the wording."
     }
   ]
 }
