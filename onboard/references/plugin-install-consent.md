@@ -58,6 +58,7 @@ remembered as declined.
 | Field | Where | Meaning |
 |---|---|---|
 | `wizardAnswers.mcpPlugins` | wizard output, context, `onboard-meta.json` | Accepted MCP-server plugins. `[]` = offered and declined all, skipped, or nothing to offer. Absent = no offer was made. Both install nothing. |
+| `wizardAnswers.mcpPluginsOffered` | wizard output, context | The MCP-plugin rows the wizard displayed in a question the person submitted. `[]` or absent = no row was shown, so nothing counts as offered. |
 | `wizardAnswers.lspPlugins` | same | Accepted LSP plugins. `[]` and absent both install nothing. |
 | `callerExtras.mcpPlugins`, `callerExtras.lspPlugins` | generation context | A programmatic caller's explicit accepted list (R2). |
 | `decisions.pluginInstalls` | generation manifest | Every plugin the write run will install. Shown in the preview; `[]` renders as "none". |
@@ -70,7 +71,7 @@ first read; see `../skills/update/references/drift-classification.md` § 4b.4.
 
 | Flow | Written by | When |
 |---|---|---|
-| `start`, full `write` generation | MCP emission Step 5 | Every time, including when nothing was accepted. |
+| `start`, full `write` generation | MCP emission Step 5 | Every time, including when nothing was accepted. `offered` = the rows the wizard actually showed, never every candidate. |
 | Repair run (`regenerateOnly` / `reResearch`) | nobody | Never. The stored ledger is left as it is. |
 | `update` | Step 8 | When Step 4b.4 seeded it, or an `install-plugin-*` offer was shown and answered. A deferred or dismissed offer is not recorded. |
 | `evolve` | Step 2c | The pre-3.3.0 seed at once; `offered` and `accepted` after an answer; nothing for a plugin nobody answered about. |

@@ -351,7 +351,7 @@ Written when the developer picks "Apply later" in the pre-question:
 Install offers are saved like any other offer and are never applied without a later selection.
 
 Next `/onboard:update`:
-1. If `.claude/onboard-pending-updates.json` exists, read it. Re-validate each offer against current state (e.g., the missing file may have been restored manually).
+1. If `.claude/onboard-pending-updates.json` exists, read it. Re-validate each offer against current state (e.g., the missing file may have been restored manually). Drop any pending `install-plugin-*` offer whose plugin is not in the catalog (`../../references/plugin-install-consent.md`, R4): a plugin name read from a project file is never offered on that file's word alone.
 2. Merge still-applicable pending offers into the freshly detected drift list. Dedupe by `id`.
 3. Present the combined list via the same Step 6 AskUserQuestion call.
 4. After "Apply all" or per-group selection lands, delete `.claude/onboard-pending-updates.json` (snapshot has served its purpose).

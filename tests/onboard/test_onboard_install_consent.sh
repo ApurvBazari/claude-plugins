@@ -53,6 +53,7 @@ for r in '**R1.**' '**R2.**' '**R3.**' '**R4.**'; do has "IC1: reference states 
 has "IC1: reference states the no-answer floor" 'install nothing, record nothing as offered' "$REF"
 has "IC1: reference points at the single-option guard" 'ask-user-question-guard.md' "$REF"
 has "IC1: reference says who writes the offer ledger, and when" 'Who writes `mcpStatus.pluginOffers`' "$REF"
+has "IC1: reference defines the rows-shown field" '`wizardAnswers.mcpPluginsOffered`' "$REF"
 
 # --- IC2: every instruction file that names the installer also cites the consent reference ---
 callers="$(grep -rlF 'install-plugins.sh' onboard --include='*.md' 2>/dev/null | grep -vE '/CHANGELOG\.md$|/plugin-install-consent\.md$' | sort)"
@@ -136,6 +137,8 @@ if "pluginInstalls" not in man["properties"]["decisions"]["properties"]:
     problems.append("generation-manifest: decisions.pluginInstalls missing")
 if "mcpPlugins" not in ctx["properties"]["callerExtras"]["properties"]:
     problems.append("context-shape-v3: callerExtras.mcpPlugins missing")
+if "mcpPluginsOffered" not in ctx["properties"]["callerExtras"]["properties"]:
+    problems.append("context-shape-v3: callerExtras.mcpPluginsOffered missing")
 print("; ".join(problems))
 sys.exit(1 if problems else 0)
 PY
@@ -167,6 +170,7 @@ has "IC10: update's Apply all names every plugin it would install" 'MUST name ev
 has "IC10: update records an answered offer even when no MCP drift was applied" 'or an `install-plugin-*` offer was shown and answered' "$UPD/SKILL.md"
 has "IC10: update never runs the installer for an unselected offer" 'Never run the installer for a plugin whose offer was not selected' "$UPD/SKILL.md"
 has "IC10: approving a server does not install its plugin" 'Approving a server does NOT install its plugin' "$UPD/references/drift-application.md"
+has "IC10: update drops a pending install offer whose plugin is not in the catalog" 'whose plugin is not in the catalog' "$UPD/SKILL.md"
 
 # --- IC11: the generator installs accepted names only, never on a repair run, never a non-catalog name ---
 step8="$(grep -F '**Install accepted plugins**' onboard/agents/config-generator.md || true)"
@@ -180,11 +184,16 @@ fi
 has "IC11: MCP emission writes the offer ledger on every full write" 'Write `pluginOffers` here on every full `write` run' "$GEN/emission/mcp-emission.md"
 has "IC11: MCP emission stops before installing on a repair run" 'stop here. A repair run never installs' "$GEN/emission/mcp-emission.md"
 has "IC11: LSP emission skips the install on a repair run" 'skip the install; a repair run never installs' "$GEN/emission/lsp-emission.md"
+has "IC11: the ledger's offered list is the rows actually shown" 'the rows the wizard displayed in a question the developer submitted' "$GEN/emission/mcp-emission.md"
+lacks "IC11: the ledger no longer counts every candidate as offered" 'when an answer exists' "$GEN/emission/mcp-emission.md"
 
 # --- IC12: an existing .mcp.json means no MCP-plugin offer, and the rows start unchecked ---
 has "IC12: wizard drops the MCP-plugin group when .mcp.json exists" '`.mcp.json` already exists' onboard/skills/wizard/SKILL.md
 has "IC12: wizard MCP-plugin rows start unchecked" 'every row unchecked' onboard/skills/wizard/SKILL.md
 has "IC12: wizard records only the accepted MCP-plugin names" 'Record the accepted names in `wizardAnswers.mcpPlugins`' onboard/skills/wizard/SKILL.md
 has "IC12: wizard never fills a plugin list with detected candidates" 'Never fill either list with detected candidates' onboard/skills/wizard/SKILL.md
+has "IC12: wizard records the rows it actually showed" 'Record the rows you displayed in `wizardAnswers.mcpPluginsOffered`' onboard/skills/wizard/SKILL.md
+has "IC12: wizard shows no plugin offer in adopt mode" '**Adopt mode**' onboard/skills/wizard/SKILL.md
+has "IC12: adopt skips both plugin offers" 'skip the LSP-plugin and MCP-server-plugin detection groups' onboard/skills/adopt/SKILL.md
 
 exit $fail

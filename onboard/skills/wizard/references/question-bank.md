@@ -234,6 +234,7 @@ These three detection groups are issued **together as three `multiSelect` questi
 - `.mcp.json` already exists at the project root → drop this group and record `wizardAnswers.mcpPlugins = []`.
 - Leave out any plugin that is already installed (`claude plugin list --json`, best-effort; if the probe fails, keep every row).
 - Present the remaining plugins with every row unchecked; record accepted names in `wizardAnswers.mcpPlugins`.
+- Record the rows displayed in `wizardAnswers.mcpPluginsOffered` once the question is submitted; `[]` when the group was dropped, skipped or dismissed.
 - Skipped or dismissed → `wizardAnswers.mcpPlugins = []`. Nothing is installed. Rule: `../../../references/plugin-install-consent.md`.
 
 ### Canonical multiSelect-groups-in-one-call example

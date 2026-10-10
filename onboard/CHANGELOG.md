@@ -9,13 +9,15 @@ Responds to the claude.ai directory review of 3.2.0: onboard installed other plu
 - **Skipping the LSP question installs nothing.** The skip default was the full detected list, so a skipped question installed every detected LSP plugin. It is now an empty list. LSP rows are still pre-checked at 10 or more files; a row you submit is an acceptance.
 - **`/onboard:update` gives each plugin its own row.** Approving a new MCP server no longer installs its plugin. "Apply all" names the plugins it would install.
 - **`/onboard:evolve` asks before installing the plugin behind a new MCP server**, the same way it already asks for LSP plugins. If the prompt cannot be shown or nobody answers, nothing is installed and nothing is recorded as offered. The server entry is still merged automatically.
+- **`/onboard:adopt` offers no plugin.** It installs nothing, so its wizard run skips the LSP and MCP-plugin questions.
+- **`/onboard:update` drops a saved install offer whose plugin is not in the catalog.** A plugin name read from `.claude/onboard-pending-updates.json` is never offered on that file's word alone.
 - **Repair runs never install.** A `regenerateOnly` or `reResearch` generation installs nothing, even when stored answers carry an earlier accepted list.
 - **Only catalog names can be installed.** A plugin name that is not in onboard's MCP or LSP catalog is dropped with a warning.
 - **`/onboard:update`'s live docs check is detect-only.** The fetch yields a list of feature names and links, shown as information. It never supplies wording for a proposal or a file; every proposal comes from the bundled guides.
 
 ### Added
 - `references/plugin-install-consent.md` — the rule (R1 to R4), the offer shape, what happens when nobody answers, and what is recorded. Every file that names `install-plugins.sh` cites it.
-- `wizardAnswers.mcpPlugins`, `callerExtras.mcpPlugins`, `decisions.pluginInstalls` (generation manifest) and `mcpStatus.pluginOffers` (`{ offered, accepted }`, the ledger that stops a declined plugin being asked about again). All optional and additive.
+- `wizardAnswers.mcpPlugins`, `wizardAnswers.mcpPluginsOffered` (the rows the wizard actually showed), `callerExtras.mcpPlugins`, `callerExtras.mcpPluginsOffered`, `decisions.pluginInstalls` (generation manifest) and `mcpStatus.pluginOffers` (`{ offered, accepted }`, the ledger that stops a declined plugin being asked about again). `offered` holds only plugins whose row was shown, so a plugin that was never shown can still be offered later. All optional and additive.
 - A server whose catalog row has no command or URL (`prisma`) is plugin-delivered: it gets no `.mcp.json` entry, exists only as a plugin offer, and is never counted as MCP drift.
 
 ### Fixed — README and description say what onboard does

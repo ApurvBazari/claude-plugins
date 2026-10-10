@@ -88,9 +88,10 @@ Record per-event type in `wizardAnswers.advancedHookTypes[<eventName>]` (`"comma
 - Ecosystem plugins: probe install status with `ls "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh" 2>/dev/null` and present each with an `[installed]` / `[not installed]` marker; selected-but-missing plugins are offered for install in /onboard:start Phase 6 (ecosystem-plugin-install step), which then directs you to `/notify:setup` for configuration (onboard does not wire notify itself).
 - LSP plugins: run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"`; empty array → skip and record `wizardAnswers.lspPlugins = []`; otherwise present detected plugins (pre-checked when `fileCount ≥ 10`) in fileCount-descending order and record the accepted names in `wizardAnswers.lspPlugins`.
 - Built-in skills: detect candidates from the analysis report (4 core always; extras when their signal fires) and record the accepted names in `wizardAnswers.builtInSkills`.
-- MCP-server plugins: run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh" "$PROJECT_ROOT"`. Each candidate names a `server` and the `plugin` behind it. If `.mcp.json` already exists at the project root, drop this group and record `wizardAnswers.mcpPlugins = []`: the developer already manages MCP there, so onboard writes no server and offers no plugin. Otherwise probe installed plugins once (`claude plugin list --json`, best-effort) and leave out any plugin already installed; if the probe fails, keep every row. Present the remaining plugins with every row unchecked: label = the plugin name, description = what it adds and the server it belongs to (for a plugin-delivered server such as `prisma`, say that the server ships only inside the plugin). Record the accepted names in `wizardAnswers.mcpPlugins`. The servers themselves are not chosen here; they stay signal-driven and appear in the Phase 5 preview. Rule: `../../references/plugin-install-consent.md`.
+- MCP-server plugins: run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh" "$PROJECT_ROOT"`. Each candidate names a `server` and the `plugin` behind it. If `.mcp.json` already exists at the project root, drop this group and record `wizardAnswers.mcpPlugins = []`: the developer already manages MCP there, so onboard writes no server and offers no plugin. Otherwise probe installed plugins once (`claude plugin list --json`, best-effort) and leave out any plugin already installed; if the probe fails, keep every row. Present the remaining plugins with every row unchecked: label = the plugin name, description = what it adds and the server it belongs to (for a plugin-delivered server such as `prisma`, say that the server ships only inside the plugin). Record the accepted names in `wizardAnswers.mcpPlugins`. Record the rows you displayed in `wizardAnswers.mcpPluginsOffered` once the developer has submitted the question; when the group was dropped, skipped or dismissed, record `[]` there, because a plugin whose row was never shown has not been offered. The servers themselves are not chosen here; they stay signal-driven and appear in the Phase 5 preview. Rule: `../../references/plugin-install-consent.md`.
 - LSP plugins, built-in skills and MCP-server plugins are issued together as **three `multiSelect` questions in one `AskUserQuestion` call** (the limit is four questions per call). The single-option guard in `.claude/rules/ask-user-question-guard.md` applies to each dynamically-built group: a standalone group that collapses to 1 candidate becomes a yes/no; a group inside the combined call is padded with an explicit `None / Skip` (envelope intact); a zero-candidate group is dropped.
 - **Programmatic mode** (`callerExtras.lspPlugins` / `callerExtras.disableLSP` / `callerExtras.mcpPlugins` / `callerExtras.disableMCP` / `callerExtras.builtInSkills` / `callerExtras.disableBuiltInSkills`): the detection prompt never fires — generation reads the caller-supplied value directly. An absent caller list for either plugin group installs nothing.
+- **Adopt mode** (the caller is `/onboard:adopt`): skip the LSP-plugin and MCP-server-plugin groups. Adopt installs nothing, so it offers no plugin. Record `lspPlugins: []`, `mcpPlugins: []` and `mcpPluginsOffered: []`, and print `Plugins to install: none` in the summary.
 
 ## Static Defaults
 
@@ -174,6 +175,7 @@ When a developer skips a question or section:
    - `securitySensitivity` → `"standard"`
    - `lspPlugins` → `[]` (a skipped question is not an acceptance, so nothing is installed; see `../../references/plugin-install-consent.md`)
    - `mcpPlugins` → `[]` (same rule)
+   - `mcpPluginsOffered` → `[]` (no row was shown, so nothing counts as offered)
    - `builtInSkills` → full candidate list (4 core + fired extras)
    - `outputStyleTuning` → `{ mode: "defaults" }`
    - `skillTuning` → `{ mode: "defaults" }`
@@ -257,6 +259,7 @@ After the wizard completes, compile all answers into the following structured JS
   },
   "lspPlugins": ["typescript-lsp", "rust-analyzer-lsp"],
   "mcpPlugins": ["vercel"],
+  "mcpPluginsOffered": ["context7", "vercel"],
   "builtInSkills": ["/loop", "/simplify", "/debug", "/pr-summary", "/schedule"]
 }
 ```
@@ -270,6 +273,8 @@ The `advancedHookTypes` / `advancedHookTypeExtras` / `allowHttpHooks` fields com
 The `lspPlugins` field is the developer-accepted list of marketplace LSP plugins from Exchange 3 (LSP detection prompt). An empty array means "detected candidates but the developer declined all, or skipped the question"; an absent field means "no offer was made". Neither installs anything. `../generation/SKILL.md` § LSP Plugin Recommendations consumes this alongside `callerExtras.lspPlugins` and `callerExtras.disableLSP`. See `../generation/references/catalogs/lsp-plugin-catalog.md` for the plugin→language mapping.
 
 The `mcpPlugins` field is the developer-accepted list of plugins behind the detected MCP servers, from Exchange 3 (MCP-server plugin prompt). An empty array means "offered and declined all, skipped, or nothing to offer"; an absent field means "no offer was made". Neither installs anything. The config-generator's install step consumes it alongside `callerExtras.mcpPlugins`; see `../../references/plugin-install-consent.md`.
+
+The `mcpPluginsOffered` field lists the MCP-server plugin rows the wizard displayed in a question the developer submitted. The generator records it as `mcpStatus.pluginOffers.offered`, which stops a declined plugin being asked about again. An empty array or an absent field means no row was shown, so nothing counts as offered and the plugin can still be offered later.
 
 The `builtInSkills` field is the developer-accepted list of built-in Claude Code skills from Exchange 3 (built-in skills detection prompt). An empty array means "candidates existed but developer declined all"; an absent field means "programmatic path — full candidate list (core + fired extras) is the implicit accept". `../generation/SKILL.md` § Built-in Claude Code Skills — emission Step 4 consumes this alongside `callerExtras.builtInSkills` and `callerExtras.disableBuiltInSkills`. See `../generation/references/catalogs/built-in-skills-catalog.md` for the skill tiers and detection signals.
 
