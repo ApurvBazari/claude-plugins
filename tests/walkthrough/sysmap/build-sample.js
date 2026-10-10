@@ -39,7 +39,7 @@ function renderMap(g, details) {
       const open = n.open === true || n.open === false ? ' data-open="' + n.open + '"' : '', chg = marked(n);
       return '<div class="sys-group" data-id="' + esc(n.id) + '"' + open + attrs(n) + '><div class="sys-ghead">' +
         '<button class="sys-tog" aria-expanded="true" aria-label="Expand or collapse ' + esc(n.label) + '"></button>' +
-        '<span class="sys-label"' + wire(n.id) + '>' + esc(n.label) + '</span>' + mark(n) +
+        '<span class="sys-label"' + wire(n.id) + '>' + esc(n.label) + '</span>' + mark(n) + (n.inferred ? '<span class="sys-kind">inferred</span>' : '') +
         '<span class="sys-count">' + leafCount(n) + '</span>' + (chg ? '<span class="sys-chg">' + chg + ' changed</span>' : '') +
         '</div><div class="sys-body">' + kids[n.id].map(box).join('') + '</div></div>';
     }
@@ -66,19 +66,20 @@ function renderMap(g, details) {
 }
 
 function page(inserted) {
-  const shop = F.graphs[1], before = F.pair.before, after = F.pair.after, deps = F.graphs[5];
+  const shop = F.graphs[1], before = F.pair.before, after = F.pair.after, deps = F.graphs[5], nested = F.nested;
   const DET = {}, SURF = {};
-  shop.nodes.forEach(n => {
-    if (!n.kind) return;
-    DET[n.id] = { k: n.kind, h: n.label, summary: n.label + ' is a ' + n.kind + ' in the online shop fixture, built on ' + n.sub + '.', where: ['tests/walkthrough/sysmap/fixtures.js'] };
+  // every leaf with a kind gets a detail, so it is wired; returns the ids for renderMap
+  const detailed = (g, name) => new Set(g.nodes.filter(n => n.kind).map(n => {
+    DET[n.id] = { k: n.kind, h: n.label, summary: n.label + ' is a ' + n.kind + ' in the ' + name + ' fixture, built on ' + n.sub + '.', where: ['tests/walkthrough/sysmap/fixtures.js'] };
     SURF[n.id] = 'pane';
-  });
-  const details = new Set(Object.keys(DET));
+    return n.id;
+  }));
   const sections = [
-    ['system', 'the system', 'The <em>system</em>', 'Eighteen boxes in four boundaries, with one cycle: the payments webhook comes back into the gateway.', renderMap(shop, details)],
+    ['system', 'the system', 'The <em>system</em>', 'Eighteen boxes in four boundaries, with one cycle: the payments webhook comes back into the gateway.', renderMap(shop, detailed(shop, 'online shop'))],
     ['before', 'before', 'Before the <em>change</em>', 'The shop before search was rebuilt.', renderMap(before, new Set())],
     ['after', 'after', 'After the <em>change</em>', 'The same shop afterwards. Marks show what was added, modified and deleted; dotted items are inferred.', renderMap(after, new Set())],
     ['imports', 'imports', 'Package <em>imports</em>', 'A module dependency graph: unlabelled import wires with shared leaves.', renderMap(deps, new Set())],
+    ['nested', 'nested', 'A group inside a <em>group</em>', 'Encoding starts closed inside the open platform and carries a change mark; Recommendations is an inferred boundary; the changed boxes open a detail.', renderMap(nested, detailed(nested, 'video platform'))],
   ];
   const engineBlock = '<script id="wt-sysmap">\n' + (inserted ? fs.readFileSync(path.join(REF, 'system-map-engine.js'), 'utf8').replace(/\n$/, '') : '/*@@SYSMAP-ENGINE@@*/') + '\n</script>';
   const fill = {
@@ -86,7 +87,8 @@ function page(inserted) {
     '{{NAV_LINKS}}': sections.map((s, i) => '<a href="#' + s[0] + '"' + (i ? '' : ' class="on"') + '>' + s[1] + '</a>').join(''),
     '{{KICKER}}': 'FIXTURE &middot; SYSTEM MAP',
     '{{HERO}}': '<div class="eyebrow">golden fixture</div><h1>System map <em>sample</em></h1>' +
-      '<p class="lede">Four maps built from the fixture graphs: nested boundaries, a cycle, async and inferred wires, change marks and a plain import graph.</p>',
+      '<p class="lede">Five maps built from the fixture graphs: nested boundaries, a cycle, async and inferred wires, change marks, a plain import graph, ' +
+      'and a closed group inside an open one with a marked group, an inferred group and changed boxes that open a detail.</p>',
     '{{SECTIONS}}': sections.map(s => '<section id="' + s[0] + '"><div class="sec-label">' + s[1] + '</div><h2>' + s[2] + '</h2><p class="lede">' + s[3] + '</p>' + s[4] + '</section>').join('\n    '),
     '{{COMPONENT_CSS}}': blocks(read('components/system-map.md'), 'css')[0],
     '{{INTERACTIVITY_JS}}': blocks(read('interactivity.md'), 'js').join('\n'),

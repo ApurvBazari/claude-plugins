@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Static checks on the golden system-map page: the page contract of components/system-map.md and
-# self-check rows 24 and 26, executed on a real built page.
+# self-check rows 24 and 26, executed on a real built page. It also makes the page keep the cases
+# that only a browser can judge (a closed group inside an open one, marks on a group, focus on a
+# changed box), so the browser probes always have them to measure.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 F="$ROOT/tests/walkthrough/fixtures/sysmap-sample.html"
@@ -190,6 +192,9 @@ for m in maps:
                 bad(m, "group %s needs one native <button class=sys-tog> with an aria-label and no role" % b.a["data-id"])
             if b.a.get("data-open") not in (None, "true", "false"):
                 bad(m, "group %s: data-open must be true or false" % b.a["data-id"])
+            word = [w.alltext() for w in own(b, "sys-kind")]
+            if word != (["inferred"] if "data-inferred" in b.a else []):
+                bad(m, "group %s: its title strip carries one .sys-kind reading inferred exactly when the group is inferred" % b.a["data-id"])
             label = own(b, "sys-label")
             wired = label[0] if label else b
         four = ("role" in wired.a, "tabindex" in wired.a, "aria-label" in wired.a, "onclick" in wired.a)
@@ -254,6 +259,29 @@ for m in maps:
             g = g.up("sys-group")
 if not compared:
     errs.append("the golden page must hold one map with data-compare, so the change-mark rules are exercised")
+
+# the cases only a browser can judge: no belt can run one, so the golden page must keep them for the probes
+every = [b for m in maps for b in read(m)[0]]
+groups = [b for b in every if b.has("sys-group")]
+
+
+def outer(g):
+    p = g.up("sys-group")
+    while p is not None:
+        yield p
+        p = p.up("sys-group")
+
+
+keep = [
+    ('a group with data-open="false" whose enclosing groups all have data-open="true", so that the first paint has a closed group inside an open one',
+     any(g.a.get("data-open") == "false" and list(outer(g)) and all(p.a.get("data-open") == "true" for p in outer(g)) for g in groups)),
+    ("a group with a change mark", any(g.a.get("data-change") for g in groups)),
+    ("an inferred group", any("data-inferred" in g.a for g in groups)),
+    ("a box that is wired to a detail and carries a change mark", any(b.has("sys-node") and b.a.get("data-change") and "onclick" in b.a for b in every)),
+]
+for what, there in keep:
+    if not there:
+        errs.append("the golden page must hold %s" % what)
 
 for e in errs[:12]:
     print("  - " + e)

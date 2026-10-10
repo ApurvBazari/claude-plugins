@@ -78,16 +78,18 @@ not draw a self-edge or an edge between a group and one of its own descendants, 
 
 | Model | On the box | On the connection row | Extra text |
 |---|---|---|---|
-| `inferred: true` | `data-inferred` | `data-inferred` | kind line ends ` &middot; inferred` (a box with no kind line gets one reading `inferred`); row ends ` (inferred)` |
+| `inferred: true` | `data-inferred` | `data-inferred` | a leaf's kind line ends ` &middot; inferred` (a leaf with no kind line gets one reading `inferred`); a group gets `<span class="sys-kind">inferred</span>` in its `.sys-ghead`; row ends ` (inferred)` |
 | `change: added` | `data-change="added"` | `data-change="added"` | `<span class="sys-mark" data-m="added">+ added</span>` |
 | `change: modified` | `data-change="modified"` | `data-change="modified"` | `<span class="sys-mark" data-m="modified">~ modified</span>` |
 | `change: deleted` | `data-change="deleted"` | `data-change="deleted"` | `<span class="sys-mark" data-m="deleted">- deleted</span>` |
 
 The `.sys-mark` span is the first child of a marked `.sys-node`, sits after the label inside a marked
-group's `.sys-ghead`, and ends a marked row. A group that holds marked items also gets
-`<span class="sys-chg">N changed</span>` after its `.sys-count`, where N is its marked descendant boxes
-plus its marked connections that have both ends inside it. A graph with `compareTo` puts that graph's id
-in `data-compare` on its `.sysmap`.
+group's `.sys-ghead`, and ends a marked row. An inferred group's `.sys-kind` span sits after the label
+too, and after the `.sys-mark` when the group has both. It is the only `.sys-kind` a group ever
+carries, and it is never hidden: the word shows in the plain view and on an open or a collapsed group
+alike. A group that holds marked items also gets `<span class="sys-chg">N changed</span>` after its
+`.sys-count`, where N is its marked descendant boxes plus its marked connections that have both ends
+inside it. A graph with `compareTo` puts that graph's id in `data-compare` on its `.sysmap`.
 
 ### The key
 
@@ -105,7 +107,7 @@ the list would be empty.
 .sys-wires{display:none;}
 .sys-node{background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:.5rem .85rem .55rem;font-family:var(--mono);font-size:.7rem;color:var(--tp);line-height:1.35;transition:border-color .3s var(--ease),box-shadow .3s var(--ease),opacity .3s var(--ease);}
 .sys-node[role="button"],.sys-ghead .sys-label[role="button"]{cursor:pointer;}
-.sys-node[role="button"]:hover,.sys-node:focus-visible{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 8px 32px -8px var(--accent-glow);outline:none;}
+.sys-node[role="button"]:hover,.sys-node:focus-visible{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 8px 32px -8px var(--accent-glow);}
 .sys-kind{display:block;font-size:.52rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;}
 .sys-label{display:block;white-space:nowrap;}
 .sys-sub{display:block;font-size:.58rem;color:var(--ts);white-space:nowrap;}
@@ -166,7 +168,11 @@ the list would be empty.
 .sysmap.on .sys-tog[aria-expanded="false"]::before{content:"+";}
 .sysmap.on .sys-tog:hover,.sysmap.on .sys-tog:focus-visible{border-color:var(--accent);color:var(--accent);outline:none;}
 .sysmap.on .sys-group.closed{border-style:solid;border-color:var(--border-active);background:var(--bg-elevated);cursor:pointer;box-shadow:4px 4px 0 -1px var(--bg-card),4px 4px 0 0 var(--border-active);}
-.sysmap.on .sys-group.closed:hover{border-color:var(--accent);}
+.sysmap.on .sys-group.closed[data-inferred]{border-style:dotted;border-color:var(--border-strong);}
+.sysmap.on .sys-group.closed[data-change="added"]{box-shadow:0 0 0 2px var(--green),6px 6px 0 -1px var(--bg-card),6px 6px 0 0 var(--border-active);}
+.sysmap.on .sys-group.closed[data-change="modified"]{box-shadow:0 0 0 2px var(--amber),6px 6px 0 -1px var(--bg-card),6px 6px 0 0 var(--border-active);}
+.sysmap.on .sys-group.closed[data-change="deleted"]{box-shadow:0 0 0 2px var(--rose),6px 6px 0 -1px var(--bg-card),6px 6px 0 0 var(--border-active);}
+.sysmap.on .sys-group.closed:hover,.sysmap.on .sys-group.closed.peer{border-color:var(--accent);}
 .sysmap.on .sys-group.closed>.sys-ghead{top:7px;color:var(--tp);}
 .sysmap.on .sys-group.closed>.sys-ghead .sys-chg{display:inline;}
 .sysmap.on .sys-group.closed>.sys-body{display:none;}
@@ -214,7 +220,9 @@ and carry no `role`. The "N links" label on a merged wire is pointer-only: a cli
 connections list and marks its rows, and the list itself is always reachable by keyboard.
 
 **If the engine cannot run** (JavaScript off, a damaged engine block, a failed layout check) the reader
-keeps the plain view above. Never hide content behind the engine.
+keeps the plain view above. Never hide content behind the engine. When the engine itself gives up on a
+map (an error it caught, or a layout that failed its check) it writes one `console.warn` line that
+starts `walkthrough system-map engine:` and names the cause.
 
 **Hostable in a sheet:** yes. The engine waits until the map has a width, so a map inside a closed
 sheet is laid out when the sheet opens. `data-id` is not an `id`, so nothing needs a surface suffix.

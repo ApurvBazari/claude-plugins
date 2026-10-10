@@ -1,6 +1,6 @@
 /* walkthrough system-map engine v1 */
 /* Reads a .sysmap block, places its boxes and draws its wires. Layout is pure and runs under node;
-   init() is the page code. Any error leaves the plain view in place. */
+   init() is the page code. Any error leaves the plain view in place and one line in the console. */
 (function (G) {
 'use strict';
 const ROOT = '\u0000';
@@ -388,6 +388,7 @@ function verify(out, m) {
 
 /* ---- page ---- */
 let seq = 0;
+const warn = e => console.warn('walkthrough system-map engine: fell back to the plain view: ' + e);
 function init(el) {
   if (el.__wtsm) return;
   const stage = el.querySelector('.sys-stage'), svg = el.querySelector('.sys-wires');
@@ -430,14 +431,12 @@ function init(el) {
   };
   const rect = n => { const r = n.getBoundingClientRect(); return { w: Math.ceil(r.width), h: Math.ceil(r.height) }; };
   const groupHead = id => els[id].querySelector(':scope > .sys-ghead');
-  function measure() {  // natural sizes: every box, and each group title both open and closed
+  function measure() {  // natural sizes: every box; each group title open, then closed alone (a closed parent would hide it)
     const gs = m.ids.filter(id => m.group[id]);
     el.classList.remove('anim');
     m.ids.forEach(id => { const n = els[id]; n.style.width = ''; n.style.height = ''; n.classList.remove('closed'); });
     m.ids.forEach(id => { if (m.group[id]) head[id] = rect(groupHead(id)); else box[id] = rect(els[id]); });
-    gs.forEach(id => els[id].classList.add('closed'));
-    gs.forEach(id => { headC[id] = rect(groupHead(id)); });
-    gs.forEach(id => els[id].classList.remove('closed'));
+    gs.forEach(id => { const c = els[id].classList; c.add('closed'); headC[id] = rect(groupHead(id)); c.remove('closed'); });
   }
   const size = (id, header) => header ? { w: head[id].w, h: head[id].h + K.HEAD_PAD }
     : m.group[id] ? { w: headC[id].w + 2 * K.PADX, h: headC[id].h + K.CLOSED_PAD } : box[id];
@@ -480,7 +479,7 @@ function init(el) {
     });
     draw(out, anim);
   }
-  function off() {  // back to the plain view, for good
+  function off(e) {  // back to the plain view, for good
     dead = true; el.classList.remove('on', 'anim'); el.removeAttribute('data-dir');
     stage.style.width = ''; stage.style.height = '';
     m.ids.forEach(id => {
@@ -489,6 +488,7 @@ function init(el) {
     });
     while (wg.firstChild) wg.removeChild(wg.firstChild);
     if (conn) conn.open = true;
+    warn(e);
   }
   function run(anim) {
     if (dead) return;
@@ -498,10 +498,11 @@ function init(el) {
       if (!ready) { el.classList.add('on'); measure(); ready = true; if (conn) conn.open = false; }
       let out = layout(m, open, size, textW, 'LR');
       if (out.W > avail) out = layout(m, open, size, textW, 'TB');
-      if (verify(out, m).length) throw new Error('layout');
+      const bad = verify(out, m);
+      if (bad.length) throw new Error('layout check failed: ' + bad.join(', '));
       const still = G.matchMedia && G.matchMedia('(prefers-reduced-motion: reduce)').matches;
       paint(out, anim && !still); shown = out; width = el.clientWidth;
-    } catch (e) { off(); }
+    } catch (e) { off(e); }
   }
 
   function hot(id) {
@@ -555,7 +556,7 @@ function init(el) {
   };
   if (G.ResizeObserver) new G.ResizeObserver(again).observe(el); else G.addEventListener('resize', again);
   if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(() => { if (dead || !ready) return; tw = O(); try { measure(); } catch (e) { off(); return; } run(false); });
+    document.fonts.ready.then(() => { if (dead || !ready) return; tw = O(); try { measure(); } catch (e) { off(e); return; } run(false); });
   }
   run(false);
 }
@@ -564,7 +565,7 @@ const api = { ROOT, K, buildModel, leaves, defaultOpen, layout, verify, init };
 if (typeof module !== 'undefined' && module.exports) module.exports = api;
 else if (typeof document !== 'undefined') {
   G.WtSysMap = api;
-  const boot = () => document.querySelectorAll('.sysmap').forEach(el => { try { init(el); } catch (e) { el.classList.remove('on', 'anim'); } });
+  const boot = () => document.querySelectorAll('.sysmap').forEach(el => { try { init(el); } catch (e) { el.classList.remove('on', 'anim'); warn(e); } });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 }
 })(typeof window !== 'undefined' ? window : globalThis);

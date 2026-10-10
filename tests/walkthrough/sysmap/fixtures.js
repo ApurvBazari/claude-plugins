@@ -1,5 +1,6 @@
 /* Fixture graphs for the system-map engine belt and the golden page.
-   Shape is the walkthrough model: flat nodes[] with `parent`, edges[] with `flow`. */
+   Shape is the walkthrough model: flat nodes[] with `parent`, edges[] with `flow`.
+   `graphs` and `pair` feed the belt and the page; `nested` is drawn on the golden page only. */
 'use strict';
 const n = (id, label, kind, sub, parent, extra) => Object.assign({ id, label, kind, sub, parent }, extra || {});
 const g = (id, label, parent, extra) => Object.assign({ id, label, parent }, extra || {});
@@ -178,4 +179,33 @@ const after = {
   ],
 };
 
-module.exports = { graphs: [small, medium, large, chain, twogroups, deps], pair: { before, after } };
+// Golden page only (the layout belt does not loop over it): the cases that only a browser can judge.
+// A group forced closed inside a group forced open, so the first paint has a closed group in an open one;
+// a group with a change mark; an inferred group; and boxes that have a detail and a change mark.
+const nested = {
+  slug: 'nested', title: 'Video platform',
+  nodes: [
+    n('viewer', 'Viewer', 'actor', 'web player'),
+    g('platform', 'Video platform', null, { open: true }),
+    n('upload', 'Upload API', 'service', 'Go', 'platform', { change: 'modified' }),
+    n('meta', 'Metadata DB', 'store', 'Postgres', 'platform', { change: 'modified' }),
+    g('encode', 'Encoding', 'platform', { open: false, change: 'modified' }),
+    n('split', 'Splitter', 'service', 'Rust', 'encode'),
+    n('h265', 'H.265 encoder', 'service', 'Rust', 'encode', { change: 'added' }),
+    n('chunks', 'Chunk store', 'store', 'S3', 'encode'),
+    g('recs', 'Recommendations', 'platform', { inferred: true }),
+    n('ranker', 'Ranker', 'service', 'Python', 'recs'),
+    n('feats', 'Feature cache', 'store', 'Redis', 'recs', { inferred: true }),
+    n('delivery', 'Delivery network', 'external', 'CDN'),
+  ],
+  edges: [
+    e('viewer', 'upload', 'publish'), e('viewer', 'ranker', 'home feed'),
+    e('upload', 'meta', 'write record', 'sync', { change: 'modified' }), e('upload', 'split', 'new upload'),
+    e('split', 'h265', 'segments', 'sync', { change: 'added' }),
+    e('h265', 'chunks', 'write chunks', 'sync', { change: 'added' }),
+    e('chunks', 'delivery', 'origin pull'), e('ranker', 'meta', 'read titles'),
+    e('ranker', 'feats', 'lookup', 'sync', { inferred: true }),
+  ],
+};
+
+module.exports = { graphs: [small, medium, large, chain, twogroups, deps], pair: { before, after }, nested };

@@ -57,7 +57,8 @@ the detail-panel store is embedded verbatim). Reconstruction reads the rendered 
   attributes, `change` and `inferred` likewise, `where[]` from its `sf-loc` chips.
 - **Ignore what the engine wrote:** inline `style`, the `closed`, `on`, `anim` and `peer` classes,
   `aria-expanded`, `data-dir`, and everything inside `.sys-wires`. They are a view, not content.
-  `.sys-count`, `.sys-chg`, `.sys-mark` and `.sys-key` are derived too: regenerate them from the model.
+  `.sys-kind`, `.sys-count`, `.sys-chg`, `.sys-mark` and `.sys-key` are derived too: regenerate them
+  from the model.
 
 **An old architecture map or dependency graph is upgraded.** Recover what is visible, then render it
 as a system map (both recipes were retired in 1.6.0):
