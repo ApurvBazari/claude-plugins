@@ -126,3 +126,11 @@ document.querySelectorAll('.erd-l').forEach(initErd);})();
 **Why no resize/theme/print listeners:** the connector exists only during an active hover/focus and is
 recomputed from live `getBoundingClientRect` each time, so a layout change between hovers is irrelevant —
 there is no standing line to keep in sync. This is precisely why the hybrid ERD stays self-contained.
+
+### Not in this bundle — the system-map engine
+
+The system map's layout engine is a separate file, `system-map-engine.js`, and is **not** pasted from
+here. It goes into the page's own `<script id="wt-sysmap">` block, after write
+(`../../render/references/render-contract.md`, "insert the system-map engine"). It needs nothing from
+this bundle to lay a map out; a box with a detail calls `openSurface` from here like any other
+component. Keeping it in its own block means a fault in the engine cannot stop this bundle.

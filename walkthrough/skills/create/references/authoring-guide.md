@@ -14,9 +14,11 @@ one component; pick the row that matches the field's *shape*.
 | session-model field present | render |
 |---|---|
 | `decisions[]` with tradeoffs | tabs + bars; else accordion |
-| `nodes[]` + `edges[]` (acyclic, single-actor) | flow / architecture / dependency diagram |
-| `nodes[]` + `edges[]` with cycles / back-edges / guard labels | state / transition diagram |
+| `nodes[]` + `edges[]`: a straight staged chain | flow diagram |
+| `nodes[]` + `edges[]`: a system (services, stores, queues, modules; may nest, may cycle) | system map |
+| `nodes[]` + `edges[]`: states with guarded or cyclic transitions | state / transition diagram |
 | `nodes[]` + `edges[]` as timed messages between actors | sequence / swimlane diagram |
+| `graphs[]` | each named graph by the same four rows; a section places it with `graph:<id>` |
 | `files[]` | file tree (+ filterable cards if many) |
 | `metrics[]` | stat cards / animated bar chart |
 | `timeline[]` | timeline; stepper if a replayable sequence |
@@ -39,25 +41,28 @@ Notes on the choices:
   This is a **classify-at-selection** routing decision — transient, not recorded to any standing ledger.
   If no row matches, compose a **bespoke** component (§ 4) and note what was composed + why.
   **Anti-force-fit invariant:** a concept is NEVER rendered by a component not registered for its type —
-  the old "architecture-map is plausible-but-wrong for a state machine" footnote is now a hard rule for
+  the old "a box-and-arrow map is plausible-but-wrong for a state machine" footnote is now a hard rule for
   all types. The disambiguation rules (`concept-coverage.md`) resolve close neighbors; the most specific
   rule wins (cycles → state beats tree → branching).
-- **`nodes[]` + `edges[]`** — **run the diagram-fidelity check first, then pick the form.** The catalog
-  flow / architecture / dependency diagrams are **acyclic, single-actor, box/linear with unlabelled
-  arrows** — they physically cannot draw a back-edge, a self-loop, a guard condition on an edge,
-  time-ordering across actors, or 2-D positioning. So before accepting one, look at the graph's shape:
-    - **cycles / back-edges / self-loops, or guard/condition labels on edges** (a retry loop, a protocol
-      FSM, a connection lifecycle) → **State / transition diagram** (`diagrams.md`), NOT an architecture
-      map. An architecture map here is a *plausible-but-wrong* fit — it renders the states as a linear
-      box row and silently drops the cycle and the guards. This is the single most common misfit.
+- **`nodes[]` + `edges[]`** (and each entry of `graphs[]`) — **run the diagram-fidelity check first, then
+  pick the form.** Ask what the nodes are:
+    - **things that exist at the same time** — services, stores, queues, modules, people, external
+      systems — joined by calls, data flow or imports → **System map** (`components/system-map.md`). It
+      draws fan-out, labelled wires, nested boundaries and cycles, so a cycle between components stays
+      a system map.
+    - **states that one thing moves between**, with guard/condition labels or back-edges (a retry loop,
+      a protocol FSM, a connection lifecycle) → **State / transition diagram** (`diagrams.md`), NOT a
+      system map. A system map here is a *plausible-but-wrong* fit — it shows the states as if they
+      all existed at once and has nowhere to put the guards. This is the single most common misfit.
     - **an ordered exchange of messages between two or more actors over time** (a handshake, an auth
       flow, a request trace) → **Sequence / swimlane diagram** (`diagrams.md`), NOT a flow diagram (a flow
       loses the lanes and the back-and-forth).
-    - **otherwise, by topology:** a linear staged pipeline → **Flow diagram**; a non-linear system of
-      services/layers → **Architecture map**; module/package import relationships → **Dependency graph**.
+    - **a straight staged chain with no branches** → **Flow diagram**.
     - **any shape the catalog still cannot draw faithfully** (2-D positioning, a quadrant, a Gantt) →
       **compose a bespoke diagram** per § 4 rather than force-fitting the nearest box-and-arrow entry.
-  All of these open node detail via `openSurface`.
+  A structure graph that carries `change` marks or a `compareTo` is a system map even when it is a
+  straight chain: only the system map draws marks (`session-model.md` § Change marks). All of these
+  open node detail via `openSurface`.
 - **`files[]`** — a handful → **File tree** (`white-space:pre`, clickable `.fl` rows). Many files
   that group into categories → add **Filterable cards + pills** so the reader can narrow by `data-cat`.
 - **`metrics[]`** — a few headline numbers → **Stat / metric cards**. Many comparable magnitudes →
@@ -195,7 +200,9 @@ Every walkthrough is a single `.html` file that works offline by double-click. T
 - All CSS, JS, and SVG are **inline**. The ONLY permitted external resource is the Google Fonts
   `@import` from `design-system.md` (and even that degrades cleanly to the system fallback offline).
 - No `<script src>` and no external stylesheet `<link>`.
-- No `<img>` — use **inline SVG** for every graphic, icon, and diagram (this is why the dependency
-  graph, mind map, and mode diagram are hand-laid SVG).
+- No `<img>` — use **inline SVG** for every graphic, icon, and diagram (this is why the mind map and
+  mode diagram are hand-laid SVG, and why the system map's wires are drawn into an inline `<svg>`).
+- No `<script src>` for the system-map engine either: it is inserted into the page itself, in its own
+  `<script id="wt-sysmap">` block (`page-scaffold.md`, "The engine block").
 - No `alert`, `confirm`, or `prompt` — surface detail through the detail surfaces (`openSurface`/`openCard`),
   never a modal dialog.

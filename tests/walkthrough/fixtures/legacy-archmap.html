@@ -1,0 +1,18 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="utf-8"><title>Legacy architecture map — walkthrough</title></head>
+<body><main>
+<!-- A 1.5.0 architecture map, as update meets it on an old page. Kept as the input for the upgrade
+     path in reconstruct-and-merge.md ("System maps"): three nodes, two edges, left to right. -->
+<section id="architecture">
+  <div class="sec-label">architecture</div>
+  <h2>Component <em>map</em></h2>
+  <div class="archmap">
+    <div class="flow-node accent" data-d="gateway" role="button" tabindex="0" aria-label="API gateway" onclick="openSurface('gateway')"><span class="node-label">edge</span>API gateway</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-node green" data-d="orders" role="button" tabindex="0" aria-label="Orders service" onclick="openSurface('orders')"><span class="node-label">service</span>Orders service</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-node amber" data-d="ordersdb" role="button" tabindex="0" aria-label="Orders DB" onclick="openSurface('ordersdb')"><span class="node-label">store</span>Orders DB</div>
+  </div>
+</section>
+</main>
+<script>const SURF={"gateway":"pane","orders":"pane","ordersdb":"pane"};const DET={"gateway":{"k":"Edge","h":"API gateway","summary":"Routes every request.","where":["edge/gateway.ts:12"]},"orders":{"k":"Service","h":"Orders service","summary":"Owns order state.","where":["services/orders/index.ts:8"]},"ordersdb":{"k":"Store","h":"Orders DB","summary":"Postgres.","where":["infra/db.tf:3"]}};</script>
+</body></html>

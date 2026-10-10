@@ -149,4 +149,44 @@ done
 [ "$ex_count" -ge 1 ] || fail "expected at least 1 published example under site/walkthrough/examples/, found $ex_count"
 ok "EXAMPLES: $ex_count published example(s), provenance footer present, leak-free"
 
+# --- 1.6.0: the system map replaces the architecture map and the dependency graph ---
+SYS="$ROOT/walkthrough/skills/create/references/components/system-map.md"
+IDX="$ROOT/walkthrough/skills/create/references/components/index.md"
+for f in "$SYS" "$IDX"; do
+  [ -s "$f" ] || fail "missing $f"
+done
+
+if grep -qE '^## (Architecture map|Dependency graph)' "$DIAG"; then fail "diagrams.md must not carry the retired architecture-map or dependency-graph recipe"; fi
+if grep -qE '^\| (Architecture map|Dependency graph) \|' "$IDX"; then fail "components/index.md must not list the retired diagrams"; fi
+grep -qE '^\| System map \|.*`system-map\.md`' "$IDX" || fail "components/index.md must route System map to system-map.md"
+grep -qE '`nonlinear-system`.*\| system map \|' "$CC" || fail "concept-coverage.md must route nonlinear-system to the system map"
+grep -qE '`module-dependency`.*\| system map \|' "$CC" || fail "concept-coverage.md must route module-dependency to the system map"
+if grep -qE '\| (architecture map|dependency graph) \|' "$CC"; then fail "concept-coverage.md still routes a concept type to a retired diagram"; fi
+grep -qF '`nonlinear-system` vs `state-machine`' "$CC" || fail "concept-coverage.md must tell a system with a cycle apart from a state machine"
+grep -qE '^\| 18 \|.*system map' "$SC" || fail "self-check #18 must exempt a cycle between components on a system map"
+grep -qE '^\| 22 \|.*\.sysmap' "$SC" || fail "self-check #22 must list .sysmap among the structural renderers"
+grep -qE '^\| 23 \|.*\.sys-node' "$SC" || fail "self-check #23 must list .sys-node among the keyboard-operable interactives"
+if grep -qE '^\| 23 \|.*\.flow-node' "$SC"; then fail "self-check #23 still names the retired .flow-node"; fi
+ok "RETIRED: architecture map and dependency graph are gone from the catalog, the routing table and the self-check"
+
+# --- the system-map recipe: its own prefix, a plain view, and the back-compat CSS for old markup ---
+if grep -q 'class="sm-' "$SYS"; then fail "system-map.md must not use the sm- prefix: it belongs to the state diagram"; fi
+grep -qF 'class="sm-node' "$DIAG" || fail "the state diagram is expected to own the sm- prefix (if that changed, revisit the sys- prefix rule)"
+grep -qF 'class="sysmap"' "$SYS" || fail "system-map.md recipe must show the .sysmap container"
+grep -qF 'class="sys-links"' "$SYS" || fail "system-map.md recipe must include the connections list: it is the no-JS view"
+grep -qF '<details class="sys-conn" open>' "$SYS" || fail "the connections list must be open in the plain view"
+grep -q 'role="button"' "$SYS" || fail "system-map.md recipe must carry role=\"button\" on a box that has a detail"
+grep -q 'tabindex' "$SYS" || fail "system-map.md recipe must carry tabindex on a box that has a detail"
+grep -qF '.archmap{' "$SYS" || fail "system-map.md must keep the .archmap back-compat CSS for old markup"
+grep -qF '.depgraph{' "$SYS" || fail "system-map.md must keep the .depgraph back-compat CSS for old markup"
+grep -qF '.sysmap' "$RM" || fail "reconstruct-and-merge.md must recover a system map from its HTML"
+grep -qF '.archmap' "$RM" || fail "reconstruct-and-merge.md must upgrade an old architecture map"
+grep -qF '.depgraph' "$RM" || fail "reconstruct-and-merge.md must upgrade an old dependency graph"
+for n in 24 25 26 27; do
+  grep -qE "^\| $n \|" "$SC" || fail "self-check.md must carry row $n"
+done
+grep -qF '## Change marks' "$SM" || fail "session-model.md must define the change-mark rules self-check #26 verifies"
+grep -qF '"graphs"' "$SM" || fail "session-model.md must declare graphs[]"
+ok "SYSMAP: recipe uses sys-, keeps a plain view and the old-markup CSS; update reads all three shapes; rows 24-27 exist"
+
 echo "PASS: walkthrough doc contracts"

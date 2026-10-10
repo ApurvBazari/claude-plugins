@@ -25,7 +25,10 @@ the detail-panel store is embedded verbatim). Reconstruction reads the rendered 
 | `.hstats` → `.hstat` (`.v`, `.l`) | `metrics[]` (`value`, `label`) | hero headline numbers |
 | `<section id="X">` → `.sec-label` + `<h2>` + body | `sections[]` (`id` = the `id` attr, `heading` = `<h2>`, `prose` = section copy) | one entry per non-hero `<section>`; recover only the narrative copy into `prose` — component markup inside the section (diagrams, tabs, trees) is recovered via the other rows, not flattened into `prose` |
 | `<div class="nav-links"><a href="#id">label</a>…` | `sections[].id` order + nav labels | confirms the section spine |
-| Diagram markup (flow / architecture / dependency / state `.statemap` / sequence `.seq`) | `nodes[]`, `edges[]` | identify by the component's class names in `components/diagrams.md`; edge direction/labels re-derived from rendered arrows/labels (best-effort). A `.statemap` SVG → `nodes[]` (`kind:"state"`) + `edges[]` with `guard` lifted from `.sm-guard` text; a `.seq` swimlane → `nodes[]` (`kind:"actor"`, one per `.seq-head`) + `edges[]` as timed messages (`.seq-msg` order → `seq`, `--c1`/`--c2` + `.rtl` → `from`/`to` lanes) |
+| System map (`.sysmap`) | a graph: `nodes[]` + `edges[]`, or one `graphs[]` entry | **exact** — the HTML is the data; see "System maps" below |
+| Old architecture map (`.archmap`) or dependency graph (`.depgraph`), from 1.5.0 or earlier | `nodes[]`, `edges[]`, re-rendered as a system map | best-effort; see "System maps" below |
+| `<script id="wt-sysmap">…</script>` | *(nothing — do not recover)* | Scaffold-owned, like the footer. On regeneration the engine block is emitted afresh and the **current** engine is inserted, so an updated page never keeps an old engine. |
+| Diagram markup (flow / state `.statemap` / sequence `.seq`) | `nodes[]`, `edges[]` | identify by the component's class names in `components/diagrams.md`; edge direction/labels re-derived from rendered arrows/labels (best-effort). A `.statemap` SVG → `nodes[]` (`kind:"state"`) + `edges[]` with `guard` lifted from `.sm-guard` text; a `.seq` swimlane → `nodes[]` (`kind:"actor"`, one per `.seq-head`) + `edges[]` as timed messages (`.seq-msg` order → `seq`, `--c1`/`--c2` + `.rtl` → `from`/`to` lanes) |
 | Tabs + tradeoff bars, or accordion `<details>` | `decisions[]` (`title`, `why`, `alternatives`, `tradeoffs[{axis, score}]`) | bar widths carry the score — read `data-w="N"` back into `score`; the tab / `.ac-body` copy is `why` / `alternatives` |
 | File tree / filterable cards | `files[]` (`path`, `change`, `note`) | `change` is encoded by the row's color/badge class |
 | Timeline / stepper | `timeline[]` (`t`, `label`, `ref`) | `ref` is the anchor each entry scrolls to |
@@ -39,6 +42,34 @@ the detail-panel store is embedded verbatim). Reconstruction reads the rendered 
 - **Section kicker.** Read each `.sec-label` as the section label. A pre-0.4.0 document bakes the
   number into the text (`01 — flow`); strip a leading `NN[ —-]` so the CSS counter does not
   double-number after re-render. Store only the label.
+
+### System maps
+
+**A `.sysmap` is recovered exactly.** The page holds the graph as plain HTML, so nothing is re-derived:
+
+- **The graph.** `data-graph="main"` is the top-level `nodes[]` / `edges[]`; any other value is the
+  `id` of a `graphs[]` entry. `data-compare` is that entry's `compareTo`.
+- **Nodes.** Each `.sys-node[data-id]` and `.sys-group[data-id]` is one node: `id` = `data-id`, `label`
+  = its `.sys-label` text, `kind` = `data-kind` (absent → `component`), `sub` = its `.sys-sub` text,
+  `parent` = the `data-id` of the `.sys-group` that encloses it, `open` = `data-open`, `change` =
+  `data-change`, `inferred` = it has `data-inferred`.
+- **Edges.** Each `.sys-links li` is one edge: `from`, `to`, `label` and `flow` from its `data-`
+  attributes, `change` and `inferred` likewise, `where[]` from its `sf-loc` chips.
+- **Ignore what the engine wrote:** inline `style`, the `closed`, `on`, `anim` and `peer` classes,
+  `aria-expanded`, `data-dir`, and everything inside `.sys-wires`. They are a view, not content.
+  `.sys-count`, `.sys-chg`, `.sys-mark` and `.sys-key` are derived too: regenerate them from the model.
+
+**An old architecture map or dependency graph is upgraded.** Recover what is visible, then render it
+as a system map (both recipes were retired in 1.6.0):
+
+- **`.archmap`** — each `.flow-node` is a node: `id` = its `data-d` (else a slug of its text), `label`
+  = its text without the `.node-label`, `sub` = the `.node-label` text. Each `.flow-arrow` between two
+  neighbouring `.flow-node`s is an edge from the left one to the right one, with no label.
+- **`.depgraph`** — each `.dg-node` is a node: `label` = its `<text>`, `id` = a slug of it. Each `<line>`
+  under `.dg-edge` is an edge between the two nodes whose `<rect>` contains its end points (or lies
+  within 4 units of them), drawn from the end with the smaller `x` to the other. A line with an end
+  that matches no rectangle is **not** turned into an edge: leave it out and name it in the fidelity
+  note. Never guess an end.
 
 ### Detect the data layout first (three historical shapes)
 

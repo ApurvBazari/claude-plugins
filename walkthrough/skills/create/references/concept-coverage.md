@@ -15,8 +15,9 @@ gets a new ⚠️/❌ row pointing at a bespoke recipe — so the "what to add n
 | Family | Concept-type | Trigger (how synthesis recognizes it) | Status | Renderer (component key) |
 |---|---|---|---|---|
 | Structure | `linear-process` | staged pipeline, straight chain, no branches | ✅ | flow |
-| | `nonlinear-system` | services/layers connected free-form | ✅ | architecture map |
-| | `module-dependency` | import/uses edges, shared leaves (a DAG) | ✅ | dependency graph |
+| | `nonlinear-system` | services, stores, queues or modules connected free-form; may nest in boundaries; may cycle | ✅ | system map |
+| | `module-dependency` | import/uses edges, shared leaves (a DAG) | ✅ | system map |
+| | `structure-change` | one system's structure before and after a change (`change` marks, `compareTo`) | ✅ | system map (change marks) |
 | | `branching-logic` | labeled yes/no/condition edges, a tree, no cycles | ✅ | decision-tree |
 | | `data-model` | entities with field lists; FK edges carry cardinality (1:N, N:M); rendered as a layered ERD — entities in dependency-depth bands, field-anchored FK refs, cycles broken+marked | ✅ | erd |
 | | `hierarchy` | strict one-parent containment, n levels | ✅ | htree |
@@ -52,10 +53,18 @@ beats tree → `branching-logic`):
 - **`branching-logic` vs `state-machine` vs `linear-process`** — labeled yes/no/condition edges over a
   **tree with no cycles** → `branching-logic` (decision-tree). Any **cycle / back-edge / self-loop** →
   `state-machine`. A **straight chain with no branches** → `linear-process` (flow).
+- **`nonlinear-system` vs `state-machine`** — ask what the nodes are. **Things that exist at the same
+  time** (services, stores, queues, modules) joined by calls or data flow → `nonlinear-system` (system
+  map), **cycles included**: a webhook that calls back into the gateway is still a system. **States one
+  thing moves between**, with transitions or guards → `state-machine` (state diagram). The "any cycle →
+  `state-machine`" rule above is for behavior graphs, not for structure graphs.
+- **`structure-change` vs `before-after`** — a before/after pair of **code or text** → `before-after`
+  (diff panes). A before/after of **a system's structure** (boxes and wires added, changed, removed) →
+  `structure-change` (system map with change marks).
 - **`hierarchy` vs `module-dependency`** — **strict one-parent containment** over n levels → `hierarchy`
-  (htree). **import/uses edges with shared leaves** (a node has >1 parent) → `module-dependency` (dep graph).
+  (htree). **import/uses edges with shared leaves** (a node has >1 parent) → `module-dependency` (system map).
 - **`data-model` vs `nonlinear-system`** — nodes are **entities with field lists** and edges carry
-  **cardinality** → `data-model` (erd). Otherwise → `nonlinear-system` (architecture map). The ERD is
+  **cardinality** → `data-model` (erd). Otherwise → `nonlinear-system` (system map). The ERD is
   **layered / cycle-aware**: entities sort into dependency-depth bands and mutual-FK cycles /
   self-references render **broken-and-marked** (`.ref.cyc`/`.ref.self`), so an FK cycle stays a
   `data-model` (erd) — it does **not** promote to `state-machine`; the "cycle → `state-machine`" rule
