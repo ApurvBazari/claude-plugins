@@ -240,6 +240,10 @@ grep -qi 'inline' "$SYSAD" || fail "adapters/system.md must say what happens whe
 grep -qF 'not independently verified' "$SYSAD" || fail "an inline reading must be labelled as not independently verified"
 grep -qF '.env' "$RULES" || fail "system-reading.md must name the files that are never opened"
 grep -qi 'manifests beat prose' "$RULES" || fail "system-reading.md must state that manifests beat prose"
+# three rules whose loss would let a secret or an unverified claim reach the page
+grep -qF 'Every content search leaves these paths out' "$RULES" || fail "system-reading.md must say a content search leaves the never-opened paths out: a search returns the matching line, value included"
+grep -qF 'refute it without opening the file' "$ROOT/walkthrough/agents/system-verifier.md" || fail "system-verifier must refute evidence in a never-opened file without opening it"
+grep -qF 'never re-reads the codebase and never brings back a dropped claim' "$SYSAD" || fail "adapters/system.md must say the coverage critic never re-reads the codebase and never brings back a dropped claim"
 if grep -niE 'pure-skill|no agents' "$README" "$CLAUDEMD" >/dev/null; then
   fail "README.md and CONVENTIONS.md must not claim the plugin is pure-skill or has no agents: it ships two"
 fi

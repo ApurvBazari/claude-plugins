@@ -44,7 +44,9 @@ install, sections[], nodes[], edges[], graphs[], reference[], examples[], links[
 
 ## Step 4: Coverage critic
 Run `../create/references/completeness.md` Part 1 against the subject before selecting components.
-Fold omitted salient items in; note intentional omissions for the coverage note.
+Fold omitted salient items in; note intentional omissions for the coverage note. For the system
+adapter the critic checks the model against the surviving claims and the gaps list, never against the
+code: follow Step E of `references/adapters/system.md`.
 
 ## Step 5: Select components
 Run the shared **select** stage of `../render/references/render-contract.md`: using
