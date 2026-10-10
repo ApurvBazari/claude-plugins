@@ -151,7 +151,8 @@ After a long session — a debugging marathon, a feature, an architecture decisi
 **One skill, one artifact:**
 
 - **Generate** — `/walkthrough:create [focus]` (or auto-invoked on phrases like *"visualize this session"* / *"make a session recap"*). The optional `focus` arg scopes the synthesis. Output is one HTML file in `.claude/walkthrough/`, with a gitignore prompt on first run.
-- **Explore** — open the file in any browser: summary, inline-SVG architecture diagrams, decision records, a file-touch list with real `path:line` refs, timeline, and metrics, with expandable detail and an in-document dark / warm-light theme toggle.
+- **Explore** — open the file in any browser: summary, system maps and other diagrams, decision records, a file-touch list with real `path:line` refs, timeline, and metrics, with expandable detail and an in-document dark / warm-light theme toggle.
+- **Map a system** — a system map draws anything with parts and connections: boxes that nest, labelled wires, cycles, and marks for what a change added, modified or deleted. `/walkthrough:document <path>` can also read a codebase and draw its map, showing the file and line where each part was seen.
 
 **Self-contained.** All CSS, JS, and SVG are inlined; the only external resource is one Google Fonts `@import`. The file renders without the plugin, a server, or a build step — copy it anywhere. It's a snapshot of one session, not a live viewer, and it synthesizes a structured model rather than pasting the message log.
 

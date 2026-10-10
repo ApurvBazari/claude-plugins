@@ -714,6 +714,87 @@
       "status": "deferred",
       "rationale": "The first publish attempt failed at the push with HTTP 403, 'Permission to ApurvBazari/claude-plugins.git denied': DOCS_BOT_TOKEN had Pull requests and Pages permissions but not Contents. The step's only message was 'the push of docs/release-sync-20c43fc was rejected. If an earlier sync of this develop commit pushed it, delete that branch to sync again', which points at the wrong cause; no such branch existed. Adding Contents: Read and write and re-running only the failed job published the same patch.",
       "resolution": "Have the push step tell a permission refusal from an existing branch, and name the two permissions the token needs (Contents and Pull requests, read and write) in the message and in CLAUDE.md."
+    },
+    {
+      "id": "SYSMAP-long-chain-drawn-tall",
+      "title": "A long chain is drawn top to bottom and comes out tall",
+      "source": "walkthrough system map spec (1.6.0), docs/superpowers/specs/2026-10-09-walkthrough-system-map-design.md",
+      "raisedAt": "2026-10-09",
+      "status": "deferred",
+      "rationale": "The owner's direction rule is: left to right when it fits the page, else top to bottom. A chain of about seven steps with labelled wires is about 1,420 px wide, more than the roughly 1,080 px available, so it goes top to bottom (291 by 746 px in the harness). The rule works as decided; the result is tall.",
+      "resolution": "Left as is in 1.6.0 and listed in the README limits (spec 7.6 row 5). Revisit only if real pages show it hurting; options are a narrower label slot or a tolerance before the switch."
+    },
+    {
+      "id": "SYSMAP-engine-near-size-cap",
+      "title": "The system-map engine is 293 bytes under its 28 KB cap",
+      "source": "walkthrough system map spec (1.6.0), docs/superpowers/specs/2026-10-09-walkthrough-system-map-design.md",
+      "raisedAt": "2026-10-09",
+      "status": "deferred",
+      "rationale": "The engine is 28,379 of 28,672 bytes after the second ordering pass and the fallbacks. The cap exists because the engine is copied into every page with a map and typed by the model where no shell can read it. The next change to the engine will not fit without trimming or a higher cap.",
+      "resolution": "Owner's call when the next engine change needs room: trim comments, or raise the cap in tests/walkthrough/test_sysmap_engine.sh and CONVENTIONS.md together."
+    },
+    {
+      "id": "SYSMAP-wire-shows-through-label-spaces",
+      "title": "A wire shows through the spaces of its own label",
+      "source": "walkthrough system map spec (1.6.0), docs/superpowers/specs/2026-10-09-walkthrough-system-map-design.md",
+      "raisedAt": "2026-10-09",
+      "status": "deferred",
+      "rationale": "A wire label sits on its wire with a halo the colour of the map background. A space has no glyph, so no halo, and the wire is visible between the words (\"read-on-miss\"). Inherited from the spike the owner tried.",
+      "resolution": "Cosmetic. A background rectangle behind each label would fix it, at some bytes of engine."
+    },
+    {
+      "id": "SYSMAP-change-marks-on-other-diagrams",
+      "title": "Change marks are drawn only by the system map",
+      "source": "walkthrough system map spec (1.6.0), docs/superpowers/specs/2026-10-09-walkthrough-system-map-design.md",
+      "raisedAt": "2026-10-09",
+      "status": "deferred",
+      "rationale": "A graph with change marks that has to be a state, sequence or flow diagram loses its marks; the coverage note says so (spec 2, out of scope).",
+      "resolution": "A later minor, if a real session needs it."
+    },
+    {
+      "id": "SYSMAP-cowork-probes-owed",
+      "title": "Cowork probes P1 and P2 have not been run",
+      "source": "walkthrough system map spec (1.6.0), docs/superpowers/specs/2026-10-09-walkthrough-system-map-design.md",
+      "raisedAt": "2026-10-09",
+      "status": "deferred",
+      "rationale": "Whether Cowork's shell can read a plugin file at the path a skill is given (P1) and whether a plugin agent can be dispatched there (P2) is unverified. Both have a fallback, so nothing is blocked. The README's Works in Cowork section is worded neutrally until they are answered.",
+      "resolution": "Owner runs the two probes in tests/walkthrough-cowork/manual-test-plan.md; then the README states which engine path and which reading path Cowork takes."
+    },
+    {
+      "id": "SYSMAP-path-variable-in-reference-files",
+      "title": ".claude/rules/plugin-script-paths.md asks for ${CLAUDE_PLUGIN_ROOT} where it is not replaced",
+      "source": "walkthrough system map spec (1.6.0), docs/superpowers/specs/2026-10-09-walkthrough-system-map-design.md",
+      "raisedAt": "2026-10-09",
+      "status": "queued",
+      "rationale": "Verified 2026-10-09 on Claude Code 2.1.294: ${CLAUDE_PLUGIN_ROOT} and ${CLAUDE_SKILL_DIR} are replaced inside a SKILL.md body and are unset in the shell that runs commands. A reference file is read as plain text, so the variable arrives there as literal text and expands to nothing in a command. The rule requires the variable in reference and agent files too; at least 28 such uses sit in onboard reference files and two in onboard/agents/config-generator.md (whether agent bodies are substituted was not checked). Flagged while building the system map; not touched.",
+      "resolution": "Probe agent bodies, then correct the rule and move those paths into SKILL.md bodies. An onboard change, not a walkthrough one."
+    },
+    {
+      "id": "SYSMAP-subject-model-notify-example-stale",
+      "title": "walkthrough's subject-model.md still describes notify's minDurationSeconds as a response-duration filter",
+      "source": "walkthrough system map spec (1.6.0), docs/superpowers/specs/2026-10-09-walkthrough-system-map-design.md",
+      "raisedAt": "2026-10-09",
+      "status": "queued",
+      "rationale": "walkthrough/skills/document/references/subject-model.md, Part B (the notify worked example) teaches the pre-2.0.2 meaning. notify made it a leading-edge cooldown. 1.6.0 edits this file's schema block and leaves the example alone.",
+      "resolution": "Rewrite the worked example in a walkthrough docs fix."
+    },
+    {
+      "id": "SYSMAP-belt-count-lives-in-lens-changelog",
+      "title": "Every PR that adds a belt has to edit lens/CHANGELOG.md",
+      "source": "walkthrough system map spec (1.6.0), docs/superpowers/specs/2026-10-09-walkthrough-system-map-design.md",
+      "raisedAt": "2026-10-09",
+      "status": "queued",
+      "rationale": "tests/lens/test_doc_contracts.sh derives the suite's belt count and requires the 1.5.0 belt note in lens/CHANGELOG.md to state it. 1.6.0 added three walkthrough belts and so changed that note from 78 to 81, as five earlier PRs did. The guard is sound; its home is another plugin's release history.",
+      "resolution": "Move the derived count to a file that is not a plugin's changelog, or drop the number from the note and keep the guard on run-all's own output."
+    },
+    {
+      "id": "SYSMAP-closed-detail-panel-shadow",
+      "title": "The closed detail panel casts a shadow into the page",
+      "source": "walkthrough system map spec (1.6.0), docs/superpowers/specs/2026-10-09-walkthrough-system-map-design.md",
+      "raisedAt": "2026-10-09",
+      "status": "queued",
+      "rationale": "page-scaffold.md gives .panel a box-shadow of -20px 0 50px and parks it off-screen with translateX(100%). The shadow still reaches about 70 px into the viewport along the right edge; it is plain to see in the light theme. Pre-existing, seen while rendering the system-map golden page.",
+      "resolution": "Give the shadow to .panel.open only. A scaffold change, so every fixture and the site pages regenerate."
     }
   ]
 }

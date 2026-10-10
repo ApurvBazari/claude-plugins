@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.6.0 — 2026-10-09
+
+### Added
+- **System map.** One renderer for anything with parts and connections: boxes that nest to any depth, labelled directed wires, sync and async flow, cycles between components, and change marks. A producer writes the graph into the page as plain HTML (nested boxes and a list of connections); a layout engine in the page places the boxes and draws the wires, and a reader opens or closes a boundary in place. With JavaScript off, or if the engine fails, the boxes and the list are still there. Recipe: `components/system-map.md`.
+- **A layout engine that ships as a file** (`skills/create/references/system-map-engine.js`). A page with a system map carries it in its own fourth script block. One shell command inserts it; where no shell can read the plugin's files, the model types it; the message after writing says which path ran. The engine checks its own result and falls back to the plain view on any fault. It lays a map out twice when wires cross and keeps the version with fewer crossings. Limits, enforced by a belt: 28 KB, no line over 200 characters, ASCII only.
+- **Model.** `nodes[]` gain `parent` (nesting), `sub`, `open` and the kinds `service`, `store`, `queue`, `external`. `edges[]` gain `flow` (`sync` or `async`) and `where[]`. Both gain `change` (`added`, `modified`, `deleted`) and `inferred`. Optional `graphs[]` hold named graphs, placed in a section with `graph:<id>`; `compareTo` names the before-graph of a change. Top-level `nodes[]` and `edges[]` work as before, so existing callers need no change.
+- **Mapping a codebase.** `/walkthrough:document` can read a codebase and draw its system map. Two read-only agents do the reading: `system-analyzer` makes claims with evidence and `system-verifier` tries to refute them, under one rules file (`references/system-reading.md`). No evidence, no box; stated versus inferred; a fixed reading budget with the gaps listed; names only, with `.env` never opened; containers by default and components on request; a library becomes a package map; manifests beat prose. Where agents cannot be dispatched the skill does both passes itself and says so.
+- Self-check rows 24 to 27 (the plain view is the whole graph, the engine block, change marks, evidence on a code-read map), a `structure-change` concept type, and three belts: the engine's layout rules over every open and closed state of eight fixture graphs, the insert command run exactly as documented, and a golden page built from the real scaffold.
+
+### Changed
+- `nonlinear-system` and `module-dependency` now render as a system map. A cycle between components stays a system map; guards and transitions between states still route to the state diagram.
+- A module dependency graph now needs JavaScript for its wires. Without it the page shows the boxes and the list of imports.
+- `update` reads a system map back exactly, and turns an architecture map or a dependency graph on an older page into a system map.
+- The plugin now ships two agents and one browser script alongside its skills. It still has no hooks and no shell scripts.
+
+### Removed
+- The architecture map and the dependency graph recipes. Their CSS stays in the system map's stylesheet as a back-compat block for old markup; new pages use the system map.
+
 ## 1.5.0 — 2026-09-19
 
 ### Added
