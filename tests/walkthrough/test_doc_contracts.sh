@@ -189,4 +189,60 @@ grep -qF '## Change marks' "$SM" || fail "session-model.md must define the chang
 grep -qF '"graphs"' "$SM" || fail "session-model.md must declare graphs[]"
 ok "SYSMAP: recipe uses sys-, keeps a plain view and the old-markup CSS; update reads all three shapes; rows 24-27 exist"
 
+# --- engine delivery: one description, one slot, and the path named where a variable is replaced ---
+RENDER_SKILL="$ROOT/walkthrough/skills/render/SKILL.md"
+README="$ROOT/walkthrough/README.md"
+SYSAD="$ROOT/walkthrough/skills/document/references/adapters/system.md"
+RULES="$ROOT/walkthrough/references/system-reading.md"
+GS="$ROOT/walkthrough/skills/document/references/gather-subject.md"
+for f in "$RENDER_SKILL" "$README" "$SYSAD" "$RULES" "$GS"; do
+  [ -s "$f" ] || fail "missing $f"
+done
+grep -qF '{{SYSMAP_ENGINE}}' "$PS" || fail "page-scaffold.md must have the {{SYSMAP_ENGINE}} slot"
+grep -qF '/*@@SYSMAP-ENGINE@@*/' "$PS" || fail "page-scaffold.md must show the engine block's marker line"
+grep -qi '### insert the system-map engine' "$RC" || fail "render-contract.md must define the engine-insert step"
+for line in 'System map engine: inserted by shell command.' 'System map engine: typed by the model' 'System map engine: not included'; do
+  grep -qF "$line" "$RC" || fail "render-contract.md must give the message: $line"
+done
+# shellcheck disable=SC2016  # the literal variable name is what the file must contain
+for f in "$CREATE_SKILL" "$UPDATE_SKILL" "$DOCUMENT_SKILL" "$RENDER_SKILL"; do
+  grep -qF '${CLAUDE_PLUGIN_ROOT}/skills/create/references/system-map-engine.js' "$f" \
+    || fail "$(basename "$(dirname "$f")")/SKILL.md must name the engine path itself: a path variable is only replaced in a SKILL.md body"
+done
+# a path variable in a reference file reaches the shell as literal text, so none may be relied on there
+if grep -lE 'CLAUDE_PLUGIN_ROOT|CLAUDE_SKILL_DIR' "$RC" "$PS" "$SYS" "$SYSAD" "$RULES" 2>/dev/null | grep -q .; then
+  fail "a reference file names a path variable; name the path in the SKILL.md body instead"
+fi
+# the command holds its paths in single quotes; the one character they cannot hold must be ruled out
+grep -qF "Never run it when either path contains a single quote" "$RC" \
+  || fail "render-contract.md must forbid the shell insert for a path that contains a single quote"
+grep -qiE 'slug' "$SYS" || fail "system-map.md must require a slug for data-id: it is written into onclick and attributes"
+# a page that shows the marker text in its own content must not make a second marker line
+grep -qF '&#47;' "$RC" || fail "render-contract.md must say how a page shows the marker text without making a second marker line"
+grep -qF 'system-map-engine.js' "$CLAUDEMD" || fail "CONVENTIONS.md must name the engine file"
+grep -qi 'FOURTH' "$CLAUDEMD" || fail "CONVENTIONS.md must say a page with a system map carries a fourth script block"
+ok "ENGINE: one insert step in render-contract.md, a scaffold slot, and the path named in all four SKILL.md bodies"
+
+# --- code reading: two read-only agents, one rules file in the flat references/ home ---
+for a in system-analyzer system-verifier; do
+  A="$ROOT/walkthrough/agents/$a.md"
+  [ -s "$A" ] || fail "missing agent walkthrough/agents/$a.md"
+  grep -qE '^tools: Read, Grep, Glob$' "$A" || fail "$a must be read-only: its tools are exactly Read, Grep, Glob"
+  grep -q "$a" "$CLAUDEMD" || fail "CONVENTIONS.md must name the $a agent"
+  grep -q "walkthrough:$a" "$SYSAD" || fail "adapters/system.md must dispatch walkthrough:$a"
+done
+[ -z "$(find "$ROOT/walkthrough/agents" -mindepth 1 -type d)" ] || fail "only agent files may live under walkthrough/agents/: every .md there is registered as an agent"
+# shellcheck disable=SC2016  # the literal variable name is what the file must contain
+grep -qF '${CLAUDE_PLUGIN_ROOT}/references/system-reading.md' "$DOCUMENT_SKILL" || fail "document/SKILL.md must name the reading-rules path it passes to the agents"
+grep -qF 'adapters/system.md' "$GS" || fail "gather-subject.md must route to the system adapter"
+grep -qF 'adapters/system.md' "$DOCUMENT_SKILL" || fail "document/SKILL.md must follow the system adapter"
+grep -qi 'inline' "$SYSAD" || fail "adapters/system.md must say what happens when agents cannot be dispatched"
+grep -qF 'not independently verified' "$SYSAD" || fail "an inline reading must be labelled as not independently verified"
+grep -qF '.env' "$RULES" || fail "system-reading.md must name the files that are never opened"
+grep -qi 'manifests beat prose' "$RULES" || fail "system-reading.md must state that manifests beat prose"
+if grep -niE 'pure-skill|no agents' "$README" "$CLAUDEMD" >/dev/null; then
+  fail "README.md and CONVENTIONS.md must not claim the plugin is pure-skill or has no agents: it ships two"
+fi
+ok "READING: two read-only agents, rules in the flat references/ home, an inline fallback, no stale no-agents claim"
+
 echo "PASS: walkthrough doc contracts"

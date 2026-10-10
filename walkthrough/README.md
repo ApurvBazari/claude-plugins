@@ -41,7 +41,7 @@ Run it whenever you want a readable artifact of the session — after a debuggin
 One HTML file. Open it in any browser and you get a composed document — not a transcript dump:
 
 - a summary and type tags for the session
-- architecture / flow diagrams rendered as inline SVG
+- flow diagrams, and **system maps** for anything with parts and connections (see [System maps](#system-maps))
 - decision records (what was chosen, what was rejected, why)
 - a file-touch list with real `path:line` references
 - a timeline and metrics where the session has them
@@ -88,6 +88,29 @@ A walkthrough is a snapshot — but you can refresh one in place as the work evo
 
 `document` is both user- and intent-invokable: the slash form works, and so does *"document this plugin"* or *"make a docs page for notify"*.
 
+### Mapping a codebase
+
+Ask `document` for a codebase's architecture (*"map this system"*, *"draw a system map of this repo"*) and it reads the code instead of the README, then draws a [system map](#system-maps) of what it found.
+
+- **Every box and wire shows where it was seen.** Click a box for the file and line. Anything supported only by indirect signals, such as a name or an environment-variable name, is drawn dotted and labelled *inferred*.
+- **Two read-only agents do the reading.** One makes claims with evidence; the other tries to refute each claim against the code. Refuted claims are not drawn.
+- **The reading is bounded, and the page says what was skipped.** A "Gaps" section lists the directories that were not read and the claims that were dropped.
+- **Names only.** Environment-variable values are never copied, and `.env` files, keys and credential files are never opened.
+- **Containers by default.** People, services, stores, queues and external systems. Ask for components to open a service up. A library with nothing deployable becomes a map of its packages.
+
+## System maps
+
+A system map draws anything with parts and connections: services, stores, queues, people, external systems, or the modules of a codebase.
+
+- **Boxes nest.** A boundary holds other boxes, to any depth. Open or close one in place to move between the big picture and the detail. On a large system the map opens only as many boundaries as fit comfortably (about 16 boxes), and *expand all*, *collapse all* and *reset* are one click away.
+- **Wires are labelled and directed.** Async flow is dashed. Several connections between two closed boundaries merge into one thicker wire; click its "N links" label to see them.
+- **Cycles are fine.** A webhook that calls back into the gateway is drawn as what it is.
+- **It can show a change.** Boxes and wires marked added, modified or deleted get a green, amber or rose ring and a text badge. A closed boundary shows how many changes it holds.
+- **The page holds the whole graph as plain text.** Under every map is the full list of connections. With JavaScript off, or if the layout fails for any reason, you still see the boxes, nested as they are, and that list.
+- **Direction is automatic.** Left to right when that fits the page, top to bottom when it does not.
+
+The picture is drawn by a small layout engine carried inside the page itself, so the file stays self-contained. It replaces two older diagrams, the architecture map and the dependency graph; `update` upgrades a page that still has one.
+
 ## The internal `render` skill
 
 Alongside the three user-facing skills, walkthrough ships one **internal** skill — `render` (`user-invocable: false`). It renders a model that's already in context straight to HTML, skipping the gather + synthesize stages, and reuses the same visual layer. It exists for *other plugins* to call programmatically — the [`lens`](../lens/) review companion uses it to render its findings. You never invoke it directly; "render the session" for users is `/walkthrough:create`.
@@ -110,7 +133,12 @@ On the first run in a repo (when `.gitignore` exists and doesn't already cover t
 
 ## Works in Cowork
 
-walkthrough is a **pure-skill plugin** — no hooks, no shell scripts, no agents — so it installs and runs in [Claude Cowork](https://claude.com/product/cowork) exactly as it does in Claude Code. Its output is a single portable HTML file, which makes it a natural fit for a Cowork working session: run it and you get an explorable deliverable you can email, drop in a wiki, or open offline.
+walkthrough has no hooks and no shell scripts, so it installs and runs in [Claude Cowork](https://claude.com/product/cowork) as it does in Claude Code. Its output is a single portable HTML file, which makes it a natural fit for a Cowork working session: run it and you get an explorable deliverable you can email, drop in a wiki, or open offline.
+
+Two parts added in 1.6.0 each have a fallback, because how Cowork handles them has not been confirmed yet:
+
+- **The system-map layout engine** is normally put into the page by one shell command. Where no shell can read the plugin's files, Claude types the engine into the page instead. The message after writing says which happened.
+- **Mapping a codebase** normally uses two read-only agents. Where agents cannot be dispatched, the skill does the reading and the checking itself, and the page says its claims were not independently verified.
 
 Because a Cowork folder is often not a git repository, `create` asks **on first run in a non-git folder** where to write — a visible `walkthroughs/` folder (easy to find) or the hidden `.claude/walkthrough/` — and remembers the choice. In a git repository (the typical Claude Code case) nothing changes: walkthroughs go to `.claude/walkthrough/` with no prompt.
 
@@ -118,6 +146,9 @@ Because a Cowork folder is often not a git repository, `create` asks **on first 
 
 - **Android / local-file JS.** As of 1.3.1 the document is fully readable without JavaScript — opened as a `file://` document on Android (which blocks local-file JS) or with JS disabled, all prose and diagrams render; only the click-to-open detail surfaces and the scroll-reveal animation are inert. For the full interactive experience, view on desktop or host the file over `http(s)`.
 - **No print path.** The document is built for on-screen exploration; there is no dedicated print stylesheet, and collapsed detail (panes, sheets) will not appear in a printout.
+- **A system map needs JavaScript for its picture.** Without it you see the boxes, nested as they are, and the full list of connections, but no drawn wires. That now includes a module dependency graph, which before 1.6.0 was a static drawing.
+- **A long chain is drawn top to bottom.** A map is laid out left to right only when that fits the page. A chain of about seven steps with labelled wires does not fit, so it comes out tall.
+- **A page with a system map is about 28 KB larger:** the size of the layout engine it carries. Pages without one are unchanged.
 
 ## What it is / isn't
 
