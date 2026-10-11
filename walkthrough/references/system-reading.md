@@ -74,6 +74,9 @@ Every content search leaves these paths out. A search returns the line it matche
 a search that reaches one of these paths has opened it. Before you search, choose a scope (one file,
 a folder, or a glob for the file types you mean, such as `*.go`) and check it against a listing of
 file names: it must match none of these paths. If it matches one, narrow the scope until it does not.
+A listing of a large tree can be cut short, and then it cannot show that a folder holds none of these
+files: when the listing you have is not complete for the place you mean to search, search one file or
+use a glob for the file types you mean, and do not search a bare folder.
 Never search the whole of `root` unfiltered. If a result still comes from one of these paths, discard
 it unread: do not use it, repeat it or cite it.
 
