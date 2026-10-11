@@ -68,19 +68,27 @@ of these that works:
    It replaces the marker line with the file. It fails, and leaves the page untouched, when the shell
    cannot read the engine file or when the marker line is not there exactly once.
 
+   If the shell can read the engine file and the command still fails, the marker line is missing, is there
+   more than once, or is indented. Check that it is in the page exactly once and starts at column 0, fix
+   the block, and run the command once more. Go to step 3 only if it fails again.
+
    **Never run it when either path contains a single quote (`'`). Go to step 3 instead.** In the command
    the two paths sit inside single quotes, which make every other character inert. A single quote in a
    path would end that quoting, and the rest of the path would run as shell. Do not try to escape it.
+   Replace `<ENGINE>` and `<PAGE>` with the literal paths and never build either with a shell expansion
+   (a variable, `$(...)`, a backtick or a glob): an expansion is not covered by the single quotes.
    The same rule holds for any other shell command you run on the page, such as the checks below.
-3. **Type it.** Only when step 2 is not possible (there is no shell, or the shell cannot read the file):
+3. **Type it.** Only when step 2 is not possible (there is no shell, or the shell cannot read the file) or
+   has failed twice:
    read the engine file and replace the marker line with its content, character for character. Do not
    shorten, reformat or improve it.
 4. **Neither works.** Delete the whole `<script id="wt-sysmap">` block. The map keeps its plain view.
 
 **Check the result** of step 2 or 3: no line of the page is the marker any more; the line
 `/* walkthrough system-map engine v1 */` and the line `/* end walkthrough system-map engine */` each
-appear exactly once; and `node --check` passes on the block (self-check #20, when node is available). If
-the check fails, repair the block once. If it still fails, do step 4.
+appear exactly once inside the `<script id="wt-sysmap">` block (a page's own content may show them); and
+`node --check` passes on the block (self-check #20, when node is available). If the check fails,
+repair the block once. If it still fails, do step 4.
 
 **Say which path ran.** The offer message (for `render`, the value returned to the caller) carries
 exactly one of these lines:

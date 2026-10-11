@@ -169,7 +169,7 @@ assemble time it holds one marker line and nothing else:
 </script>
 ```
 
-The marker stands alone on its line with no leading spaces. After the file is written, the write stage of
+The marker stands alone on its line with no leading spaces: the slot's own indentation in the template does not carry into the block, so the marker line starts at column 0. After the file is written, the write stage of
 `../../render/references/render-contract.md` replaces that line with the content of
 `system-map-engine.js`. The engine has its own block so that a fault in it cannot stop the
 interactivity bundle or the component script: the page then simply keeps the map's plain view. The

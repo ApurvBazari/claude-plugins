@@ -187,6 +187,9 @@ for n in 24 25 26 27; do
 done
 grep -qF '## Change marks' "$SM" || fail "session-model.md must define the change-mark rules self-check #26 verifies"
 grep -qF '"graphs"' "$SM" || fail "session-model.md must declare graphs[]"
+# author text is escaped wherever the recipe has a producer write it: a quote ends an attribute, a "<" becomes markup
+grep -qF 'is never markup' "$SYS" || fail "system-map.md must say that every label is escaped text, never markup"
+grep -qF '`&`, `<`, `>` and `"`' "$SYS" || fail "system-map.md must name the four characters a producer escapes"
 ok "SYSMAP: recipe uses sys-, keeps a plain view and the old-markup CSS; update reads all three shapes; rows 24-27 exist"
 
 # --- engine delivery: one description, one slot, and the path named where a variable is replaced ---
@@ -221,6 +224,9 @@ grep -qiE 'slug' "$SYS" || fail "system-map.md must require a slug for data-id: 
 grep -qF '&#47;' "$RC" || fail "render-contract.md must say how a page shows the marker text without making a second marker line"
 grep -qF 'system-map-engine.js' "$CLAUDEMD" || fail "CONVENTIONS.md must name the engine file"
 grep -qi 'FOURTH' "$CLAUDEMD" || fail "CONVENTIONS.md must say a page with a system map carries a fourth script block"
+# the paths are literal text: a shell expansion would run outside the single quotes the safety argument rests on
+grep -qF 'never build either with a shell expansion' "$RC" \
+  || fail "render-contract.md must say the two paths are literal and never built with a shell expansion"
 ok "ENGINE: one insert step in render-contract.md, a scaffold slot, and the path named in all four SKILL.md bodies"
 
 # --- code reading: two read-only agents, one rules file in the flat references/ home ---

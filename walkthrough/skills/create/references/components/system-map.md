@@ -61,6 +61,10 @@ You never write a coordinate.
   `.sys-label`. A box without a detail carries none of them.
 - **`data-id` is unique inside one `.sysmap`.** The same id may appear in another map on the page; it
   opens the same detail.
+- **Every label is text.** A label, a `sub` and a connection label are escaped wherever they are written:
+  `&`, `<`, `>` and `"` become `&amp;`, `&lt;`, `&gt;` and `&quot;`, in attribute values (`data-label`,
+  `aria-label`) as well as in element text. A quote left raw ends the attribute the engine reads, and a
+  `<` becomes markup; a label is never markup.
 - **An id is a slug:** letters, digits, `-` and `_` only. It is written into attributes and into
   `openSurface('<id>')`, so it must never carry a quote, a space or markup. Turn any other name into a
   slug at synthesis time and keep the readable name in the label.
