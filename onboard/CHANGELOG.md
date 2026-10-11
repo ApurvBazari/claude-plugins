@@ -9,6 +9,7 @@ Responds to the claude.ai directory review of 3.2.0: onboard installed other plu
 - **Skipping the LSP question installs nothing.** The skip default was the full detected list, so a skipped question installed every detected LSP plugin. It is now an empty list. LSP rows are still pre-checked at 10 or more files; a row you submit is an acceptance.
 - **`/onboard:update` gives each plugin its own row.** Approving a new MCP server no longer installs its plugin. "Apply all" names the plugins it would install.
 - **`/onboard:evolve` asks before installing the plugin behind a new MCP server**, the same way it already asks for LSP plugins. If the prompt cannot be shown or nobody answers, nothing is installed and nothing is recorded as offered. The server entry is still merged automatically.
+- **`/onboard:evolve` takes no plugin list from a caller.** Its LSP step said a list from `generate` replaced the prompt, but `generate` never calls evolve, so the clause was only a way around the prompt. Only an answer to evolve's own question installs a plugin.
 - **`/onboard:adopt` offers no plugin.** It installs nothing, so its wizard run skips the LSP and MCP-plugin questions.
 - **`/onboard:update` drops a saved install offer whose plugin is not in the catalog.** A plugin name read from `.claude/onboard-pending-updates.json` is never offered on that file's word alone.
 - **Repair runs never install.** A `regenerateOnly` or `reResearch` generation installs nothing, even when stored answers carry an earlier accepted list.

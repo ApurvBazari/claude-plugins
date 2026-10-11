@@ -14,7 +14,8 @@ installs nothing.
 
 **R2.** An explicit list from a programmatic caller (`callerExtras.lspPlugins`,
 `callerExtras.mcpPlugins`) counts as acceptance by that caller. An absent list means none, never
-"all detected".
+"all detected". This applies to generation only: the context that `start` and its callers pass to
+`generate`. `evolve` takes no caller list; there, only a person's answer installs a plugin.
 
 **R3.** Installs happen only in a full `write` generation that follows an approved `start` gate, or in
 an `update` / `evolve` step that has just received the acceptance. A `regenerateOnly` or `reResearch`

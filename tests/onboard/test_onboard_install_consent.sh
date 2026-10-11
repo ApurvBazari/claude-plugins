@@ -54,6 +54,7 @@ has "IC1: reference states the no-answer floor" 'install nothing, record nothing
 has "IC1: reference points at the single-option guard" 'ask-user-question-guard.md' "$REF"
 has "IC1: reference says who writes the offer ledger, and when" 'Who writes `mcpStatus.pluginOffers`' "$REF"
 has "IC1: reference defines the rows-shown field" '`wizardAnswers.mcpPluginsOffered`' "$REF"
+has "IC1: reference limits a caller's list to generation" 'applies to generation only' "$REF"
 
 # --- IC2: every instruction file that names the installer also cites the consent reference ---
 callers="$(grep -rlF 'install-plugins.sh' onboard --include='*.md' 2>/dev/null | grep -vE '/CHANGELOG\.md$|/plugin-install-consent\.md$' | sort)"
@@ -89,6 +90,9 @@ fi
 step2g="$(section onboard/skills/evolve/SKILL.md '^## Step 2g' '^## Step 2h')"
 if [ -z "$step2g" ]; then bad "IC4: could not locate evolve Step 2g"; else
   in_text "IC4: Step 2g states the no-answer floor for LSP plugins" 'install nothing and append nothing to the snapshot' "$step2g"
+  # Same floor as Step 2c: the caller the old clause named (`generate`) never calls evolve.
+  in_text "IC4: Step 2g takes no plugin list from a caller" 'takes no plugin list from `callerExtras`' "$step2g"
+  if printf '%s\n' "$step2g" | grep -qF "delegates to the caller's explicit list"; then bad "IC4: Step 2g still lets a caller's list stand in for an answer"; else ok "IC4: Step 2g no longer accepts a caller's list as the answer"; fi
 fi
 
 # --- IC5: a skipped or absent LSP answer installs nothing ---

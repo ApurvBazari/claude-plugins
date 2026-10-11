@@ -266,7 +266,7 @@ Run the same drift classification as `../update/SKILL.md` § 4b.8 LSP Plugin Dri
 
 When `.claude/onboard-lsp-snapshot.json` is absent, fire a one-time initial prompt just like `/onboard:start` wizard Step 6. After the user's response, write the snapshot with `recommended` = full detected list, `accepted` = user's selected subset. Subsequent evolve runs follow the normal drift flow.
 
-**Programmatic mode** (when called via `generate` with `callerExtras.lspPlugins` set): evolve delegates to the caller's explicit list — no prompt fires. An empty array means "declined all"; an absent caller value falls through to interactive prompting.
+**No caller list.** Nothing calls evolve programmatically (`generate` is called by evolve, never the other way round), so evolve takes no plugin list from `callerExtras`. If `callerExtras.lspPlugins` is present, ignore it: only an answer to the prompt above installs an LSP plugin.
 
 Update `onboard-meta.json.lspStatus` to reflect additions.
 
