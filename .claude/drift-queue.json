@@ -576,6 +576,67 @@
       "status": "deferred",
       "rationale": "The wizard and update describe LSP rows as pre-checked (autoChecked: true). AskUserQuestion may have no pre-selected state, in which case the rows are simply unchecked and fewer LSP plugins are installed than the text implies. Not checked in this PR.",
       "resolution": "Check in a real run; if rows cannot be pre-checked, drop the wording."
+    },
+    {
+      "id": "RUN-1",
+      "title": "start's recommended walkthrough install gives nothing in the session that offers it",
+      "source": "onboard 3.3.0 install-consent branch, real run on a sandbox project (2026-10-10)",
+      "raisedAt": "2026-10-11",
+      "status": "deferred",
+      "rationale": "At the preview gate the owner chose 'Install now (Recommended)'. claude plugin install walkthrough@apurvbazari-plugins succeeded, but walkthrough:render was still an unknown skill, because a plugin installed during a session is not loaded into it. The session fell back to the markdown preview. The offer text is the same as in 3.2.0.",
+      "resolution": "Say in the offer that the page is available from the next session and drop '(Recommended)', or stop offering the install at the gate."
+    },
+    {
+      "id": "RUN-2",
+      "title": "Plugin detection ignores CLAUDE_CONFIG_DIR and can disagree with the install offer's probe",
+      "source": "onboard 3.3.0 install-consent branch, real run on a sandbox project (2026-10-10)",
+      "raisedAt": "2026-10-11",
+      "status": "deferred",
+      "rationale": "plugin-detection-guide.md reads ~/.claude/plugins/cache, and the notify probe reads the sibling path beside onboard. The wizard's MCP-plugin offer probes with claude plugin list, which honours CLAUDE_CONFIG_DIR. Under a separate config directory the two disagreed: detection reported 15 or more plugins as installed, the offer treated them as absent, and the session stopped to ask which to trust. The wizard also called notify 'present [installed]' although it was not installed in that config. In the unattended evolve run the session used the config directory's list and reported that following the cache probe would have removed two generated artifacts in favour of plugins it could not load. In a default config both agree.",
+      "resolution": "Use claude plugin list as the one source for 'installed', or make the cache probe honour CLAUDE_CONFIG_DIR."
+    },
+    {
+      "id": "RUN-3",
+      "title": "A plugin offer names the plugin but not the source it is installed from",
+      "source": "onboard 3.3.0 install-consent branch, real run on a sandbox project (2026-10-10)",
+      "raisedAt": "2026-10-11",
+      "status": "deferred",
+      "rationale": "install-plugins.sh runs claude plugin install with a bare name. In the real run context7 and github resolved from Claude Code's built-in anthropic-plugin-directory source, and typescript-lsp and chrome-devtools-mcp from claude-plugins-official. The offer, the preview and the gate show only the bare name.",
+      "resolution": "Owner decision: name the source in the offer, pin name@marketplace in the catalogs, or leave as is."
+    },
+    {
+      "id": "RUN-4",
+      "title": "Answer to REV-8: LSP rows are not pre-checked in the real prompt",
+      "source": "onboard 3.3.0 install-consent branch, real run on a sandbox project (2026-10-10)",
+      "raisedAt": "2026-10-11",
+      "status": "deferred",
+      "rationale": "In the real run the typescript-lsp row (12 source files) arrived unticked and the owner ticked it. wizard/SKILL.md, references/plugin-install-consent.md and evolve Step 2g still say rows are pre-checked at 10 or more files. Nothing is selected on the person's behalf, so no plugin installs without a tick. The README makes no pre-checked claim.",
+      "resolution": "Drop the pre-checked wording from the wizard, the consent reference, update and evolve."
+    },
+    {
+      "id": "RUN-5",
+      "title": "Real run: findings outside the install-consent change",
+      "source": "onboard 3.3.0 install-consent branch, real run on a sandbox project (2026-10-10)",
+      "raisedAt": "2026-10-11",
+      "status": "deferred",
+      "rationale": "Reported by the real run's session and by /onboard:check on the same project. None concerns a plugin install. The first three were confirmed only as far as the named text exists in the source; whether the hooks really fail to log was not tested.",
+      "items": [
+        "evolution-hooks-guide.md: the FileChanged hook template passes \"$FILE_PATH\" to the detect scripts. If Claude Code delivers the path only as stdin JSON, the three drift hooks never log.",
+        "workflow-presets.md: a profile's default model is claude-opus-4-8[1m], which predates the current model family.",
+        "check/SKILL.md reads modelApprovedByUser from onboard-meta.json; the generated meta records approval under modelRecommendation.approved.",
+        "Five detected built-in skills did not fit one four-option question, so the session asked a single-select (all / core / none) in place of the multi-select. The built-in-skills side of REV-4.",
+        "start's opening message said nothing is written until approval, and the research files were written before the gate. REV-5 seen in a real run."
+      ],
+      "resolution": "Check each against the source, then fix in a later onboard patch release."
+    },
+    {
+      "id": "RUN-6",
+      "title": "Not verified in a real run: declining, accepting one plugin, evolve with a person, update",
+      "source": "onboard 3.3.0 install-consent branch, real run on a sandbox project (2026-10-10 and 2026-10-11)",
+      "raisedAt": "2026-10-11",
+      "status": "deferred",
+      "rationale": "Two cases were run on a sandbox project under a separate config directory. start, accepting every offer: the wizard named each plugin, the summary, preview and gate named exactly the four accepted, and exactly those were installed after approval. evolve with nobody to answer (print mode, auto permission mode, no permission denied): the supabase server was merged into .mcp.json, no install command was run, nothing was added to pluginOffers, and the report named claude plugin install supabase. Not run, by the owner's decision on 2026-10-11: start declining everything, start accepting exactly one plugin, evolve with a person answering, and update. A first print-mode evolve attempt in the default permission mode was inconclusive: the detector scripts were denied, so evolve stopped before the offer and named no manual command.",
+      "resolution": "Run the remaining cases if a later review questions behaviour, or when the instruction text for those paths next changes."
     }
   ]
 }
