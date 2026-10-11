@@ -140,7 +140,7 @@ Long Claude Code sessions often end with the user pasting a paragraph into the *
 
 **Trust model.** Directive content is wrapped in `<untrusted-source>` framing in the hook output — routing and metadata are trusted, the directive itself is data describing user intent. The four-option flow ensures the user confirms before any action. Standard defense-in-depth for a marketplace plugin.
 
-For the full skill reference (`/handoff:save`, `/handoff:pickup`, `/handoff:check`, `/handoff:discard`), the SessionStart hook contract, configuration knobs (`stale-day-threshold`, `deferral-snooze-hours`, `trigger-phrases`), and storage model: [handoff/README.md →](./handoff/README.md)
+For the full skill reference (`/handoff:save`, `/handoff:pickup`, `/handoff:check`, `/handoff:discard`), the SessionStart hook contract, configuration knobs (`stale-day-threshold`, `deferral-snooze-hours`, `archive-retention`), and storage model: [handoff/README.md →](./handoff/README.md)
 
 ---
 
