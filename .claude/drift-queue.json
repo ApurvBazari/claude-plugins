@@ -637,6 +637,56 @@
       "status": "deferred",
       "rationale": "Two cases were run on a sandbox project under a separate config directory. start, accepting every offer: the wizard named each plugin, the summary, preview and gate named exactly the four accepted, and exactly those were installed after approval. evolve with nobody to answer (print mode, auto permission mode, no permission denied): the supabase server was merged into .mcp.json, no install command was run, nothing was added to pluginOffers, and the report named claude plugin install supabase. Not run, by the owner's decision on 2026-10-11: start declining everything, start accepting exactly one plugin, evolve with a person answering, and update. A first print-mode evolve attempt in the default permission mode was inconclusive: the detector scripts were denied, so evolve stopped before the offer and named no manual command.",
       "resolution": "Run the remaining cases if a later review questions behaviour, or when the instruction text for those paths next changes."
+    },
+    {
+      "id": "PR139-1",
+      "title": "evolve's caller-list clause for MCP plugins removed (PR #139 security review, L1)",
+      "source": "PR #139 automated security review (2026-10-11)",
+      "raisedAt": "2026-10-11",
+      "status": "closed",
+      "rationale": "evolve Step 2c said a callerExtras.mcpPlugins list counted as acceptance and no prompt fired. Nothing calls evolve with that list, and Claude can start evolve on its own, so the clause was an unused way past the ask-first rule. Fixed in the same PR: Step 2c now says evolve takes no plugin list from callerExtras, pinned by two IC4 checks that failed first. This also settles the REV-1 item about the clause having no defined source.",
+      "resolution": "Done in PR #139."
+    },
+    {
+      "id": "PR139-2",
+      "title": "evolve's LSP and built-in-skills steps still accept a caller's list",
+      "source": "PR #139 automated security review (2026-10-11), follow-up to L1",
+      "raisedAt": "2026-10-11",
+      "status": "deferred",
+      "rationale": "evolve Steps 2g and 2h say that when evolve is called via generate with callerExtras.lspPlugins or callerExtras.builtInSkills set, the caller's list is used and no prompt fires. Both clauses predate 3.3.0 and name generate as the caller. Whether generate ever calls evolve was not checked. The LSP clause can lead to a plugin install.",
+      "resolution": "Check for a real caller. If there is none, remove the LSP clause the way Step 2c's was removed."
+    },
+    {
+      "id": "PR139-3",
+      "title": "update's live docs check does not restrict where a reported link points",
+      "source": "PR #139 automated security review (2026-10-11), L2",
+      "raisedAt": "2026-10-11",
+      "status": "deferred",
+      "rationale": "update's live docs check now takes only a feature name and a link from the fetched page. Nothing requires the link to be under https://code.claude.com/docs/, so a tampered page could put an arbitrary link into the findings report. The list is shown to the person and never applied.",
+      "resolution": "Drop any pair whose url is not under https://code.claude.com/docs/, cap the feature name at about 80 characters and show it as plain text."
+    },
+    {
+      "id": "PR139-4",
+      "title": "The catalog-only install rule is enforced only in instruction text",
+      "source": "PR #139 automated security review (2026-10-11), informational",
+      "raisedAt": "2026-10-11",
+      "status": "deferred",
+      "rationale": "install-plugins.sh checks a name's characters, not whether the name is in a catalog. The catalog-only rule (R4) holds only while a skill's instructions are followed.",
+      "resolution": "Give the script a catalog allowlist, read from the two catalogs or passed by the caller."
+    },
+    {
+      "id": "PR139-5",
+      "title": "PR #139 structure review: minor points left open",
+      "source": "PR #139 automated structure review (2026-10-11)",
+      "raisedAt": "2026-10-11",
+      "status": "deferred",
+      "rationale": "Optional points from the review. None concerns a plugin install.",
+      "items": [
+        "Each new belt file forces an edit to the suite count inside the already-shipped lens 1.5.0 changelog entry, because tests/lens/test_doc_contracts.sh reads the count from that line. The check could read it from somewhere other than a past release note.",
+        "references/plugin-install-consent.md says a one-candidate install offer is Install / Skip with neither marked recommended; .claude/rules/ask-user-question-guard.md says Yes (Recommended) / No. The reference is right for consent. Add the exception to the rule file so a later edit does not bring the recommended option back.",
+        "tests/onboard/test_onboard_install_consent.sh uses [ ] in one place where shell-scripts.md asks for [[ ]]."
+      ],
+      "resolution": "Sweep in a later patch."
     }
   ]
 }
