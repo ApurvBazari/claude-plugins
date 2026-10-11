@@ -5,7 +5,7 @@ description: Render any SUBJECT (a plugin, library, subsystem, or the marketplac
 
 # Document — Render a Subject as an Interactive Document
 
-You are invoked via `/walkthrough:document <subject> [output-path]`. Produce ONE self-contained
+You are invoked via `/walkthrough:document <subject> [request] [output-path]`. Produce ONE self-contained
 interactive HTML file in the house style from a *subject* (not the session), then offer to open it.
 The visual layer is reused verbatim from the `create` skill; only the model and gathering differ.
 
@@ -20,18 +20,30 @@ Two more files are named here because a path is only filled in inside a skill's 
   `${CLAUDE_PLUGIN_ROOT}/skills/create/references/system-map-engine.js` (the same file as
   `${CLAUDE_SKILL_DIR}/../create/references/system-map-engine.js`). Step 9 uses it;
 - the reading rules of the system adapter: `${CLAUDE_PLUGIN_ROOT}/references/system-reading.md` (the
-  same file as `${CLAUDE_SKILL_DIR}/../../references/system-reading.md`). Step 2 passes this path to
-  the adapter's agents.
+  same file as `${CLAUDE_SKILL_DIR}/../../references/system-reading.md`). When Step 2 follows that
+  adapter, you read the file at this path yourself, before you read or search any file of the subject,
+  and you pass the path to the adapter's agents.
 
 ## Step 1: Identify the subject
-`<subject>` is the first argument — a plugin directory, the word `marketplace` (or repo root), a
-codebase whose architecture you are asked to map, or any path/description. Route to the right adapter
-per `references/gather-subject.md`.
+`<subject>` is the first argument — a plugin directory, the word `marketplace` (or a repository root
+that has a `marketplace.json`), a codebase whose architecture you are asked to map, or any
+path/description.
+
+What follows the subject is a **request**, an **output path**, or both. An argument is the output path
+only when it ends in `.html`. Anything else (`architecture`, `system map`, `components of the API`) is
+the request, a word with a `/` in it included (`components of services/api`): it says what to draw,
+and it is never used as a file name. So `/walkthrough:document . architecture` asks for the
+architecture of the current directory and names no output path.
+
+Route to the right adapter per `references/gather-subject.md`: the route depends on the subject and on
+the request.
 
 ## Step 2: Gather (README + manifest are canonical, except for the system adapter)
 Follow `references/gather-subject.md` and the matched adapter (`references/adapters/plugin.md`,
 `references/adapters/marketplace.md` or `references/adapters/system.md`). Read the canonical
-source files. Cite `path:line` only when verified by a real read.
+source files. Cite `path:line` only when verified by a real read. On the system adapter that read is
+the verifier's: an anchor it confirmed counts as verified, and you never re-read the code to confirm
+an anchor.
 
 The **system adapter** reads code, not a README. It dispatches the read-only `walkthrough:system-analyzer`
 agent and then the read-only `walkthrough:system-verifier` agent, applies the verifier's verdicts, and
@@ -80,7 +92,8 @@ which stays true after a subject rebrand. Retain it verbatim on subject pages. T
 the nav logo and the `<title>` suffix only.
 
 ## Step 7: Output path
-If a second argument (output path) is given, write there. Otherwise resolve `<base>` first (same as
+If an output path was given (Step 1: an argument that ends in `.html`), write there. A request is
+never the output path. Otherwise resolve `<base>` first (same as
 `create` Step 6.5): if a `settings.md` with `output-location:` exists in `walkthroughs/` (visible) or
 `.claude/walkthrough/` (hidden), use that base; else default to `.claude/walkthrough/`. Then default to
 `<base>/<YYYY-MM-DD-HHMM>-<slug>.html` (`slug` = kebab of the title; collisions → `-2`,
@@ -119,7 +132,7 @@ system adapter ran, also include its reading line (`Read by agents: analyzer and
 - **Model before markup.** Synthesize the subject model (Step 3) before assembling HTML.
 - **Omit empty, never stub.** Render only components with real content.
 - **Relative links only.** Internal cross-links use `./` or `../`, never `/…` (Pages base path).
-- **Real code refs only.** Cite `path:line` only when verified via a file read.
+- **Real code refs only.** Cite `path:line` only when verified via a file read. For the system adapter that read is the verifier's: an anchor it confirmed counts as verified, and you never re-read the code to confirm an anchor.
 - **Read-only.** Never execute subject code; only read files.
 - **Self-check before write.** Run `self-check.md` on the assembled HTML; never write a document that fails it.
 - **Completeness gate.** Run the coverage critic after synthesis and surface the coverage note at the offer step.

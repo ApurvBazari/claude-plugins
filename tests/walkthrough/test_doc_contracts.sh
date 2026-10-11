@@ -220,8 +220,9 @@ fi
 grep -qF "Never run it when either path contains a single quote" "$RC" \
   || fail "render-contract.md must forbid the shell insert for a path that contains a single quote"
 grep -qiE 'slug' "$SYS" || fail "system-map.md must require a slug for data-id: it is written into onclick and attributes"
-# a page that shows the marker text in its own content must not make a second marker line
-grep -qF '&#47;' "$RC" || fail "render-contract.md must say how a page shows the marker text without making a second marker line"
+# a page that shows the marker text in its own content must not make a second marker line. The pin is
+# a phrase of the rule's own line: the literal &#47; is also in the retry paragraph, so it outlives the rule
+grep -qF 'has to show the marker text, write its first' "$RC" || fail "render-contract.md must say how a page shows the marker text without making a second marker line"
 grep -qF 'system-map-engine.js' "$CLAUDEMD" || fail "CONVENTIONS.md must name the engine file"
 grep -qi 'FOURTH' "$CLAUDEMD" || fail "CONVENTIONS.md must say a page with a system map carries a fourth script block"
 # the paths are literal text: a shell expansion would run outside the single quotes the safety argument rests on
@@ -251,6 +252,10 @@ grep -qF 'Every content search leaves these paths out' "$RULES" || fail "system-
 grep -qF 'refute it without opening the file' "$ROOT/walkthrough/agents/system-verifier.md" || fail "system-verifier must refute evidence in a never-opened file without opening it"
 grep -qF 'Before you open anything, check every path' "$ROOT/walkthrough/agents/system-verifier.md" || fail "system-verifier must check the cited paths against the never-opened list before it opens anything"
 grep -qF 'never re-reads the codebase and never brings back a dropped claim' "$SYSAD" || fail "adapters/system.md must say the coverage critic never re-reads the codebase and never brings back a dropped claim"
+# the two sentences that close the rules-unreadable path. Without them a run whose rules could not be
+# read can end on the generic route, which reads the subject with no never-opened list
+grep -qF 'If you cannot read the rules file, stop the whole skill here' "$SYSAD" || fail "adapters/system.md must stop the whole skill, and build no page, when the skill cannot read the reading rules"
+grep -qF 'could not read the rules,** treat its reply as a failed dispatch' "$SYSAD" || fail "adapters/system.md must treat an agent's could-not-read-the-rules reply as a failed dispatch, never as a result"
 if grep -niE 'pure-skill|no agents' "$README" "$CLAUDEMD" >/dev/null; then
   fail "README.md and CONVENTIONS.md must not claim the plugin is pure-skill or has no agents: it ships two"
 fi

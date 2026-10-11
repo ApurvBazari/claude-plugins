@@ -14,9 +14,10 @@ ok(){ echo "ok: $1"; }
 if grep -q '<script src' "$F"; then fail "not self-contained: external <script src>"; fi
 if grep -q '<img' "$F"; then fail "not self-contained: <img> present"; fi
 if grep -qi '<link[^>]*stylesheet' "$F"; then fail "not self-contained: external stylesheet"; fi
-if grep -vE 'data:image|feTurbulence' "$F" | grep -vE '^[[:space:]]*--' | grep -Eq '#[0-9a-fA-F]{6}'; then
-  fail "raw hex outside the grain SVG and the token definitions: tokens only"
-fi
+# Count the lines; never end this pipe in `grep -q`. Under pipefail a `grep -q` that finds a match
+# exits early, the greps before it die of SIGPIPE, and the pipeline's 141 reads as "no match".
+HEX="$(grep -vE 'data:image|feTurbulence' "$F" | grep -vE '^[[:space:]]*--' | grep -cE '#[0-9a-fA-F]{6}' || true)"
+[ "$HEX" -eq 0 ] || fail "raw hex outside the grain SVG and the token definitions: tokens only"
 if grep -qE 'class="(archmap|depgraph|flow-node|dg-node)' "$F"; then fail "a retired architecture-map or dependency-graph class is used"; fi
 if grep -qE 'class="sm-' "$F"; then fail "the sm- prefix belongs to the state diagram; the system map uses sys-"; fi
 ok "self-contained, tokens only, no retired class"

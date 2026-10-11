@@ -49,7 +49,8 @@ Pass the path you read to both agents as `rules`.
 3. **If either agent cannot be dispatched** (there is no Agent tool, or the dispatch fails), do the
    work yourself from the same rules file: first the analysis, then, as a separate pass, try to refute
    each of your own claims as the verifier would. Record that the reading was **inline**. Never skip the
-   second pass, and never present an inline reading as independently verified.
+   second pass, and never present an inline reading as independently verified. When only the verifier
+   failed, the analysis is not redone: keep the analyzer's claims and do the second pass on them.
 4. **If a reply is not valid JSON,** ask that agent once to return only the JSON. If it still is not,
    treat it as a failed dispatch (step 3).
 5. **If an agent reports that it could not read the rules,** treat its reply as a failed dispatch
@@ -72,6 +73,12 @@ no verdict.
 | `downgrade` | kept, with `provenance` set to `inferred` |
 | `refuted` | dropped, and a gap is added with the reason `refuted` and the verifier's sentence |
 | no verdict, or a `downgrade` whose reason starts "could not open" | kept as `inferred`, and a gap is added saying it was not verified |
+
+**Before you keep a claim that has no verdict,** check every path in its `evidence` against the
+never-opened list (rule 6), by name and without opening anything. The verifier makes that check, and
+with no verdict there is nothing to show it was made. If any path is on the list, drop the claim
+instead, whatever else it cites, and add a gap with the reason `refuted` that names the claim by its
+`id` and says its evidence was a never-opened file. Such a file is never cited as evidence.
 
 Then, in this order:
 
@@ -96,7 +103,7 @@ never-opened paths stay unread and unsearched, and no value is copied.
 | `tagline` | the manifest's description, else one line you write from the surviving nodes | no claim the reading does not support |
 | `summary` | the surviving claims | what the system is made of, in two or three plain sentences |
 | `typeTags` | — | `["system", "architecture"]`, plus `"library"` for a package map |
-| `nodes` / `edges` | the surviving claims | `provenance: inferred` → `inferred: true`; an edge's `evidence` → its `where[]`; `parent`, `kind`, `sub`, `flow` verbatim |
+| `nodes` / `edges` | the surviving claims | `provenance: inferred` → `inferred: true`; an edge's `evidence` → its `where[]`; `parent`, `kind`, `flow` verbatim; `sub` as it stands after the names-only check below |
 | `details` | one per surviving node | `kicker` = its kind, `heading` = its label, `summary` = what it is and does, `where[]` = its `evidence`, `points[]` = the `signal`, and for an inferred node "Inferred from: <signal>", `related[]` = the nodes its own wires point to, leaving out any link that closes a loop (below) |
 | `sections` | fixed order | "The system" (the map), "What it is made of" (the reference table), "How this was read", "Gaps" (only when there are gaps) |
 | `reference` | the surviving nodes | grouped as "Services", "Data stores", "Queues", "External systems", "People" (a library: "Packages"); `name` = label, `sig` = `sub`, `summary` = one line |
@@ -115,8 +122,9 @@ evidence path, an analyzer's `what` or `note`, a verifier's `reason` and the dir
 things hold for every such string, wherever it ends up:
 
 - **Names only.** Before it enters the model, check that it holds no value (rule 5), and leave out any
-  value it carries. The verifier's leak check covered only the `label`, `sub` and `signal` of the
-  claims it judged, so a gap, a `reason` and a claim kept with no verdict reach you unchecked.
+  value it carries. If nothing is left of a label, name the node by its `id`. The verifier's leak
+  check covered only the `label`, `sub` and `signal` of the claims it judged, so a gap, a `reason` and
+  a claim kept with no verdict reach you unchecked.
 - **Escaped.** When it is written into the page it is escaped (`&`, `<` and `>`, and `"` inside an
   attribute), never written as markup. That includes the `details` fields, which the page inserts as
   HTML.

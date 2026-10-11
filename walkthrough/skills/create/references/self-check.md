@@ -5,7 +5,7 @@ every test to where the rule applies. If any fails, fix the HTML and re-run.
 
 | # | Assert | How to reason about it |
 |---|--------|------------------------|
-| 1 | Exactly one CSS `@import` and it is the only external URL | Count `@import url(` in the `<style>` block (ignore prose mentions of "@import"). The font is the only external resource the page loads. Two kinds of `http(s)` string load nothing and are not counted, wherever they appear: the SVG namespace string `http://www.w3.org/2000/svg`, and a link's target (an `<a href>`, such as the provenance footer's link). |
+| 1 | Exactly one CSS `@import` and it is the only external URL | Count `@import url(` in the `<style>` block (ignore prose mentions of "@import"). The font is the only external resource the page loads. An `http(s)` string that loads nothing is not counted, wherever it appears: for example the SVG namespace string `http://www.w3.org/2000/svg`, a link's target (an `<a href>`, such as the provenance footer's link), or a URL shown as text (in prose or in a code snippet). |
 | 2 | No `<script src>`, `<link rel=stylesheet>`, or `<img>` | None anywhere in the document. |
 | 3 | Tokens only -- no raw hex | No `#rrggbb`/`#rgb` outside the two token blocks (`:root`, `[data-theme="light"]`). Ignore the grain data-URI (`%23` is encoded `#`) and anchor hrefs/ids (e.g. `#decisions`). |
 | 4 | No non-ASCII inside the `<style>` block | Glyphs like arrows or em-dashes belong in HTML/JS, never CSS -- use CSS escapes (`\2014`). HTML body glyphs are fine. |

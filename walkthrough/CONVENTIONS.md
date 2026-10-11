@@ -126,8 +126,8 @@ One renderer for a system: boxes that can nest, joined by labelled, directed wir
 - **The engine lays it out.** `skills/create/references/system-map-engine.js` reads that HTML in the browser, places the boxes and draws the wires. Each open group is laid out alone, then treated as one box in its parent. Left to right when it fits, top to bottom when it does not. A second ordering pass is kept only when it gives fewer wire crossings.
 - **Budget.** 16 visible boxes decide which groups start open (an open group counts as its children). `open` on a node overrides it.
 - **It fails to the plain view.** The engine checks its own result. Any error, or a layout with overlapping or escaping boxes, removes the upgrade for that map and leaves the boxes and the list.
-- **Limits on the engine file,** enforced by `tests/walkthrough/test_sysmap_engine.sh`: 28,672 bytes, no line over 200 characters, ASCII only, no colour, no font name, no `</script`. It is copied into every page that has a map, and where no shell can read it the model types it out, so size is a real cost.
-- **Delivery.** One shell command inserts it when a shell can read the file; otherwise the model types it; otherwise the block is removed. The offer message says which. The single description is `render-contract.md`.
+- **Limits on the engine file,** enforced by `tests/walkthrough/test_sysmap_engine.sh`: 28,672 bytes, no line over 200 characters, ASCII only, no colour, no font name, no `</script`. It is copied into every page that has a map, and where the shell command cannot be used the model types it out, so size is a real cost.
+- **Delivery.** One shell command inserts it; where that command cannot be used, or has failed twice, the model types it; if neither works the block is removed. The offer message says which. The single description is `render-contract.md`.
 - **Path.** A path variable is only replaced inside a `SKILL.md` body, never in a reference file and never in the shell's environment. So each of the four skills names the engine path in its own text.
 - **Prefix.** `sys-`. The state diagram owns `sm-`.
 - **What a channel means.** Shape and tint = kind. Green / amber / rose ring plus a text badge = added / modified / deleted, and nothing else uses those three colours. Dotted line plus the word "inferred" = inferred. Dashed wire = async.
@@ -140,7 +140,7 @@ One renderer for a system: boxes that can nest, joined by labelled, directed wir
 - **Two read-only agents.** `agents/system-analyzer.md` makes claims with evidence; `agents/system-verifier.md` tries to refute each one. Tools: Read, Grep, Glob. No shell, no write.
 - **The skill applies the verdicts,** not the agents: confirmed stays, downgrade becomes inferred, refuted is dropped and listed as a gap.
 - **One rules file,** `references/system-reading.md`, in the plugin's flat `references/` home because its readers are agents. Never put a reference under `agents/`: every `.md` there is registered as an agent.
-- **The rules in one line each:** no evidence, no box; stated versus inferred; bounded reading with gaps listed; names only, `.env` never opened; containers by default, components on request; a library becomes a package map; manifests beat prose.
+- **The rules in one line each:** no evidence, no box; stated versus inferred; bounded reading with gaps listed; names only, and the agents are told never to open, search or cite `.env`, key and credential files (an instruction, not a technical block: the verifier and self-check #27 check it again); containers by default, components on request; a library becomes a package map; manifests beat prose.
 - **If agents cannot be dispatched,** the skill does both passes itself and says the claims were not independently verified.
 
 ## Detail surfaces
