@@ -79,9 +79,9 @@ A walkthrough is a snapshot — but you can refresh one in place as the work evo
 /walkthrough:document <subject> [request] [output-path]
 ```
 
-`create` and `update` render a **session**. `document` renders a **subject** — a plugin, the whole marketplace, or any path — into the same self-contained house style. Its source of truth is the subject's own files: it reads the `README` + manifest (canonical) and the `skills/` surface, synthesizes the same kind of structured model, and emits one portable HTML page.
+`create` and `update` render a **session**. `document` renders a **subject** — a plugin, the whole marketplace, or any path — into the same self-contained house style. Its source of truth is the subject's own files: it reads the `README` + manifest (canonical, except for a [mapped codebase](#mapping-a-codebase)) and the `skills/` surface, synthesizes the same kind of structured model, and emits one portable HTML page.
 
-The optional `request` says what to draw: `/walkthrough:document . architecture` maps the codebase in the current directory (see [Mapping a codebase](#mapping-a-codebase)). An argument after the subject is the output path only when it ends in `.html`; anything else is read as the request.
+The optional `request` says what to draw: `/walkthrough:document . architecture` maps the codebase in the current directory (see [Mapping a codebase](#mapping-a-codebase)). The output path is the last argument, and only when it ends in `.html`; everything else after the subject is read as the request.
 
 - **Same promises as `create`** — one house style, two themes, everything inlined, only the Google Fonts `@import` is external.
 - **README + manifest are canonical** — the page is a rendering of them, not a separately-maintained doc. Change the README, regenerate the page. The exception is a [mapped codebase](#mapping-a-codebase): there the code is the source, not the README.
@@ -97,7 +97,7 @@ Ask `document` for a codebase's architecture (*"map this system"*, *"draw a syst
 - **Every box and wire shows where it was seen.** Click a box for the file and line. Anything supported only by indirect signals, such as a name or an environment-variable name, is drawn dotted and labelled *inferred*.
 - **Two read-only agents do the reading.** One makes claims with evidence; the other tries to refute each claim against the code. Refuted claims are not drawn.
 - **The reading is bounded, and the page says what was skipped.** A "Gaps" section lists the directories that were not read and the claims that were dropped.
-- **Names only.** The agents are told never to open, search or cite `.env` files, keys and credential files, and never to copy an environment variable's value; a template such as `.env.example` is read for variable names only. That is an instruction, not a technical block. The verifier refutes any claim that rests on one of those files or carries a value, and the page is checked again before it is written.
+- **Names only.** The agents, and the skill itself, are told never to open, search or cite `.env` files, keys and credential files, and never to copy an environment variable's value; a template such as `.env.example` is read for variable names only. That is an instruction, not a technical block. The verifier refutes any claim that rests on one of those files or carries a value, and the page is checked again before it is written.
 - **Containers by default.** People, services, stores, queues and external systems. Ask for components to open a service up. A library with nothing deployable becomes a map of its packages.
 
 ## System maps

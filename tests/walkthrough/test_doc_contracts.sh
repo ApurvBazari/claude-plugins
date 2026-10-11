@@ -243,6 +243,8 @@ done
 grep -qF '${CLAUDE_PLUGIN_ROOT}/references/system-reading.md' "$DOCUMENT_SKILL" || fail "document/SKILL.md must name the reading-rules path it passes to the agents"
 grep -qF 'adapters/system.md' "$GS" || fail "gather-subject.md must route to the system adapter"
 grep -qF 'adapters/system.md' "$DOCUMENT_SKILL" || fail "document/SKILL.md must follow the system adapter"
+# a request word must never become the file the page is written to
+grep -qF 'The output path is the last argument, and only when it ends in `.html`' "$DOCUMENT_SKILL" || fail "document/SKILL.md Step 1 must say the output path is the last argument, and only when it ends in .html: everything else is the request"
 grep -qi 'inline' "$SYSAD" || fail "adapters/system.md must say what happens when agents cannot be dispatched"
 grep -qF 'not independently verified' "$SYSAD" || fail "an inline reading must be labelled as not independently verified"
 grep -qF '.env' "$RULES" || fail "system-reading.md must name the files that are never opened"

@@ -29,11 +29,12 @@ Two more files are named here because a path is only filled in inside a skill's 
 that has a `marketplace.json`), a codebase whose architecture you are asked to map, or any
 path/description.
 
-What follows the subject is a **request**, an **output path**, or both. An argument is the output path
-only when it ends in `.html`. Anything else (`architecture`, `system map`, `components of the API`) is
-the request, a word with a `/` in it included (`components of services/api`): it says what to draw,
-and it is never used as a file name. So `/walkthrough:document . architecture` asks for the
-architecture of the current directory and names no output path.
+What follows the subject is a **request**, an **output path**, or both.
+The output path is the last argument, and only when it ends in `.html`. Everything else is the request
+(`architecture`, `system map`, `components of the API`), a word with a `/` in it and an earlier word
+that ends in `.html` included (`components of services/api`, `how site/index.html is built`): it says
+what to draw, and it is never used as a file name. So `/walkthrough:document . architecture` asks for
+the architecture of the current directory and names no output path.
 
 Route to the right adapter per `references/gather-subject.md`: the route depends on the subject and on
 the request.
@@ -42,8 +43,10 @@ the request.
 Follow `references/gather-subject.md` and the matched adapter (`references/adapters/plugin.md`,
 `references/adapters/marketplace.md` or `references/adapters/system.md`). Read the canonical
 source files. Cite `path:line` only when verified by a real read. On the system adapter that read is
-the verifier's: an anchor it confirmed counts as verified, and you never re-read the code to confirm
-an anchor.
+the verifier's pass: it opens the lines each claim cites (never a file on the never-opened list),
+whether the agent runs it or you run it yourself (Step B of the adapter). Once the verdicts are in,
+you never go back into the code to confirm an anchor: every surviving claim keeps its `path:line`, as
+claimed when it was confirmed, marked inferred when it was downgraded or kept with no verdict.
 
 The **system adapter** reads code, not a README. It dispatches the read-only `walkthrough:system-analyzer`
 agent and then the read-only `walkthrough:system-verifier` agent, applies the verifier's verdicts, and
@@ -92,8 +95,8 @@ which stays true after a subject rebrand. Retain it verbatim on subject pages. T
 the nav logo and the `<title>` suffix only.
 
 ## Step 7: Output path
-If an output path was given (Step 1: an argument that ends in `.html`), write there. A request is
-never the output path. Otherwise resolve `<base>` first (same as
+If an output path was given (Step 1: the last argument, and only when it ends in `.html`), write
+there. A request is never the output path. Otherwise resolve `<base>` first (same as
 `create` Step 6.5): if a `settings.md` with `output-location:` exists in `walkthroughs/` (visible) or
 `.claude/walkthrough/` (hidden), use that base; else default to `.claude/walkthrough/`. Then default to
 `<base>/<YYYY-MM-DD-HHMM>-<slug>.html` (`slug` = kebab of the title; collisions → `-2`,
@@ -123,6 +126,10 @@ When the page has a system map, also include the contract's `System map engine: 
 system adapter ran, also include its reading line (`Read by agents: analyzer and verifier.` or
 `Read inline (agents unavailable): claims were not independently verified.`) and the number of gaps.
 
+When arguments after the subject were read as the request and nothing was drawn from them (they did not
+route the subject and did not set a depth), name them in the message and say that an output path must
+end in `.html`, in case one of them was meant as the path.
+
 ## Key Rules
 - **One look-and-feel.** Tokens only — never raw hex. Reproduce `design-system.md` patterns.
 - **Self-contained.** All CSS/JS/SVG inline; only the Google Fonts `@import` is external.
@@ -132,7 +139,7 @@ system adapter ran, also include its reading line (`Read by agents: analyzer and
 - **Model before markup.** Synthesize the subject model (Step 3) before assembling HTML.
 - **Omit empty, never stub.** Render only components with real content.
 - **Relative links only.** Internal cross-links use `./` or `../`, never `/…` (Pages base path).
-- **Real code refs only.** Cite `path:line` only when verified via a file read. For the system adapter that read is the verifier's: an anchor it confirmed counts as verified, and you never re-read the code to confirm an anchor.
+- **Real code refs only.** Cite `path:line` only when verified via a file read. For the system adapter that read is the verifier's pass, which opens the lines each claim cites (never a file on the never-opened list), whether the agent runs it or you do. Once the verdicts are in, never go back into the code to confirm an anchor: every surviving claim keeps its `path:line`, marked inferred when it was downgraded or kept with no verdict.
 - **Read-only.** Never execute subject code; only read files.
 - **Self-check before write.** Run `self-check.md` on the assembled HTML; never write a document that fails it.
 - **Completeness gate.** Run the coverage critic after synthesis and surface the coverage note at the offer step.

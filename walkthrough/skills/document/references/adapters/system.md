@@ -10,7 +10,8 @@ prose (reading rule 7).
 
 ## When this adapter runs
 
-- the request asks for the subject's architecture, system map, containers or "how it fits together"; or
+- the request asks for the subject's architecture, system map, containers, components or "how it fits
+  together"; or
 - the subject is a repository root with at least one build or deploy manifest, and it is neither a
   plugin directory nor a marketplace.
 
@@ -91,15 +92,16 @@ Then, in this order:
 Nothing is dropped without a gap. A gap names a dropped claim by its `id` (an edge by the ids of its
 two ends), never by its label: a claim can be dropped because its label leaks a value.
 
-If `subjectKind` is `none`, or no node is left, stop using this adapter: fall back to the generic
-route in `../gather-subject.md` and tell the user why. Rules 5 and 6 still bind you on that route: the
-never-opened paths stay unread and unsearched, and no value is copied.
+If `subjectKind` is `none`, or no node is left, stop using this adapter and tell the user why. Fall
+back to the plugin adapter when the subject is a plugin directory, to the marketplace adapter when it
+is the marketplace, and otherwise to the generic route in `../gather-subject.md`. Rules 5 and 6 still
+bind you on that route: the never-opened paths stay unread and unsearched, and no value is copied.
 
 ## Step D: Map to the subject-model
 
 | subject-model field | Source | How |
 |---|---|---|
-| `title` | the repository or directory name | verbatim |
+| `title` | the repository or directory name | as it stands after the names-only check below |
 | `tagline` | the manifest's description, else one line you write from the surviving nodes | no claim the reading does not support |
 | `summary` | the surviving claims | what the system is made of, in two or three plain sentences |
 | `typeTags` | — | `["system", "architecture"]`, plus `"library"` for a package map |
