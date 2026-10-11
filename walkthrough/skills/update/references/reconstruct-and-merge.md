@@ -55,6 +55,8 @@ the detail-panel store is embedded verbatim). Reconstruction reads the rendered 
   `data-change`, `inferred` = it has `data-inferred`.
 - **Edges.** Each `.sys-links li` is one edge: `from`, `to`, `label` and `flow` from its `data-`
   attributes, `change` and `inferred` likewise, `where[]` from its `sf-loc` chips.
+- **Decode what you read.** Text recovered from the page (a label, a `sub`, a `data-label`) is decoded
+  back to plain characters before it enters the model; the recipe escapes it again on the way out.
 - **Ignore what the engine wrote:** inline `style`, the `closed`, `on`, `anim` and `peer` classes,
   `aria-expanded`, `data-dir`, and everything inside `.sys-wires`. They are a view, not content.
   `.sys-kind`, `.sys-count`, `.sys-chg`, `.sys-mark` and `.sys-key` are derived too: regenerate them

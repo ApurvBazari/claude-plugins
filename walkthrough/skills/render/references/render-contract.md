@@ -68,18 +68,21 @@ of these that works:
    It replaces the marker line with the file. It fails, and leaves the page untouched, when the shell
    cannot read the engine file or when the marker line is not there exactly once.
 
-   If the shell can read the engine file and the command still fails, the marker line is missing, is there
-   more than once, or is indented. Check that it is in the page exactly once and starts at column 0, fix
-   the block, and run the command once more. Go to step 3 only if it fails again.
+   The command does not say why it failed. If the engine file is readable and the page path is right, the
+   marker line is the cause: it is missing, is there more than once, or is indented. Check that it is in the
+   page exactly once and starts at column 0, fix the block, and run the command once more. A second marker
+   line in the page's own content is fixed by the marker rule above (write its first
+   slash as `&#47;`). Go to step 3 only if it fails again.
 
    **Never run it when either path contains a single quote (`'`). Go to step 3 instead.** In the command
    the two paths sit inside single quotes, which make every other character inert. A single quote in a
    path would end that quoting, and the rest of the path would run as shell. Do not try to escape it.
    Replace `<ENGINE>` and `<PAGE>` with the literal paths and never build either with a shell expansion
-   (a variable, `$(...)`, a backtick or a glob): an expansion is not covered by the single quotes.
+   (a variable, `$(...)`, a backtick or a glob): inside the single quotes an expansion stays plain text
+   and names no file, and to make it expand you would have to leave the quotes, where nothing is inert.
    The same rule holds for any other shell command you run on the page, such as the checks below.
-3. **Type it.** Only when step 2 is not possible (there is no shell, or the shell cannot read the file) or
-   has failed twice:
+3. **Type it.** Only when step 2 is not possible (there is no shell, the shell cannot read the file, or a
+   path contains a single quote) or has failed twice:
    read the engine file and replace the marker line with its content, character for character. Do not
    shorten, reformat or improve it.
 4. **Neither works.** Delete the whole `<script id="wt-sysmap">` block. The map keeps its plain view.

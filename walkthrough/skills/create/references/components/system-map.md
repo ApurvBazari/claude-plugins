@@ -71,7 +71,8 @@ You never write a coordinate.
 
 ### Writing the connections
 
-One `<li>` per edge, none left out, in declaration order. `data-from` and `data-to` name boxes in this
+One `<li>` per edge, none left out, in declaration order. A connection label is escaped as under "Every
+label is text" above, in `data-label` and in the visible text. `data-from` and `data-to` name boxes in this
 map. `data-label` is the label (empty when there is none), `data-flow` is `sync` or `async`. The visible
 text repeats it: both labels in `<b>`, the label in `<i>`, with ` (async)` after an async label. An edge
 with `where[]` evidence ends with one `<code class="sf-loc">path:line</code>` per anchor. Set

@@ -225,7 +225,7 @@ grep -qF '&#47;' "$RC" || fail "render-contract.md must say how a page shows the
 grep -qF 'system-map-engine.js' "$CLAUDEMD" || fail "CONVENTIONS.md must name the engine file"
 grep -qi 'FOURTH' "$CLAUDEMD" || fail "CONVENTIONS.md must say a page with a system map carries a fourth script block"
 # the paths are literal text: a shell expansion would run outside the single quotes the safety argument rests on
-grep -qF 'never build either with a shell expansion' "$RC" \
+grep -qF 'literal paths and never build either with a shell expansion' "$RC" \
   || fail "render-contract.md must say the two paths are literal and never built with a shell expansion"
 ok "ENGINE: one insert step in render-contract.md, a scaffold slot, and the path named in all four SKILL.md bodies"
 
