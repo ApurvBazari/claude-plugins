@@ -66,7 +66,8 @@ Apply the right invocation policy per skill:
 | Category | Who invokes | Frontmatter | Examples |
 |---|---|---|---|
 | Destructive / setup | User only (explicit) | `disable-model-invocation: true` | `onboard:start`, `onboard:update`, `notify:setup`, `notify:uninstall` |
-| Read-only helpers | User + auto | (default) — write a specific `description` | `onboard:check`, `onboard:verify`, `onboard:evolve`, `notify:check` |
+| Read-only helpers | User + auto | (default) — write a specific `description` | `onboard:check`, `notify:check` |
+| Writing helpers | User + auto | (default) — the `description` must say what the skill writes; never install anything without an accepted, named offer | `onboard:verify`, `onboard:evolve` |
 | Programmatic API | Claude only, hidden | `user-invocable: false` | `onboard:generate` |
 | Internal building blocks | Claude only, hidden | `user-invocable: false` | `wizard`, `generation` |
 

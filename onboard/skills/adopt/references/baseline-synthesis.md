@@ -55,7 +55,7 @@ Canonical-shape `onboard-meta.json` with retrofit additions. Resolve `<dynamic>`
   "skillStatus":         { "status": "adopted", "generated": [ /* skill names */ ], "existedPreOnboard": [], "frontmatterFields": { /* <name>: {<captured fields>, "source": "adopted"} */ }, "warnings": [] },
   "agentStatus":         { "status": "adopted", "generated": [ /* agent names */ ], "existedPreOnboard": [], "frontmatterFields": { /* … "source": "adopted" */ }, "warnings": [] },
   "outputStyleStatus":   { "status": "adopted", "generated": [ /* style stems */ ], "existedPreOnboard": [], "frontmatterFields": { /* … "source": "adopted" */ }, "warnings": [] },
-  "mcpStatus":           { "status": "adopted", "generated": [ /* server names from .mcp.json */ ], "existedPreOnboard": true, "autoInstalled": [], "autoInstallFailed": [] },
+  "mcpStatus":           { "status": "adopted", "generated": [ /* server names from .mcp.json */ ], "existedPreOnboard": true, "pluginOffers": { "offered": [ /* the plugin of each catalog server found in .mcp.json */ ], "accepted": [] }, "autoInstalled": [], "autoInstallFailed": [] },
   "lspStatus":           { "status": "adopted", "accepted": [ /* installed lsp plugins */ ], "generated": [], "skipped": [], "autoInstalled": [], "autoInstallFailed": [] },
   "builtInSkillsStatus": { "status": "adopted", "generated": [ /* built-in skill refs found in CLAUDE.md */ ], "skipped": [], "detectionSignals": {}, "warnings": [] }
 }

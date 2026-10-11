@@ -86,7 +86,17 @@
         "lspPlugins": {
           "type": "array",
           "items": { "type": "string" },
-          "description": "Explicit accepted marketplace LSP plugin names for emission Step 3. Empty array = 'detected but declined all'; absent = wizard-driven or full-detected default."
+          "description": "Explicit accepted marketplace LSP plugin names for emission Step 3 (a programmatic caller's own acceptance). Empty array = 'detected but declined all'. Absent = no caller list: wizardAnswers.lspPlugins is used, and when that is absent too nothing is installed."
+        },
+        "mcpPlugins": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Explicit accepted plugin names for the plugins behind emitted MCP servers (a programmatic caller's own acceptance). Empty array = 'declined all'. Absent = no caller list: wizardAnswers.mcpPlugins is used, and when that is absent too nothing is installed."
+        },
+        "mcpPluginsOffered": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "The MCP-server plugin rows a person was actually shown in a submitted question (from wizardAnswers.mcpPluginsOffered). Recorded as mcpStatus.pluginOffers.offered. Empty array or absent = no row was shown, so nothing counts as offered."
         },
         "builtInSkills": {
           "type": "array",

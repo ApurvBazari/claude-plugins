@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Independent feature verification for projects with feature tracking. Use when user wants to test whether features in docs/feature-list.json pass their acceptance criteria, check sprint gate status, or run verification on F001-style feature IDs. Spawns the feature-evaluator agent in worktree isolation.
+description: Independent feature verification for projects with feature tracking — writes results to docs/feature-list.json, docs/progress.md and docs/verification-reports/. Use when user wants to test whether features in docs/feature-list.json pass their acceptance criteria, check sprint gate status, or run verification on F001-style feature IDs. Spawns the feature-evaluator agent in worktree isolation.
 ---
 
 # Verify Skill — Independent Feature Evaluation

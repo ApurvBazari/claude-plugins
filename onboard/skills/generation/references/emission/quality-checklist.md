@@ -46,7 +46,7 @@ Before finishing generation, verify:
 - [ ] `.claude/onboard-mcp-snapshot.json` matches what was written to `.mcp.json`
 - [ ] `onboard-meta.json.mcpStatus` populated alongside `hookStatus` (with `status` enum value)
 - [ ] `.claude/rules/mcp-setup.md` emitted when any server needs auth OR pre-existing file detected
-- [ ] Auto-install ran after metadata write (never before)
+- [ ] Plugins were installed only from the accepted list, after the metadata write (never before, never on a `regenerateOnly` / `reResearch` run) — see `../../../../references/plugin-install-consent.md`
 - [ ] `callerExtras.disableMCP: true` skips artifact writes BUT still emits `mcpStatus: { status: "skipped", reason: "caller-disabled" }` (SKIP-PHASE family contract)
 - [ ] emission Step 2 ran after emission Step 1 and before Hooks
 - [ ] Emitted output-style file is at `.claude/output-styles/<archetype-name>.md` with matching `name` frontmatter

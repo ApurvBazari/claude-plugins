@@ -63,7 +63,7 @@ fi
 
 ## MCP Auto-Emit Signals
 
-The `MCP Server` column above describes what each plugin maps to. `.mcp.json` emission is driven by **stack signals**, not just plugin installation — we emit when the project's detected stack unambiguously benefits, whether or not the user has installed the corresponding plugin. When we emit and the plugin is not installed, we auto-install it (see `../catalogs/mcp-guide.md`).
+The `MCP Server` column above describes what each plugin maps to. `.mcp.json` emission is driven by **stack signals**, not just plugin installation — we emit when the project's detected stack unambiguously benefits, whether or not the user has installed the corresponding plugin. When we emit and the plugin is not installed, the plugin is **offered by name** and installed only if the person accepts (see `../catalogs/mcp-guide.md` § Install accepted plugins). The rule is in `../../../../references/plugin-install-consent.md`.
 
 | Stack signal | Emits MCP server | Confidence tier |
 |---|---|---|

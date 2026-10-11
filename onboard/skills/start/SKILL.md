@@ -274,7 +274,7 @@ If plan mode fails or the manifest fails validation, do NOT proceed — surface 
 
 ### Step: preview (assemble the preview model)
 
-Build `previewModel` from the research dossier (Phase 2 Research) + the manifest (the plan step above) per `../research/references/render-adapter.md` § previewModel: `flow:"start"`; `research` = architecture map + top risks + glossary from the dossier (null if research was minimal/empty); `changes`/`decisions`/`warnings` from the manifest.
+Build `previewModel` from the research dossier (Phase 2 Research) + the manifest (the plan step above) per `../research/references/render-adapter.md` § previewModel: `flow:"start"`; `research` = architecture map + top risks + glossary from the dossier (null if research was minimal/empty); `changes`/`decisions`/`warnings` from the manifest. `decisions.pluginInstalls` renders as the **Plugins to install** line (per the adapter), so the developer sees every plugin by name before approving.
 
 ### Step: gate (render + hard gate — review before implementation)
 
@@ -334,7 +334,7 @@ The generate skill validates the context (`../generate/SKILL.md` § Validation),
 
 **Do NOT** call `Agent(config-generator)` directly, and **do NOT** call Write / Edit from this skill — the dispatched agent owns every write (hard-fail safety net: config-generator refuses to write unless `dispatchedAsAgent === true`).
 
-Before dispatching, tell the developer generation is starting and will create the tailored artifact set — root + any subdirectory CLAUDE.md, path-scoped rules, skills, agents, hook configuration, MCP servers / output style / LSP integration where stack signals warrant, and setup metadata.
+Before dispatching, tell the developer generation is starting and will create the tailored artifact set — root + any subdirectory CLAUDE.md, path-scoped rules, skills, agents, hook configuration, a project `.mcp.json` with MCP servers / an output style / LSP integration where stack signals warrant, and setup metadata. Say which plugins will be installed — exactly the `decisions.pluginInstalls` the developer approved at the gate — or that none will be.
 
 ### Step: report-results
 
@@ -353,6 +353,8 @@ After generation completes, list every file that was created:
 > | `.claude/agents/test-writer.md` | Test generation agent |
 > | `.claude/settings.json` | Hook configuration (auto-format, lint) |
 > | `.claude/onboard-meta.json` | Setup metadata |
+
+Below the table, list the plugins that were installed (from `mcpStatus.autoInstalled` and `lspStatus.autoInstalled`) and any that were offered and not taken, each with its manual command `claude plugin install <name>`.
 
 > **Phase complete:** after generation returns and the file list above is reported, `TaskUpdate(generation → completed)`. The ecosystem-plugin-install step below is an optional tail of Phase 6 — it does not get its own task.
 
@@ -401,3 +403,4 @@ Deliver the handoff narration per `references/handoff-narration.md` in full — 
 - **Halt and surface on context builder validation failure** — if the Phase 4 build-v3-context validation fails, refuse to dispatch and show the offending field. Never attempt generation with an incomplete or malformed context object.
 - **The orchestrator owns every phase-task transition** — per `references/phase-tracking.md`, Step 0 creates the 8 bare-slug phase tasks (`empty-repo-check` … `handoff`); each phase marks its own task `in_progress` before its work (and before any agent/Skill dispatch) and `completed` after. Subagents (`codebase-analyzer`, `config-generator`) and internal skills (`research`, `wizard`, `generate`) are task-blind. The enum is exactly `pending`/`in_progress`/`completed`/`deleted` — no "blocked"/"cancelled". The Phase 5 gate stays `in_progress` while awaiting the decision; Approve → `completed`, Adjust → loop (no change), Cancel → mark tasks 5/6/7 `deleted`.
 - **The resume anchor is on-disk artifacts, not the task list** — Step 0's resume probe (per `references/phase-tracking.md` § Resume) keys on durable files: `onboard-meta.json` with an integer `currentPhase` (probe 1, generation-era) → research dossier with no meta (probe 2, post-research) → neither (clean start). The harness task list is in-session visibility only. `currentPhase` is **orchestrator-owned and written from Phase 6 onward only** (the meta's first existence): set `= 6` after Phase 6 returns, then `= "done"` at Phase 7 completion. Phases 0–5 write no `currentPhase` (no meta exists) — their durable progress is the research dossier. Do **not** move these writes into the config-generator agent; the orchestrator updates the meta after generation returns. Absent `currentPhase` ⇒ no resume offered (back-compat).
+- **No plugin is installed without an accepted, named offer** — the wizard records the accepted LSP and MCP-server plugins, the Phase 5 preview lists them, and Phase 6 installs exactly that list. See `../../references/plugin-install-consent.md`.

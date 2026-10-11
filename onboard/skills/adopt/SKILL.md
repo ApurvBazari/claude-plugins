@@ -73,7 +73,7 @@ The engine fans out specialists, verifies, synthesizes the dossier, asks the art
 
 > **Phase transition (per `../start/references/phase-tracking.md`):** `TaskUpdate(adopt:wizard → in_progress)` now, **before** invoking the `wizard` skill (task-blind). Mark it `TaskUpdate(... → completed)` after the wizard returns the canonical `wizardAnswers` + `wizardStatus`.
 
-Run the `wizard` skill (the grounded confirm/override surface), seeded by `research.wizardInferences`, exactly as `start` Step 2. `autonomyLevel` is asked cold (never inferred). Returns the canonical `wizardAnswers` + `wizardStatus`.
+Run the `wizard` skill (the grounded confirm/override surface), seeded by `research.wizardInferences`, as `start` Step 2 does, with one difference: adopt installs nothing, so tell the wizard to run in adopt mode and skip the LSP-plugin and MCP-server-plugin detection groups. No plugin is offered, and the wizard summary reads `Plugins to install: none`. `autonomyLevel` is asked cold (never inferred). Returns the canonical `wizardAnswers` + `wizardStatus`.
 
 ## Step A4: Catalog → synthesize baseline (in context, writes nothing)
 
@@ -96,7 +96,7 @@ Assemble `previewModel` per `../research/references/render-adapter.md § preview
 - `flow: "adopt"`;
 - `research` = architecture map + top risks + glossary from the A2 dossier (null only if research returned a minimal/empty dossier);
 - `changes` = the A4 record-set;
-- `decisions` = `{ model: <resolved>, autonomy: wizardAnswers.autonomyLevel, profile: "retrofit", hooks: [...detected hook events], mcp: [...detected servers], lsp: [...detected plugins], pluginIntegration: [...detectedPlugins] }`;
+- `decisions` = `{ model: <resolved>, autonomy: wizardAnswers.autonomyLevel, profile: "retrofit", hooks: [...detected hook events], mcp: [...detected servers], lsp: [...detected plugins], pluginIntegration: [...detectedPlugins], pluginInstalls: [] }` (adopt installs no plugin, so the preview's Plugins to install line reads `none`);
 - `warnings` = e.g. "N artifacts have no maintenance header — they'll be offered for modernization on your next `/onboard:update`."
 
 Then render + hard-gate exactly like `start` Phase 5 (Plan → Preview → Gate):

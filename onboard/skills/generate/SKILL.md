@@ -107,7 +107,7 @@ The malformed-research reject error (verbatim — distinct from the D2 error and
 
 The caller must provide a context JSON object in the conversation. This object contains all the information that the wizard and analyzer would normally produce.
 
-The full context shape — its `required[]` set, every optional top-level field (`analysis`, `wizardAnswers`, `modelChoice`, `ecosystemPlugins`, `enriched`), and the `callerExtras.*` sub-keys (`installedPlugins`, `coveredCapabilities`, `pluginSurfaces`, the `disable*` flags, `qualityGates`, `phaseSkills`, `regenerateOnly`, `reResearch`) — is documented once, in the schema this skill validates against: `../../schemas/context-shape-v3.json` (draft-07, the single documented source). The deep per-event entry shape for `callerExtras.qualityGates` is specified in `../generation/SKILL.md`; `callerExtras.phaseSkills` is derived per `../generation/references/plugins/plugin-detection-guide.md` § phaseSkills Derivation. The schema is deliberately permissive (`additionalProperties: true` at every level) so it validates the real internal context as-is.
+The full context shape — its `required[]` set, every optional top-level field (`analysis`, `wizardAnswers`, `modelChoice`, `ecosystemPlugins`, `enriched`), and the `callerExtras.*` sub-keys (`installedPlugins`, `coveredCapabilities`, `pluginSurfaces`, the `disable*` flags, `lspPlugins`, `mcpPlugins`, `qualityGates`, `phaseSkills`, `regenerateOnly`, `reResearch`) — is documented once, in the schema this skill validates against: `../../schemas/context-shape-v3.json` (draft-07, the single documented source). The deep per-event entry shape for `callerExtras.qualityGates` is specified in `../generation/SKILL.md`; `callerExtras.phaseSkills` is derived per `../generation/references/plugins/plugin-detection-guide.md` § phaseSkills Derivation. The schema is deliberately permissive (`additionalProperties: true` at every level) so it validates the real internal context as-is.
 
 **`qualityGates` semantics** — the per-`mode` blocking/advisory behavior, the autonomyLevel downgrade expectation, plugin-availability dropping, the advanced-event and per-entry `hookType` fields, the HTTP opt-in, and backward-compat behavior are documented in `references/quality-gates-semantics.md` § qualityGates semantics (full per-event spec in `../generation/SKILL.md`).
 
@@ -146,7 +146,7 @@ This skill accepts an optional `mode` in its args: `"plan"` or `"write"` (defaul
 
 The plan/write split lives here — callers never invoke `config-generator` directly. The `dispatchedAsAgent` hard-fail stays on both modes.
 
-**Honor-plan invariant:** a `write` run that follows an approved `plan` for the same context MUST produce the same `changes[]` paths and the same `decisions`. Prose content is regenerated at write time.
+**Honor-plan invariant:** a `write` run that follows an approved `plan` for the same context MUST produce the same `changes[]` paths and the same `decisions`, including `decisions.pluginInstalls`: write mode installs exactly the plugins the approved plan listed, and no others. Prose content is regenerated at write time.
 
 ---
 
