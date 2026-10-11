@@ -81,6 +81,10 @@ if [ -z "$step2c" ]; then bad "IC4: could not locate evolve Step 2c"; else
   in_text "IC4: Step 2c cites the consent reference" 'plugin-install-consent.md' "$step2c"
   if printf '%s\n' "$step2c" | grep -qF 'Queue corresponding plugin'; then bad "IC4: Step 2c still queues a plugin without asking"; else ok "IC4: Step 2c no longer queues a plugin"; fi
   in_text "IC4: Step 2c offer rows start unchecked" 'every row unchecked' "$step2c"
+  # evolve has no programmatic caller, and Claude can start it on its own: a caller-supplied list
+  # must never stand in for an answer to the offer.
+  in_text "IC4: Step 2c takes no plugin list from a caller" 'takes no plugin list from `callerExtras`' "$step2c"
+  if printf '%s\n' "$step2c" | grep -qF "the caller's list is the acceptance"; then bad "IC4: Step 2c still lets a caller's list stand in for an answer"; else ok "IC4: Step 2c no longer accepts a caller's list as the answer"; fi
 fi
 step2g="$(section onboard/skills/evolve/SKILL.md '^## Step 2g' '^## Step 2h')"
 if [ -z "$step2g" ]; then bad "IC4: could not locate evolve Step 2g"; else

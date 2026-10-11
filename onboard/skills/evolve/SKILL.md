@@ -186,7 +186,7 @@ Run the same drift classification as `../update/SKILL.md` § 4b.4 MCP Drift:
 6. Declined plugins → add to `pluginOffers.offered` only. They are not asked about again.
 7. If the prompt cannot be shown, is dismissed, or returns no selection (for example Claude started evolve with nobody at the keyboard): install nothing and record nothing for those plugins (the seed from item 1 stays written). List each plugin under "Not auto-applied" in Step 3 with its manual command.
 
-**Programmatic mode** (`callerExtras.mcpPlugins` set): no prompt fires; the caller's list is the acceptance. An absent caller value falls through to the offer above.
+**No caller list.** Nothing calls evolve programmatically for this step, so evolve takes no plugin list from `callerExtras`. If `callerExtras.mcpPlugins` is present, ignore it: only an answer to the offer above installs a plugin.
 
 Update `onboard-meta.json.mcpStatus` to reflect additions.
 
