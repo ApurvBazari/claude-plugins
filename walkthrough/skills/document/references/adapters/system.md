@@ -31,25 +31,32 @@ skill's base directory: `<base>/../../references/system-reading.md`.
 **Read the rules yourself before you read or search any file of the subject.** They bind you as well
 as the agents: the never-opened list (rule 6) and names only (rule 5) apply to every read and search
 you make in the subject, in this step and in every later one (the manifest you read for `tagline` in
-Step D is one). If you cannot read the rules file, stop using this adapter before anything of the
-codebase is read: do not dispatch the agents and do not do the reading yourself. Fall back to the
-generic route in `../gather-subject.md` and tell the user why.
+Step D is one). If you cannot read the rules file, stop the whole skill here: read nothing of the
+codebase, dispatch no agent and build no page. Tell the user that the reading rules could not be read
+and which paths you tried. Do not fall back to the generic route: it would read the subject with no
+never-opened list.
 
 Pass the path you read to both agents as `rules`.
 
 1. **Analyze.** Dispatch the `walkthrough:system-analyzer` agent with `root`, `depth`, `containers`
    (when named) and `rules`. It returns one JSON object: `subjectKind`, `depth`, `nodes[]`, `edges[]`,
-   `gaps[]`, `read`.
+   `gaps[]`, `read`. If it reports that it could not read the rules, go to step 5.
 2. **Verify.** Skip this when the analyzer returned `subjectKind: none` or no nodes: there is nothing
    to verify, and the last paragraph of Step C applies. Otherwise dispatch the
    `walkthrough:system-verifier` agent with `root`, the analyzer's JSON as `claims`, and `rules`. It
-   returns one verdict per claim, nodes first, then edges, in the order given.
+   returns one verdict per claim, nodes first, then edges, in the order given. If it reports that it
+   could not read the rules, go to step 5.
 3. **If either agent cannot be dispatched** (there is no Agent tool, or the dispatch fails), do the
    work yourself from the same rules file: first the analysis, then, as a separate pass, try to refute
    each of your own claims as the verifier would. Record that the reading was **inline**. Never skip the
    second pass, and never present an inline reading as independently verified.
 4. **If a reply is not valid JSON,** ask that agent once to return only the JSON. If it still is not,
    treat it as a failed dispatch (step 3).
+5. **If an agent reports that it could not read the rules,** treat its reply as a failed dispatch
+   (step 3): you have read the rules, so you can do that pass yourself. The analyzer reports it with
+   `subjectKind: none` and one gap whose `note` is "could not open the reading rules". The verifier
+   reports it by giving every verdict that sentence as its `reason`. Neither reply is a result: do not
+   fall back to the generic route on the first, and do not apply the second as verdicts.
 
 ## Step C: Apply the verdicts (the skill does this, not the agents)
 
@@ -78,7 +85,8 @@ Nothing is dropped without a gap. A gap names a dropped claim by its `id` (an ed
 two ends), never by its label: a claim can be dropped because its label leaks a value.
 
 If `subjectKind` is `none`, or no node is left, stop using this adapter: fall back to the generic
-route in `../gather-subject.md` and tell the user why.
+route in `../gather-subject.md` and tell the user why. Rules 5 and 6 still bind you on that route: the
+never-opened paths stay unread and unsearched, and no value is copied.
 
 ## Step D: Map to the subject-model
 
@@ -102,19 +110,23 @@ of each edge that leaves it. Fill it node by node, in the order of `nodes`, and 
 links already kept lead from its target back to this node. The wire stays on the map and in the
 connections list; only the link in the detail is left out.
 
-**Everything from the codebase or from an agent is text.** A label, a `sub`, a `signal`, gap text, a
-verifier's `reason` and the directory name are escaped wherever they are written into the page (`&`,
-`<` and `>`, and `"` inside an attribute), never written as markup. That includes the `details`
-fields, which the page inserts as HTML.
+**Everything from the codebase or from an agent is text**, such as a label, a `sub`, a `signal`, an
+evidence path, an analyzer's `what` or `note`, a verifier's `reason` and the directory name. Two
+things hold for every such string, wherever it ends up:
+
+- **Names only.** Before it enters the model, check that it holds no value (rule 5), and leave out any
+  value it carries. The verifier's leak check covered only the `label`, `sub` and `signal` of the
+  claims it judged, so a gap, a `reason` and a claim kept with no verdict reach you unchecked.
+- **Escaped.** When it is written into the page it is escaped (`&`, `<` and `>`, and `"` inside an
+  attribute), never written as markup. That includes the `details` fields, which the page inserts as
+  HTML.
 
 **"How this was read"** is a key–value grid: depth; files and lines read; `Read by agents: analyzer and
 verifier.` or `Read inline (agents unavailable): claims were not independently verified.`; how many
 claims were confirmed, downgraded and refuted.
 
 **"Gaps"** is one callout per gap: what was not read or was dropped, and why. This section is the
-honest edge of the map; never leave it out to make the page look complete. Rule 5 covers this text
-too: before an analyzer's `what` or `note` or a verifier's `reason` goes into a callout, check that it
-holds names only, and leave out any value it carries.
+honest edge of the map; never leave it out to make the page look complete.
 
 ## Step E: The coverage critic (your skill's Step 4)
 
@@ -123,14 +135,17 @@ lacks. For this adapter the source to check against is the surviving claims and 
 code:
 
 - confirm that every surviving node and edge is in the model with its `evidence`, and that every gap
-  is on the page;
+  is in the model's "Gaps" section; add any that is missing;
 - deepen a detail only from what the surviving claims already say (a `signal`, a `sub`, the node's
-  edges, the verifier's `reason`);
+  edges, the verifier's `reason`), each checked for values as Step D says;
 - the critic never re-reads the codebase and never brings back a dropped claim, and it adds no node,
-  edge or claim. The reading was done within a budget and then checked. A dropped claim is covered by
-  its gap; folding it back in would draw something the verifier refuted.
+  edge or claim that is not among the surviving claims. The reading was done within a budget and then
+  checked. A dropped claim is covered by its gap; folding it back in would draw something the verifier
+  refuted.
 
 ## Step F: After the page is written
 
 The offer message carries the reading line from "How this was read" as well as the engine line the
-render contract asks for. Self-check #27 applies to every page this adapter produces.
+render contract asks for. Its coverage note (`completeness.md` Part 2) reports what was not read as
+the gaps: on this adapter "not read" is the honest reason for that omission, not a process excuse.
+Self-check #27 applies to every page this adapter produces.

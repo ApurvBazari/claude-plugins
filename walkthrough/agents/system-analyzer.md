@@ -30,7 +30,8 @@ list of `containers` to open at component depth, and `rules` (the path of the re
    reading budget and order, the files you must never open, and the depth you were asked for. Where
    this file and the rules differ, the rules win. If you cannot read it, read nothing under `root`:
    return `subjectKind` `none` with no nodes, no edges and one gap, whose `what` is the path of `root`,
-   whose `reason` is `unreadable` and whose `note` says the reading rules could not be read.
+   whose `reason` is `unreadable` and whose `note` is "could not open the reading rules". The skill
+   then does the reading itself.
 
 2. **List before reading.** Use Glob to see what is under `root`. Decide which files the rules' reading
    order puts first. Count the files and lines you read as you go, and stop at the budget.

@@ -27,8 +27,9 @@ You will receive `root` (the directory the claims are about), `claims` (the anal
 `edges`, `gaps`) and `rules` (the path of the reading rules).
 
 1. **Read the rules first.** Read the file at `rules` in full. It defines stated and inferred and lists
-   the files that must never be opened. If you cannot read it, open nothing under `root`: give every
-   claim `downgrade` with the reason "could not open the reading rules".
+   the files that must never be opened. If you cannot read it, open nothing under `root` and judge
+   nothing: give every claim `downgrade` with the reason "could not open the reading rules". The skill
+   does not use that reply as verdicts; it does this pass itself.
 
 2. **Check the cited paths, then open the evidence.** Before you open anything, check every path a
    claim cites against the never-opened list (rule 6). When a claim cites a path on that list,

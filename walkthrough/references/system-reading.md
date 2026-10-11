@@ -73,8 +73,9 @@ them.
 Every content search leaves these paths out. A search returns the line it matched, value included, so
 a search that reaches one of these paths has opened it. Before you search, choose a scope (one file,
 a folder, or a glob for the file types you mean, such as `*.go`) and check it against a listing of
-file names: it must match none of these paths. Never search the whole of `root` unfiltered. If a
-result still comes from one of these paths, discard it unread: do not use it, repeat it or cite it.
+file names: it must match none of these paths. If it matches one, narrow the scope until it does not.
+Never search the whole of `root` unfiltered. If a result still comes from one of these paths, discard
+it unread: do not use it, repeat it or cite it.
 
 A skipped file of the first three kinds is reported as a gap with the reason `denied`. This rule is an
 instruction: nothing technical stops a Read or a search. The verifier checks it again (it refutes any

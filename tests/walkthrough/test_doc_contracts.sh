@@ -243,6 +243,7 @@ grep -qi 'manifests beat prose' "$RULES" || fail "system-reading.md must state t
 # three rules whose loss would let a secret or an unverified claim reach the page
 grep -qF 'Every content search leaves these paths out' "$RULES" || fail "system-reading.md must say a content search leaves the never-opened paths out: a search returns the matching line, value included"
 grep -qF 'refute it without opening the file' "$ROOT/walkthrough/agents/system-verifier.md" || fail "system-verifier must refute evidence in a never-opened file without opening it"
+grep -qF 'Before you open anything, check every path' "$ROOT/walkthrough/agents/system-verifier.md" || fail "system-verifier must check the cited paths against the never-opened list before it opens anything"
 grep -qF 'never re-reads the codebase and never brings back a dropped claim' "$SYSAD" || fail "adapters/system.md must say the coverage critic never re-reads the codebase and never brings back a dropped claim"
 if grep -niE 'pure-skill|no agents' "$README" "$CLAUDEMD" >/dev/null; then
   fail "README.md and CONVENTIONS.md must not claim the plugin is pure-skill or has no agents: it ships two"
