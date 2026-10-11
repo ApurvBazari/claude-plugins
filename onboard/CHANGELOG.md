@@ -6,7 +6,7 @@ Responds to the claude.ai directory review of 3.2.0: onboard installed other plu
 
 ### Changed — no plugin is installed without an accepted, named offer
 - **`/onboard:start` offers the plugins behind MCP servers by name.** The wizard has a new multiSelect, every row unchecked, listing the plugin that goes with each detected MCP server. The Phase 5 preview has a "Plugins to install" line, and generation installs exactly that list. Before, the plugin behind every emitted server was installed without being named (context7 on every project).
-- **Skipping the LSP question installs nothing.** The skip default was the full detected list, so a skipped question installed every detected LSP plugin. It is now an empty list. LSP rows are still pre-checked at 10 or more files; a row you submit is an acceptance.
+- **Skipping the LSP question installs nothing.** The skip default was the full detected list, so a skipped question installed every detected LSP plugin. It is now an empty list: only the LSP plugins you select are installed.
 - **`/onboard:update` gives each plugin its own row.** Approving a new MCP server no longer installs its plugin. "Apply all" names the plugins it would install.
 - **`/onboard:evolve` asks before installing the plugin behind a new MCP server**, the same way it already asks for LSP plugins. If the prompt cannot be shown or nobody answers, nothing is installed and nothing is recorded as offered. The server entry is still merged automatically.
 - **`/onboard:evolve` takes no plugin list from a caller.** Its LSP step said a list from `generate` replaced the prompt, but `generate` never calls evolve, so the clause was only a way around the prompt. Only an answer to evolve's own question installs a plugin.

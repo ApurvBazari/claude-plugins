@@ -118,6 +118,12 @@ has "IC6: README says evolve applies most drift without asking" 'applies most dr
 has "IC6: README says evolve removes tooling that no longer applies" 'removes tooling that no longer applies' "$R"
 lacks "IC6: README does not promise evolve never touches your edits" 'never touches your own edits' "$R"
 has "IC6: README says what verify writes" 'docs/verification-reports/' "$R"
+# The release's own notes are a description too. In a real run the LSP row arrived unticked, so the
+# 3.3.0 entry must not say rows are pre-checked. Older entries are history and are not read.
+rel="$(section onboard/CHANGELOG.md '^## 3\.3\.0' '^## 3\.2')"
+if [ -z "$rel" ]; then bad "IC6: could not locate the 3.3.0 changelog entry"; else
+  if printf '%s\n' "$rel" | grep -qiE 'pre-?checked'; then bad "IC6: the 3.3.0 changelog still says LSP rows are pre-checked"; else ok "IC6: the 3.3.0 changelog does not say LSP rows are pre-checked"; fi
+fi
 
 # --- IC7: the two descriptions are identical and disclose the .mcp.json write and the install rule ---
 if python3 - <<'PY'
