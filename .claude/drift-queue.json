@@ -610,8 +610,8 @@
       "source": "onboard 3.3.0 install-consent branch, real run on a sandbox project (2026-10-10)",
       "raisedAt": "2026-10-11",
       "status": "deferred",
-      "rationale": "In the real run the typescript-lsp row (12 source files) arrived unticked and the owner ticked it. wizard/SKILL.md, references/plugin-install-consent.md, evolve Step 2g and the 3.3.0 changelog entry still say rows are pre-checked at 10 or more files. Nothing is selected on the person's behalf, so no plugin installs without a tick. The README makes no pre-checked claim.",
-      "resolution": "Drop the pre-checked wording from the wizard, the consent reference, update, evolve and the changelog."
+      "rationale": "In the real run the typescript-lsp row (12 source files) arrived unticked and the owner ticked it. wizard/SKILL.md, references/plugin-install-consent.md and evolve Step 2g still say rows are pre-checked at 10 or more files. The 3.3.0 changelog said so too and was corrected before the merge. Nothing is selected on the person's behalf, so no plugin installs without a tick. The README makes no pre-checked claim.",
+      "resolution": "Drop the pre-checked wording from the wizard, the consent reference, update and evolve."
     },
     {
       "id": "RUN-5",
@@ -653,7 +653,7 @@
       "source": "PR #139 automated security review (2026-10-11), follow-up to L1",
       "raisedAt": "2026-10-11",
       "status": "deferred",
-      "rationale": "evolve Steps 2g and 2h said that when evolve is called via generate with callerExtras.lspPlugins or callerExtras.builtInSkills set, the caller's list is used and no prompt fires. Both clauses predate 3.3.0. The security re-review of PR #139 (L3) found that generate never calls evolve, so the caller they name does not exist. The LSP clause could lead to a plugin install and was removed in PR #139 the way Step 2c's was, with two IC4 checks. Step 2h's built-in-skills clause is left: it installs nothing.",
+      "rationale": "evolve Steps 2g and 2h said that when evolve is called via generate with callerExtras.lspPlugins or callerExtras.builtInSkills set, the caller's list is used and no prompt fires. Both clauses predate 3.3.0. The security re-review of PR #139 (L3) found that generate never calls evolve, so the caller they name does not exist. The LSP clause could lead to a plugin install and was removed in PR #139 the way Step 2c's was, with two IC4 checks and one IC1 check. Step 2h's built-in-skills clause is left: it installs nothing.",
       "resolution": "Remove Step 2h's clause too, for consistency, in a later patch."
     },
     {
