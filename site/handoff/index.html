@@ -270,7 +270,6 @@ stale-day-threshold: 90
 deferral-snooze-hours: 24
 gitignore-prompt: ask
 archive-retention: 10
-trigger-phrases: []
 ---</code></pre>
       </div>
       <table class="ref-table">
@@ -281,7 +280,6 @@ trigger-phrases: []
           <tr><td class="slash">deferral-snooze-hours</td><td class="cell-mono">24</td><td>Hours to suppress re-surface after "Save for later". No permanent suppression — re-surfaces after the window.</td></tr>
           <tr><td class="slash">gitignore-prompt</td><td class="cell-mono">ask</td><td><span class="cell-mono">ask</span> or <span class="cell-mono">never</span> — whether the first save offers to add <span class="cell-mono">.claude/handoff/</span> to <span class="cell-mono">.gitignore</span>.</td></tr>
           <tr><td class="slash">archive-retention</td><td class="cell-mono">10</td><td>Cap on archive file count (shared across consumed/discarded/expired). <span class="cell-mono">0</span>, <span class="cell-mono">unlimited</span>, or <span class="cell-mono">-1</span> for no cap.</td></tr>
-          <tr><td class="slash">trigger-phrases</td><td class="cell-mono">(built-in list)</td><td>Additions or overrides for the wrap-up phrase NL trigger list that auto-invokes <span class="cell-mono">/handoff:save</span>.</td></tr>
         </tbody>
       </table>
     </section>
@@ -314,7 +312,7 @@ trigger-phrases: []
         <div class="edge">
           <div class="n">settings.md</div>
           <div class="t">Optional config</div>
-          <p>Override thresholds, snooze window, gitignore behavior, archive retention, and trigger phrases. Edit directly — no re-install needed.</p>
+          <p>Override thresholds, snooze window, gitignore behavior, and archive retention. Edit directly — no re-install needed.</p>
         </div>
       </div>
     </section>

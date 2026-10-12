@@ -167,7 +167,7 @@ section.vis{opacity:1;transform:none;}
       <a href="#example">Example</a>
     </div>
     <div style="display:flex;align-items:center;gap:.8rem">
-      <div class="nav-meta"><span class="dot"></span> PLUGIN · v3.2.0</div>
+      <div class="nav-meta"><span class="dot"></span> PLUGIN · v3.3.0</div>
       <button class="theme-btn" onclick="tgl()">◑ THEME</button></div>
   </div></nav>
   <div class="progress" id="prog"></div>
@@ -175,7 +175,7 @@ section.vis{opacity:1;transform:none;}
     <section id="top" class="vis" style="padding-top:2.4rem">
       <div class="eyebrow">claude-plugins · onboard</div>
       <h1>Lifecycle manager for <em>AI configs</em>.</h1>
-      <p class="lede">onboard analyzes a codebase with deep, <strong>verified research</strong> and generates evidence-grounded Claude tooling on day one — <code>CLAUDE.md</code>, path-scoped rules, skills, agents, hooks, and a verify backlog. Then it <strong>detects code-vs-config drift</strong> as the project evolves and offers to realign.</p>
+      <p class="lede">onboard analyzes a codebase with deep, <strong>verified research</strong> and generates evidence-grounded Claude tooling on day one — <code>CLAUDE.md</code>, path-scoped rules, skills, agents, hooks, a project <code>.mcp.json</code>, and a verify backlog. It offers companion LSP and MCP plugins by name and installs only the ones you accept. Then it <strong>detects code-vs-config drift</strong> as the project evolves and updates the tooling to match.</p>
       <div class="chips">
         <span class="chip accent">plugin</span>
         <span class="chip">codebase-analysis</span>
@@ -200,10 +200,17 @@ section.vis{opacity:1;transform:none;}
       <div class="sec-label">01 — what it does</div>
       <h2>From <em>evidence-grounded</em> setup to continuous upkeep</h2>
       <p class="lede">Generating a <code>CLAUDE.md</code> is well-covered in 2026 — Claude Code's <code>/init</code>, Copilot, Codex, Cursor, and several web tools all do it. onboard's focus is the step after: <strong>grounding</strong> the configs in verified research, and <strong>keeping them aligned</strong> as your code grows.</p>
-      <p>The first run does not cold-prompt you. A read-only analyzer scans the codebase, a research engine fans out specialists and adversarially verifies their claims, and the wizard asks you to confirm or override what the research already inferred. Nothing is written until you approve a full preview. After that, the drift loop takes over — or, when an orchestrator drives the work, the <strong>maintain entry</strong> keeps tooling current after each change it lands.</p>
+      <p>The first run does not cold-prompt you. A read-only analyzer scans the codebase, a research engine fans out specialists and adversarially verifies their claims, and the wizard asks you to confirm or override what the research already inferred. No tooling file is written until you approve a full preview; before that, only the research notes and the preview page exist. After that, the drift loop takes over — or, when an orchestrator drives the work, the <strong>maintain entry</strong> keeps tooling current after each change it lands.</p>
       <div class="callout">
         <h4>Not just generation — alignment</h4>
-        <p>The differentiator is the lifecycle: every generated artifact carries a self-maintaining header, and <code>/onboard:evolve</code> watches code-vs-config drift and proposes targeted realignments you approve one at a time.</p>
+        <p>The differentiator is the lifecycle: every generated artifact carries a self-maintaining header, and <code>/onboard:evolve</code> watches code-vs-config drift and brings the tooling back in line. Most drift is applied directly and shown as a diff; anything that installs a plugin waits for your answer.</p>
+      </div>
+      <div class="sec-label" style="margin-top:1.6rem">what onboard changes — know this before you run it</div>
+      <div class="edge-grid">
+        <div class="edge"><div class="n">tooling files</div><div class="t">Written after approval</div><p><code>CLAUDE.md</code>, <code>.claude/rules/</code>, <code>.claude/skills/</code>, <code>.claude/agents/</code>, hook entries in <code>.claude/settings.json</code>, and its own state files under <code>.claude/</code>. <code>/onboard:start</code> previews every one and writes none until you approve.</p></div>
+        <div class="edge"><div class="n">.mcp.json</div><div class="t">Project MCP servers</div><p>Servers matched to your stack — <code>context7</code> on every project, others (GitHub, Vercel, Supabase, Chrome DevTools) when the stack calls for them. Prisma's server ships inside the <code>prisma</code> plugin, so it gets no entry and is offered as a plugin. An existing <code>.mcp.json</code> is never overwritten.</p></div>
+        <div class="edge"><div class="n">other plugins</div><div class="t">Only on an accepted, named offer</div><p>LSP plugins, the plugins that go with those MCP servers, <code>walkthrough</code> and <code>notify</code>. The MCP-plugin rows start unchecked, a skipped question installs nothing, and the preview lists every plugin that will be installed.</p></div>
+        <div class="edge"><div class="n">evolve · verify</div><div class="t">Write files, auto-invocable</div><p>Claude can start <code>/onboard:evolve</code> and <code>/onboard:verify</code>, and both write to your project. Neither installs a plugin without asking (§03, §06).</p></div>
       </div>
     </section>
 
@@ -211,17 +218,17 @@ section.vis{opacity:1;transform:none;}
       <div class="sec-label">02 — research-first start</div>
       <h2>A <em>grounded</em>, research-first first run</h2>
       <p class="lede"><code>/onboard:start</code> is the main entry point. Instead of a cold questionnaire, it recons the code, researches it, and lets you confirm what the research inferred — behind a hard write gate.</p>
-      <p><strong>Recon</strong> runs the codebase-analyzer agent (read-only, script-free — native Glob/Grep/Read plus git one-liners) to detect languages, frameworks, testing, CI/CD, and structure; its output stays in context, never on disk. <strong>Deep Research</strong> (<code>onboard:research</code>) fans out specialists per dimension, adversarially verifies their claims, and synthesizes a research dossier plus four artifacts — <span class="cell-mono">research-dossier</span>, <span class="cell-mono">architecture</span>, <span class="cell-mono">risk-register</span>, and <span class="cell-mono">glossary</span>. The <strong>grounded wizard</strong> then surfaces <code>research.wizardInferences</code> for you to confirm or override — autonomy level is always asked cold, never inferred. An empty-repo guard offers a 3-option menu (abort / placeholder / canonical stub) before any of this runs.</p>
+      <p><strong>Recon</strong> runs the codebase-analyzer agent (read-only, script-free — native Glob/Grep/Read plus git one-liners) to detect languages, frameworks, testing, CI/CD, and structure; its output stays in context, never on disk. <strong>Deep Research</strong> (<code>onboard:research</code>) fans out specialists per dimension, adversarially verifies their claims, and synthesizes a research dossier plus four artifacts — <span class="cell-mono">research-dossier</span>, <span class="cell-mono">architecture</span>, <span class="cell-mono">risk-register</span>, and <span class="cell-mono">glossary</span>. The <strong>grounded wizard</strong> then surfaces <code>research.wizardInferences</code> for you to confirm or override — autonomy level is always asked cold, never inferred. The wizard also offers plugins by name — LSP plugins, and the plugins that go with detected MCP servers, every MCP row unchecked — and only the ones you select are installed. An empty-repo guard offers a 3-option menu (abort / placeholder / canonical stub) before any of this runs.</p>
     </section>
 
     <section id="drift">
       <div class="sec-label">03 — the drift loop</div>
       <h2>The <em>drift-detection</em> loop</h2>
-      <p class="lede"><code>/onboard:evolve</code> is the heart of the lifecycle. When <code>/onboard:start</code> runs in enriched mode it installs auto-evolution hooks that quietly track change, and evolve drains them into targeted, approve-by-item updates.</p>
-      <p><strong>FileChanged</strong> hooks on <code>package.json</code>, <code>tsconfig.json</code>, <code>pyproject.toml</code>, lockfiles, and structural anchors log diffs to <code>.claude/onboard-drift.json</code> (a legacy <code>greenfield-drift.json</code> is still read, and evolve migrates it); a <strong>SessionStart</strong> hook summarises pending drift at the start of each session. Then <code>/onboard:evolve</code> reads that log, compares against the original snapshot, categorises the change (new dependencies, structural shifts, config diffs, missing hooks, stale rules), and proposes updates. You decide which to apply; the snapshot then updates so the next run is incremental.</p>
+      <p class="lede"><code>/onboard:evolve</code> is the heart of the lifecycle. When <code>/onboard:start</code> runs in enriched mode it installs auto-evolution hooks that quietly track change, and evolve drains them into targeted updates.</p>
+      <p><strong>FileChanged</strong> hooks on <code>package.json</code>, <code>tsconfig.json</code>, <code>pyproject.toml</code>, lockfiles, and structural anchors log diffs to <code>.claude/onboard-drift.json</code> (a legacy <code>greenfield-drift.json</code> is still read, and evolve migrates it); a <strong>SessionStart</strong> hook summarises pending drift at the start of each session. Then <code>/onboard:evolve</code> reads that log, compares against the original snapshot, categorises the change (new dependencies, structural shifts, config diffs, missing hooks), and applies the matching tooling updates. Most are applied without asking and shown as a diff afterwards; the snapshots then update so the next run is incremental.</p>
       <div class="callout">
-        <h4>You stay in control</h4>
-        <p>Drift detection never silently rewrites your tooling — every proposed update is shown and applied only on your approval. The snapshot advances after each run, keeping subsequent passes incremental.</p>
+        <h4>What evolve applies, and what it asks</h4>
+        <p>It applies most drift directly: <code>CLAUDE.md</code>, rules, hook scripts and <code>settings.json</code> entries, and newly relevant MCP servers in <code>.mcp.json</code>. It also removes tooling that no longer applies — rules for a package you removed, the <code>CLAUDE.md</code> of a deleted directory, hook scripts for an uninstalled plugin, generated files an installed plugin made redundant — and in <code>CLAUDE.md</code> it changes only the affected sections and keeps your own additions. It stops and asks before installing any plugin (including the one behind a new MCP server), adding a built-in-skill recommendation, or creating a new subdirectory <code>CLAUDE.md</code>; if nobody answers, none of those happen. A plugin you declined is not asked about again; on a project onboarded with 3.2.x or earlier, the plugins of existing servers count as already offered, so a plugin you removed is not reinstalled. For per-item approval of every change, use <code>/onboard:update</code>.</p>
       </div>
     </section>
 
@@ -264,7 +271,7 @@ section.vis{opacity:1;transform:none;}
     <section id="flow">
       <div class="sec-label">05 — pipeline</div>
       <h2>The eight-phase <em>start</em> pipeline</h2>
-      <p class="lede"><code>/onboard:start</code> runs a fixed, model-before-markup pipeline. Nothing is written to disk until Phase 5's hard gate is approved. Click a phase for detail.</p>
+      <p class="lede"><code>/onboard:start</code> runs a fixed, model-before-markup pipeline. No tooling file is written, and none of the plugins on the preview's install line is installed, until Phase 5's hard gate is approved; before it, only the research notes and the preview page exist. Click a phase for detail.</p>
       <div class="pipe" aria-label="onboard:start eight-phase pipeline">
         <button class="pnode" data-d="p0" onclick="openD('p0')" aria-label="Phase 0 empty-repo guard"><span class="ph">Phase 0</span>Empty-repo guard<span class="pd">no source? 3-option menu</span></button>
         <span class="parr">↓</span>
@@ -288,16 +295,16 @@ section.vis{opacity:1;transform:none;}
     <section id="skills">
       <div class="sec-label">06 — reference</div>
       <h2>Eleven <em>skills</em>, five agents</h2>
-      <p class="lede">The six user-facing skills use the <code>/onboard:&lt;name&gt;</code> slash syntax. Read-only helpers can auto-invoke; the three destructive entry points — <code>start</code>, <code>update</code>, and <code>adopt</code> — require explicit invocation; the five internal steps are hidden from the menu entirely.</p>
+      <p class="lede">The six user-facing skills use the <code>/onboard:&lt;name&gt;</code> slash syntax. Claude can start <code>check</code>, which writes nothing, and <code>verify</code> and <code>evolve</code>, which write to your project; the three destructive entry points — <code>start</code>, <code>update</code>, and <code>adopt</code> — require explicit invocation; the five internal steps are hidden from the menu entirely.</p>
       <table class="ref-table">
         <thead><tr><th>Skill</th><th>Invocation</th><th>What it does</th></tr></thead>
         <tbody>
           <tr><td class="slash">/onboard:start</td><td><span class="tag lock">user-only</span></td><td>Main entry point — the grounded, research-first guided workflow: recon → research → wizard → preview gate → generation → handoff. Includes the empty-repo guard.</td></tr>
-          <tr><td class="slash">/onboard:update</td><td><span class="tag lock">user-only</span></td><td>Re-aligns tooling against the latest Claude Code best practices and live docs, preserving your manual customisations.</td></tr>
-          <tr><td class="slash">/onboard:adopt</td><td><span class="tag lock">user-only</span></td><td>Retrofits hand-crafted tooling into an onboard baseline (<span class="cell-mono">mode:retrofit</span> + snapshots) so <code>update</code> works — without modifying any hand-crafted file. Every adopted artifact is tracked <span class="cell-mono">origin:adopted</span>.</td></tr>
-          <tr><td class="slash">/onboard:evolve</td><td><span class="tag auto">auto</span></td><td>The drift loop. Reads <span class="cell-mono">onboard-drift.json</span>, compares against the snapshot, and proposes targeted realignments you approve.</td></tr>
-          <tr><td class="slash">/onboard:verify</td><td><span class="tag auto">auto</span></td><td>Independent feature verification — spawns the feature-evaluator agent in worktree isolation to test features against <span class="cell-mono">docs/feature-list.json</span>. Single-feature, sprint, or all-incomplete modes.</td></tr>
-          <tr><td class="slash">/onboard:check</td><td><span class="tag auto">auto</span></td><td>Quick health check — last run date, generated artifacts, integrity status, and recommendations.</td></tr>
+          <tr><td class="slash">/onboard:update</td><td><span class="tag lock">user-only</span></td><td>Re-aligns tooling against onboard's bundled best-practice guides and offers each change for approval, preserving your manual customisations. It lists Claude Code features newer than those guides from the live docs as information only — that list never supplies what gets written. A plugin is installed only if you select its own row, and “Apply all” names the plugins it would install. A saved offer read back from <span class="cell-mono">.claude/onboard-pending-updates.json</span> is dropped if its plugin is not in onboard's catalog.</td></tr>
+          <tr><td class="slash">/onboard:adopt</td><td><span class="tag lock">user-only</span></td><td>Retrofits hand-crafted tooling into an onboard baseline (<span class="cell-mono">mode:retrofit</span> + snapshots) so <code>update</code> works — without modifying any hand-crafted file. Every adopted artifact is tracked <span class="cell-mono">origin:adopted</span>. Installs nothing, so it offers no plugin.</td></tr>
+          <tr><td class="slash">/onboard:evolve</td><td><span class="tag auto">auto</span></td><td>The drift loop. Reads <span class="cell-mono">onboard-drift.json</span>, compares against the snapshots, applies most updates directly and shows a diff, and asks before installing a plugin, adding a built-in-skill recommendation or creating a subdirectory <code>CLAUDE.md</code> (§03).</td></tr>
+          <tr><td class="slash">/onboard:verify</td><td><span class="tag auto">auto</span></td><td>Independent feature verification — spawns the feature-evaluator agent in worktree isolation to test features against <span class="cell-mono">docs/feature-list.json</span>. Single-feature, sprint, or all-incomplete modes. Writes its results to <span class="cell-mono">docs/feature-list.json</span> (passing only on a PASS), <span class="cell-mono">docs/progress.md</span> and <span class="cell-mono">docs/verification-reports/</span>.</td></tr>
+          <tr><td class="slash">/onboard:check</td><td><span class="tag auto">auto</span></td><td>Quick health check — last run date, generated artifacts, integrity status, and recommendations. Writes nothing.</td></tr>
           <tr><td class="slash">/onboard:generate</td><td><span class="tag hidden-int">internal</span></td><td>Internal generation step invoked by <code>start</code> / <code>update</code> / <code>evolve</code>. Consumes the v3 context; <span class="cell-mono">mode:plan</span> computes the manifest for the gate without writing, <span class="cell-mono">mode:write</span> runs the full pipeline.</td></tr>
           <tr><td class="slash">research</td><td><span class="tag hidden-int">internal</span></td><td>The v3 research engine. Fans out one read-only specialist per dimension, adversarially verifies every claim against the codebase, then synthesizes the canonical research dossier the generation step consumes. Claims that cannot be proven are dropped, not softened.</td></tr>
           <tr><td class="slash">wizard</td><td><span class="tag hidden-int">internal</span></td><td>The adaptive Q&amp;A flow that gathers developer preferences during <code>start</code>. A building block, never invoked on its own.</td></tr>
@@ -336,13 +343,14 @@ section.vis{opacity:1;transform:none;}
           <li><strong><code>.claude/skills/</code> + <code>.claude/agents/</code></strong> — stack-specific skills and plugin-aware agents (skips capabilities an installed plugin already covers).</li>
           <li><strong><code>.claude/output-styles/</code></strong> — a project-scoped output style tuned to archetype (onboarding / teaching / production-ops / research / solo).</li>
           <li><strong>Hook entries in <code>.claude/settings.json</code></strong> — auto-format and lint checks tailored to your tooling.</li>
+          <li><strong><code>.mcp.json</code></strong> — project MCP servers matched to your stack (an existing file is never overwritten).</li>
           <li><strong>PR template + commit conventions</strong> and <strong><code>.claude/onboard-meta.json</code></strong> — the generation manifest.</li>
         </ul>
       </div>
       <div class="tier">
         <div class="th-row"><span class="tlabel enriched">enriched</span><span class="tt">When the wizard enables it</span></div>
         <ul>
-          <li><strong>CI/CD pipelines</strong> — GitHub Actions: ci, tooling-audit, pr-review.</li>
+          <li><strong>CI/CD pipelines</strong> — GitHub Actions: ci, tooling-audit, pr-review. The tooling audit flags a rule whose <code>paths:</code> pattern matches no file, judged the way Claude Code matches it (gitignore semantics; a block list, flow list or comma-separated string), on macOS as on Linux. If the check cannot run because <code>python3</code> is missing or fails, it reports that as drift instead of passing. A project generated before onboard 3.2.1 keeps its own copy at <code>.github/scripts/audit-tooling.sh</code>; replace it with the current script to get this check.</li>
           <li><strong>Harness artifacts</strong> — <code>docs/progress.md</code>, <code>docs/HARNESS-GUIDE.md</code>.</li>
           <li><strong>Auto-evolution hooks</strong> — FileChanged + SessionStart plus the drift-detection scripts that power <code>/onboard:evolve</code>.</li>
           <li><strong>Sprint contracts</strong> — <code>docs/sprint-contracts/</code>.</li>
@@ -367,6 +375,7 @@ section.vis{opacity:1;transform:none;}
       <div class="edge-grid">
         <div class="edge"><div class="n">bash</div><div class="t">Required</div><p>Evolution, CI-audit, and maintain scripts, and generated hooks. Ships on macOS and Linux.</p></div>
         <div class="edge"><div class="n">git</div><div class="t">Required</div><p>Repository analysis and contributor detection.</p></div>
+        <div class="edge"><div class="n">claude CLI</div><div class="t">Required to install plugins</div><p>Installs the plugins you accept.</p></div>
         <div class="edge"><div class="n">python3</div><div class="t">Required for maintain</div><p>The maintain entry's <code>maintain-*</code> scripts — standard library only.</p></div>
         <div class="edge"><div class="n">tree</div><div class="t">Optional</div><p>Directory visualisation — falls back to <code>find</code>.</p></div>
         <div class="edge"><div class="n">jq</div><div class="t">Optional</div><p>JSON parsing in hooks — generated hooks include a <code>python3</code> fallback.</p></div>
@@ -405,16 +414,22 @@ From the research I inferred — confirm or override:
   Testing philosophy   TDD   (vitest + RTL, co-located)   &gt; confirm
   Autonomy level?  (asked cold)  &gt; b (Balanced)
 
+  Plugins that go with the MCP servers I'll add — install any?   (all unchecked)
+  [ ] context7   [ ] chrome-devtools-mcp   [ ] github
+&gt; (none)
+
 Phase 5: Preview &amp; Gate
 ━━━━━━━━━━━━━━━━━━━━━━━
   research: 3 risks, architecture map, glossary
-  + 12 files (CLAUDE.md, 3 rules, 1 skill, 1 agent, settings.json, …)
+  + 12 files (CLAUDE.md, 3 rules, 1 skill, 1 agent, settings.json, .mcp.json, …)
+  MCP servers: context7, chrome-devtools-mcp, github
+  Plugins to install: none
   Approve &amp; generate?  [Approve / Adjust / Cancel]   &gt; Approve
 
-Phase 6: Generation → 12 artifacts written
+Phase 6: Generation → 12 artifacts written · plugins: none installed
 Phase 7: Handoff → "Your project is set up. Try /onboard:check anytime."
 
-# ── two weeks later — team added Playwright + extracted packages/shared ──
+# ── two weeks later — team added Playwright, Supabase and packages/shared ──
 
 &gt; /onboard:evolve
 
@@ -422,13 +437,22 @@ Drift detected:
   + new dependency     @playwright/test in apps/web
   + structural change  packages/shared workspace appeared
   ~ tsconfig changes   paths added for @repo/shared
+  + new stack signal   supabase/ directory → supabase MCP server
 
-Proposed updates:
-  • Add rule        testing/e2e-conventions.md (Playwright)
-  • Update CLAUDE.md → mark monorepo, document workspace boundaries
-Apply all? [Y/n]  &gt; Y
+Updates applied:
+  • CLAUDE.md                    added @playwright/test, marked monorepo, documented workspace boundaries
+  • .claude/rules/typescript.md  updated for the new paths
+  • .mcp.json                    added supabase server
 
-Snapshot updated. AI configs realigned to current code.</code></pre>
+One question:
+  New MCP server: supabase. Install the plugin that goes with it?
+  [ ] supabase
+&gt; (none)
+
+Not applied (needs your input):
+  • New directory packages/shared — create a CLAUDE.md for it?
+
+Snapshots updated.</code></pre>
       </div>
     </section>
 
@@ -437,7 +461,7 @@ Snapshot updated. AI configs realigned to current code.</code></pre>
         <a href="../">← marketplace</a>
         <a href="https://github.com/ApurvBazari/claude-plugins/tree/main/onboard">source on GitHub</a>
       </div>
-      <div class="meta">onboard · v3.2.0 · MIT · by Apurv Bazari</div>
+      <div class="meta">onboard · v3.3.0 · MIT · by Apurv Bazari</div>
     </div>
   </main>
   <aside class="panel" id="panel"><span class="x" onclick="closeD()">✕</span>
@@ -447,10 +471,10 @@ const DET={
  p0:{k:"Phase 0",h:"Empty-repo guard",b:"Before anything runs, onboard checks whether the repo has source files. If it is empty it offers a 3-option menu — <code>abort</code>, drop a <code>placeholder</code>, or scaffold a <code>canonical stub</code> — rather than researching nothing. A non-empty repo falls straight through to recon."},
  p1:{k:"Phase 1",h:"Recon",b:"The codebase-analyzer agent runs read-only and script-free — native Glob/Grep/Read plus git one-liners — to detect languages, frameworks, testing setup, CI/CD, and project structure, emitting <code>reconHints</code>. The output stays in conversation context and is never written to disk."},
  p2:{k:"Phase 2",h:"Research",b:"First you pick a profile (Minimal / Standard / Comprehensive) which sets research depth and generation scope. Then <code>onboard:research</code> fans out specialists per dimension, adversarially verifies their claims, and synthesizes a research dossier plus four artifacts: research-dossier, architecture, risk-register, and glossary."},
- p3:{k:"Phase 3",h:"Grounded wizard",b:"Instead of cold Q&amp;A, the wizard surfaces <code>research.wizardInferences</code> and asks you to confirm or override each — testing philosophy, conventions, and the rest. The one exception is the autonomy level, which is always asked cold and never inferred."},
+ p3:{k:"Phase 3",h:"Grounded wizard",b:"Instead of cold Q&amp;A, the wizard surfaces <code>research.wizardInferences</code> and asks you to confirm or override each — testing philosophy, conventions, and the rest. The one exception is the autonomy level, which is always asked cold and never inferred. The wizard also offers plugins by name: the LSP plugins for your languages, and the plugin that goes with each detected MCP server, every MCP row unchecked. Only the plugins you select are installed; a skipped question installs nothing."},
  p4:{k:"Phase 4",h:"Plugin detection &amp; context",b:"onboard deep-probes installed sibling plugins and the marketplace cache (so it can skip generating agents a plugin already covers), then assembles the combined v3 context — recon + research + wizard answers, <code>version: 3</code> with a research block — that generation consumes."},
- p5:{k:"Phase 5",h:"Plan → preview → HARD GATE",b:"<code>onboard:generate {mode:plan}</code> computes the generation manifest — exactly what it would write — without writing. onboard shows a full preview (research findings + the blueprint of every file) behind a hard gate: <code>Approve</code> writes, <code>Adjust</code> re-plans, <code>Cancel</code> writes nothing. This is the single point where disk writes are authorised."},
- p6:{k:"Phase 6",h:"Generation",b:"After approval, <code>onboard:generate {mode:write}</code> runs the config-generator agent to emit Core artifacts always — CLAUDE.md, rules, skills, agents, hooks — and Enriched artifacts (CI/CD, harness, evolution, teams) when enabled. v3 generation sharpens those artifacts from the verified research and seeds <code>docs/feature-list.json</code>."},
+ p5:{k:"Phase 5",h:"Plan → preview → HARD GATE",b:"<code>onboard:generate {mode:plan}</code> computes the generation manifest — exactly what it would write — without writing. onboard shows a full preview (research findings, the blueprint of every file, the MCP servers it will add, and a Plugins to install line) behind a hard gate: <code>Approve</code> writes, <code>Adjust</code> re-plans, <code>Cancel</code> writes nothing. This is the single point where tooling writes and the installs on that line are authorised; only the research notes and the preview page exist before it. One install can come earlier: if the <code>walkthrough</code> plugin is missing, onboard offers to install it at this step, by name, and installs it only if you accept."},
+ p6:{k:"Phase 6",h:"Generation",b:"After approval, <code>onboard:generate {mode:write}</code> runs the config-generator agent to emit Core artifacts always — CLAUDE.md, rules, skills, agents, hooks — and Enriched artifacts (CI/CD, harness, evolution, teams) when enabled. v3 generation sharpens those artifacts from the verified research and seeds <code>docs/feature-list.json</code>. It installs exactly the plugins on the preview's install line, and only names from onboard's MCP or LSP catalog; a repair run (<code>regenerateOnly</code> or <code>reResearch</code>) installs nothing."},
  p7:{k:"Phase 7",h:"Handoff",b:"onboard explains what it generated and how to use it — open a file and Claude has your conventions, ask it to build something and it follows your patterns — and points you at <code>/onboard:check</code> to inspect the setup's health anytime."},
  m1:{k:"Step 1",h:"Detect",b:"<code>maintain-detect.sh --base &lt;ref&gt; --out &lt;file&gt;</code> compares the working tree with a base ref — untracked files included, tooling paths excluded — and writes a <code>maintain-detect.json</code> report. No model, no network, about a second. Every item is labelled <code>apply</code>, <code>defer</code> or <code>inform</code> by a fixed per-kind table. Its read-only query modes (<code>--mentioned</code>, <code>--lesson-file</code>, <code>--lesson-present</code>) share the same predicates with the apply step, so the two never disagree about what a line means."},
  m2:{k:"Step 2",h:"Guard before",b:"The apply step opens with <code>maintain-guard.sh before</code>, which records every dirty or untracked path with a content hash and returns a state file. Every entry the run records goes against that state, and Step 4 judges the run's writes by it."},
