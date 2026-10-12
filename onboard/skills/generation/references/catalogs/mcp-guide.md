@@ -8,7 +8,7 @@ Rules for emitting `.mcp.json` during emission Step 1 of the generation pipeline
 
 ## Invocation Gate
 
-Auto-emit. No wizard prompt. The decision is driven purely by stack signals, not plugin installation. If a signal fires and the corresponding Claude Code plugin is not installed, onboard will auto-install it after writing the config (see § Auto-install).
+Server entries are emitted from stack signals: no wizard prompt decides which servers are written, and the decision does not depend on which plugins are installed. The **plugin** behind a server is different. It is never installed on a signal alone; it is offered by name and installed only when accepted (see § Install accepted plugins).
 
 ## Trust boundary
 
@@ -30,11 +30,13 @@ The initial catalog has **6 entries**:
 | Any project | `context7` | stdio | `npx -y @upstash/context7-mcp` | none | — | `context7` |
 | `.github/workflows/` present | `github` | http | `https://api.githubcopilot.com/mcp/` | token | `GITHUB_PERSONAL_ACCESS_TOKEN` | `github` |
 | `vercel.json` OR `@vercel/*` dep | `vercel` | http | `https://mcp.vercel.com` | oauth | — | `vercel` |
-| `prisma/` dir OR `@prisma/client` / `prisma` dep | `prisma` | stdio + http | per-plugin (bundled via the `prisma` Claude plugin) | none | — | `prisma` |
+| `prisma/` dir OR `@prisma/client` / `prisma` dep | `prisma` | stdio + http | none — **plugin-delivered** (the server ships inside the `prisma` plugin; no `.mcp.json` entry) | none | — | `prisma` |
 | `@supabase/*` dep OR `supabase/` dir | `supabase` | http | `https://mcp.supabase.com` | oauth | — | `supabase` |
 | Frontend framework detected | `chrome-devtools-mcp` | stdio | `npx -y chrome-devtools-mcp` | none | — | `chrome-devtools-mcp` |
 
 Frontend frameworks that trigger `chrome-devtools-mcp`: React, Next.js, Vue, Svelte, SvelteKit, Astro, Remix, SolidJS, Nuxt, Qwik. Detection uses `framework` fingerprints from `analysis.stack.frameworks[]`.
+
+**Plugin-delivered servers.** A row with no command or URL of its own is plugin-delivered: onboard never writes a `.mcp.json` entry for it, and it exists only as a plugin offer. Today that is `prisma`.
 
 ## Confidence Tiers
 
@@ -88,14 +90,14 @@ Because `.mcp.json` is pure JSON (no comments / markers possible), drift detecti
 - Contents: exactly what onboard last wrote to `.mcp.json`
 - Purpose: `onboard:update` / `onboard:evolve` compare `.mcp.json` vs snapshot to detect user edits and propose (never apply) deltas
 
-## Auto-install
+## Install accepted plugins
 
-After `.mcp.json` is written and metadata is updated, run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh"` with the list of emitted server→plugin pairs. The script:
+After `.mcp.json` is written and metadata is updated, install the plugins the person accepted, and only those. The procedure is in `../emission/mcp-emission.md` § Install accepted plugins. The rule is in `../../../../references/plugin-install-consent.md`. In short:
 
-1. Probes installed plugins once (`claude plugin list --json`)
-2. Skips any server whose plugin is already installed
-3. Calls `claude plugin install <plugin>` for each remaining server's plugin
-4. Logs failures (offline, plugin renamed) to stdout but NEVER exits non-zero — install layer must not fail the generation phase
+1. The accepted list comes from the wizard's MCP-plugin offer, or from a programmatic caller's explicit list. Absent or empty means no install.
+2. `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <accepted names>` probes installed plugins once and skips those already installed.
+3. Failures (offline, plugin renamed) are logged and NEVER fail the generation phase.
+4. A `regenerateOnly` or `reResearch` generation skips this step.
 
 ## mcpStatus Telemetry
 
@@ -109,8 +111,9 @@ Parallel to `hookStatus`. Added to `onboard-meta.json`:
     "skipped": [                                  // why anything was not emitted
       { "server": "github", "reason": "no-github-workflows-detected" }
     ],
-    "autoInstalled": ["vercel"],                 // plugins that were freshly installed
-    "autoInstallFailed": [                        // best-effort install layer
+    "pluginOffers": { "offered": ["context7", "vercel"], "accepted": ["vercel"] }, // what was offered, and what the person took
+    "autoInstalled": ["vercel"],                 // installed after acceptance (key name is historical)
+    "autoInstallFailed": [                        // an accepted install that failed
       { "plugin": "supabase", "reason": "exit-code-1" }
     ],
     "existedPreOnboard": false
@@ -127,7 +130,7 @@ Programmatic callers may pass `callerExtras.disableMCP: true` to suppress `.mcp.
 - Skip emission Step 1 completely
 - Record `mcpStatus.skipped = [{ server: "*", reason: "caller-disabled" }]`
 - Do NOT emit `mcp-setup.md`
-- Do NOT attempt auto-install
+- Do NOT offer or install any plugin
 
 Used when the scaffold template already ships an `.mcp.json`.
 
@@ -140,6 +143,10 @@ MCP servers configured:
   ✓ context7 (stdio) — no auth required
   ✓ vercel (http) — OAuth required
     → run `claude mcp auth vercel` to complete setup
+
+Plugins:
+  ✓ vercel — installed (you accepted it)
+  · context7 — not installed; add it with `claude plugin install context7`
 
 See .claude/rules/mcp-setup.md for full details.
 ```

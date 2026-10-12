@@ -151,7 +151,7 @@ Create the `.claude/` directory if absent. Do not add placeholder hooks — they
   "hookStatus":          { "status": "skipped", "reason": "stub-mode-no-code", "planned": [], "generated": [], "skipped": [{ "event": "*", "reason": "stub-mode-no-code" }], "warnings": [] },
   "skillStatus":         { "status": "skipped", "reason": "stub-mode-no-code", "planned": [], "generated": [], "skipped": [], "warnings": [] },
   "agentStatus":         { "status": "skipped", "reason": "stub-mode-no-code", "planned": [], "generated": [], "skipped": [], "warnings": [] },
-  "mcpStatus":           { "status": "skipped", "reason": "stub-mode-no-code", "planned": [], "generated": [], "skipped": [], "autoInstalled": [], "autoInstallFailed": [] },
+  "mcpStatus":           { "status": "skipped", "reason": "stub-mode-no-code", "planned": [], "generated": [], "skipped": [], "pluginOffers": { "offered": [], "accepted": [] }, "autoInstalled": [], "autoInstallFailed": [] },
   "outputStyleStatus":   { "status": "skipped", "reason": "stub-mode-no-code", "planned": [], "generated": [], "skipped": [], "warnings": [] },
   "lspStatus":           { "status": "skipped", "reason": "stub-mode-no-code", "planned": [], "generated": [], "skipped": [], "autoInstalled": [], "autoInstallFailed": [] },
   "builtInSkillsStatus": { "status": "skipped", "reason": "stub-mode-no-code", "planned": [], "generated": [], "skipped": [], "warnings": [], "detectionSignals": {} },

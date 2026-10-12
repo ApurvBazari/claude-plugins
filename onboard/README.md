@@ -2,7 +2,7 @@
 
 > Part of [`claude-plugins`](../README.md) — see also [`notify`](../notify/) and [`handoff`](../handoff/).
 
-Lifecycle manager for AI configs. Generates Claude tooling on day one, then **detects code-vs-config drift** as the project evolves and offers to fix it.
+Lifecycle manager for AI configs. Generates Claude tooling on day one, then **detects code-vs-config drift** as the project evolves and updates the tooling to match.
 
 Generating `CLAUDE.md` is well-covered in 2026 — Claude Code's `/init`, GitHub Copilot, OpenAI Codex, Cursor, and several web tools all do it. onboard's focus is the step after: keeping those configs aligned as your code grows.
 
@@ -12,15 +12,34 @@ Generating `CLAUDE.md` is well-covered in 2026 — Claude Code's `/init`, GitHub
 claude plugin install onboard@apurvbazari-plugins
 ```
 
+## What onboard changes
+
+Know this before you run it:
+
+- **It writes Claude tooling files into your project**: `CLAUDE.md`, `.claude/rules/`, `.claude/skills/`, `.claude/agents/`, hook entries in `.claude/settings.json`, and its own state files under `.claude/`. `/onboard:start` shows every one of them in a preview and writes none of them until you approve it. Before that point it writes only its research notes (`.claude/onboard-research.json`, plus `docs/onboard/` if you choose to keep the research docs in the repo) and the preview page itself.
+- **It writes a project `.mcp.json`** with MCP servers matched to your stack. `context7` is added on every project; others (GitHub, Vercel, Supabase, Chrome DevTools) are added when your stack calls for them. Some of these start an `npx` package and some connect to a vendor URL. Prisma's server ships inside the `prisma` plugin, so onboard writes no entry for it and offers the plugin instead. An existing `.mcp.json` is never overwritten. The preview lists the servers.
+- **It installs other Claude Code plugins only when you accept an offer that names them.** That covers language-server (LSP) plugins, the plugins that go with those MCP servers, `walkthrough` and `notify`. The MCP-plugin rows start unchecked, a skipped question installs nothing, and the preview lists every plugin that will be installed.
+- **`/onboard:evolve` and `/onboard:verify` write files, and Claude can start them.** Each skill's section below says exactly what it changes.
+
 ## Skills
 
-All skills are invoked with the `/onboard:<name>` slash syntax. Read-only helpers (`check`, `verify`, `evolve`) can also be auto-invoked by Claude when relevant. Destructive skills (`start`, `update`, `adopt`) require explicit invocation.
+All skills are invoked with the `/onboard:<name>` slash syntax. They fall into three groups:
 
-### `/onboard:evolve` — the drift detection loop
+- **Writes nothing:** `check`. Claude can start it when relevant.
+- **Writes to your project, and Claude can start it when relevant:** `verify` and `evolve`. Neither installs a plugin without asking.
+- **Runs only when you invoke it:** `start`, `update` and `adopt`.
 
-The drift loop. Reads `.claude/onboard-drift.json` (populated by auto-evolution hooks `onboard:start` writes during initial setup), compares the snapshot against current code state, and proposes targeted updates: new languages added, new dependencies, structural changes, missing hooks, stale rules. (Legacy projects: the old `greenfield-drift.json` is still read; `/onboard:evolve` migrates it.)
+### `/onboard:evolve` — the drift loop
 
-You decide which proposed updates to apply. Snapshot then updates so the next `/onboard:evolve` run is incremental.
+Reads `.claude/onboard-drift.json` (populated by the auto-evolution hooks `onboard:start` writes during initial setup), compares its snapshots against the current project, and brings the tooling back in line. (Legacy projects: the old `greenfield-drift.json` is still read; `/onboard:evolve` migrates it.)
+
+**It applies most drift without asking.** That includes updating `CLAUDE.md`, rules, hook scripts and `settings.json` entries, and adding newly relevant MCP servers to `.mcp.json`.
+
+**It also removes tooling that no longer applies:** rules that reference a package you removed, the `CLAUDE.md` of a directory you deleted, hook scripts for a plugin you uninstalled, and generated files that an installed plugin has made redundant (for example a standalone TDD skill once `superpowers` is installed). In `CLAUDE.md` it changes only the sections affected and keeps your own additions. It shows a diff of everything it changed when it finishes.
+
+**It stops and asks before** installing any plugin, adding a built-in-skill recommendation, or creating a new subdirectory `CLAUDE.md`. If nobody answers, none of those happen.
+
+For per-item approval of every change, use `/onboard:update` instead.
 
 This is the heart of the lifecycle loop — see [Drift detection deep dive](#drift-detection-deep-dive) below.
 
@@ -31,8 +50,8 @@ Main entry point. Runs a grounded, research-first guided workflow:
 1. **Recon** — codebase-analyzer agent (read-only, script-free — native Glob/Grep/Read + git one-liners) scans languages, frameworks, testing setup, CI/CD, project structure and emits `reconHints`. Output stays in conversation context, not written to disk.
 2. **Profile select** — pick Minimal / Standard / Comprehensive. The profile sets how deep the research goes and how much tooling is generated (no Custom path).
 3. **Deep Research** — `onboard:research` fans out specialists, adversarially verifies, and synthesizes a research dossier plus 4 artifacts (research-dossier, architecture, risk-register, glossary).
-4. **Grounded Wizard** — instead of cold Q&A, you confirm or override the wizard answers the research already inferred (`research.wizardInferences`). Autonomy level is always asked cold, never inferred.
-5. **Preview & gate** — onboard computes a generation plan and shows a full preview (research findings + the blueprint of every file it will write) behind a hard Approve / Adjust / Cancel gate. Nothing is written until you approve.
+4. **Grounded Wizard** — instead of cold Q&A, you confirm or override the wizard answers the research already inferred (`research.wizardInferences`). Autonomy level is always asked cold, never inferred. The wizard also offers plugins by name (LSP plugins, and the plugins that go with detected MCP servers); only the ones you select are installed.
+5. **Preview & gate** — onboard computes a generation plan and shows a full preview (research findings, the blueprint of every file it will write, the MCP servers it will add and every plugin it will install) behind a hard Approve / Adjust / Cancel gate. No tooling file is written until you approve; only the research notes and the preview page exist before that.
 6. **Generation** — config-generator agent emits Core artifacts (always) and Enriched artifacts (when enabled): see [Generated artifacts](#generated-artifacts).
 7. **Education & Handoff** — explains what was generated and how to use it.
 
@@ -40,7 +59,7 @@ Includes an empty-repo guard — if the repo is empty, offers a 3-option menu (a
 
 ### `/onboard:update` *(destructive — user-invoked only)*
 
-Re-aligns your tooling against the latest Claude Code best practices. Compares current setup against both the plugin's built-in knowledge and live Claude Code documentation. Preserves your manual customisations.
+Re-aligns your tooling against onboard's bundled best-practice guides and offers each change for approval. It also checks the live Claude Code docs for features newer than those guides and lists them for you; that list is information only and never supplies what gets written. A plugin is installed only if you select its own row. Preserves your manual customisations.
 
 ### `/onboard:adopt` *(destructive — user-invoked only)*
 
@@ -50,9 +69,11 @@ For repos that already have **hand-crafted** Claude tooling not generated by onb
 
 Independent feature verification. Spawns the `feature-evaluator` agent in worktree isolation to test features against `docs/feature-list.json`. Supports single-feature, sprint, or all-incomplete modes. Includes sprint-contract gate checking.
 
+It writes its results: `docs/feature-list.json` (a feature is marked passing only on a PASS), `docs/progress.md`, and a report under `docs/verification-reports/`. The evaluator itself runs in a throwaway worktree and cannot change your files.
+
 ### `/onboard:check`
 
-Quick health check showing last run date, generated artifacts, integrity status, and recommendations.
+Quick health check showing last run date, generated artifacts, integrity status, and recommendations. Writes nothing.
 
 ### `/onboard:generate` *(internal API — `user-invocable: false`, hidden from `/` menu)*
 
@@ -88,7 +109,7 @@ Phase 5: Plan → Preview → HARD GATE ──→ Skill(onboard:generate {mode:p
      │                                        Approve → write │ Adjust → re-plan │ Cancel → nothing
      ▼
 Phase 6: Generation (post-gate) ──→ Skill(onboard:generate {mode:"write"})
-     │                   └── config-generator agent (write)
+     │                   └── config-generator agent (write; installs only the plugins you accepted)
      ▼
 Phase 7: Handoff ──→ explains generated artifacts, suggests next steps
 ```
@@ -109,7 +130,7 @@ When `/onboard:start` runs in **enriched mode**, it installs auto-evolution hook
 - **FileChanged hooks** on `package.json`, `tsconfig.json`, `pyproject.toml`, lockfiles, and structural anchors → log diffs to `.claude/onboard-drift.json`
 - **SessionStart hook** → summarises pending drift at the start of each Claude Code session
 
-Then `/onboard:evolve` reads the drift log, compares against the original snapshot, categorises changes (new dependencies, structural shifts, config diffs, missing hooks), proposes targeted updates, and applies the ones you approve. Snapshot updates after each run so subsequent invocations are incremental.
+Then `/onboard:evolve` reads the drift log, compares against the original snapshot, categorises changes (new dependencies, structural shifts, config diffs, missing hooks) and applies the matching tooling updates. Most are applied without asking and shown as a diff afterwards; a plugin install, a built-in-skill recommendation or a new subdirectory `CLAUDE.md` waits for your answer. Snapshots update after each run so subsequent invocations are incremental.
 
 See the [Example](#example) below for a full two-run transcript showing start followed by evolve detecting drift two weeks later.
 
@@ -170,11 +191,17 @@ From the research I inferred the following — confirm or override:
 
 > b
 
+  Plugins that go with the MCP servers I'll add — install any?   (all unchecked)
+  [ ] context7   [ ] chrome-devtools-mcp   [ ] github
+> (none)
+
 Phase 5: Preview & Gate
 ━━━━━━━━━━━━━━━━━━━━━━━
 Here's everything I'll create — review before I write anything:
   research: 3 risks, architecture map, glossary
-  + 12 files (CLAUDE.md, 3 rules, 1 skill, 1 agent, settings.json, …)
+  + 12 files (CLAUDE.md, 3 rules, 1 skill, 1 agent, settings.json, .mcp.json, …)
+  MCP servers: context7, chrome-devtools-mcp, github
+  Plugins to install: none
 
   Approve & generate?  [Approve / Adjust / Cancel]
 > Approve
@@ -191,7 +218,10 @@ Generated 12 artifacts:
   .claude/skills/run-tests/SKILL.md  Project-specific test runner
   .claude/agents/code-reviewer.md    Review agent with project context
   .claude/settings.json              Prettier on Write, ESLint on Edit
-  + 4 more files
+  .mcp.json                          context7, chrome-devtools-mcp, github
+  + 3 more files
+
+  Plugins: none installed. Add one later with `claude plugin install <name>`.
 
   Snapshot saved to .claude/onboard-meta.json
 
@@ -202,27 +232,33 @@ Your project is set up for AI-assisted development. Try:
   2. Ask Claude to create a new component — it'll follow your patterns
   3. Run /onboard:check anytime to check the health of your setup
 
-# ── two weeks later — team added Playwright + extracted packages/shared ──
+# ── two weeks later — team added Playwright, Supabase and packages/shared ──
 
 > /onboard:evolve
 
-Reading snapshot vs current state…
+Reading snapshots vs current state…
 
 Drift detected:
   + new dependency     @playwright/test in apps/web
-  + new language area  Playwright config implies e2e tests (no rule yet)
   + structural change  packages/shared workspace appeared
   ~ tsconfig changes   paths added for @repo/shared
+  + new stack signal   supabase/ directory → supabase MCP server
 
-Proposed updates:
-  • Add rule        testing/e2e-conventions.md (Playwright)
-  • Update CLAUDE.md → mark monorepo, document workspace boundaries
-  • Add hook        PostToolUse on apps/web/**/*.tsx → Playwright config check
+Updates applied:
+  • CLAUDE.md                    added @playwright/test, marked monorepo, documented workspace boundaries
+  • .claude/rules/typescript.md  updated for the new paths
+  • .mcp.json                    added supabase server (OAuth — run `claude mcp auth supabase`)
 
-Apply all? [Y/n]
-> Y
+One question:
+  New MCP server: supabase. Install the plugin that goes with it?
+  [ ] supabase
+> (none)
 
-Snapshot updated. AI configs realigned to current code.
+Not applied (needs your input):
+  • New directory packages/shared — create a CLAUDE.md for it?
+  • supabase plugin not installed. Add it later with `claude plugin install supabase`
+
+Snapshots updated.
 ```
 
 ## Generated artifacts
@@ -236,6 +272,7 @@ Snapshot updated. AI configs realigned to current code.
 - **`.claude/agents/`** — Specialised agents (plugin-aware — skips agents already covered by an installed plugin)
 - **`.claude/output-styles/<name>.md`** — Project-scoped custom output style tuned to archetype (onboarding / teaching / production-ops / research / solo)
 - **Hook entries in `.claude/settings.json`** — Auto-format, lint checks, tailored to your tooling
+- **`.mcp.json`** — project MCP servers matched to your stack (an existing file is never overwritten)
 - **PR template + commit conventions**
 - **`.claude/onboard-meta.json`** — generation manifest
 
@@ -264,6 +301,7 @@ All generated files include self-maintaining headers (version + date) that promp
 
 - **bash** — evolution + CI-audit scripts and generated hooks (recon itself is script-free; macOS and Linux ship with it)
 - **git** — repository analysis and contributor detection
+- **`claude` CLI** — used to install the plugins you accept
 - **python3** — required by the [maintain entry](#maintain-entry-for-orchestrators)'s `maintain-*` scripts (standard library only)
 - **tree** (optional) — directory visualisation; falls back to `find`
 - **jq** (optional) — JSON parsing in hooks; generated hooks include a `python3` fallback

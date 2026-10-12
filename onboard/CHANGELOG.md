@@ -1,5 +1,54 @@
 # Changelog
 
+## 3.3.0 — 2026-10-10
+
+Responds to the claude.ai directory review of 3.2.0: onboard installed other plugins without offering them, and its README and description did not match what it does.
+
+### Changed — no plugin is installed without an accepted, named offer
+- **`/onboard:start` offers the plugins behind MCP servers by name.** The wizard has a new multiSelect, every row unchecked, listing the plugin that goes with each detected MCP server. The Phase 5 preview has a "Plugins to install" line, and generation installs exactly that list. Before, the plugin behind every emitted server was installed without being named (context7 on every project).
+- **Skipping the LSP question installs nothing.** The skip default was the full detected list, so a skipped question installed every detected LSP plugin. It is now an empty list: only the LSP plugins you select are installed.
+- **`/onboard:update` gives each plugin its own row.** Approving a new MCP server no longer installs its plugin. "Apply all" names the plugins it would install.
+- **`/onboard:evolve` asks before installing the plugin behind a new MCP server**, the same way it already asks for LSP plugins. If the prompt cannot be shown or nobody answers, nothing is installed and nothing is recorded as offered. The server entry is still merged automatically.
+- **`/onboard:evolve` takes no plugin list from a caller.** Its LSP step said a list from `generate` replaced the prompt, but `generate` never calls evolve, so the clause was only a way around the prompt. Only an answer to evolve's own question installs a plugin.
+- **`/onboard:adopt` offers no plugin.** It installs nothing, so its wizard run skips the LSP and MCP-plugin questions.
+- **`/onboard:update` drops a saved install offer whose plugin is not in the catalog.** A plugin name read from `.claude/onboard-pending-updates.json` is never offered on that file's word alone.
+- **Repair runs never install.** A `regenerateOnly` or `reResearch` generation installs nothing, even when stored answers carry an earlier accepted list.
+- **Only catalog names can be installed.** A plugin name that is not in onboard's MCP or LSP catalog is dropped with a warning.
+- **`/onboard:update`'s live docs check is detect-only.** The fetch yields a list of feature names and links, shown as information. It never supplies wording for a proposal or a file; every proposal comes from the bundled guides.
+
+### Added
+- `references/plugin-install-consent.md` — the rule (R1 to R4), the offer shape, what happens when nobody answers, and what is recorded. Every file that names `install-plugins.sh` cites it.
+- `wizardAnswers.mcpPlugins`, `wizardAnswers.mcpPluginsOffered` (the rows the wizard actually showed), `callerExtras.mcpPlugins`, `callerExtras.mcpPluginsOffered`, `decisions.pluginInstalls` (generation manifest) and `mcpStatus.pluginOffers` (`{ offered, accepted }`, the ledger that stops a declined plugin being asked about again). `offered` holds only plugins whose row was shown, so a plugin that was never shown can still be offered later. All optional and additive.
+- A server whose catalog row has no command or URL (`prisma`) is plugin-delivered: it gets no `.mcp.json` entry, exists only as a plugin offer, and is never counted as MCP drift.
+
+### Fixed — README and description say what onboard does
+- `verify` and `evolve` are no longer described as read-only. The README states what each writes, that `evolve` applies most drift without asking, every kind of tooling it removes (rules for a removed package, the `CLAUDE.md` of a deleted directory, hook scripts of an uninstalled plugin, generated files a plugin made redundant), and what it stops to ask about.
+- The README says what `/onboard:start` writes before you approve: its research notes and the preview page. No tooling file is written before approval.
+- A new "What onboard changes" section says up front that onboard writes a project `.mcp.json` and installs plugins only on acceptance.
+- The example transcript no longer shows an `Apply all? [Y/n]` prompt that `evolve` does not have.
+- The `plugin.json` and marketplace description discloses the `.mcp.json` write and the install rule.
+
+### Tests
+- New belt `tests/onboard/test_onboard_install_consent.sh` (12 assertions) pins the rule at every caller, the README and description claims, the schema fields and the detect-only rule.
+
+### Upgrading
+- A project onboarded on 3.2.x or earlier has no `mcpStatus.pluginOffers`. `update` and `evolve` seed it on first read: the plugins of existing servers count as already offered, so you are not asked about them and a plugin you removed is not reinstalled.
+- `install-plugins.sh` behaves as before; only what callers pass to it changed. The telemetry keys `autoInstalled` / `autoInstallFailed` keep their names.
+
+## 3.2.1 — 2026-10-09
+
+### Fixed
+- **The audit's rule-path check matches the way Claude Code does.** `scripts/audit-tooling.sh` matched each rule's `paths:` pattern with `compgen -G`, a shell glob where `**` is one level and `*` skips dot-directories, so a rule targeting `**/marketplace.json` was reported as matching nothing while `.claude-plugin/marketplace.json` existed. Claude Code does not use a shell glob: it splits a `paths` value on commas, expands braces, drops a trailing `/**`, and matches with the `ignore` library, so the semantics are gitignore's. One inline `python3` pass now does the same. A pattern with no slash matches at any depth, one with a slash is anchored to the project root, `dir/**` and `dir/` cover the files under a directory, letter case is ignored, and a dot-directory matches like any other. `.git` and `node_modules` are not searched.
+- **Where the docs and Claude Code disagree, the audit follows Claude Code.** The docs say `*.md` matches Markdown files in the project root; Claude Code 2.1.294 applies such a rule at any depth, so the audit counts a nested match.
+- **The check reads every form of `paths` Claude Code reads**: a block list, a flow list or a comma-separated string, in rule files at any depth under `.claude/rules/`. A negated pattern (`!…`) is never reported.
+- **The same check now runs on macOS.** Its frontmatter was read with a `sed` expression BSD `sed` rejects, and the error was discarded, so on macOS the check read no paths and reported no drift for any project.
+- **A rule-path check that cannot run is reported.** When `python3` is missing or fails, the audit lists `Rule path check could not run` as drift instead of passing.
+
+### Tests
+- New belt `tests/onboard/test_audit_tooling_rule_paths.sh` covers the pattern forms, the frontmatter shapes, the step outputs and the failed-run case. Its expectations are what a headless Claude Code 2.1.294 run was seen to load, and what `ignore` 5.3.2 returns; the matcher is a port of that library's pattern rules and agreed with it on 7 million generated pattern and path pairs.
+
+The drift line's wording and the `has_drift` / `report` step outputs are unchanged. A project generated earlier keeps its own copy at `.github/scripts/audit-tooling.sh`; replace it with this script to get the fix.
+
 ## 3.2.0 — 2026-09-27
 
 ### Added — the maintain entry (for orchestrators)

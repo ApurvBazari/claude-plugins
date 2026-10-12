@@ -50,8 +50,8 @@ correct a marker/count. Preserve tables, prose, and ordering already present.
 
 Report flag-only findings verbatim for the user to handle:
 `PHANTOM_CMD`, `VERSION_MISMATCH`, `DESC_MISMATCH`, `PLUGIN_JSON_MISSING`,
-`SITE_PAGE_MISSING`, `SITE_PAGE_STALE`. For the site findings, the instruction is
-"run `/walkthrough:document <plugin>`".
+`SITE_PAGE_MISSING`. For that finding, the instruction is "run `/walkthrough:document <plugin>`".
+Site *content* drift is checked by `/release-docs` and its "Docs Obligations" gate, not here.
 
 ## Step 5: Re-verify
 

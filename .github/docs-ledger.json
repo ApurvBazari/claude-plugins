@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "entries": {
+    "onboard@3.3.0#9aaac90e": {"disposition": "covered", "at": ["onboard/README.md#what-onboard-changes", "site/onboard/index.html#what"]},
+    "onboard@3.3.0#38376c74": {"disposition": "covered", "at": ["site/onboard/index.html#start", "site/onboard/index.html#flow", "site/onboard/index.html#example"]},
+    "onboard@3.3.0#89f0fdde": {"disposition": "covered", "at": ["onboard/README.md#what-onboard-changes", "site/onboard/index.html#what", "site/onboard/index.html#flow"]},
+    "onboard@3.3.0#4c9eb301": {"disposition": "covered", "at": ["site/onboard/index.html#skills"]},
+    "onboard@3.3.0#054f8953": {"disposition": "covered", "at": ["site/onboard/index.html#drift", "site/onboard/index.html#example"]},
+    "onboard@3.3.0#4658544e": {"disposition": "covered", "at": ["site/onboard/index.html#drift"]},
+    "onboard@3.3.0#0b9078d5": {"disposition": "covered", "at": ["site/onboard/index.html#skills"]},
+    "onboard@3.3.0#e03133e8": {"disposition": "covered", "at": ["site/onboard/index.html#skills"]},
+    "onboard@3.3.0#fb9a6e48": {"disposition": "covered", "at": ["site/onboard/index.html#flow"]},
+    "onboard@3.3.0#975d87f3": {"disposition": "covered", "at": ["site/onboard/index.html#flow"]},
+    "onboard@3.3.0#b2e56c20": {"disposition": "covered", "at": ["site/onboard/index.html#skills"]},
+    "onboard@3.3.0#59acd07c": {"disposition": "not-user-facing", "reason": "an internal reference the onboard skills load; the rule it states is documented on the onboard page (§01, §03, §05)"},
+    "onboard@3.3.0#6fde9192": {"disposition": "not-user-facing", "reason": "internal context, manifest and state-file schema fields; the behaviour they record is documented on the onboard page"},
+    "onboard@3.3.0#0581f2ad": {"disposition": "covered", "at": ["onboard/README.md#what-onboard-changes", "site/onboard/index.html#what"]},
+    "onboard@3.3.0#ec4ccb61": {"disposition": "covered", "at": ["site/onboard/index.html#skills", "site/onboard/index.html#drift", "site/onboard/index.html#what"]},
+    "onboard@3.3.0#622abcf1": {"disposition": "covered", "at": ["site/onboard/index.html#what", "site/onboard/index.html#flow"]},
+    "onboard@3.3.0#15a18e22": {"disposition": "covered", "at": ["onboard/README.md#what-onboard-changes", "site/onboard/index.html#what"]},
+    "onboard@3.3.0#12e8979f": {"disposition": "covered", "at": ["site/onboard/index.html#example"]},
+    "onboard@3.3.0#39b0641d": {"disposition": "covered", "at": ["site/index.html#plugins", "site/onboard/index.html#top"]},
+    "onboard@3.3.0#4ab5a865": {"disposition": "not-user-facing", "reason": "test belt only"},
+    "onboard@3.3.0#82802ef8": {"disposition": "covered", "at": ["site/onboard/index.html#drift"]},
+    "onboard@3.3.0#baa50d2b": {"disposition": "not-user-facing", "reason": "states an internal script and telemetry key names are unchanged; nothing a user sees changes"},
+    "onboard@3.2.1#e64700be": {"disposition": "covered", "at": ["site/onboard/index.html#artifacts"]},
+    "onboard@3.2.1#59c9c6bb": {"disposition": "covered", "at": ["site/onboard/index.html#artifacts"]},
+    "onboard@3.2.1#a45593b4": {"disposition": "covered", "at": ["site/onboard/index.html#artifacts"]},
+    "onboard@3.2.1#ee7c7c14": {"disposition": "covered", "at": ["site/onboard/index.html#artifacts"]},
+    "onboard@3.2.1#f3aa82b2": {"disposition": "covered", "at": ["site/onboard/index.html#artifacts"]},
+    "onboard@3.2.1#97e10553": {"disposition": "not-user-facing", "reason": "test belt only"},
+    "onboard@3.2.1#aa4b692f": {"disposition": "covered", "at": ["site/onboard/index.html#artifacts"]}
+  },
+  "intentional": [
+    {
+      "file": "onboard/README.md",
+      "token": "greenfield-drift.json",
+      "context": "is still read",
+      "reason": "documents the legacy drift-log name evolve still reads and migrates"
+    },
+    {
+      "file": "site/onboard/index.html",
+      "token": "greenfield-drift.json",
+      "context": "is still read",
+      "reason": "documents the legacy drift-log name evolve still reads and migrates"
+    },
+    {
+      "file": "onboard/skills/generation/references/extended/evolution-hooks-guide.md",
+      "token": ".claude/greenfield-drift.json",
+      "context": "or the legacy .claude/greenfield-drift.json",
+      "reason": "the generated SessionStart hook still checks the legacy drift-log name, for projects onboarded before the rename"
+    },
+    {
+      "file": "handoff/CONVENTIONS.md",
+      "token": "trigger-phrases",
+      "context": "and no `trigger-phrases` setting",
+      "reason": "states that the removed trigger-phrases setting does not exist (it was never read by any code)"
+    }
+  ]
+}

@@ -56,13 +56,13 @@ Present each as an **overridable card with its static/preset default pre-selecte
 
 Then the **detection prompts** (unchanged detection logic, folded into this exchange):
 
-- Ecosystem plugins (Step 5), LSP plugins (Step 6), built-in skills (Step 7). The single-option guard in `.claude/rules/ask-user-question-guard.md` still applies to each dynamically-built group.
+- Ecosystem plugins (Step 5), LSP plugins (Step 6), built-in skills (Step 7), MCP-server plugins (Step 8). The single-option guard in `.claude/rules/ask-user-question-guard.md` still applies to each dynamically-built group.
 
 A developer who accepts all defaults clears Exchange 3 in one pass.
 
 ### Summary & Confirmation
 
-Present everything gathered (recon `analysis` + `research` inferences + confirmed/overridden answers + the chosen model line) and confirm before control returns to `/onboard:start`, which proceeds to Phase 4 (Plugin Detection). **Always include the model line** as before: `Model: <model-id> (<source>)`.
+Present everything gathered (recon `analysis` + `research` inferences + confirmed/overridden answers + the chosen model line) and confirm before control returns to `/onboard:start`, which proceeds to Phase 4 (Plugin Detection). **Always include the model line** as before: `Model: <model-id> (<source>)`. **Always include a plugins line** too: `Plugins to install: <accepted LSP and MCP-server plugins>`, or `Plugins to install: none`.
 
 ## Exchange 3 detail — recorded field shapes
 
@@ -83,13 +83,15 @@ Record per-event type in `wizardAnswers.advancedHookTypes[<eventName>]` (`"comma
 
 **Skill / agent / output-style tuning** — default `{ mode: "defaults" }` each (archetype inference only). When overridden, record `wizardAnswers.skillTuning` / `agentTuning` / `outputStyleTuning` with `mode: "tuned"` and the per-mode settings documented in § Output. Per-skill / per-agent / per-style tweaks happen in the generation-time confirmation step, not here.
 
-**Detection prompts** — ecosystem plugins, LSP plugins, built-in skills (Steps 5 / 6 / 7):
+**Detection prompts** — ecosystem plugins, LSP plugins, built-in skills, MCP-server plugins (Steps 5 / 6 / 7 / 8):
 
 - Ecosystem plugins: probe install status with `ls "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh" 2>/dev/null` and present each with an `[installed]` / `[not installed]` marker; selected-but-missing plugins are offered for install in /onboard:start Phase 6 (ecosystem-plugin-install step), which then directs you to `/notify:setup` for configuration (onboard does not wire notify itself).
 - LSP plugins: run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"`; empty array → skip and record `wizardAnswers.lspPlugins = []`; otherwise present detected plugins (pre-checked when `fileCount ≥ 10`) in fileCount-descending order and record the accepted names in `wizardAnswers.lspPlugins`.
 - Built-in skills: detect candidates from the analysis report (4 core always; extras when their signal fires) and record the accepted names in `wizardAnswers.builtInSkills`.
-- LSP plugins and built-in skills are issued together as **two `multiSelect` questions in one `AskUserQuestion` call** (the canonical two-block pattern). The single-option guard in `.claude/rules/ask-user-question-guard.md` applies to each dynamically-built group: a standalone group that collapses to 1 candidate becomes a yes/no; a group inside the combined call is padded with an explicit `None / Skip` (envelope intact); a zero-candidate group is dropped.
-- **Programmatic mode** (`callerExtras.lspPlugins` / `callerExtras.disableLSP` / `callerExtras.builtInSkills` / `callerExtras.disableBuiltInSkills`): the detection prompt never fires — generation reads the caller-supplied value directly.
+- MCP-server plugins: run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh" "$PROJECT_ROOT"`. Each candidate names a `server` and the `plugin` behind it. If `.mcp.json` already exists at the project root, drop this group and record `wizardAnswers.mcpPlugins = []`: the developer already manages MCP there, so onboard writes no server and offers no plugin. Otherwise probe installed plugins once (`claude plugin list --json`, best-effort) and leave out any plugin already installed; if the probe fails, keep every row. Present the remaining plugins with every row unchecked: label = the plugin name, description = what it adds and the server it belongs to (for a plugin-delivered server such as `prisma`, say that the server ships only inside the plugin). Record the accepted names in `wizardAnswers.mcpPlugins`. Record the rows you displayed in `wizardAnswers.mcpPluginsOffered` once the developer has submitted the question; when the group was dropped, skipped or dismissed, record `[]` there, because a plugin whose row was never shown has not been offered. The servers themselves are not chosen here; they stay signal-driven and appear in the Phase 5 preview. Rule: `../../references/plugin-install-consent.md`.
+- LSP plugins, built-in skills and MCP-server plugins are issued together as **three `multiSelect` questions in one `AskUserQuestion` call** (the limit is four questions per call). The single-option guard in `.claude/rules/ask-user-question-guard.md` applies to each dynamically-built group: a standalone group that collapses to 1 candidate becomes a yes/no; a group inside the combined call is padded with an explicit `None / Skip` (envelope intact); a zero-candidate group is dropped.
+- **Programmatic mode** (`callerExtras.lspPlugins` / `callerExtras.disableLSP` / `callerExtras.mcpPlugins` / `callerExtras.disableMCP` / `callerExtras.builtInSkills` / `callerExtras.disableBuiltInSkills`): the detection prompt never fires — generation reads the caller-supplied value directly. An absent caller list for either plugin group installs nothing.
+- **Adopt mode** (the caller is `/onboard:adopt`): skip the LSP-plugin and MCP-server-plugin groups. Adopt installs nothing, so it offers no plugin. Record `lspPlugins: []`, `mcpPlugins: []` and `mcpPluginsOffered: []`, and print `Plugins to install: none` in the summary.
 
 ## Static Defaults
 
@@ -127,7 +129,7 @@ Note: a `research.wizardInferences` value may be an enum *stem* (e.g. `teamSize:
 3. **Three-exchange shape** — the grounded wizard runs Exchange 1 (workflow/preferences) + Exchange 2 (cold asks) + Exchange 3 (tuning + detection), skipping any detection group with no candidates. No preset selection, no Custom path, no mid-wizard escape hatch (those were the v2 model).
 4. **Reference the analysis** — Always connect questions to what the analyzer found. This demonstrates value and reduces redundant questions.
 5. **Capture autonomy preference carefully** — This determines how much Claude asks vs acts independently. Get this right.
-6. **Always populate fields explicitly** — When the wizard skips a detection group (no signal, programmatic mode) or the developer accepts a default, populate the corresponding field in `wizardAnswers` with the explicit default value (full detected list, archetype default, etc.) rather than leaving the field `undefined`. This means downstream generation always receives explicit Path A data and never has to fall back to Path B (which is just the C1-introduced safety net).
+6. **Always populate fields explicitly** — When the wizard skips a detection group (no signal, programmatic mode) or the developer accepts a default, populate the corresponding field in `wizardAnswers` with the explicit default value (an empty list for the two plugin groups, the candidate list for built-in skills, archetype default, etc.) rather than leaving the field `undefined`. This means downstream generation always receives explicit Path A data and never has to fall back to Path B (which is just the C1-introduced safety net).
 7. **Canonical wizardStatus telemetry — Finalize step** — Before the Summary, emit `wizardStatus` to `onboard-meta.json` with **exactly** these 5 subkeys. Emission runs for every profile; no profile-specific shape variant is allowed.
 
    Track state throughout the wizard run:
@@ -161,6 +163,8 @@ Note: a `research.wizardInferences` value may be an enum *stem* (e.g. `teamSize:
    - `exchangesUsed` defaults to `0` for stub-mode paths that bypass the wizard entirely. Do not emit `null`.
    - No extra keys beyond the 5 canonical. Adding fields creates drift for downstream consumers.
 
+8. **A plugin is installed only from an accepted, named offer** — the LSP and MCP-server plugin groups record what the developer selected, and a skip records `[]`. Never fill either list with detected candidates on the developer's behalf. See `../../references/plugin-install-consent.md`.
+
 ## Skip Behavior
 
 When a developer skips a question or section:
@@ -169,7 +173,9 @@ When a developer skips a question or section:
    - `autonomyLevel` → `"balanced"`
    - `codeStyleStrictness` → `"moderate"`
    - `securitySensitivity` → `"standard"`
-   - `lspPlugins` → full detected list from `${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh` (accept-all default)
+   - `lspPlugins` → `[]` (a skipped question is not an acceptance, so nothing is installed; see `../../references/plugin-install-consent.md`)
+   - `mcpPlugins` → `[]` (same rule)
+   - `mcpPluginsOffered` → `[]` (no row was shown, so nothing counts as offered)
    - `builtInSkills` → full candidate list (4 core + fired extras)
    - `outputStyleTuning` → `{ mode: "defaults" }`
    - `skillTuning` → `{ mode: "defaults" }`
@@ -252,6 +258,8 @@ After the wizard completes, compile all answers into the following structured JS
     "activationDefault": "none"
   },
   "lspPlugins": ["typescript-lsp", "rust-analyzer-lsp"],
+  "mcpPlugins": ["vercel"],
+  "mcpPluginsOffered": ["context7", "vercel"],
   "builtInSkills": ["/loop", "/simplify", "/debug", "/pr-summary", "/schedule"]
 }
 ```
@@ -262,7 +270,11 @@ The `advancedHookEvents` field is an array of event names the developer explicit
 
 The `advancedHookTypes` / `advancedHookTypeExtras` / `allowHttpHooks` fields come from Exchange 3 (per-event execution type). `advancedHookTypes` only contains entries for judgment-capable events the developer explicitly picked a non-default type for; events defaulting to `command` are omitted. `advancedHookTypeExtras` carries the auxiliary field (`agentRef` / `httpUrl` / `promptRef` / `promptInline`) required by the chosen type. `allowHttpHooks` is `true` only when the developer confirmed the HTTP data-leaves-machine prompt for at least one event. See `../generation/references/emission/hooks-generation.md` § Advanced Event Hooks § Per-event defaults and § Hook Type Validation for how these are consumed.
 
-The `lspPlugins` field is the developer-accepted list of marketplace LSP plugins from Exchange 3 (LSP detection prompt). An empty array means "detected candidates but developer declined all"; an absent field means "programmatic path — full detected list is the implicit accept". `../generation/SKILL.md` § LSP Plugin Recommendations consumes this alongside `callerExtras.lspPlugins` and `callerExtras.disableLSP`. See `../generation/references/catalogs/lsp-plugin-catalog.md` for the plugin→language mapping.
+The `lspPlugins` field is the developer-accepted list of marketplace LSP plugins from Exchange 3 (LSP detection prompt). An empty array means "detected candidates but the developer declined all, or skipped the question"; an absent field means "no offer was made". Neither installs anything. `../generation/SKILL.md` § LSP Plugin Recommendations consumes this alongside `callerExtras.lspPlugins` and `callerExtras.disableLSP`. See `../generation/references/catalogs/lsp-plugin-catalog.md` for the plugin→language mapping.
+
+The `mcpPlugins` field is the developer-accepted list of plugins behind the detected MCP servers, from Exchange 3 (MCP-server plugin prompt). An empty array means "offered and declined all, skipped, or nothing to offer"; an absent field means "no offer was made". Neither installs anything. The config-generator's install step consumes it alongside `callerExtras.mcpPlugins`; see `../../references/plugin-install-consent.md`.
+
+The `mcpPluginsOffered` field lists the MCP-server plugin rows the wizard displayed in a question the developer submitted. The generator records it as `mcpStatus.pluginOffers.offered`, which stops a declined plugin being asked about again. An empty array or an absent field means no row was shown, so nothing counts as offered and the plugin can still be offered later.
 
 The `builtInSkills` field is the developer-accepted list of built-in Claude Code skills from Exchange 3 (built-in skills detection prompt). An empty array means "candidates existed but developer declined all"; an absent field means "programmatic path — full candidate list (core + fired extras) is the implicit accept". `../generation/SKILL.md` § Built-in Claude Code Skills — emission Step 4 consumes this alongside `callerExtras.builtInSkills` and `callerExtras.disableBuiltInSkills`. See `../generation/references/catalogs/built-in-skills-catalog.md` for the skill tiers and detection signals.
 

@@ -20,7 +20,7 @@ canonical order), `MARKER_MISSING` (add marker to the entry's header), `PLUGIN_N
 
 **Flag-only (needs human / another tool):** `PHANTOM_CMD` (deleting prose is a human call),
 `VERSION_MISMATCH` / `DESC_MISMATCH` / `PLUGIN_JSON_MISSING` (ambiguous which side is right),
-`SITE_PAGE_MISSING` / `SITE_PAGE_STALE` (HTML is rendered by `/walkthrough:document`).
+`SITE_PAGE_MISSING` (HTML is rendered by `/walkthrough:document`; content drift is `/release-docs`' job).
 
 ## Scaffold shape for a missing command entry
 

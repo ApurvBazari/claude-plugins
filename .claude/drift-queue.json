@@ -435,6 +435,285 @@
       "status": "deferred",
       "rationale": "Claude Code reads only paths: from a rule; a rule scoped with globs: is silently loaded in every session (villasa: 7 of 8 rules). Not a maintain concern — not diff-caused (D2).",
       "resolution": "Add a warning to /onboard:check in a later onboard release."
+    },
+    {
+      "id": "DIR-1",
+      "title": "onboard directory listing has no icon",
+      "source": "onboard install-consent spec section 10 (claude.ai directory review of 3.2.0, 2026-10-08)",
+      "raisedAt": "2026-10-09",
+      "status": "deferred",
+      "rationale": "The listing falls back to the publisher's GitHub avatar. The portal reads .claude-plugin/icon.png once, at first save or submit; whether the first submission used that up is not stated.",
+      "resolution": "Owner supplies a square PNG, 512 to 2048 px, under 2 MB; add it and check the Listing tab."
+    },
+    {
+      "id": "DIR-2",
+      "title": "Directory scanner warning: uses a credential from the user's machine (4 findings)",
+      "source": "onboard install-consent spec section 10 (claude.ai directory review of 3.2.0, 2026-10-08)",
+      "raisedAt": "2026-10-09",
+      "status": "deferred",
+      "rationale": "Hits are sample text in hooks-guide.md, ci-cd-templates.md and hooks-generation.md, plus a plugin-wide flag. onboard never reads or sends a token; http hooks need allowHttpHooks and a URL. The portal says to leave it for a reviewer to confirm.",
+      "resolution": "No change unless a reviewer asks. The trigger line in hooks-generation.md was not found."
+    },
+    {
+      "id": "DIR-3",
+      "title": "Directory scanner warning: contains a download-and-run command (3 findings)",
+      "source": "onboard install-consent spec section 10 (claude.ai directory review of 3.2.0, 2026-10-08)",
+      "raisedAt": "2026-10-09",
+      "status": "deferred",
+      "rationale": "Flagged in CHANGELOG.md, hooks-guide.md (npx prettier / npx eslint in sample hook commands) and specialist-roster.md (no trigger found). The portal says documentation-only cases need no change.",
+      "resolution": "No change unless a reviewer asks."
+    },
+    {
+      "id": "DIR-4",
+      "title": "An MCP server can be registered twice, by .mcp.json and by its plugin",
+      "source": "onboard install-consent spec section 10 (claude.ai directory review of 3.2.0, 2026-10-08)",
+      "raisedAt": "2026-10-09",
+      "status": "deferred",
+      "rationale": "When a person accepts the plugin behind a server onboard also wrote to .mcp.json, the same server may be registered from both places.",
+      "resolution": "Design call: when the plugin is accepted, should onboard skip the .mcp.json entry, as it does for a plugin-delivered server?"
+    },
+    {
+      "id": "DIR-5",
+      "title": "Telemetry keys autoInstalled / autoInstallFailed no longer describe an automatic install",
+      "source": "onboard install-consent spec section 10 (claude.ai directory review of 3.2.0, 2026-10-08)",
+      "raisedAt": "2026-10-09",
+      "status": "deferred",
+      "rationale": "Since 3.3.0 these record installs that followed an acceptance. They are stored in existing projects' onboard-meta.json, so renaming needs a read-both migration.",
+      "resolution": "Rename with a migration in a later onboard release, or leave and keep the note in the consent reference."
+    },
+    {
+      "id": "DIR-6",
+      "title": "GitHub's default branch is develop; CLAUDE.md says main",
+      "source": "onboard install-consent spec section 10 (claude.ai directory review of 3.2.0, 2026-10-08)",
+      "raisedAt": "2026-10-09",
+      "status": "deferred",
+      "rationale": "The claude.ai directory reviews the latest commit of the default branch, so in-flight develop work is what gets reviewed and listed. CLAUDE.md's Branching section states main is the default.",
+      "resolution": "Owner decides: flip the default to main and resubmit pinned there, or correct CLAUDE.md."
+    },
+    {
+      "id": "REV-1",
+      "title": "onboard 3.3.0 review: minor wording and consistency findings left open",
+      "source": "onboard 3.3.0 install-consent branch, fresh whole-branch review (2026-10-10)",
+      "raisedAt": "2026-10-10",
+      "status": "deferred",
+      "rationale": "The review's minor findings that were not fixed in the PR. None opens a path to an install nobody accepted.",
+      "items": [
+        "start/SKILL.md and question-bank.md summary templates lack the 'Plugins to install' line the wizard now requires.",
+        "The markdown-gate fallback sentence (start/SKILL.md, adopt/SKILL.md) does not name the Plugins to install line.",
+        "evolve Step 2c 'Programmatic mode (callerExtras.mcpPlugins set)' has no defined source; nothing passes it to evolve.",
+        "evolve's offer prompt says 'New MCP server(s)' for a set that can include older snapshot servers; the README example shows a one-row multiSelect where the reference wants Install / Skip.",
+        "update derives install offers only from newly-suggested servers, so a plugin left un-offered for an existing server is offered by evolve only (the spec said 'or by update').",
+        "config-generator step 8 is not gated by callerExtras.disableMCP, while mcp-guide § Caller Escape Hatch says no plugin is offered or installed.",
+        "The consent reference says 'do not offer a plugin that is already installed' for all offers, but the LSP prompts do not probe; it also omits the accepted-list resolution order and the plugin-delivered rule.",
+        "schemas/context-shape-v3.json's top description omits mcpPlugins; the example context uses typescript-language-server, a name R4 would drop.",
+        "question-bank.md still says 'Selected-but-missing plugins install in ... Phase 6' for ecosystem plugins.",
+        "README 'the preview lists every plugin that will be installed' does not cover notify and walkthrough, which have their own offers.",
+        "evolve Step 3's diff has no line for an accepted install that failed (spec 5.7).",
+        "Belt IC1 checks only the bold R1-R4 markers, not the rule text.",
+        "Belt IC2 does not cover files that run 'claude plugin install' directly (the walkthrough and notify offers in start, adopt and ecosystem-plugin-install.md)."
+      ],
+      "resolution": "Sweep in a later onboard patch release."
+    },
+    {
+      "id": "REV-2",
+      "title": "An LSP plugin that was never offered is remembered as recommended",
+      "source": "onboard 3.3.0 install-consent branch, fresh whole-branch review (2026-10-10)",
+      "raisedAt": "2026-10-10",
+      "status": "deferred",
+      "rationale": "LSP emission Path B writes every detected plugin to the snapshot's recommended list even when no offer was shown, and update offers only plugins missing from that list. The MCP side now records only rows actually shown (wizardAnswers.mcpPluginsOffered); the LSP side does not.",
+      "resolution": "Design call: give the LSP snapshot the same rows-shown rule, or let update re-offer a recommended plugin that was never accepted or declined."
+    },
+    {
+      "id": "REV-3",
+      "title": "evolve's removal steps have no user-edit check",
+      "source": "onboard 3.3.0 install-consent branch, fresh whole-branch review (2026-10-10)",
+      "raisedAt": "2026-10-10",
+      "status": "deferred",
+      "rationale": "evolve removes rules that reference a removed package, the CLAUDE.md of a deleted directory and the hook scripts of an uninstalled plugin without checking whether the file was hand-edited. The README now describes the removals instead of promising evolve never touches your edits; the behaviour is unchanged.",
+      "resolution": "Decide whether those steps should skip a file whose maintenance header was changed or removed, as update does."
+    },
+    {
+      "id": "REV-4",
+      "title": "A wizard plugin group can exceed AskUserQuestion's four options per question",
+      "source": "onboard 3.3.0 install-consent branch, fresh whole-branch review (2026-10-10)",
+      "raisedAt": "2026-10-10",
+      "status": "deferred",
+      "rationale": "The wizard's own Guard says each question takes up to four options. A Next.js + Vercel + Supabase + GitHub stack yields five MCP-plugin rows; the LSP and built-in-skills groups have the same pre-existing limit (the question bank's example shows five options).",
+      "resolution": "Add a split rule (consecutive questions of at most four rows, never drop a row) and reconcile it with the three-groups-in-one-call contract. Try a five-plugin stack in a real run."
+    },
+    {
+      "id": "REV-5",
+      "title": "start says nothing has been written before the gate, but the research notes exist",
+      "source": "onboard 3.3.0 install-consent branch, fresh whole-branch review (2026-10-10)",
+      "raisedAt": "2026-10-10",
+      "status": "deferred",
+      "rationale": "start/SKILL.md tells the model 'Nothing has been written yet' at the gate and prints 'Cancelled — no files were created' on Cancel. By then research has written .claude/onboard-research.json (and docs/onboard/ when chosen) and the gate has written the preview page. The README was corrected in 3.3.0; the skill text was not.",
+      "resolution": "Reword both lines to 'no tooling file', or remove the research notes and preview page on Cancel."
+    },
+    {
+      "id": "REV-6",
+      "title": "Plugin files cite .claude/rules/ask-user-question-guard.md, which does not ship with the plugin",
+      "source": "onboard 3.3.0 install-consent branch, fresh whole-branch review (2026-10-10)",
+      "raisedAt": "2026-10-10",
+      "status": "deferred",
+      "rationale": "The wizard, the question bank, start, research and the consent reference point at a rule file that exists only in this repository. An installed onboard has no such file; the reference restates the rule inline, the others do not.",
+      "resolution": "Move the rule's text into an onboard reference and cite that."
+    },
+    {
+      "id": "REV-7",
+      "title": "tests/release-docs/test_render_check.sh is flaky under load",
+      "source": "onboard 3.3.0 install-consent branch, fresh whole-branch review (2026-10-10)",
+      "raisedAt": "2026-10-10",
+      "status": "deferred",
+      "rationale": "Twice on 2026-10-10 a case in this belt (T5-GOOD, then T5-FONTS-REAL) got exit 143: headless Chrome was killed by the belt's timeout, once at the untouched baseline and once while other checks ran beside the suite. Alone, and in a quiet full run, it passes 56 of 56.",
+      "resolution": "Raise the belt's Chrome timeout or retry once on 143."
+    },
+    {
+      "id": "REV-8",
+      "title": "Not verified: what an untouched 'pre-checked' LSP row does",
+      "source": "onboard 3.3.0 install-consent branch, fresh whole-branch review (2026-10-10)",
+      "raisedAt": "2026-10-10",
+      "status": "deferred",
+      "rationale": "The wizard and update describe LSP rows as pre-checked (autoChecked: true). AskUserQuestion may have no pre-selected state, in which case the rows are simply unchecked and fewer LSP plugins are installed than the text implies. Not checked in this PR.",
+      "resolution": "Check in a real run; if rows cannot be pre-checked, drop the wording."
+    },
+    {
+      "id": "RUN-1",
+      "title": "start's recommended walkthrough install gives nothing in the session that offers it",
+      "source": "onboard 3.3.0 install-consent branch, real run on a sandbox project (2026-10-10)",
+      "raisedAt": "2026-10-11",
+      "status": "deferred",
+      "rationale": "At the preview gate the owner chose 'Install now (Recommended)'. claude plugin install walkthrough@apurvbazari-plugins succeeded, but walkthrough:render was still an unknown skill, because a plugin installed during a session is not loaded into it. The session fell back to the markdown preview. The offer text is the same as in 3.2.0.",
+      "resolution": "Say in the offer that the page is available from the next session and drop '(Recommended)', or stop offering the install at the gate."
+    },
+    {
+      "id": "RUN-2",
+      "title": "Plugin detection ignores CLAUDE_CONFIG_DIR and can disagree with the install offer's probe",
+      "source": "onboard 3.3.0 install-consent branch, real run on a sandbox project (2026-10-10)",
+      "raisedAt": "2026-10-11",
+      "status": "deferred",
+      "rationale": "plugin-detection-guide.md reads ~/.claude/plugins/cache, and the notify probe reads the sibling path beside onboard. The wizard's MCP-plugin offer probes with claude plugin list, which honours CLAUDE_CONFIG_DIR. Under a separate config directory the two disagreed: detection reported 15 or more plugins as installed, the offer treated them as absent, and the session stopped to ask which to trust. The wizard also called notify 'present [installed]' although it was not installed in that config. In the unattended evolve run the session used the config directory's list and reported that following the cache probe would have removed two generated artifacts in favour of plugins it could not load. In a default config both agree.",
+      "resolution": "Use claude plugin list as the one source for 'installed', or make the cache probe honour CLAUDE_CONFIG_DIR."
+    },
+    {
+      "id": "RUN-3",
+      "title": "A plugin offer names the plugin but not the source it is installed from",
+      "source": "onboard 3.3.0 install-consent branch, real run on a sandbox project (2026-10-10)",
+      "raisedAt": "2026-10-11",
+      "status": "deferred",
+      "rationale": "install-plugins.sh runs claude plugin install with a bare name. In the real run context7 and github resolved from Claude Code's built-in anthropic-plugin-directory source, and typescript-lsp and chrome-devtools-mcp from claude-plugins-official. The offer, the preview and the gate show only the bare name.",
+      "resolution": "Owner decision: name the source in the offer, pin name@marketplace in the catalogs, or leave as is."
+    },
+    {
+      "id": "RUN-4",
+      "title": "Answer to REV-8: LSP rows are not pre-checked in the real prompt",
+      "source": "onboard 3.3.0 install-consent branch, real run on a sandbox project (2026-10-10)",
+      "raisedAt": "2026-10-11",
+      "status": "deferred",
+      "rationale": "In the real run the typescript-lsp row (12 source files) arrived unticked and the owner ticked it. wizard/SKILL.md, references/plugin-install-consent.md and evolve Step 2g still say rows are pre-checked at 10 or more files. The 3.3.0 changelog said so too and was corrected before the merge. Nothing is selected on the person's behalf, so no plugin installs without a tick. The README makes no pre-checked claim.",
+      "resolution": "Drop the pre-checked wording from the wizard, the consent reference, update and evolve."
+    },
+    {
+      "id": "RUN-5",
+      "title": "Real run: findings outside the install-consent change",
+      "source": "onboard 3.3.0 install-consent branch, real run on a sandbox project (2026-10-10)",
+      "raisedAt": "2026-10-11",
+      "status": "deferred",
+      "rationale": "Reported by the real run's session and by /onboard:check on the same project. None concerns a plugin install. The first three were confirmed only as far as the named text exists in the source; whether the hooks really fail to log was not tested.",
+      "items": [
+        "evolution-hooks-guide.md: the FileChanged hook template passes \"$FILE_PATH\" to the detect scripts. If Claude Code delivers the path only as stdin JSON, the three drift hooks never log.",
+        "workflow-presets.md: a profile's default model is claude-opus-4-8[1m], which predates the current model family.",
+        "check/SKILL.md reads modelApprovedByUser from onboard-meta.json; the generated meta records approval under modelRecommendation.approved.",
+        "Five detected built-in skills did not fit one four-option question, so the session asked a single-select (all / core / none) in place of the multi-select. The built-in-skills side of REV-4.",
+        "start's opening message said nothing is written until approval, and the research files were written before the gate. REV-5 seen in a real run."
+      ],
+      "resolution": "Check each against the source, then fix in a later onboard patch release."
+    },
+    {
+      "id": "RUN-6",
+      "title": "Not verified in a real run: declining, accepting one plugin, evolve with a person, update",
+      "source": "onboard 3.3.0 install-consent branch, real run on a sandbox project (2026-10-10 and 2026-10-11)",
+      "raisedAt": "2026-10-11",
+      "status": "deferred",
+      "rationale": "Two cases were run on a sandbox project under a separate config directory. start, accepting every offer: the wizard named each plugin, the summary, preview and gate named exactly the four accepted, and exactly those were installed after approval. evolve with nobody to answer (print mode, auto permission mode, no permission denied): the supabase server was merged into .mcp.json, no install command was run, nothing was added to pluginOffers, and the report named claude plugin install supabase. Not run, by the owner's decision on 2026-10-11: start declining everything, start accepting exactly one plugin, evolve with a person answering, and update. A first print-mode evolve attempt in the default permission mode was inconclusive: the detector scripts were denied, so evolve stopped before the offer and named no manual command.",
+      "resolution": "Run the remaining cases if a later review questions behaviour, or when the instruction text for those paths next changes."
+    },
+    {
+      "id": "PR139-1",
+      "title": "evolve's caller-list clause for MCP plugins removed (PR #139 security review, L1)",
+      "source": "PR #139 automated security review (2026-10-11)",
+      "raisedAt": "2026-10-11",
+      "status": "closed",
+      "rationale": "evolve Step 2c said a callerExtras.mcpPlugins list counted as acceptance and no prompt fired. Nothing calls evolve with that list, and Claude can start evolve on its own, so the clause was an unused way past the ask-first rule. Fixed in the same PR: Step 2c now says evolve takes no plugin list from callerExtras, pinned by two IC4 checks that failed first. This also settles the REV-1 item about the clause having no defined source.",
+      "resolution": "Done in PR #139."
+    },
+    {
+      "id": "PR139-2",
+      "title": "evolve's built-in-skills step still accepts a caller's list",
+      "source": "PR #139 automated security review (2026-10-11), follow-up to L1",
+      "raisedAt": "2026-10-11",
+      "status": "deferred",
+      "rationale": "evolve Steps 2g and 2h said that when evolve is called via generate with callerExtras.lspPlugins or callerExtras.builtInSkills set, the caller's list is used and no prompt fires. Both clauses predate 3.3.0. The security re-review of PR #139 (L3) found that generate never calls evolve, so the caller they name does not exist. The LSP clause could lead to a plugin install and was removed in PR #139 the way Step 2c's was, with two IC4 checks and one IC1 check. Step 2h's built-in-skills clause is left: it installs nothing.",
+      "resolution": "Remove Step 2h's clause too, for consistency, in a later patch."
+    },
+    {
+      "id": "PR139-3",
+      "title": "update's live docs check does not restrict where a reported link points",
+      "source": "PR #139 automated security review (2026-10-11), L2",
+      "raisedAt": "2026-10-11",
+      "status": "deferred",
+      "rationale": "update's live docs check now takes only a feature name and a link from the fetched page. Nothing requires the link to be under https://code.claude.com/docs/, so a tampered page could put an arbitrary link into the findings report. The list is shown to the person and never applied.",
+      "resolution": "Drop any pair whose url is not under https://code.claude.com/docs/, cap the feature name at about 80 characters and show it as plain text."
+    },
+    {
+      "id": "PR139-4",
+      "title": "The catalog-only install rule is enforced only in instruction text",
+      "source": "PR #139 automated security review (2026-10-11), informational",
+      "raisedAt": "2026-10-11",
+      "status": "deferred",
+      "rationale": "install-plugins.sh checks a name's characters, not whether the name is in a catalog. The catalog-only rule (R4) holds only while a skill's instructions are followed.",
+      "resolution": "Give the script a catalog allowlist, read from the two catalogs or passed by the caller."
+    },
+    {
+      "id": "PR139-5",
+      "title": "PR #139 structure review: minor points left open",
+      "source": "PR #139 automated structure review (2026-10-11)",
+      "raisedAt": "2026-10-11",
+      "status": "deferred",
+      "rationale": "Optional points from the review. None concerns a plugin install.",
+      "items": [
+        "Each new belt file forces an edit to the suite count inside the already-shipped lens 1.5.0 changelog entry, because tests/lens/test_doc_contracts.sh reads the count from that line. The check could read it from somewhere other than a past release note.",
+        "references/plugin-install-consent.md says a one-candidate install offer is Install / Skip with neither marked recommended; .claude/rules/ask-user-question-guard.md says Yes (Recommended) / No. The reference is right for consent. Add the exception to the rule file so a later edit does not bring the recommended option back.",
+        "tests/onboard/test_onboard_install_consent.sh uses [ ] in one place where shell-scripts.md asks for [[ ]]."
+      ],
+      "resolution": "Sweep in a later patch."
+    },
+    {
+      "id": "PR141-1",
+      "title": "notify's docs say the hook falls back from the project config to the global one",
+      "source": "release docs PR #141, review of the docs bot's patch (2026-10-12)",
+      "raisedAt": "2026-10-12",
+      "status": "deferred",
+      "rationale": "notify/README.md and notify/CONVENTIONS.md say the runtime hook reads exactly one config: the project-local notify-config.json when it exists, otherwise the global one. The docs sync copied that sentence into four places on site/notify/index.html. notify/scripts/notify.sh does no lookup across scopes: setup copies the script to <scope>/hooks/notify.sh, and the script reads the notify-config.json in that scope's own directory. When both scopes are installed, each has its own hook and its own config. The page's earlier text, that a project-local file inherits and overrides global keys, was also wrong, so the sync did not make the page worse.",
+      "resolution": "Correct the sentence in notify/README.md and notify/CONVENTIONS.md first, then the page: each installed scope's hook reads that scope's own config."
+    },
+    {
+      "id": "PR141-2",
+      "title": "The docs PR body says 'Ledger and config changes: none' when the run changed both files",
+      "source": "release docs PR #141, automated security review (2026-10-12)",
+      "raisedAt": "2026-10-12",
+      "status": "deferred",
+      "rationale": "The body that docs-detect.sh --pr-body built for PR #141 lists 'none' under 'Ledger and config changes', while the same run added 29 entries to .github/docs-ledger.json and two live[] entries to .github/docs-surfaces.json. The live[] additions did appear in the body's first section and the ledger entries in its coverage table, so nothing was hidden outright, but the section meant to list such edits was empty. First seen on the pipeline's first real publish: the publish job, which builds the body, is skipped on dry runs.",
+      "resolution": "Find why that section came out empty for a run that changed both files, and add a belt case for it."
+    },
+    {
+      "id": "PR141-3",
+      "title": "publish blames an earlier branch when the docs bot token cannot push",
+      "source": "release docs PR #141, the pipeline's first real publish (2026-10-11)",
+      "raisedAt": "2026-10-12",
+      "status": "deferred",
+      "rationale": "The first publish attempt failed at the push with HTTP 403, 'Permission to ApurvBazari/claude-plugins.git denied': DOCS_BOT_TOKEN had Pull requests and Pages permissions but not Contents. The step's only message was 'the push of docs/release-sync-20c43fc was rejected. If an earlier sync of this develop commit pushed it, delete that branch to sync again', which points at the wrong cause; no such branch existed. Adding Contents: Read and write and re-running only the failed job published the same patch.",
+      "resolution": "Have the push step tell a permission refusal from an existing branch, and name the two permissions the token needs (Contents and Pull requests, read and write) in the message and in CLAUDE.md."
     }
   ]
 }

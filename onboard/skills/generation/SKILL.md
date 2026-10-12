@@ -79,7 +79,7 @@ When dispatched with `planOnly: true`, run the front half of generation — all 
 
 1. Compute the artifact set exactly as write mode would (Core tier always; Enriched tiers per wizard flags; rules/skills/agents from detected patterns + research claims; hooks from autonomy; MCP/LSP from signals; plugin integration from detection).
 2. For each artifact emit one `changes[]` entry: `path`, `action` (`create` for a new file, `merge` for a merge-aware write into an existing file such as `.claude/settings.json`), `purpose` (one line), `outline` (section list for CLAUDE.md and multi-section artifacts), `tier`, `origin: "generated"`.
-3. Populate `decisions` from the resolved context: `model`, `autonomy`, `profile`, `hooks`, `mcp`, `lsp`, `pluginIntegration`.
+3. Populate `decisions` from the resolved context: `model`, `autonomy`, `profile`, `hooks`, `mcp`, `lsp`, `pluginIntegration`, and `pluginInstalls` — the plugins write mode will install: the accepted LSP list (per `references/emission/lsp-emission.md` Step 2) plus the accepted MCP-plugin list (per `references/emission/mcp-emission.md` § Install accepted plugins), each name checked against the catalogs. An empty array is valid and means nothing will be installed.
 4. Return `{ mode: "plan", flow: "start", changes, decisions, warnings }`. **Write nothing.** Do not run emission Step 1–4 writes; only their planned outcomes appear as `changes[]` entries.
 
 ## Artifact Generation Rules
@@ -233,7 +233,7 @@ All projects use TDD (red-green-refactor); generation adapts to which workflow p
 
 ### MCP Servers (.mcp.json) — emission Step 1
 
-Follow `references/catalogs/mcp-guide.md` for emission rules, catalog, and transport shapes. The emission-Step-1 generation contract — the 4 firing paths (A/B/C/SKIP), inputs, telemetry contract, the 8 emission steps (detect → pre-existing check → write `.mcp.json` → snapshot → `mcpStatus` → `mcp-setup.md` → auto-install → stdout summary), the verbatim `mcpStatus` JSON shape, and the Auto-install Plugins sub-procedure — is in `references/emission/mcp-emission.md`. Apply it verbatim. Runs after Recommended Plugins copy and before Hooks.
+Follow `references/catalogs/mcp-guide.md` for emission rules, catalog, and transport shapes. The emission-Step-1 generation contract — the 4 firing paths (A/B/C/SKIP), inputs, telemetry contract, the 8 emission steps (detect → pre-existing check → write `.mcp.json` → snapshot → `mcpStatus` → `mcp-setup.md` → install accepted plugins → stdout summary), the verbatim `mcpStatus` JSON shape, and the Install accepted plugins sub-procedure — is in `references/emission/mcp-emission.md`. Apply it verbatim. Runs after Recommended Plugins copy and before Hooks.
 
 ### Output Styles (.claude/output-styles/) — emission Step 2
 
@@ -387,7 +387,7 @@ These carry the verbatim artifact templates and long emission enumerations for t
 - `references/emission/skill-frontmatter-emission.md` — 7-step SKILL.md frontmatter emission + `skillStatus`
 - `references/emission/agent-frontmatter-emission.md` — 7-step agent frontmatter emission + `agentStatus`
 - `references/extended/tdd-workflow-and-recommended-plugins.md` — plugin-aware TDD matrix + `## Recommended Plugins` template
-- `references/emission/mcp-emission.md` — MCP `.mcp.json` emission (emission Step 1) + auto-install
+- `references/emission/mcp-emission.md` — MCP `.mcp.json` emission (emission Step 1) + installing accepted plugins
 - `references/emission/output-styles-emission.md` — output-styles emission (emission Step 2) + settings.local.json merge
 - `references/emission/lsp-emission.md` — LSP plugin recommendations (emission Step 3)
 - `references/emission/builtin-skills-emission.md` — built-in Claude Code skills (emission Step 4)
