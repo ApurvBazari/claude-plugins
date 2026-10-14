@@ -75,11 +75,14 @@ no verdict.
 | `refuted` | dropped, and a gap is added with the reason `refuted` and the verifier's sentence |
 | no verdict, or a `downgrade` whose reason starts "could not open" | kept as `inferred`, and a gap is added saying it was not verified |
 
-**Before you keep a claim that has no verdict,** check every path in its `evidence` against the
-never-opened list (rule 6), by name and without opening anything. The verifier makes that check, and
-with no verdict there is nothing to show it was made. If any path is on the list, drop the claim
-instead, whatever else it cites, and add a gap with the reason `refuted` that names the claim by its
-`id` and says its evidence was a never-opened file. Such a file is never cited as evidence.
+**Before you keep any claim, whatever its verdict,** check every path in its `evidence` against the
+never-opened list (rule 6), by name and without opening anything, and check that it is inside `root`
+(not absolute, no leading `~`, no `..` segment). The verifier makes these checks too, but its reply
+cannot show that it made them, and a claim with no verdict was never checked at all.
+If any path is on the list or outside `root`, drop the claim instead, whatever else it cites and
+whatever its verdict, and add a gap with the reason `refuted` that names the claim by its `id` and
+says its evidence was a never-opened file or a path outside `root`. Such a path is never cited as
+evidence.
 
 Then, in this order:
 

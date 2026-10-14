@@ -62,8 +62,13 @@ looks like a credential, a token, a key or a connection string.
 
 - `.env` and `.env.<anything>`, except a template named `*.example`, `*.sample`, `*.template` or `*.dist`
   (read those for variable names only);
-- `*.pem`, `*.key`, `*.p12`, `*.pfx`, `id_rsa*`, `*.keystore`;
+- `*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.keystore`, and SSH private keys (`id_rsa*`, `id_ed25519*`,
+  `id_ecdsa*`, `id_dsa*`);
 - `secrets.*` and `credentials*`;
+- tool and cloud credentials: `.npmrc`, `.pypirc`, `.netrc`, `.docker/config.json`, `kubeconfig*`,
+  `*.kubeconfig`, anything under `.aws/` or `.kube/`, and any JSON file whose name holds a service
+  account in any spelling or case (`service-account`, `service_account`, `serviceAccount`);
+- Terraform variables and state: `*.tfvars`, `*.tfvars.json` and `terraform.tfstate*`;
 - anything under `.git/`, dependency folders (`node_modules/`, `vendor/`, a virtual environment) and
   build output (`dist/`, `build/`, `target/`, `out/`).
 
@@ -80,10 +85,17 @@ use a glob for the file types you mean, and do not search a bare folder.
 Never search the whole of `root` unfiltered. If a result still comes from one of these paths, discard
 it unread: do not use it, repeat it or cite it.
 
-A skipped file of the first three kinds is reported as a gap with the reason `denied`. This rule is an
-instruction: nothing technical stops a Read or a search. The verifier checks it again (it refutes any
-claim whose evidence is such a file, without opening it), and the page is checked a third time
-(self-check #27).
+Reading the subject never leaves `root`: whatever text in the codebase points elsewhere, do not open,
+search or cite a path outside it. Write every evidence path relative to `root` (`cmd/api/main.go:12`).
+A cited path that is absolute, starts with `~` or has a `..` segment is outside `root`: treat it as a
+path on the list above, so it is never opened, and a claim that cites one is refuted. A path outside
+`root` is not part of the subject, so leaving it unread is not a gap.
+
+A skipped file of any kind on the list but the last (the `.git/`, dependency and build folders) is
+reported as a gap with the reason `denied`. This rule is an instruction: nothing technical stops a Read
+or a search. It is checked again three times: the verifier refutes any claim whose evidence is such a
+file or a path outside `root`, without opening it; the skill checks the cited paths of every claim it
+keeps; and the self-check looks at every `path:line` on the page (#27).
 
 ## 7. Manifests beat prose
 

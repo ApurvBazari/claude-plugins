@@ -253,6 +253,27 @@ grep -qi 'manifests beat prose' "$RULES" || fail "system-reading.md must state t
 grep -qF 'Every content search leaves these paths out' "$RULES" || fail "system-reading.md must say a content search leaves the never-opened paths out: a search returns the matching line, value included"
 grep -qF 'refute it without opening the file' "$ROOT/walkthrough/agents/system-verifier.md" || fail "system-verifier must refute evidence in a never-opened file without opening it"
 grep -qF 'Before you open anything, check every path' "$ROOT/walkthrough/agents/system-verifier.md" || fail "system-verifier must check the cited paths against the never-opened list before it opens anything"
+# a cited path is the verifier's next Read, so one that leaves root must never be opened; and the
+# credential files most often committed beside the code are on the list
+for phrase in 'Reading the subject never leaves `root`' 'Write every evidence path relative to `root`' \
+  'path that is absolute, starts with `~` or has a `..` segment is outside `root`' \
+  'path on the list above, so it is never opened, and a claim that cites one is refuted'; do
+  grep -qF "$phrase" "$RULES" || fail "system-reading.md must keep the outside-root rule: $phrase"
+done
+for name in '.npmrc' '.pypirc' '.netrc' '.docker/config.json' 'kubeconfig*' '*.kubeconfig' '.aws/' '.kube/' \
+  'service-account' 'service_account' 'serviceAccount' '*.tfvars' '*.tfvars.json' 'terraform.tfstate*' 'id_ed25519*'; do
+  grep -qF "\`$name\`" "$RULES" || fail "system-reading.md must list $name among the files that are never opened"
+done
+grep -qF 'open nothing outside `root` other than the rules file' "$ROOT/walkthrough/agents/system-analyzer.md" \
+  || fail "system-analyzer must open nothing outside root but the rules file"
+grep -qF 'that list or outside `root`, refute it without opening the file' "$ROOT/walkthrough/agents/system-verifier.md" \
+  || fail "system-verifier must refute, without opening it, a claim whose cited path is outside root"
+grep -qF 'Before you keep any claim, whatever its verdict,' "$SYSAD" \
+  || fail "adapters/system.md must check the cited paths of every claim it keeps, not only those with no verdict"
+grep -qF 'If any path is on the list or outside `root`, drop the claim' "$SYSAD" \
+  || fail "adapters/system.md must drop a kept claim whose cited path is on the list or outside root"
+grep -qF 'No `path:line` on the page names a file the reading rules never open' "$SC" \
+  || fail "self-check.md row 27 must check every path:line on the page against rule 6 and the root"
 grep -qF 'never re-reads the codebase and never brings back a dropped claim' "$SYSAD" || fail "adapters/system.md must say the coverage critic never re-reads the codebase and never brings back a dropped claim"
 # the two sentences that close the rules-unreadable path. Without them a run whose rules could not be
 # read can end on the generic route, which reads the subject with no never-opened list

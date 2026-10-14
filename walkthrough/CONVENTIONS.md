@@ -140,7 +140,7 @@ One renderer for a system: boxes that can nest, joined by labelled, directed wir
 - **Two read-only agents.** `agents/system-analyzer.md` makes claims with evidence; `agents/system-verifier.md` tries to refute each one. Tools: Read, Grep, Glob. No shell, no write.
 - **The skill applies the verdicts,** not the agents: confirmed stays, downgrade becomes inferred, refuted is dropped and listed as a gap.
 - **One rules file,** `references/system-reading.md`, in the plugin's flat `references/` home because its readers are agents. Never put a reference under `agents/`: every `.md` there is registered as an agent.
-- **The rules in one line each:** no evidence, no box; stated versus inferred; bounded reading with gaps listed; names only, and the agents and the skill are told never to open, search or cite `.env`, key and credential files (an instruction, not a technical block: the verifier and self-check #27 check it again); containers by default, components on request; a library becomes a package map; manifests beat prose.
+- **The rules in one line each:** no evidence, no box; stated versus inferred; bounded reading with gaps listed; names only, and the agents and the skill are told never to open, search or cite `.env`, key and credential files, or anything outside the folder being read (an instruction, not a technical block: the verifier and self-check #27 check it again); containers by default, components on request; a library becomes a package map; manifests beat prose.
 - **If agents cannot be dispatched,** the skill does both passes itself and says the claims were not independently verified.
 
 ## Detail surfaces
