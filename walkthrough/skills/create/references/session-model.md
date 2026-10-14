@@ -29,15 +29,32 @@ exact keys `authoring-guide.md` keys its mapping table off of — do not rename 
   ],
 
   // nodes[] + edges[] together drive a diagram. The graph's SHAPE picks which one — run the
-  // diagram-fidelity check in authoring-guide.md § 1 before defaulting to a box-and-arrow form:
-  //   linear staged pipeline            → flow diagram
-  //   non-linear services/layers        → architecture map
-  //   module/package imports            → dependency graph (inline SVG)
-  //   cyclic / guarded transitions      → state / transition diagram (nodes kind:"state"; set edge.guard)
-  //   timed messages between actors     → sequence / swimlane diagram (nodes kind:"actor"; set edge.seq)
+  // diagram-fidelity check in authoring-guide.md § 1 before picking a form:
+  //   a straight staged chain              → flow diagram
+  //   a system: services, stores, queues,  → system map (components/system-map.md): nested boundaries,
+  //     modules, people, external systems     labelled wires, sync/async flow, cycles, change marks
+  //   guarded transitions between states   → state / transition diagram (nodes kind:"state"; set edge.guard)
+  //   timed messages between actors        → sequence / swimlane diagram (nodes kind:"actor"; set edge.seq)
   // `kind` hints intent; nodes with a matching details[] entry are clickable (openSurface).
-  "nodes": [ { "id": "...", "label": "...", "kind": "component|step|concept|state|actor" } ], // → diagram nodes
-  "edges": [ { "from": "<id>", "to": "<id>", "label": "", "guard": "", "seq": 0 } ], // guard → state-edge condition; seq → sequence order
+  // System-map fields (the other diagrams ignore them):
+  //   parent    the node that contains this one. A node named as a parent is a group (a boundary).
+  //             Nesting depth is the level, so there is no `level` field.
+  //   sub       second line: technology or role
+  //   open      groups only: true / false forces the group open / closed; omit to let the engine decide
+  //   change    added | modified | deleted  (see "Change marks" below)
+  //   inferred  true when only indirect signals support the item; omit for stated
+  "nodes": [ { "id": "...", "label": "...", "kind": "component|step|concept|state|actor|service|store|queue|external",
+               "parent": "<id>", "sub": "...", "open": true, "change": "added|modified|deleted", "inferred": true } ], // → diagram nodes
+  // guard → state-edge condition; seq → sequence order; flow → a sync (default) or async wire;
+  // where → path:line evidence, shown on the connection's row in the system map
+  "edges": [ { "from": "<id>", "to": "<id>", "label": "", "guard": "", "seq": 0,
+               "flow": "sync|async", "change": "added|modified|deleted", "inferred": true, "where": ["path:line"] } ],
+
+  // graphs[] → optional NAMED graphs, each routed exactly like nodes[]/edges[]. A section places one by
+  // listing "graph:<id>" in its components. Top-level nodes[]/edges[] stay valid: they are the default
+  // graph. The same node id in two graphs is the same thing and opens the same details{} entry.
+  // compareTo names the BEFORE graph of a change; the graph that carries it holds the change marks.
+  "graphs": [ { "id": "after", "title": "...", "nodes": [], "edges": [], "compareTo": "before" } ],
 
   // dataModel → the layered ERD (components/data.md). A relational schema is its OWN shape, not
   // nodes[]/edges[]: entities with typed fields, keyed rows, and FK refs that carry a cardinality.
@@ -129,6 +146,35 @@ A detail with `components`, `code`, or a long `summary`+`points` is inferred `sh
 **Nesting.** A sheet's hosted `components[]` may contain nodes that reference other `details{}` ids via `openSurface`, so one detail can open another. Two hard limits keep this bounded: the reference graph must be **acyclic** — a detail must never transitively open itself (an `A → B → A` chain is a build failure) — and the open depth is capped at **3** (a 4th nested open replaces the topmost surface rather than deepening). Author chains deeper than 3 are flattened at synthesis time. The self-check enforces both the acyclic and depth-≤-3 rules.
 
 Each entity `id` is also its `openSurface` target and its ERD `data-ent`; keep the `details{}` cross-link graph acyclic even when the FK graph cycles.
+
+## Change marks
+
+`change` says how an item differs from an earlier state of the same system. Whoever builds the model sets
+it. The renderer writes it into the page and the self-check (#26) verifies it; nothing works a mark out.
+Only the system map draws marks, so a structure graph that carries any mark or a `compareTo` renders as a
+system map, even when it is a straight chain. If a marked graph has to be a state or sequence diagram,
+its marks are not drawn and the coverage note says so.
+
+**Edge identity.** An edge is identified by its ordered pair `from` → `to`. When either graph has more
+than one edge on the same pair, the label joins the key for that pair.
+
+With `compareTo`, for every item of the graph that carries it:
+
+| Mark | Must hold |
+|---|---|
+| `added` | the item is absent from the before-graph |
+| `deleted` | the item is present in the before-graph |
+| `modified` | the item is present in the before-graph |
+| none | the item is present in the before-graph |
+
+Every item of the before-graph appears in the after-graph, marked or not, so nothing vanishes silently.
+The graph named by `compareTo` must be in `graphs[]`; it does not have to be placed in a section.
+
+With or without `compareTo`:
+
+- an edge with an `added` end is `added`; an edge with a `deleted` end is `deleted`;
+- every descendant of an `added` group is `added`; every descendant of a `deleted` group is `deleted`;
+- a group's change count is its marked descendant nodes plus its marked edges that have both ends inside it.
 
 ## Part B — Worked example: "Adding the HDFC SMS parser"
 

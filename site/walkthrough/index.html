@@ -214,6 +214,7 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
       <a href="#pipeline">Pipeline</a>
       <a href="#surfaces">Detail surfaces</a>
       <a href="#concepts">Concept coverage</a>
+      <a href="#sysmap">System maps</a>
       <a href="#skills">Skills</a>
       <a href="#contained">Self-contained</a>
       <a href="#cowork">In Cowork</a>
@@ -221,7 +222,7 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
       <a href="#isnt">Is / isn't</a>
     </div>
     <div style="display:flex;align-items:center;gap:.8rem">
-      <div class="nav-meta"><span class="dot"></span> PLUGIN · v1.5.0</div>
+      <div class="nav-meta"><span class="dot"></span> PLUGIN · v1.6.0</div>
       <button class="theme-btn" onclick="tgl()">◑ THEME</button></div>
   </div></nav>
   <div class="progress" id="prog"></div>
@@ -246,7 +247,7 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
         <div class="hstat"><div class="v"><em>3</em></div><div class="l">user skills</div></div>
         <div class="hstat"><div class="v">2</div><div class="l">input modes</div></div>
         <div class="hstat"><div class="v">5</div><div class="l">pipeline stages</div></div>
-        <div class="hstat"><div class="v"><em>29</em></div><div class="l">concept-types, 0 uncovered</div></div>
+        <div class="hstat"><div class="v"><em>30</em></div><div class="l">concept-types, 0 uncovered</div></div>
         <div class="hstat"><div class="v">2</div><div class="l">themes, 1 toggle</div></div>
         <div class="hstat"><div class="v"><em>1</em></div><div class="l">HTML file out</div></div>
       </div>
@@ -255,7 +256,7 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
     <section id="what">
       <div class="sec-label">what it does</div>
       <h2>A composed document, <em>not</em> a transcript dump</h2>
-      <p class="lede">Open the file in any browser and you get a synthesized document — a summary and type tags for the session, architecture and flow diagrams rendered as inline SVG, decision records (what was chosen, what was rejected, why), a file-touch list with real <code>path:line</code> references, and a timeline and metrics where the session has them.</p>
+      <p class="lede">Open the file in any browser and you get a synthesized document — a summary and type tags for the session, flow diagrams, <strong>system maps</strong> for anything with parts and connections (§ System maps), decision records (what was chosen, what was rejected, why), a file-touch list with real <code>path:line</code> references, and a timeline and metrics where the session has them.</p>
       <p>For richer surfaces there are two interactive components: an <strong>interactive explorer</strong> — a selector that drives a live diagram region and a detail pane from one shared data model, useful for multi-component architectures where you want to navigate relationships rather than read a static diagram — and a <strong>data-driven step timeline</strong> — phases of parallel and sequential steps with source pills and micro-cycles, useful when the session covers a pipeline, workflow, or multi-phase build.</p>
       <p>Underneath sits a <strong>concept-coverage layer</strong>: a concept-fidelity gate that routes each concept to the renderer best-shaped for it, across concept-shaped renderers including a <strong>decision tree</strong>, a <strong>recursive tree</strong>, a <strong>layer stack</strong>, a <strong>layered ERD</strong>, and a <strong>causal hypothesis ladder</strong> — so branching logic, hierarchies, layered stacks, data models, and debugging traces each render in the shape that fits them.</p>
       <p>Components adapt to the session — the catalog is a floor, not a ceiling. When content fits no off-the-shelf component, a bespoke one is composed from the same design-system primitives so it still looks native, and empty sections are omitted rather than stubbed. After writing the file, <code>create</code> surfaces a short <strong>coverage summary</strong> — what made it into the document and what was intentionally omitted — so you can spot anything left out before you close the session.</p>
@@ -339,7 +340,7 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
       <div class="sec-label">concept coverage</div>
       <h2>Concept coverage — <em>the right renderer for every concept</em></h2>
       <p class="lede">The concept-coverage layer ensures each kind of idea renders in the shape that fits it. Synthesis classifies each concept it wants to convey into a type at selection time, and the <strong>concept-fidelity gate</strong> routes it to the registered renderer — or, for an uncovered type, to a logged bespoke component. The gate never force-fits a concept into a component not registered for its type.</p>
-      <p>The built-in map currently covers <strong>29 concept-types with zero uncovered rows</strong>. A selection of the concept-shaped renderers is below — click any renderer name for detail.</p>
+      <p>The built-in map currently covers <strong>30 concept-types with zero uncovered rows</strong>. Services, stores, queues or modules connected free-form (<code>nonlinear-system</code>), a module dependency graph (<code>module-dependency</code>) and one system's structure before and after a change (<code>structure-change</code>) all render as a system map. A selection of the concept-shaped renderers is below — click any renderer name for detail.</p>
       <table class="cov-table" aria-label="Selected concept-coverage renderers">
         <thead><tr><th>Concept-type</th><th>Trigger</th><th>Renderer</th></tr></thead>
         <tbody>
@@ -368,26 +369,48 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
             <td>Symptom → causes ruled in/out by evidence → root cause</td>
             <td><span class="cov-renderer" role="button" tabindex="0" onclick="openSurface('cov-ladder')" style="cursor:pointer">causal hypothesis ladder</span></td>
           </tr>
+          <tr class="cov-new">
+            <td><span class="cov-type" role="button" tabindex="0" onclick="openSurface('cov-sysmap')" style="cursor:pointer">nonlinear-system</span></td>
+            <td>Services, stores, queues or modules connected free-form; may nest in boundaries; may cycle</td>
+            <td><span class="cov-renderer" role="button" tabindex="0" onclick="openSurface('cov-sysmap')" style="cursor:pointer">system map</span></td>
+          </tr>
         </tbody>
       </table>
-      <p>The concept-coverage map (<code>concept-coverage.md</code>) is the single source of truth for which concept-types are covered and which renderer each routes to. Disambiguation rules handle close neighbors: for instance, a cycle or back-edge routes to a state machine, not a decision tree — except in a data model, which is carved out, because an ERD renders its own cycles by breaking and marking them rather than handing them to a state diagram; strict one-parent containment routes to the recursive tree, not the dependency graph (which allows shared leaves). An uncovered concept-type gets a bespoke component and a new ⚠️ row in the map — the hole stays visible rather than being silently force-fit.</p>
+      <p>The concept-coverage map (<code>concept-coverage.md</code>) is the single source of truth for which concept-types are covered and which renderer each routes to. Disambiguation rules handle close neighbors: for instance, guards and transitions between states route to a state machine, not a decision tree, while a cycle between components (services, stores, queues, modules) stays a system map; a data model is carved out too, because an ERD renders its own cycles by breaking and marking them rather than handing them to a state diagram; strict one-parent containment routes to the recursive tree, while import edges with shared leaves are a module dependency graph and route to the system map. An uncovered concept-type gets a bespoke component and a new ⚠️ row in the map — the hole stays visible rather than being silently force-fit.</p>
       <div class="callout">
         <h4>Concept-fidelity gate — the anti-force-fit invariant</h4>
-        <p>The gate generalizes the pre-existing diagram-fidelity check to every concept-type. It routes each concept to its registered renderer, never fitting a branching-logic concept into a linear flow or a data-model concept into an architecture map. The gate is part of the <code>authoring-guide.md</code> Step 1 and runs in the same select stage as the component-selection pass.</p>
+        <p>The gate generalizes the pre-existing diagram-fidelity check to every concept-type. It routes each concept to its registered renderer, never fitting a branching-logic concept into a linear flow or a data-model concept into a system map. The gate is part of the <code>authoring-guide.md</code> Step 1 and runs in the same select stage as the component-selection pass.</p>
+      </div>
+    </section>
+
+    <section id="sysmap">
+      <div class="sec-label">system maps</div>
+      <h2>System maps — <em>parts and connections</em></h2>
+      <p class="lede">A system map draws anything with parts and connections: services, stores, queues, people, external systems, or the modules of a codebase. The page holds the graph as plain HTML — nested boxes and a list of connections — and a small layout engine carried inside the page places the boxes and draws the wires, so the file stays self-contained.</p>
+      <div class="edge-grid">
+        <div class="edge"><div class="n">boxes nest</div><div class="t">Open a boundary in place</div><p>A boundary holds other boxes, to any depth. Open or close one in place to move between the big picture and the detail. On a large system the map opens only as many boundaries as fit comfortably (about 16 boxes), and <em>expand all</em>, <em>collapse all</em> and <em>reset</em> are one click away.</p></div>
+        <div class="edge"><div class="n">wires</div><div class="t">Labelled and directed</div><p>Async flow is dashed. Several connections between two closed boundaries merge into one thicker wire; click its "N links" label to see them. Cycles are fine: a webhook that calls back into the gateway is drawn as what it is.</p></div>
+        <div class="edge"><div class="n">change marks</div><div class="t">It can show a change</div><p>Boxes and wires marked added, modified or deleted get a green, amber or rose ring and a text badge. A closed boundary shows how many changes it holds.</p></div>
+        <div class="edge"><div class="n">plain view</div><div class="t">The whole graph as text</div><p>Under every map is the full list of connections. With JavaScript off, or if the layout fails for any reason, you still see the boxes, nested as they are, and that list; when the engine gives up on a map, it leaves one line in the browser console saying why.</p></div>
+      </div>
+      <p style="margin-top:1.4rem">Direction is automatic: left to right when that fits the page, top to bottom when it does not. The system map replaces two older diagrams, the architecture map and the dependency graph; <code>update</code> turns one on an older page into a system map. A page with a system map is about 28 KB larger, the size of the layout engine it carries.</p>
+      <div class="callout">
+        <h4>Mapping a codebase</h4>
+        <p>Ask <code>document</code> for a codebase's architecture — <code>/walkthrough:document . architecture</code>, or <em>"draw a system map of this repo"</em> — and it reads the code instead of the README. It also does this by itself when the subject is a repository root that has a build or deploy manifest and is neither a plugin nor the marketplace. Two read-only agents do the reading within a fixed budget of files and lines: <code>system-analyzer</code> makes claims with evidence, and <code>system-verifier</code> tries to refute each one against the code; refuted claims are not drawn. Click a box for the file and line where it was seen; anything supported only by indirect signals is drawn dotted and labelled <em>inferred</em>, and a "Gaps" section lists the directories that were not read and the claims that were dropped. The agents and the skill are told never to open, search or cite <code>.env</code>, key and credential files (tool, cloud and Terraform ones included) or anything outside the folder being mapped. The map shows containers by default; ask for components to open a service up. The page carries the codebase's own name — its title is <code>&lt;repository name&gt; — system map</code> — and if the reading finds nothing to map, <code>document</code> falls back to rendering the README and says why.</p>
       </div>
     </section>
 
     <section id="skills">
       <div class="sec-label">reference</div>
       <h2>Three skills, one <em>shared</em> renderer</h2>
-      <p class="lede">The three user-facing skills are <code>/walkthrough:&lt;name&gt;</code>, all default frontmatter — user- <em>and</em> intent-invokable. Typing the slash form works; so does asking in plain language. Alongside them sits one <strong>internal</strong> building block — <code>render</code> (<code>user-invocable: false</code>), consumed by the <code>lens</code> plugin. No agents, no hooks, no scripts.</p>
+      <p class="lede">The three user-facing skills are <code>/walkthrough:&lt;name&gt;</code>, all default frontmatter — user- <em>and</em> intent-invokable. Typing the slash form works; so does asking in plain language. Alongside them sits one <strong>internal</strong> building block — <code>render</code> (<code>user-invocable: false</code>), consumed by the <code>lens</code> plugin. Two read-only agents, <code>system-analyzer</code> and <code>system-verifier</code>, do the code reading when <code>document</code> maps a codebase. No hooks and no shell scripts.</p>
       <table class="ref-table">
         <thead><tr><th>Skill</th><th>Input</th><th>What it does</th></tr></thead>
         <tbody>
           <tr><td class="slash">/walkthrough:create</td><td class="cell-mode">session <span class="tag auto">auto</span></td><td>Renders the current session from scratch through the five-stage pipeline. The optional <span class="cell-mono">[focus]</span> argument scopes the synthesis. Also fires on plain-language intent — "visualize this session", "walk me through what we did", "walk me through it" (or "this" / "that"), or "make a session recap".</td></tr>
-          <tr><td class="slash">/walkthrough:update</td><td class="cell-mode">session <span class="tag auto">auto</span></td><td>Refreshes an existing walkthrough in place — reconstructs the prior model from the rendered HTML, folds in the spec/source files you name, and overwrites the <strong>same file</strong>. It always asks which document to refresh first; nothing is overwritten silently.</td></tr>
-          <tr><td class="slash">/walkthrough:document</td><td class="cell-mode">subject <span class="tag auto">auto</span></td><td>Renders a subject — a plugin, the marketplace, or any path — instead of a session. README + manifest are canonical. This is what builds every page under <span class="cell-mono">site/</span>, including this one.</td></tr>
-          <tr><td class="slash">render</td><td class="cell-mode">internal</td><td>Renders a model already in context straight to HTML (skips gather + synthesize), reusing the same visual layer. Internal (<span class="cell-mono">user-invocable: false</span>) — not a user command; it exists for other plugins to call, and the <code>lens</code> review companion uses it to render its findings.</td></tr>
+          <tr><td class="slash">/walkthrough:update</td><td class="cell-mode">session <span class="tag auto">auto</span></td><td>Refreshes an existing walkthrough in place — reconstructs the prior model from the rendered HTML, folds in the spec/source files you name, and overwrites the <strong>same file</strong>. It always asks which document to refresh first; nothing is overwritten silently. It reads a system map back exactly, and turns an architecture map or a dependency graph on an older page into a system map.</td></tr>
+          <tr><td class="slash">/walkthrough:document</td><td class="cell-mode">subject <span class="tag auto">auto</span></td><td>Renders a subject — a plugin, the marketplace, or any path — instead of a session. README + manifest are canonical, except for a mapped codebase, where the code is the source (§ System maps). Arguments: <span class="cell-mono">&lt;subject&gt; [request] [output-path]</span> — the output path is the last argument, and only when it ends in <span class="cell-mono">.html</span>; everything else after the subject is read as a request for what to draw. This is what builds every page under <span class="cell-mono">site/</span>, including this one.</td></tr>
+          <tr><td class="slash">render</td><td class="cell-mode">internal</td><td>Renders a model already in context straight to HTML (skips gather + synthesize), reusing the same visual layer. Internal (<span class="cell-mono">user-invocable: false</span>) — not a user command; it exists for other plugins to call, and the <code>lens</code> review companion uses it to render its findings. When the page has a system map, it returns a second line after the written path: the <span class="cell-mono">System map engine: …</span> line.</td></tr>
         </tbody>
       </table>
       <div class="callout">
@@ -410,17 +433,19 @@ dialog.pane-dialog{max-width:min(360px,92vw);margin-right:0;margin-left:auto;hei
       </div>
       <p style="margin-top:1.4rem">The result renders with no network beyond that one font fetch — copy the file anywhere, email it, drop it in a wiki, and it works without the plugin, without a server, and without a connection. Walkthroughs are written to <code>.claude/walkthrough/&lt;YYYY-MM-DD-HHMM&gt;-&lt;slug&gt;.html</code>. When a walkthrough on the same subject already exists, <code>create</code> asks whether to update it in place, write a new versioned file, or overwrite — rather than silently adding a <code>-2</code>/<code>-3</code> suffix. On the first run in a repo, it offers to add the directory to <code>.gitignore</code> (a session artifact can contain code and prose you exchanged) and remembers your choice in <code>settings.md</code>.</p>
       <div class="callout">
-        <h4>Two caveats</h4>
-        <p>Opened as a <code>file://</code> document on <strong>Android</strong>, the page shows the hero and nothing below — Android blocks JavaScript in local files and the sections reveal via JS; view on desktop or host over <code>http(s)</code>. There is also <strong>no print path</strong>: the document is built for on-screen exploration, with no dedicated print stylesheet, and collapsed detail won't appear in a printout.</p>
+        <h4>Caveats</h4>
+        <p>Opened as a <code>file://</code> document on <strong>Android</strong> (which blocks local-file JavaScript) or with JavaScript off, all prose and diagrams render; only the click-to-open detail surfaces and the scroll-reveal animation are inert. A <strong>system map needs JavaScript for its picture</strong>: without it you see the boxes and the full list of connections, but no drawn wires, and that now includes a module dependency graph. There is also <strong>no print path</strong>: the document is built for on-screen exploration, with no dedicated print stylesheet, and collapsed detail won't appear in a printout.</p>
       </div>
     </section>
 
     <section id="cowork">
       <div class="sec-label">in cowork</div>
       <h2>Works in <em>Claude Cowork</em></h2>
-      <p class="lede">walkthrough is a <strong>pure-skill plugin</strong> — no hooks, no shell scripts, no agents — so it installs and runs in <a href="https://claude.com/product/cowork">Claude Cowork</a> exactly as it does in Claude Code. Its one portable HTML file is a natural Cowork deliverable: run it and you get an explorable page you can email, drop in a wiki, or open offline.</p>
+      <p class="lede">walkthrough has <strong>no hooks and no shell scripts</strong>, so it installs and runs in <a href="https://claude.com/product/cowork">Claude Cowork</a> as it does in Claude Code. Its one portable HTML file is a natural Cowork deliverable: run it and you get an explorable page you can email, drop in a wiki, or open offline. Two parts added in 1.6.0 each have a fallback, because how Cowork handles them has not been confirmed yet.</p>
       <div class="edge-grid">
-        <div class="edge"><div class="n">runs anywhere skills run</div><div class="t">No hooks, no scripts</div><p>Nothing in walkthrough depends on plugin hooks — it's skills over a shared visual layer, so it loads and runs as a first-class citizen in Cowork, not just Claude Code.</p></div>
+        <div class="edge"><div class="n">runs anywhere skills run</div><div class="t">No hooks, no scripts</div><p>Nothing in walkthrough depends on plugin hooks — it's skills, plus two read-only agents for code reading, over a shared visual layer, so it loads and runs as a first-class citizen in Cowork, not just Claude Code.</p></div>
+        <div class="edge"><div class="n">fallback</div><div class="t">The layout engine</div><p>The system-map layout engine is normally put into the page by one shell command. Where that command cannot be used, Claude types the engine into the page instead. The message after writing says which happened.</p></div>
+        <div class="edge"><div class="n">fallback</div><div class="t">Mapping a codebase</div><p>Mapping a codebase normally uses two read-only agents. Where agents cannot be dispatched, the skill does the reading and the checking itself, and the page says its claims were not independently verified.</p></div>
         <div class="edge"><div class="n">adaptive output</div><div class="t">Finds a visible home</div><p>A Cowork folder is often not a git repo, so on first run there <code>create</code> asks where to write — a visible <span class="cell-mono">walkthroughs/</span> folder or the hidden <span class="cell-mono">.claude/walkthrough/</span> — and remembers the choice in <span class="cell-mono">settings.md</span>.</p></div>
       </div>
       <div class="callout">
@@ -485,7 +510,7 @@ write        overwrite the SAME file — no new file, no backup
         <a href="../">← marketplace</a>
         <a href="https://github.com/ApurvBazari/claude-plugins/tree/main/walkthrough">source on GitHub</a>
       </div>
-      <div class="meta">walkthrough · v1.5.0 · MIT · by Apurv Bazari</div>
+      <div class="meta">walkthrough · v1.6.0 · MIT · by Apurv Bazari</div>
     </div>
   </main>
   <aside class="panel" id="panel"><span class="x" onclick="closeD()">✕</span>
@@ -589,7 +614,7 @@ addEventListener('scroll',()=>{const sc=scrollY/(document.body.scrollHeight-inne
 document.querySelectorAll('[role="button"]').forEach(n=>n.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();n.click();}}));
 const DET={
  'mode-session':{k:"Input mode",h:"Session",summary:"The current conversation is the source of record — there is no repository scan. <code>create</code> renders it from scratch; <code>update</code> refreshes an existing document by reconstructing its model from the rendered HTML, then merging in named files. Both produce the session model: sections, nodes, edges, decisions, files, and timeline."},
- 'mode-subject':{k:"Input mode",h:"Subject",summary:"A plugin, the whole marketplace, or any path. <code>document</code> reads the subject's own files — README + manifest are canonical, plus the skills/ surface — and synthesizes the subject model. The page is a rendering of those sources, not a separately-maintained doc."},
+ 'mode-subject':{k:"Input mode",h:"Subject",summary:"A plugin, the whole marketplace, or any path. <code>document</code> reads the subject's own files — README + manifest are canonical, plus the skills/ surface — and synthesizes the subject model. The page is a rendering of those sources, not a separately-maintained doc. A mapped codebase is the exception: there two read-only agents read the code, and the page is a system map of what they found."},
  'visual-layer':{k:"Shared",h:"Visual layer",summary:"Reused verbatim across all three skills: the design system (tokens + both :root theme blocks), the interactivity JS (theme toggle, detail surfaces), the page scaffold, and the open component catalog. Only the model and the gathering differ between session and subject."},
  gather:{k:"Stage 1",h:"gather",summary:"Read any source file you intend to cite so path:line refs are real. For a session, the transcript is the source of record — no repo scan. For a subject, gather reads the README + manifest (canonical) and the skills surface."},
  synthesize:{k:"Stage 2",h:"synthesize",summary:"Build the structured model BEFORE any HTML — for a session: sections, diagram nodes, decisions, files, and timeline. The model is fully synthesized before a single tag is written — rendering never starts from the raw transcript."},
@@ -603,9 +628,10 @@ const DET={
  'surf-sheet':{k:"Detail surfaces",h:"Centered sheet",summary:"A centered native <dialog> surface for richer content that the narrow pane can't hold — a hosted diagram, a code block. It is roomy enough to host a full catalog component. A sheet can itself open further detail. Opened with showModal() for free focus-trap and top-layer stacking."},
  'surf-nested':{k:"Detail surfaces",h:"Nested detail",summary:"A surface reached from inside a sheet opens further detail, nested — so you can follow a cross-link from one component to the next, navigating relationships in a multi-component architecture rather than reading one static diagram. Capped at 3 levels; replace-topmost beyond that."},
  'cov-dtree':{k:"concept renderer",h:"Decision tree",summary:"For branching-logic concepts — labeled yes/no/condition edges, a tree with no cycles. Inline SVG with accent-bordered decision nodes and green leaf nodes. Distinct from the flow (no branches) and the state diagram (cycles/back-edges). Clickable nodes open detail via openSurface."},
- 'cov-htree':{k:"concept renderer",h:"Recursive tree",summary:"For hierarchy concepts — strict one-parent containment over n levels (an AST, a component tree, a taxonomy). An indented collapsible tree via native <details> (no JS for collapse). Internal nodes collapse; leaf nodes open detail via openSurface. Distinct from the dependency graph (shared leaves → a DAG)."},
- 'cov-lstack':{k:"concept renderer",h:"Layer stack",summary:"For layering concepts — ordered vertical bands where each layer touches only its neighbors (a tech stack, a network/protocol stack, a middleware chain). Full-width HTML bands, top = outermost, bottom = innermost. Clickable bands open detail via openSurface. Distinct from the architecture map (free-form connections)."},
- 'cov-erd':{k:"concept renderer",h:"Layered ERD",summary:"For data-model concepts — entities with field lists and relationships carrying cardinality (1:N, N:M). Entities are placed in dependency-depth bands: referenced entities on top, the most-dependent (junctions) at the bottom. Each relationship is anchored on its own FK field row as → Target.field · cardinality, with one connector drawn on hover or focus; a relationship summary lists every edge as the always-visible channel for keyboard, print and no-hover reading. Cycles are broken and marked, self-references render as a self-loop. Clickable entities open detail via openSurface. Distinct from the architecture map (services, no fields/cardinality)."},
+ 'cov-htree':{k:"concept renderer",h:"Recursive tree",summary:"For hierarchy concepts — strict one-parent containment over n levels (an AST, a component tree, a taxonomy). An indented collapsible tree via native <details> (no JS for collapse). Internal nodes collapse; leaf nodes open detail via openSurface. Distinct from a module dependency graph (shared leaves → a DAG), which renders as a system map."},
+ 'cov-lstack':{k:"concept renderer",h:"Layer stack",summary:"For layering concepts — ordered vertical bands where each layer touches only its neighbors (a tech stack, a network/protocol stack, a middleware chain). Full-width HTML bands, top = outermost, bottom = innermost. Clickable bands open detail via openSurface. Distinct from the system map (free-form connections)."},
+ 'cov-erd':{k:"concept renderer",h:"Layered ERD",summary:"For data-model concepts — entities with field lists and relationships carrying cardinality (1:N, N:M). Entities are placed in dependency-depth bands: referenced entities on top, the most-dependent (junctions) at the bottom. Each relationship is anchored on its own FK field row as → Target.field · cardinality, with one connector drawn on hover or focus; a relationship summary lists every edge as the always-visible channel for keyboard, print and no-hover reading. Cycles are broken and marked, self-references render as a self-loop. Clickable entities open detail via openSurface. Distinct from the system map (services, no fields/cardinality)."},
+ 'cov-sysmap':{k:"concept renderer",h:"System map",summary:"For nonlinear-system, module-dependency and structure-change concepts — boxes that nest to any depth, labelled directed wires, sync and async flow, cycles between components, and change marks. The page holds nested boxes and a list of connections as plain HTML; a layout engine in the page places the boxes and draws the wires, and a reader opens or closes a boundary in place. With JavaScript off, or if the engine fails, the boxes and the list are still there."},
  'cov-ladder':{k:"concept renderer",h:"Causal hypothesis ladder",summary:"For causal-chain concepts — a debugging trace: symptom, candidate causes each ruled in or out by evidence, converging to a root cause and fix. HTML rows with .chip status (ruled-in = ok, ruled-out = danger) plus a root-cause→fix callout. Distinct from the flow (neutral processing stages, no evidence semantics)."}
 };
 const SURF={'surf-sheet':'sheet','cov-erd':'sheet'};

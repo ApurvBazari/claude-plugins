@@ -21,9 +21,12 @@ model (`authoring-guide.md` § 1), so reused components render them with no chan
   // The document spine — same shape as session-model. Prose carries the narrative.
   "sections": [ { "id": "overview", "heading": "...", "prose": "...", "components": ["flow"] } ],
 
-  // nodes[] + edges[] → diagram (flow / architecture / dependency / concept) — reused unchanged.
-  "nodes": [ { "id": "...", "label": "...", "kind": "component|step|concept" } ],
-  "edges": [ { "from": "<id>", "to": "<id>", "label": "" } ],
+  // nodes[] + edges[] → diagram (flow / system map / concept) — the same fields and the same routing
+  // as session-model.md, including the system-map fields (parent, sub, open, change, inferred, the
+  // service|store|queue|external kinds, edges[].flow and edges[].where) and optional graphs[].
+  "nodes": [ { "id": "...", "label": "...", "kind": "component|step|concept|actor|service|store|queue|external",
+               "parent": "<id>", "sub": "...", "inferred": true } ],
+  "edges": [ { "from": "<id>", "to": "<id>", "label": "", "flow": "sync|async", "inferred": true, "where": ["path:line"] } ],
 
   // reference[] → the structured API/command surface. Grouped rows render as a comparison table
   // (Comparison table component) or a key–value metadata grid. `group` buckets entries

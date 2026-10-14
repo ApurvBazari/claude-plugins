@@ -1,6 +1,6 @@
 # walkthrough — Internal Conventions
 
-Render an explorable, self-contained interactive HTML document — from one of **two input modes**: a *session* (`create` renders from scratch, `update` refreshes in place) or a *subject* (`document` renders a plugin, the marketplace, or any path). Three user-facing skills, one shared visual layer, one output artifact per run, no hooks. Closest existing plugin in shape is `handoff/` (skills + optional in-repo settings file, no scripts), but the heavy lifting lives in the skills' `references/`, which together form the renderer.
+Render an explorable, self-contained interactive HTML document — from one of **two input modes**: a *session* (`create` renders from scratch, `update` refreshes in place) or a *subject* (`document` renders a plugin, the marketplace, or any path). Three user-facing skills, one shared visual layer, one output artifact per run, no hooks. Closest existing plugin in shape is `handoff/` (skills + optional in-repo settings file, no scripts), but the heavy lifting lives in the skills' `references/`, which together form the renderer. Since 1.6.0 the plugin also ships one browser script (the system-map engine) and two read-only agents (for `document`'s code reading); see § The system map and § Code reading.
 
 The visual layer (`create/references/`: `design-system.md`, `interactivity.md`, `page-scaffold.md`, `authoring-guide.md`, `components/`, `self-check.md`, `completeness.md`) is shared across all three user-facing skills. `update` and `document` reuse it unchanged and bring only what differs: `update` adds `reconstruct-and-merge.md`; `document` swaps the model — its own `subject-model.md` + `gather-subject.md` + `adapters/` replace `create`'s session model.
 
@@ -50,6 +50,8 @@ following that contract rather than restating them here.
    (`.claude/walkthrough/<YYYY-MM-DD-HHMM>-<slug>.html`, collision → `-2`, `-3`, …; never auto-open).
 
 **v1.3.1** — the assembled page emits THREE script blocks: an inert `<script type="application/json" id="wt-data">` holding `{DET,SURF}` (parsed at runtime, never executed), then the interactivity and component `<script>` boilerplate. Author content never sits in executable JS. Sections are visible unless JS proves healthy (`html.js` gate + 2.5s failsafe). `update` probes all three historical layouts.
+
+**v1.6.0** — a page that has a system map carries a FOURTH block, `<script id="wt-sysmap">`, holding the layout engine. It is assembled as one marker line and filled after write (`render-contract.md`, "insert the system-map engine"). It has its own block so that a fault in the engine cannot stop the other two scripts. A page with no system map still has exactly three.
 
 ## The update skill — reconstruct, merge, overwrite in place
 
@@ -114,6 +116,33 @@ First-class additions in v1.2.0 (concept-coverage layer):
 
 **v1.3.0** — the ERD (`components/data.md`) is rewritten as a dependency-layered, field-anchored, cycle-aware renderer; hover-connector JS lives in `interactivity.md`; layering algorithm in `authoring-guide.md` § 1.
 
+**v1.6.0** — the **system map** (`components/system-map.md`) replaces the architecture map and the dependency graph; the model gains nesting, kinds, flow, change marks and named graphs; `document` gains a code-reading adapter with two agents. See the next two sections.
+
+## The system map
+
+One renderer for a system: boxes that can nest, joined by labelled, directed wires.
+
+- **The HTML is the data.** A producer writes nested boxes plus a connections list (`components/system-map.md`). That is complete on its own and is the no-JS view. No producer ever writes a coordinate.
+- **The engine lays it out.** `skills/create/references/system-map-engine.js` reads that HTML in the browser, places the boxes and draws the wires. Each open group is laid out alone, then treated as one box in its parent. Left to right when it fits, top to bottom when it does not. A second ordering pass is kept only when it gives fewer wire crossings.
+- **Budget.** 16 visible boxes decide which groups start open (an open group counts as its children). `open` on a node overrides it.
+- **It fails to the plain view.** The engine checks its own result. Any error, or a layout with overlapping or escaping boxes, removes the upgrade for that map and leaves the boxes and the list.
+- **Limits on the engine file,** enforced by `tests/walkthrough/test_sysmap_engine.sh`: 28,672 bytes, no line over 200 characters, ASCII only, no colour, no font name, no `</script`. It is copied into every page that has a map, and where the shell command cannot be used the model types it out, so size is a real cost.
+- **Delivery.** One shell command inserts it; where that command cannot be used, or has failed twice, the model types it; if neither works the block is removed. The offer message says which. The single description is `render-contract.md`.
+- **Path.** A path variable is only replaced inside a `SKILL.md` body, never in a reference file and never in the shell's environment. So each of the four skills names the engine path in its own text.
+- **Prefix.** `sys-`. The state diagram owns `sm-`.
+- **What a channel means.** Shape and tint = kind. Green / amber / rose ring plus a text badge = added / modified / deleted, and nothing else uses those three colours. Dotted line plus the word "inferred" = inferred. Dashed wire = async.
+- **Old pages.** `update` reads a 1.5.0 `.archmap` or `.depgraph` and renders it as a system map. Their CSS stays as a back-compat block at the end of the system map's CSS.
+
+## Code reading (the system adapter)
+
+`document` can build a system map by reading a codebase (`skills/document/references/adapters/system.md`).
+
+- **Two read-only agents.** `agents/system-analyzer.md` makes claims with evidence; `agents/system-verifier.md` tries to refute each one. Tools: Read, Grep, Glob. No shell, no write.
+- **The skill applies the verdicts,** not the agents: confirmed stays, downgrade becomes inferred, refuted is dropped and listed as a gap.
+- **One rules file,** `references/system-reading.md`, in the plugin's flat `references/` home because its readers are agents. Never put a reference under `agents/`: every `.md` there is registered as an agent.
+- **The rules in one line each:** no evidence, no box; stated versus inferred; bounded reading with gaps listed; names only, and the agents and the skill are told never to open, search or cite `.env`, key and credential files, or anything outside the folder being read (an instruction, not a technical block: the verifier and self-check #27 check it again); containers by default, components on request; a library becomes a package map; manifests beat prose.
+- **If agents cannot be dispatched,** the skill does both passes itself and says the claims were not independently verified.
+
 ## Detail surfaces
 
 Clicking an interactive node, card, or cross-link chip opens its detail through **one router**, `openSurface(id)`, which routes to one of two shells rendered from a single structured schema:
@@ -137,9 +166,9 @@ The whole system lives in the shared `create/references/` visual layer (`session
 
 Three user-facing skills (all show in `/walkthrough:` autocomplete; all default frontmatter — user- and model-invocable, no `disable-model-invocation`):
 
-- `create/SKILL.md` — renders the current session from scratch. The renderer is six `references/` files (including `concept-coverage.md`) plus the `references/components/` catalog (`index.md` + per-group recipes loaded on demand).
+- `create/SKILL.md` — renders the current session from scratch. The renderer is six `references/` files (including `concept-coverage.md`) plus the `references/components/` catalog (`index.md` + per-group recipes loaded on demand), plus `references/system-map-engine.js` for a page that has a system map.
 - `update/SKILL.md` — refreshes an EXISTING walkthrough in place: reconstructs the prior model from the rendered HTML, merges in explicitly-named files, and overwrites the same file. Reuses `create`'s renderer references unchanged for the render half (six `references/` files + the `components/` catalog); its own `references/reconstruct-and-merge.md` covers the reconstruct + merge stages.
-- `document/SKILL.md` — renders a *subject* (a plugin, the marketplace, or any path) instead of a session. Reuses `create`'s visual-layer references unchanged; brings its own `references/subject-model.md`, `references/gather-subject.md`, and `references/adapters/` (plugin + marketplace). README + manifest are canonical; the output path is an argument (the docs site passes `site/<plugin>/index.html`). No gitignore prompt — output is a published/derived artifact, not private session content.
+- `document/SKILL.md` — renders a *subject* (a plugin, the marketplace, or any path) instead of a session. Reuses `create`'s visual-layer references unchanged; brings its own `references/subject-model.md`, `references/gather-subject.md`, and `references/adapters/` (plugin + marketplace + system). README + manifest are canonical, except in the system adapter, where machine-read files beat prose; after the subject comes an optional request (what to draw), and the output path is the last argument, and only when it ends in `.html` (the docs site passes `site/<plugin>/index.html`). No gitignore prompt — output is a published/derived artifact, not private session content.
 - `render/SKILL.md` — **internal** (`user-invocable: false`): renders a model already in context to a
   caller-supplied output path; skips gather+synthesize, reuses create's renderer references. The
   walkthrough plugin's first internal building block (programmatic-API category, like `onboard:generate`);
@@ -149,7 +178,8 @@ One internal building block: `render/SKILL.md` (`user-invocable: false`). `rende
 terminal stage; the user-facing producers (`create`, `update`, `document`) synthesize their own model, then
 PERFORM the shared terminal stages by following `skills/render/references/render-contract.md` — they do
 **not** invoke the `render` skill. The `render` SKILL is the programmatic entry for external callers (e.g.
-`lens`) that supply a pre-synthesized model. No agents, no hooks, no scripts.
+`lens`) that supply a pre-synthesized model. No hooks and no shell scripts. Two agents
+(`agents/system-analyzer.md`, `agents/system-verifier.md`) serve `document`'s system adapter only.
 
 ## AskUserQuestion usage
 

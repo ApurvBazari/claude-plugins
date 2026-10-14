@@ -14,6 +14,10 @@ house style.
 `create` is the renderer of record. This skill reuses its references unchanged for the render half;
 the two stages unique to `update` (reconstruct + merge) live in `references/reconstruct-and-merge.md`.
 
+A page that has a system map also needs the layout engine file. Its path is
+`${CLAUDE_PLUGIN_ROOT}/skills/create/references/system-map-engine.js` (the same file as
+`${CLAUDE_SKILL_DIR}/../create/references/system-map-engine.js`). Step 9 uses it.
+
 ## Step 1: Resolve the target (always confirm — the overwrite safety gate)
 
 Resolve `<base>` first (same as `create` Step 6.5): if a `settings.md` with `output-location:` exists in
@@ -35,6 +39,10 @@ The confirmed file is `TARGET`.
 Read `TARGET` and rebuild the session model from its rendered HTML following
 `references/reconstruct-and-merge.md` Part A. Parse the trailing `const DET={…}` store directly for
 `details{}` (the highest-fidelity source). Do not fabricate structure that is not present.
+
+A system map (`.sysmap`) is recovered exactly, because its HTML is the graph. An architecture map or a
+dependency graph from 1.5.0 or earlier is recovered best-effort and comes back as a system map. The
+engine block (`<script id="wt-sysmap">`) is never recovered: Step 9 inserts the current engine afresh.
 
 ## Step 3: Gather the new material (named files only)
 
@@ -74,6 +82,8 @@ Assemble per the shared **assemble** stage of `../render/references/render-contr
 `page-scaffold.md` verbatim, fill its component slots from the recipes you selected, inline
 `interactivity.md` into `{{INTERACTIVITY_JS}}`, emit the inert `{{DATA_JSON}}` island, and generate
 `{{NAV_LINKS}}` deterministically from `sections[]`; self-contained, only the one Google Fonts `@import`.
+When the page has a system map, fill `{{SYSMAP_ENGINE}}` with the engine block holding its marker line;
+otherwise delete that slot.
 **Update-specific:** fill `{{KICKER}}` from session metadata (date · primary type · scope), uppercase per
 `page-scaffold.md` — the nav status line; produce **no** update chrome — no "updated" badge, no changelog;
 the document simply reflects the new combined state.
@@ -89,6 +99,10 @@ Overwrite `TARGET` with the assembled HTML. Keep the same filename — do not wr
 file, do not create a backup. (`.claude/walkthrough/` already exists and is gitignored from the first
 `create` run, so no gitignore prompt is needed; honor the persisted gitignore choice in any existing `.claude/walkthrough/settings.md` and do not re-prompt.)
 
+When the page has a system map, then run the **insert the system-map engine** step of
+`../render/references/render-contract.md`, with the engine path named at the top of this skill, and run
+its check.
+
 ## Step 10: Offer to open
 
 Tell the user the path (under three lines). Offer to open it:
@@ -102,7 +116,12 @@ Do not auto-open; offer.
 Include the `completeness.md` Part 2 coverage note (included / intentionally omitted) in the message,
 above the open offer. It is a passive summary, not an `AskUserQuestion`.
 
+When the page has a system map, also include the contract's `System map engine: …` line. When an old
+architecture map or dependency graph was upgraded, say so, and name any connection that could not be
+recovered.
+
 ## Key Rules
+- **Engine by the contract.** A page with a system map gets the current engine through the insert step of `render-contract.md`, every time. Never carry an old engine block over, and never offer a page that still holds the marker line.
 - **Confirm before overwrite.** Step 1 always resolves the target through a user confirmation, even when model-invoked. There is no silent-overwrite path.
 - **Reconstruct, don't fabricate.** Recover only what the HTML actually contains; the `DET` store is the reliable source for details. Note partial fidelity on degraded input.
 - **Named files drive; conversation frames.** No automatic git discovery of changes. No paths → ask which files changed.

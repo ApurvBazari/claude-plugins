@@ -5,7 +5,7 @@ Components that render the shape of data (not code structure). Tokens-only + sel
 ## ERD / schema (layered, field-anchored, cycle-aware)
 
 **When:** the session is about a **data model** — entities with fields and relationships carrying
-cardinality. Distinct from the architecture map (services, no fields/cardinality). Entities are placed
+cardinality. Distinct from the system map (services, no fields/cardinality). Entities are placed
 in **dependency-depth bands** (computed at synthesis, see `authoring-guide.md` § 1 "ERD layering"),
 referenced/parent entities on top, the most-dependent (junction) at the bottom. A relationship lives on
 its **FK field row** as a clickable `→ Target.field · cardinality`; a **relationship summary** lists

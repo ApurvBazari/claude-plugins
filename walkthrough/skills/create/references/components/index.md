@@ -14,9 +14,8 @@ read **only** the group files for the components you actually select. Paths are 
 | Prose section | A narrative-only section | `layout-prose.md` |
 | Tabs + tradeoff bars | Decisions with scored trade-off axes | `decisions.md` |
 | Flow / pipeline diagram | A linear staged sequence | `diagrams.md` |
-| Architecture map | Non-linear services / layers | `diagrams.md` |
+| System map | A system: services, stores, queues, modules, people — nested boundaries, labelled sync / async wires, cycles, change marks | `system-map.md` |
 | Layer stack | Ordered vertical layers, each touching only neighbors — tech / protocol / middleware stack | `diagrams.md` |
-| Dependency graph | Module / package imports | `diagrams.md` |
 | Recursive tree | A deep parent→child hierarchy (AST, component tree, taxonomy) — strict one-parent, n levels | `diagrams.md` |
 | Morphing-mode diagram | One structure shown in multiple modes | `diagrams.md` |
 | ERD / schema | Entities with fields + relationships carrying cardinality (DB schema, types) | `data.md` |
@@ -43,5 +42,8 @@ read **only** the group files for the components you actually select. Paths are 
 | Findings list | Review `findings[]`, severity-ranked + filterable by category | `review.md` |
 | Adherence panel | `adherence` — spec items + plan steps marked met/partial/missing | `review.md` |
 | Cause→effect (hypothesis ladder) | A debugging trace — symptom → causes ruled in/out by evidence → root cause + fix | `reasoning.md` |
+
+Module / package imports are drawn by the **System map** too (the dependency graph was retired in
+1.6.0, with the architecture map).
 
 ## Composing beyond the catalog — see `authoring-guide.md`.
