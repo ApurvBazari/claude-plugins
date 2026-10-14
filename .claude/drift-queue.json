@@ -1065,6 +1065,15 @@
       "status": "deferred",
       "rationale": "Security review M1 and M2 were fixed in the PR: rule 6 of walkthrough/references/system-reading.md now lists tool and cloud credentials (.npmrc, .pypirc, .netrc, .docker/config.json, kubeconfig files, .aws/, .kube/, service-account JSON in any spelling), Terraform variables and state, and more SSH key names, and says a cited path that is absolute, starts with ~ or has a .. segment is outside root and never opened; the verifier refutes such a claim without opening it, the skill drops any kept claim that cites one whatever its verdict, and self-check #27 looks at every path:line the page shows as evidence. The new wording is pinned in test_doc_contracts.sh, each pin checked by a mutant, but no headless run has read a codebase under it. The earlier live runs all predate it. Not covered by the new sentence: a symbolic link inside root that points outside it, since the check is on the path as written.",
       "resolution": "In the next live run of /walkthrough:document on a fixture, add a committed .npmrc with a canary token and a README line that points at a path outside root, and check that neither is opened, searched or cited."
+    },
+    {
+      "id": "PR144-1",
+      "title": "The docs bot's own post-checks fail the system-map belts on a package.json only its job has",
+      "source": "release docs run 38523951680 for the walkthrough 1.6.0 release (PR #143, docs PR #144), 2026-10-14",
+      "raisedAt": "2026-10-14",
+      "status": "deferred",
+      "rationale": "In the sync job, post-checks from the sealed copy reported 'tests/run-all.sh (Ran 82 belt script(s); 2 failed.)': test_sysmap_engine.sh ('the engine does not parse') and test_sysmap_insert.sh. The model's own node --check of the engine failed with 'Error: Invalid package config /home/runner/work/claude-plugins/claude-plugins/package.json'. The repository tracks no package.json, and the publish job's authoritative post-checks, on a fresh checkout with the same patch, passed run-all. So the sync job's tree held an untracked package.json that node could not parse, and node reads the nearest package.json before it runs any .js under the repository. Most likely it is an empty mount point left by the Bash sandbox, as it leaves for the protected dotfiles; that is not confirmed. The two belts are the first in the suite to run node on a file inside the repository, so from 1.6.0 on every docs PR opens as a draft labelled needs-owner even when the authoritative checks pass.",
+      "resolution": "Confirm what the file is in a dry run (list it in the trail step). Then either have the sync job's post-checks skip or neutralise sandbox mount points before run-all, or have the two belts run node on a copy outside the repository (or with an explicit --input-type) so a stray package.json cannot reach them."
     }
   ]
 }
