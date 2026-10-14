@@ -1020,6 +1020,51 @@
       "status": "queued",
       "rationale": "Reading rule 6 (walkthrough/references/system-reading.md) says every content search leaves the never-opened paths out: choose a scope, check it against a listing of file names, and never search the whole root unfiltered. A sentence added late in the 1.6.0 work says what to do when the listing is not complete for the place to be searched, as when a listing of a large tree is cut short: search one file, or use a glob for the file types you mean, and never a bare folder. It was added because in a live run on this repository (2026-10-11) the agent's root listing stopped at 100 of 1,076 names and did not show two gitignored `.env` files that were in the tree. That run's six searches were each of one file or of one folder with a glob, and none reached either file. The remedy has two limits. (1) A glob for a file type does not keep every never-opened file out. It keeps out `.env` itself and the key files the rule names by extension. It does not keep out `.env.<anything>`, `id_rsa*`, `secrets.*` or `credentials*`, which take any extension (`secrets.yml` fits `*.yml`), and it does not keep out a dependency or build folder below the folder searched: in that run a `*.md` glob over one folder returned files two folders down. With an incomplete listing the rule's own check, that the scope matches none of these paths, cannot be made for the glob either, so in those cases only the rule's last line is left: discard such a result unread. (2) The sentence names a listing that was cut short. A listing made with a pattern shows only some names by design and is just as unable to show that a folder is clean, and the reader has to infer that it counts as incomplete. Two of the three listings in that run were of that kind. What the runs show about the search tool: once, in the last run of 2026-10-11, the skill searched the repository the plugin was loaded from with the tool, from the root, for `*.html` files holding a class name. The result counted ten files and named five, all tracked, and ten tracked pages hold that string. 55 gitignored pages holding it were under the same root, one of them with no hidden folder in its path and one under an `out/` folder, which rule 6 lists; the count leaves no room for any of them. So the tool left gitignored files out, in one search. Not shown: what the tool does with a hidden file that is not gitignored, and any search with a `.env` itself in scope. A shell search is another matter. The one that ran, a `grep -r` for `*.html` from the same root in an earlier run that day, did return gitignored pages. That is true of that run only: in a later session the same command returned just the ten tracked pages, because that session's `grep` applied ignore files. The two agents have no shell; the skill does. On what was seen, then, a gitignored `.env`, the usual case, is kept out by the tool as well as by the rule, while a `.env` that is committed, and any search made through the shell, has only the rule. No belt pins the new sentence (SYSMAP-belt-pins-could-be-wider), and no live run has been made with it (SYSMAP-live-check-is-by-hand).",
       "resolution": "Close the limit in the rule, then pin the sentence and run it. Three ways to close limit 1: have the place to be searched listed in full first, so that the rule's own check can be made; use an exclusion that the search tool applies, if it has one; or search named files only. The first two cover both halves, the names and the folders. Naming files covers the names only: a named file such as `package.json` still matches inside a dependency folder. For limit 2, say in the rule that a listing made with a pattern is not complete either. What is not shown needs no model run: one search with the tool, for a string in the file, over a folder that holds a `.env` that is not gitignored. Whether an agent follows the new sentence needs a live run on a large repository (SYSMAP-live-check-is-by-hand)."
+    },
+    {
+      "id": "PR142-1",
+      "title": "The engine insert writes to a temp file with a predictable name",
+      "source": "walkthrough 1.6.0, PR #142 automated reviews (2026-10-14)",
+      "raisedAt": "2026-10-14",
+      "status": "deferred",
+      "rationale": "Security review L1. The insert command in walkthrough/skills/render/references/render-contract.md writes awk's output to \"$PAGE.tmp\" with a plain > redirect, which follows a symbolic link. Someone who can write to the output folder could plant page.html.tmp as a link and have the redirect overwrite its target. That needs write access to the user's own output folder, so the risk is low. mktemp in the same folder would close it, at the cost of a longer command that is pinned by test_sysmap_insert.sh and test_doc_contracts.sh and was run live.",
+      "resolution": "Switch the temp file to mktemp \"$PAGE.XXXXXX\" in the same folder, keep the no-temp-file-left check, update the pins, and run the insert belt on macOS and Linux."
+    },
+    {
+      "id": "PR142-2",
+      "title": "A relative page path containing = or starting with - makes the engine insert fail",
+      "source": "walkthrough 1.6.0, PR #142 automated reviews (2026-10-14)",
+      "raisedAt": "2026-10-14",
+      "status": "deferred",
+      "rationale": "Security review L2, both cases reproduced on macOS. With PAGE='a=b.html' awk takes the operand as a variable assignment and reads stdin, so the command exits 1, removes the temp file and leaves the page untouched, and the engine is then typed. With PAGE='-x.html' awk reads the file, but mv and then rm take the path as an option and fail, so the command exits 1, the page is untouched, and -x.html.tmp is left behind. The skills pass a full path, which starts with /, so neither case is expected in practice. The PR's Limits name only the backslash case.",
+      "resolution": "Pass \"./$PAGE\" when the path is relative, which covers both cases, or name = and a leading - beside the backslash in the contract's limits; pin whichever is chosen in test_sysmap_insert.sh."
+    },
+    {
+      "id": "PR142-3",
+      "title": "The verifier receives the analyzer's claims without an untrusted-input fence",
+      "source": "walkthrough 1.6.0, PR #142 automated reviews (2026-10-14)",
+      "raisedAt": "2026-10-14",
+      "status": "deferred",
+      "rationale": "Security review L3. adapters/system.md passes the analyzer's JSON to system-verifier as claims, and every string in it comes from the codebase. The reading rules and both agents already say file contents are data, not instructions, which covers the risk in spirit, but the claims are not wrapped the way the repo fences other untrusted input.",
+      "resolution": "Have the adapter wrap claims in <untrusted-user-input field=\"claims\">...</untrusted-user-input> and have the verifier treat labels and signals as data; pin the fence in test_doc_contracts.sh."
+    },
+    {
+      "id": "PR142-4",
+      "title": "Root CLAUDE.md's References row lists only markdown files",
+      "source": "walkthrough 1.6.0, PR #142 automated reviews (2026-10-14)",
+      "raisedAt": "2026-10-14",
+      "status": "deferred",
+      "rationale": "pr-review nit 3. The File Type Conventions table in CLAUDE.md gives references as references/*.md, but walkthrough/skills/create/references/system-map-engine.js is now a non-markdown reference. Not checked here: how check-references.sh and check-ref-paths.sh treat a .js reference.",
+      "resolution": "Widen the row to name non-markdown references, and confirm what the two reference guards do with a .js path."
+    },
+    {
+      "id": "PR142-5",
+      "title": "The rule 6 changes made after PR #142's security review were not run live",
+      "source": "walkthrough 1.6.0, PR #142 automated reviews (2026-10-14)",
+      "raisedAt": "2026-10-14",
+      "status": "deferred",
+      "rationale": "Security review M1 and M2 were fixed in the PR: rule 6 of walkthrough/references/system-reading.md now lists tool and cloud credentials (.npmrc, .pypirc, .netrc, .docker/config.json, kubeconfig files, .aws/, .kube/, service-account JSON in any spelling), Terraform variables and state, and more SSH key names, and says a cited path that is absolute, starts with ~ or has a .. segment is outside root and never opened; the verifier refutes such a claim without opening it, the skill drops any kept claim that cites one whatever its verdict, and self-check #27 looks at every path:line on the page. The new wording is pinned in test_doc_contracts.sh, each pin checked by a mutant, but no headless run has read a codebase under it. The earlier live runs all predate it. Not covered by the new sentence: a symbolic link inside root that points outside it, since the check is on the path as written.",
+      "resolution": "In the next live run of /walkthrough:document on a fixture, add a committed .npmrc with a canary token and a README line that points at a path outside root, and check that neither is opened, searched or cited."
     }
   ]
 }
