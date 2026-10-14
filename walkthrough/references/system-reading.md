@@ -95,7 +95,7 @@ A skipped file of any kind on the list but the last (the `.git/`, dependency and
 reported as a gap with the reason `denied`. This rule is an instruction: nothing technical stops a Read
 or a search. It is checked again three times: the verifier refutes any claim whose evidence is such a
 file or a path outside `root`, without opening it; the skill checks the cited paths of every claim it
-keeps; and the self-check looks at every `path:line` on the page (#27).
+keeps; and the self-check looks at every `path:line` the page shows as evidence (#27).
 
 ## 7. Manifests beat prose
 

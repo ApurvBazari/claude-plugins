@@ -272,8 +272,8 @@ grep -qF 'Before you keep any claim, whatever its verdict,' "$SYSAD" \
   || fail "adapters/system.md must check the cited paths of every claim it keeps, not only those with no verdict"
 grep -qF 'If any path is on the list or outside `root`, drop the claim' "$SYSAD" \
   || fail "adapters/system.md must drop a kept claim whose cited path is on the list or outside root"
-grep -qF 'No `path:line` on the page names a file the reading rules never open' "$SC" \
-  || fail "self-check.md row 27 must check every path:line on the page against rule 6 and the root"
+grep -qF 'No `path:line` shown as evidence (a node'"'"'s `where[]`, an edge'"'"'s `sf-loc` chips) names a file the reading rules never open' "$SC" \
+  || fail "self-check.md row 27 must check every evidence path:line on the page against rule 6 and the root"
 grep -qF 'never re-reads the codebase and never brings back a dropped claim' "$SYSAD" || fail "adapters/system.md must say the coverage critic never re-reads the codebase and never brings back a dropped claim"
 # the two sentences that close the rules-unreadable path. Without them a run whose rules could not be
 # read can end on the generic route, which reads the subject with no never-opened list
