@@ -26,10 +26,17 @@ including its § Review-specific assembly for `findings`/`diffHunks`/`adherence`
 caller-supplied output path (create the directory if missing); do not prompt for gitignore (the caller
 owns its output location). Return the written path to the caller.
 
+When the page has a system map, run the contract's **insert the system-map engine** step after the
+write, and its check. The engine file is
+`${CLAUDE_PLUGIN_ROOT}/skills/create/references/system-map-engine.js` (the same file as
+`${CLAUDE_SKILL_DIR}/../create/references/system-map-engine.js`). Return the contract's
+`System map engine: …` line to the caller with the path.
+
 ## Key Rules
 - **Internal only.** `user-invocable: false`; callers invoke it via the Skill tool.
 - **No synthesis.** Render the supplied model verbatim — never re-derive from the transcript.
 - **Follow the contract.** The shared stages + review assembly live in `references/render-contract.md`; this
   skill is their programmatic entry point, not a second copy of them.
 - **Self-contained + tokens only.** Same invariants as create; run the structural self-check before write.
+- **Engine by the contract.** A page with a system map gets its engine through the contract's insert step; never return a page that still holds the marker line.
 - **Empty context → redirect to create.** Never silently fall back to synthesis.

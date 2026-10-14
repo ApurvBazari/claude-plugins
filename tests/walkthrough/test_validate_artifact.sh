@@ -15,7 +15,12 @@ grep -q '<script>{{COMPONENT_JS}}</script>' "$PS"     || fail "component JS must
 grep -q 'html.js section' "$PS"                       || fail "scaffold must gate the hidden state on html.js"
 ! grep -q '{{DETAIL_DATA}}' "$PS"                     || fail "scaffold must retire the {{DETAIL_DATA}} slot"
 ! grep -q '{{SURFACE_MAP}}' "$PS"                     || fail "scaffold must retire the {{SURFACE_MAP}} slot"
-ok "page-scaffold: three-block + json-data island + html.js gate"
+# 1.6.0: an optional fourth block for the system-map engine, after the component script, so that a
+# fault in the engine cannot stop the two scripts above it
+grep -q '{{SYSMAP_ENGINE}}' "$PS"                     || fail "scaffold must have the {{SYSMAP_ENGINE}} slot"
+awk '/<script>\{\{COMPONENT_JS\}\}<\/script>/{c=NR} /^[[:space:]]*\{\{SYSMAP_ENGINE\}\}[[:space:]]*$/{e=NR} END{exit (c && e && e>c)?0:1}' "$PS" \
+  || fail "the {{SYSMAP_ENGINE}} slot must sit on its own line after the component script"
+ok "page-scaffold: three-block + json-data island + html.js gate + engine slot"
 
 # --- Task 2: interactivity js-gate + JSON.parse(DET/SURF) + failsafe ---
 IJ="$ROOT/walkthrough/skills/create/references/interactivity.md"

@@ -1,5 +1,8 @@
 # Component Catalog — Diagrams
 
+The **system map** has its own file, `system-map.md`. It replaced the architecture map and the
+dependency graph in 1.6.0; neither has a recipe here any more.
+
 ## Flow / pipeline diagram
 
 **When:** The session described a linear pipeline or staged process. Horizontal nodes with arrows; click a node for detail in the side panel. The full CSS ships with this recipe below.
@@ -30,72 +33,6 @@
 **Wiring:** click → `openSurface('<id>')` (reads the structured `DET` store in `interactivity.md` — add a matching `details{}` entry per node, compiled to `DET[id]` = `{k,h,summary,where,…}`). Escape closes the pane; a rich node can route to a sheet instead (kind inference, authoring-guide § 3).
 
 **Hostable in a sheet:** can be embedded in a detail sheet via a detail's `components[]`; suffix its internal ids with the surface id (e.g. `-rich`) so global ids stay unique (authoring-guide § 3).
-
-## Architecture map
-
-**When:** The session described a system with components that connect non-linearly (services, layers, a fan-out). Built in OUR tokens as labelled boxes joined by arrows.
-
-```html
-<section id="<id>">
-  <div class="sec-label"><architecture></div>
-  <h2>Component <em>map</em></h2>
-  <div class="archmap">
-    <div class="flow-node accent" data-d="<id1>" role="button" tabindex="0" aria-label="<Component A>" onclick="openSurface('<id1>')"><span class="node-label"><layer></span><Component A></div>
-    <span class="flow-arrow">→</span>
-    <div class="flow-node green" data-d="<id2>" role="button" tabindex="0" aria-label="<Component B>" onclick="openSurface('<id2>')"><span class="node-label"><layer></span><Component B></div>
-    <span class="flow-arrow">→</span>
-    <div class="flow-node amber" data-d="<id3>" role="button" tabindex="0" aria-label="<Component C>" onclick="openSurface('<id3>')"><span class="node-label"><layer></span><Component C></div>
-  </div>
-</section>
-```
-
-```css
-.archmap{display:flex;align-items:center;flex-wrap:wrap;gap:.4rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1.2rem 0;justify-content:center;}
-.flow-node{background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:.85rem 1.25rem;font-family:var(--mono);font-size:.72rem;color:var(--tp);text-align:center;position:relative;transition:all .3s var(--ease);cursor:pointer;min-width:140px;}
-.flow-node:hover{border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow);transform:scale(1.03);}
-.flow-node.accent{border-color:color-mix(in srgb,var(--accent) 30%,transparent);background:linear-gradient(135deg,var(--bg-elevated),var(--accent-soft));}
-.flow-node.green{border-color:color-mix(in srgb,var(--green) 30%,transparent);background:linear-gradient(135deg,var(--bg-elevated),var(--green-soft));}
-.flow-node.amber{border-color:color-mix(in srgb,var(--amber) 30%,transparent);background:linear-gradient(135deg,var(--bg-elevated),var(--amber-soft));}
-.flow-node .node-label{font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.3rem;display:block;}
-.flow-arrow{color:var(--tm);font-size:1.2rem;padding:0 .75rem;opacity:.4;flex-shrink:0;}
-```
-
-**Wiring:** click → `openSurface('<id>')` (add `DET` keys per node). Reveal via the IntersectionObserver.
-
-**Hostable in a sheet:** can be embedded in a detail sheet via a detail's `components[]`; suffix its internal ids with the surface id (e.g. `-rich`) so global ids stay unique (authoring-guide § 3).
-
-## Dependency graph
-
-**When:** The session is about how modules/packages/files depend on each other. Inline SVG (self-contained, no `<img>`) with token-coloured edges and nodes; hover edges glow.
-
-```html
-<section id="<id>">
-  <div class="sec-label"><dependencies></div>
-  <h2>Dependency <em>graph</em></h2>
-  <div class="depgraph">
-    <svg viewBox="0 0 600 220" role="img" aria-label="<dependency graph description>">
-      <g class="dg-edge"><line x1="120" y1="60" x2="300" y2="60"/><line x1="120" y1="60" x2="300" y2="160"/><line x1="300" y1="60" x2="480" y2="110"/><line x1="300" y1="160" x2="480" y2="110"/></g>
-      <g class="dg-node"><rect x="40" y="40" width="160" height="40" rx="8"/><text x="120" y="65" text-anchor="middle"><root module></text></g>
-      <g class="dg-node"><rect x="220" y="40" width="160" height="40" rx="8"/><text x="300" y="65" text-anchor="middle"><dep A></text></g>
-      <g class="dg-node"><rect x="220" y="140" width="160" height="40" rx="8"/><text x="300" y="165" text-anchor="middle"><dep B></text></g>
-      <g class="dg-node leaf"><rect x="400" y="90" width="160" height="40" rx="8"/><text x="480" y="115" text-anchor="middle"><shared leaf></text></g>
-    </svg>
-  </div>
-</section>
-```
-
-```css
-.depgraph{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1.2rem 0;overflow-x:auto;}
-.depgraph svg{display:block;min-width:560px;max-width:100%;height:auto;}
-.dg-edge line{stroke:var(--border-strong);stroke-width:1.5;transition:stroke .3s var(--ease);}
-.depgraph:hover .dg-edge line{stroke:var(--accent);}
-.dg-node rect{fill:var(--bg-elevated);stroke:var(--border);transition:all .3s var(--ease);}
-.dg-node:hover rect{stroke:var(--accent);}
-.dg-node.leaf rect{fill:color-mix(in srgb,var(--bg-elevated),var(--accent-soft));stroke:color-mix(in srgb,var(--accent) 30%,transparent);}
-.dg-node text{font-family:var(--mono);font-size:11px;fill:var(--tp);}
-```
-
-**Wiring:** No handler required (pure CSS hover glow). Reveal via the IntersectionObserver. Coordinates are placeholders — lay nodes out by hand and connect with `<line>` per real edge.
 
 ## Morphing-mode diagram
 
@@ -175,7 +112,7 @@ document.querySelectorAll('#mode button').forEach(b=>b.addEventListener('click',
 
 ## State / transition diagram
 
-**When:** The session described a system of **states** with transitions that are **cyclic** (back-edges, retry loops, self-loops) and/or **guarded** (an edge fires only under a condition). This is the right form whenever a flow/architecture map would have to bend its linear arrows backwards — a connection lifecycle, a parser/protocol FSM, a workflow with retries. Inline SVG (self-contained), token-coloured state boxes, curved `<path>` edges (a `Q`/`C` Bézier draws a back-edge or self-loop a straight `<line>` cannot), and small guard labels on the conditional edges. Clickable states open detail via `openSurface`.
+**When:** The session described a system of **states** with transitions that are **cyclic** (back-edges, retry loops, self-loops) and/or **guarded** (an edge fires only under a condition). This is the right form whenever a flow diagram would have to bend its arrows backwards, and whenever the nodes are states rather than things that exist side by side (which would be a system map) — a connection lifecycle, a parser/protocol FSM, a workflow with retries. Inline SVG (self-contained), token-coloured state boxes, curved `<path>` edges (a `Q`/`C` Bézier draws a back-edge or self-loop a straight `<line>` cannot), and small guard labels on the conditional edges. Clickable states open detail via `openSurface`.
 
 ```html
 <section id="<id>">
@@ -224,7 +161,7 @@ document.querySelectorAll('#mode button').forEach(b=>b.addEventListener('click',
 
 ## Sequence / swimlane diagram
 
-**When:** The session traced an **ordered exchange of messages between two or more actors/participants** over time — a request lifecycle, an auth handshake, a protocol trace. Time flows top-to-bottom; each actor owns a lane; messages bounce between lanes. No linear flow or architecture map captures the lanes + ordering, so this is the right form. Token-styled lane heads over CSS-grid message rows; each message is clickable → `openSurface`. Pairs naturally with the **Stepper / playback** (`files-timeline.md`) to replay the trace.
+**When:** The session traced an **ordered exchange of messages between two or more actors/participants** over time — a request lifecycle, an auth handshake, a protocol trace. Time flows top-to-bottom; each actor owns a lane; messages bounce between lanes. No flow diagram or system map captures the lanes + ordering, so this is the right form. Token-styled lane heads over CSS-grid message rows; each message is clickable → `openSurface`. Pairs naturally with the **Stepper / playback** (`files-timeline.md`) to replay the trace.
 
 ```html
 <section id="<id>">
@@ -319,7 +256,7 @@ outcomes `.leaf`. **Escape `<`/`>` in guard text as `&lt;`/`&gt;`** (e.g. `[n &l
 ## Recursive tree
 
 **When:** A deep **parent→child hierarchy** with strict one-parent containment over n levels — an AST,
-a component tree, a taxonomy, a directory of concepts. Distinct from the **dependency graph** (import
+a component tree, a taxonomy, a directory of concepts. Distinct from a **system map** of module imports (import
 edges, shared leaves → a DAG) and the **mind map** (single-level radial). An **indented collapsible
 tree** via native `<details>` (the accordion's no-JS collapse) handles arbitrary depth and reuses the
 mono tree styling. Internal nodes collapse; **leaf nodes are clickable → `openSurface`**.
@@ -369,8 +306,8 @@ internal `<summary>` nodes toggle only. The disclosure caret is a CSS escape (`\
 ## Layer stack
 
 **When:** An **ordered set of vertical layers where each layer talks only to its neighbors** — a tech
-stack, a network/protocol stack, a middleware chain. Distinct from the **architecture map** (free-form
-horizontal connections). Pure HTML/CSS full-width bands; top band = outermost, bottom = innermost.
+stack, a network/protocol stack, a middleware chain. Distinct from the **system map** (free-form
+connections). Pure HTML/CSS full-width bands; top band = outermost, bottom = innermost.
 Clickable band → `openSurface`.
 
 ```html

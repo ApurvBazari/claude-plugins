@@ -4,18 +4,42 @@
 command argument (a path, a plugin directory, or "marketplace"). README + manifest are **canonical** —
 never invent content not grounded in the source.
 
+The **request** is what the user asked to have drawn. It comes from the words after the subject that
+are not an output path (your skill's Step 1 tells the two apart), or, when the skill was started by a
+sentence instead of the slash form, from that sentence.
+
 ## Routing
 
 | Argument | Adapter | Canonical inputs |
 |---|---|---|
 | a plugin dir (contains `.claude-plugin/plugin.json`) | `adapters/plugin.md` | `plugin.json`, `README.md`, `skills/*/SKILL.md`, `agents/*.md`, `scripts/*.sh`, `CHANGELOG.md` |
-| `marketplace` / repo root | `adapters/marketplace.md` | `.claude-plugin/marketplace.json`, root `README.md` |
+| `marketplace` / repo root with a `marketplace.json` | `adapters/marketplace.md` | `.claude-plugin/marketplace.json`, root `README.md` |
+| a codebase whose architecture or system map is asked for; or a repository root with a build or deploy manifest that is neither of the two above | `adapters/system.md` | machine-read files first (manifests, deploy files, entry points, wiring), read by the `system-analyzer` and `system-verifier` agents under `system-reading.md`; prose last |
 | any other path/description | generic | the named files; map prose → `sections`, code → `examples`, structure → `nodes/edges` |
+
+**Precedence.** The rows are not tried from top to bottom. Decide in this order:
+
+1. A request for the subject's architecture or system map, in any of the wordings `adapters/system.md`
+   lists under "When this adapter runs", routes to that adapter whatever the subject is, a plugin
+   directory or the marketplace included. A request for components (`components of the API`) is one
+   of them, and it also sets the depth (that file's Step A).
+2. With no such request, a plugin directory routes to `adapters/plugin.md` and the marketplace to
+   `adapters/marketplace.md`.
+3. Only then does the repository-root rule apply: a subject that is neither of those, and is a
+   repository root with a build or deploy manifest, routes to `adapters/system.md`. It needs no request.
+4. Anything else takes the generic route.
 
 ## Rules
 - Read the README first; it is the authoritative narrative. Manifest fills structured fields
-  (name, version, keywords, install).
+  (name, version, keywords, install). **The system adapter is the one exception:** there, the reading
+  rules come first, before any file of the subject; machine-read files beat prose; and a thing only
+  the README mentions is at most inferred (`adapters/system.md`).
 - Cite `path:line` in `details[].where` only when verified by a real file read; otherwise cite
-  `path` only or omit (same rule as `create`).
+  `path` only or omit (same rule as `create`). The system adapter has its own rule
+  (`adapters/system.md`, Step B to Step D). There the real read is the verifier's pass, which opens
+  the lines each claim cites (never a file on the never-opened list), whether the agent runs it or you
+  do. Once the verdicts are in, you never go back into the code to confirm an anchor: every surviving
+  claim keeps its `path:line`, marked inferred when it was downgraded or kept with no verdict, so
+  "cite `path` only or omit" does not apply.
 - Omit empty model fields — never stub (`authoring-guide.md` § 2).
 - Do not run any subject code; read-only.

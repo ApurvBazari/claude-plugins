@@ -11,6 +11,10 @@ style, then offer to open it. The renderer is six `references/` files (including
 plus the `references/components/` catalog (its `index.md` routes to per-group recipe files you read on
 demand). Load them as the steps direct.
 
+A page that has a system map also needs the layout engine file. Its path is
+`${CLAUDE_PLUGIN_ROOT}/skills/create/references/system-map-engine.js` (the same file as
+`${CLAUDE_SKILL_DIR}/references/system-map-engine.js`). Step 10 uses it.
+
 ## Step 1: Scope
 If an argument was given (e.g. `architecture decisions`), scope synthesis to that focus.
 Otherwise cover the whole session. If the session is trivially short, ask via AskUserQuestion
@@ -23,7 +27,7 @@ never invent a line number; if unverified, cite `path` only or omit.
 
 ## Step 3: Synthesize the session model
 Build the structured model per `references/session-model.md` (title, summary, typeTags,
-sections[], nodes[], edges[], decisions[], files[], timeline[], metrics[], openQuestions[],
+sections[], nodes[], edges[], graphs[], decisions[], files[], timeline[], metrics[], openQuestions[],
 details{}) BEFORE writing any HTML.
 
 ## Step 4: Coverage critic
@@ -34,10 +38,12 @@ salient items into the model; note intentional omissions for the coverage note.
 Using `references/authoring-guide.md`, map the model to component names, then look each name up in
 `references/components/index.md` to find its group file. Apply "omit empty, never stub". For content
 that fits no catalog entry, compose a bespoke component per the authoring-guide recipe + looks-native checklist.
-Before accepting a catalog **diagram**, run the authoring-guide § 1 diagram-fidelity check: cyclic /
-guarded `nodes[]`+`edges[]` → state / transition diagram; timed messages between actors → sequence /
-swimlane diagram; a shape the catalog still cannot draw faithfully → compose a bespoke diagram. Never
-force-fit a state machine or a message trace into a flow / architecture map.
+Before accepting a catalog **diagram**, run the authoring-guide § 1 diagram-fidelity check: a system
+(services, stores, queues, modules, people; cycles included) → system map; states with guarded or
+cyclic transitions → state / transition diagram; timed messages between actors → sequence / swimlane
+diagram; a straight staged chain → flow diagram; a shape the catalog still cannot draw faithfully →
+compose a bespoke diagram. Never force-fit a state machine or a message trace into a flow diagram or a
+system map.
 
 Run the **concept-fidelity gate** (`references/authoring-guide.md` § 1, routed by
 `references/concept-coverage.md`): classify each concept at selection time into a concept-type, bind it to the
@@ -48,8 +54,9 @@ Assemble per the **assemble** stage of `../render/references/render-contract.md`
 source for the shared select→assemble→self-check→write mechanics. Copy `references/page-scaffold.md`
 verbatim (its `<style>` block is the base-CSS home), fill its component slots from the recipes you selected
 in Step 5, inline the `references/interactivity.md` bundle into `{{INTERACTIVITY_JS}}`, emit the inert
-`{{DATA_JSON}}` island, and generate `{{NAV_LINKS}}` deterministically from `sections[]`. Keep it
-self-contained: only the one Google Fonts `@import`.
+`{{DATA_JSON}}` island, and generate `{{NAV_LINKS}}` deterministically from `sections[]`. When the page
+has a system map, fill `{{SYSMAP_ENGINE}}` with the engine block holding its marker line; otherwise
+delete that slot. Keep it self-contained: only the one Google Fonts `@import`.
 
 ## Step 6.5: Resolve output base directory
 Decide where walkthroughs are written in this folder, and remember the choice, BEFORE computing the path.
@@ -105,6 +112,9 @@ document that fails the self-check.
 Per the shared **write** stage of `../render/references/render-contract.md`, write the assembled HTML to
 the path resolved in Steps 6.5–8.
 
+When the page has a system map, then run the contract's **insert the system-map engine** step, with the
+engine path named at the top of this skill, and run its check.
+
 ## Step 11: Offer to open
 Tell the user the path (under three lines). Offer to open it:
 
@@ -117,8 +127,12 @@ Do not auto-open; offer.
 Include the `completeness.md` Part 2 coverage note (included / intentionally omitted) in the message,
 above the open offer. It is a passive summary, not an `AskUserQuestion`.
 
+When the page has a system map, also include the contract's `System map engine: …` line, so the user
+knows whether the engine was inserted by a shell command, typed, or left out.
+
 ## Key Rules
 - **One look-and-feel.** Tokens only — never raw hex. Reproduce the signature patterns from `design-system.md`.
+- **Engine by the contract.** A page with a system map gets its engine through the insert step of `render-contract.md`. Never paste the engine into `{{COMPONENT_JS}}`, and never offer a page that still holds the marker line.
 - **Self-contained.** All CSS/JS/SVG inline; only the Google Fonts `@import` is external. No CDN scripts/libs.
 - **Model before markup.** Always synthesize the session model (Step 3) before assembling HTML.
 - **Omit empty, never stub.** Render only components with real content.
