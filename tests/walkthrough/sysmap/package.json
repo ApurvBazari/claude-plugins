@@ -1,0 +1,5 @@
+{
+  "private": true,
+  "description": "Pins the module scope of the system-map test scripts. Node reads the nearest package.json above a script before it runs it and fails on an invalid one, so without this file a stray package.json above the repository fails the belts.",
+  "type": "commonjs"
+}
