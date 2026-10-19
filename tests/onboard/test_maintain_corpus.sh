@@ -11,8 +11,9 @@
 # `git clone --shared` into a temp dir (no write to the source repo, not even a worktree entry),
 # head checked out, tooling restored to base when the label says so — and detect's items must equal
 # the label. A range's repo is an alias, resolved by maintain-corpus/corpus_ranges.py through the
-# gitignored maintain-corpus/repos.local.json (repos.local.example.json shows its shape), so the
-# tracked labels name no machine and no private project. A range whose alias is unmapped, or whose
+# gitignored maintain-corpus/repos.local.json (repos.local.example.json shows its shape), and every
+# repo-specific string in a label is a placeholder filled from the same file, so the tracked labels
+# name no machine and none of a private repo's commits, files or structure. A range whose alias is unmapped, or whose
 # repo is not on this machine, is SKIPPED and counted; set MAINTAIN_CORPUS_REQUIRED=1 (the feature's
 # exit gate does) to turn a skip into a failure.
 set -uo pipefail
@@ -48,7 +49,7 @@ fi
 # --- ranges: then detect against the labels ---
 ran=0
 skipped=0
-while IFS='|' read -r id repo base head restore alias; do
+while IFS=$'\x1f' read -r id repo base head restore alias; do
   if [ -z "$repo" ]; then
     skipped=$((skipped + 1))
     if [ "${MAINTAIN_CORPUS_REQUIRED:-0}" = 1 ]; then fail "range $id: alias $alias is not mapped in maintain-corpus/repos.local.json"; else echo "SKIP: range $id — alias $alias is not mapped on this machine"; fi

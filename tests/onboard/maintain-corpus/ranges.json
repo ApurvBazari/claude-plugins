@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "description": "Labelled ranges for tests/onboard/test_maintain_corpus.sh. Each range is replayed read-only (git clone --shared), with CLAUDE.md files and .claude/rules restored to base when restoreTooling is true, and detect's items (ids aside) must equal expected. Each range's repo is an alias that corpus_ranges.py resolves through the gitignored repos.local.json, and a <token> in an expected item is filled from the same file. monorepo-pricing is labelled from the spec's worked example (§ 16, § 17). The other five were drafted from detect's output on 2026-09-27 and every item is audited against plain git evidence by audit-labels.py, which shares no code with detect. Never refresh a label from detect's output without re-running that audit.",
+  "description": "Labelled ranges for tests/onboard/test_maintain_corpus.sh. Each range is replayed read-only (git clone --shared), with CLAUDE.md files and .claude/rules restored to base when restoreTooling is true, and detect's items (ids aside) must equal expected. Each range's repo is an alias that corpus_ranges.py resolves through the gitignored repos.local.json, and every repo-specific string (the base/head SHAs and the paths, lines, commands and workspace package names inside expected items) is a <alias:N> placeholder filled from the same file, so this tracked file names no private repo's commits, files or structure. monorepo-pricing is labelled from the spec's worked example (§ 16, § 17). The other five were drafted from detect's output on 2026-09-27 and every item is audited against plain git evidence by audit-labels.py, which shares no code with detect. Never refresh a label from detect's output without re-running that audit.",
   "ranges": [
     {
       "id": "monorepo-pricing",
       "repo": "monorepo-a",
-      "base": "4cabaf21b6071b4eb1106e65ae43d18cc840bae5",
-      "head": "add521a9dc27e1e9205edda21ff0a0c48a1efe8f",
+      "base": "<monorepo-a:1>",
+      "head": "<monorepo-a:2>",
       "restoreTooling": true,
       "note": "AC16. The worked example's range (spec § 16, § 17): 8 inform items, no apply or defer item. Label from the worked example's detect.json, not from detect's own output.",
       "expected": {
@@ -15,82 +15,82 @@
             "kind": "dependency-added",
             "name": "decimal.js",
             "version": "^10.6.0",
-            "file": "apps/crm/package.json",
+            "file": "<monorepo-a:3>",
             "disposition": "inform"
           },
           {
             "kind": "recheck-line",
-            "line": "CLAUDE.md:119",
+            "line": "<monorepo-a:4>",
             "matched": [
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/billing-config.ts"
+                "value": "<monorepo-a:5>"
               }
             ],
             "disposition": "inform"
           },
           {
             "kind": "recheck-line",
-            "line": "CLAUDE.md:114",
+            "line": "<monorepo-a:6>",
             "matched": [
               {
                 "by": "stem",
-                "value": "decimal"
+                "value": "<monorepo-a:7>"
               }
             ],
             "disposition": "inform"
           },
           {
             "kind": "recheck-line",
-            "line": "CLAUDE.md:115",
+            "line": "<monorepo-a:8>",
             "matched": [
               {
                 "by": "stem",
-                "value": "decimal"
+                "value": "<monorepo-a:7>"
               }
             ],
             "disposition": "inform"
           },
           {
             "kind": "recheck-line",
-            "line": "CLAUDE.md:142",
+            "line": "<monorepo-a:9>",
             "matched": [
               {
                 "by": "stem",
-                "value": "decimal"
+                "value": "<monorepo-a:7>"
               }
             ],
             "disposition": "inform"
           },
           {
             "kind": "recheck-line",
-            "line": "CLAUDE.md:154",
+            "line": "<monorepo-a:10>",
             "matched": [
               {
                 "by": "stem",
-                "value": "decimal"
+                "value": "<monorepo-a:7>"
               }
             ],
             "disposition": "inform"
           },
           {
             "kind": "recheck-line",
-            "line": "CLAUDE.md:265",
+            "line": "<monorepo-a:11>",
             "matched": [
               {
                 "by": "stem",
-                "value": "decimal"
+                "value": "<monorepo-a:7>"
               }
             ],
             "disposition": "inform"
           },
           {
             "kind": "recheck-line",
-            "line": "apps/crm/CLAUDE.md:177",
+            "line": "<monorepo-a:12>",
             "matched": [
               {
                 "by": "stem",
-                "value": "decimal"
+                "value": "<monorepo-a:7>"
               }
             ],
             "disposition": "inform"
@@ -104,26 +104,26 @@
     {
       "id": "monorepo-sms",
       "repo": "monorepo-a",
-      "base": "2ce6d5829279340c8cf3a4520f097ef4ae95d6da",
-      "head": "0d79a564716ac46d395e907fb7b66eb382a16915",
+      "base": "<monorepo-a:13>",
+      "head": "<monorepo-a:14>",
       "restoreTooling": true,
       "note": "A workspace dependency added to one app; the only recheck is the auth file the commit changed (modified docs such as docs/progress.md are not keys — owner decision 2026-09-27).",
       "expected": {
         "items": [
           {
             "kind": "dependency-added",
-            "name": "@repo/sms",
+            "name": "<monorepo-a:15>",
             "version": "workspace:*",
-            "file": "apps/crm/package.json",
+            "file": "<monorepo-a:3>",
             "disposition": "inform"
           },
           {
             "kind": "recheck-line",
-            "line": "apps/crm/CLAUDE.md:134",
+            "line": "<monorepo-a:16>",
             "matched": [
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/auth-server.ts"
+                "value": "<monorepo-a:17>"
               }
             ],
             "disposition": "inform"
@@ -137,19 +137,19 @@
     {
       "id": "monorepo-app-removal",
       "repo": "monorepo-a",
-      "base": "fb31cd3e0ae5f83881e0c5e5fcdf47ce21d3c1ed",
-      "head": "fb9efe46a20d1c9457b352bdfbb9892673344d1b",
+      "base": "<monorepo-a:18>",
+      "head": "<monorepo-a:19>",
       "restoreTooling": true,
       "note": "A whole app deleted: directory and file path-mention-broken items, config-changed for its deleted configs, and per-package dependency-removed stale-lines (owner decision 2026-09-27: per-package, even where another package still uses the dependency).",
       "expected": {
         "items": [
           {
             "kind": "recheck-line",
-            "line": "CLAUDE.md:200",
+            "line": "<monorepo-a:20>",
             "matched": [
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/public-listing-service.ts"
+                "value": "<monorepo-a:21>"
               }
             ],
             "disposition": "inform"
@@ -157,254 +157,254 @@
           {
             "kind": "dependency-removed",
             "name": "@prisma/client",
-            "file": "apps/pwa/package.json",
-            "line": "packages/core/CLAUDE.md:9",
+            "file": "<monorepo-a:22>",
+            "line": "<monorepo-a:23>",
             "alsoAt": [
-              "packages/db/CLAUDE.md:10",
-              "packages/db/CLAUDE.md:33",
-              "packages/db/CLAUDE.md:35",
-              ".claude/rules/deployment.md:55"
+              "<monorepo-a:24>",
+              "<monorepo-a:25>",
+              "<monorepo-a:26>",
+              "<monorepo-a:27>"
             ],
             "disposition": "defer",
-            "reason": "stale-line",
-            "hint": "edit by hand: this line names a removed dependency"
+            "reason": "<monorepo-a:28>",
+            "hint": "<monorepo-a:29>"
           },
           {
             "kind": "dependency-removed",
-            "name": "@repo/core",
-            "file": "apps/pwa/package.json",
-            "line": "CLAUDE.md:13",
+            "name": "<monorepo-a:30>",
+            "file": "<monorepo-a:22>",
+            "line": "<monorepo-a:31>",
             "alsoAt": [
-              "apps/client/CLAUDE.md:69",
-              "apps/client/CLAUDE.md:71",
-              "apps/client/CLAUDE.md:130",
-              "packages/core/CLAUDE.md:1",
-              "packages/core/CLAUDE.md:19",
-              "packages/core/CLAUDE.md:23"
+              "<monorepo-a:32>",
+              "<monorepo-a:33>",
+              "<monorepo-a:34>",
+              "<monorepo-a:35>",
+              "<monorepo-a:36>",
+              "<monorepo-a:37>"
             ],
             "disposition": "defer",
-            "reason": "stale-line",
-            "hint": "edit by hand: this line names a removed dependency"
+            "reason": "<monorepo-a:28>",
+            "hint": "<monorepo-a:29>"
           },
           {
             "kind": "dependency-removed",
-            "name": "@repo/db",
-            "file": "apps/pwa/package.json",
-            "line": "CLAUDE.md:31",
+            "name": "<monorepo-a:38>",
+            "file": "<monorepo-a:22>",
+            "line": "<monorepo-a:39>",
             "alsoAt": [
-              "CLAUDE.md:32",
-              "CLAUDE.md:33",
-              "CLAUDE.md:34",
-              "CLAUDE.md:35",
-              "CLAUDE.md:43",
-              "CLAUDE.md:44",
-              "apps/crm/CLAUDE.md:207",
-              "apps/crm/CLAUDE.md:234",
-              "apps/crm/CLAUDE.md:235",
-              "apps/crm/CLAUDE.md:236",
-              "packages/core/CLAUDE.md:7",
-              "packages/core/CLAUDE.md:8",
-              "packages/core/CLAUDE.md:9",
-              "packages/db/CLAUDE.md:1",
-              "packages/db/CLAUDE.md:14",
-              "packages/db/CLAUDE.md:15",
-              "packages/db/CLAUDE.md:16",
-              "packages/db/CLAUDE.md:17",
-              "packages/db/CLAUDE.md:18",
-              "packages/db/CLAUDE.md:19",
-              ".claude/rules/database.md:25",
-              ".claude/rules/database.md:26",
-              ".claude/rules/database.md:27",
-              ".claude/rules/deployment.md:105",
-              ".claude/rules/deployment.md:106",
-              ".claude/rules/deployment.md:109"
+              "<monorepo-a:40>",
+              "<monorepo-a:41>",
+              "<monorepo-a:42>",
+              "<monorepo-a:43>",
+              "<monorepo-a:44>",
+              "<monorepo-a:45>",
+              "<monorepo-a:46>",
+              "<monorepo-a:47>",
+              "<monorepo-a:48>",
+              "<monorepo-a:49>",
+              "<monorepo-a:50>",
+              "<monorepo-a:51>",
+              "<monorepo-a:23>",
+              "<monorepo-a:52>",
+              "<monorepo-a:53>",
+              "<monorepo-a:54>",
+              "<monorepo-a:55>",
+              "<monorepo-a:56>",
+              "<monorepo-a:57>",
+              "<monorepo-a:58>",
+              "<monorepo-a:59>",
+              "<monorepo-a:60>",
+              "<monorepo-a:61>",
+              "<monorepo-a:62>",
+              "<monorepo-a:63>",
+              "<monorepo-a:64>"
             ],
             "disposition": "defer",
-            "reason": "stale-line",
-            "hint": "edit by hand: this line names a removed dependency"
+            "reason": "<monorepo-a:28>",
+            "hint": "<monorepo-a:29>"
           },
           {
             "kind": "dependency-removed",
-            "name": "@repo/eslint-config",
-            "file": "apps/pwa/package.json",
-            "line": "packages/eslint-config/CLAUDE.md:1",
+            "name": "<monorepo-a:65>",
+            "file": "<monorepo-a:22>",
+            "line": "<monorepo-a:66>",
             "alsoAt": [],
             "disposition": "defer",
-            "reason": "stale-line",
-            "hint": "edit by hand: this line names a removed dependency"
+            "reason": "<monorepo-a:28>",
+            "hint": "<monorepo-a:29>"
           },
           {
             "kind": "dependency-removed",
             "name": "clsx",
-            "file": "apps/pwa/package.json",
-            "line": "apps/crm/CLAUDE.md:142",
+            "file": "<monorepo-a:22>",
+            "line": "<monorepo-a:67>",
             "alsoAt": [],
             "disposition": "defer",
-            "reason": "stale-line",
-            "hint": "edit by hand: this line names a removed dependency"
+            "reason": "<monorepo-a:28>",
+            "hint": "<monorepo-a:29>"
           },
           {
             "kind": "dependency-removed",
             "name": "eslint",
-            "file": "apps/pwa/package.json",
-            "line": "CLAUDE.md:15",
+            "file": "<monorepo-a:22>",
+            "line": "<monorepo-a:68>",
             "alsoAt": [
-              "CLAUDE.md:27",
-              "CLAUDE.md:224",
-              "apps/client/CLAUDE.md:25",
-              "packages/eslint-config/CLAUDE.md:1",
-              "packages/eslint-config/CLAUDE.md:3"
+              "<monorepo-a:69>",
+              "<monorepo-a:70>",
+              "<monorepo-a:71>",
+              "<monorepo-a:66>",
+              "<monorepo-a:72>"
             ],
             "disposition": "defer",
-            "reason": "stale-line",
-            "hint": "edit by hand: this line names a removed dependency"
+            "reason": "<monorepo-a:28>",
+            "hint": "<monorepo-a:29>"
           },
           {
             "kind": "dependency-removed",
             "name": "next",
-            "file": "apps/pwa/package.json",
-            "line": "apps/client/CLAUDE.md:41",
+            "file": "<monorepo-a:22>",
+            "line": "<monorepo-a:73>",
             "alsoAt": [
-              "apps/client/CLAUDE.md:42",
-              "apps/client/CLAUDE.md:116",
-              "apps/client/CLAUDE.md:134",
-              "apps/client/CLAUDE.md:136",
-              "apps/client/CLAUDE.md:139",
-              "apps/crm/CLAUDE.md:203",
-              "packages/core/CLAUDE.md:10",
-              "packages/eslint-config/CLAUDE.md:9",
-              "packages/eslint-config/CLAUDE.md:20",
-              "packages/eslint-config/CLAUDE.md:23",
-              ".claude/rules/components.md:41",
-              ".claude/rules/security.md:69"
+              "<monorepo-a:74>",
+              "<monorepo-a:75>",
+              "<monorepo-a:76>",
+              "<monorepo-a:77>",
+              "<monorepo-a:78>",
+              "<monorepo-a:79>",
+              "<monorepo-a:80>",
+              "<monorepo-a:81>",
+              "<monorepo-a:82>",
+              "<monorepo-a:83>",
+              "<monorepo-a:84>",
+              "<monorepo-a:85>"
             ],
             "disposition": "defer",
-            "reason": "stale-line",
-            "hint": "edit by hand: this line names a removed dependency"
+            "reason": "<monorepo-a:28>",
+            "hint": "<monorepo-a:29>"
           },
           {
             "kind": "dependency-removed",
             "name": "react",
-            "file": "apps/pwa/package.json",
-            "line": "CLAUDE.md:90",
+            "file": "<monorepo-a:22>",
+            "line": "<monorepo-a:86>",
             "alsoAt": [
-              "CLAUDE.md:111",
-              "CLAUDE.md:175",
-              "apps/crm/CLAUDE.md:141",
-              "packages/core/CLAUDE.md:10",
-              ".claude/rules/components.md:2",
-              ".claude/rules/components.md:48",
-              ".claude/rules/testing.md:21"
+              "<monorepo-a:87>",
+              "<monorepo-a:88>",
+              "<monorepo-a:89>",
+              "<monorepo-a:80>",
+              "<monorepo-a:90>",
+              "<monorepo-a:91>",
+              "<monorepo-a:92>"
             ],
             "disposition": "defer",
-            "reason": "stale-line",
-            "hint": "edit by hand: this line names a removed dependency"
+            "reason": "<monorepo-a:28>",
+            "hint": "<monorepo-a:29>"
           },
           {
             "kind": "dependency-removed",
             "name": "tailwind-merge",
-            "file": "apps/pwa/package.json",
-            "line": "apps/crm/CLAUDE.md:142",
+            "file": "<monorepo-a:22>",
+            "line": "<monorepo-a:67>",
             "alsoAt": [],
             "disposition": "defer",
-            "reason": "stale-line",
-            "hint": "edit by hand: this line names a removed dependency"
+            "reason": "<monorepo-a:28>",
+            "hint": "<monorepo-a:29>"
           },
           {
             "kind": "dependency-removed",
             "name": "typescript",
-            "file": "apps/pwa/package.json",
-            "line": "CLAUDE.md:28",
+            "file": "<monorepo-a:22>",
+            "line": "<monorepo-a:93>",
             "alsoAt": [],
             "disposition": "defer",
-            "reason": "stale-line",
-            "hint": "edit by hand: this line names a removed dependency"
+            "reason": "<monorepo-a:28>",
+            "hint": "<monorepo-a:29>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/client/CLAUDE.md:138",
-            "mention": "apps/pwa",
-            "path": "apps/pwa",
+            "line": "<monorepo-a:94>",
+            "mention": "<monorepo-a:95>",
+            "path": "<monorepo-a:95>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was deleted"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:97>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/pwa/CLAUDE.md:9",
-            "mention": "src/lib/prisma.ts",
-            "path": "apps/pwa/src/lib/prisma.ts",
+            "line": "<monorepo-a:98>",
+            "mention": "<monorepo-a:99>",
+            "path": "<monorepo-a:100>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was deleted"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:97>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/pwa/CLAUDE.md:10",
-            "mention": "src/lib/catalog.ts",
-            "path": "apps/pwa/src/lib/catalog.ts",
+            "line": "<monorepo-a:101>",
+            "mention": "<monorepo-a:102>",
+            "path": "<monorepo-a:103>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was deleted"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:97>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/pwa/CLAUDE.md:11",
-            "mention": "src/app/page.tsx",
-            "path": "apps/pwa/src/app/page.tsx",
+            "line": "<monorepo-a:104>",
+            "mention": "<monorepo-a:105>",
+            "path": "<monorepo-a:106>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was deleted"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:97>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/pwa/CLAUDE.md:13",
-            "mention": "src/app/api/revalidate/route.ts",
-            "path": "apps/pwa/src/app/api/revalidate/route.ts",
+            "line": "<monorepo-a:107>",
+            "mention": "<monorepo-a:108>",
+            "path": "<monorepo-a:109>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was deleted"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:97>"
           },
           {
             "kind": "path-mention-broken",
-            "line": ".claude/rules/deployment.md:38",
-            "mention": "apps/pwa",
-            "path": "apps/pwa",
+            "line": "<monorepo-a:110>",
+            "mention": "<monorepo-a:95>",
+            "path": "<monorepo-a:95>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was deleted"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:97>"
           },
           {
             "kind": "path-mention-broken",
-            "line": ".claude/rules/deployment.md:38",
-            "mention": "apps/pwa/vercel.json",
-            "path": "apps/pwa/vercel.json",
+            "line": "<monorepo-a:110>",
+            "mention": "<monorepo-a:111>",
+            "path": "<monorepo-a:111>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was deleted"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:97>"
           },
           {
             "kind": "path-mention-broken",
-            "line": ".claude/rules/security.md:89",
-            "mention": "apps/pwa",
-            "path": "apps/pwa",
+            "line": "<monorepo-a:112>",
+            "mention": "<monorepo-a:95>",
+            "path": "<monorepo-a:95>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was deleted"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:97>"
           },
           {
             "kind": "config-changed",
-            "file": "apps/pwa/eslint.config.mjs",
+            "file": "<monorepo-a:113>",
             "disposition": "defer",
-            "reason": "needs-review",
-            "command": "/onboard:update"
+            "reason": "<monorepo-a:114>",
+            "command": "<monorepo-a:115>"
           },
           {
             "kind": "config-changed",
-            "file": "apps/pwa/tsconfig.json",
+            "file": "<monorepo-a:116>",
             "disposition": "defer",
-            "reason": "needs-review",
-            "command": "/onboard:update"
+            "reason": "<monorepo-a:114>",
+            "command": "<monorepo-a:115>"
           }
         ],
         "truncated": {
@@ -415,310 +415,310 @@
     {
       "id": "monorepo-core-extraction",
       "repo": "monorepo-a",
-      "base": "4a11acfc6c9b7d9047c8435ec5bf1816e1476523",
-      "head": "16e5b8bc8d2f6e78699b77ecf1f5f322f9d1345f",
+      "base": "<monorepo-a:117>",
+      "head": "<monorepo-a:118>",
       "restoreTooling": true,
       "note": "A shared package extracted by renames: path-mention-broken with renamedTo for files and a directory, a new package's scripts as apply items, directory-new, and a truncated recheck set (cap 8).",
       "expected": {
         "items": [
           {
             "kind": "dependency-added",
-            "name": "@repo/core",
+            "name": "<monorepo-a:30>",
             "version": "workspace:*",
-            "file": "apps/crm/package.json",
+            "file": "<monorepo-a:3>",
             "disposition": "inform"
           },
           {
             "kind": "dependency-added",
             "name": "@types/node",
             "version": "^22",
-            "file": "packages/core/package.json",
+            "file": "<monorepo-a:119>",
             "disposition": "inform"
           },
           {
             "kind": "recheck-line",
-            "line": "apps/crm/CLAUDE.md:11",
+            "line": "<monorepo-a:120>",
             "matched": [
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/activity-service.ts"
+                "value": "<monorepo-a:121>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/addon-service.ts"
+                "value": "<monorepo-a:122>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/amenity-category-service.ts"
+                "value": "<monorepo-a:123>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/amenity-service.ts"
+                "value": "<monorepo-a:124>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/audit-service.ts"
+                "value": "<monorepo-a:125>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/availability-service.ts"
+                "value": "<monorepo-a:126>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/booking-service.ts"
+                "value": "<monorepo-a:127>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/booking-snapshot-service.ts"
+                "value": "<monorepo-a:128>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/calendar-service.ts"
+                "value": "<monorepo-a:129>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/caretaker-service.ts"
+                "value": "<monorepo-a:130>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/commission-rate-service.ts"
+                "value": "<monorepo-a:131>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/damage-service.ts"
+                "value": "<monorepo-a:132>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/dashboard-service.ts"
+                "value": "<monorepo-a:133>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/deposit-service.ts"
+                "value": "<monorepo-a:134>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/destination-service.ts"
+                "value": "<monorepo-a:135>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/expense-approval-service.ts"
+                "value": "<monorepo-a:136>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/expense-service.ts"
+                "value": "<monorepo-a:137>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/guest-service.ts"
+                "value": "<monorepo-a:138>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/ical-export-service.ts"
+                "value": "<monorepo-a:139>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/ical-sync-service.ts"
+                "value": "<monorepo-a:140>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/income-service.ts"
+                "value": "<monorepo-a:141>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/invoice-service.ts"
+                "value": "<monorepo-a:142>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/lead-service.ts"
+                "value": "<monorepo-a:143>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/media-service.ts"
+                "value": "<monorepo-a:144>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/notification-service.ts"
+                "value": "<monorepo-a:145>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/owner-service.ts"
+                "value": "<monorepo-a:146>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/payment-service.ts"
+                "value": "<monorepo-a:147>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/payout-service.ts"
+                "value": "<monorepo-a:148>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/peak-calendar-service.ts"
+                "value": "<monorepo-a:149>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/pnl-service.ts"
+                "value": "<monorepo-a:150>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/pricing-service.ts"
+                "value": "<monorepo-a:151>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/property-day-pricing-service.ts"
+                "value": "<monorepo-a:152>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/property-service.ts"
+                "value": "<monorepo-a:153>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/recurring-schedule-service.ts"
+                "value": "<monorepo-a:154>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/report-service.ts"
+                "value": "<monorepo-a:155>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/tag-category-service.ts"
+                "value": "<monorepo-a:156>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/tag-service.ts"
+                "value": "<monorepo-a:157>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/task-overdue-service.ts"
+                "value": "<monorepo-a:158>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/task-rule-service.ts"
+                "value": "<monorepo-a:159>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/task-template-service.ts"
+                "value": "<monorepo-a:160>"
               }
             ],
             "disposition": "inform"
           },
           {
             "kind": "recheck-line",
-            "line": "CLAUDE.md:190",
+            "line": "<monorepo-a:161>",
             "matched": [
               {
                 "by": "path",
-                "value": "packages/core/src/pricing/booking-financials.ts"
+                "value": "<monorepo-a:162>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/booking-service.ts"
+                "value": "<monorepo-a:127>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/deposit-service.ts"
+                "value": "<monorepo-a:134>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/invoice-service.ts"
+                "value": "<monorepo-a:142>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/payout-service.ts"
+                "value": "<monorepo-a:148>"
               },
               {
                 "by": "name",
-                "value": "zod"
+                "value": "<monorepo-a:163>"
               },
               {
                 "by": "stem",
-                "value": "decimal"
+                "value": "<monorepo-a:7>"
               }
             ],
             "disposition": "inform"
           },
           {
             "kind": "recheck-line",
-            "line": "CLAUDE.md:191",
+            "line": "<monorepo-a:164>",
             "matched": [
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/booking-service.ts"
+                "value": "<monorepo-a:127>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/calendar-service.ts"
+                "value": "<monorepo-a:129>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/deposit-service.ts"
+                "value": "<monorepo-a:134>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/task-service.ts"
+                "value": "<monorepo-a:165>"
               }
             ],
             "disposition": "inform"
           },
           {
             "kind": "recheck-line",
-            "line": "apps/crm/CLAUDE.md:255",
+            "line": "<monorepo-a:166>",
             "matched": [
               {
                 "by": "path",
-                "value": "packages/core/src/locale/formatters.ts"
+                "value": "<monorepo-a:167>"
               },
               {
                 "by": "path",
-                "value": "packages/core/src/money/invoice-helpers.ts"
+                "value": "<monorepo-a:168>"
               },
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/invoice-service.ts"
+                "value": "<monorepo-a:142>"
               }
             ],
             "disposition": "inform"
           },
           {
             "kind": "recheck-line",
-            "line": "CLAUDE.md:87",
+            "line": "<monorepo-a:169>",
             "matched": [
               {
                 "by": "path",
-                "value": "packages/core/src/errors/business-error.ts"
+                "value": "<monorepo-a:170>"
               }
             ],
             "disposition": "inform"
           },
           {
             "kind": "recheck-line",
-            "line": "apps/crm/CLAUDE.md:17",
+            "line": "<monorepo-a:171>",
             "matched": [
               {
                 "by": "path",
-                "value": "apps/crm/src/app/(dashboard)/owners/actions.ts"
+                "value": "<monorepo-a:172>"
               }
             ],
             "disposition": "inform"
           },
           {
             "kind": "recheck-line",
-            "line": "apps/crm/CLAUDE.md:19",
+            "line": "<monorepo-a:173>",
             "matched": [
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/caretaker-service.ts"
+                "value": "<monorepo-a:130>"
               }
             ],
             "disposition": "inform"
           },
           {
             "kind": "recheck-line",
-            "line": "apps/crm/CLAUDE.md:23",
+            "line": "<monorepo-a:174>",
             "matched": [
               {
                 "by": "path",
-                "value": "apps/crm/src/lib/services/guest-service.ts"
+                "value": "<monorepo-a:138>"
               }
             ],
             "disposition": "inform"
@@ -726,336 +726,336 @@
           {
             "kind": "script-added",
             "name": "lint",
-            "run": "eslint .",
-            "file": "packages/core/package.json",
-            "package": "@repo/core",
+            "run": "<monorepo-a:175>",
+            "file": "<monorepo-a:119>",
+            "package": "<monorepo-a:30>",
             "disposition": "apply"
           },
           {
             "kind": "script-added",
             "name": "test",
-            "run": "vitest run",
-            "file": "packages/core/package.json",
-            "package": "@repo/core",
+            "run": "<monorepo-a:176>",
+            "file": "<monorepo-a:119>",
+            "package": "<monorepo-a:30>",
             "disposition": "apply"
           },
           {
             "kind": "script-added",
             "name": "test:watch",
-            "run": "vitest",
-            "file": "packages/core/package.json",
-            "package": "@repo/core",
+            "run": "<monorepo-a:177>",
+            "file": "<monorepo-a:119>",
+            "package": "<monorepo-a:30>",
             "disposition": "apply"
           },
           {
             "kind": "script-added",
             "name": "typecheck",
-            "run": "tsc --noEmit",
-            "file": "packages/core/package.json",
-            "package": "@repo/core",
+            "run": "<monorepo-a:178>",
+            "file": "<monorepo-a:119>",
+            "package": "<monorepo-a:30>",
             "disposition": "apply"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/crm/CLAUDE.md:13",
-            "mention": "src/lib/validators/",
-            "path": "apps/crm/src/lib/validators",
-            "renamedTo": "packages/core/src/validators",
+            "line": "<monorepo-a:179>",
+            "mention": "<monorepo-a:180>",
+            "path": "<monorepo-a:181>",
+            "renamedTo": "<monorepo-a:182>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was renamed to packages/core/src/validators"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:183>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/crm/CLAUDE.md:20",
-            "mention": "src/lib/validators/caretaker-schema.ts",
-            "path": "apps/crm/src/lib/validators/caretaker-schema.ts",
-            "renamedTo": "packages/core/src/validators/caretaker-schema.ts",
+            "line": "<monorepo-a:184>",
+            "mention": "<monorepo-a:185>",
+            "path": "<monorepo-a:186>",
+            "renamedTo": "<monorepo-a:187>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was renamed to packages/core/src/validators/caretaker-schema.ts"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:188>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/crm/CLAUDE.md:24",
-            "mention": "src/lib/validators/guest-schema.ts",
-            "path": "apps/crm/src/lib/validators/guest-schema.ts",
-            "renamedTo": "packages/core/src/validators/guest-schema.ts",
+            "line": "<monorepo-a:189>",
+            "mention": "<monorepo-a:190>",
+            "path": "<monorepo-a:191>",
+            "renamedTo": "<monorepo-a:192>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was renamed to packages/core/src/validators/guest-schema.ts"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:193>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/crm/CLAUDE.md:25",
-            "mention": "src/lib/guest-helpers.ts",
-            "path": "apps/crm/src/lib/guest-helpers.ts",
-            "renamedTo": "packages/core/src/helpers/guest-helpers.ts",
+            "line": "<monorepo-a:194>",
+            "mention": "<monorepo-a:195>",
+            "path": "<monorepo-a:196>",
+            "renamedTo": "<monorepo-a:197>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was renamed to packages/core/src/helpers/guest-helpers.ts"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:198>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/crm/CLAUDE.md:33",
-            "mention": "src/lib/validators/booking-schema.ts",
-            "path": "apps/crm/src/lib/validators/booking-schema.ts",
-            "renamedTo": "packages/core/src/validators/booking-schema.ts",
+            "line": "<monorepo-a:199>",
+            "mention": "<monorepo-a:200>",
+            "path": "<monorepo-a:201>",
+            "renamedTo": "<monorepo-a:202>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was renamed to packages/core/src/validators/booking-schema.ts"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:203>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/crm/CLAUDE.md:38",
-            "mention": "src/lib/booking-financials.ts",
-            "path": "apps/crm/src/lib/booking-financials.ts",
-            "renamedTo": "packages/core/src/pricing/booking-financials.ts",
+            "line": "<monorepo-a:204>",
+            "mention": "<monorepo-a:205>",
+            "path": "<monorepo-a:206>",
+            "renamedTo": "<monorepo-a:162>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was renamed to packages/core/src/pricing/booking-financials.ts"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:207>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/crm/CLAUDE.md:42",
-            "mention": "src/lib/validators/payout-schema.ts",
-            "path": "apps/crm/src/lib/validators/payout-schema.ts",
-            "renamedTo": "packages/core/src/validators/payout-schema.ts",
+            "line": "<monorepo-a:208>",
+            "mention": "<monorepo-a:209>",
+            "path": "<monorepo-a:210>",
+            "renamedTo": "<monorepo-a:211>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was renamed to packages/core/src/validators/payout-schema.ts"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:212>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/crm/CLAUDE.md:43",
-            "mention": "src/lib/validators/deposit-schema.ts",
-            "path": "apps/crm/src/lib/validators/deposit-schema.ts",
-            "renamedTo": "packages/core/src/validators/deposit-schema.ts",
+            "line": "<monorepo-a:213>",
+            "mention": "<monorepo-a:214>",
+            "path": "<monorepo-a:215>",
+            "renamedTo": "<monorepo-a:216>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was renamed to packages/core/src/validators/deposit-schema.ts"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:217>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/crm/CLAUDE.md:44",
-            "mention": "src/lib/validators/damage-schema.ts",
-            "path": "apps/crm/src/lib/validators/damage-schema.ts",
-            "renamedTo": "packages/core/src/validators/damage-schema.ts",
+            "line": "<monorepo-a:218>",
+            "mention": "<monorepo-a:219>",
+            "path": "<monorepo-a:220>",
+            "renamedTo": "<monorepo-a:221>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was renamed to packages/core/src/validators/damage-schema.ts"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:222>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/crm/CLAUDE.md:68",
-            "mention": "src/lib/validators/pricing-schema.ts",
-            "path": "apps/crm/src/lib/validators/pricing-schema.ts",
-            "renamedTo": "packages/core/src/validators/pricing-schema.ts",
+            "line": "<monorepo-a:223>",
+            "mention": "<monorepo-a:224>",
+            "path": "<monorepo-a:225>",
+            "renamedTo": "<monorepo-a:226>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was renamed to packages/core/src/validators/pricing-schema.ts"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:227>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/crm/CLAUDE.md:69",
-            "mention": "src/lib/validators/task-template-schema.ts",
-            "path": "apps/crm/src/lib/validators/task-template-schema.ts",
-            "renamedTo": "packages/core/src/validators/task-template-schema.ts",
+            "line": "<monorepo-a:228>",
+            "mention": "<monorepo-a:229>",
+            "path": "<monorepo-a:230>",
+            "renamedTo": "<monorepo-a:231>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was renamed to packages/core/src/validators/task-template-schema.ts"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:232>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/crm/CLAUDE.md:71",
-            "mention": "src/lib/validators/invoice-schema.ts",
-            "path": "apps/crm/src/lib/validators/invoice-schema.ts",
-            "renamedTo": "packages/core/src/validators/invoice-schema.ts",
+            "line": "<monorepo-a:233>",
+            "mention": "<monorepo-a:234>",
+            "path": "<monorepo-a:235>",
+            "renamedTo": "<monorepo-a:236>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was renamed to packages/core/src/validators/invoice-schema.ts"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:237>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/crm/CLAUDE.md:72",
-            "mention": "src/lib/invoice-helpers.ts",
-            "path": "apps/crm/src/lib/invoice-helpers.ts",
-            "renamedTo": "packages/core/src/money/invoice-helpers.ts",
+            "line": "<monorepo-a:238>",
+            "mention": "<monorepo-a:239>",
+            "path": "<monorepo-a:240>",
+            "renamedTo": "<monorepo-a:168>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was renamed to packages/core/src/money/invoice-helpers.ts"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:241>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/crm/CLAUDE.md:78",
-            "mention": "src/lib/validators/expense-schema.ts",
-            "path": "apps/crm/src/lib/validators/expense-schema.ts",
-            "renamedTo": "packages/core/src/validators/expense-schema.ts",
+            "line": "<monorepo-a:242>",
+            "mention": "<monorepo-a:243>",
+            "path": "<monorepo-a:244>",
+            "renamedTo": "<monorepo-a:245>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was renamed to packages/core/src/validators/expense-schema.ts"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:246>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/crm/CLAUDE.md:85",
-            "mention": "src/lib/validators/income-schema.ts",
-            "path": "apps/crm/src/lib/validators/income-schema.ts",
-            "renamedTo": "packages/core/src/validators/income-schema.ts",
+            "line": "<monorepo-a:247>",
+            "mention": "<monorepo-a:248>",
+            "path": "<monorepo-a:249>",
+            "renamedTo": "<monorepo-a:250>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was renamed to packages/core/src/validators/income-schema.ts"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:251>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/crm/CLAUDE.md:90",
-            "mention": "src/lib/pnl-helpers.ts",
-            "path": "apps/crm/src/lib/pnl-helpers.ts",
-            "renamedTo": "packages/core/src/money/pnl-helpers.ts",
+            "line": "<monorepo-a:252>",
+            "mention": "<monorepo-a:253>",
+            "path": "<monorepo-a:254>",
+            "renamedTo": "<monorepo-a:255>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was renamed to packages/core/src/money/pnl-helpers.ts"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:256>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/crm/CLAUDE.md:95",
-            "mention": "src/lib/recurring-schedule-helpers.ts",
-            "path": "apps/crm/src/lib/recurring-schedule-helpers.ts",
-            "renamedTo": "packages/core/src/money/recurring-schedule-helpers.ts",
+            "line": "<monorepo-a:257>",
+            "mention": "<monorepo-a:258>",
+            "path": "<monorepo-a:259>",
+            "renamedTo": "<monorepo-a:260>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was renamed to packages/core/src/money/recurring-schedule-helpers.ts"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:261>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/crm/CLAUDE.md:97",
-            "mention": "src/lib/validators/recurring-schedule-schema.ts",
-            "path": "apps/crm/src/lib/validators/recurring-schedule-schema.ts",
-            "renamedTo": "packages/core/src/validators/recurring-schedule-schema.ts",
+            "line": "<monorepo-a:262>",
+            "mention": "<monorepo-a:263>",
+            "path": "<monorepo-a:264>",
+            "renamedTo": "<monorepo-a:265>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was renamed to packages/core/src/validators/recurring-schedule-schema.ts"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:266>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/crm/CLAUDE.md:135",
-            "mention": "src/lib/formatters.ts",
-            "path": "apps/crm/src/lib/formatters.ts",
-            "renamedTo": "packages/core/src/locale/formatters.ts",
+            "line": "<monorepo-a:267>",
+            "mention": "<monorepo-a:268>",
+            "path": "<monorepo-a:269>",
+            "renamedTo": "<monorepo-a:167>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was renamed to packages/core/src/locale/formatters.ts"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:270>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/crm/CLAUDE.md:137",
-            "mention": "src/lib/url.ts",
-            "path": "apps/crm/src/lib/url.ts",
-            "renamedTo": "packages/core/src/helpers/url.ts",
+            "line": "<monorepo-a:271>",
+            "mention": "<monorepo-a:272>",
+            "path": "<monorepo-a:273>",
+            "renamedTo": "<monorepo-a:274>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was renamed to packages/core/src/helpers/url.ts"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:275>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/crm/CLAUDE.md:138",
-            "mention": "src/lib/slug.ts",
-            "path": "apps/crm/src/lib/slug.ts",
-            "renamedTo": "packages/core/src/helpers/slug.ts",
+            "line": "<monorepo-a:276>",
+            "mention": "<monorepo-a:277>",
+            "path": "<monorepo-a:278>",
+            "renamedTo": "<monorepo-a:279>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was renamed to packages/core/src/helpers/slug.ts"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:280>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/crm/CLAUDE.md:141",
-            "mention": "src/lib/errors/business-error.ts",
-            "path": "apps/crm/src/lib/errors/business-error.ts",
-            "renamedTo": "packages/core/src/errors/business-error.ts",
+            "line": "<monorepo-a:89>",
+            "mention": "<monorepo-a:281>",
+            "path": "<monorepo-a:282>",
+            "renamedTo": "<monorepo-a:170>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was renamed to packages/core/src/errors/business-error.ts"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:283>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/crm/CLAUDE.md:142",
-            "mention": "src/lib/payment-helpers.ts",
-            "path": "apps/crm/src/lib/payment-helpers.ts",
-            "renamedTo": "packages/core/src/money/payment-helpers.ts",
+            "line": "<monorepo-a:67>",
+            "mention": "<monorepo-a:284>",
+            "path": "<monorepo-a:285>",
+            "renamedTo": "<monorepo-a:286>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was renamed to packages/core/src/money/payment-helpers.ts"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:287>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/crm/CLAUDE.md:143",
-            "mention": "src/lib/ca-export-helpers.ts",
-            "path": "apps/crm/src/lib/ca-export-helpers.ts",
-            "renamedTo": "packages/core/src/money/ca-export-helpers.ts",
+            "line": "<monorepo-a:288>",
+            "mention": "<monorepo-a:289>",
+            "path": "<monorepo-a:290>",
+            "renamedTo": "<monorepo-a:291>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was renamed to packages/core/src/money/ca-export-helpers.ts"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:292>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/crm/CLAUDE.md:147",
-            "mention": "src/lib/vedic-helpers.ts",
-            "path": "apps/crm/src/lib/vedic-helpers.ts",
-            "renamedTo": "packages/core/src/pricing/vedic-helpers.ts",
+            "line": "<monorepo-a:293>",
+            "mention": "<monorepo-a:294>",
+            "path": "<monorepo-a:295>",
+            "renamedTo": "<monorepo-a:296>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was renamed to packages/core/src/pricing/vedic-helpers.ts"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:297>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/crm/CLAUDE.md:149",
-            "mention": "src/lib/availability/freshness.ts",
-            "path": "apps/crm/src/lib/availability/freshness.ts",
-            "renamedTo": "packages/core/src/availability/freshness.ts",
+            "line": "<monorepo-a:298>",
+            "mention": "<monorepo-a:299>",
+            "path": "<monorepo-a:300>",
+            "renamedTo": "<monorepo-a:301>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was renamed to packages/core/src/availability/freshness.ts"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:302>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/crm/CLAUDE.md:260",
-            "mention": "src/lib/billing-config.ts",
-            "path": "apps/crm/src/lib/billing-config.ts",
-            "renamedTo": "packages/core/src/pricing/billing-config.ts",
+            "line": "<monorepo-a:303>",
+            "mention": "<monorepo-a:304>",
+            "path": "<monorepo-a:5>",
+            "renamedTo": "<monorepo-a:305>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was renamed to packages/core/src/pricing/billing-config.ts"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:306>"
           },
           {
             "kind": "path-mention-broken",
-            "line": "apps/crm/CLAUDE.md:260",
-            "mention": "src/lib/pricing-engine.ts",
-            "path": "apps/crm/src/lib/pricing-engine.ts",
-            "renamedTo": "packages/core/src/pricing/pricing-engine.ts",
+            "line": "<monorepo-a:303>",
+            "mention": "<monorepo-a:307>",
+            "path": "<monorepo-a:308>",
+            "renamedTo": "<monorepo-a:309>",
             "disposition": "defer",
-            "reason": "stale-reference",
-            "hint": "edit by hand: the path was renamed to packages/core/src/pricing/pricing-engine.ts"
+            "reason": "<monorepo-a:96>",
+            "hint": "<monorepo-a:310>"
           },
           {
             "kind": "config-changed",
-            "file": "packages/core/eslint.config.mjs",
+            "file": "<monorepo-a:311>",
             "disposition": "defer",
-            "reason": "needs-review",
-            "command": "/onboard:update"
+            "reason": "<monorepo-a:114>",
+            "command": "<monorepo-a:115>"
           },
           {
             "kind": "config-changed",
-            "file": "packages/core/tsconfig.json",
+            "file": "<monorepo-a:312>",
             "disposition": "defer",
-            "reason": "needs-review",
-            "command": "/onboard:update"
+            "reason": "<monorepo-a:114>",
+            "command": "<monorepo-a:115>"
           },
           {
             "kind": "directory-new",
-            "path": "packages/core",
+            "path": "<monorepo-a:313>",
             "count": 124,
             "disposition": "defer",
-            "reason": "needs-prompt",
-            "command": "/onboard:update"
+            "reason": "<monorepo-a:314>",
+            "command": "<monorepo-a:115>"
           }
         ],
         "truncated": {
@@ -1066,8 +1066,8 @@
     {
       "id": "site-sprint2",
       "repo": "site-a",
-      "base": "d2a1346087ab3dc4666bd2b950acf54b07e59997",
-      "head": "747e4b7d7e8d973b512970a6692df05ac99752d6",
+      "base": "<site-a:1>",
+      "head": "<site-a:2>",
       "restoreTooling": true,
       "note": "A single-package site: three added scripts (apply) and two new test directories.",
       "expected": {
@@ -1075,42 +1075,42 @@
           {
             "kind": "script-added",
             "name": "build:fixtures",
-            "run": "node scripts/build-tokens.mjs --check && SITE_CONTENT_ROOT=tests/fixtures/content node scripts/build-strict.mjs",
-            "file": "package.json",
-            "package": "apurvbazari",
+            "run": "<site-a:3>",
+            "file": "<site-a:4>",
+            "package": "<site-a:5>",
             "disposition": "apply"
           },
           {
             "kind": "script-added",
             "name": "dev:fixtures",
-            "run": "node scripts/build-tokens.mjs && SITE_CONTENT_ROOT=tests/fixtures/content astro dev",
-            "file": "package.json",
-            "package": "apurvbazari",
+            "run": "<site-a:6>",
+            "file": "<site-a:4>",
+            "package": "<site-a:5>",
             "disposition": "apply"
           },
           {
             "kind": "script-added",
             "name": "test:e2e:fixtures",
-            "run": "SITE_CONTENT_ROOT=tests/fixtures/content sh scripts/e2e.sh --project=fixture-build",
-            "file": "package.json",
-            "package": "apurvbazari",
+            "run": "<site-a:7>",
+            "file": "<site-a:4>",
+            "package": "<site-a:5>",
             "disposition": "apply"
           },
           {
             "kind": "directory-new",
-            "path": "tests/e2e/fixture-build",
+            "path": "<site-a:8>",
             "count": 5,
             "disposition": "defer",
-            "reason": "needs-prompt",
-            "command": "/onboard:update"
+            "reason": "<site-a:9>",
+            "command": "<site-a:10>"
           },
           {
             "kind": "directory-new",
-            "path": "tests/unit",
+            "path": "<site-a:11>",
             "count": 6,
             "disposition": "defer",
-            "reason": "needs-prompt",
-            "command": "/onboard:update"
+            "reason": "<site-a:9>",
+            "command": "<site-a:10>"
           }
         ],
         "truncated": {
@@ -1121,30 +1121,30 @@
     {
       "id": "android-agp-bump",
       "repo": "android-a",
-      "base": "904047cd09c0126f83ffd19447ed3e8a2ca08821",
-      "head": "4184757a8c6faa03cae8460688724cedd88f131a",
+      "base": "<android-a:1>",
+      "head": "<android-a:2>",
       "restoreTooling": true,
       "note": "A Kotlin/Gradle project: no package.json kinds; a changed .kts build file is a source path, so its tooling mentions are rechecks.",
       "expected": {
         "items": [
           {
             "kind": "recheck-line",
-            "line": "app/src/main/java/dev/apurvbazari/<android-a-pkg>/data/CLAUDE.md:16",
+            "line": "<android-a:3>",
             "matched": [
               {
                 "by": "path",
-                "value": "app/build.gradle.kts"
+                "value": "<android-a:4>"
               }
             ],
             "disposition": "inform"
           },
           {
             "kind": "recheck-line",
-            "line": ".claude/rules/privacy-invariants.md:80",
+            "line": "<android-a:5>",
             "matched": [
               {
                 "by": "path",
-                "value": "app/build.gradle.kts"
+                "value": "<android-a:4>"
               }
             ],
             "disposition": "inform"
