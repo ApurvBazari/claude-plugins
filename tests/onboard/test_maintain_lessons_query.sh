@@ -35,7 +35,7 @@ rc=0; bash "$DETECT" --lesson-file >/dev/null 2>&1 || rc=$?
 expect "--lesson-file with no glob: exit 2" 2 "$rc"
 
 put .claude/rules/lessons.md '# Lessons' '' '<!-- lesson:L-1 -->' '- Always round at the output boundary.' \
-  '  _evidence: gate-1 steer (matali run 1)_'
+  '  _evidence: gate-1 steer (run 1)_'
 put CLAUDE.md '# Root' '- Prefer server actions over API routes.'
 expect "present: id marker" "present-id .claude/rules/lessons.md:3" "$(present L-1 'anything')"
 expect "present: normalised text (case, whitespace, trailing punctuation, list marker)" \

@@ -1,6 +1,9 @@
 {
   "schemaVersion": 1,
   "entries": {
+    "onboard@3.3.1#07baa1e4": {"disposition": "covered", "at": ["onboard/README.md#skills", "onboard/README.md#maintain-entry-for-orchestrators", "site/onboard/index.html#maintain"]},
+    "onboard@3.3.1#3fd406da": {"disposition": "not-user-facing", "reason": "example evidence.ref values in schema examples, an internal skill reference and test fixtures; the field's rules are unchanged and no page shows those examples"},
+    "lens@1.5.2#b4bc9df4": {"disposition": "covered", "at": ["lens/README.md#skills", "site/lens/index.html#skills"]},
     "walkthrough@1.6.0#613dec27": {"disposition": "covered", "at": ["walkthrough/README.md#system-maps", "site/walkthrough/index.html#sysmap", "site/walkthrough/index.html#concepts"]},
     "walkthrough@1.6.0#6c7a65ac": {"disposition": "covered", "at": ["walkthrough/README.md#works-in-cowork", "walkthrough/README.md#limitations", "site/walkthrough/index.html#sysmap", "site/walkthrough/index.html#cowork"]},
     "walkthrough@1.6.0#c575a170": {"disposition": "not-user-facing", "reason": "the render model's schema fields, read by callers of the internal render skill; what they draw (nesting, sync and async flow, change marks) is documented on the walkthrough page (§ System maps)"},

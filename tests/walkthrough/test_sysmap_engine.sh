@@ -44,6 +44,17 @@ if ! command -v node >/dev/null 2>&1; then
   echo "SKIP: node is not installed, so the engine was not parsed and its layout was not run"
   exit 0
 fi
-node --check "$E" || fail "the engine does not parse"
-node "$H" "$E" || fail "the layout harness failed"
+# Node reads the nearest package.json above a file before it runs it, and fails on an invalid one.
+# The engine is checked as a copy beside a package.json of the belt's own, and the harness sits
+# beside tests/walkthrough/sysmap/package.json, so a stray one above the repository cannot fail
+# this belt (the docs bot's job had one: drift queue PR144-1).
+SHIELD="$ROOT/tests/walkthrough/sysmap/package.json"
+grep -qE '"type": *"commonjs"' "$SHIELD" 2>/dev/null \
+  || fail "tests/walkthrough/sysmap/package.json must exist and set \"type\": \"commonjs\": it keeps node from reading a package.json above the repository"
+T="$(mktemp -d "${TMPDIR:-/tmp}/sysmap-engine.XXXXXX")"
+trap 'rm -rf "$T"' EXIT
+printf '{"private": true, "type": "commonjs"}\n' > "$T/package.json"
+cp "$E" "$T/system-map-engine.js"
+node --check "$T/system-map-engine.js" || fail "the engine does not parse"
+node "$H" "$T/system-map-engine.js" || fail "the layout harness failed"
 echo "PASS: system-map engine"

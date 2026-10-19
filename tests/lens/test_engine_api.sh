@@ -439,12 +439,12 @@ printf '%s\n' "$RENDER" | grep -qiE 'failure only|failure channel' \
 CONSUMERS="$(section "$H_CONSUMERS" "$API")"
 [ -n "$CONSUMERS" ] || fail "the '$H_CONSUMERS' section is empty"
 # Pinned to the DECLARING bullet, not a bare substring: the section quotes `agents` again further down
-# (matali's own CLAUDE.md wording), so a bare grep stayed satisfied even with the declaration renamed.
+# (the orchestrator's own docs, quoted), so a bare grep stayed satisfied even with the declaration renamed.
 # shellcheck disable=SC2016 # literal backticks — this is the exact grepped bullet, not shell expansion
 printf '%s\n' "$CONSUMERS" | grep -qF -- '- **An `agents` finder roster.**' \
   || fail "consumer-assumptions section must declare the 'agents' roster a consumer reads"
-printf '%s\n' "$CONSUMERS" | grep -qi 'matali' \
-  || fail "consumer-assumptions section must name matali as the consumer making the assumption"
+printf '%s\n' "$CONSUMERS" | grep -qi 'orchestrator' \
+  || fail "consumer-assumptions section must name the orchestrator as the consumer making the assumption"
 printf '%s\n' "$CONSUMERS" | grep -qiE 'not part of the contract|not contracted' \
   || fail "consumer-assumptions section must state that 'agents' is not part of the contract"
 
@@ -866,8 +866,8 @@ DESC="$(grep '^description:' "$ESKILL")"
 if printf '%s\n' "$DESC" | grep -qF 'invoked BY lens:review'; then
   fail "engine/SKILL.md description must no longer claim it is invoked BY lens:review only"
 fi
-printf '%s\n' "$DESC" | grep -qiE 'matali|orchestrator' \
-  || fail "engine/SKILL.md description must name matali or a programmatic orchestrator as a real caller"
+printf '%s\n' "$DESC" | grep -qi 'orchestrator' \
+  || fail "engine/SKILL.md description must name a programmatic orchestrator as a real caller"
 printf '%s\n' "$DESC" | grep -qF '/lens:review' \
   || fail "engine/SKILL.md description must still name /lens:review as a real caller"
 
@@ -1461,7 +1461,7 @@ grep -qF 'field-additive' "$CLAUDEMD" || fail "INDEX: CLAUDE.md must keep 'field
 grep -qF 'co-owned' "$CLAUDEMD" || fail "INDEX: CLAUDE.md must keep 'co-owned'"
 
 # 5b. ...AND IT MUST BE SCOPED TO WHAT IT ACTUALLY BINDS. The invariant reads "never rename, re-type,
-# or repurpose a vicario field; only add optional ones" — true of the FIELD set, and silent about
+# or repurpose an upstream field; only add optional ones" — true of the FIELD set, and silent about
 # cross-field constraints, of which 1.5.0 adds three. Read unqualified it certifies that this release
 # cannot invalidate a document 1.4.3's schema accepted, which is false: the degraded biconditional
 # rejects every 1.4.3-produced degraded return. The round-trip claim below it needs the same treatment,
@@ -1475,9 +1475,9 @@ printf '%s\n' "$CLAUDEMD_FLAT" | grep -qiF 'narrowings' \
 printf '%s\n' "$CLAUDEMD_FLAT" | grep -qF 'rejects *every* 1.4.3-produced return carrying `degraded: true`' \
   || fail "INDEX: CLAUDE.md must state the concrete break its invariant does not cover"
 # THE ROUND-TRIP CLAIM, split by direction. "Both validators round-trip" is now true one way only.
-printf '%s\n' "$CLAUDEMD_FLAT" | grep -qF 'The round-trip that still holds is the **lens → vicario** direction' \
-  || fail "INDEX: CLAUDE.md's vicario round-trip claim must name the direction that still holds — stated symmetrically it is false, because a vicario-produced degraded document no longer validates here"
-printf '%s\n' "$CLAUDEMD_FLAT" | grep -qF 'The **vicario → lens** direction is where the narrowings bite' \
+printf '%s\n' "$CLAUDEMD_FLAT" | grep -qF 'The round-trip that still holds is the **lens → upstream** direction' \
+  || fail "INDEX: CLAUDE.md's upstream round-trip claim must name the direction that still holds — stated symmetrically it is false, because an upstream-produced degraded document no longer validates here"
+printf '%s\n' "$CLAUDEMD_FLAT" | grep -qF 'The **upstream → lens** direction is where the narrowings bite' \
   || fail "INDEX: CLAUDE.md must state which direction the narrowings break — a reader who only learns one half will assume the other"
 # Derived by the SAME walk the CHANGELOG's disclosure is checked against (tests/lib/schema-narrowings.py),
 # so the two documents cannot disagree about what the release narrows — and scoped to the PARAGRAPH that

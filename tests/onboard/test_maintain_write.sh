@@ -24,10 +24,10 @@ put src/a.ts x
 commit_base
 
 expect "untargeted: prints the file" '{"file": ".claude/rules/lessons.md"}' \
-  "$(lesson --id L-1 --text 'Round only at the output boundary.' --summary 'gate-1 steer' --ref 'matali run 1')"
-lesson --id L-2 --text 'Run the price belt first.' --summary 'owner note' --ref 'matali run 1' >/dev/null
+  "$(lesson --id L-1 --text 'Round only at the output boundary.' --summary 'gate-1 steer' --ref 'run 1')"
+lesson --id L-2 --text 'Run the price belt first.' --summary 'owner note' --ref 'run 1' >/dev/null
 same_file "untargeted: header, entries, one blank line between" .claude/rules/lessons.md \
-'# Lessons\n\n<!-- lesson:L-1 -->\n- Round only at the output boundary.\n  _evidence: gate-1 steer (matali run 1)_\n\n<!-- lesson:L-2 -->\n- Run the price belt first.\n  _evidence: owner note (matali run 1)_\n'
+'# Lessons\n\n<!-- lesson:L-1 -->\n- Round only at the output boundary.\n  _evidence: gate-1 steer (run 1)_\n\n<!-- lesson:L-2 -->\n- Run the price belt first.\n  _evidence: owner note (run 1)_\n'
 
 expect "paths: a new lessons-<slug>.md" '{"file": ".claude/rules/lessons-crm-lib.md"}' \
   "$(lesson --id L-3 --text 'Money is decimal.' --summary 's' --ref 'r' --paths 'apps/crm/src/lib/**' 'lib/x/**')"

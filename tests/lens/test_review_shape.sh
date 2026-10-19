@@ -53,7 +53,7 @@ print("PASS: review-findings contract (nominal + degraded, globbed fixtures)")
 PY
 
 # L5 — lens dispatches ONE verifier per finding; the sample fixture's votes.total must be 1
-# (a 3-vote panel is matali/vicario behavior, not lens).
+# (a 3-vote panel is orchestrator behavior, not lens).
 python3 - "$FIX" <<'PY' || fail "sample fixture votes.total must be 1 (single verifier)"
 import json, sys
 d = json.load(open(sys.argv[1]))

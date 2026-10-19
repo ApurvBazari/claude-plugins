@@ -143,11 +143,10 @@ for ex in "$ROOT"/site/walkthrough/examples/*.html; do
   ex_count=$((ex_count+1))
   grep -qF 'wt-credit' "$ex" \
     || fail "published example $(basename "$ex") predates the provenance footer - re-render it with the current engine"
-  grep -qiE 'vicario|matali|mimir|asgard|iris|jamakhata|wallet' "$ex" \
-    && fail "published example $(basename "$ex") leaks an unreleased-project reference"
 done
 [ "$ex_count" -ge 1 ] || fail "expected at least 1 published example under site/walkthrough/examples/, found $ex_count"
-ok "EXAMPLES: $ex_count published example(s), provenance footer present, leak-free"
+# Private-project names are checked repo-wide, from a gitignored list, by tests/test_private_names.sh.
+ok "EXAMPLES: $ex_count published example(s), provenance footer present"
 
 # --- 1.6.0: the system map replaces the architecture map and the dependency graph ---
 SYS="$ROOT/walkthrough/skills/create/references/components/system-map.md"

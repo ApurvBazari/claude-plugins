@@ -47,7 +47,7 @@ provenance (one group per distinct source; `kind` is `spec` for `sourceSpec` buc
 existing **flat** `specItems[]`/`planSteps[]` (byte-identical to today). The renderer reads `groups[]` when
 present, the flat arrays otherwise.
 
-2. **Headless / contract-only (e.g. vicario or matali consuming the engine's `review-findings` JSON without the
+2. **Headless / contract-only (e.g. an orchestrator consuming the engine's `review-findings` JSON without the
    finders' side outputs).** The finders' `specItems[]`/`planSteps[]` are not in scope here, but the engine's
    return **may still carry a top-level `adherence: { specItems[], planSteps[] }` block** (the 1.4.0
    side-output). **Consume that block when present** — its items already carry `{label, state}` (and

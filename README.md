@@ -6,9 +6,9 @@
 
 > Sharp, honest tooling that makes Claude Code's work visible and verifiable. Claude Code plugins for the project lifecycle — `onboard` keeps AI configs aligned as your code evolves, `notify` closes the loop, `handoff` carries session intent across context boundaries, `walkthrough` turns a session into an explorable document, and `lens` reviews work against its spec before it ships. Five plugins that work on their own and **compose together**.
 
-[![A walkthrough document rendered from a real Claude Code session](./site/assets/hero-walkthrough.jpg)](https://apurvbazari.github.io/claude-plugins/walkthrough/examples/traction-campaign-session.html)
+[![A walkthrough document: the system map of a backup design, with the parts it adds marked](./site/assets/hero-walkthrough.jpg)](https://apurvbazari.github.io/claude-plugins/walkthrough/examples/backup-design.html)
 
-*Above: `walkthrough` turned a real session into this self-contained HTML document — [open the live one](https://apurvbazari.github.io/claude-plugins/walkthrough/examples/traction-campaign-session.html). One file, no server, works offline.*
+*Above: a worked example, a backup design for a trip expense app, as one self-contained HTML document: the system map with what changed, the options scored side by side, and what each would cost. [Open the live one](https://apurvbazari.github.io/claude-plugins/walkthrough/examples/backup-design.html). One file, no server, works offline.*
 
 Built on top of [Claude Code](https://code.claude.com/docs/en) by Anthropic. Distributed under [MIT](./LICENSE).
 
