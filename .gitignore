@@ -44,6 +44,8 @@ docs/
 # explicitly so the intent survives if that blanket line is ever narrowed.
 # lens review settings + state (rendered reviews go to the configured outputPath, e.g. docs/reviews/)
 .claude/lens/
+# private-project names read by tests/test_private_names.sh (the list itself must never be tracked)
+.claude/private-names.txt
 # an orchestrator's isolated feature checkouts (its per-run state also lives under .claude/)
 .claude/worktrees/
 
