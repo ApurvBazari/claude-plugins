@@ -56,10 +56,10 @@ assert len(codes) == len(set(codes)), f"errorEnvelope.code repeats a code: {code
 REQ = set(s.get("required", [])) | set(ok_branch.get("required", []))
 
 props=s["properties"]["findings"]["items"]["properties"]
-assert props["line"]["type"]=="integer", "line must be integer (vicario parity)"
+assert props["line"]["type"]=="integer", "line must be integer (upstream parity)"
 v=props["votes"]["properties"]
 for k in ("total","couldNotRefute","refuted"):
-    assert v[k]["type"]=="integer", f"votes.{k} must be integer (vicario parity)"
+    assert v[k]["type"]=="integer", f"votes.{k} must be integer (upstream parity)"
 # U4 — the vote tally is a closed four-key set, asserted BOTH directions: the rule's invariant is
 # couldNotRefute + refuted + abstained == total, so a missing key makes the invariant unstatable and
 # an extra one makes it unprovable. abstained is typed here alongside the three it joins.
@@ -71,7 +71,7 @@ assert v["abstained"]["type"]=="integer", "votes.abstained must be integer (it t
 # tally both validated: a vote count is a count of DISPATCHES, so a negative member names a state the
 # engine cannot reach, and a `total` outside 1..5 names a panel size no caller can ask for (verifyVotes
 # is itself bounded 1..5 and rejected in pre-flight otherwise). A lower bound rejects no sibling field,
-# so the vicario field-additive argument gives the omission no cover. The sum invariant stays prose —
+# so the upstream field-additive argument gives the omission no cover. The sum invariant stays prose —
 # draft-07 cannot express a relation between siblings.
 for k in ("total","couldNotRefute","refuted","abstained"):
     assert v[k].get("minimum")==0 or (k=="total" and v[k].get("minimum")==1), \
@@ -100,10 +100,10 @@ finding_required=set(s["properties"]["findings"]["items"].get("required",[]))
 for k in ("votes","voteResolution"):
     assert k not in finding_required, f"{k} must stay optional (not in the per-finding required[])"
     assert k not in REQ, f"{k} must not enter the success channel's required[]"
-# The dimension enum is the canonical 9-value SHARED contract (vicario's six + lens's
+# The dimension enum is the canonical 9-value SHARED contract (the upstream six + lens's
 # test/risk/comment). Assert it EXACTLY: a subset check would let test/risk/comment be deleted
 # silently (every other test still passes), and an extra value would diverge from the co-owned
-# vicario enum. Lock both directions here.
+# upstream enum. Lock both directions here.
 expected={"requirements","correctness","security","types","silent-failure","simplify","test","risk","comment"}
 dims=props["dimension"]["enum"]
 assert len(dims)==len(expected) and set(dims)==expected, \
@@ -119,12 +119,12 @@ for k in ("fixed","new","stillOpen"):
 for k in ("delta","severityTrend"):
     assert k not in REQ, f"{k} must stay optional (field-additive superset)"
 # F1 — emptyScope discriminator: must exist as boolean, must NOT be required
-# (field-additive — vicario's validator ignores it; only the dimension enum is co-owned)
+# (field-additive — the upstream validator ignores it; only the dimension enum is co-owned)
 assert top["emptyScope"]["type"]=="boolean", "emptyScope must be a boolean property"
 assert "emptyScope" not in REQ, \
-    "emptyScope must stay optional (field-additive; vicario must not require it)"
+    "emptyScope must stay optional (field-additive; the upstream schema must not require it)"
 # L3 — adherence item shape is declared (additive: properties only, never required,
-# no additionalProperties:false — matali payloads valid under 1.4.1 must stay valid).
+# no additionalProperties:false — orchestrator payloads valid under 1.4.1 must stay valid).
 adh = top["adherence"]
 assert adh["type"] == "object", "adherence must be an object"
 assert "adherence" not in REQ, "adherence must stay optional (field-additive)"

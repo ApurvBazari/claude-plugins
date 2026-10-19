@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.3.1 — 2026-10-19
+
+### Changed — callers are named by role
+- **The maintain entry's docs name its caller by role.** `onboard:maintain`'s description, the README and `maintain-lessons.json` now say "an orchestrator's maintain phase" instead of naming one orchestrator project. Nothing about how the skill behaves changes.
+- **Lesson examples carry a neutral run reference.** The `evidence.ref` values in the schema examples, the lesson-entry reference and the test fixtures read `run <id>`. The field's rules are unchanged: any non-empty single line.
+
 ## 3.3.0 — 2026-10-10
 
 Responds to the claude.ai directory review of 3.2.0: onboard installed other plugins without offering them, and its README and description did not match what it does.

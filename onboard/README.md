@@ -81,7 +81,7 @@ Internal generation step invoked by `/onboard:start` (after the grounded wizard)
 
 ### `onboard:maintain` *(internal — `user-invocable: false`, hidden from `/` menu)*
 
-The apply half of the **maintain entry**, called by an orchestrator (matali v2's maintain phase) after a change lands. It runs non-interactively: given a `maintain-detect` report and optional owner-approved lessons, it writes each new `package.json` script as one line in the nearest fitting commands section of a `CLAUDE.md` (in that section's own style), writes the approved lessons into `.claude/rules/lessons*.md` or a marked section, and returns `applied[]` / `deferred[]` / `skipped[]` in `maintain-result.json`. It never prompts, never commits, and writes only tooling files.
+The apply half of the **maintain entry**, called by an orchestrator's maintain phase after a change lands. It runs non-interactively: given a `maintain-detect` report and optional owner-approved lessons, it writes each new `package.json` script as one line in the nearest fitting commands section of a `CLAUDE.md` (in that section's own style), writes the approved lessons into `.claude/rules/lessons*.md` or a marked section, and returns `applied[]` / `deferred[]` / `skipped[]` in `maintain-result.json`. It never prompts, never commits, and writes only tooling files.
 
 ## Architecture
 

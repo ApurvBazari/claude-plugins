@@ -15,6 +15,8 @@ import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import corpus_ranges  # noqa: E402  (resolves each range's repo alias through repos.local.json)
 problems = []
 
 
@@ -41,9 +43,9 @@ def line_text(repo, base, ref):
 
 
 def audit(r):
-    repo = os.path.expanduser(r["repo"])
-    if not os.path.isdir(os.path.join(repo, ".git")):
-        print("SKIP %s (repo not on this machine)" % r["id"])
+    repo = r["repo"]
+    if not repo or not os.path.isdir(os.path.join(repo, ".git")):
+        print("SKIP %s (repo %s not on this machine)" % (r["id"], r["alias"]))
         return
     base, head = r["base"], r["head"]
     status = {}
@@ -121,8 +123,8 @@ def audit(r):
 
 
 def main(argv):
-    path = argv[0] if argv else os.path.join(HERE, "ranges.json")
-    for r in json.load(open(path))["ranges"]:
+    path = argv[0] if argv else corpus_ranges.RANGES
+    for r in corpus_ranges.load(path):
         audit(r)
     for p in problems:
         print("UNSUPPORTED " + p)

@@ -1,0 +1,10 @@
+{
+  "repos": {
+    "monorepo-a": "~/path/to/the/monorepo",
+    "site-a": "~/path/to/the/site",
+    "android-a": "~/path/to/the/android/app"
+  },
+  "tokens": {
+    "<monorepo-a:1>": "the real string this placeholder stands for (a SHA, path, line or command)"
+  }
+}

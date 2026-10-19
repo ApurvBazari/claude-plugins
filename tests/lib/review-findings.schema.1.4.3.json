@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$comment": "version 1. FIELD-additive superset of vicario review-findings: extra optional fields are ignored by vicario's validator. The dimension enum is the canonical 9-value SHARED contract (vicario's six + lens's test/risk/comment); vicario adopts the same enum so all dimensions validate both ways — no mapping layer. Until the vicario repo widens its enum to match (tracked), only the 6 shared dimensions round-trip to an un-updated vicario; coordinate enum changes across both repos.",
+  "$comment": "version 1. FIELD-additive superset of the upstream review-findings schema: extra optional fields are ignored by the upstream validator. The dimension enum is the canonical 9-value SHARED contract (the upstream six + lens's test/risk/comment); the upstream schema adopts the same enum so all dimensions validate both ways — no mapping layer. Until the upstream repo widens its enum to match (tracked), only the 6 shared dimensions round-trip to an un-updated upstream validator; coordinate enum changes across both repos.",
   "title": "lens review-findings",
   "type": "object",
   "required": ["findings", "recommendedEscalation", "degraded"],
@@ -39,7 +39,7 @@
               "refuted": {"type": "integer"}
             }
           },
-          "voteDegraded": {"type": "boolean", "$comment": "carried for vicario parity; lens v1 does not set it"},
+          "voteDegraded": {"type": "boolean", "$comment": "carried for upstream parity; lens v1 does not set it"},
           "claim": {"type": "string"},
           "detail": {"type": "string"},
           "suggestedFix": {"type": "string"},
@@ -55,11 +55,11 @@
     "recommendedEscalation": {"type": "string", "enum": ["minor", "moderate", "major", "critical"]},
     "degraded": {"type": "boolean"},
     "summary": {"type": "string"},
-    "emptyScope": {"type": "boolean", "$comment": "true only on empty-diff/no-repo; lets a caller distinguish 'nothing to review' from a clean zero-finding review. Field-additive — vicario's validator ignores it (only the dimension enum is co-owned)."},
+    "emptyScope": {"type": "boolean", "$comment": "true only on empty-diff/no-repo; lets a caller distinguish 'nothing to review' from a clean zero-finding review. Field-additive — the upstream validator ignores it (only the dimension enum is co-owned)."},
     "severityTrend": {
       "type": "string",
       "enum": ["improving", "same", "regressed"],
-      "$comment": "this run's recommendedEscalation vs the prior run's, keyed on the 4-value escalation not the 3-value verdict (per skills/review/references/reconcile.md). Optional — set by reconcile/compute-only, never by the engine; vicario's validator ignores it."
+      "$comment": "this run's recommendedEscalation vs the prior run's, keyed on the 4-value escalation not the 3-value verdict (per skills/review/references/reconcile.md). Optional — set by reconcile/compute-only, never by the engine; the upstream validator ignores it."
     },
     "delta": {
       "type": "object",
@@ -72,7 +72,7 @@
     },
     "adherence": {
       "type": "object",
-      "$comment": "Optional, field-additive — set by the finders' side outputs or the engine's adherence return; vicario's validator ignores it. Item objects declare their known keys but stay open (no required[], no additionalProperties:false) so single-spec flat items and headless-derived items — which may omit sourceSpec/sourcePlan — remain valid.",
+      "$comment": "Optional, field-additive — set by the finders' side outputs or the engine's adherence return; the upstream validator ignores it. Item objects declare their known keys but stay open (no required[], no additionalProperties:false) so single-spec flat items and headless-derived items — which may omit sourceSpec/sourcePlan — remain valid.",
       "properties": {
         "specItems": {
           "type": "array",

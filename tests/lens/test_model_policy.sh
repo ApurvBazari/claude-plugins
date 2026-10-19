@@ -453,7 +453,7 @@ printf '%s\n' "$MODEL" | grep -qF 'matches the `agent` value verbatim' \
   || fail "engine-api.md § Model resolution must state that byAgent matches the agent value verbatim"
 model_line_has 'no plugin-prefix stripping' 'no normalization' \
   "engine-api.md § Model resolution must state that byAgent applies no normalization and no plugin-prefix stripping"
-model_line_has 'matali:principles-finder' 'does **not** match' \
+model_line_has 'acme:principles-finder' 'does **not** match' \
   "engine-api.md § Model resolution must carry the plugin-qualified non-match example for byAgent"
 
 # === NEGATIVE DECLARE-ONCE: no procedure file re-declares the policy shape ===
@@ -821,10 +821,10 @@ CASES = [
     # --- byAgent matches the agent value VERBATIM: no prefix stripping ---
     ("byAgent does NOT match a plugin-qualified agent under its bare name",
      {"byAgent": {"principles-finder": "x"}, "default": "the-default"},
-     None, "matali:principles-finder", "finder", ("dispatch", "default", "the-default")),
+     None, "acme:principles-finder", "finder", ("dispatch", "default", "the-default")),
     ("byAgent matches the plugin-qualified spelling exactly",
-     {"byAgent": {"matali:principles-finder": "qualified"}, "default": "the-default"},
-     None, "matali:principles-finder", "finder", ("dispatch", "byAgent", "qualified")),
+     {"byAgent": {"acme:principles-finder": "qualified"}, "default": "the-default"},
+     None, "acme:principles-finder", "finder", ("dispatch", "byAgent", "qualified")),
     # --- THE DENY GATE, on each of the caller-chosen positions ---
     ("a denied record.model raises — a caller's explicit request is never clamped",
      {"deny": ["haiku"], "default": "opus"},

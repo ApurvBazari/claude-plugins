@@ -86,6 +86,24 @@ jobs:
       # validated no schema at all. tests/ci/test-workflow-contracts.sh parses workflows with PyYAML.
       - name: Install belt dependencies
         run: pip install jsonschema pyyaml
+      # tests/test_private_names.sh needs the owner's list of private project names, which is never
+      # committed. It comes from the PRIVATE_NAMES secret, scoped to this one step. GitHub withholds
+      # secrets from fork PRs, so there the list is absent and the guard skips. Every name is masked
+      # before any later step runs, and under GITHUB_ACTIONS the guard prints only a name's number
+      # and hit count, never the matching lines (masking is case-sensitive; the guard's match is not).
+      - name: Load the private-name list
+        env:
+          PRIVATE_NAMES: ${{ secrets.PRIVATE_NAMES }}
+        run: |
+          if [ -z "$PRIVATE_NAMES" ]; then echo "PRIVATE_NAMES is not set: the private-name guard will skip"; exit 0; fi
+          mkdir -p .claude
+          printf '%s\n' "$PRIVATE_NAMES" > .claude/private-names.txt
+          n=0
+          while IFS= read -r line || [ -n "$line" ]; do
+            name="$(printf '%s' "${line%%#*}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+            if [ -n "$name" ]; then echo "::add-mask::$name"; n=$((n + 1)); fi
+          done < .claude/private-names.txt
+          echo "loaded $n private name(s)"
       - name: Run all plugin test belts
         run: bash tests/run-all.sh
 

@@ -1,6 +1,6 @@
 ---
 name: maintain
-description: Internal, non-interactive apply step of onboard's maintain entry. Given a maintain-detect report and optional owner-approved lessons (file paths), writes the new script lines marked apply into CLAUDE.md files and the approved lessons into tooling, then writes maintain-result.json. Called by an orchestrator such as matali's maintain phase; never prompts, never commits. Not user-invocable.
+description: Internal, non-interactive apply step of onboard's maintain entry. Given a maintain-detect report and optional owner-approved lessons (file paths), writes the new script lines marked apply into CLAUDE.md files and the approved lessons into tooling, then writes maintain-result.json. Called by an orchestrator's maintain phase; never prompts, never commits. Not user-invocable.
 user-invocable: false
 ---
 

@@ -27,6 +27,9 @@ build/
 __pycache__/
 *.pyc
 
+# maintain corpus: maps each range's repo alias to a path on this machine (names private repos)
+tests/onboard/maintain-corpus/repos.local.json
+
 # Local planning docs
 future-plans/
 docs/
@@ -41,13 +44,14 @@ docs/
 # explicitly so the intent survives if that blanket line is ever narrowed.
 # lens review settings + state (rendered reviews go to the configured outputPath, e.g. docs/reviews/)
 .claude/lens/
-# matali's isolated feature checkouts + its per-run pipeline state
+# private-project names read by tests/test_private_names.sh (the list itself must never be tracked)
+.claude/private-names.txt
+# an orchestrator's isolated feature checkouts (its per-run state also lives under .claude/)
 .claude/worktrees/
-.claude/matali/state/
 
 # /release-docs run scratch (.release-docs/run/: obligations, verifier output, screenshots).
 # Outside .claude/ because the unattended CI model can't write under that protected path.
 .release-docs/
 
-# matali worktree seed-file manifest — local tooling config, not marketplace content
+# orchestrator worktree seed-file manifest — local tooling config, not marketplace content
 .worktreeinclude

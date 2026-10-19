@@ -147,7 +147,7 @@ def check_again(shapes_json, shape, work, snap):
 
 LESSON_BLOCK = ("\n<!-- onboard:lessons:start -->\n<!-- lesson:L-file -->\n"
                 "- Keep the root CLAUDE.md under 200 lines.\n"
-                "  _evidence: owner note (matali run 20260927-0001)_\n"
+                "  _evidence: owner note (run 20260927-0001)_\n"
                 "<!-- onboard:lessons:end -->\n")
 
 

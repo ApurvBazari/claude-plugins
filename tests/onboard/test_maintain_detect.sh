@@ -220,7 +220,7 @@ expect "subdirectory: exit 0" 0 "$RC"
 expect "subdirectory: same report as from the root" "$(q 'd["items"]')" \
   "$(OUT="$REPO/.claude/run/sub.json" q 'd["items"]')"
 
-# --- review focus: a git worktree (matali builds features in worktrees) ---
+# --- review focus: a git worktree (an orchestrator builds features in worktrees) ---
 new_repo wt-main
 put package.json '{"name":"root","scripts":{"dev":"x"}}'
 put CLAUDE.md '# Root'

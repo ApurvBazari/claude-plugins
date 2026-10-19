@@ -1,7 +1,7 @@
 # lens programmatic API — the single declared surface
 
 What `lens:engine` takes and returns, what `lens:render-review` consumes, and **who owns each field** —
-stated once, here. A programmatic caller (matali, vicario, any orchestrator) reads this file instead of
+stated once, here. A programmatic caller (any orchestrator) reads this file instead of
 reconciling the same shapes out of eight SKILL and reference files.
 
 ## Precedence — this doc declares, the skills govern
@@ -41,10 +41,10 @@ after it raises rather than being ignored (§ Model resolution).
 
 | Input | Shape | Notes |
 |---|---|---|
-| `target` | string — a ref, a range, or a pathspec | The **canonical** name for the diff-scope override; used verbatim in place of the default scope. Historical alias: `scope` — the same channel under the older spelling, still used by `./pipeline.md` §2/§3 and by matali's call site. Both spellings are in use and nothing is renamed; a caller may hand either. |
+| `target` | string — a ref, a range, or a pathspec | The **canonical** name for the diff-scope override; used verbatim in place of the default scope. Historical alias: `scope` — the same channel under the older spelling, still used by `./pipeline.md` §2/§3 and by the orchestrator's call site. Both spellings are in use and nothing is renamed; a caller may hand either. |
 | `taskIds` | `{ scope, intent, analyze, verify }` | Harness task ids for the four engine stages, handed only by the standalone `/lens:review` path. **Absent ⇒ the engine is task-silent** — it takes no task action at all, which is the compute-only/orchestrator path. |
-| `injectedIntent` | `Array<{ role: "spec" \| "plan", name: string, content: string }>` | The **frozen matali contract**, and the highest-priority intent source. `content` is the full spec/plan markdown used verbatim; `name` is the provenance tag carried as `sourceSpec`/`sourcePlan`; `role` selects the adherence fan-out. Governed by `./pipeline.md` §2 rule 0. |
-| `injectedFinders` | `Array<{ agent, dimension, label?, readonly: true, model?, effort? }>` | **The canonical project-finder path** for a programmatic caller. `agent` resolves through the Agent-tool registry and **may be plugin-qualified** (e.g. `matali:principles-finder`), so the finder ships in the caller's own plugin. Dispatched identically to the file-registered project tier — read-only enforced at the boundary, normalized, deduped, adversarially verified. A malformed `model`/`effort` on one of these **call-time** records **raises `E_INVALID_INPUT`** in pre-flight (§ Errors, I-1): the caller that sent the record is the one that can fix it. **A record carrying neither key never raises** — a 1.4.3-shaped `injectedFinders` record has no 1.5.0 key to be malformed, so it resolves and dispatches exactly as it did in 1.3.0 (I-2). Governed by `./pipeline.md` §3 and `./finder-registry.md` Tier 3. |
+| `injectedIntent` | `Array<{ role: "spec" \| "plan", name: string, content: string }>` | The **frozen orchestrator contract**, and the highest-priority intent source. `content` is the full spec/plan markdown used verbatim; `name` is the provenance tag carried as `sourceSpec`/`sourcePlan`; `role` selects the adherence fan-out. Governed by `./pipeline.md` §2 rule 0. |
+| `injectedFinders` | `Array<{ agent, dimension, label?, readonly: true, model?, effort? }>` | **The canonical project-finder path** for a programmatic caller. `agent` resolves through the Agent-tool registry and **may be plugin-qualified** (e.g. `acme:principles-finder`), so the finder ships in the caller's own plugin. Dispatched identically to the file-registered project tier — read-only enforced at the boundary, normalized, deduped, adversarially verified. A malformed `model`/`effort` on one of these **call-time** records **raises `E_INVALID_INPUT`** in pre-flight (§ Errors, I-1): the caller that sent the record is the one that can fix it. **A record carrying neither key never raises** — a 1.4.3-shaped `injectedFinders` record has no 1.5.0 key to be malformed, so it resolves and dispatches exactly as it did in 1.3.0 (I-2). Governed by `./pipeline.md` §3 and `./finder-registry.md` Tier 3. |
 | `finders` | project-tier finder entries (`agent`, `dimension`, `label?`, `readonly: true`, `model?`, `effort?`) | The **file-based** project registry, read from `.claude/lens/settings.md`. Same dispatch and same read-only enforcement as `injectedFinders`; the only difference is where the entry came from. A malformed `model`/`effort` here **never raises**: it is normalized where it can be and dropped where it cannot, with `degraded: true`, `degradedReasons` code `finder-malformed`, and the drop named in `summary` — standalone `/lens:review` hands the engine no 1.5.0 input, so it **cannot fail on project config**. |
 | `modelPolicy` | `{ deny?: string[], default?: string, byRole?: { finder?: string, verifier?: string }, byAgent?: { <agent>: string } }` | The caller's model policy for this run. Every key is optional and `{}` is valid; resolved once in pre-flight and never re-read mid-run. The ordering, the denied-winner rule and the matching semantics are declared in § Model resolution — the precedence chain. A malformed policy raises `E_INVALID_INPUT` — including one that is not an object at all, which is checked before any key is read. |
 | `verifyVotes` | integer — `1..5` | How many independent verifier votes each surviving candidate gets in VERIFY. The votes are resolved into `verified` and `voteResolution` by the named rule `huginn-quorum-v1`, whose procedure lives at `./pipeline.md` §5. |
@@ -193,7 +193,7 @@ call never meets the floor either — with no `modelPolicy`, every verifier vote
   that the next version bump slips past is not one.
 - **`byAgent` matches the `agent` value verbatim** — exactly as written at the dispatch site. There is
   no normalization, no case folding and no plugin-prefix stripping: a key `principles-finder`
-  does **not** match a record whose `agent` is `matali:principles-finder`, which has to be keyed under
+  does **not** match a record whose `agent` is `acme:principles-finder`, which has to be keyed under
   that full plugin-qualified spelling. Exact matching is what stops a policy from silently governing an
   agent the caller never named.
 
@@ -294,9 +294,9 @@ ordinary empty diff as a broken render.
 One live consumer reads a field lens does not declare. It is recorded here so it is not mistaken for
 contract:
 
-- **An `agents` finder roster.** matali reads `agents` off the engine return — its `review` skill (lines
-  186 and 216 of that skill's `SKILL.md`, in the matali repo) forwards it verbatim into
-  `derived.execution.P5`, and matali's plugin `CLAUDE.md` (line 52) states that lens "now returns its finder
+- **An `agents` finder roster.** The orchestrator reads `agents` off the engine return — its `review`
+  skill forwards it verbatim into its own execution record (`derived.execution.P5`), and its plugin
+  docs state that lens "now returns its finder
   roster in `agents`". **lens declares no such field**: not in `../../../schemas/review-findings.schema.json`,
   not in `../SKILL.md`, not in § lens:engine — returns above. It is **not part of the contract** — a
   consumer must default it to `[]` and degrade quietly when it is absent. Documented as a divergence, not
