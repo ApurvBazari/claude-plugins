@@ -21,7 +21,7 @@ No `paths:` frontmatter, so Claude Code loads it in every session. Created as:
 
 <!-- lesson:L-7f3a -->
 - All pricing math runs through decimal.js; round to 2dp only at the output boundary.
-  _evidence: gate-1 steer (matali run 20260926-1412)_
+  _evidence: gate-1 steer (run 20260926-1412)_
 ```
 
 ## Path-targeted: `.claude/rules/lessons-<slug>.md`
@@ -38,7 +38,7 @@ paths:
 
 <!-- lesson:L-7f3a -->
 - All pricing math runs through decimal.js; round to 2dp only at the output boundary.
-  _evidence: gate-1 steer (matali run 20260926-1412)_
+  _evidence: gate-1 steer (run 20260926-1412)_
 ```
 
 An existing file is reused as is: append the entry, leave its frontmatter alone.
@@ -52,7 +52,7 @@ In the target `CLAUDE.md` or `.claude/rules/` file. When the section is missing,
 <!-- onboard:lessons:start -->
 <!-- lesson:L-2b44 -->
 - CRM server actions return BusinessError, never throw.
-  _evidence: owner note (matali run 20260926-1412)_
+  _evidence: owner note (run 20260926-1412)_
 <!-- onboard:lessons:end -->
 ```
 

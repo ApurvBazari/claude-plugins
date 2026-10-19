@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://github.com/ApurvBazari/claude-plugins/onboard/schemas/maintain-lessons.json",
   "title": "onboard maintain — approved lessons",
-  "description": "Written by the caller (matali's CLI: one writer) and read by onboard:maintain. Holds only lessons the owner approved; apply writes each text verbatim. evidence.summary and evidence.ref are committed into tooling, so ref must be durable; evidence.pointer is machine-local and never written (D20). Spec § 6.2.",
+  "description": "Written by the caller (one writer: the orchestrator's CLI) and read by onboard:maintain. Holds only lessons the owner approved; apply writes each text verbatim. evidence.summary and evidence.ref are committed into tooling, so ref must be durable; evidence.pointer is machine-local and never written (D20). Spec § 6.2.",
   "type": "object",
   "required": ["schemaVersion", "lessons"],
   "additionalProperties": false,
