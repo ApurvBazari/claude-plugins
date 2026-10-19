@@ -27,6 +27,9 @@ build/
 __pycache__/
 *.pyc
 
+# maintain corpus: maps each range's repo alias to a path on this machine (names private repos)
+tests/onboard/maintain-corpus/repos.local.json
+
 # Local planning docs
 future-plans/
 docs/

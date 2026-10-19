@@ -10,8 +10,11 @@
 # Then each labelled range in maintain-corpus/ranges.json is replayed read-only —
 # `git clone --shared` into a temp dir (no write to the source repo, not even a worktree entry),
 # head checked out, tooling restored to base when the label says so — and detect's items must equal
-# the label. A range whose repo is not on this machine is SKIPPED and counted; set
-# MAINTAIN_CORPUS_REQUIRED=1 (the feature's exit gate does) to turn a skip into a failure.
+# the label. A range's repo is an alias, resolved by maintain-corpus/corpus_ranges.py through the
+# gitignored maintain-corpus/repos.local.json (repos.local.example.json shows its shape), so the
+# tracked labels name no machine and no private project. A range whose alias is unmapped, or whose
+# repo is not on this machine, is SKIPPED and counted; set MAINTAIN_CORPUS_REQUIRED=1 (the feature's
+# exit gate does) to turn a skip into a failure.
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 failures=0
@@ -45,11 +48,15 @@ fi
 # --- ranges: then detect against the labels ---
 ran=0
 skipped=0
-while IFS='|' read -r id repo base head restore; do
-  repo="${repo/#\~/$HOME}"
+while IFS='|' read -r id repo base head restore alias; do
+  if [ -z "$repo" ]; then
+    skipped=$((skipped + 1))
+    if [ "${MAINTAIN_CORPUS_REQUIRED:-0}" = 1 ]; then fail "range $id: alias $alias is not mapped in maintain-corpus/repos.local.json"; else echo "SKIP: range $id — alias $alias is not mapped on this machine"; fi
+    continue
+  fi
   if [ ! -d "$repo/.git" ] || ! git -C "$repo" cat-file -e "$head^{commit}" 2>/dev/null; then
     skipped=$((skipped + 1))
-    if [ "${MAINTAIN_CORPUS_REQUIRED:-0}" = 1 ]; then fail "range $id: $repo (or $head) not available"; else echo "SKIP: range $id — $repo not on this machine"; fi
+    if [ "${MAINTAIN_CORPUS_REQUIRED:-0}" = 1 ]; then fail "range $id: repo $alias (or $head) not available"; else echo "SKIP: range $id — repo $alias not on this machine"; fi
     continue
   fi
   status_before="$(git -C "$repo" status --porcelain=v1 -uall | shasum)"
@@ -61,7 +68,7 @@ while IFS='|' read -r id repo base head restore; do
   fi
   cd "$REPO" || exit 1
   if [ "$restore" = true ]; then
-    # The code change without the author's own tooling edit: what a matali run hands detect.
+    # The code change without the author's own tooling edit: what an orchestrator run hands detect.
     python3 - "$base" <<'PY'
 import os, subprocess, sys
 base = sys.argv[1]
@@ -80,10 +87,12 @@ PY
   fi
   detect "$base"
   ran=$((ran + 1))
-  diff_out="$(python3 - "$CORPUS/ranges.json" "$id" "$OUT" <<'PY'
+  diff_out="$(python3 - "$CORPUS" "$id" "$OUT" <<'PY'
 import json, sys
-ranges = {r["id"]: r for r in json.load(open(sys.argv[1]))["ranges"]}
-want = ranges[sys.argv[2]]["expected"]
+sys.dont_write_bytecode = True
+sys.path.insert(0, sys.argv[1])
+import corpus_ranges
+want = {r["id"]: r for r in corpus_ranges.load()}[sys.argv[2]]["expected"]
 got = json.load(open(sys.argv[3]))
 if "error" in got:
     print("detect error: %s" % got["error"]); sys.exit()
@@ -103,9 +112,7 @@ PY
   if [ -z "$diff_out" ]; then echo "ok: range $id matches its label"; else fail "range $id differs from its label:"; printf '%s\n' "$diff_out"; fi
   expect "range $id: source repo status unchanged" "$status_before" "$(git -C "$repo" status --porcelain=v1 -uall | shasum)"
   expect "range $id: source repo HEAD unchanged" "$head_before" "$(git -C "$repo" rev-parse HEAD)"
-done < <(python3 -c 'import json,sys
-for r in json.load(open(sys.argv[1]))["ranges"]:
-    print("|".join([r["id"], r["repo"], r["base"], r["head"], "true" if r["restoreTooling"] else "false"]))' "$CORPUS/ranges.json")
+done < <(python3 -B "$CORPUS/corpus_ranges.py" list)
 
 echo
 echo "ranges: $ran replayed, $skipped skipped"

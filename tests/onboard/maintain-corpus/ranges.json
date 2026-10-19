@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "description": "Labelled ranges for tests/onboard/test_maintain_corpus.sh. Each range is replayed read-only (git clone --shared), with CLAUDE.md files and .claude/rules restored to base when restoreTooling is true, and detect's items (ids aside) must equal expected. villasa-pricing is labelled from the spec's worked example (§ 16, § 17). The other five were drafted from detect's output on 2026-09-27 and every item is audited against plain git evidence by audit-labels.py, which shares no code with detect. Never refresh a label from detect's output without re-running that audit.",
+  "description": "Labelled ranges for tests/onboard/test_maintain_corpus.sh. Each range is replayed read-only (git clone --shared), with CLAUDE.md files and .claude/rules restored to base when restoreTooling is true, and detect's items (ids aside) must equal expected. Each range's repo is an alias that corpus_ranges.py resolves through the gitignored repos.local.json, and a <token> in an expected item is filled from the same file. monorepo-pricing is labelled from the spec's worked example (§ 16, § 17). The other five were drafted from detect's output on 2026-09-27 and every item is audited against plain git evidence by audit-labels.py, which shares no code with detect. Never refresh a label from detect's output without re-running that audit.",
   "ranges": [
     {
-      "id": "villasa-pricing",
-      "repo": "~/Desktop/projects/villasa",
+      "id": "monorepo-pricing",
+      "repo": "monorepo-a",
       "base": "4cabaf21b6071b4eb1106e65ae43d18cc840bae5",
       "head": "add521a9dc27e1e9205edda21ff0a0c48a1efe8f",
       "restoreTooling": true,
@@ -102,8 +102,8 @@
       }
     },
     {
-      "id": "villasa-sms",
-      "repo": "~/Desktop/projects/villasa",
+      "id": "monorepo-sms",
+      "repo": "monorepo-a",
       "base": "2ce6d5829279340c8cf3a4520f097ef4ae95d6da",
       "head": "0d79a564716ac46d395e907fb7b66eb382a16915",
       "restoreTooling": true,
@@ -135,8 +135,8 @@
       }
     },
     {
-      "id": "villasa-pwa-decommission",
-      "repo": "~/Desktop/projects/villasa",
+      "id": "monorepo-app-removal",
+      "repo": "monorepo-a",
       "base": "fb31cd3e0ae5f83881e0c5e5fcdf47ce21d3c1ed",
       "head": "fb9efe46a20d1c9457b352bdfbb9892673344d1b",
       "restoreTooling": true,
@@ -413,8 +413,8 @@
       }
     },
     {
-      "id": "villasa-core-extraction",
-      "repo": "~/Desktop/projects/villasa",
+      "id": "monorepo-core-extraction",
+      "repo": "monorepo-a",
       "base": "4a11acfc6c9b7d9047c8435ec5bf1816e1476523",
       "head": "16e5b8bc8d2f6e78699b77ecf1f5f322f9d1345f",
       "restoreTooling": true,
@@ -1064,8 +1064,8 @@
       }
     },
     {
-      "id": "mywebsite-sprint2",
-      "repo": "~/Desktop/projects/mywebsite",
+      "id": "site-sprint2",
+      "repo": "site-a",
       "base": "d2a1346087ab3dc4666bd2b950acf54b07e59997",
       "head": "747e4b7d7e8d973b512970a6692df05ac99752d6",
       "restoreTooling": true,
@@ -1119,8 +1119,8 @@
       }
     },
     {
-      "id": "jamakhata-agp-bump",
-      "repo": "~/Desktop/projects/jamakhata",
+      "id": "android-agp-bump",
+      "repo": "android-a",
       "base": "904047cd09c0126f83ffd19447ed3e8a2ca08821",
       "head": "4184757a8c6faa03cae8460688724cedd88f131a",
       "restoreTooling": true,
@@ -1129,7 +1129,7 @@
         "items": [
           {
             "kind": "recheck-line",
-            "line": "app/src/main/java/dev/apurvbazari/jamakhata/data/CLAUDE.md:16",
+            "line": "app/src/main/java/dev/apurvbazari/<android-a-pkg>/data/CLAUDE.md:16",
             "matched": [
               {
                 "by": "path",

@@ -1,0 +1,10 @@
+{
+  "repos": {
+    "monorepo-a": "~/path/to/the/monorepo",
+    "site-a": "~/path/to/the/site",
+    "android-a": "~/path/to/the/android/app"
+  },
+  "tokens": {
+    "<android-a-pkg>": "the app's own package segment"
+  }
+}
