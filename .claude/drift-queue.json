@@ -38,15 +38,15 @@
       "note": "Renamed from SP9-* \u2014 SP-9 is already the Wave-3 walkthrough sprint. This is a post-Wave-3 (Wave-4) hardening candidate; not pinned to a Wave-3 slot."
     },
     {
-      "id": "SP10-matali-lens-contract-divergence",
-      "title": "matali reads lens:engine return/input fields lens declares nowhere (agents roster, modelPolicy)",
+      "id": "SP10-orchestrator-lens-contract-divergence",
+      "title": "The orchestrator reads lens:engine return/input fields lens declares nowhere (agents roster, modelPolicy)",
       "assessedDuring": "SP-10 P3 BUILD",
       "raisedAt": "2026-07-28",
       "severity": "medium",
-      "rationale": "SP-10's new single declared programmatic surface (lens/skills/engine/references/engine-api.md) records an `agents` finder roster as an explicitly non-contracted consumer assumption, but the same cross-repo pass surfaced a second, undocumented divergence in the opposite direction (`modelPolicy`, sent by matali but never consumed or acknowledged by lens). Neither breaks anything today \u2014 lens ignores unknown input fields and consumers are told to default `agents` to [] \u2014 but both are truth gaps between the two repos that a future lens contract change could silently break for matali. Resolve in the matali repo (stop depending on undeclared fields) or via a future lens contract addition (declare and honor them explicitly).",
+      "rationale": "SP-10's new single declared programmatic surface (lens/skills/engine/references/engine-api.md) records an `agents` finder roster as an explicitly non-contracted consumer assumption, but the same cross-repo pass surfaced a second, undocumented divergence in the opposite direction (`modelPolicy`, sent by the orchestrator but never consumed or acknowledged by lens). Neither breaks anything today \u2014 lens ignores unknown input fields and consumers are told to default `agents` to [] \u2014 but both are truth gaps between the two repos that a future lens contract change could silently break for the orchestrator. Resolve in the orchestrator repo (stop depending on undeclared fields) or via a future lens contract addition (declare and honor them explicitly).",
       "items": [
-        "matali plugin `skills/review/SKILL.md:186,216` and `CLAUDE.md:52` read an `agents` finder roster off the `lens:engine` return; lens declares this nowhere in its schema or in engine-api.md's returns section \u2014 it is recorded only under engine-api.md's '## Known consumer assumptions (not part of the contract)'.",
-        "matali also passes `modelPolicy` as an argument to `lens:engine`; engine-api.md's '## lens:engine \u2014 inputs' section does not list it as a consumed input at all \u2014 a second, undocumented consumer-side divergence (matali sending something lens never reads)."
+        "the orchestrator plugin's `skills/review/SKILL.md:186,216` and `CLAUDE.md:52` read an `agents` finder roster off the `lens:engine` return; lens declares this nowhere in its schema or in engine-api.md's returns section \u2014 it is recorded only under engine-api.md's '## Known consumer assumptions (not part of the contract)'.",
+        "the orchestrator also passes `modelPolicy` as an argument to `lens:engine`; engine-api.md's '## lens:engine \u2014 inputs' section does not list it as a consumed input at all \u2014 a second, undocumented consumer-side divergence (the orchestrator sending something lens never reads)."
       ]
     },
     {
@@ -79,18 +79,18 @@
     },
     {
       "id": "SP10-render-review-noop-consumer",
-      "title": "lens 1.4.3 adds a third render-review return (`noop:`) that matali does not yet know",
+      "title": "lens 1.4.3 adds a third render-review return (`noop:`) that the orchestrator does not yet know",
       "assessedDuring": "SP-10 P5 REVIEW",
       "raisedAt": "2026-07-29",
       "severity": "medium",
-      "rationale": "lens 1.4.3's empty-scope short-circuit now returns the line `noop: nothing to review` (a success, no artifact) instead of answering on `skipped:`, which lens declares as its failure-only channel. matali, the live consumer, branches only on `wrote:` vs `skipped:` and knows nothing about `noop:`, so today an empty scope still reads as a render failure there. Nothing breaks -- matali's `skipped:` handling is already degrade-not-block -- but until matali learns `noop:`, an ordinary empty-diff phase is reported as a degrade. Cross-repo: cannot be fixed from claude-plugins.",
+      "rationale": "lens 1.4.3's empty-scope short-circuit now returns the line `noop: nothing to review` (a success, no artifact) instead of answering on `skipped:`, which lens declares as its failure-only channel. the orchestrator, the live consumer, branches only on `wrote:` vs `skipped:` and knows nothing about `noop:`, so today an empty scope still reads as a render failure there. Nothing breaks -- the orchestrator's `skipped:` handling is already degrade-not-block -- but until the orchestrator learns `noop:`, an ordinary empty-diff phase is reported as a degrade. Cross-repo: cannot be fixed from claude-plugins.",
       "items": [
-        "matali `references/delegation-contract.md:54` maps a `skipped:` return to 'render no doc this phase, warn once' -- it should treat `noop: nothing to review` as a clean no-op (no doc, no warning) and keep the warn path for `skipped:` alone.",
-        "matali `skills/pipeline/SKILL.md:665` maps a `skipped:` return to 'Degrade (R10) => no link, note' -- same split needed, so an empty scope stops being counted as a degrade.",
+        "the orchestrator's `references/delegation-contract.md:54` maps a `skipped:` return to 'render no doc this phase, warn once' -- it should treat `noop: nothing to review` as a clean no-op (no doc, no warning) and keep the warn path for `skipped:` alone.",
+        "the orchestrator's `skills/pipeline/SKILL.md:665` maps a `skipped:` return to 'Degrade (R10) => no link, note' -- same split needed, so an empty scope stops being counted as a degrade.",
         "Contract source of truth for the three returns: lens `skills/engine/references/engine-api.md` section '## lens:render-review -- inputs and returns' and `skills/render-review/SKILL.md` Step 4."
       ],
       "status": "queued",
-      "note": "Appended as a new entry (never mutating an existing one) per this queue's top-level contract. Resolve in the matali repo."
+      "note": "Appended as a new entry (never mutating an existing one) per this queue's top-level contract. Resolve in the orchestrator repo."
     },
     {
       "id": "SP10-review-accepted-deferred",
@@ -106,13 +106,13 @@
         "C13 'The four field-enumeration bullets are gone' guards only three: re-materializing '- **`dimension` enum:**' in lens/CLAUDE.md matches neither negative pin. Highest drift risk of the four, since the dimension enum is co-owned across two repos.",
         "C14 markdown-fallback.md got the same example-path edit as the six lens/agents files but is excluded from the JSON-integrity guard (its fences are ```markdown, not ```json). Seven files edited, six guarded. Its nested 4-backtick/3-backtick fence has no integrity check at all.",
         "C15 tests/lens/test_render_review.sh:39-42 duplicates :11/:16 byte-for-byte with a rationale that cannot hold (two identical greps over one file cannot diverge); :34 is subsumed by the whole-line heading pin at :50/:53.",
-        "C16 engine-api.md hardcodes matali's line numbers (SKILL.md 186/216, plugin CLAUDE.md 52) in what is now the canonical contract. Accurate today; no guard here can hold them true. Cite by stable anchor instead.",
+        "C16 engine-api.md hardcodes the orchestrator's line numbers (SKILL.md 186/216, plugin CLAUDE.md 52) in what is now the canonical contract. Accurate today; no guard here can hold them true. Cite by stable anchor instead.",
         "C17 Unresolvable process identifiers in shipped test comments ('criterion 15a/15b/16', \"U3's gatekeeper\", 'Floor (b)'). The repo's SP-N convention is fine (six precedents cite durable repo-resident lessons); these point at run-scoped artifacts under docs/, which .gitignore excludes wholesale.",
         "C18 Three belt assertions duplicate test_doc_contracts.sh:54,65,66 exactly ('4 engine stages', 'schema-parity target', 'live consumer'); :409-413 overlap its DERIVED skill-list check at :38-41, which is the better guard. Note the fencing pins at :19-22 are NOT duplicates and must stay.",
-        "C19 The canon elects `target` canonical while pipeline.md \u00a72/\u00a73, matali's call site and engine/SKILL.md all use `scope` \u2014 engine/SKILL.md never names `target`. A caller reading the single declared surface writes the spelling the runtime never mentions.",
+        "C19 The canon elects `target` canonical while pipeline.md \u00a72/\u00a73, the orchestrator's call site and engine/SKILL.md all use `scope` \u2014 engine/SKILL.md never names `target`. A caller reading the single declared surface writes the spelling the runtime never mentions.",
         "C20 tests/lens/test_engine_api.sh bundles five concerns in one file and prints PASS four times before finishing, so a real failure renders as 'PASS...PASS...PASS...PASS...FAIL'. The other 12 lens belts are 22-74 lines, one concern each.",
         "C21 The example-path repairs are half-finished: risk-classify.md:51 pairs '\"path\": \"src/api/handlers.ts\"' with '\"note\": \"Changes the /lens:review entrypoint contract\"'; correctness.md:49 attributes a walkthrough:render error to a generic API handler. Few-shot exemplars that contradict themselves.",
-        "C22/C23 engine-api.md never states that an undeclared input arg is ignored rather than rejected (matali already depends on this for modelPolicy); and the Ownership map's Owner column - the file's core deliverable - is pinned only at heading level.",
+        "C22/C23 engine-api.md never states that an undeclared input arg is ignored rather than rejected (the orchestrator already depends on this for modelPolicy); and the Ownership map's Owner column - the file's core deliverable - is pinned only at heading level.",
         "MERIT (advisory, 3/3 judges): over-engineering - a 424-line belt guards a 122-line doc, of which only ~15 lines are consolidated shapes; completeness - lens/CLAUDE.md:50 and :155 still restate the surface, so it did not become 'a true index' as the ask required; architecture - a live runtime behavior change shipped inside a doc-consolidation phase on a patch bump. Judges recommended cutting the belt toward 100 lines and splitting the behavior change into its own minor.",
         "PRE-EXISTING, surfaced by merit: lens/CLAUDE.md:140 says 'the engine compares the new findings against the prior set ... and tracks the severity trend', but CLAUDE.md:37/:153 and the new canon all say the engine has 4 stages and reconcile owns that. Not introduced by this diff; contradicts the canon it now points at."
       ]
@@ -132,266 +132,266 @@
       ]
     },
     {
-      "id": "FENRIR-bounded-ceiling-margins",
+      "id": "LENS150-bounded-ceiling-margins",
       "title": "Four bounded() extractor ceilings have margins too thin to catch the lost-terminator failure they exist for",
-      "assessedDuring": "lens-fenrir-contract P3 fix-cycle gatekeeper re-check",
+      "assessedDuring": "lens-1.5.0-contract P3 fix-cycle gatekeeper re-check",
       "raisedAt": "2026-07-31",
       "severity": "low",
       "rationale": "Gatekeeper mutation-proved that engine-api.md '## Model resolution' (actual 102 / ceiling 125) and pipeline.md \u00a73 (actual 75 / ceiling 90) no longer self-catch a lost extractor terminator: dropping the next H2 grows them to 120 and 88, both <= ceiling, so bounded() stays silent. Neither is a DISARM - both mutations still redden the suite via companion pins in test_doc_contracts/test_engine_api/test_model_policy - so no guard is lost, but the ceiling stops being self-sufficient. Two pre-existing weaknesses of the same class, NOT introduced by this fix: pipeline.md \u00a78 is the last H2 so its ceiling can never fire, and engine/SKILL.md Step 3's ceiling 25 exactly equals its loss-size 25 which -le admits. Suggested: tighten to ~110 and ~80; give the last-H2 region a real terminator.",
       "suggestedFix": "Tighten the two ceilings and add a terminator for the trailing-H2 regions; re-run the mutation probes to confirm each bounded() call self-catches."
     },
     {
-      "id": "FENRIR-ac13-substitution-row-unreachable",
+      "id": "LENS150-ac13-substitution-row-unreachable",
       "title": "AC13 mandates three denied-winner branches, but the sixth-to-seventh substitution branch is provably unreachable under site-scoped matching",
-      "assessedDuring": "lens-fenrir-contract P4 verify finding #10, carried through the P3 fix-cycle",
+      "assessedDuring": "lens-1.5.0-contract P4 verify finding #10, carried through the P3 fix-cycle",
       "raisedAt": "2026-07-31",
       "severity": "medium",
       "rationale": "engine-api.md declares that a denied winner from precedence positions 6-7 substitutes the highest-precedence allowed policy value (byAgent, then byRole, then default). But reaching 6/7 for a dispatch means byAgent and byRole already yielded nothing FOR THAT SITE - which is exactly why resolution fell past them - so under the exact/site-scoped matching AC14 requires, no site-scoped substitute can exist. The unscoped reading would let a dispatch inherit a value the caller wrote for a different agent, contradicting AC14. The fixer resolved this honestly by DECLARING the narrowness rather than deleting the row, because deleting it would regress AC13, which mandates all three branches. Both the fixer and the gatekeeper independently flagged this as a SPEC-level contradiction that BUILD cannot settle: the spec would have to amend AC13 before the row could be removed. Not a fixer failure and not another fix cycle.",
       "suggestedFix": "Spec decision: either amend AC13 to two branches and delete the row, or redefine substitution as policy-scoped rather than site-scoped and accept the AC14 tension explicitly."
     },
     {
-      "id": "FENRIR-ownership-map-omits-degradedreasons",
+      "id": "LENS150-ownership-map-omits-degradedreasons",
       "title": "engine-api.md Ownership map row for lens:engine returns lists six fields, omitting degradedReasons[]",
-      "assessedDuring": "lens-fenrir-contract P4 micro-cycle 1/3 (fixer, out-of-diagnosis)",
+      "assessedDuring": "lens-1.5.0-contract P4 micro-cycle 1/3 (fixer, out-of-diagnosis)",
       "raisedAt": "2026-07-31",
       "severity": "low",
       "rationale": "The returns table and the schema both carry seven engine-owned fields after this release adds degradedReasons[], but engine-api.md's Ownership map row for lens:engine still enumerates six and omits it. Nothing derives that row from the schema, so no belt catches the drift - the same undetected-doc-drift class the release's derived count-word pins exist to prevent, just in a row nobody wired. Surfaced by the fixer while repairing the error-channel declaration; deliberately left unfixed as out of the dispatched diagnosis.",
       "suggestedFix": "Either derive the Ownership map row from the schema like the count-words are, or add a parity pin asserting it matches the returns-table field set."
     },
     {
-      "id": "FENRIR-ac6-ac12-chain-restatement-conflict",
+      "id": "LENS150-ac6-ac12-chain-restatement-conflict",
       "title": "AC6 mandates the abbreviated precedence-chain string that AC12's declare-once rule forbids",
-      "assessedDuring": "lens-fenrir-contract P4 VERIFY pass 3",
+      "assessedDuring": "lens-1.5.0-contract P4 VERIFY pass 3",
       "raisedAt": "2026-07-31",
       "severity": "medium",
       "rationale": "spec.md:105 (AC6) requires lens:capability's supports.resolutionRules to carry model: 'deny->record->byAgent->byRole->default->frontmatter' - six positions, abbreviated. spec.md:121 (AC12) requires the chain to be declared once in engine-api.md as the seven-position form ending in 'harness default', and engine-api.md states in its own words that 'a resolution order stated twice has already begun to fork'. capability/SKILL.md:126 carries the AC6 string, so the two criteria are in direct conflict and the fork has already occurred (position 7 absent, record.model->record, agent frontmatter->frontmatter). This predates every fix cycle and was scored met in verify passes 1 and 2; only pass 3's adversarial probe went deep enough to surface it. BUILD cannot resolve a contradiction between two acceptance criteria.",
       "suggestedFix": "Spec decision: either (a) amend AC6 so resolutionRules carries a rule NAME (e.g. 'lens-model-precedence-v1') that points at the canonical declaration rather than restating an order, matching how resolutionRules already names 'huginn-quorum-v1' for verify; or (b) amend AC12 to explicitly exempt the resolutionRules value as an identifier rather than a restatement."
     },
     {
-      "id": "FENRIR-p4-residual-high-findings",
+      "id": "LENS150-p4-residual-high-findings",
       "title": "Five high-severity P4 findings accepted unresolved at the P4 close-out, pending re-probe against a refreshed plugin cache",
-      "assessedDuring": "lens-fenrir-contract P4 VERIFY pass 3",
+      "assessedDuring": "lens-1.5.0-contract P4 VERIFY pass 3",
       "raisedAt": "2026-07-31",
       "severity": "medium",
       "rationale": "Pass 3 returned 5 high findings: (1) modelPolicy model-id values are type-checked but not value-checked, so {\"default\":\"\"} clears pre-flight; (2) call-time injectedFinders record validation is scoped to model/effort only, so agent/dimension/readonly/unknown keys escape pre-flight; (3) an unparseable or empty .claude/lens/settings.md has no declared branch; (4) settings.md's outputPath is consumed with no containment check; (5) the live-invocation finding that turned out to be a stale-cache artifact. Findings resting on LIVE SKILL INVOCATION are unreliable for this phase because the installed plugin cache was four hours stale; findings resting on FILE READS are sound. The developer elected at the P4 close-out to stop verifying and let P5 REVIEW weigh these against the diff rather than run a fourth cycle on an unbounded degenerate-input surface.",
       "suggestedFix": "Re-probe each against a refreshed cache to separate genuine defects from cache artifacts, then triage: the modelPolicy empty-string and injectedFinders key-scoping items look genuine and file-read-based."
     },
     {
-      "id": "MATALI-p4-probes-see-stale-plugin-cache",
-      "title": "matali P4 probes that invoke a skill observe the installed plugin cache, not the worktree under test",
-      "assessedDuring": "lens-fenrir-contract P4 VERIFY (all three passes)",
+      "id": "ORCH-p4-probes-see-stale-plugin-cache",
+      "title": "Orchestrator P4 probes that invoke a skill observe the installed plugin cache, not the worktree under test",
+      "assessedDuring": "lens-1.5.0-contract P4 VERIFY (all three passes)",
       "raisedAt": "2026-07-31",
       "severity": "medium",
       "rationale": "VERIFY's premise is that probes exercise the RUNNING system. In this repo the running system for a lens skill is ~/.claude/plugins/cache/apurvbazari-plugins/lens/<version>/, which is a snapshot taken when the marketplace was last updated - not the worktree. During this run the cache froze at 2026-07-31T13:50:51Z while two fix cycles edited the worktree at 15:24Z and 17:23Z, so probes invoking lens:capability received the PRE-fix skill (jq -r '.version', 5232 bytes) while the file on disk carried the post-fix type filter (9309 bytes). Confirmed by the orchestrator invoking the skill and diffing the delivered text against disk. This silently invalidates any live-invocation probe after an in-run edit, and it produced at least one high finding whose stated mechanism (Skill-tool truncation) was wrong.",
       "suggestedFix": "Have the VERIFY phase either refresh/point the plugin cache at the worktree before probing, or require probes to state whether their evidence came from a file read or a live invocation so the orchestrator can discount the latter after an in-run edit."
     },
     {
-      "id": "FENRIR-matali-modelpolicy-shape-mismatch",
-      "title": "matali forwards a 5-key role->model modelPolicy that lens 1.5.0 rejects; the bridge must translate it before matali consumes 1.5.0",
-      "assessedDuring": "lens-fenrir-contract P5 REVIEW",
+      "id": "LENS150-orchestrator-modelpolicy-shape-mismatch",
+      "title": "The orchestrator forwards a 5-key role->model modelPolicy that lens 1.5.0 rejects; the bridge must translate it before the orchestrator consumes 1.5.0",
+      "assessedDuring": "lens-1.5.0-contract P5 REVIEW",
       "raisedAt": "2026-08-04",
       "severity": "high",
-      "rationale": "FEN-1. matali/skills/review/SKILL.md:81 instructs passing modelPolicy 'through verbatim', and the value it forwards is a role->model map keyed {cheap,fix,judge,verify,worker}. lens 1.5.0 accepts exactly {deny,default,byRole,byAgent} (engine-api.md section Model resolution; engine/SKILL.md Step 0; pinned by tests/lens/test_model_policy.sh's unknown-key row), so a matali P5 review against lens 1.5.0 returns an error envelope in pre-flight and dispatches ZERO finders. lens's validation is correct per AC11 and the fail-open reasoning at engine-api.md section Model resolution -- a silently discarded policy takes the deny gate down with it while the run still reports an ordinary success -- so lens behavior was deliberately NOT loosened. What was repaired in this repo is the false claim: lens/CHANGELOG.md's closing note and docs/matali/lens-fenrir-contract/plan.md both asserted matali 'passes none of the five new inputs' and called it the concrete backward-compat bar. Both now state the truth.",
-      "suggestedFix": "In the matali repo (~/Desktop/projects/matali): translate the role->model map at the matali<->lens bridge into lens's byRole/byAgent shape, or omit modelPolicy from the lens:engine call, BEFORE matali is pointed at lens 1.5.0. Cross-repo, so out of scope for this diff.",
-      "crossRepo": "matali"
+      "rationale": "FEN-1. the orchestrator's review skill (SKILL.md:81) instructs passing modelPolicy 'through verbatim', and the value it forwards is a role->model map keyed {cheap,fix,judge,verify,worker}. lens 1.5.0 accepts exactly {deny,default,byRole,byAgent} (engine-api.md section Model resolution; engine/SKILL.md Step 0; pinned by tests/lens/test_model_policy.sh's unknown-key row), so an orchestrator P5 review against lens 1.5.0 returns an error envelope in pre-flight and dispatches ZERO finders. lens's validation is correct per AC11 and the fail-open reasoning at engine-api.md section Model resolution -- a silently discarded policy takes the deny gate down with it while the run still reports an ordinary success -- so lens behavior was deliberately NOT loosened. What was repaired in this repo is the false claim: lens/CHANGELOG.md's closing note and the lens 1.5.0 contract plan both asserted the orchestrator 'passes none of the five new inputs' and called it the concrete backward-compat bar. Both now state the truth.",
+      "suggestedFix": "In the orchestrator repo: translate the role->model map at the orchestrator<->lens bridge into lens's byRole/byAgent shape, or omit modelPolicy from the lens:engine call, BEFORE the orchestrator is pointed at lens 1.5.0. Cross-repo, so out of scope for this diff.",
+      "crossRepo": "orchestrator"
     },
     {
-      "id": "FENRIR-ac6-advertised-chain-is-lossy-not-merely-restated",
-      "title": "SHARPENS FENRIR-ac6-ac12-chain-restatement-conflict: the advertised precedence chain is not just a restatement, it is WRONG -- position 7 is dropped",
-      "assessedDuring": "lens-fenrir-contract P5 REVIEW",
+      "id": "LENS150-ac6-advertised-chain-is-lossy-not-merely-restated",
+      "title": "SHARPENS LENS150-ac6-ac12-chain-restatement-conflict: the advertised precedence chain is not just a restatement, it is WRONG -- position 7 is dropped",
+      "assessedDuring": "lens-1.5.0-contract P5 REVIEW",
       "raisedAt": "2026-08-04",
       "severity": "medium",
-      "rationale": "FEN-6. The queued entry FENRIR-ac6-ac12-chain-restatement-conflict frames AC6-vs-AC12 as a declare-once conflict. It is materially worse than that: capability/SKILL.md advertises 'deny->record->byAgent->byRole->default->frontmatter' -- SIX positions -- while engine-api.md section Model resolution declares SEVEN, ending in 'harness default'. Position (7) is simply absent, and 'record.model'/'agent frontmatter' are abbreviated. tests/lens/test_capability.sh hardcodes the 6-position string rather than deriving it, so the belt cements the fork -- ten lines away, the same belt DERIVES supports.inputKeys[] from engine-api.md's inputs table. A COMPAT gate reading resolutionRules.model to decide whether this lens resolves the way it expects is told something untrue.",
+      "rationale": "FEN-6. The queued entry LENS150-ac6-ac12-chain-restatement-conflict frames AC6-vs-AC12 as a declare-once conflict. It is materially worse than that: capability/SKILL.md advertises 'deny->record->byAgent->byRole->default->frontmatter' -- SIX positions -- while engine-api.md section Model resolution declares SEVEN, ending in 'harness default'. Position (7) is simply absent, and 'record.model'/'agent frontmatter' are abbreviated. tests/lens/test_capability.sh hardcodes the 6-position string rather than deriving it, so the belt cements the fork -- ten lines away, the same belt DERIVES supports.inputKeys[] from engine-api.md's inputs table. A COMPAT gate reading resolutionRules.model to decide whether this lens resolves the way it expects is told something untrue.",
       "suggestedFix": "Resolve with the parent entry, and prefer its option (a): make resolutionRules.model a rule NAME pointing at the canonical declaration (the way resolutionRules.verify already names huginn-quorum-v1), which removes the restatement AND the lossiness in one move. If the abbreviated string is kept, derive it in test_capability.sh from engine-api.md's chain table instead of hardcoding it.",
-      "supersedes": "FENRIR-ac6-ac12-chain-restatement-conflict"
+      "supersedes": "LENS150-ac6-ac12-chain-restatement-conflict"
     },
     {
-      "id": "FENRIR-ownership-map-degradedreasons-CLOSED",
-      "title": "CLOSED: engine-api.md's Ownership map returns row now lists degradedReasons[] -- supersedes FENRIR-ownership-map-omits-degradedreasons",
-      "assessedDuring": "lens-fenrir-contract P5 REVIEW",
+      "id": "LENS150-ownership-map-degradedreasons-CLOSED",
+      "title": "CLOSED: engine-api.md's Ownership map returns row now lists degradedReasons[] -- supersedes LENS150-ownership-map-omits-degradedreasons",
+      "assessedDuring": "lens-1.5.0-contract P5 REVIEW",
       "raisedAt": "2026-08-04",
       "severity": "low",
       "rationale": "FEN-22, fixed in the P5->P3 fix cycle on 2026-08-04. The Ownership map's 'lens:engine returns' row enumerated six fields and omitted degradedReasons[], which the same release added to the returns table. The row now reads findings[], recommendedEscalation, degraded, degradedReasons[]?, summary?, emptyScope?, adherence?. Recorded as a superseding entry rather than by mutating the original, per this queue's append-only rule.",
-      "suggestedFix": "None -- closed. The queued item FENRIR-ownership-map-omits-degradedreasons is superseded by this entry.",
+      "suggestedFix": "None -- closed. The queued item LENS150-ownership-map-omits-degradedreasons is superseded by this entry.",
       "status": "closed",
-      "supersedes": "FENRIR-ownership-map-omits-degradedreasons"
+      "supersedes": "LENS150-ownership-map-omits-degradedreasons"
     },
     {
-      "id": "FENRIR-record-vs-value-drop-ambiguity",
+      "id": "LENS150-record-vs-value-drop-ambiguity",
       "title": "A malformed file-registered model/effort drops the RECORD in two files and the VALUE in two others",
-      "assessedDuring": "lens-fenrir-contract P5 REVIEW",
+      "assessedDuring": "lens-1.5.0-contract P5 REVIEW",
       "raisedAt": "2026-08-04",
       "severity": "medium",
       "rationale": "FEN-12. pipeline.md section 3 and review/references/setup.md make the subject of the drop the record/finder ('names the dropped finder'); engine/SKILL.md Step 0 and engine-api.md's finders row make it the VALUE. Reading A silently loses a whole registered finder -- an entire dimension of coverage -- over one typo in an optional knob; reading B runs that finder at its frontmatter model with full coverage. Both set degraded:true with degradedReasons code finder-malformed, so nothing in the return distinguishes them. 'Normalized where it can be' is also undefined for effort: whether HIGH folds to high or is dropped is not stated anywhere.",
       "suggestedFix": "Pick one subject and state it in engine-api.md, then make the other three sites pointer sentences. Define 'normalized' for effort explicitly (case-fold, or reject)."
     },
     {
-      "id": "FENRIR-votes-arithmetic-unenforced",
+      "id": "LENS150-votes-arithmetic-unenforced",
       "title": "votes arithmetic and range invariants are prose-only; violating instances validate",
-      "assessedDuring": "lens-fenrir-contract P5 REVIEW",
+      "assessedDuring": "lens-1.5.0-contract P5 REVIEW",
       "raisedAt": "2026-08-04",
       "severity": "medium",
       "rationale": "FEN-13. Executed against the real schema: {total:1,couldNotRefute:1,refuted:1,abstained:1} (sum 3 != total 1) VALIDATES; all-negative values VALIDATE; {} VALIDATES. votes has no required[], no additionalProperties:false, and no minimum/maximum. The stated total == n and the couldNotRefute + refuted + abstained == total invariant live only in a $comment, and the closed four-key set is closed in the schema DOCUMENT and in the three fixtures, never on the wire. Note the same defect class in degradedReasons items WAS closed on 2026-08-04 (required code + additionalProperties:false + the degraded biconditional), so the two sibling shapes now make opposite calls.",
       "suggestedFix": "Give votes required[] = the four keys, additionalProperties:false, and minimum: 0 on each; the sum invariant is not expressible in draft-07 and stays a belt assertion (tests/lens/test_verify_votes.sh already checks it per fixture)."
     },
     {
-      "id": "FENRIR-error-code-registry-unenforced-in-schema",
+      "id": "LENS150-error-code-registry-unenforced-in-schema",
       "title": "The closed error-code registry has no machine enforcement: an invented code validates",
-      "assessedDuring": "lens-fenrir-contract P5 REVIEW",
+      "assessedDuring": "lens-1.5.0-contract P5 REVIEW",
       "raisedAt": "2026-08-04",
       "severity": "medium",
       "rationale": "FEN-14. definitions.errorEnvelope types error.code as a bare string, so {'code':'E_MADE_UP'} VALIDATES. The $comment justifies this as declare-once discipline -- but the same release accepted MIRRORING for degradedReasons' 7-code enum and guarded the fork with a parity test in tests/lens/test_engine_api.sh. The two shapes make opposite calls on the same question, and the mirrored one is the one a caller can actually validate against. extra is likewise an untyped object, so the per-code shapes ({missing,have}, {role,agent,resolved,deny}, {input,value,expected}, {path,exit}) are unenforced. Note the registry moved from three codes to four on 2026-08-04 (E_MANIFEST_UNREADABLE, developer-approved), which raises rather than lowers the value of machine enforcement.",
       "suggestedFix": "Mirror the code enum into definitions.errorEnvelope and extend test_engine_api.sh's existing degradedReasons parity check to cover it in both directions, exactly as that check already does for the degrade codes."
     },
     {
-      "id": "FENRIR-quorum-vs-vicario-tie-divergence-undisclosed",
-      "title": "huginn-quorum-v1 diverges from the vicario majority rule the retired paragraph named, and nothing discloses it",
-      "assessedDuring": "lens-fenrir-contract P5 REVIEW",
+      "id": "LENS150-quorum-vs-upstream-tie-divergence-undisclosed",
+      "title": "huginn-quorum-v1 diverges from the upstream majority rule the retired paragraph named, and nothing discloses it",
+      "assessedDuring": "lens-1.5.0-contract P5 REVIEW",
       "raisedAt": "2026-08-04",
       "severity": "medium",
-      "rationale": "FEN-15. The retired pipeline.md section 5 text named vicario's rule (keep unless refuted > total/2) as the deferred target. The wired rule is STRICTER and disagrees at exactly the tie cases: n=2 refutes=1 and n=4 refutes=2 -- vicario keeps, lens drops. pipeline.md calls out 'ties drop' without saying it is a divergence from the named target, no file under lens/ mentions vicario's rule any more, and the CHANGELOG frames the retirement as 'no behavior change at n=1' -- true, and silent about n>1. lens/CLAUDE.md declares the review-findings contract co-owned with vicario, so a resolution-rule divergence is exactly the class of thing that section exists to coordinate.",
-      "suggestedFix": "Either disclose the divergence in the CHANGELOG and in pipeline.md section 5 (naming the tie cases where the two rules disagree), or coordinate the rule with the vicario repo the way the dimension enum already is."
+      "rationale": "FEN-15. The retired pipeline.md section 5 text named the upstream rule (keep unless refuted > total/2) as the deferred target. The wired rule is STRICTER and disagrees at exactly the tie cases: n=2 refutes=1 and n=4 refutes=2 -- the upstream rule keeps, lens drops. pipeline.md calls out 'ties drop' without saying it is a divergence from the named target, no file under lens/ mentions the upstream rule any more, and the CHANGELOG frames the retirement as 'no behavior change at n=1' -- true, and silent about n>1. lens/CLAUDE.md declares the review-findings contract co-owned with the upstream schema, so a resolution-rule divergence is exactly the class of thing that section exists to coordinate.",
+      "suggestedFix": "Either disclose the divergence in the CHANGELOG and in pipeline.md section 5 (naming the tie cases where the two rules disagree), or coordinate the rule with the upstream repo the way the dimension enum already is."
     },
     {
-      "id": "FENRIR-unsatisfiable-extra-cannot-express-a-floor-raise",
+      "id": "LENS150-unsatisfiable-extra-cannot-express-a-floor-raise",
       "title": "E_MODEL_POLICY_UNSATISFIABLE's extra cannot express a verifier-floor raise",
-      "assessedDuring": "lens-fenrir-contract P5 REVIEW",
+      "assessedDuring": "lens-1.5.0-contract P5 REVIEW",
       "raisedAt": "2026-08-04",
       "severity": "medium",
       "rationale": "FEN-16. One code now covers TWO gates -- modelPolicy.deny and the never-Haiku floor -- but its extra is documented as {role, agent, resolved, deny: []}, described as 'the deny list that rejected that model'. On a floor raise no deny list rejected anything and deny[] may be empty, so the failure is undiagnosable from the envelope -- against section Errors' own promise that nothing has to be recovered by parsing prose. extra.role = 'verifier' is not a discriminator either, because a deny raise on a verifier dispatch carries the same role.",
       "suggestedFix": "Add a gate discriminator to extra (e.g. gate: 'deny' | 'floor'), or split the floor raise into its own code. The first is additive and cheaper; both are ask-first against the closed registry."
     },
     {
-      "id": "FENRIR-injectedfinders-is-a-1-3-0-channel-that-can-now-hard-fail",
+      "id": "LENS150-injectedfinders-is-a-1-3-0-channel-that-can-now-hard-fail",
       "title": "injectedFinders, a 1.3.0 input, is the one pre-existing channel that can now raise -- and the not-raises direction is unpinned",
-      "assessedDuring": "lens-fenrir-contract P5 REVIEW",
+      "assessedDuring": "lens-1.5.0-contract P5 REVIEW",
       "raisedAt": "2026-08-04",
       "severity": "medium",
       "rationale": "FEN-17. A call-time injectedFinders record with a malformed model/effort now raises. In 1.4.3 the record shape had no rule for extra keys, so a stray model:123 was ignored. I-2's exemption is qualified to calls carrying no 1.5.0 KEY, and model/effort ON a 1.3.0 record are 1.5.0 keys -- so the channel is technically outside I-2 rather than in violation of it, but a 1.3.0 caller reading 'a 1.4.3-shaped call can never receive an error envelope' will not draw that distinction. tests/lens/test_injected_finders.sh pins the raise; nothing pins the other direction -- that a 1.4.3-shaped record must NOT raise. Every other 1.5.0 input has that guard (verifyVotes' 'Absent never raises', modelPolicy's null/absent exemption).",
       "suggestedFix": "Add the missing positive twin: pin that an injectedFinders record carrying neither model nor effort cannot raise, and say so in engine-api.md's injectedFinders row the way the verifyVotes bullets already do."
     },
     {
-      "id": "FENRIR-p3-reentry-scope-unallocated",
+      "id": "LENS150-p3-reentry-scope-unallocated",
       "title": "The P3 re-entry fix cycles landed scope no plan unit allocated, and the plan's error-surface inventory no longer describes the tree",
-      "assessedDuring": "lens-fenrir-contract P5 REVIEW",
+      "assessedDuring": "lens-1.5.0-contract P5 REVIEW",
       "raisedAt": "2026-08-04",
       "severity": "medium",
       "rationale": "FEN-18, and it recurred on 2026-08-04. The schema root was restructured from a flat required[] into a two-branch oneOf plus definitions.errorEnvelope; engine-api.md gained a 4th new H2 (return channels), taking the pinned heading inventory 8->11 rather than the planned 8->10; E_INVALID_INPUT gained lens:capability as a second raiser; E_MODEL_POLICY_UNSATISFIABLE gained a second raise trigger. The 2026-08-04 cycle added a fourth error code (developer-approved), a degraded biconditional in the schema, and a shared tests/lib/belt-helpers.sh. Each is individually defensible and belt-pinned, and spec.md AC7 was amended for the code -- but the PLAN's unit inventory still describes the pre-fix tree. Root cause: a fix micro-cycle correctly does not re-derive the unit DAG, and nothing else reconciles the plan afterwards.",
       "suggestedFix": "Process, not code: add a plan-reconciliation step at the end of any P5->P3 re-entry, or accept the plan as a point-in-time artifact and say so in it explicitly."
     },
     {
-      "id": "FENRIR-substitution-branch-unreachable-CONFIRMED",
-      "title": "CONFIRMS FENRIR-ac13-substitution-row-unreachable: the (6)-(7) substitution branch is provably unreachable under the site-scoping rule",
-      "assessedDuring": "lens-fenrir-contract P5 REVIEW",
+      "id": "LENS150-substitution-branch-unreachable-CONFIRMED",
+      "title": "CONFIRMS LENS150-ac13-substitution-row-unreachable: the (6)-(7) substitution branch is provably unreachable under the site-scoping rule",
+      "assessedDuring": "lens-1.5.0-contract P5 REVIEW",
       "raisedAt": "2026-08-04",
       "severity": "low",
-      "rationale": "FEN-20. Reaching position (6) means byAgent, byRole and default all yielded nothing FOR THIS SITE, and engine-api.md scopes substitution to the dispatch site -- so 'an implicit default, with an allowed policy value available' can never hold. engine-api.md states exactly this in its own prose ('a dispatch that reaches (6)-(7) at all is one the policy was already silent about, and silence has nothing to substitute') and then declares both rows live anyway. Already queued as FENRIR-ac13-substitution-row-unreachable; this entry records the independent P5 confirmation and that it needs a SPEC amendment (AC13 mandates three branches), not a BUILD fix.",
+      "rationale": "FEN-20. Reaching position (6) means byAgent, byRole and default all yielded nothing FOR THIS SITE, and engine-api.md scopes substitution to the dispatch site -- so 'an implicit default, with an allowed policy value available' can never hold. engine-api.md states exactly this in its own prose ('a dispatch that reaches (6)-(7) at all is one the policy was already silent about, and silence has nothing to substitute') and then declares both rows live anyway. Already queued as LENS150-ac13-substitution-row-unreachable; this entry records the independent P5 confirmation and that it needs a SPEC amendment (AC13 mandates three branches), not a BUILD fix.",
       "suggestedFix": "Resolve with the parent entry: amend AC13 to two denied-winner branches and delete the unreachable row, or state in the spec why an unreachable row is deliberately retained.",
-      "supersedes": "FENRIR-ac13-substitution-row-unreachable"
+      "supersedes": "LENS150-ac13-substitution-row-unreachable"
     },
     {
-      "id": "FENRIR-finder-malformed-overloaded",
+      "id": "LENS150-finder-malformed-overloaded",
       "title": "finder-malformed is overloaded across two causes at two stages",
-      "assessedDuring": "lens-fenrir-contract P5 REVIEW",
+      "assessedDuring": "lens-1.5.0-contract P5 REVIEW",
       "raisedAt": "2026-08-04",
       "severity": "low",
       "rationale": "FEN-23. engine/SKILL.md Step 4 assigns finder-malformed to a finder whose OUTPUT was rejected after it ran; pipeline.md section 3 and engine-api.md's finders row assign it to a file-registered RECORD malformed in pre-flight, where that finder may never run at all. Those are different coverage states behind one machine-branchable code, and detail is free-form prose. The CHANGELOG says each code is tied to 'the' governing site that emits it, which reads as one site per code. The 2026-08-04 cycle added a third site (adapter-dispatch.md's normalization backstop), which is the output cause again rather than a new one.",
       "suggestedFix": "Either split the record cause into its own code (ask-first against the closed 7-code enum), or state in engine-api.md's degradedReasons row that finder-malformed spans both a rejected output and a dropped record, so a consumer knows the code alone does not tell it which."
     },
     {
-      "id": "FENRIR-ac30-standalone-unchanged-overclaims",
+      "id": "LENS150-ac30-standalone-unchanged-overclaims",
       "title": "AC30's standalone-unchanged claim overreaches: a file-registered model key rides chain position (2)",
-      "assessedDuring": "lens-fenrir-contract P5 REVIEW",
+      "assessedDuring": "lens-1.5.0-contract P5 REVIEW",
       "raisedAt": "2026-08-04",
       "severity": "low",
       "rationale": "FEN-24. Chain position (2) explicitly covers 'the file-registered project tier', and Step 0 resolves the model plan on EVERY run -- so a .claude/lens/settings.md carrying model: opus changes standalone /lens:review dispatch. setup.md now advertises both keys to standalone users. MITIGATION VERIFIED: 1.4.3's setup.md had no model/effort keys, so no EXISTING project config changes behavior; only a user who adds them opts in. This is a spec-precision overclaim ('the standalone path passes none of the new inputs'), not a live regression.",
       "suggestedFix": "Amend the spec's non-goal wording to 'passes none of the new CALL-TIME inputs; a project that opts into the new settings.md keys changes its own standalone dispatch by design'."
     },
     {
-      "id": "FENRIR-merit-over-engineering",
+      "id": "LENS150-merit-over-engineering",
       "title": "Merit panel (3/3 judges, advisory): over-engineering in the 1.5.0 contract surface",
-      "assessedDuring": "lens-fenrir-contract P5 REVIEW",
+      "assessedDuring": "lens-1.5.0-contract P5 REVIEW",
       "raisedAt": "2026-08-04",
       "severity": "medium",
       "rationale": "merit-1, advisory. capability/SKILL.md spends roughly 45 of its ~180 lines on forensics for reading its own version; about 2,200 lines of belt guard roughly 700 lines of contract prose, much of it pinning exact English sentences; and the unreachable substitution branch is kept with explanatory prose instead of deleted. Recorded as advisory rather than actioned: each individual pin was added in response to a real escape, so trimming them is a judgement call about the whole guard posture, not a defect fix.",
       "suggestedFix": "Weigh as a posture decision in a future release: which pins are load-bearing versus which restate a sentence that no consumer branches on."
     },
     {
-      "id": "FENRIR-merit-completeness",
+      "id": "LENS150-merit-completeness",
       "title": "Merit panel (3/3 judges, advisory): completeness gaps across the new inputs and the schema's closed registries",
-      "assessedDuring": "lens-fenrir-contract P5 REVIEW",
+      "assessedDuring": "lens-1.5.0-contract P5 REVIEW",
       "raisedAt": "2026-08-04",
       "severity": "medium",
-      "rationale": "merit-2, advisory. The knob was asked for as 'thinking' and shipped as 'effort' with the asked-for spelling banned tree-wide; strict-validation gaps remain in the new inputs and in the schema's closed registries; the repo-root CLAUDE.md inventory was stale. PARTIALLY ADDRESSED 2026-08-04: the tree-wide 'thinking' ban is now scoped to the record-key spelling so the rename is disclosable, the repo-root CLAUDE.md inventory now lists four lens skills, and the degradedReasons registry is now schema-enforced. The remaining registry gaps are tracked separately as FENRIR-votes-arithmetic-unenforced and FENRIR-error-code-registry-unenforced-in-schema.",
+      "rationale": "merit-2, advisory. The knob was asked for as 'thinking' and shipped as 'effort' with the asked-for spelling banned tree-wide; strict-validation gaps remain in the new inputs and in the schema's closed registries; the repo-root CLAUDE.md inventory was stale. PARTIALLY ADDRESSED 2026-08-04: the tree-wide 'thinking' ban is now scoped to the record-key spelling so the rename is disclosable, the repo-root CLAUDE.md inventory now lists four lens skills, and the degradedReasons registry is now schema-enforced. The remaining registry gaps are tracked separately as LENS150-votes-arithmetic-unenforced and LENS150-error-code-registry-unenforced-in-schema.",
       "suggestedFix": "Track the two named registry entries; the rest is closed."
     },
     {
-      "id": "FENRIR-merit-architecture",
+      "id": "LENS150-merit-architecture",
       "title": "Merit panel (3/3 judges, advisory): architecture tensions in the floor, the queue churn, and the restated chain",
-      "assessedDuring": "lens-fenrir-contract P5 REVIEW",
+      "assessedDuring": "lens-1.5.0-contract P5 REVIEW",
       "raisedAt": "2026-08-04",
       "severity": "medium",
-      "rationale": "merit-3, advisory. (a) The never-Haiku floor contradicts 'modelPolicy passthrough honored at every dispatch' and hardcodes a model-family literal that will age. (b) .claude/drift-queue.json was re-serialized with \\u escapes in this release, mixing unrelated churn into the diff -- the 2026-08-04 fix cycle appended in the same style deliberately, to avoid compounding it. (c) The precedence chain is restated in capability's resolutionRules, forking the declare-once rule this release preaches (tracked separately as FENRIR-ac6-advertised-chain-is-lossy-not-merely-restated).",
+      "rationale": "merit-3, advisory. (a) The never-Haiku floor contradicts 'modelPolicy passthrough honored at every dispatch' and hardcodes a model-family literal that will age. (b) .claude/drift-queue.json was re-serialized with \\u escapes in this release, mixing unrelated churn into the diff -- the 2026-08-04 fix cycle appended in the same style deliberately, to avoid compounding it. (c) The precedence chain is restated in capability's resolutionRules, forking the declare-once rule this release preaches (tracked separately as LENS150-ac6-advertised-chain-is-lossy-not-merely-restated).",
       "suggestedFix": "(a) is a deliberate safety floor -- revisit only if a non-Haiku cheap family appears. (b) restore the raw-UTF-8 serialization in a standalone chore commit, never inside a feature diff. (c) resolve with the chain entry."
     },
     {
-      "id": "FENRIR-merit-over-engineering-reaffirmed",
+      "id": "LENS150-merit-over-engineering-reaffirmed",
       "title": "Merit panel re-raised over-engineering at P5 pass 2 (merit-1) \u2014 reviewed and NOT actioned",
-      "assessedDuring": "lens-fenrir-contract P5 REVIEW pass 2",
+      "assessedDuring": "lens-1.5.0-contract P5 REVIEW pass 2",
       "raisedAt": "2026-08-04",
       "severity": "medium",
       "rationale": "merit-1, advisory, 3/3 judges: capability/SKILL.md is ~184 lines to read a version string and compare a list; ~2,800 belt lines guard ~700 lines of new markdown, including meta-tests of the tests. Reviewed by the developer on 2026-08-04 alongside the conformance findings and explicitly NOT actioned: capability/SKILL.md is not trimmed and no belt assertion is cut. Each pin in that file was added in response to a real escape, and pass 2 produced another one (a whitespace-padded .version reported as valid) precisely where the prose was long and the execution absent \u2014 so the answer taken was to ADD the executable manifest read rather than to shorten the forensics. The one item the panel named that WAS actioned is the unreachable substitution branch, which is now deleted rather than kept with prose explaining why it cannot fire; that was carried as a conformance finding, not as merit.",
       "suggestedFix": "Revisit as a posture decision in a future release: which pins are load-bearing versus which restate a sentence no consumer branches on. Do not re-open inside this run."
     },
     {
-      "id": "FENRIR-merit-architecture-reaffirmed",
+      "id": "LENS150-merit-architecture-reaffirmed",
       "title": "Merit panel re-raised architecture tensions at P5 pass 2 (merit-3, score 4->3) \u2014 reviewed and NOT actioned",
-      "assessedDuring": "lens-fenrir-contract P5 REVIEW pass 2",
+      "assessedDuring": "lens-1.5.0-contract P5 REVIEW pass 2",
       "raisedAt": "2026-08-04",
       "severity": "medium",
       "rationale": "merit-3, advisory, 3/3 judges: (a) the never-Haiku floor hardcodes a model-family substring in a doc that deliberately keeps no model catalog; (b) unknown-key strictness is inconsistent across the two new call-time inputs; (c) engine-api.md grew from 129 to 361 lines of rationale inside a runtime prompt file. NOT actioned by developer decision on 2026-08-04: the floor stays as written. It is a safety floor over the pass that decides which findings survive, and it matches by substring for the same reason deny does -- a floor a dated model id walks past is not one. Item (c) is the same trade as merit-1 and is tracked there.",
-      "suggestedFix": "(a) revisit only if a non-Haiku cheap model family appears, at which point the floor needs a real predicate rather than a second substring. (b) worth a single unknown-key posture across modelPolicy and injectedFinders in a future minor. (c) see FENRIR-merit-over-engineering-reaffirmed."
+      "suggestedFix": "(a) revisit only if a non-Haiku cheap model family appears, at which point the floor needs a real predicate rather than a second substring. (b) worth a single unknown-key posture across modelPolicy and injectedFinders in a future minor. (c) see LENS150-merit-over-engineering-reaffirmed."
     },
     {
-      "id": "FENRIR-modelpolicy-raise-stays-a-raise",
+      "id": "LENS150-modelpolicy-raise-stays-a-raise",
       "title": "Merit panel proposed degrading instead of raising on an unrecognized modelPolicy shape (merit-2) \u2014 REJECTED by the developer",
-      "assessedDuring": "lens-fenrir-contract P5 REVIEW pass 2",
+      "assessedDuring": "lens-1.5.0-contract P5 REVIEW pass 2",
       "raisedAt": "2026-08-04",
       "severity": "medium",
-      "rationale": "merit-2, advisory: the panel proposed treating an unrecognized modelPolicy shape as degraded:true plus a degradedReasons code rather than a pre-flight raise, which would let 1.5.0 ship without the owed cross-repo matali fix. The developer REJECTED that on 2026-08-04: the raise stays and modelPolicy validation is not loosened. A silently discarded policy takes the deny gate down with it while the run still reports an ordinary non-degraded success, so the one cost/compliance control over finder dispatch would fail open with nothing in the return to say so -- and the proposal contradicts AC11. The owed work is the matali-side translation, already tracked as FENRIR-matali-modelpolicy-shape-mismatch.",
-      "suggestedFix": "None here. Do not re-propose degrade-instead-of-raise for modelPolicy; the bridge fix belongs in the matali repo."
+      "rationale": "merit-2, advisory: the panel proposed treating an unrecognized modelPolicy shape as degraded:true plus a degradedReasons code rather than a pre-flight raise, which would let 1.5.0 ship without the owed cross-repo orchestrator fix. The developer REJECTED that on 2026-08-04: the raise stays and modelPolicy validation is not loosened. A silently discarded policy takes the deny gate down with it while the run still reports an ordinary non-degraded success, so the one cost/compliance control over finder dispatch would fail open with nothing in the return to say so -- and the proposal contradicts AC11. The owed work is the orchestrator-side translation, already tracked as LENS150-orchestrator-modelpolicy-shape-mismatch.",
+      "suggestedFix": "None here. Do not re-propose degrade-instead-of-raise for modelPolicy; the bridge fix belongs in the orchestrator repo."
     },
     {
-      "id": "FENRIR-resolutionrules-unversioned-names-undeclared",
+      "id": "LENS150-resolutionrules-unversioned-names-undeclared",
       "title": "Three of the five advertised resolutionRules names are declared nowhere under lens/",
-      "assessedDuring": "lens-fenrir-contract P5 micro-cycle 1 (pass-2 fix)",
+      "assessedDuring": "lens-1.5.0-contract P5 micro-cycle 1 (pass-2 fix)",
       "raisedAt": "2026-08-04",
       "severity": "low",
       "rationale": "Found while pinning that an advertised rule NAME resolves to a declaration. The two VERSIONED names do: huginn-quorum-v1 (pipeline.md section 5) and the new lens-model-precedence-v1 (engine-api.md section Model resolution), and both are now pinned in both directions by tests/lens/test_capability.sh. The other three -- injected-wins, file-line-title, flag-not-empty-findings -- are advertised as names but appear nowhere else under lens/skills or lens/agents, so a caller reading them has nothing to look up. The behaviors themselves ARE governed (pipeline.md section 2 rule 0, section 4's dedup key, and the emptyScope discriminator), they simply are not named at their governing sites. Left as-is: naming them is a doc change in three more files and was outside the finding set this micro-cycle was dispatched to close.",
       "suggestedFix": "In a future minor, declare each of the three names at its governing site (one sentence each) and widen the test_capability.sh resolution pin from the two versioned names to all five."
     },
     {
-      "id": "FENRIR-emptyscope-degrade-carryforward-unpinned",
+      "id": "LENS150-emptyscope-degrade-carryforward-unpinned",
       "title": "The empty-scope return's degrade carry-forward is corrected in prose and pinned by nothing",
-      "assessedDuring": "lens-fenrir-contract P5 micro-cycle 3 (pass-3 fix)",
+      "assessedDuring": "lens-1.5.0-contract P5 micro-cycle 3 (pass-3 fix)",
       "raisedAt": "2026-08-05",
       "severity": "medium",
       "rationale": "P3-E is fixed as PROSE only, by explicit scope decision: engine/SKILL.md Step 1 and pipeline.md section 1 now state that the empty-scope return carries forward a degrade recorded in pre-flight (degraded true + degradedReasons finder-malformed + the drop named in summary) and that the hardcoded clean literal is the shape of a clean pre-flight only. No belt pins the corrected behaviour. Verified by mutation, not assumed: reverting BOTH new paragraphs in a scratch copy outside the repo and running tests/run-all.sh gives 55 ran, 0 failed. The reverse-degrade sweep in tests/lens/test_engine_api.sh cannot supply the backstop -- it is built to fire on sites that SET degraded true without naming a code, so a return that goes back to reporting degraded false is invisible to it by construction.",
       "suggestedFix": "In a future minor, pin the carry-forward on the sentence that states it (engine/SKILL.md Step 1 must state that the empty-scope return is the clean-pre-flight shape only, and must name degradedReasons on the same line), or better, add an executable fixture asserting an empty-diff-plus-malformed-settings run returns emptyScope true AND degraded true together."
     },
     {
-      "id": "FENRIR-narrowing-guard-disclosure-granularity",
+      "id": "LENS150-narrowing-guard-disclosure-granularity",
       "title": "The narrowings guard discloses by FIELD NAME, so a narrowing on an already-named field is not distinguished",
-      "assessedDuring": "lens-fenrir-contract P5 micro-cycle 3 (pass-3 fix)",
+      "assessedDuring": "lens-1.5.0-contract P5 micro-cycle 3 (pass-3 fix)",
       "raisedAt": "2026-08-05",
       "severity": "low",
       "rationale": "tests/lib/schema-narrowings.py now walks the schema for every constraint keyword reachable by a 1.4.3 document and requires each subject field to be named in the disclosure text (the CHANGELOG narrowings bullet, and lens/CLAUDE.md's narrowing paragraph). Mutation-tested: an undisclosed minimum on delta.fixed, a maxLength on summary, a value added to severity's enum, and a member added to findings.items.required each redden both guards. Two mutation classes do NOT redden, because the disclosure unit is the field name and those fields are already named for another reason: (a) tightening an existing 1.5.0 bound in place (votes.total.minimum 1 -> 2), and (b) sealing an existing object (additionalProperties false on findings.items, subject 'findings'). Neither is a regression against the 1.4.3 baseline the guard is built on, and (a)'s removal-direction twin IS caught -- deleting votes.total.maximum reddens tests/lens/test_schema_types.sh.",
       "suggestedFix": "If a later release narrows an already-disclosed field, either give the guard a value-level disclosure unit for that site or add an executable accept/reject pair in tests/lens/test_schema_types.sh, which is where value-level schema behaviour is already proved by running it."
     },
     {
-      "id": "FENRIR-p3-residual-findings-at-retry-cap",
+      "id": "LENS150-p3-residual-findings-at-retry-cap",
       "title": "19 of the 27 pass-3 review findings are carried, not fixed -- P5 reached its retry cap",
-      "assessedDuring": "lens-fenrir-contract P5 micro-cycle 3 (pass-3 fix)",
+      "assessedDuring": "lens-1.5.0-contract P5 micro-cycle 3 (pass-3 fix)",
       "raisedAt": "2026-08-05",
       "severity": "medium",
       "rationale": "Micro-cycle 3 was dispatched with a closed scope: the two highs (P3-A narrowings-guard blindness, P3-B retired-outcome ban false-positives), the user-facing P3-E, and the cheap doc-truth items P3-I / P3-W / P3-T / P3-P / P3-R. Those 8 are fixed. The remaining 19 findings are carried into the release unfixed and are recorded here so the release does not ship them as unknowns.",
@@ -433,7 +433,7 @@
       "source": "onboard maintain entry spec § 14 (2026-09-27 review, D31)",
       "raisedAt": "2026-09-27",
       "status": "deferred",
-      "rationale": "Claude Code reads only paths: from a rule; a rule scoped with globs: is silently loaded in every session (villasa: 7 of 8 rules). Not a maintain concern — not diff-caused (D2).",
+      "rationale": "Claude Code reads only paths: from a rule; a rule scoped with globs: is silently loaded in every session (one onboarded monorepo: 7 of 8 rules). Not a maintain concern — not diff-caused (D2).",
       "resolution": "Add a warning to /onboard:check in a later onboard release."
     },
     {

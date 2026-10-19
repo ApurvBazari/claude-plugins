@@ -44,13 +44,12 @@ docs/
 # explicitly so the intent survives if that blanket line is ever narrowed.
 # lens review settings + state (rendered reviews go to the configured outputPath, e.g. docs/reviews/)
 .claude/lens/
-# matali's isolated feature checkouts + its per-run pipeline state
+# an orchestrator's isolated feature checkouts (its per-run state also lives under .claude/)
 .claude/worktrees/
-.claude/matali/state/
 
 # /release-docs run scratch (.release-docs/run/: obligations, verifier output, screenshots).
 # Outside .claude/ because the unattended CI model can't write under that protected path.
 .release-docs/
 
-# matali worktree seed-file manifest — local tooling config, not marketplace content
+# orchestrator worktree seed-file manifest — local tooling config, not marketplace content
 .worktreeinclude
