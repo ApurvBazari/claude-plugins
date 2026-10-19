@@ -114,6 +114,7 @@
     "headlessMode",
     "install-mcp-plugins.sh",
     "scripts/install-mcp-plugins.sh",
+    "site/walkthrough/examples/traction-campaign-session.html",
     "test-notification.sh",
     "test_sp5_invariants.sh",
     "trigger-phrases",
