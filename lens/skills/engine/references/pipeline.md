@@ -58,7 +58,7 @@ decomposes large work into sub-projects, each with its own spec→plan cycle). S
 0. **injected intent (programmatic caller)** — the **highest-priority** rule (it runs **before rule 1**):
    if the caller passed a non-empty `injectedIntent` array, it wins outright over **everything** below:
    build the intent record **verbatim** from it and **skip rules 1–4 entirely** (no `docs/superpowers/`
-   diff-correlation, no latest-only fallback, no transcript reconstruction). The arg is the FROZEN matali
+   diff-correlation, no latest-only fallback, no transcript reconstruction). The arg is the FROZEN orchestrator
    contract:
 
    Its shape is declared in `engine-api.md` § lens:engine — inputs.
@@ -159,7 +159,7 @@ the **project tier** (custom finders from `.claude/lens/settings.md`, experiment
 Read-only is **enforced at the dispatch boundary** for every tier. Tag every candidate with its `dimension` per the
 producer→dimension map.
 
-**Injected finders (programmatic caller).** A caller may pass `injectedFinders` (shape declared in `engine-api.md` § lens:engine — inputs) through the same Skill-tool channel as `scope`/`injectedIntent`/`taskIds`. Each is dispatched at ANALYZE **alongside** the `.claude/lens/settings.md` project tier and handled **identically**: read-only **enforced at the dispatch boundary**, output **normalized** into the finding shape, **deduped** by `(file, line, title)`, and **adversarially verified**. The `agent` value resolves through the **Agent-tool registry** and **may be plugin-qualified** (e.g. `matali:principles-finder`), so the finder can ship in the caller's own plugin and self-resolve its references via `${CLAUDE_PLUGIN_ROOT}`. Treat a **missing or empty** `injectedFinders` as "not provided" — behavior is then **byte-identical** to 1.2.0; if it arrives as a **JSON string**, parse it defensively before the emptiness check.
+**Injected finders (programmatic caller).** A caller may pass `injectedFinders` (shape declared in `engine-api.md` § lens:engine — inputs) through the same Skill-tool channel as `scope`/`injectedIntent`/`taskIds`. Each is dispatched at ANALYZE **alongside** the `.claude/lens/settings.md` project tier and handled **identically**: read-only **enforced at the dispatch boundary**, output **normalized** into the finding shape, **deduped** by `(file, line, title)`, and **adversarially verified**. The `agent` value resolves through the **Agent-tool registry** and **may be plugin-qualified** (e.g. `acme:principles-finder`), so the finder can ship in the caller's own plugin and self-resolve its references via `${CLAUDE_PLUGIN_ROOT}`. Treat a **missing or empty** `injectedFinders` as "not provided" — behavior is then **byte-identical** to 1.2.0; if it arrives as a **JSON string**, parse it defensively before the emptiness check.
 
 **A Tier-3 record's `effort`.** Either form of the record — file-registered or injected — may carry an
 `effort` (declared in `engine-api.md` § lens:engine — inputs). When it is present, **prepend it to that

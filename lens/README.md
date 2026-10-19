@@ -18,9 +18,9 @@ That's it. No setup step required up front — lens does a small first-run setup
 
 > `engine` is an internal building block (`user-invocable: false`) — the data-only judgment core that `review` calls; you never invoke it directly.
 
-> `render-review` is also internal — the pure HTML render entrypoint an orchestrator (e.g. matali) calls after `engine`; you never invoke it directly.
+> `render-review` is also internal — the pure HTML render entrypoint an orchestrator calls after `engine`; you never invoke it directly.
 
-> `capability` is also internal — the compatibility gate an orchestrator (e.g. matali) calls to learn what this installation supports before it sends a review; you never invoke it directly.
+> `capability` is also internal — the compatibility gate an orchestrator calls to learn what this installation supports before it sends a review; you never invoke it directly.
 
 ## Usage
 

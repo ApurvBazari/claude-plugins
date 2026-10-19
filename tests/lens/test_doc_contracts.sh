@@ -69,10 +69,10 @@ grep -qi "review.* skill.s render stage" "$CLAUDEMD" || fail "L1: CLAUDE.md must
 grep -q 'four stages' "$PIPE" || fail "L1: pipeline.md must say 'four stages'"
 grep -qi 'five stages' "$PIPE" && fail "L1: pipeline.md must not say 'five stages'"
 
-# L5 — the schema exists now: no stale '(built in a later task)'; and the vicario/matali roles are stated.
+# L5 — the schema exists now: no stale '(built in a later task)'; and the upstream-schema/orchestrator roles are stated.
 grep -qi 'built in a later task' "$CLAUDEMD" && fail "L5: CLAUDE.md must drop the stale '(built in a later task)' — the schema exists"
-grep -qi 'schema-parity target' "$CLAUDEMD" || fail "L5: CLAUDE.md must state vicario = schema-parity target"
-grep -qi 'live consumer' "$CLAUDEMD" || fail "L5: CLAUDE.md must state matali = the live consumer"
+grep -qi 'schema-parity target' "$CLAUDEMD" || fail "L5: CLAUDE.md must state the upstream schema = schema-parity target"
+grep -qi 'live consumer' "$CLAUDEMD" || fail "L5: CLAUDE.md must state the orchestrator = the live consumer"
 
 # L2 — the headless path consumes the engine's returned adherence block first; derive-from-gaps is the true fallback.
 grep -qi "engine.*adherence" "$ASM" || fail "L2: review-model-assembly headless path must consume the engine's adherence block when present"
@@ -346,7 +346,7 @@ one_line "$DRBULLET" "CHANGELOG 1.5.0 degradedReasons bullet"
 printf '%s\n' "$DRBULLET" | grep -qiF 'NARROWING' \
   || fail "AC25: the degradedReasons bullet must classify the biconditional as a NARROWING — 'field-additive' describes the field and hides the constraint, which is the class of change that breaks a consumer"
 printf '%s\n' "$DRBULLET" | grep -qF 'no 1.4.3-produced return carrying `degraded: true` validates' \
-  || fail "AC25: the degradedReasons bullet must state the concrete breakage — a 1.4.3/vicario document with degraded:true no longer validates"
+  || fail "AC25: the degradedReasons bullet must state the concrete breakage — a 1.4.3/upstream document with degraded:true no longer validates"
 printf '%s\n' "$DRBULLET" | grep -qiE 'backfill' \
   || fail "AC25: the degradedReasons bullet must give the backfill recovery for a consumer holding prior-run state"
 printf '%s\n' "$DRBULLET" | grep -qiE 'skip validation' \
@@ -472,7 +472,7 @@ printf '%s\n' "$BELTNOTE" | grep -qF "**$BELT_COUNT** belts" \
 # earlier bullet of the SAME entry says, in bold and belt-pinned, that such a caller still receives
 # three new fields and it is "not byte-identical". A summary that generalizes over a bullet has to be
 # re-derived when the bullet is strengthened, and it was not. The note must separate the two surfaces.
-COMPATNOTE="$(printf '%s\n' "$ENTRY_150" | grep -F 'matali is not' || true)"
+COMPATNOTE="$(printf '%s\n' "$ENTRY_150" | grep -F 'The orchestrator is not' || true)"
 [ -n "$COMPATNOTE" ] || fail "AC25: lens CHANGELOG 1.5.0 entry must carry its closing compatibility note"
 one_line "$COMPATNOTE" "CHANGELOG 1.5.0 closing compatibility note"
 if printf '%s\n' "$COMPATNOTE" | grep -qF 'behaves exactly as 1.4.3 did'; then

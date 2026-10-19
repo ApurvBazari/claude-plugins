@@ -65,7 +65,7 @@ finders:
 The engine reads this registry and dispatches the named `.claude/agents/` finders, **read-only-enforced at
 the dispatch boundary** like the adapter tier. (Authoring contract: see `finder-contract.md`.)
 
-**Tier 3 also has a call-time variant — *injected* finders.** A programmatic caller (e.g. matali) may pass `injectedFinders` (shape declared in `engine-api.md`) directly to the engine instead of registering in `.claude/lens/settings.md`. Injected finders are dispatched and constrained **identically** to file-registered ones; the only difference is the source (the call vs. the settings file). The `agent` resolves through the Agent-tool registry and may be plugin-qualified, so a caller's own plugin agent works without a project-local copy.
+**Tier 3 also has a call-time variant — *injected* finders.** A programmatic caller (e.g. an orchestrator) may pass `injectedFinders` (shape declared in `engine-api.md`) directly to the engine instead of registering in `.claude/lens/settings.md`. Injected finders are dispatched and constrained **identically** to file-registered ones; the only difference is the source (the call vs. the settings file). The `agent` resolves through the Agent-tool registry and may be plugin-qualified, so a caller's own plugin agent works without a project-local copy.
 
 ## Normalization (all tiers)
 
@@ -74,7 +74,7 @@ Every tier's raw output is normalized into the `review-findings` shape before de
 - `dimension` stays the **closed 9-value enum** (`requirements`, `correctness`, `security`, `types`,
   `silent-failure`, `simplify`, `test`, `risk`, `comment`). Never invent a dimension. Note: `security` and
   `simplify` are **contract-only dimensions** in v1 — no built-in finder or adapter emits them (`simplify`
-  is vicario-inherited; `security` can be produced by a `correctness` finder or a project-tier finder).
+  is inherited from the upstream schema; `security` can be produced by a `correctness` finder or a project-tier finder).
 - **Finer categories go in `label`** (a single free-form string) and/or `tags[]` (a free-form list) —
   e.g. an adapter's native category like `brittle-test` becomes `label:"brittle-test"`, `dimension:"test"`.
 - `verified` is normalized to `false` on intake (the VERIFY stage owns the flip); `source` records the

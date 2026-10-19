@@ -1,6 +1,6 @@
 ---
 name: engine
-description: Internal data-only review core invoked directly by /lens:review and by a programmatic orchestrator (matali) calling it as a compute-only step, to produce a review-findings JSON object from the session diff. Not user-invocable; returns data, writes nothing, never prompts.
+description: Internal data-only review core invoked directly by /lens:review and by a programmatic orchestrator calling it as a compute-only step, to produce a review-findings JSON object from the session diff. Not user-invocable; returns data, writes nothing, never prompts.
 user-invocable: false
 ---
 
@@ -14,7 +14,7 @@ surface) + `references/pipeline.md` + `references/finder-registry.md`.
 If the caller passed `taskIds` in args (the standalone `/lens:review` path hands
 `{ scope, intent, analyze, verify }`), mark each handed-in stage task `in_progress` when you enter that
 stage and `completed` when you leave it, via `TaskUpdate` keyed on the given `taskId`. If `taskIds` is
-**absent** (orchestrator/compute-only callers, vicario reuse, any non-standalone invocation), take **no
+**absent** (orchestrator/compute-only callers, reuse by another caller, any non-standalone invocation), take **no
 task action** — behavior is unchanged and byte-identical to the data-only contract. Never create tasks.
 The finder and verifier **subagents you dispatch are task-blind** — they emit findings only and never touch
 the task list.
@@ -60,7 +60,7 @@ that there was nothing to review, and never tells them why.
 
 ## Step 2: Intent
 Build the intent record — it may **span multiple specs/plans**. **If the caller passed a non-empty
-`injectedIntent` array (a programmatic caller such as matali), it wins outright** — build the record
+`injectedIntent` array (a programmatic caller such as an orchestrator), it wins outright** — build the record
 **verbatim** from each entry's `content`, tag provenance from `name` (`sourceSpec`/`sourcePlan`), select the
 fan-out agent from `role` (`spec`/`plan`), do **not** set `degraded`, and **skip** the docs/superpowers
 correlation, the latest-only fallback, and transcript reconstruction (pipeline §2 rule 0). Otherwise selection
@@ -106,7 +106,7 @@ orchestrator render the full met/partial/missing adherence matrix without re-der
 
 ## Key Rules
 - **Data only.** Return JSON; never write a file or prompt — the caller owns I/O and any gate.
-- **Schema-valid.** Output must validate against `review-findings.schema.json` (the vicario contract) — its **success** branch on the ordinary return, its **failure** branch when pre-flight raises the envelope. Both are declared returns of this skill, and a caller branches on the presence of `error` before it reads either (`references/engine-api.md` § lens:engine — return channels).
+- **Schema-valid.** Output must validate against `review-findings.schema.json` (the shared upstream contract) — its **success** branch on the ordinary return, its **failure** branch when pre-flight raises the envelope. Both are declared returns of this skill, and a caller branches on the presence of `error` before it reads either (`references/engine-api.md` § lens:engine — return channels).
 - **Read-only adapters.** Enforce findings-only at the adapter boundary; skip absent providers silently.
 - **Nothing dropped silently.** Verify-errors surface as `verified:false`. Set `degraded:true` whenever coverage is partial — a finder/adapter returned null or errored, intent was reconstructed, or a huge diff was truncated — and **never set the bit alone**: every `degraded:true` also appends its cause to `degradedReasons[]` (degradedReasons code, from the closed set declared in `references/engine-api.md` § lens:engine — returns) and names the gap in `summary`. The bit says a gap exists, the code says which one, the prose says where — and the schema rejects the bit without a code. **The converse binds just as hard: never name a cause without the bit.** `degradedReasons[]` is non-empty **if and only if** `degraded` is `true`, so a return that carries an entry must carry `degraded:true`, and a return claiming full coverage must carry the array absent or empty — the schema rejects a populated array beside `degraded:false` exactly as it rejects the bare bit. If you recorded a cause and then judged coverage complete, one of the two judgements is wrong; do not ship both.
 - **I-1 — raise before dispatch.** An error may be raised **only in pre-flight, before the first finder is dispatched** (Step 0). Once ANALYZE has begun, coverage gaps are reported through `degraded` + `summary` — never by raising.
