@@ -5,7 +5,8 @@
 #
 # The names themselves never enter the repo: they live in a gitignored list, one name per line,
 # with `#` comments and blank lines allowed. The list is $PRIVATE_NAMES_FILE, by default
-# .claude/private-names.txt (under .claude/, which .gitignore already excludes). Matching is a
+# .claude/private-names.txt, which has its own .gitignore line. In CI it is written from the
+# PRIVATE_NAMES secret (.github/workflows/validate.yml). Matching is a
 # case-insensitive fixed-string search over every tracked text file, so a name inside a path,
 # an id or a sentence is caught alike. With no list on this machine the belt skips with a notice,
 # which is what any other clone, and CI without the PRIVATE_NAMES secret, see.
