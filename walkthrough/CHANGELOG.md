@@ -8,6 +8,7 @@
 - **README.** It opens with what the plugin reads, writes, runs and sends, where it works (Claude Code, Cowork, claude.ai chat), and an install line for the plugin directory as well as this marketplace. Every link is absolute, so it works on the directory's listing page.
 
 ### Added
+- **Listing icon and display name.** A 512 px PNG icon for Anthropic's plugin directory, drawn from what walkthrough does (its SVG source sits beside it in the assets folder), and the display name "Walkthrough".
 - `references/ask-user-question-guard.md`: the AskUserQuestion two-option rule now ships with the plugin. `create` and `update` cited the repository's `.claude/rules/` copy, which an installed plugin doesn't have.
 - A `LICENSE` file in the plugin folder, and `homepage`, `documentationUrl`, `supportUrl`, `privacyPolicyUrl` and `author.url` in `plugin.json`.
 

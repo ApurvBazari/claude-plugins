@@ -1,5 +1,6 @@
 {
   "name": "walkthrough",
+  "displayName": "Walkthrough",
   "version": "1.7.0",
   "description": "Render a session or any subject (plugin, marketplace, path) as a self-contained interactive HTML document that loads nothing from the network",
   "author": { "name": "Apurv Bazari", "url": "https://github.com/ApurvBazari" },
@@ -7,6 +8,7 @@
   "documentationUrl": "https://apurvbazari.github.io/claude-plugins/walkthrough/",
   "supportUrl": "https://github.com/ApurvBazari/claude-plugins/issues",
   "privacyPolicyUrl": "https://github.com/ApurvBazari/claude-plugins/blob/main/PRIVACY.md",
+  "icon": "./assets/icon.png",
   "repository": "https://github.com/ApurvBazari/claude-plugins",
   "license": "MIT",
   "keywords": ["session-visualization", "interactive-html", "documentation", "diagrams", "system-map", "walkthrough", "session-recap", "cowork", "claude-cowork"]
