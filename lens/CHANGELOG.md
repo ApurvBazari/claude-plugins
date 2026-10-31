@@ -11,6 +11,9 @@
 - **Manifest and license.** `plugin.json` gains the author URL, `homepage`, `documentationUrl`, `supportUrl` and `privacyPolicyUrl`; the plugin folder now carries its own `LICENSE`.
 - The first-run setup and the finder registry no longer cite repository-only rule files that aren't shipped with the plugin.
 
+### Added
+- **Listing icon and display name.** A 512 px PNG icon for Anthropic's plugin directory, drawn from what lens does (its SVG source sits beside it in the assets folder), and the display name "Lens".
+
 ## 1.5.2 — 2026-10-19
 
 ### Changed
