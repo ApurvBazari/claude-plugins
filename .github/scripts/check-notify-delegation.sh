@@ -12,8 +12,8 @@
 #
 # It deliberately matches the EMISSION CONSTRUCTS (command/probe tokens), never plain
 # prose, so the legitimate "onboard does NOT copy notify.sh / write notify-config.json"
-# delegation wording does not trip it. The install-presence probe
-# (${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh) is intentionally still allowed.
+# delegation wording does not trip it. onboard checks whether notify is installed with
+# `claude plugin list --json`, never a sibling ../notify path (it only exists in a dev checkout).
 set -euo pipefail
 
 START="onboard/skills/start/SKILL.md"

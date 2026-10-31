@@ -15,7 +15,7 @@ When a SKILL.md, agent, or reference invokes a shell script, use the canonical p
 | Context | Example | Form |
 |---|---|---|
 | In-plugin script | onboard calls its own `detect-lsp-signals.sh` | `${CLAUDE_PLUGIN_ROOT}/scripts/<name>.sh` |
-| Cross-plugin script | onboard calls notify's `install-notifier.sh` | `${CLAUDE_PLUGIN_ROOT}/../<other-plugin>/scripts/<name>.sh` |
+| Another plugin | onboard checks whether notify is installed | Never a path. Ask Claude Code: `claude plugin list --json`, then hand off to that plugin's own skill (e.g. `/notify:setup`) |
 | Generated-artifact script (inside hooks written to user project) | Evolution hook shells out to `detect-dep-changes.sh` | `.claude/scripts/<name>.sh` (project-relative) |
 
 ## Why `${CLAUDE_PLUGIN_ROOT}`
@@ -30,12 +30,13 @@ Bare relative forms (`scripts/foo.sh`, `../scripts/foo.sh`) get resolved from th
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"
 ```
 
-✅ **Cross-plugin (onboard calling notify's script):**
+✅ **Another plugin (onboard checking for notify):**
 
 ```bash
-ls "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh" 2>/dev/null
-bash "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/install-notifier.sh"
+claude plugin list --json 2>/dev/null | grep -qE '"id": ?"notify@'
 ```
+
+❌ Never reach into another plugin's folder (`${CLAUDE_PLUGIN_ROOT}/../notify/...`). Installed plugins live in separate versioned cache folders (`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`), so a sibling path only resolves in this development checkout. Each plugin is also submitted to Anthropic's directory on its own, and nothing it loads may point outside its folder.
 
 ✅ **Generated hook (written to user's `.claude/scripts/`):**
 
