@@ -29,6 +29,9 @@ Prepares onboard for the claude.ai plugin directory's validation and security sc
 - **Shorter always-on descriptions** for the internal skills (`generate`, `generation`, `maintain`, `research`, `wizard`) and four agents.
 - **Manifest:** `author.url`, `homepage`, `documentationUrl`, `supportUrl` and `privacyPolicyUrl`. A copy of the MIT `LICENSE` now ships in the plugin folder.
 
+### Added
+- **Listing icon and display name.** A 512 px PNG icon for Anthropic's plugin directory, drawn from what onboard does (its SVG source sits beside it in the assets folder), and the display name "Onboard".
+
 ## 3.3.1 — 2026-10-19
 
 ### Changed — callers are named by role
