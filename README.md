@@ -33,7 +33,7 @@ Swap `walkthrough` for any plugin name below. Each plugin works on its own.
 | **[onboard](./onboard/)** | Generates Claude tooling for a repo (`CLAUDE.md`, rules, skills, agents, hooks), then keeps it in step as the code changes. | `/onboard:start` · `/onboard:adopt` · `/onboard:check` · `/onboard:evolve` · `/onboard:update` · `/onboard:verify` | Claude Code |
 | **[notify](./notify/)** | Desktop notifications on macOS and Linux when Claude finishes or needs you. | `/notify:setup` · `/notify:check` · `/notify:uninstall` | Claude Code |
 | **[handoff](./handoff/)** | Saves where a session left off and offers it back when the next one starts. | `/handoff:save` · `/handoff:pickup` · `/handoff:check` · `/handoff:discard` | Claude Code |
-| **[walkthrough](./walkthrough/)** | Turns a session, a plugin or a codebase into one interactive HTML page with diagrams and clickable detail. | `/walkthrough:create` · `/walkthrough:document` · `/walkthrough:update` | Claude Code, Cowork, claude.ai |
+| **[walkthrough](./walkthrough/)** | Turns a session, a plugin or a codebase into one interactive HTML page with diagrams and clickable detail. | `/walkthrough:create` · `/walkthrough:document` · `/walkthrough:update` | Claude Code, Cowork |
 | **[lens](./lens/)** | Reviews a session's changes against the spec and plan they were meant to follow, then tries to disprove each finding before it shows it to you. | `/lens:review` | Claude Code |
 
 ![walkthrough in use: scrolling a page, opening a part of the system map, comparing options, switching to the light theme](./site/assets/walkthrough-demo.gif)

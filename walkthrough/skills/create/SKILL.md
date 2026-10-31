@@ -1,6 +1,6 @@
 ---
 name: create
-description: Generate an interactive HTML walkthrough of the current session — a self-contained, explorable document (prose + diagrams + clickable detail) in a fixed house style. Use when the user asks to "visualize this session", "create a walkthrough", "walk me through it", "walk me through this/that", "walk me through what we did", "make a session recap/document", or runs /walkthrough:create. Writes to .claude/walkthrough/ (or a chosen walkthroughs/ folder in a non-git directory).
+description: Generate an interactive HTML walkthrough of the current session — one self-contained page of prose, diagrams and clickable detail in a fixed house style. Use when the user asks to "create a walkthrough", "visualize this session", "walk me through what we did", "make a session recap", or runs /walkthrough:create. Not for explaining code or a concept in chat. Writes to .claude/walkthrough/ (or a chosen walkthroughs/ folder outside git).
 ---
 
 # Create — Render the Session as an Interactive Document
@@ -56,7 +56,7 @@ verbatim (its `<style>` block is the base-CSS home), fill its component slots fr
 in Step 5, inline the `references/interactivity.md` bundle into `{{INTERACTIVITY_JS}}`, emit the inert
 `{{DATA_JSON}}` island, and generate `{{NAV_LINKS}}` deterministically from `sections[]`. When the page
 has a system map, fill `{{SYSMAP_ENGINE}}` with the engine block holding its marker line; otherwise
-delete that slot. Keep it self-contained: only the one Google Fonts `@import`.
+delete that slot. Keep it self-contained: no `@import`, nothing loaded from the network.
 
 ## Step 6.5: Resolve output base directory
 Decide where walkthroughs are written in this folder, and remember the choice, BEFORE computing the path.
@@ -74,7 +74,7 @@ Decide where walkthroughs are written in this folder, and remember the choice, B
    - Else determine whether this is a git repository: `git rev-parse --is-inside-work-tree` (exit 0 = git repo).
      - **Git repo** → `<base>` = `.claude/walkthrough/` silently (today's behavior; no new prompt).
      - **Not a git repo** (the knowledge-work / Cowork case) → ask via `AskUserQuestion`
-       (single-select, fixed 2 options per `.claude/rules/ask-user-question-guard.md` — a
+       (single-select, fixed 2 options per `${CLAUDE_PLUGIN_ROOT}/references/ask-user-question-guard.md` — a
        repo-development convention, not shipped with the plugin; the shipped constraint is simply that
        AskUserQuestion option lists must have ≥2 entries (the schema's `minItems: 2`), so use a yes/no
        form when only one candidate exists):
@@ -90,7 +90,7 @@ Compute `slug` = kebab of the title. List `<base>/*.html` and strip the
 - **No slug match** -> use `<base>/<YYYY-MM-DD-HHMM>-<slug>.html` (collision on the exact
   name -> append `-2`, `-3`, ...). Create `<base>` if missing.
 - **Slug matches an existing file** -> do NOT silently version. Ask via `AskUserQuestion`
-  (single-select, fixed 3 options per `.claude/rules/ask-user-question-guard.md`):
+  (single-select, fixed 3 options per `${CLAUDE_PLUGIN_ROOT}/references/ask-user-question-guard.md`):
   - **Update in place** -> stop `create` and hand off to `/walkthrough:update` on the matched file.
   - **New versioned file** -> proceed with the timestamped `-2`/`-3` name (today's behavior).
   - **Overwrite** -> write to the matched file's path.
@@ -100,7 +100,7 @@ This is honored even when model-invoked -- there is no silent-proliferation path
 ## Step 8: Gitignore prompt (first run only)
 Only when `<base>` is `.claude/walkthrough/`: if it is not already gitignored and `.gitignore`
 exists, ask via AskUserQuestion (fixed 3 options: "Add pattern" / "Skip" / "Don't ask again");
-persist the choice in `<base>/settings.md`. (See `.claude/rules/ask-user-question-guard.md`.)
+persist the choice in `<base>/settings.md`. (See `${CLAUDE_PLUGIN_ROOT}/references/ask-user-question-guard.md`.)
 When `<base>` is `walkthroughs/` (a non-git folder has no `.gitignore`), this step self-skips.
 
 ## Step 9: Self-check (structure)
@@ -133,11 +133,11 @@ knows whether the engine was inserted by a shell command, typed, or left out.
 ## Key Rules
 - **One look-and-feel.** Tokens only — never raw hex. Reproduce the signature patterns from `design-system.md`.
 - **Engine by the contract.** A page with a system map gets its engine through the insert step of `render-contract.md`. Never paste the engine into `{{COMPONENT_JS}}`, and never offer a page that still holds the marker line.
-- **Self-contained.** All CSS/JS/SVG inline; only the Google Fonts `@import` is external. No CDN scripts/libs.
+- **Self-contained.** All CSS/JS/SVG inline; system fonts only. No `@import`, no CDN scripts/libs, nothing loaded from the network.
 - **Model before markup.** Always synthesize the session model (Step 3) before assembling HTML.
 - **Omit empty, never stub.** Render only components with real content.
 - **Real code refs only.** Cite `path:line` only when verified via a file read.
 - **Read-only.** Never execute session-derived code; only read files to verify citations.
-- **AskUserQuestion guard.** The thin-session (2), output-location (2, first-run non-git only), gitignore (3), and proliferation-guard (3, conditional) prompts use fixed-length option lists per `.claude/rules/ask-user-question-guard.md`.
+- **AskUserQuestion guard.** The thin-session (2), output-location (2, first-run non-git only), gitignore (3), and proliferation-guard (3, conditional) prompts use fixed-length option lists per `${CLAUDE_PLUGIN_ROOT}/references/ask-user-question-guard.md`.
 - **Self-check before write.** Run `self-check.md` on the assembled HTML; never write a document that fails it.
 - **Completeness gate.** Run the coverage critic after synthesis and surface the coverage note at the offer step.

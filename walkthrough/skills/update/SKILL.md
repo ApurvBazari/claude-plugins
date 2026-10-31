@@ -23,9 +23,9 @@ A page that has a system map also needs the layout engine file. Its path is
 Resolve `<base>` first (same as `create` Step 6.5): if a `settings.md` with `output-location:` exists in
 `walkthroughs/` (visible) or `.claude/walkthrough/` (hidden), use that base; else default to
 `.claude/walkthrough/`. List `<base>/*.html` (not a hardcoded `.claude/walkthrough/`). Never overwrite
-without explicit user confirmation, even when model-invoked. Per `.claude/rules/ask-user-question-guard.md`
-(a repo-development convention, not shipped with the plugin; the shipped constraint — AskUserQuestion option
-lists must have ≥2 entries, the schema's `minItems: 2` — is inlined per-branch below):
+without explicit user confirmation, even when model-invoked. Per `${CLAUDE_PLUGIN_ROOT}/references/ask-user-question-guard.md`
+(AskUserQuestion option lists must have ≥2 entries, the schema's `minItems: 2`; each branch below
+applies it):
 
 - **0 files** → do not proceed. Tell the user: *"No walkthrough exists yet — run `/walkthrough:create` first."* Offer to run it. Stop.
 - **1 file** → confirm with a 2-option single-select `AskUserQuestion`: `"Update <filename>?"` → `Yes` / `No`. (A 1-option list violates the schema's `minItems: 2`; the yes/no form satisfies it.)
@@ -81,7 +81,8 @@ canonical source for the shared select→assemble→self-check→write mechanics
 Assemble per the shared **assemble** stage of `../render/references/render-contract.md`: copy
 `page-scaffold.md` verbatim, fill its component slots from the recipes you selected, inline
 `interactivity.md` into `{{INTERACTIVITY_JS}}`, emit the inert `{{DATA_JSON}}` island, and generate
-`{{NAV_LINKS}}` deterministically from `sections[]`; self-contained, only the one Google Fonts `@import`.
+`{{NAV_LINKS}}` deterministically from `sections[]`; self-contained, no `@import`. An older page that still
+carries the Google Fonts `@import` loses it here: the rewritten page uses the system font stacks.
 When the page has a system map, fill `{{SYSMAP_ENGINE}}` with the engine block holding its marker line;
 otherwise delete that slot.
 **Update-specific:** fill `{{KICKER}}` from session metadata (date · primary type · scope), uppercase per
@@ -126,9 +127,9 @@ recovered.
 - **Reconstruct, don't fabricate.** Recover only what the HTML actually contains; the `DET` store is the reliable source for details. Note partial fidelity on degraded input.
 - **Named files drive; conversation frames.** No automatic git discovery of changes. No paths → ask which files changed.
 - **One coherent doc.** Revise/merge/add into a single narrative; keep ids stable; never staple old + new.
-- **Same look, reused renderer.** Render via create's renderer references unchanged — six `references/` files plus the `components/` catalog (index + on-demand group recipes); tokens only, self-contained, one Google Fonts `@import`.
+- **Same look, reused renderer.** Render via create's renderer references unchanged — six `references/` files plus the `components/` catalog (index + on-demand group recipes); tokens only, self-contained, system fonts (a legacy Google Fonts `@import` is dropped).
 - **In place, seamless.** Overwrite the same file; no new file, no backup, no update chrome.
 - **Read-only except the final write.** Never execute session-derived code; only read the named and cited files.
-- **AskUserQuestion guard.** The target picker uses fixed-length option lists per `.claude/rules/ask-user-question-guard.md`.
+- **AskUserQuestion guard.** The target picker uses fixed-length option lists per `${CLAUDE_PLUGIN_ROOT}/references/ask-user-question-guard.md`.
 - **Self-check before write.** Run `self-check.md` on the assembled HTML; never write a document that fails it.
 - **Completeness gate.** Run the coverage critic after synthesis and surface the coverage note at the offer step.
