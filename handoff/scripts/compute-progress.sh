@@ -24,6 +24,10 @@ ARCHIVE_DIR="$PROJECT_ROOT/.claude/handoff/archive"
 
 saved_at="$(hf_get_fm_value "$ACTIVE_FILE" 'saved-at')"
 saved_at_sha="$(hf_get_fm_value "$ACTIVE_FILE" 'saved-at-sha')"
+# The file may come from someone else (a handoff committed to the repo). Accept only a
+# 7–40 character hex object name before it reaches git: a value such as `--output=<path>`
+# would otherwise be parsed as a git option rather than a revision.
+[[ "$saved_at_sha" =~ ^[0-9a-fA-F]{7,40}$ ]] || saved_at_sha="unknown"
 saved_at_branch="$(hf_get_fm_value "$ACTIVE_FILE" 'saved-at-branch')"
 saved_from_cwd="$(hf_get_fm_value "$ACTIVE_FILE" 'saved-from-cwd')"
 

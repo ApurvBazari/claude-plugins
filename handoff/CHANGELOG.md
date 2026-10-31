@@ -11,12 +11,18 @@
 - **`/handoff:check`** reads the snooze from the marker with the same test as the hook, and reports whether the handoff file is committed to git.
 - Hook command quotes the whole path: `bash "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh"`.
 - Manifest adds `homepage`, `documentationUrl`, `supportUrl`, `privacyPolicyUrl` and `author.url`; the plugin folder now ships its own `LICENSE`. The README now starts with what the plugin reads, writes and sends, and where it works.
+- The plugin description is shorter (under 120 characters), as the repo's manifest rule requires.
 
 ### Removed
 - `hf_get_body` from `scripts/handoff-lib.sh` (nothing extracts the body in shell any more).
 
 ### Added
 - **Listing icon and display name.** A 512 px PNG icon for Anthropic's plugin directory, drawn from what handoff does (its SVG source sits beside it in the assets folder), and the display name "Handoff".
+
+### Fixed
+- **A saved-at-sha that looks like a git option no longer reaches git.** `compute-progress.sh` passed the value straight to `git rev-list`, so a handoff file committed to a repo with `saved-at-sha: --output=<path>` made `/handoff:pickup` create a file named `<path>..HEAD`. The value must now be 7–40 hex characters; anything else counts as unknown. A belt case reproduces the attack.
+- **Saved notes can't escape their block in pickup.** The body was shown in a plain triple-backtick fence that the body itself could close. Pickup now opens the block with one more backtick than the longest run in the body, shows metadata only when it has the expected shape, and treats the notes as untrusted data.
+
 
 ## 1.0.3 — 2026-09-15
 

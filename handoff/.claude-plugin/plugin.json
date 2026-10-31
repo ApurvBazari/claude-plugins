@@ -2,7 +2,7 @@
   "name": "handoff",
   "displayName": "Handoff",
   "version": "1.1.0",
-  "description": "Save where a session left off and offer it at the start of the next one. Nothing is acted on until you choose Execute, Edit, Discard, or Save for later.",
+  "description": "Saves where a session left off and offers it at the next start. Nothing runs until you choose what to do.",
   "author": {
     "name": "Apurv Bazari",
     "url": "https://github.com/ApurvBazari"
