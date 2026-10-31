@@ -50,7 +50,7 @@ Before creating a fresh task list, probe for a prior interrupted run. The cross-
 2. **Probe 2 — research dossier, no meta** → research completed, generation never ran. Offer **Resume into Phase 3** (the wizard re-confirms from the dossier's `research.wizardInferences` — continue forward through context → plan-gate → generation) or **Restart**.
 3. **Probe 3 — neither** → fresh start; skip the prompt and create the list below.
 
-Both offer options are **fixed** (Resume / Restart, header `"Resume?"`), so the single-option guard in `.claude/rules/ask-user-question-guard.md` does **not** apply. On **Resume**, rehydrate from the checkpoint artifact(s), re-create the list with already-completed phases marked `completed`, and jump to the resume target (Phase 7 for probe 1, Phase 3 for probe 2); on **Restart** (or probe 3), mark any leftover incomplete tasks `deleted` and continue below.
+Both offer options are **fixed** (Resume / Restart, header `"Resume?"`), so the single-option guard in `../../references/ask-user-question-guard.md` does **not** apply. On **Resume**, rehydrate from the checkpoint artifact(s), re-create the list with already-completed phases marked `completed`, and jump to the resume target (Phase 7 for probe 1, Phase 3 for probe 2); on **Restart** (or probe 3), mark any leftover incomplete tasks `deleted` and continue below.
 
 ### Step: Create the phase-task list
 
@@ -103,7 +103,7 @@ Dispatch on the choice:
 - **Start fresh** → continue to the analysis step below; note that existing files will be overwritten at generation.
 - **Cancel** → stop.
 
-**Guard Usage:** four fixed options (≥2), so the single-option guard in `.claude/rules/ask-user-question-guard.md` does not apply.
+**Guard Usage:** four fixed options (≥2), so the single-option guard in `../../references/ask-user-question-guard.md` does not apply.
 
 **If minimal or no Claude config exists**, proceed directly to analysis.
 
@@ -282,7 +282,7 @@ This is the review-before-implementation gate. **Nothing has been written yet.**
 
 1. **Render.** Map `previewModel` → a walkthrough `session-model` per `../research/references/render-adapter.md`, then invoke `walkthrough:render` with `{ model, outputPath: ".claude/walkthrough/<YYYY-MM-DD-HHMM>-onboard-plan.html" }`.
    - **walkthrough absent** (render skill unavailable) → offer install via AskUserQuestion (single-select, header `"Walkthrough"`): **Install now (Recommended)** ("render this preview as an interactive page") / **Skip — markdown preview**.
-     - Install now → `claude plugin install walkthrough@apurvbazari-plugins` via Bash; re-probe; success → render as above; failure → markdown fallback.
+     - Install now → `claude plugin install walkthrough@apurvbazari-plugins` via Bash (if `apurvbazari-plugins` isn't an added marketplace, don't add it: tell the developer to run `claude plugin marketplace add ApurvBazari/claude-plugins` later and take the markdown fallback); re-probe; success → render as above; failure → markdown fallback.
      - Skip / failure → **markdown gate**: present `previewModel` inline as markdown (Overview · What I learned · What I'll build grouped by tier with each artifact's purpose+outline · Key decisions · Risks). Optionally also write `.claude/onboard-plan.md`.
    - **`walkthrough:render` present but fails at runtime** → don't abort the gate; announce the degrade and fall through to the **markdown gate** above. (Invoking the skill is itself the presence test: an uninstalled skill surfaces as *absent* above; a runtime render error lands here.)
    - This degrades the HTML render only — never the gate.
@@ -292,7 +292,7 @@ This is the review-before-implementation gate. **Nothing has been written yet.**
    - **Cancel** → the user declined → nothing was written (the gate precedes the only write phase). Per § Cancel → `deleted`: mark the gate task **and every later phase task** `deleted` — `TaskUpdate(plan-gate → deleted)`, `TaskUpdate(generation → deleted)`, `TaskUpdate(handoff → deleted)`. Leave the already-`completed` tasks 0–4 as `completed` (they really ran). Then stop. Write nothing. Print: "Cancelled — no files were created."
 3. Only **Approve** advances to Phase 6 Generation. Until then, nothing is written to disk.
 
-**Guard Usage:** the install offer and the gate both use fixed-option single-selects (≥2 options), so the single-option guard in `.claude/rules/ask-user-question-guard.md` does not apply.
+**Guard Usage:** the install offer and the gate both use fixed-option single-selects (≥2 options), so the single-option guard in `../../references/ask-user-question-guard.md` does not apply.
 
 ---
 

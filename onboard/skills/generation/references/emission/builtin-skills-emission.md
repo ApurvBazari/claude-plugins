@@ -2,7 +2,7 @@
 
 # Built-in Claude Code Skills — emission Step 4
 
-Follow `../catalogs/built-in-skills-catalog.md` for the 9-skill catalog, tier classification (core vs extra), detection signals, and stack-specific example templates.
+Follow `../catalogs/built-in-skills-catalog.md` for the 8-skill catalog, tier classification (core vs extra), detection signals, and stack-specific example templates.
 
 **When to run**: After emission Step 3 (LSP) and before Hooks. Runs once per generation; drift handling lives in `update`/`evolve`.
 
@@ -38,10 +38,10 @@ Follow `../catalogs/built-in-skills-catalog.md` for the 9-skill catalog, tier cl
 
 **Step 1 — Detect candidates.** Run detection against the codebase analysis report:
 
-- **Core skills** (`/loop`, `/simplify`, `/debug`, `/pr-summary`): always candidates. No detection signal needed.
+- **Core skills** (`/loop`, `/simplify`, `/code-review`, `/debug`): always candidates. No detection signal needed.
 - **Extra skills**: check each signal per the catalog's "Detection signal" and "Analysis report field" columns. Record which signals fired and which did not.
 
-Build the full candidate list: 4 core + N extras (0-5) whose signals fired. Record as `planned[]`.
+Build the full candidate list: 4 core + N extras (0-4) whose signals fired. Record as `planned[]`.
 
 **Step 2 — Resolve accepted list.** Determine which skills to generate from the candidate list:
 
@@ -69,14 +69,14 @@ In both cases, wrap the content in `<!-- onboard:builtin-skills:start -->` / `<!
   Example: project-specific example from catalog.
 ```
 
-Use rich narrative voice matching the project's autonomy level (per the Tone rules). The subsection header should briefly explain what built-in skills are: "These Anthropic-provided skills are available in every Claude Code session — no plugin install required."
+Use rich narrative voice matching the project's autonomy level (per the Tone rules). The subsection header should briefly explain what built-in skills are: "These ship with Claude Code — no plugin install required."
 
 **Step 5 — Write drift snapshot.** Write `.claude/onboard-builtin-skills-snapshot.json`:
 
 ```json
 {
-  "recommended": ["/batch", "/debug", "/loop", "/pr-summary", "/schedule", "/simplify"],
-  "accepted": ["/debug", "/loop", "/pr-summary", "/schedule", "/simplify"]
+  "recommended": ["/batch", "/code-review", "/debug", "/loop", "/schedule", "/simplify"],
+  "accepted": ["/code-review", "/debug", "/loop", "/schedule", "/simplify"]
 }
 ```
 
@@ -89,8 +89,8 @@ Plain JSON, no `_generated` header — matches LSP snapshot format. Both arrays 
   "builtInSkillsStatus": {
     "status": "documented",
     "documentedIn": "CLAUDE.md",
-    "planned": ["/loop", "/simplify", "/debug", "/pr-summary", "/schedule", "/batch"],
-    "generated": ["/loop", "/simplify", "/debug", "/pr-summary", "/schedule"],
+    "planned": ["/loop", "/simplify", "/code-review", "/debug", "/schedule", "/batch"],
+    "generated": ["/loop", "/simplify", "/code-review", "/debug", "/schedule"],
     "skipped": [{ "skill": "/batch", "reason": "user-declined" }],
     "warnings": [],
     "detectionSignals": {

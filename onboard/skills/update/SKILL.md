@@ -55,7 +55,7 @@ Read: .claude/onboard-meta.json
 
   On **Adopt then update**: run `Skill(onboard:adopt)`. Adopt synthesizes the baseline (it never modifies your files) and, because it was entered from here, hands control straight back — continue into Step 2 with the freshly written `.claude/onboard-meta.json`. On **Cancel**: stop.
 
-  **Guard Usage:** two fixed options (≥2), so the single-option guard in `.claude/rules/ask-user-question-guard.md` does not apply.
+  **Guard Usage:** two fixed options (≥2), so the single-option guard in `../../references/ask-user-question-guard.md` does not apply.
 
 - **No tooling at all** → there is nothing to update or adopt:
   > This project hasn't been set up with onboard yet. Run `/onboard:start` first to generate your Claude tooling.
@@ -326,7 +326,7 @@ Issue a **single AskUserQuestion call** containing the pre-question + up to 3 of
 
 For each option, set the `description` to the offer's `description` field. Mark `autoChecked: true` offers (e.g., new-language LSP) as pre-selected so the developer just clicks Submit unless they want to opt out.
 
-**Single-option guard** (per `.claude/rules/ask-user-question-guard.md`): when a group has exactly 1 offer, **pad that group** with an explicit `None / Skip` option (label: `"None / Skip"`, description: `"Do not apply anything from this group"`). This keeps the batched single-call envelope intact. Do NOT fall back to sequential single-select calls — that breaks the M2 contract (one AskUserQuestion per update exchange) and was the failure mode observed in release-gate finding F1 (2026-04-17). When the user selects `None / Skip` in a padded group, treat it as empty-array-equivalent: skip every offer in that group, do not apply, and record `status: "declined", reason: "user-skipped-padded-group"` in `updateHistory`.
+**Single-option guard** (per `../../references/ask-user-question-guard.md`): when a group has exactly 1 offer, **pad that group** with an explicit `None / Skip` option (label: `"None / Skip"`, description: `"Do not apply anything from this group"`). This keeps the batched single-call envelope intact. Do NOT fall back to sequential single-select calls — that breaks the M2 contract (one AskUserQuestion per update exchange) and was the failure mode observed in release-gate finding F1 (2026-04-17). When the user selects `None / Skip` in a padded group, treat it as empty-array-equivalent: skip every offer in that group, do not apply, and record `status: "declined", reason: "user-skipped-padded-group"` in `updateHistory`.
 
 ### "Apply later" snapshot — `.claude/onboard-pending-updates.json`
 

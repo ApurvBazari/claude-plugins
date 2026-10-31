@@ -1,6 +1,6 @@
 ---
 name: wizard
-description: Adaptive Q&A flow for gathering developer preferences during /onboard:start. Internal building block invoked by the start skill — not user-invocable.
+description: "Internal: onboard's adaptive Q&A that gathers project preferences. Called by onboard's start and adopt skills."
 user-invocable: false
 ---
 
@@ -56,7 +56,7 @@ Present each as an **overridable card with its static/preset default pre-selecte
 
 Then the **detection prompts** (unchanged detection logic, folded into this exchange):
 
-- Ecosystem plugins (Step 5), LSP plugins (Step 6), built-in skills (Step 7), MCP-server plugins (Step 8). The single-option guard in `.claude/rules/ask-user-question-guard.md` still applies to each dynamically-built group.
+- Ecosystem plugins (Step 5), LSP plugins (Step 6), built-in skills (Step 7), MCP-server plugins (Step 8). The single-option guard in `../../references/ask-user-question-guard.md` still applies to each dynamically-built group.
 
 A developer who accepts all defaults clears Exchange 3 in one pass.
 
@@ -85,11 +85,11 @@ Record per-event type in `wizardAnswers.advancedHookTypes[<eventName>]` (`"comma
 
 **Detection prompts** — ecosystem plugins, LSP plugins, built-in skills, MCP-server plugins (Steps 5 / 6 / 7 / 8):
 
-- Ecosystem plugins: probe install status with `ls "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh" 2>/dev/null` and present each with an `[installed]` / `[not installed]` marker; selected-but-missing plugins are offered for install in /onboard:start Phase 6 (ecosystem-plugin-install step), which then directs you to `/notify:setup` for configuration (onboard does not wire notify itself).
+- Ecosystem plugins: probe install status with `claude plugin list --json 2>/dev/null | grep -qE '"id": ?"notify@'` (installed from any source; never probe a sibling `../notify` folder, which only exists in a development checkout) and present each with an `[installed]` / `[not installed]` marker; selected-but-missing plugins are offered for install in /onboard:start Phase 6 (ecosystem-plugin-install step), which then directs you to `/notify:setup` for configuration (onboard does not wire notify itself).
 - LSP plugins: run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"`; empty array → skip and record `wizardAnswers.lspPlugins = []`; otherwise present detected plugins (pre-checked when `fileCount ≥ 10`) in fileCount-descending order and record the accepted names in `wizardAnswers.lspPlugins`.
 - Built-in skills: detect candidates from the analysis report (4 core always; extras when their signal fires) and record the accepted names in `wizardAnswers.builtInSkills`.
-- MCP-server plugins: run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh" "$PROJECT_ROOT"`. Each candidate names a `server` and the `plugin` behind it. If `.mcp.json` already exists at the project root, drop this group and record `wizardAnswers.mcpPlugins = []`: the developer already manages MCP there, so onboard writes no server and offers no plugin. Otherwise probe installed plugins once (`claude plugin list --json`, best-effort) and leave out any plugin already installed; if the probe fails, keep every row. Present the remaining plugins with every row unchecked: label = the plugin name, description = what it adds and the server it belongs to (for a plugin-delivered server such as `prisma`, say that the server ships only inside the plugin). Record the accepted names in `wizardAnswers.mcpPlugins`. Record the rows you displayed in `wizardAnswers.mcpPluginsOffered` once the developer has submitted the question; when the group was dropped, skipped or dismissed, record `[]` there, because a plugin whose row was never shown has not been offered. The servers themselves are not chosen here; they stay signal-driven and appear in the Phase 5 preview. Rule: `../../references/plugin-install-consent.md`.
-- LSP plugins, built-in skills and MCP-server plugins are issued together as **three `multiSelect` questions in one `AskUserQuestion` call** (the limit is four questions per call). The single-option guard in `.claude/rules/ask-user-question-guard.md` applies to each dynamically-built group: a standalone group that collapses to 1 candidate becomes a yes/no; a group inside the combined call is padded with an explicit `None / Skip` (envelope intact); a zero-candidate group is dropped.
+- MCP-server plugins: run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh" "$PROJECT_ROOT"`. Each candidate names a `server` and the `plugin` behind it. If `.mcp.json` already exists at the project root, drop this group and record `wizardAnswers.mcpPlugins = []`: the developer already manages MCP there, so onboard writes no server and offers no plugin. Otherwise probe installed plugins once (`claude plugin list --json`, best-effort) and leave out any plugin already installed; if the probe fails, keep every row. Present the remaining plugins with every row unchecked: label = the plugin name, description = what it adds and the server it belongs to (for a plugin-delivered server — `context7`, `github`, `prisma`, `chrome-devtools-mcp` — say that the server ships only inside the plugin and nothing is written to `.mcp.json` for it). Record the accepted names in `wizardAnswers.mcpPlugins`. Record the rows you displayed in `wizardAnswers.mcpPluginsOffered` once the developer has submitted the question; when the group was dropped, skipped or dismissed, record `[]` there, because a plugin whose row was never shown has not been offered. The servers themselves are not chosen here; they stay signal-driven and appear in the Phase 5 preview. Rule: `../../references/plugin-install-consent.md`.
+- LSP plugins, built-in skills and MCP-server plugins are issued together as **three `multiSelect` questions in one `AskUserQuestion` call** (the limit is four questions per call). The single-option guard in `../../references/ask-user-question-guard.md` applies to each dynamically-built group: a standalone group that collapses to 1 candidate becomes a yes/no; a group inside the combined call is padded with an explicit `None / Skip` (envelope intact); a zero-candidate group is dropped.
 - **Programmatic mode** (`callerExtras.lspPlugins` / `callerExtras.disableLSP` / `callerExtras.mcpPlugins` / `callerExtras.disableMCP` / `callerExtras.builtInSkills` / `callerExtras.disableBuiltInSkills`): the detection prompt never fires — generation reads the caller-supplied value directly. An absent caller list for either plugin group installs nothing.
 - **Adopt mode** (the caller is `/onboard:adopt`): skip the LSP-plugin and MCP-server-plugin groups. Adopt installs nothing, so it offers no plugin. Record `lspPlugins: []`, `mcpPlugins: []` and `mcpPluginsOffered: []`, and print `Plugins to install: none` in the summary.
 
@@ -260,7 +260,7 @@ After the wizard completes, compile all answers into the following structured JS
   "lspPlugins": ["typescript-lsp", "rust-analyzer-lsp"],
   "mcpPlugins": ["vercel"],
   "mcpPluginsOffered": ["context7", "vercel"],
-  "builtInSkills": ["/loop", "/simplify", "/debug", "/pr-summary", "/schedule"]
+  "builtInSkills": ["/loop", "/simplify", "/code-review", "/debug", "/schedule"]
 }
 ```
 

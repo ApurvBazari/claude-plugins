@@ -211,14 +211,14 @@ These cannot be inferred from research; they are cold free-form asks (or "skip" 
 **Map to**: `ecosystemPlugins.notify`
 **Default**: `true`
 **Skip if**: notify plugin is not installed in Claude Code.
-**Probe install status**: `ls "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh" 2>/dev/null`; present each plugin with an `[installed]` / `[not installed]` marker. Selected-but-missing plugins install in /onboard:start Phase 6 (ecosystem-plugin-install step).
+**Probe install status**: `claude plugin list --json 2>/dev/null | grep -qE '"id": ?"notify@'` (installed from any source; never probe a sibling `../notify` folder, which only exists in a development checkout); present each plugin with an `[installed]` / `[not installed]` marker. Selected-but-missing plugins install in /onboard:start Phase 6 (ecosystem-plugin-install step).
 **Note**: If accepted, `/onboard:start` ensures the notify plugin is installed and prompts you to run `/notify:setup` to configure notifications. onboard does not write notify config or hooks itself — `/notify:setup` owns that (and chooses global vs per-project scope).
 
 ---
 
 ## Category 9: Detection Prompts — LSP, Built-in Skills & MCP-Server Plugins (Exchange 3)
 
-These three detection groups are issued **together as three `multiSelect` questions in one `AskUserQuestion` call**. The single-option guard in `.claude/rules/ask-user-question-guard.md` applies to each dynamically-built group.
+These three detection groups are issued **together as three `multiSelect` questions in one `AskUserQuestion` call**. The single-option guard in `../../../references/ask-user-question-guard.md` applies to each dynamically-built group.
 
 ### Q9.1: LSP Plugins
 - Run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-lsp-signals.sh" "$PROJECT_ROOT"`.
@@ -261,18 +261,18 @@ AskUserQuestion({
       options: [
         { label: "/loop",       description: "Core — recurring interval runner" },
         { label: "/simplify",   description: "Core — quality-only cleanup pass" },
-        { label: "/debug",      description: "Core — systematic debugging" },
-        { label: "/pr-summary", description: "Core — PR description generator" },
+        { label: "/code-review", description: "Core — finds correctness bugs in the current diff" },
+        { label: "/debug",      description: "Core — troubleshoots Claude Code hooks, MCP and plugins" },
         { label: "/schedule",   description: "Extra — fired: CI/CD detected" }
       ]
     },
     {
       header: "MCP Plugins",
-      question: "These plugins go with the MCP servers I will add to .mcp.json. Install any of them?",
+      question: "These plugins add MCP servers that fit this project. Install any of them?",
       multiSelect: true,
       options: [
-        { label: "vercel",   description: "Vercel plugin — deploy skills and commands; goes with the vercel MCP server" },
-        { label: "context7", description: "context7 plugin — goes with the context7 docs-lookup MCP server" }
+        { label: "vercel",   description: "Vercel plugin — deploy skills and commands; goes with the vercel MCP server in .mcp.json" },
+        { label: "context7", description: "context7 plugin — up-to-date library docs; its MCP server ships inside the plugin" }
         // every row starts unchecked; if this list collapsed to ONE candidate, pad with { label: "None / Skip", ... }
       ]
     }

@@ -52,29 +52,29 @@ fi
 | `feature-dev` | Stack-conditional | `feature-development`, `code-review` | — | — | — |
 | `code-review` | Workflow-conditional | `code-review` | — | — | — |
 | `pr-review-toolkit` | Workflow-conditional | `code-review`, `code-simplification` | — | — | — |
-| `context7` | Stack-conditional | `docs-lookup` | `@upstash/context7-mcp` | stdio | none |
-| `github` | Workflow-conditional | `vcs-integration` | `api.githubcopilot.com` | http | token |
+| `context7` | Stack-conditional | `docs-lookup` | ships in the plugin | plugin | set up by the plugin |
+| `github` | Workflow-conditional | `vcs-integration` | ships in the plugin | plugin | set up by the plugin |
 | `gitlab` | Workflow-conditional | `vcs-integration` | — | — | — |
 | `playwright` | Stack-conditional | `e2e-testing` | — | — | — |
 | `vercel` | Stack-conditional | `deploy-verification`, `platform-integration` | `mcp.vercel.com` | http | oauth |
-| `prisma` | Stack-conditional | `database-orm` | `prisma` | stdio + http | none |
+| `prisma` | Stack-conditional | `database-orm` | ships in the plugin | plugin | set up by the plugin |
 | `supabase` | Stack-conditional | `backend-as-a-service` | `mcp.supabase.com` | http | oauth |
-| `chrome-devtools-mcp` | Stack-conditional | `frontend-debugging`, `browser-automation` | `chrome-devtools-mcp` | stdio | none |
+| `chrome-devtools-mcp` | Stack-conditional | `frontend-debugging`, `browser-automation` | ships in the plugin | plugin | set up by the plugin |
 
 ## MCP Auto-Emit Signals
 
-The `MCP Server` column above describes what each plugin maps to. `.mcp.json` emission is driven by **stack signals**, not just plugin installation — we emit when the project's detected stack unambiguously benefits, whether or not the user has installed the corresponding plugin. When we emit and the plugin is not installed, the plugin is **offered by name** and installed only if the person accepts (see `../catalogs/mcp-guide.md` § Install accepted plugins). The rule is in `../../../../references/plugin-install-consent.md`.
+The `MCP Server` column above describes what each plugin maps to. MCP handling is driven by **stack signals**, not just plugin installation. For a server with a catalog URL (`vercel`, `supabase`), onboard writes a remote `https` entry into `.mcp.json` when the stack unambiguously benefits. For a plugin-delivered server (`context7`, `github`, `prisma`, `chrome-devtools-mcp`), the server ships inside the plugin, so onboard writes no `.mcp.json` entry. In both cases the plugin is **offered by name** and installed only if the person accepts (see `../catalogs/mcp-guide.md` § Install accepted plugins). The rule is in `../../../../references/plugin-install-consent.md`.
 
-| Stack signal | Emits MCP server | Confidence tier |
-|---|---|---|
-| Any project | `context7` | always |
-| `.github/workflows/` present | `github` | high |
-| `vercel.json` or `@vercel/*` in package.json | `vercel` | high |
-| `prisma/` dir or `@prisma/client`/`prisma` in deps | `prisma` | high |
-| `@supabase/*` in deps or `supabase/` config dir | `supabase` | high |
-| Frontend framework detected (React, Next.js, Vue, Svelte, Astro, Remix, SolidJS) | `chrome-devtools-mcp` | high |
+| Stack signal | MCP server | Delivery | Confidence tier |
+|---|---|---|---|
+| Any project | `context7` | plugin offer | any-project |
+| `.github/workflows/` present | `github` | plugin offer | high |
+| `vercel.json` or `@vercel/*` in package.json | `vercel` | `.mcp.json` entry + plugin offer | high |
+| `prisma/` dir or `@prisma/client`/`prisma` in deps | `prisma` | plugin offer | high |
+| `@supabase/*` in deps or `supabase/` config dir | `supabase` | `.mcp.json` entry + plugin offer | high |
+| Frontend framework detected (React, Next.js, Vue, Svelte, Astro, Remix, SolidJS) | `chrome-devtools-mcp` | plugin offer | high |
 
-Env-var requirements and OAuth steps are documented in the generated `.claude/rules/mcp-setup.md`.
+OAuth steps for the servers onboard writes are documented in the generated `.claude/rules/mcp-setup.md`.
 
 ## CLAUDE_PLUGIN_ROOT Fallback
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Validate onboard JSON example fixtures against their schemas.
 
-Two fixture classes live in onboard/schemas/examples/:
+Two fixture classes live in tests/onboard/schemas/examples/ (test-only; kept out of the shipped plugin):
 
   - <schema>.example.json        — a POSITIVE fixture that MUST validate against
                                    the <schema> schema.
@@ -34,8 +34,10 @@ try:
 except ImportError:
     HAVE_JSONSCHEMA = False
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # -> onboard/
-EXAMPLES_DIR = os.path.join(ROOT, "schemas", "examples")
+HERE = os.path.dirname(os.path.abspath(__file__))  # -> tests/onboard/schemas/
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
+ROOT = os.path.join(REPO, "onboard")  # the shipped plugin, which owns the schemas
+EXAMPLES_DIR = os.path.join(HERE, "examples")
 
 
 def schema_path_for(name):

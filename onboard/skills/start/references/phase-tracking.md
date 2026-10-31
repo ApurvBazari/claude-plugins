@@ -275,7 +275,7 @@ through context → plan-gate → generation, **or Restart**.
 When a resume is offered (probe 1 integer case, or probe 2), ask via single-select
 `AskUserQuestion` with **two fixed options** — Resume / Restart. Because both options are fixed
 (not built from a dynamic list that could collapse to one), the single-option guard in
-`.claude/rules/ask-user-question-guard.md` does **not** apply:
+`../../../references/ask-user-question-guard.md` does **not** apply:
 
 - **Resume (Recommended)** — "Continue the interrupted run." Rehydrate from the checkpoint
   artifact(s) (read the dossier, re-derive context), re-create the task list reflecting completed

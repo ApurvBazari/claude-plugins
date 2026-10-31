@@ -30,7 +30,7 @@ from anywhere else is dropped and reported as a warning.
 
 One `AskUserQuestion` call, `multiSelect: true`, one option per plugin:
 
-- `label` — the plugin name, exactly as it would be passed to `claude plugin install`.
+- `label` — the plugin name (the installer adds its marketplace: catalog plugins come from `claude-plugins-official`).
 - `description` — what the plugin adds, and the MCP server or language it belongs to.
 
 Rows for the plugin behind an MCP server start unchecked. LSP rows keep their existing pre-check
@@ -40,7 +40,7 @@ Do not offer a plugin that is already installed. Probe once with `claude plugin 
 probe fails, offer every candidate; the installer skips installed plugins.
 
 **Option count.** `AskUserQuestion` needs at least two options. Follow
-`.claude/rules/ask-user-question-guard.md`: no candidates, ask nothing; one candidate in a standalone
+`ask-user-question-guard.md`: no candidates, ask nothing; one candidate in a standalone
 question, a single-select with the two options `Install <plugin>` and `Skip`, neither marked
 recommended; one candidate inside a combined call, pad that group with `None / Skip`.
 
@@ -49,7 +49,7 @@ recommended; one candidate inside a combined call, pad that group with `None / S
 If the prompt cannot be shown, is dismissed, or returns no selection:
 install nothing, record nothing as offered, and print the manual command so the person can act later.
 
-> `<plugin>` was not installed. To add it yourself: `claude plugin install <plugin>`
+> `<plugin>` was not installed. To add it yourself: `claude plugin install <plugin>@claude-plugins-official`
 
 Recording nothing matters. A plugin that was never really offered must be offered again, not
 remembered as declined.
@@ -80,13 +80,19 @@ first read; see `../skills/update/references/drift-classification.md` § 4b.4.
 
 ## The call
 
-Only after an acceptance, and only with the accepted names:
+Only after an acceptance, and only with the accepted names, each qualified with its marketplace:
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <accepted-plugin> [<accepted-plugin> ...]
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <accepted-plugin>@claude-plugins-official [...]
 ```
 
+Every catalog plugin lives in `claude-plugins-official`. Pass the qualified name so the install can
+never resolve against another marketplace that lists a plugin with the same name. A bare name is
+treated as `claude-plugins-official`. The script installs only from a marketplace that is already
+added (it never adds one) and at Claude Code's default scope (user).
+
 Skip the call entirely when the accepted list is empty. The script never fails its caller: read its
-JSON (`installed`, `alreadyInstalled`, `failed`) and record the results in the status block's
+JSON (`installed`, `alreadyInstalled`, `failed`; a `failed` entry carries `plugin`, `marketplace`
+and `reason`) and record the results in the status block's
 `autoInstalled` / `autoInstallFailed` keys. Those key names are historical; they record installs that
 followed an acceptance.

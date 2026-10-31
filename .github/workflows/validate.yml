@@ -102,7 +102,7 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.x'
-      # onboard/schemas/check-schemas.py validates every schema fixture only when jsonschema
+      # tests/onboard/schemas/check-schemas.py validates every schema fixture only when jsonschema
       # is importable; without it the suite is skipped, so the belts would report a pass having
       # validated no schema at all. tests/ci/test-workflow-contracts.sh parses workflows with PyYAML.
       - name: Install belt dependencies

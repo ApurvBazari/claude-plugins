@@ -41,7 +41,7 @@ Before finishing generation, verify:
 - [ ] PR template includes TDD checklist item ("Tests written first, all pass")
 - [ ] No stale references to `minimal`, `write-after`, or `comprehensive` testing philosophies
 - [ ] emission Step 1 ran before Hooks section (when any MCP candidate fires)
-- [ ] `.mcp.json` is pure JSON (no comments) and uses `${VAR}` form for secrets
+- [ ] `.mcp.json` is pure JSON (no comments); every entry is `type: "http"` with a catalog `https` URL — no `headers`, `env`, `command`/`args`, credentials or package launchers, and no entry for a plugin-delivered server
 - [ ] Pre-existing `.mcp.json` was NOT overwritten (check for `mcpStatus.existedPreOnboard`)
 - [ ] `.claude/onboard-mcp-snapshot.json` matches what was written to `.mcp.json`
 - [ ] `onboard-meta.json.mcpStatus` populated alongside `hookStatus` (with `status` enum value)

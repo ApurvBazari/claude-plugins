@@ -2,7 +2,7 @@
 
 Maps detected project languages to official Claude Code marketplace LSP plugins used by emission Step 3 of the generation pipeline and by `detect-lsp-signals.sh`. Each plugin ships its own `lspServers` config inline in its `plugin.json` — onboard does **not** generate any project-level LSP config files.
 
-When `onboard:start` detects files of these extensions, wizard Step 6 presents a checkbox list of the matching plugins. User-selected entries are installed via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugin-name>`. A skipped question installs nothing; the rule is in `../../../../references/plugin-install-consent.md`.
+When `onboard:start` detects files of these extensions, wizard Step 6 presents a checkbox list of the matching plugins. User-selected entries are installed via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugin-name>@claude-plugins-official`. A skipped question installs nothing; the rule is in `../../../../references/plugin-install-consent.md`.
 
 See `mcp-guide.md` for the sibling MCP catalog pattern.
 
@@ -48,7 +48,7 @@ If a marketplace plugin is renamed (e.g., `rust-analyzer-lsp` → `rust-lsp`), o
 1. This catalog — update the plugin column.
 2. `detect-lsp-signals.sh` — update the matching row in the `LANGUAGES` array.
 
-`install-plugins.sh` receives the new name from the wizard output and calls `claude plugin install <new-name>` — no code change needed there.
+`install-plugins.sh` receives the new name from the wizard output and calls `claude plugin install <new-name>@claude-plugins-official` — no code change needed there.
 
 ## Relationship to `.lsp.json`
 

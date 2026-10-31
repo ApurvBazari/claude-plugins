@@ -233,7 +233,7 @@ When the grounded wizard does not confirm a field (e.g. the Minimal profile skip
 | `wizardAnswers.lspPlugins` | `[]` |
 | `wizardAnswers.mcpPlugins` | `[]` |
 | `wizardAnswers.mcpPluginsOffered` | `[]` |
-| `wizardAnswers.builtInSkills` | `["/loop", "/simplify", "/debug", "/pr-summary"]` + detected extras |
+| `wizardAnswers.builtInSkills` | `["/loop", "/simplify", "/code-review", "/debug"]` + detected extras |
 | `wizardAnswers.skillTuning` | `{ mode: "defaults" }` |
 | `wizardAnswers.agentTuning` | `{ mode: "defaults" }` |
 | `wizardAnswers.outputStyleTuning` | `{ mode: "defaults" }` |

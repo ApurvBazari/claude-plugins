@@ -1,10 +1,15 @@
 {
   "name": "onboard",
-  "version": "3.3.1",
+  "version": "3.4.0",
   "description": "Analyze a codebase with verified research and generate evidence-grounded Claude tooling: CLAUDE.md, path-scoped rules, skills, agents, hooks and a project .mcp.json. Offers companion LSP and MCP plugins and installs only the ones you accept, then keeps the tooling current as the code changes.",
   "author": {
-    "name": "Apurv Bazari"
+    "name": "Apurv Bazari",
+    "url": "https://github.com/ApurvBazari"
   },
+  "homepage": "https://apurvbazari.github.io/claude-plugins/onboard/",
+  "documentationUrl": "https://apurvbazari.github.io/claude-plugins/onboard/",
+  "supportUrl": "https://github.com/ApurvBazari/claude-plugins/issues",
+  "privacyPolicyUrl": "https://github.com/ApurvBazari/claude-plugins/blob/main/PRIVACY.md",
   "repository": "https://github.com/ApurvBazari/claude-plugins",
   "license": "MIT",
   "keywords": [

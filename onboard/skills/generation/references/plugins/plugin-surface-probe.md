@@ -258,7 +258,7 @@ When hook behavior cannot be resolved from `hooks.json`, fall back to filename-d
 
 7. **Plugin directory exists but is empty** — `type: "empty"`, skip in Plugin Integration, emit a warning.
 
-8. **Plugin with legacy `commands/` directory** — enumerate anyway (repo convention says commands/ is deprecated per `.claude/rules/plugin-structure.md`, but many third-party plugins still use it). Treat as `command-or-skill` surface.
+8. **Plugin with legacy `commands/` directory** — enumerate anyway (Claude Code has merged commands into skills, but many third-party plugins still ship a `commands/` directory). Treat as `command-or-skill` surface.
 
 ## Integration points
 

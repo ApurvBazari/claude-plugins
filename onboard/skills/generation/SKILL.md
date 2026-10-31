@@ -1,6 +1,6 @@
 ---
 name: generation
-description: Invoked by the config-generator agent during /onboard:start and /onboard:generate to produce the Claude tooling artifacts. Internal building block; not user-invocable.
+description: "Internal: the config-generator agent's rules for writing each tooling artifact. Loaded only during onboard generation."
 user-invocable: false
 ---
 
@@ -245,7 +245,7 @@ Follow `references/catalogs/lsp-plugin-catalog.md` for the 12-entry language→p
 
 ### Built-in Claude Code Skills — emission Step 4
 
-Follow `references/catalogs/built-in-skills-catalog.md` for the 9-skill catalog, tier classification, detection signals, and stack-specific example templates. The emission-Step-4 generation contract — the 4 firing paths, inputs, telemetry contract (primary user of the `"documented"` status), the 7 emission steps (detect → resolve accepted → placement path → compose subsection → snapshot → telemetry → stdout summary), and the verbatim snapshot/`builtInSkillsStatus` JSON shapes plus `<!-- onboard:builtin-skills:start/end -->` marker rules — is in `references/emission/builtin-skills-emission.md`. Apply it verbatim. Runs after emission Step 3 and before Hooks.
+Follow `references/catalogs/built-in-skills-catalog.md` for the 8-skill catalog, tier classification, detection signals, and stack-specific example templates. The emission-Step-4 generation contract — the 4 firing paths, inputs, telemetry contract (primary user of the `"documented"` status), the 7 emission steps (detect → resolve accepted → placement path → compose subsection → snapshot → telemetry → stdout summary), and the verbatim snapshot/`builtInSkillsStatus` JSON shapes plus `<!-- onboard:builtin-skills:start/end -->` marker rules — is in `references/emission/builtin-skills-emission.md`. Apply it verbatim. Runs after emission Step 3 and before Hooks.
 
 ### Hooks (.claude/settings.json)
 

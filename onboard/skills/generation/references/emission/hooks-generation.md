@@ -363,7 +363,7 @@ These apply at generation time — if they're true, do not write the script or t
 
 ##### Script requirements
 
-- `#!/usr/bin/env bash` + `set -u` (NOT `set -euo pipefail` — see "Shell options for hook scripts" below). This matches `.claude/rules/shell-scripts.md`, which already says hook scripts must not use `set -e`.
+- `#!/usr/bin/env bash` + `set -u` (NOT `set -euo pipefail` — see "Shell options for hook scripts" below). A hook script must not use `set -e`: it has to reach its `exit 0` even when a command inside it fails.
 - `shellcheck -x` must pass cleanly — zero warnings, zero errors
 - Never `exit 2` — this hook is always advisory. Exit code other than 0 is a bug.
 - Reference patterns: `.claude/hooks/validate-bash.sh` for stdin JSON parsing, `.claude/hooks/post-edit.sh` for the advisory exit pattern
@@ -387,7 +387,7 @@ Using `set -u` alone:
 - Leaves error handling to explicit checks inline (`[ -z "$var" ] && exit 0`)
 - Works correctly with the stdin-drain and jq-fallback patterns the hooks rely on
 
-**Rule**: hook scripts use `set -u`. Utility scripts (`scripts/*.sh`, `install*.sh`, analysis/detection tooling) use `set -euo pipefail`. This distinction is documented in `.claude/rules/shell-scripts.md` and is authoritative — this spec section only restates it for the generation-time audience.
+**Rule**: hook scripts use `set -u`. Utility scripts (`scripts/*.sh`, `install*.sh`, analysis/detection tooling) use `set -euo pipefail`. This section is the authoritative statement of that rule for generated scripts.
 
 #### Standalone Quality-Gate Hooks (when no plugins detected)
 
@@ -451,7 +451,7 @@ In addition to the four core quality-gate categories (sessionStart / preCommit /
 
 | Event | Inference trigger | Template script (in `../guides/hooks-guide.md`) |
 |---|---|---|
-| `SessionEnd` | Always emit (safe cleanup stub) | `session-end.sh` |
+| `SessionEnd` | None — never inferred. Emit only when the caller or the wizard asks for it: the template does nothing unless something writes `.claude/session-state/current-task`, so an inferred copy would add a process to every session end for no effect | `session-end.sh` |
 | `UserPromptSubmit` | `wizardAnswers.securitySensitivity === "high"` OR `hookify` in `effectivePlugins` | `user-prompt-preflight.sh` |
 | `PreCompact` | `wizardAnswers.autonomyLevel ∈ {balanced, autonomous}` AND `analysis.complexity.fileCount > 500` — matcher `"auto"` | `pre-compact-checkpoint.sh` |
 | `SubagentStart` | `enriched.enableTeams === true` | `subagent-start-audit.sh` |
