@@ -67,6 +67,9 @@ A `pluginSurfaces` object keyed by plugin name:
 For each plugin name `P` in `installedPlugins`, resolve the plugin root with the same lookup as `plugin-detection-guide.md § Known Plugin Probe List`: the `installPath` that `claude plugin list --json` reports, falling back to the marketplace cache only when the CLI can't answer. Never use a sibling folder (`${CLAUDE_PLUGIN_ROOT}/../<plugin>`).
 
 ```bash
+# Reuse the list the detection step fetched; fetch it here when this probe runs on its own.
+INSTALLED_JSON="${INSTALLED_JSON:-$(claude plugin list --json 2>/dev/null || echo '[]')}"
+
 ROOT="$(printf '%s' "$INSTALLED_JSON" \
   | jq -r --arg p "$P" '[.[] | select((.id | startswith($p + "@")) and (.enabled != false))][0].installPath // empty' 2>/dev/null)"
 if [ -z "$ROOT" ]; then
