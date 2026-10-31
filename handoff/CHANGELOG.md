@@ -15,6 +15,9 @@
 ### Removed
 - `hf_get_body` from `scripts/handoff-lib.sh` (nothing extracts the body in shell any more).
 
+### Added
+- **Listing icon and display name.** A 512 px PNG icon for Anthropic's plugin directory, drawn from what handoff does (its SVG source sits beside it in the assets folder), and the display name "Handoff".
+
 ## 1.0.3 — 2026-09-15
 
 ### Changed

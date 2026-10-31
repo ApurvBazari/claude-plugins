@@ -1,5 +1,6 @@
 {
   "name": "handoff",
+  "displayName": "Handoff",
   "version": "1.1.0",
   "description": "Save where a session left off and offer it at the start of the next one. Nothing is acted on until you choose Execute, Edit, Discard, or Save for later.",
   "author": {
@@ -10,6 +11,7 @@
   "documentationUrl": "https://apurvbazari.github.io/claude-plugins/handoff/",
   "supportUrl": "https://github.com/ApurvBazari/claude-plugins/issues",
   "privacyPolicyUrl": "https://github.com/ApurvBazari/claude-plugins/blob/main/PRIVACY.md",
+  "icon": "./assets/icon.png",
   "repository": "https://github.com/ApurvBazari/claude-plugins",
   "license": "MIT",
   "keywords": [
