@@ -4,6 +4,12 @@
 
 set -uo pipefail
 
+# A fixed identity for the fixture repos. CI runners have no git identity, so without
+# this `git commit` fails there, the fixture repo has no commits, and every git-backed
+# assertion quietly sees an empty history.
+export GIT_AUTHOR_NAME="handoff-test" GIT_AUTHOR_EMAIL="handoff-test@example.invalid"
+export GIT_COMMITTER_NAME="handoff-test" GIT_COMMITTER_EMAIL="handoff-test@example.invalid"
+
 FIXTURE_ROOT=""
 PASS_COUNT=0
 FAIL_COUNT=0
