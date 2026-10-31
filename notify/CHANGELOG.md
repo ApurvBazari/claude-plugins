@@ -21,6 +21,7 @@
 ### Docs
 - README: what notify reads, writes, runs and changes in your Claude settings; where it works (Claude Code only); the community alternatives moved here from the root README. Absolute links, so the README reads correctly as a directory listing.
 - `CONVENTIONS.md`: scope resolution now matches the code (each installed copy reads the config in its own scope; both scopes installed means two notifications), and the stale onboard detection probe is replaced by the delegation rule.
+- Description shortened to under 120 characters, as the repo's manifest rule requires. `CONVENTIONS.md` now describes how onboard really checks for notify (`claude plugin list --json`), not the old sibling-folder probe.
 
 ### Tests
 - `test_json_get_bool.sh` (python3-fallback booleans) is replaced by `test_config_parse.sh`: `enabled: false` is still honoured (N1), the no-`jq` path fires on defaults without parsing the input, stdout stays empty, and `notify.sh` contains no `python3`. New `test_show_message.sh`. The harness now puts `jq` on the curated `PATH` (opt out with `NT_NO_JQ=1`) and no longer links `python3`.

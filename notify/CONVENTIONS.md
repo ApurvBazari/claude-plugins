@@ -39,7 +39,7 @@ Each installed copy of `notify.sh` reads the `notify-config.json` in its own sco
 
 ### onboard
 
-onboard never wires notify itself. It probes whether the plugin is installed (`${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh`) and delegates to `/notify:setup`; `.github/scripts/check-notify-delegation.sh` guards this. Keep `scripts/notify.sh` at that path.
+onboard never wires notify itself. It asks Claude Code whether notify is installed (`claude plugin list --json`, matching an `"id"` of `notify@<source>`) and delegates to `/notify:setup`. It never reads notify's files: a sibling `../notify` path only exists in a development checkout. `.github/scripts/check-notify-delegation.sh` guards both rules. `/notify:setup` copies `scripts/notify.sh` into the chosen scope, so keep it at that path.
 
 ## Script Safety
 

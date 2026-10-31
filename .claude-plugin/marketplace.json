@@ -28,7 +28,7 @@
     {
       "name": "notify",
       "source": "./notify",
-      "description": "Desktop notifications for Claude Code on macOS and Linux: an alert with repo, branch and a short excerpt of Claude's reply when a task finishes or Claude needs you, with a cooldown so rapid replies don't spam you.",
+      "description": "Desktop notifications on macOS and Linux when Claude finishes or needs you, with repo, branch and a cooldown.",
       "version": "2.1.0",
       "keywords": [
         "notifications",
