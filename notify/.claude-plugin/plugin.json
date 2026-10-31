@@ -1,5 +1,6 @@
 {
   "name": "notify",
+  "displayName": "Notify",
   "version": "2.1.0",
   "description": "Desktop notifications for Claude Code on macOS and Linux: an alert with repo, branch and a short excerpt of Claude's reply when a task finishes or Claude needs you, with a cooldown so rapid replies don't spam you.",
   "author": {
@@ -10,6 +11,7 @@
   "documentationUrl": "https://apurvbazari.github.io/claude-plugins/notify/",
   "supportUrl": "https://github.com/ApurvBazari/claude-plugins/issues",
   "privacyPolicyUrl": "https://github.com/ApurvBazari/claude-plugins/blob/main/PRIVACY.md",
+  "icon": "./assets/icon.png",
   "repository": "https://github.com/ApurvBazari/claude-plugins",
   "license": "MIT",
   "keywords": [

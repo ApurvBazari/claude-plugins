@@ -10,6 +10,7 @@
 - Plain description: macOS and Linux, not "cross-platform".
 
 ### Added
+- **Listing icon and display name.** A 512 px PNG icon for Anthropic's plugin directory, drawn from what notify does (its SVG source sits beside it in the assets folder), and the display name "Notify".
 - **`showMessage`** in `notify-config.json` (top level, or per event; default `true`). Set it to `false` to keep Claude's text out of notifications — useful when your screen is shared or notifications show on a lock screen. The wizard asks about it.
 - `/notify:check` compares the installed `notify.sh` with the plugin's copy and warns when it is out of date. The installed script is a copy; re-run `/notify:setup` → **Update** after updating the plugin.
 - `LICENSE` file inside the plugin folder; `author.url`, `homepage`, `documentationUrl`, `supportUrl` and `privacyPolicyUrl` in `plugin.json`.
