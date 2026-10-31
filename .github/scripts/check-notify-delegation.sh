@@ -45,6 +45,18 @@ for f in "$START" "$GEN"; do
   fi
 done
 
+# NEGATIVE — no onboard file may reach into another plugin's folder through a sibling path.
+# ${CLAUDE_PLUGIN_ROOT}/../<plugin> only exists in a dev checkout; installed plugins live in
+# separate cache or synced folders. Match command forms (ls, [ -d, cat, bash, source, an
+# assignment), not prose that warns against the pattern. CHANGELOG history is exempt.
+sibling_re='(\bls\b|\[ -[a-z] |\bcat\b|\bbash\b|\bsource\b|=)[[:space:]]*"?\$\{CLAUDE_PLUGIN_ROOT(:-)?\}/\.\./'
+if hits="$(grep -rnE --include='*.md' --include='*.sh' --include='*.json' "$sibling_re" onboard \
+           | grep -v '^onboard/CHANGELOG\.md:' || true)" && [ -n "$hits" ]; then
+  echo "onboard probes a sibling plugin folder; ask \`claude plugin list --json\` for installPath instead:"
+  printf '%s\n' "$hits" | sed 's/^/  /'
+  fail=1
+fi
+
 # POSITIVE — start must point the developer at /notify:setup.
 if [ -f "$START" ] && ! grep -qF '/notify:setup' "$START"; then
   echo "$START: no /notify:setup delegation found"; fail=1

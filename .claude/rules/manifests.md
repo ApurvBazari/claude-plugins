@@ -30,6 +30,16 @@ Every plugin manifest must include:
 - `keywords`: lowercase, hyphen-separated, relevant for discovery
 - `author.name`: required; `author.email` and `author.url` optional
 
+## plugin.json — Directory Listing Fields
+
+Anthropic's plugin directory reads these from `plugin.json` (Claude Code ignores them at load time). Every plugin here sets them:
+
+- `displayName`: the label people see, e.g. `"Onboard"`. Never change `name` to relabel a plugin; change `displayName`.
+- `icon`: `"./assets/icon.png"` — a square PNG, 512–2048 px, under 2 MB. The directory rejects SVG; keep the SVG source beside it as `assets/icon.svg`. The icon is captured once, at the plugin's first portal save.
+- `homepage` and `documentationUrl`: the plugin's docs-site page. `supportUrl`: the repo's issues page. `privacyPolicyUrl`: the root `PRIVACY.md`.
+
+Set these only in `plugin.json`: `claude plugin validate` reports them as unknown fields in a marketplace entry.
+
 ## marketplace.json — Version Sync
 
 The marketplace manifest at `.claude-plugin/marketplace.json` must list every plugin:

@@ -8,7 +8,7 @@ paths:
 
 # AskUserQuestion Single-Option Guard
 
-> **Shipped copies.** Installed plugins never receive this repo-root file, so the plugins that use the rule carry their own copy: `onboard/references/ask-user-question-guard.md` and `walkthrough/references/ask-user-question-guard.md`. Skills cite those copies. When you change the rule here, change both copies in the same commit.
+> **Shipped copies.** Installed plugins never receive this repo-root file, so the plugins that use the rule carry their own copy: `onboard/references/ask-user-question-guard.md` and `walkthrough/references/ask-user-question-guard.md`. Skills cite those copies. Each copy is worded for its plugin and may leave out sections it doesn't need, but the **decision tree must stay identical**: when you change it here, change it in both copies in the same commit.
 
 When a `multiSelect: true` call to `AskUserQuestion` has only **one** candidate in its `options` list, the tool call fails with `Invalid tool parameters` — the schema requires `options.minItems: 2`. Wizards that build option lists dynamically (from detection scripts, wizard state, or caller extras) MUST guard against this case before invoking the tool.
 
