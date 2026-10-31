@@ -23,7 +23,6 @@
 - **A saved-at-sha that looks like a git option no longer reaches git.** `compute-progress.sh` passed the value straight to `git rev-list`, so a handoff file committed to a repo with `saved-at-sha: --output=<path>` made `/handoff:pickup` create a file named `<path>..HEAD`. The value must now be 7–40 hex characters; anything else counts as unknown. A belt case reproduces the attack.
 - **Saved notes can't escape their block in pickup.** The body was shown in a plain triple-backtick fence that the body itself could close. Pickup now opens the block with one more backtick than the longest run in the body, shows metadata only when it has the expected shape, and treats the notes as untrusted data.
 
-
 ## 1.0.3 — 2026-09-15
 
 ### Changed
