@@ -2,7 +2,7 @@
   "name": "lens",
   "displayName": "Lens",
   "version": "1.5.3",
-  "description": "Review Claude's work against the spec and plan it was meant to follow: checks the session's changes, verifies each finding, and writes an interactive review. Never edits your code.",
+  "description": "Reviews Claude's changes against the spec and plan they followed and verifies each finding. Never edits code.",
   "author": { "name": "Apurv Bazari", "url": "https://github.com/ApurvBazari" },
   "homepage": "https://apurvbazari.github.io/claude-plugins/lens/",
   "documentationUrl": "https://apurvbazari.github.io/claude-plugins/lens/",

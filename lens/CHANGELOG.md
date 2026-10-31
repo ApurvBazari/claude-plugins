@@ -10,6 +10,7 @@
 - **README rewritten for the plugin directory.** It now opens with what lens does, how to install it from the directory or this marketplace, its command, a table of what it reads, writes, runs and sends (no network), and which surfaces it works on. Links are absolute so they work on the directory listing.
 - **Manifest and license.** `plugin.json` gains the author URL, `homepage`, `documentationUrl`, `supportUrl` and `privacyPolicyUrl`; the plugin folder now carries its own `LICENSE`.
 - The first-run setup and the finder registry no longer cite repository-only rule files that aren't shipped with the plugin.
+- Description shortened to under 120 characters, as the repo's manifest rule requires.
 
 ### Added
 - **Listing icon and display name.** A 512 px PNG icon for Anthropic's plugin directory, drawn from what lens does (its SVG source sits beside it in the assets folder), and the display name "Lens".
