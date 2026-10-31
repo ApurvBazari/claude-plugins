@@ -216,7 +216,7 @@ After all questions are answered, present a summary:
 
 Before generation, detect installed Claude Code plugins so the output is plugin-aware (Plugin Integration section, per-directory skill annotations, plugin-aware agent skipping, quality-gate hooks). The canonical procedures live under `../generation/references/plugins/`:
 
-- **Probe both locations** — the dev-sibling path (`${CLAUDE_PLUGIN_ROOT}/../<plugin>/`) and the marketplace cache (`~/.claude/plugins/cache/*/<plugin>/`) — per `../generation/references/plugins/plugin-detection-guide.md` § Known Plugin Probe List. Build `installedPlugins` across the full catalog; continue past misses; only report "no plugins detected" when BOTH locations are empty (the cache probe still runs off `$HOME` when `CLAUDE_PLUGIN_ROOT` is unset).
+- **Find installed plugins** — ask Claude Code (`claude plugin list --json`, which covers marketplace installs, plugins synced from claude.ai and skills-directory plugins), falling back to the marketplace cache (`~/.claude/plugins/cache/*/<plugin>/`) only when the CLI can't answer — per `../generation/references/plugins/plugin-detection-guide.md` § Known Plugin Probe List. Never probe a sibling `${CLAUDE_PLUGIN_ROOT}/../<plugin>` folder. Build `installedPlugins` across the full catalog; continue past misses; only report "no plugins detected" when the lookup finds none of the catalog.
 - **Classify each surface** via `../generation/references/plugins/plugin-surface-probe.md` — tag every installed plugin `command-or-skill` / `hooks-only` / `agent-only`; the resulting `pluginSurfaces` map prevents fabricated slash refs (release-gate finding G.3, 2026-04-17).
 - **Derive** `coveredCapabilities`, `qualityGates`, and `phaseSkills` per the derivation rules in `../generation/references/plugins/plugin-detection-guide.md` — dedup capabilities; filter gates/skills by `installedPlugins`; downgrade `preCommit[].mode` per `wizardAnswers.autonomyLevel`; drop empty phases.
 
@@ -371,7 +371,7 @@ Below the table, list the plugins that were installed (from `mcpStatus.autoInsta
 
 ### Step: ecosystem-plugin-install
 
-If the wizard answers include `ecosystemPlugins`, set up the requested plugins following the canonical procedure in `references/ecosystem-plugin-install.md` — it owns the per-plugin install-probe (`ls "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh"`), the never-silent inline-install offer for anything missing, and the skip/report messaging. If no plugins were requested or available, skip this step entirely.
+If the wizard answers include `ecosystemPlugins`, set up the requested plugins following the canonical procedure in `references/ecosystem-plugin-install.md` — it owns the per-plugin install check (`claude plugin list --json`), the never-silent inline-install offer for anything missing, and the skip/report messaging. If no plugins were requested or available, skip this step entirely.
 
 **Notify is delegated, never wired per-repo:** when `ecosystemPlugins.notify` is `true` and notify is installed, direct the developer to run `/notify:setup` — onboard never copies `notify.sh`, writes a `notify-config.json`, runs `install-notifier.sh`, or merges notify hooks; `/notify:setup` owns scope selection and global-config detection.
 

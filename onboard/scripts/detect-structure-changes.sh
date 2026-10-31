@@ -15,7 +15,7 @@ fi
 
 # Defensive: FileChanged hook payload should be a workspace-relative or
 # absolute path. Refuse option-flag-looking input or shell metacharacters.
-# Hook scripts must always exit 0 (see .claude/rules/shell-scripts.md).
+# Hook scripts must always exit 0: a non-zero exit would surface as a hook error in the user's session.
 case "$FILE_PATH" in
   /*|./*|[a-zA-Z0-9_]*) ;;
   *) exit 0 ;;

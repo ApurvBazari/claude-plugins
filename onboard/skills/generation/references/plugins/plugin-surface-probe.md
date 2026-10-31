@@ -64,24 +64,18 @@ A `pluginSurfaces` object keyed by plugin name:
 
 ## Probe procedure — per plugin
 
-For each plugin name `P` in `installedPlugins`, resolve the plugin root using the same two-location search as `plugin-detection-guide.md § Known Plugin Probe List`:
+For each plugin name `P` in `installedPlugins`, resolve the plugin root with the same lookup as `plugin-detection-guide.md § Known Plugin Probe List`: the `installPath` that `claude plugin list --json` reports, falling back to the marketplace cache only when the CLI can't answer. Never use a sibling folder (`${CLAUDE_PLUGIN_ROOT}/../<plugin>`).
 
 ```bash
-# 1. Dev-repo siblings
-if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -d "${CLAUDE_PLUGIN_ROOT}/../${P}" ]; then
-  ROOT="${CLAUDE_PLUGIN_ROOT}/../${P}"
-
-# 2. Marketplace cache (versioned dir)
-elif ROOT=$(ls -d "$HOME/.claude/plugins/cache"/*/"${P}"/*/ 2>/dev/null | head -1); then
+ROOT="$(printf '%s' "$INSTALLED_JSON" \
+  | jq -r --arg p "$P" '[.[] | select((.id | startswith($p + "@")) and (.enabled != false))][0].installPath // empty' 2>/dev/null)"
+if [ -z "$ROOT" ]; then
+  ROOT="$(ls -d "$HOME/.claude/plugins/cache"/*/"${P}"/*/ 2>/dev/null | head -1)"
   ROOT="${ROOT%/}"
-
-# 3. Marketplace cache (unversioned)
-elif ROOT=$(ls -d "$HOME/.claude/plugins/cache"/*/"${P}"/ 2>/dev/null | head -1); then
-  ROOT="${ROOT%/}"
-
-else
-  # Plugin isn't actually installed — caller shouldn't have added it to
-  # installedPlugins. Skip and log a warning.
+fi
+if [ -z "$ROOT" ]; then
+  # Plugin isn't actually installed — the caller shouldn't have added it to
+  # installedPlugins. Skip it and log a warning.
   continue
 fi
 ```

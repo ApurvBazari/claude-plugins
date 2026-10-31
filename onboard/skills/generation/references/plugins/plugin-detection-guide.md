@@ -4,37 +4,27 @@ Canonical source of truth for detecting installed Claude Code plugins and derivi
 
 ## Known Plugin Probe List
 
-A plugin may live in one of two places on disk:
+Ask Claude Code which plugins are installed. `claude plugin list --json` reports every install source with its real folder: marketplace installs (`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`), plugins added from Anthropic's directory and synced from claude.ai (`~/.claude/plugins/synced/…`), and skills-directory plugins. Each entry carries `"id": "<plugin>@<source>"`, `"enabled"` and `"installPath"`.
 
-1. **Sibling** to the running plugin — e.g., in a development monorepo like `claude-plugins/` where `onboard/`, `notify/`, `handoff/` live side-by-side under one parent. Path: `${CLAUDE_PLUGIN_ROOT}/../<plugin-name>/`.
-2. **Marketplace cache** — the standard install location populated by `claude plugin install`. Path: `~/.claude/plugins/cache/<marketplace>/<plugin-name>/<version>/` where `<marketplace>` is typically `claude-plugins-official` and `<version>` is often the literal string `unknown` (not a semver).
-
-Probing only siblings misses marketplace-installed plugins entirely (release-gate finding B8, 2026-04-17 — Standard + Minimal presets detected 2 plugins when 14+ were actually installed). Probe **both** locations:
+Probing the marketplace cache alone misses directory installs, and probing a sibling folder (`${CLAUDE_PLUGIN_ROOT}/../<plugin>`) only works in a development checkout of this repo (release-gate finding B8, 2026-04-17, was the sibling-only version of this miss). Never probe a sibling folder: a directory-submitted plugin may not point outside its own folder.
 
 ```bash
+# One call for the whole catalog.
+INSTALLED_JSON="$(claude plugin list --json 2>/dev/null || echo '[]')"
+
 # For each plugin name in the catalog below:
 P="<plugin-name>"
-FOUND=0
+ROOT="$(printf '%s' "$INSTALLED_JSON" \
+  | jq -r --arg p "$P" '[.[] | select((.id | startswith($p + "@")) and (.enabled != false))][0].installPath // empty' 2>/dev/null)"
 
-# (1) Sibling location (dev repo monorepo layout)
-if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -d "${CLAUDE_PLUGIN_ROOT}/../${P}" ]; then
-  FOUND=1
+# Fallback only when the CLI or jq can't answer: the marketplace cache.
+if [ -z "$ROOT" ]; then
+  ROOT="$(ls -d "$HOME/.claude/plugins/cache"/*/"${P}"/*/ 2>/dev/null | head -1)"
+  ROOT="${ROOT%/}"
 fi
 
-# (2) Marketplace cache (standard install)
-# Use globbing via [ -d <path>/*/<p> ] — the <marketplace> and <version>
-# dir names vary by install, so don't hardcode them.
-if [ $FOUND -eq 0 ] && ls -d "$HOME/.claude/plugins/cache"/*/"${P}"/ >/dev/null 2>&1; then
-  FOUND=1
-fi
-
-# Also accept a versioned cache dir: ~/.claude/plugins/cache/<mkt>/<p>/<ver>/
-if [ $FOUND -eq 0 ] && ls -d "$HOME/.claude/plugins/cache"/*/"${P}"/*/ >/dev/null 2>&1; then
-  FOUND=1
-fi
-
-if [ $FOUND -eq 1 ]; then
-  # Plugin is installed. Add to installedPlugins.
+if [ -n "$ROOT" ]; then
+  # Plugin is installed and enabled. Add P to installedPlugins and keep ROOT for the surface probe.
   :
 fi
 ```
