@@ -52,7 +52,8 @@ never in `dimension`. Choose the closest dimension and put specificity in `label
 ## 3. Be read-only (findings-only)
 
 The agent must **never** edit, write, stage, or commit. Grant it read-only tools only
-(`Read`, `Grep`, `Glob`, and `Bash` for read-only inspection/repro). The engine **also** enforces
+(`Read`, `Grep`, `Glob`). Add `Bash` only when the finder must run an inspection command, and then
+say in the agent which commands it may run (the built-in `verifier` is the model). The engine **also** enforces
 read-only at the dispatch boundary, but the agent must be authored findings-only — there is no write path
 through a finder.
 

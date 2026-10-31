@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.5.3 — 2026-10-31
+
+### Changed
+- **"Read-only" now says exactly what lens writes.** The review skill, the README and `CONVENTIONS.md` used to call lens read-only, but it also writes `.claude/lens/settings.md`, `.claude/lens/review-state.json`, the review document, and (only if you accept the first-run offer) `.gitignore` entries for `.claude/lens/`. They now say lens never edits, stages, or commits your code and list those files. What hasn't changed: lens still has no write path into your code.
+- **The `correctness` finder no longer has Bash.** It confirms each finding with Read, Grep, and Glob only; a claim that needs code run to settle is left for the verifier. The `verifier` keeps Bash, and its file now lists what it may run: read-only git, search, and the project's typecheck or test command scoped to the changed code. It never installs packages, changes git state, or uses the network. `finder-contract.md` tells custom-finder authors to do the same.
+- **Sharper trigger for `/lens:review`.** Its description is anchored on checking work against its spec and plan, so a generic "review my changes" no longer competes with the built-in `/code-review`.
+- **Shorter descriptions for the internal skills and agents.** `capability`, `engine`, `render-review` and the six agent descriptions are one plain line each. They load in every session, so this trims lens's always-on context.
+- **README rewritten for the plugin directory.** It now opens with what lens does, how to install it from the directory or this marketplace, its command, a table of what it reads, writes, runs and sends (no network), and which surfaces it works on. Links are absolute so they work on the directory listing.
+- **Manifest and license.** `plugin.json` gains the author URL, `homepage`, `documentationUrl`, `supportUrl` and `privacyPolicyUrl`; the plugin folder now carries its own `LICENSE`.
+- The first-run setup and the finder registry no longer cite repository-only rule files that aren't shipped with the plugin.
+
 ## 1.5.2 — 2026-10-19
 
 ### Changed

@@ -25,8 +25,8 @@ and both tag `requirements`; their category lives in `label` (`spec-gap`, `scope
 ## Tier 2 — Adapter
 
 Five **read-only external adapters**, auto-detected at runtime and **skipped SILENTLY when the source
-plugin is absent** — the degrade-if-absent pattern from `.claude/rules/plugin-structure.md` §
-Self-Contained Plugins (check for the provider at runtime; skip if missing, never error). Each maps a
+plugin is absent** — the degrade-if-absent pattern (check for the provider at runtime; skip if
+missing, never error). Each maps a
 foreign producer onto one closed `dimension`, with scoping:
 
 | Adapter (producer) | Dimension | Scoping |

@@ -1,6 +1,6 @@
 ---
 name: render-review
-description: Internal pure-render entrypoint — given a review-findings object (plus optional prior findings, a diff ref, and intent), reconcile in-memory, assemble the review-model, and render the interactive HTML via walkthrough:render. Writes ONLY the output HTML; no lens state, no recompute, no task list. Invoked by an orchestrator that owns persistence + the gate.
+description: Internal. Called by an orchestrator to render a review-findings object as HTML via walkthrough:render.
 user-invocable: false
 ---
 
