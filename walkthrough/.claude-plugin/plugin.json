@@ -2,7 +2,7 @@
   "name": "walkthrough",
   "displayName": "Walkthrough",
   "version": "1.7.0",
-  "description": "Render a session or any subject (plugin, marketplace, path) as a self-contained interactive HTML document that loads nothing from the network",
+  "description": "Turns a session, plugin or codebase into one interactive HTML page that loads nothing from the network.",
   "author": { "name": "Apurv Bazari", "url": "https://github.com/ApurvBazari" },
   "homepage": "https://apurvbazari.github.io/claude-plugins/walkthrough/",
   "documentationUrl": "https://apurvbazari.github.io/claude-plugins/walkthrough/",
