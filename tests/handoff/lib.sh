@@ -83,3 +83,22 @@ summary() {
   [[ "$FAIL_COUNT" -gt 0 ]] && exit 1
   exit 0
 }
+
+# Run the SessionStart hook the way Claude Code does: from the project directory,
+# with the hook's stdin JSON. The hook reads nothing but relative paths.
+# Usage: run_hook_in <project-root>
+run_hook_in() {
+  local root="$1"
+  local hook
+  hook="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/handoff/hooks/session-start.sh"
+  (cd "$root" && printf '{"cwd":"%s"}' "$root" | bash "$hook" 2>/dev/null)
+}
+
+# Set the snooze marker's mtime <seconds> from now (negative = in the past).
+# Usage: set_snooze_marker <project-root> <seconds-offset>
+set_snooze_marker() {
+  local root="$1" off="$2" when
+  when="$(date -u -d "@$(( $(date +%s) + off ))" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null \
+          || date -u -r "$(( $(date +%s) + off ))" +%Y-%m-%dT%H:%M:%SZ)"
+  touch -d "$when" "$root/.claude/handoff/snooze-until"
+}

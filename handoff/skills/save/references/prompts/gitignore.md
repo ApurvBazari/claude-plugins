@@ -5,7 +5,7 @@ Verbatim prompt content for `save/SKILL.md` Step 8. This is the authoritative so
 ## Pre-conditions (caller's responsibility before presenting)
 
 Skip the prompt entirely if any apply:
-- `.gitignore` does not exist (the file isn't in a versioned context).
+- The project is not a git repository (`git rev-parse --is-inside-work-tree` fails) — nothing can be committed by accident.
 - `.gitignore` already contains the literal line `.claude/handoff/`.
 - `.claude/handoff/settings.md` has `gitignore-prompt: never` in its frontmatter.
 
@@ -19,7 +19,7 @@ Skip the prompt entirely if any apply:
 
 | Selection | Action |
 |---|---|
-| Add | Append `.claude/handoff/` to `.gitignore` on its own line (preceded by a blank line if the file doesn't end in one). Do NOT write to settings — future saves will skip via the "pattern already in .gitignore" pre-condition. |
+| Add | Append `.claude/handoff/` to `.gitignore` on its own line (preceded by a blank line if the file doesn't end in one). If `.gitignore` does not exist, create it with that one line. Do NOT write to settings — future saves will skip via the "pattern already in .gitignore" pre-condition. |
 | Skip — I'll handle it | Do not modify `.gitignore`. Write `gitignore-prompt: never` to `.claude/handoff/settings.md` via `merge-fm-key.sh`. |
 | Don't ask again | Identical to "Skip — I'll handle it". The label distinction is purely UX (whether the user inspected vs dismissed); the effective behavior is the same. |
 

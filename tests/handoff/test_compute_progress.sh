@@ -112,6 +112,26 @@ else
   FAIL_COUNT=$((FAIL_COUNT + 1)); echo "  FAIL: tz-offset saved-at did not parse (days_old=$days_got)"
 fi
 
+# Case 11: hostile frontmatter values never execute, and the 1.1.0 fields come back
+# as plain tokens.
+cat > "$FIXTURE_ROOT/.claude/handoff/active.md" <<FM
+---
+saved-at: 2026-10-01T00:00:00Z
+saved-at-sha: \$(touch $canary_dir/pwned-sha)
+saved-at-branch: \$(touch $canary_dir/pwned-branch)
+---
+body
+FM
+# The four fields are assigned by the eval'd output — SC2154 false positive.
+# shellcheck disable=SC2154
+fields="$( eval "$(bash "$SCRIPT" "$FIXTURE_ROOT")"; echo "$branch_changed|$commits_past|$stale|$tracked_in_git" )"
+if [[ ! -e "$canary_dir/pwned-sha" && ! -e "$canary_dir/pwned-branch" ]]; then
+  PASS_COUNT=$((PASS_COUNT + 1)); echo "  ok: hostile frontmatter values did not execute"
+else
+  FAIL_COUNT=$((FAIL_COUNT + 1)); echo "  FAIL: hostile frontmatter value executed"
+fi
+assert_eq "yes|unknown|no|no" "$fields" "branch_changed/commits_past/stale/tracked_in_git are plain tokens"
+
 rm -rf "$canary_dir"
 
 echo
