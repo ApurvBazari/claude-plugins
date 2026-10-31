@@ -3,13 +3,12 @@
 # then further stops are suppressed until N seconds pass since the FIRED one,
 # then the next fires.
 #
-# Sizing the window: the belt drives notify.sh through its jq-less python3
-# fallback (lib.sh deliberately omits jq), so each nt_run costs ~0.8s of wall
-# time. Cooldown granularity is whole seconds (date +%s), so the window
-# (minDurationSeconds) must sit comfortably ABOVE that per-run cost — otherwise
-# the "immediate" second stop lands a whole second later and reads as elapsed,
-# not suppressed. 3s window + a 4s sleep leaves a ~2s margin on both the
-# suppress side and the fire side, keeping the characterization deterministic.
+# Sizing the window: cooldown granularity is whole seconds (date +%s), so the
+# window (minDurationSeconds) must sit comfortably ABOVE the per-run cost of
+# nt_run on a slow CI machine — otherwise the "immediate" second stop lands a
+# whole second later and reads as elapsed, not suppressed. 3s window + a 4s
+# sleep leaves a margin on both the suppress side and the fire side, keeping the
+# characterization deterministic.
 set -uo pipefail
 # shellcheck source=/dev/null
 . "$(cd "$(dirname "$0")" && pwd)/lib.sh"

@@ -1,6 +1,6 @@
 # notify — Internal Conventions
 
-Cross-platform system notifications for Claude Code. macOS via `terminal-notifier`, Linux via `notify-send`.
+System notifications for Claude Code on macOS (`terminal-notifier`) and Linux (`notify-send`).
 
 ## Platform Support
 
@@ -35,30 +35,25 @@ Each `stop`/`subagentStop` event supports `minDurationSeconds` as a **leading-ed
 
 ### Scope resolution
 
-`notify.sh` reads exactly one config at runtime: the project-local `notify-config.json` when present, else the global one. There is no cross-scope key merge — each scope's config is used as-is. (onboard does not merge these either; any prior claim of an onboard merge step was inaccurate and has been removed.)
+Each installed copy of `notify.sh` reads the `notify-config.json` in its own scope folder (`BASE_DIR` = the script's folder's parent): the global copy reads `~/.claude/notify-config.json`, a project copy reads `<project>/.claude/notify-config.json`. There is no cross-scope key merge. Claude Code runs hooks from every settings file, so when both scopes are installed both hooks fire and you get two notifications per event.
 
-### Detection (used by /onboard:start before offering project-local setup)
+### onboard
 
-To probe whether global notify is already configured **strictly** (both required to count as configured):
-- `~/.claude/notify-config.json` exists.
-- `~/.claude/settings.json` has a hook entry whose command references **both** `notify.sh` AND `notify-config.json` (single match — both strings present).
-
-If both probes pass, /onboard:start informs the user that global covers them and skips the project-local offer entirely. If only one passes (`globalPartial`), it offers project-local with a hint to repair the global setup.
+onboard never wires notify itself. It probes whether the plugin is installed (`${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh`) and delegates to `/notify:setup`; `.github/scripts/check-notify-delegation.sh` guards this. Keep `scripts/notify.sh` at that path.
 
 ## Script Safety
 
 - `notify.sh` is a hook script — it MUST always `exit 0`
-- Never block Claude execution, even on notification failure
+- Never block Claude execution, even on notification failure: setup writes every hook entry with `"async": true`
+- Print nothing to stdout — an async hook's JSON stdout is delivered to Claude on the next turn. Notifier output goes to `/dev/null`
 - Missing notification backend (terminal-notifier or notify-send) should fail silently
+- No inline programs (`python3 -c`, `bash -c`) and no package launchers in `notify.sh`
 
 ## JSON Parsing Pattern
 
-All scripts use the `json_get()` helper:
-1. Try `jq` first (preferred)
-2. Fall back to `python3 -c` with inline JSON parsing
-3. Return empty string on failure — never crash
+`notify.sh` parses JSON with `jq` only, through `json_fields()`: one `jq` call per document (the hook input once, the config once) that prints every needed value NUL-terminated, read back with `read -d ''`. `null` becomes an empty string; booleans and numbers become their text (`false`, `30`).
 
-This pattern avoids hard dependencies on either tool.
+`jq` is recommended, not required. Without it the script skips parsing: it uses the per-event defaults and the fallback message, keys the cooldown per user, and still exits 0. `/notify:setup` and `/notify:check` report a missing `jq`.
 
 ## Git Context for Subtitle
 
@@ -70,6 +65,7 @@ Notifications show repo + branch context:
 ## Message Handling
 
 - Extract contextual text from stdin JSON (`.last_assistant_message` or `.message`)
+- `showMessage: false` (per event, else top level; default `true`) replaces that text with the fallback message
 - Sanitize: replace newlines with spaces
 - Truncate to 80 characters + "..."
 - Fall back to configured default message if extraction fails
@@ -78,7 +74,7 @@ Notifications show repo + branch context:
 
 - **Global** (`~/.claude/settings.json`): hooks fire in every project
 - **Per-project** (`<project>/.claude/settings.json`): hooks fire only in that project
-- Per-project extends/overrides global — both can coexist
+- Both can coexist; each fires its own hooks with its own config (see Scope resolution)
 - The wizard detects the running editor (VS Code, Cursor, Windsurf) for bundle ID (macOS only)
 
 ## Skills

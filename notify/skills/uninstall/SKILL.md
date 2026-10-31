@@ -43,7 +43,7 @@ Stop.
 > - `$BASE_DIR/notify-config.json` — your notification preferences
 > - Hook entries in `$BASE_DIR/settings.json` that reference `notify.sh`
 >
-> Your other hooks and settings will not be affected.
+> Your other hooks and settings will not be affected. `terminal-notifier` / `notify-send` and `jq` stay installed.
 >
 > Proceed with uninstall?
 
@@ -53,7 +53,7 @@ Wait for confirmation. If declined, stop.
 
 ## Step 3: Remove Hook Entries from settings.json
 
-Read `$BASE_DIR/settings.json`. Remove only hook entries whose `command` field contains `notify.sh`. Preserve all other hooks and settings.
+Read `$BASE_DIR/settings.json`. Remove only hook entries whose `command` field contains `notify.sh` — with or without `"async": true` (entries from notify before 2.1.0 have no `async` field). Preserve all other hooks and settings.
 
 For each hook event (`Stop`, `Notification`, `SubagentStop`):
 - If the hooks array for that event contains a notify hook, remove that specific entry
