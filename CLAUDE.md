@@ -17,21 +17,25 @@ Claude Code plugin marketplace by Apurv Bazari. Five plugins — all markdown + 
          │      │           research, wizard, generation, maintain)
          │      ├── agents/ (codebase-analyzer, config-generator, feature-evaluator,
          │      │           research-specialist, research-verifier)
-         │      └── scripts/ (detect-{config,dep,structure}-changes, detect-{lsp,mcp}-signals, audit-tooling, install-plugins,
-         │                    maintain-{detect,guard,write} + maintain-lib/)
+         │      ├── scripts/ (detect-{config,dep,structure}-changes, detect-{lsp,mcp}-signals, audit-tooling, install-plugins,
+         │      │             maintain-{detect,guard,write} + maintain-lib/)
+         │      └── references/ (plugin-install-consent, ask-user-question-guard, …)
          │
          ├──→ notify/                    ← cross-platform system notifications
          │      ├── skills/ (setup, check, uninstall, wizard)
          │      └── scripts/ (notify, install-notifier)
          │
          ├──→ handoff/                   ← session handoff continuity
-         │      └── skills/ (save, pickup, check, discard)
+         │      ├── skills/ (save, pickup, check, discard)
+         │      ├── hooks/ (hooks.json, session-start.sh)   ← announce-only; no variables
+         │      └── scripts/ (handoff-lib, compute-progress, snooze, archive-active,
+         │                    prune-archive, merge-fm-key)
          │
          ├──→ walkthrough/               ← session or subject → self-contained interactive HTML
          │      ├── skills/ (create, update, document, render)
          │      │           └── create/references/system-map-engine.js  ← in-page layout engine
          │      ├── agents/ (system-analyzer, system-verifier)          ← read-only, for document's code reading
-         │      └── references/ (system-reading)                        ← the two agents' shared rules
+         │      └── references/ (system-reading, ask-user-question-guard) ← shared rules
          │
          └──→ lens/                      ← intent-grounded review companion (brain; renders via walkthrough)
                 ├── skills/ (review, engine, render-review, capability)
