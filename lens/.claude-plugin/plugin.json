@@ -1,8 +1,14 @@
 {
   "name": "lens",
-  "version": "1.5.2",
-  "description": "Intent-grounded review companion — checks the session diff against spec & plan, verifies findings, renders a review.",
-  "author": { "name": "Apurv Bazari" },
+  "displayName": "Lens",
+  "version": "1.5.3",
+  "description": "Reviews Claude's changes against the spec and plan they followed and verifies each finding. Never edits code.",
+  "author": { "name": "Apurv Bazari", "url": "https://github.com/ApurvBazari" },
+  "homepage": "https://apurvbazari.github.io/claude-plugins/lens/",
+  "documentationUrl": "https://apurvbazari.github.io/claude-plugins/lens/",
+  "supportUrl": "https://github.com/ApurvBazari/claude-plugins/issues",
+  "privacyPolicyUrl": "https://github.com/ApurvBazari/claude-plugins/blob/main/PRIVACY.md",
+  "icon": "./assets/icon.png",
   "repository": "https://github.com/ApurvBazari/claude-plugins",
   "license": "MIT",
   "keywords": ["code-review", "pr-review", "intent-grounded", "adversarial-verification", "interactive-html"]

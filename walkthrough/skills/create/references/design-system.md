@@ -5,14 +5,20 @@ patterns never do. The `:root` token blocks and base CSS are materialized once i
 — the base-CSS home — and copied verbatim into every generated document's `<style>`; this file
 documents what those tokens mean and the signature patterns they compose.
 
-## Fonts (one `@import`, system fallback)
+## Fonts (system stacks, nothing fetched)
+
+The page loads no web font. Each family is a system stack, set once in the `:root` block of
+`page-scaffold.md`:
 
 ```css
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace;
+--serif:'Iowan Old Style','Palatino Linotype',Palatino,'Book Antiqua',Georgia,serif;
+--sans:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
 ```
-Roles: `--serif` (Instrument Serif) = display headings + italic-accent `<em>`; `--sans` (DM Sans)
-= body; `--mono` (JetBrains Mono) = eyebrows, labels, pills, code, trees. Each var ends in a
-generic family (`serif`/`sans-serif`/`monospace`) so offline degrades cleanly.
+Roles: `--serif` = display headings + italic-accent `<em>`; `--sans` = body; `--mono` = eyebrows,
+labels, pills, code, trees. Each stack ends in a generic family (`serif`/`sans-serif`/`monospace`), so
+every machine renders the page with fonts it already has. Never add an `@import`, a `<link>` to a font
+service, or an `@font-face` that points at a URL: the page must load nothing from the network.
 
 ## Tokens — two themes (materialized in `page-scaffold.md`)
 

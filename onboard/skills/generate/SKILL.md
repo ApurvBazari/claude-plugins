@@ -1,6 +1,6 @@
 ---
 name: generate
-description: Internal v3 generation step — turns the onboard:start v3 context (analysis + wizardAnswers + research) into Claude tooling artifacts via the config-generator agent. Invoked through the Skill tool by /onboard:start and /onboard:update; not an external API; not user-invocable.
+description: "Internal: builds Claude tooling from onboard's v3 context via the config-generator agent. Called by start, update and evolve."
 user-invocable: false
 ---
 

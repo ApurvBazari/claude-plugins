@@ -1,6 +1,6 @@
 ---
 name: system-analyzer
-description: Reads a codebase within a fixed budget and returns evidence-backed claims about its structure (the people, containers, stores, queues and external systems, and the wires between them) for a walkthrough system map. Dispatched by the walkthrough:document skill's system adapter. Read-only; returns JSON, never prose for the user.
+description: Read-only. Reads a codebase within a fixed budget and returns evidence-backed JSON claims about its parts (people, containers, stores, queues, external systems) and the wires between them, for a walkthrough system map. Dispatched only by the walkthrough:document skill.
 color: blue
 tools: Read, Grep, Glob
 model: opus

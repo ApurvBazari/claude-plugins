@@ -22,7 +22,7 @@ For each project: run a short working session, then trigger walkthrough **both**
 - [ ] Open the produced HTML in a browser: both themes + the dark/light toggle work.
 - [ ] Diagrams render (inline SVG); detail surfaces open — pane and sheet; interactivity (selector → diagram + detail) works.
 - [ ] **Offline font fallback:** with the font fetch blocked (offline / devtools request-block), text still renders in a sane native font (existing generic-family fallback) — no bare/broken type.
-- [ ] Self-contained: devtools shows no console errors and no failed external requests except the Google Fonts `@import`.
+- [ ] Self-contained: devtools shows no console errors and no external requests at all (the page uses system fonts).
 - [ ] The in-session coverage summary (included / intentionally omitted) is shown after writing.
 
 ## Probes (1.6.0) — what Cowork does with a plugin path and with plugin agents

@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.7.0 — 2026-10-31
+
+### Changed
+- **Pages load nothing from the network.** The Google Fonts `@import` is gone from the page scaffold. Headings, body text and code now use system font stacks (`--serif`, `--sans`, `--mono` in the `:root` block), so a page makes no request when it opens and no reader's IP address goes to a font service. Self-check row 1 now asserts that the page has no external resource at all, and `update` drops a legacy Google Fonts `@import` when it rewrites an older page.
+- **Tighter triggers.** `create` no longer fires on "walk me through it / this / that", which caught ordinary requests to explain code; it still fires on "walk me through what we did", "create a walkthrough", "visualize this session" and "make a session recap", and its description says a plain explanation belongs in chat. `document`'s description is shorter and fires on an explicit request for a page. The internal `render` skill and the two agents have shorter descriptions, which trims what every session loads.
+- **README.** It opens with what the plugin reads, writes, runs and sends, where it works (Claude Code, Cowork, claude.ai chat), and an install line for the plugin directory as well as this marketplace. Every link is absolute, so it works on the directory's listing page.
+- Description shortened to under 120 characters, as the repo's manifest rule requires.
+
+### Added
+- **Listing icon and display name.** A 512 px PNG icon for Anthropic's plugin directory, drawn from what walkthrough does (its SVG source sits beside it in the assets folder), and the display name "Walkthrough".
+- `references/ask-user-question-guard.md`: the AskUserQuestion two-option rule now ships with the plugin. `create` and `update` cited the repository's `.claude/rules/` copy, which an installed plugin doesn't have.
+- A `LICENSE` file in the plugin folder, and `homepage`, `documentationUrl`, `supportUrl`, `privacyPolicyUrl` and `author.url` in `plugin.json`.
+
 ## 1.6.0 — 2026-10-09
 
 ### Added

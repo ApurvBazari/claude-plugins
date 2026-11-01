@@ -1,6 +1,6 @@
 ---
 name: spec-adherence
-description: Checks the session diff against its spec (the intent record) — decides met/partial/missing per spec item, flags spec-gaps and scope-creep. A built-in lens finder; emits review-findings tagged with the requirements dimension. Read-only.
+description: Built-in lens finder. Checks the session diff against its spec: met, partial or missing per item, plus scope creep. Read-only.
 color: blue
 tools: Read, Grep, Glob
 model: opus

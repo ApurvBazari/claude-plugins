@@ -1,5 +1,39 @@
 # Changelog
 
+## 3.4.0 — 2026-10-31
+
+Prepares onboard for the claude.ai plugin directory's validation and security scan: onboard no longer writes package launchers or credentials into a project, every plugin install names its marketplace, and the README says exactly what onboard reads, writes, runs and sends.
+
+### Changed — MCP servers
+- **context7, GitHub and Chrome DevTools are plugin offers now, like Prisma.** onboard no longer writes `.mcp.json` entries that run `npx -y @upstash/context7-mcp` or `npx -y chrome-devtools-mcp`, or that send `GITHUB_PERSONAL_ACCESS_TOKEN` as a Bearer header. Each of these servers ships inside its official plugin in `claude-plugins-official`, so the wizard offers that plugin instead (unchecked, like every MCP-plugin row). `context7` is no longer added to every project; it is an offer on every project.
+- **`.mcp.json` holds only remote OAuth servers.** The only entries onboard writes are `type: "http"` with a fixed `https` URL — today Vercel and Supabase. The config shape, the quality checklist and the `mcp-setup.md` template no longer mention `headers`, `env`, `command`, tokens or environment variables.
+- **`detect-mcp-signals.sh` tags each candidate with `delivery`** (`"mcp-json"` or `"plugin"`); `context7`'s confidence tier is `any-project` instead of `always`.
+- **Entries an older onboard wrote are left alone.** `update` and `evolve` classify a `context7`, `github` or `chrome-devtools-mcp` entry from before 3.4.0 as a `legacy-entry`: they say the official plugin can replace it, include that plugin in the install offer, and remove the entry only when you say so.
+
+### Changed — plugin installs
+- **Every install names its marketplace.** `install-plugins.sh` installs `<name>@claude-plugins-official` for a bare name and accepts an explicit `name@marketplace`; it never adds a marketplace and reports `marketplace-not-added` instead. A `failed` entry now carries `marketplace` too. The instructions, the consent reference and the manual commands onboard prints all use qualified names.
+- **The "already installed" check works again.** It matched `"name":"<plugin>"`, but `claude plugin list --json` reports `"id": "<name>@<source>"`, so installed plugins were never detected. It now matches the `id` from any source, including claude.ai sync.
+- **The notify check asks Claude Code instead of probing a sibling folder.** `${CLAUDE_PLUGIN_ROOT}/../notify` only resolves in a development checkout; installed plugins live in separate versioned folders.
+- **Installed plugins are found through Claude Code.** Plugin detection and the surface probe read each plugin's `installPath` from `claude plugin list --json` instead of probing a sibling `${CLAUDE_PLUGIN_ROOT}/../<plugin>` folder, which only exists in a development checkout. This also finds plugins added from Anthropic's directory (synced from claude.ai), which the marketplace-cache fallback missed.
+
+### Fixed — built-in skills
+- **onboard recommended commands that don't exist.** `/pr-summary` and `/codebase-visualizer` are examples in the Claude Code skills docs, and `/explain-code` doesn't exist; all three are removed. `/debug` was described as general bug-hunting; it turns on Claude Code's own debug log, and is now described that way. `/code-review` joins the core set and `/security-review` the extras, both checked against the commands reference. `/schedule` is described as cloud scheduled tasks (formerly routines). `update` and `evolve` flag a removed name in an existing `CLAUDE.md` so you can delete the line.
+
+### Changed — runtime self-containment
+- **The AskUserQuestion single-option guard ships with onboard** at `references/ask-user-question-guard.md`. Skills cited the repository's `.claude/rules/` copy, which installed users don't have. Two other development-only citations are gone from the generation references.
+- **The drift scripts use `jq` instead of inline `python3 -c` programs.** `detect-dep-changes.sh`, `detect-config-changes.sh` and `detect-structure-changes.sh` write the same drift-log entries; without `jq` they skip logging. `audit-tooling.sh`'s two inline checks use `jq` as well.
+- **No more always-on `SessionEnd` stub.** onboard no longer infers a `SessionEnd` hook for every project: the template does nothing unless something writes `.claude/session-state/current-task`. It is still emitted when a caller or the wizard asks for it.
+- **Test-only files left the shipped plugin.** `schemas/check-schemas.py` and the 26 fixtures in `schemas/examples/` moved to `tests/onboard/schemas/`; no skill or agent read them.
+
+### Changed — documentation
+- **README rewritten for the directory listing:** install from the directory or this marketplace, what it does, a commands table, a "What it reads, writes, and sends" table (including the docs fetch in `update`, `verify`'s requests to your local app, the drift scripts it copies, and the `allowed-tools` and `acceptEdits` settings generated tooling can carry), and where it works. Links are absolute so they resolve on the listing page.
+- **Shorter always-on descriptions** for the internal skills (`generate`, `generation`, `maintain`, `research`, `wizard`) and four agents.
+- **Manifest:** `author.url`, `homepage`, `documentationUrl`, `supportUrl` and `privacyPolicyUrl`. A copy of the MIT `LICENSE` now ships in the plugin folder.
+- The plugin description is shorter (under 120 characters) and still says onboard writes a project `.mcp.json` and installs only the plugins you accept. A garbled sentence in the context schema's description is fixed, and three drift scripts state their exit-0 reason inline instead of citing a repo-only rule.
+
+### Added
+- **Listing icon and display name.** A 512 px PNG icon for Anthropic's plugin directory, drawn from what onboard does (its SVG source sits beside it in the assets folder), and the display name "Onboard".
+
 ## 3.3.1 — 2026-10-19
 
 ### Changed — callers are named by role

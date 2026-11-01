@@ -1,10 +1,17 @@
 {
   "name": "handoff",
-  "version": "1.0.3",
-  "description": "Save and resume session handoffs — capture intent at session end, surface it at the next SessionStart",
+  "displayName": "Handoff",
+  "version": "1.1.0",
+  "description": "Saves where a session left off and offers it at the next start. Nothing runs until you choose what to do.",
   "author": {
-    "name": "Apurv Bazari"
+    "name": "Apurv Bazari",
+    "url": "https://github.com/ApurvBazari"
   },
+  "homepage": "https://apurvbazari.github.io/claude-plugins/handoff/",
+  "documentationUrl": "https://apurvbazari.github.io/claude-plugins/handoff/",
+  "supportUrl": "https://github.com/ApurvBazari/claude-plugins/issues",
+  "privacyPolicyUrl": "https://github.com/ApurvBazari/claude-plugins/blob/main/PRIVACY.md",
+  "icon": "./assets/icon.png",
   "repository": "https://github.com/ApurvBazari/claude-plugins",
   "license": "MIT",
   "keywords": [

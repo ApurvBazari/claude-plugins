@@ -112,6 +112,54 @@ else
   FAIL_COUNT=$((FAIL_COUNT + 1)); echo "  FAIL: tz-offset saved-at did not parse (days_old=$days_got)"
 fi
 
+# Case 11: hostile frontmatter values never execute, and the 1.1.0 fields come back
+# as plain tokens.
+cat > "$FIXTURE_ROOT/.claude/handoff/active.md" <<FM
+---
+saved-at: 2026-10-01T00:00:00Z
+saved-at-sha: \$(touch $canary_dir/pwned-sha)
+saved-at-branch: \$(touch $canary_dir/pwned-branch)
+---
+body
+FM
+# The four fields are assigned by the eval'd output — SC2154 false positive.
+# shellcheck disable=SC2154
+fields="$( eval "$(bash "$SCRIPT" "$FIXTURE_ROOT")"; echo "$branch_changed|$commits_past|$stale|$tracked_in_git" )"
+if [[ ! -e "$canary_dir/pwned-sha" && ! -e "$canary_dir/pwned-branch" ]]; then
+  PASS_COUNT=$((PASS_COUNT + 1)); echo "  ok: hostile frontmatter values did not execute"
+else
+  FAIL_COUNT=$((FAIL_COUNT + 1)); echo "  FAIL: hostile frontmatter value executed"
+fi
+assert_eq "yes|unknown|no|no" "$fields" "branch_changed/commits_past/stale/tracked_in_git are plain tokens"
+
+# Case 12: a saved-at-sha that looks like a git option never reaches git as one.
+# Before the hex check, `git rev-list --count "--output=<path>..HEAD"` created <path>..HEAD,
+# so a handoff committed to a repo could make /handoff:pickup write a file.
+cat > "$FIXTURE_ROOT/.claude/handoff/active.md" <<FM
+---
+saved-at: 2026-10-01T00:00:00Z
+saved-at-sha: --output=$canary_dir/pwned-option
+saved-at-branch: main
+---
+body
+FM
+# shellcheck disable=SC2154
+commits_got="$( eval "$(bash "$SCRIPT" "$FIXTURE_ROOT")"; echo "$commits_past" )"
+if ! compgen -G "$canary_dir/pwned-option*" >/dev/null; then
+  PASS_COUNT=$((PASS_COUNT + 1)); echo "  ok: an option-shaped saved-at-sha wrote no file"
+else
+  FAIL_COUNT=$((FAIL_COUNT + 1)); echo "  FAIL: an option-shaped saved-at-sha reached git as an option"
+fi
+assert_eq "unknown" "$commits_got" "a non-hex saved-at-sha counts as unknown"
+
+# A real short sha still counts commits.
+real_sha="$(cd "$FIXTURE_ROOT" && git rev-parse --short HEAD)"
+(cd "$FIXTURE_ROOT" && git commit -q --allow-empty -m one && git commit -q --allow-empty -m two)
+sed -i.bak "s|^saved-at-sha: .*|saved-at-sha: $real_sha|" "$FIXTURE_ROOT/.claude/handoff/active.md" && rm -f "$FIXTURE_ROOT/.claude/handoff/active.md.bak"
+# shellcheck disable=SC2154
+commits_got="$( eval "$(bash "$SCRIPT" "$FIXTURE_ROOT")"; echo "$commits_past" )"
+assert_eq "2" "$commits_got" "a valid hex saved-at-sha still counts commits past it"
+
 rm -rf "$canary_dir"
 
 echo

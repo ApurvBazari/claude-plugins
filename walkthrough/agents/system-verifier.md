@@ -1,6 +1,6 @@
 ---
 name: system-verifier
-description: Adversarial checker for a walkthrough system map built from code. Takes the analyzer's claims about a codebase's structure and tries to refute each one against the real files, returning one verdict per claim. Dispatched by the walkthrough:document skill's system adapter. Read-only; returns JSON, never prose for the user.
+description: Read-only. Tries to refute each system-analyzer claim against the real files and returns one JSON verdict per claim. Dispatched only by the walkthrough:document skill.
 color: red
 tools: Read, Grep, Glob
 model: opus

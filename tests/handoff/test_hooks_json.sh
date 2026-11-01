@@ -23,7 +23,7 @@ assert entry["type"]=="command", "hook type must be 'command'"
 cmd=entry["command"]
 assert "session-start.sh" in cmd, "command must invoke session-start.sh"
 assert "${CLAUDE_PLUGIN_ROOT}" in cmd, "command must use ${CLAUDE_PLUGIN_ROOT} (plugin-aware path)"
-assert '"${CLAUDE_PLUGIN_ROOT}"' in cmd, "${CLAUDE_PLUGIN_ROOT} must be double-quoted (exit-127 / spaces-in-path guard)"
+assert cmd == 'bash "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh"', "command must quote the WHOLE path from ${CLAUDE_PLUGIN_ROOT} (spaces-in-path guard; one path, no other variable — directory subfolder rule): got " + cmd
 assert int(entry.get("timeout",0))>0, "timeout must be a positive integer"
 assert int(entry.get("timeout",0))<=60, "timeout must be a sane ceiling (seconds; ≤60) — 3000 would block session start for 50min (H1)"
 print("PASS: handoff hooks.json validity")

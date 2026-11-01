@@ -1,6 +1,6 @@
 ---
 name: save
-description: Use when the user signals end-of-session — "save handoff", "pick this up later", "continue in a new session", "I'll come back to this". Captures the session's intent so the next session can resume it. Slash form /handoff:save is the explicit fallback.
+description: Use when the user signals end-of-session — "save handoff", "pick this up later", "continue in a new session", "I'll come back to this". Asks first, then writes the session's next steps to .claude/handoff/active.md so the next session can resume; on the first save it may add .claude/handoff/ to .gitignore (also asked). Slash form /handoff:save skips the first confirm.
 ---
 
 # Save Skill — Capture Session Intent for Handoff
@@ -92,12 +92,20 @@ saved-from-cwd: <abs-path>
 
 Do NOT include `deferred-at` — that field is written only by the resume flow.
 
+Then clear any snooze marker left by an earlier handoff, so the new one is offered at the next session start:
+
+```bash
+rm -f .claude/handoff/snooze-until
+```
+
 ## Step 8: Gitignore prompt (first save only)
 
 Read `.claude/handoff/settings.md` if present. If `gitignore-prompt: never`, skip.
-If `.gitignore` doesn't exist, or already contains `.claude/handoff/`, skip.
-Otherwise present the prompt at `references/prompts/gitignore.md` — verbatim
-option text — and apply the per-option behavior documented there.
+If the project is not a git repository (`git rev-parse --is-inside-work-tree` fails), skip.
+If `.gitignore` already contains `.claude/handoff/`, skip.
+Otherwise — including when `.gitignore` does not exist yet — present the prompt at
+`references/prompts/gitignore.md` (verbatim option text) and apply the per-option
+behavior documented there. When `.gitignore` is missing, the **Add** option creates it.
 
 ## Step 9: Retention prompt (first save only)
 
@@ -110,9 +118,9 @@ documented there.
 
 Tell the user (terse — under three lines):
 
-> Saved to `.claude/handoff/active.md` (sha `<short-sha>` on `<branch>`). Will surface at next SessionStart in this project.
+> Saved to `.claude/handoff/active.md` (sha `<short-sha>` on `<branch>`). The next session in this project will offer it.
 
-Mention the gitignore step if it ran ("Added `.claude/handoff/` to `.gitignore`."). Don't list the directive content back — they already saw it (or wrote it).
+Mention the gitignore step if it ran ("Added `.claude/handoff/` to `.gitignore`." or "Created `.gitignore` with `.claude/handoff/`."). Don't list the directive content back — they already saw it (or wrote it).
 
 ## Key Rules
 
@@ -122,4 +130,5 @@ Mention the gitignore step if it ran ("Added `.claude/handoff/` to `.gitignore`.
 - **Single active slot.** If a handoff already exists, prompt before overwriting. Do not silently replace.
 - **Gitignore prompt is once-per-repo.** Persist the user's choice in `.claude/handoff/settings.md` so future saves don't nag. The retention prompt is also once-per-repo, suppressed by the presence of the `archive-retention` key.
 - **No `deferred-at` on save.** That field belongs to the resume flow's "Save for later" path.
-- **AskUserQuestion guard** (`.claude/rules/ask-user-question-guard.md`): all four AskUserQuestion calls in this skill have static, fixed-length option lists (3 options each for Steps 2, 6, and 8; 4 options for Step 9). No dynamic single-option risk.
+- **A new save clears the snooze marker.** A snooze belongs to the handoff it was set on; the new handoff is offered at the next session start.
+- **Fixed option lists**: all four AskUserQuestion calls in this skill have static option lists (3 options each for Steps 2, 6, and 8; 4 options for Step 9).

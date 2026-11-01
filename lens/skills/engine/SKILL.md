@@ -1,6 +1,6 @@
 ---
 name: engine
-description: Internal data-only review core invoked directly by /lens:review and by a programmatic orchestrator calling it as a compute-only step, to produce a review-findings JSON object from the session diff. Not user-invocable; returns data, writes nothing, never prompts.
+description: Internal review core called by /lens:review or an orchestrator. Returns review-findings JSON; writes nothing.
 user-invocable: false
 ---
 

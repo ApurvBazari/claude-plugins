@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"><title>handoff</title><rect width="512" height="512" rx="112" fill="#faf8f4"/><rect x="3" y="3" width="506" height="506" rx="109" fill="none" stroke="#e4ddd2" stroke-width="6"/>
+  <rect x="104" y="128" width="200" height="236" rx="24" fill="none" stroke="#2a2520" stroke-width="24" opacity=".45"/>
+  <rect x="196" y="168" width="212" height="244" rx="24" fill="#faf8f4" stroke="#2a2520" stroke-width="24"/>
+  <path d="M234 252 H316 M234 296 H366 M234 340 H330" stroke="#2a2520" stroke-width="20" stroke-linecap="round" opacity=".6"/>
+  <path d="M334 156 V246 l26 -20 l26 20 V156 Z" fill="#c05e2b" stroke="#faf8f4" stroke-width="10" stroke-linejoin="round"/></svg>

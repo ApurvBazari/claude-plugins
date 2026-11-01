@@ -30,19 +30,18 @@ If **No**: exit silently. Do not modify the file.
 On **Yes**:
 
 ```bash
-ts="$(date +%Y%m%dT%H%M%S)"
-mkdir -p .claude/handoff/archive
-mv .claude/handoff/active.md ".claude/handoff/archive/discarded-${ts}.md"
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/prune-archive.sh" "$(pwd)"
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/archive-active.sh" "$(pwd)" discarded
 ```
+
+The script moves the file to `.claude/handoff/archive/discarded-<ts>.md`, clears any snooze marker, applies `archive-retention`, and prints the archive path.
 
 Confirm to the user (one line):
 
-> Handoff archived to `.claude/handoff/archive/discarded-<ts>.md`. Cleared.
+> Handoff archived to `<path>`. Cleared.
 
 ## Key Rules
 
 - **Always confirm before archiving** — `disable-model-invocation: true` means only the user can trigger this, but a confirm step still prevents fat-finger mistakes.
 - **Archive, never delete.** The renamed file is recoverable; user can `mv .claude/handoff/archive/discarded-<ts>.md .claude/handoff/active.md` to restore.
 - **No-op when nothing is saved.** Do not create or modify state if there's no active handoff.
-- **AskUserQuestion guard**: 2-option static list. No dynamic single-option risk.
+- **Fixed option list**: the one AskUserQuestion call has a static 2-option list.

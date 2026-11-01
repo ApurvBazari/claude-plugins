@@ -76,6 +76,14 @@ Example config:
 }
 ```
 
+## Showing Claude's Text
+
+| Field | Where | Type | Default | Description |
+|-------|-------|------|---------|-------------|
+| `showMessage` | top level, or inside an event | bool | `true` | `false` keeps Claude's text (and Claude Code's attention prompt text) out of the notification; only the event's fallback `message` is shown |
+
+A per-event value wins over the top-level one. Without `jq`, `notify.sh` reads no config and always shows the fallback message.
+
 ## Notification Matcher Patterns
 
 For the `Notification` hook, the `matcher` field filters which notification types trigger the hook:

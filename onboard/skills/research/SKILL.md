@@ -1,6 +1,6 @@
 ---
 name: research
-description: Internal research engine for onboard v3 — fans out read-only specialists per dimension, adversarially verifies their claims, synthesizes the canonical research object, and renders four markdown artifacts. Invoked via the Skill tool by /onboard:start or directly by a model; not user-invocable. Returns the validated research-dossier object.
+description: "Internal: onboard's verified codebase research engine. Called by onboard's start, adopt, update and evolve skills; returns the research dossier."
 user-invocable: false
 ---
 
@@ -82,7 +82,7 @@ Return the validated `research-dossier` object to the caller, which later feeds 
 
 ## Guard Usage
 
-Step 7's location prompt uses a single-select `AskUserQuestion` with three fixed options (`committed`/`local`/`none`) — never a dynamically-built list, so the single-option guard in `.claude/rules/ask-user-question-guard.md` does not apply here. Keep all three options present.
+Step 7's location prompt uses a single-select `AskUserQuestion` with three fixed options (`committed`/`local`/`none`) — never a dynamically-built list, so the single-option guard in `../../references/ask-user-question-guard.md` does not apply here. Keep all three options present.
 
 ## Key Rules
 

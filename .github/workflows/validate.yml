@@ -32,6 +32,27 @@ jobs:
       - name: Validate plugin manifests
         run: .github/scripts/validate-manifests.sh
 
+  plugin-validate-strict:
+    name: Claude Plugin Validate (strict)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # The same check the directory's submission form starts from. Pinned to an exact CLI version:
+      # the listing fields in plugin.json (icon, documentationUrl, supportUrl, privacyPolicyUrl)
+      # need 2.1.281 or later under --strict. Bump the version on purpose, never float it.
+      - name: Install the Claude Code CLI
+        run: npm install --global @anthropic-ai/claude-code@2.1.314
+      - name: Validate every plugin with --strict
+        run: |
+          status=0
+          for src in $(jq -r '.plugins[].source' .claude-plugin/marketplace.json); do
+            echo "::group::claude plugin validate $src --strict"
+            claude plugin validate "$src" --strict || status=1
+            echo "::endgroup::"
+          done
+          exit "$status"
+
   structure-check:
     name: Structure Check
     runs-on: ubuntu-latest
@@ -81,7 +102,7 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.x'
-      # onboard/schemas/check-schemas.py validates every schema fixture only when jsonschema
+      # tests/onboard/schemas/check-schemas.py validates every schema fixture only when jsonschema
       # is importable; without it the suite is skipped, so the belts would report a pass having
       # validated no schema at all. tests/ci/test-workflow-contracts.sh parses workflows with PyYAML.
       - name: Install belt dependencies

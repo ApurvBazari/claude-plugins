@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Unit tests for handoff/scripts/handoff-lib.sh — the single source of truth for
-# frontmatter reading, body extraction, ISO parsing, and retention normalization.
+# frontmatter reading, ISO parsing, and retention normalization.
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$HERE/../.." && pwd)"
@@ -32,10 +32,9 @@ assert_eq "2026-07-02T09:00:00Z" "$(hf_get_fm_value "$tmp" deferred-at)"  "fm: d
 assert_eq ""                     "$(hf_get_fm_value "$tmp" missing-key)"  "fm: absent key → empty"
 assert_eq ""                     "$(hf_get_fm_value /no/such/file key)"   "fm: missing file → empty"
 
-# get_body returns text after the closing --- and is NOT polluted by the body `---`
-body="$(hf_get_body "$tmp")"
-assert_contains "Intro paragraph." "$body" "body: includes first line after fm"
-assert_contains "More body text."  "$body" "body: includes text past the body hr"
+# hf_get_body was removed in 1.1.0 with the hook's directive injection; nothing
+# extracts the body in shell any more (pickup reads the file with the Read tool).
+assert_eq "" "$(type -t hf_get_body)" "lib: hf_get_body is gone (no shell body extraction)"
 
 # iso_to_epoch: valid → >0; garbage/empty → 0
 assert_eq "1"  "$([[ "$(hf_iso_to_epoch 2026-07-01T10:00:00Z)" -gt 0 ]] && echo 1 || echo 0)" "iso: valid → >0"

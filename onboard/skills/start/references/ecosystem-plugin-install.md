@@ -8,43 +8,41 @@ If the wizard answers include `ecosystemPlugins`, set up the requested plugins.
 
 For each plugin the developer selected in the wizard (`ecosystemPlugins.notify`, etc.), verify it's installed. If it's missing, **offer inline install** — do not skip silently, because the developer explicitly asked for it.
 
-For each requested plugin, probe the filesystem:
+For each requested plugin, ask Claude Code whether it is installed (from any source — a marketplace or claude.ai sync):
 
 ```bash
-# Check if notify is available
-ls "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh" 2>/dev/null
+claude plugin list --json 2>/dev/null | grep -qE '"id": ?"notify@'
 ```
 
-Characteristic files per plugin:
-- `notify` → `scripts/notify.sh`
+Do not probe a sibling folder such as `${CLAUDE_PLUGIN_ROOT}/../notify`: installed plugins live in separate versioned cache folders, so that path only resolves in a development checkout.
 
-**If the probe finds the file**, the plugin is installed — proceed to the notify delegation section below (for notify).
+**If the probe matches**, the plugin is installed — proceed to the notify delegation section below (for notify).
 
-**If the probe returns nothing**, the plugin is missing. Tell the developer:
+**If the probe finds nothing**, the plugin is missing. It is published in the `apurvbazari-plugins` marketplace. Check that marketplace is added (`claude plugin marketplace list --json` names `apurvbazari-plugins`). If it isn't, don't add it for the developer: tell them to run `claude plugin marketplace add ApurvBazari/claude-plugins` and `claude plugin install <plugin>@apurvbazari-plugins` themselves, emit the skip message below, and continue. If it is added, tell the developer:
 
 > You selected the **<plugin>** plugin during the wizard, but it's not installed yet.
 >
-> Install it now? (runs: `claude plugin install <plugin>`)
+> Install it now? (runs: `claude plugin install <plugin>@apurvbazari-plugins`)
 
 Use AskUserQuestion with two options:
 - **Install now (Recommended)** — run the install command via Bash, then continue
 - **Skip setup** — don't configure this plugin; continue with the rest of the flow
 
 **If the developer installs:**
-1. Run `claude plugin install <plugin>` via the Bash tool.
+1. Run `claude plugin install <plugin>@apurvbazari-plugins` via the Bash tool.
 2. Re-run the detection probe to verify.
 3. **On success** — proceed to the corresponding setup section. If the plugin's slash commands/scripts aren't immediately available, note: "Plugin installed, but its scripts may not be on disk yet until you restart the session. If setup fails, restart Claude Code and rerun `/onboard:start`."
 4. **On install failure** — surface the underlying error verbatim. Then emit the explicit skip message below and continue with the next requested plugin.
 
 **If the developer skips or install fails**, emit a clear skip message (never silent):
 
-> Skipping **<plugin>** setup. You can install it later with `claude plugin install <plugin>` and run its setup command directly (`/notify:setup`, etc.).
+> Skipping **<plugin>** setup. You can install it later with `claude plugin install <plugin>@apurvbazari-plugins` (after `claude plugin marketplace add ApurvBazari/claude-plugins` if you haven't added it) and run its setup command directly (`/notify:setup`, etc.).
 
 Then continue to the next requested plugin. Repeat for each entry in `ecosystemPlugins`.
 
 **Edge case** — if a plugin was NOT requested in the wizard (`ecosystemPlugins.<plugin>` is `false` or absent), skip it entirely. Do not probe, do not prompt. This procedure only acts on what the developer explicitly asked for.
 
-**Guard Usage:** both options above are **fixed** (Install now / Skip setup), so the single-option guard in `.claude/rules/ask-user-question-guard.md` does not apply.
+**Guard Usage:** both options above are **fixed** (Install now / Skip setup), so the single-option guard in `../../../references/ask-user-question-guard.md` does not apply.
 
 ## Set Up Notify (if requested and available)
 

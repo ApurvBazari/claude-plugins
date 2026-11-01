@@ -1,6 +1,6 @@
 ---
 name: research-specialist
-description: Parameterized read-only deep-diver for ONE research dimension over a scoped subtree. Dispatched once per effective-roster dimension by the onboard:research engine; returns a research-findings.json object (claims + file:line evidence + 0-1 confidence + status). Never fabricates — an un-assessable dimension returns status 'not-assessed' with empty claims. Hard-fails if invoked without dispatchedAsAgent=true.
+description: Researches one dimension of a codebase without editing it and returns claims with file:line evidence. Dispatched only by onboard's research engine.
 color: cyan
 tools: Read, Glob, Grep, Bash
 model: opus

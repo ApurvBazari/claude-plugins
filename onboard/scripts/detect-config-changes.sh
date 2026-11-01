@@ -15,7 +15,7 @@ fi
 
 # Defensive: FileChanged hook payload should be a workspace-relative or
 # absolute path. Refuse option-flag-looking input or shell metacharacters.
-# Hook scripts must always exit 0 (see .claude/rules/shell-scripts.md).
+# Hook scripts must always exit 0: a non-zero exit would surface as a hook error in the user's session.
 case "$FILE_PATH" in
   /*|./*|[a-zA-Z0-9_]*) ;;
   *) exit 0 ;;
@@ -49,21 +49,23 @@ case "$BASENAME" in
   pyproject.toml) CONFIG_TYPE="python-project" ;;
 esac
 
+# Append one entry to the drift log with jq; skip quietly when jq is absent.
+# Writes to a temp file first so a failed write never truncates the log.
+append_entry() { # <jq-entry-filter> [jq args...]
+  local filter="$1"; shift
+  command -v jq >/dev/null 2>&1 || return 0
+  local tmp
+  tmp="$(mktemp "${DRIFT_FILE}.XXXXXX" 2>/dev/null)" || return 0
+  if jq "$@" ".entries += [${filter}]" "$DRIFT_FILE" > "$tmp" 2>/dev/null; then
+    mv "$tmp" "$DRIFT_FILE" 2>/dev/null || rm -f "$tmp"
+  else
+    rm -f "$tmp"
+  fi
+}
+
 # Append entry to drift file
-if command -v python3 >/dev/null 2>&1; then
-  python3 -c "
-import json, sys
-drift_file, timestamp, basename, config_type, file_path = sys.argv[1:6]
-drift = json.load(open(drift_file))
-drift['entries'].append({
-    'timestamp': timestamp,
-    'file': basename,
-    'type': 'config',
-    'changes': [{'action': 'modified', 'configType': config_type, 'path': file_path}]
-})
-with open(drift_file, 'w') as f:
-    json.dump(drift, f, indent=2)
-" "$DRIFT_FILE" "$TIMESTAMP" "$BASENAME" "$CONFIG_TYPE" "$FILE_PATH" 2>/dev/null || true
-fi
+# shellcheck disable=SC2016  # jq variables, not shell expansions
+append_entry '{timestamp: $ts, file: $bn, type: "config", changes: [{action: "modified", configType: $ct, path: $fp}]}' \
+  --arg ts "$TIMESTAMP" --arg bn "$BASENAME" --arg ct "$CONFIG_TYPE" --arg fp "$FILE_PATH"
 
 exit 0

@@ -1,6 +1,6 @@
 ---
 name: setup
-description: Use only when the user explicitly invokes /notify:setup — one-time setup of cross-platform desktop notifications (installs the notifier, wires the Stop/Notification/SubagentStop hooks). User-invoked only.
+description: Use only when the user explicitly invokes /notify:setup — one-time setup of macOS/Linux desktop notifications. Copies notify.sh into the chosen .claude/hooks/ folder, adds three async hooks (Stop, Notification, SubagentStop) to that scope's settings.json, writes notify-config.json, and offers to install terminal-notifier. User-invoked only.
 disable-model-invocation: true
 ---
 
@@ -42,6 +42,11 @@ Run `command -v notify-send` via Bash.
 - If missing: show installation instructions from `${CLAUDE_PLUGIN_ROOT}/scripts/install-notifier.sh` output (distro-specific `apt`/`dnf`/`pacman` commands) and stop.
 
 Note: On Linux, sounds are not supported (mapped to urgency levels) and click-to-focus (`activate`) is not available. Inform the developer of these differences.
+
+**Both platforms — `jq` (recommended, not required):**
+Run `command -v jq` via Bash.
+- If installed: `jq is installed. notify.sh will read your settings and Claude's message text.`
+- If missing: tell the developer that notify still works without `jq`, but `notify.sh` then skips `notify-config.json` and the hook input: every notification uses the built-in defaults and a generic message. Suggest installing it (`brew install jq` on macOS — macOS 15 and later already ship `/usr/bin/jq`; `sudo apt install jq`, `sudo dnf install jq` or `sudo pacman -S jq` on Linux). Do not install it yourself, and do not stop setup.
 
 ---
 
@@ -110,7 +115,7 @@ Check for existing notification hooks:
 
 If "Cancel", stop. If "Update" or "Replace", continue (Replace removes old config first).
 
-**On "Update":** before merging hooks in Step 6b, remove any *existing* notify hook entries (commands containing `notify.sh`) from each event array first, then add the fresh entry. This prevents a duplicate hook — and therefore a double notification — when setup is re-run against a scope that already has notify installed.
+**On "Update":** before merging hooks in Step 6b, remove any *existing* notify hook entries (commands containing `notify.sh`) from each event array first, then add the fresh entry. This prevents a duplicate hook — and therefore a double notification — when setup is re-run against a scope that already has notify installed. Entries written by notify before 2.1.0 have no `"async": true`; they match the same way and are replaced by the async entries. Update also re-copies `notify.sh` (Step 6a), which is how an installed copy picks up a newer plugin version.
 
 **If no existing config**, proceed directly.
 
@@ -127,6 +132,8 @@ Present the default configuration:
 > | Task completed | "Task completed" | Hero | VS Code |
 > | Needs attention | "Needs your attention" | Glass | VS Code |
 > | Subagent done | *(off by default)* | — | — |
+>
+> Notifications show a short excerpt (80 characters) of Claude's last message. If your screen is shared or notifications appear on your lock screen, you can turn that off (`showMessage: false`) and see only the fallback message.
 >
 > The "Needs attention" event uses a **matcher** (`permission_prompt|idle_prompt`) to filter which Notification events trigger it. You can customize this during setup or edit `notify-config.json` later.
 >
@@ -145,6 +152,7 @@ If "Use defaults", use these values (omit `activate` on Linux):
 ```json
 {
   "version": "1.0.0",
+  "showMessage": true,
   "events": {
     "stop": {
       "enabled": true,
@@ -186,7 +194,9 @@ cp "${CLAUDE_PLUGIN_ROOT}/scripts/notify.sh" "$BASE_DIR/hooks/notify.sh"
 chmod +x "$BASE_DIR/hooks/notify.sh"
 ```
 
-The script supports both macOS (`terminal-notifier`) and Linux (`notify-send`), auto-detects the platform, reads config from `notify-config.json` at runtime, and supports a leading-edge notification cooldown via `minDurationSeconds`.
+The script supports both macOS (`terminal-notifier`) and Linux (`notify-send`), auto-detects the platform, reads config from `notify-config.json` at runtime (with `jq`), and supports a leading-edge notification cooldown via `minDurationSeconds`. It prints nothing to stdout and always exits 0.
+
+This is a copy. It does not change when the notify plugin updates — re-running `/notify:setup` and choosing **Update** refreshes it.
 
 ### 6b: Merge hooks into `$BASE_DIR/settings.json`
 
@@ -194,7 +204,7 @@ If `$BASE_DIR/settings.json` exists but does not parse as JSON, do NOT overwrite
 
 Read the existing `$BASE_DIR/settings.json` (create if it doesn't exist). Merge hook entries into the `hooks` object **non-destructively** — preserve all existing keys and hooks.
 
-**Always register all three events.** The hook command only passes the event name — all preferences (enabled, sound, message fallback, activate) are read from `notify-config.json` at runtime. Use the fully resolved absolute `$BASE_DIR` path in all command strings (no `~`):
+**Always register all three events.** The hook command only passes the event name — all preferences (enabled, sound, message fallback, activate, showMessage) are read from `notify-config.json` at runtime. Use the fully resolved absolute `$BASE_DIR` path in all command strings (no `~`). Every entry sets `"async": true`, so a notification never delays Claude:
 
 ```json
 {
@@ -205,7 +215,7 @@ Read the existing `$BASE_DIR/settings.json` (create if it doesn't exist). Merge 
           {
             "type": "command",
             "command": "\"$BASE_DIR/hooks/notify.sh\" stop",
-            "timeout": 10
+            "async": true
           }
         ]
       }
@@ -217,7 +227,7 @@ Read the existing `$BASE_DIR/settings.json` (create if it doesn't exist). Merge 
           {
             "type": "command",
             "command": "\"$BASE_DIR/hooks/notify.sh\" notification",
-            "timeout": 5
+            "async": true
           }
         ]
       }
@@ -228,7 +238,7 @@ Read the existing `$BASE_DIR/settings.json` (create if it doesn't exist). Merge 
           {
             "type": "command",
             "command": "\"$BASE_DIR/hooks/notify.sh\" subagentStop",
-            "timeout": 10
+            "async": true
           }
         ]
       }
@@ -241,7 +251,7 @@ The `matcher` stays in `settings.json` (Claude Code evaluates it before invoking
 
 ### 6c: Write `$BASE_DIR/notify-config.json`
 
-Write the full configuration JSON. The `message` field in each event is the **fallback message** — it's used only when contextual information can't be extracted from Claude's response. Normally, notifications show a truncated version of Claude's actual response.
+Write the full configuration JSON. The `message` field in each event is the **fallback message** — it's used when contextual information can't be extracted from Claude's response, when `jq` is missing, or when `showMessage` is `false`. Otherwise notifications show a truncated version of Claude's actual response.
 
 ---
 
@@ -276,8 +286,8 @@ Ask the developer if they saw the notification.
 ## Step 8: Handoff
 
 > **What was set up:**
-> - `$BASE_DIR/hooks/notify.sh` — The notification script
-> - `$BASE_DIR/settings.json` — Hooks that trigger notifications on Claude events
+> - `$BASE_DIR/hooks/notify.sh` — The notification script (a copy; re-run `/notify:setup` → Update after you update the plugin)
+> - `$BASE_DIR/settings.json` — Three async hooks that trigger notifications on Claude events
 > - `$BASE_DIR/notify-config.json` — Your preferences (edit this to change settings)
 >
 > **Scope:** <global | this project only (`$BASE_DIR`)>
@@ -285,6 +295,7 @@ Ask the developer if they saw the notification.
 > **To change settings later:**
 > - Edit `$BASE_DIR/notify-config.json` — changes take effect immediately (no need to re-run setup)
 > - Toggle events on/off by setting `"enabled": true/false` in the config
+> - Set `"showMessage": false` to keep Claude's text out of notifications
 > - The only setting that requires re-running setup is the Notification `matcher` (stored in `settings.json`)
 > - Run `/notify:check` to check everything is working
 
@@ -299,4 +310,6 @@ If the scope is per-project, add:
 - **`settings.json` is always read before writing** — hooks are merged non-destructively alongside existing entries. Never overwrite the file; preserve all other hooks, rules, and keys verbatim.
 - **Existing config requires explicit user choice before proceeding** — if `notify.sh`, `notify-config.json`, or existing hooks are detected in Step 3, surface the Update / Replace / Cancel menu and wait. Never silently overwrite a previous setup.
 - **`BASE_DIR` must be a fully resolved absolute path** — no `~` or relative segments in any path that gets written to `settings.json` hook commands. Expand at resolution time in Step 2 and carry the expanded form forward through all subsequent steps.
+- **Hooks are always async** — every notify entry written to `settings.json` carries `"async": true`. A notification must never delay Claude, and `notify.sh` prints nothing to stdout.
+- **`jq` is reported, never installed or required** — Step 1 tells the developer when `jq` is missing and what that changes; setup continues either way.
 - **All three hook events are always registered** — Stop, Notification, and SubagentStop hooks must always be written to `settings.json`, regardless of whether the event is `enabled` in `notify-config.json`. The `enabled` flag is a runtime gate read by `notify.sh`, not a generation-time filter.

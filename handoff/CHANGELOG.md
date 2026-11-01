@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.1.0 — 2026-10-31
+
+### Changed
+- **The SessionStart hook only announces a saved handoff; it no longer prints the file.** It checks that `.claude/handoff/active.md` exists and is not snoozed, then emits one fixed notice that routes to `/handoff:pickup`. The notes, frontmatter and progress signals never reach Claude's context from the hook. Before, the hook printed the directive inside `<untrusted-source>` tags and the frontmatter values in a "trusted" block, unescaped — so a handoff committed to a cloned repository could close the tag or plant text in the trusted block. The new hook has no shell variables, no command substitution and calls no other file, which is what Anthropic's plugin directory requires of hook scripts in a plugin that lives in a subfolder of its repository.
+- **`/handoff:pickup` now does what the hook used to do.** It reads the file, computes progress (commits since the save, branch change, age), archives a handoff older than `stale-day-threshold` as `expired`, shows the notes as data, and warns when the handoff file is committed to git (someone else may have written it). The four-option flow is unchanged.
+- **Snooze is a marker file.** "Save for later" (new `scripts/snooze.sh`) still writes `deferred-at`, and now sets `.claude/handoff/snooze-until`'s modification time to the end of the window (`deferral-snooze-hours`, default 24, capped at one year). The hook stays quiet while that time is in the future. A `deferred-at` without the marker no longer snoozes: a handoff you snoozed with 1.0.x is offered once more at the next session start.
+- **One archive path.** New `scripts/archive-active.sh` moves the active handoff to `archive/<consumed|discarded|expired>-<ts>.md`, clears the snooze marker and applies `archive-retention`. Pickup and `/handoff:discard` both use it.
+- **`/handoff:save` says what it writes** in its description (`.claude/handoff/active.md`, and `.gitignore` when you accept), clears an old snooze marker so a new handoff is offered at the next session start, and now offers to create `.gitignore` when the project is a git repository without one.
+- **`/handoff:check`** reads the snooze from the marker with the same test as the hook, and reports whether the handoff file is committed to git.
+- Hook command quotes the whole path: `bash "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh"`.
+- Manifest adds `homepage`, `documentationUrl`, `supportUrl`, `privacyPolicyUrl` and `author.url`; the plugin folder now ships its own `LICENSE`. The README now starts with what the plugin reads, writes and sends, and where it works.
+- The plugin description is shorter (under 120 characters), as the repo's manifest rule requires.
+
+### Removed
+- `hf_get_body` from `scripts/handoff-lib.sh` (nothing extracts the body in shell any more).
+
+### Added
+- **Listing icon and display name.** A 512 px PNG icon for Anthropic's plugin directory, drawn from what handoff does (its SVG source sits beside it in the assets folder), and the display name "Handoff".
+
+### Fixed
+- **A saved-at-sha that looks like a git option no longer reaches git.** `compute-progress.sh` passed the value straight to `git rev-list`, so a handoff file committed to a repo with `saved-at-sha: --output=<path>` made `/handoff:pickup` create a file named `<path>..HEAD`. The value must now be 7–40 hex characters; anything else counts as unknown. A belt case reproduces the attack.
+- **Saved notes can't escape their block in pickup.** The body was shown in a plain triple-backtick fence that the body itself could close. Pickup now opens the block with one more backtick than the longest run in the body, shows metadata only when it has the expected shape, and treats the notes as untrusted data.
+
 ## 1.0.3 — 2026-09-15
 
 ### Changed

@@ -46,7 +46,7 @@ For empty repos without a prior stub, use `AskUserQuestion` (single-select, head
 
 Default: **Generate canonical stub**.
 
-**Single-option guard** (per `.claude/rules/ask-user-question-guard.md`): the menu has 3 options → no guard needed.
+**Single-option guard** (per `../../../references/ask-user-question-guard.md`): the menu has 3 options → no guard needed.
 
 ## Execute the selected path
 

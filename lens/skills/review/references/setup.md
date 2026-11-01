@@ -4,9 +4,9 @@ Guarded by SKILL Step 1: run this **only** when `.claude/lens/settings.md` is ab
 just read `settings.md` — never re-prompt.
 
 ## Guard usage
-This uses `AskUserQuestion`. Per `.claude/rules/ask-user-question-guard.md`: both questions below have a
-**static, ≥2-option** list (they aren't built from a dynamic detection), so the single-option collapse
-case can't occur and no padding/None guard is needed. Ask them as plain single-select questions.
+This uses `AskUserQuestion`, which needs at least two options per question. Both questions below have
+a **static, ≥2-option** list (they aren't built from a dynamic detection), so a question can't collapse
+to a single option and no padding/None option is needed. Ask them as plain single-select questions.
 
 ## The two questions
 Ask both (one `AskUserQuestion` call, two questions):

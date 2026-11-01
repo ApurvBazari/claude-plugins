@@ -197,8 +197,8 @@ existing interaction conventions — do not invent a parallel design language.
 
 Every walkthrough is a single `.html` file that works offline by double-click. Therefore:
 
-- All CSS, JS, and SVG are **inline**. The ONLY permitted external resource is the Google Fonts
-  `@import` from `design-system.md` (and even that degrades cleanly to the system fallback offline).
+- All CSS, JS, and SVG are **inline**. The page loads **no** external resource: no `@import`, no web
+  font, no CDN. Fonts are the system stacks in `design-system.md`.
 - No `<script src>` and no external stylesheet `<link>`.
 - No `<img>` — use **inline SVG** for every graphic, icon, and diagram (this is why the mind map and
   mode diagram are hand-laid SVG, and why the system map's wires are drawn into an inline `<svg>`).
