@@ -196,12 +196,17 @@ grep -q '\-\-space-' "$MK" && fail "marketplace.md references non-existent --spa
 grep -qiE 'typeTags.*chip|hero chip.*typeTags|chip.*from typeTags' "$PS" || fail "page-scaffold must document the typeTags->hero-chip recipe (W7)"
 ok "W7: no --space fiction; typeTags chip recipe present"
 
-# ask-guard: create/SKILL.md must now clarify the rule is a repo-dev convention (not shipped) AND
-# inline the shipped >=2-entries constraint so the skill is self-contained (update already inlines it).
+# ask-guard: since 1.7.0 the guard ships inside the plugin. create/SKILL.md must cite the shipped copy
+# (which must exist), must not still call it unshipped, and must inline the >=2-entries constraint so
+# the skill reads on its own (update already does all three).
 CS="$ROOT/walkthrough/skills/create/SKILL.md"
-grep -qiE 'repo-development convention|not (bundled|shipped)|convention \(not shipped\)' "$CS" || fail "create/SKILL.md must clarify the ask-guard rule is a repo-dev convention, not shipped (W7)"
+GUARD="$ROOT/walkthrough/references/ask-user-question-guard.md"
+[ -s "$GUARD" ] || fail "walkthrough must ship references/ask-user-question-guard.md (W7)"
+# shellcheck disable=SC2016  # the skill must contain the literal ${CLAUDE_PLUGIN_ROOT} text
+grep -qF '${CLAUDE_PLUGIN_ROOT}/references/ask-user-question-guard.md' "$CS" || fail "create/SKILL.md must cite the shipped ask-guard copy (W7)"
+grep -qiE 'not (bundled|shipped)|repo-development convention' "$CS" && fail "create/SKILL.md must not call the shipped ask-guard unshipped (W7)"
 grep -qiE '≥ ?2 (entries|options)|at least 2 (entries|options)|minItems' "$CS" || fail "create/SKILL.md must inline the >=2-entries AskUserQuestion constraint (W7)"
-ok "W7: ask-guard constraint inlined + clarified in create/SKILL.md"
+ok "W7: ask-guard cited from the shipped copy and its constraint inlined in create/SKILL.md"
 
 # --- W9-doc: README states the 1.3.1 document is readable without JS ---
 RD="$ROOT/walkthrough/README.md"
