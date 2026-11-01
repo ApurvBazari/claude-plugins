@@ -32,10 +32,8 @@ saved_at_branch="$(hf_get_fm_value "$ACTIVE_FILE" 'saved-at-branch')"
 saved_from_cwd="$(hf_get_fm_value "$ACTIVE_FILE" 'saved-from-cwd')"
 
 # Thresholds: positive integers only; anything else falls back to the default.
-stale_commit_threshold="$(hf_get_fm_value "$SETTINGS_FILE" 'stale-commit-threshold')"
-[[ "$stale_commit_threshold" =~ ^[0-9]+$ ]] || stale_commit_threshold=3
-stale_day_threshold="$(hf_get_fm_value "$SETTINGS_FILE" 'stale-day-threshold')"
-[[ "$stale_day_threshold" =~ ^[0-9]+$ ]] || stale_day_threshold=90
+stale_commit_threshold="$(hf_int_setting "$(hf_get_fm_value "$SETTINGS_FILE" 'stale-commit-threshold')" 3 999999)"
+stale_day_threshold="$(hf_int_setting "$(hf_get_fm_value "$SETTINGS_FILE" 'stale-day-threshold')" 90 999999)"
 
 now_epoch="$(date +%s)"
 days_old="unknown"
