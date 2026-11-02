@@ -64,4 +64,4 @@ value=$(cat - | grep -o '"key": *"[^"]*"' | head -1 | sed 's/.*: *"//;s/"//')
 Hook scripts must never fail for want of `jq`. Two acceptable shapes:
 
 - **jq with a text fallback** (above), when the script needs the value either way.
-- **jq only, degrading to defaults** when the value is optional: without `jq`, skip parsing and use the script's built-in defaults (notify's `notify.sh` does this). Never fall back to an inline interpreter such as `python3 -c`: the plugin directory holds scripts with inline programs for review.
+- **jq only, degrading to defaults** when the value is optional: without `jq`, skip parsing and use the script's built-in defaults (notify's `notify.sh` does this). Never fall back to an inline interpreter such as `python3 -c`: Anthropic's plugin directory holds scripts with inline programs for manual review.
