@@ -31,7 +31,7 @@ saved_at_sha="$(hf_get_fm_value "$ACTIVE_FILE" 'saved-at-sha')"
 saved_at_branch="$(hf_get_fm_value "$ACTIVE_FILE" 'saved-at-branch')"
 saved_from_cwd="$(hf_get_fm_value "$ACTIVE_FILE" 'saved-from-cwd')"
 
-# Thresholds: positive integers only; anything else falls back to the default.
+# Thresholds: whole numbers (leading zeros ignored), capped; anything else falls back to the default.
 stale_commit_threshold="$(hf_int_setting "$(hf_get_fm_value "$SETTINGS_FILE" 'stale-commit-threshold')" 3 999999)"
 stale_day_threshold="$(hf_int_setting "$(hf_get_fm_value "$SETTINGS_FILE" 'stale-day-threshold')" 90 999999)"
 
