@@ -76,7 +76,7 @@
       "name": "lens",
       "source": "./lens",
       "description": "Reviews Claude's changes against the spec and plan they followed and verifies each finding. Never edits code.",
-      "version": "1.5.3",
+      "version": "1.5.4",
       "keywords": [
         "code-review",
         "pr-review",
