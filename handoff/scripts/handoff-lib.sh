@@ -60,3 +60,17 @@ hf_normalize_retention() {
   esac
   return 0
 }
+
+# Read a non-negative whole-number setting from frontmatter. Prints <default> when the value
+# isn't all digits. Leading zeros are stripped first, because bash arithmetic reads them as
+# octal (`08` is an error, `010` is 8). The result is capped at <max>.
+# Usage: hf_int_setting <raw> <default> <max>
+hf_int_setting() {
+  local raw="$1" def="$2" max="$3"
+  [[ "$raw" =~ ^[0-9]+$ ]] || { printf '%s' "$def"; return 0; }
+  raw="${raw#"${raw%%[!0]*}"}"
+  [[ -n "$raw" ]] || raw=0
+  if (( ${#raw} > ${#max} )) || (( raw > max )); then raw="$max"; fi
+  printf '%s' "$raw"
+  return 0
+}

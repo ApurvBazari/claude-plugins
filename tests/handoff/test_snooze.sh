@@ -42,6 +42,9 @@ assert_file_absent "$FIXTURE_ROOT/pwned"
 printf -- '---\ndeferral-snooze-hours: 999999\n---\n' > "$FIXTURE_ROOT/.claude/handoff/settings.md"
 bash "$SNOOZE" "$FIXTURE_ROOT" >/dev/null
 assert_eq "8760" "$(marker_offset_h "$FIXTURE_ROOT/.claude/handoff/snooze-until")" "window capped at one year"
+printf -- '---\ndeferral-snooze-hours: 08\n---\n' > "$FIXTURE_ROOT/.claude/handoff/settings.md"
+bash "$SNOOZE" "$FIXTURE_ROOT" >/dev/null
+assert_eq "8" "$(marker_offset_h "$FIXTURE_ROOT/.claude/handoff/snooze-until")" "zero-padded 08 → 8h, not read as octal"
 printf -- '---\ndeferral-snooze-hours: 0\n---\n' > "$FIXTURE_ROOT/.claude/handoff/settings.md"
 bash "$SNOOZE" "$FIXTURE_ROOT" >/dev/null
 assert_contains "handoff:pickup" "$(run_hook_in "$FIXTURE_ROOT")" "0h window → hook announces again"

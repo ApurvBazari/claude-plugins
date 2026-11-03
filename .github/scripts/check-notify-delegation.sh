@@ -45,14 +45,33 @@ for f in "$START" "$GEN"; do
   fi
 done
 
-# NEGATIVE — no onboard file may reach into another plugin's folder through a sibling path.
+# NEGATIVE — no plugin file may reach into another plugin's folder through a sibling path.
 # ${CLAUDE_PLUGIN_ROOT}/../<plugin> only exists in a dev checkout; installed plugins live in
 # separate cache or synced folders. Match command forms (ls, [ -d, cat, bash, source, an
 # assignment), not prose that warns against the pattern. CHANGELOG history is exempt.
+# The folders to scan come from the marketplace, so a renamed or added plugin is covered
+# without editing this script. A listed folder that is missing fails the gate: grep would
+# otherwise skip it with an error that `|| true` swallows, and the gate would still pass.
+MARKETPLACE=".claude-plugin/marketplace.json"
+plugin_dirs=()
+if ! listed="$(jq -r '.plugins[].source' "$MARKETPLACE" 2>/dev/null)" || [ -z "$listed" ]; then
+  echo "$MARKETPLACE: can't read the plugin list, so no plugin was scanned for sibling probes"; fail=1
+else
+  while IFS= read -r src; do
+    dir="${src#./}"
+    if [ -d "$dir" ]; then
+      plugin_dirs+=("$dir")
+    else
+      echo "$MARKETPLACE lists $src, but that folder is missing, so it can't be scanned for sibling probes"; fail=1
+    fi
+  done <<<"$listed"
+fi
 sibling_re='(\bls\b|\[ -[a-z] |\bcat\b|\bbash\b|\bsource\b|=)[[:space:]]*"?\$\{CLAUDE_PLUGIN_ROOT(:-)?\}/\.\./'
-if hits="$(grep -rnE --include='*.md' --include='*.sh' --include='*.json' "$sibling_re" onboard \
-           | grep -v '^onboard/CHANGELOG\.md:' || true)" && [ -n "$hits" ]; then
-  echo "onboard probes a sibling plugin folder; ask \`claude plugin list --json\` for installPath instead:"
+if [ "${#plugin_dirs[@]}" -gt 0 ] \
+   && hits="$(grep -rnE --include='*.md' --include='*.sh' --include='*.json' "$sibling_re" \
+                "${plugin_dirs[@]}" \
+              | grep -vE '^[a-z]+/CHANGELOG\.md:' || true)" && [ -n "$hits" ]; then
+  echo "a plugin probes a sibling plugin folder; ask \`claude plugin list --json\` for installPath instead:"
   printf '%s\n' "$hits" | sed 's/^/  /'
   fail=1
 fi

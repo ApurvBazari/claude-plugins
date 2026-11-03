@@ -45,6 +45,11 @@ assert_eq "5" "$stale_day_threshold" "override threshold is reported"
 printf -- '---\nstale-day-threshold: soon\n---\n' > "$FIXTURE_ROOT/.claude/handoff/settings.md"
 eval "$(bash "$REPO_ROOT/handoff/scripts/compute-progress.sh" "$FIXTURE_ROOT")"
 assert_eq "90" "$stale_day_threshold" "non-integer threshold → default 90"
+# A zero-padded value is decimal: 08 days, not an octal error that leaves the handoff never stale.
+printf -- '---\nstale-day-threshold: 08\n---\n' > "$FIXTURE_ROOT/.claude/handoff/settings.md"
+eval "$(bash "$REPO_ROOT/handoff/scripts/compute-progress.sh" "$FIXTURE_ROOT")"
+assert_eq "8" "$stale_day_threshold" "zero-padded 08 → 8, not read as octal"
+assert_eq "yes" "$stale" "08-day threshold → 10-day-old handoff is stale"
 cleanup
 
 summary

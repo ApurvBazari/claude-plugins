@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Unit tests for handoff/scripts/handoff-lib.sh — the single source of truth for
-# frontmatter reading, ISO parsing, and retention normalization.
+# frontmatter reading, ISO parsing, retention normalization, and whole-number settings.
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$HERE/../.." && pwd)"
@@ -49,6 +49,16 @@ assert_eq "0"         "$(hf_normalize_retention 0)"         "ret: 0 stays 0 (del
 assert_eq "5"         "$(hf_normalize_retention 5)"         "ret: positive int"
 assert_eq "10"        "$(hf_normalize_retention '')"        "ret: empty → default 10"
 assert_eq "10"        "$(hf_normalize_retention 'x;rm -rf')" "ret: hostile non-numeric → 10"
+
+# int_setting: whole numbers read as decimal (never octal), capped at max; junk → default
+assert_eq "0"    "$(hf_int_setting 000 24 8760)"                  "int: 000 → 0 (all zeros)"
+assert_eq "8"    "$(hf_int_setting 08 24 8760)"                   "int: 08 → 8 (not an octal error)"
+assert_eq "10"   "$(hf_int_setting 0010 24 8760)"                 "int: 0010 → 10 (not octal 8)"
+assert_eq "8760" "$(hf_int_setting 8761 24 8760)"                 "int: over max → max"
+# 2^64 + 1: bash arithmetic wraps it to 1, so only the length check keeps it from slipping past the cap.
+assert_eq "8760" "$(hf_int_setting 18446744073709551617 24 8760)" "int: longer than max → max (no overflow)"
+assert_eq "24"   "$(hf_int_setting abc 24 8760)"                  "int: non-digits → default"
+assert_eq "24"   "$(hf_int_setting '' 24 8760)"                   "int: empty → default"
 
 rm -f "$tmp"
 summary

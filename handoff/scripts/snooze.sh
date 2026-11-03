@@ -32,9 +32,7 @@ if [[ ! -f "$active" ]]; then
   exit 3
 fi
 
-hours="$(hf_get_fm_value "$handoff_dir/settings.md" 'deferral-snooze-hours')"
-[[ "$hours" =~ ^[0-9]+$ ]] || hours=24
-[[ "$hours" -le 8760 ]] || hours=8760
+hours="$(hf_int_setting "$(hf_get_fm_value "$handoff_dir/settings.md" 'deferral-snooze-hours')" 24 8760)"
 
 now_epoch="$(date +%s)"
 until_epoch=$(( now_epoch + hours * 3600 ))
