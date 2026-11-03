@@ -92,6 +92,8 @@ Apply the right invocation policy per skill:
 
 Canonical frontmatter spelling is **hyphenated** (`user-invocable`, `disable-model-invocation`) per the Claude Code docs. Underscore spelling is silently ignored.
 
+Frontmatter must parse as YAML. A plain value can't contain `: `, so wrap a description that has one in double quotes. Claude Code and `claude plugin validate --strict` both accept the broken form, but Anthropic's plugin directory holds the version (it held lens 1.5.3). `tests/test_frontmatter_yaml.sh` enforces this for every shipped skill and agent.
+
 ## Naming Conventions
 
 - File names: kebab-case (`codebase-analyzer.md`, `validate-bash.sh`)
