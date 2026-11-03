@@ -163,7 +163,7 @@ section.vis{opacity:1;transform:none;}
       <a href="#isnt">Is / isn't</a>
     </div>
     <div style="display:flex;align-items:center;gap:.8rem">
-      <div class="nav-meta"><span class="dot"></span> PLUGIN · v1.5.2</div>
+      <div class="nav-meta"><span class="dot"></span> PLUGIN · v1.5.3</div>
       <button class="theme-btn" onclick="tgl()">◑ THEME</button>
     </div>
   </div></nav>
@@ -212,7 +212,7 @@ section.vis{opacity:1;transform:none;}
         <div class="edge">
           <div class="n">correctness</div>
           <div class="t">Does it work correctly?</div>
-          <p>Scans for bugs, silent failures, edge cases, and security issues — confirming each against the real source. Only confirmed findings survive the adversarial verify pass.</p>
+          <p>Scans for bugs, silent failures, edge cases, and security issues — confirming each against the real source with Read, Grep, and Glob only (no Bash). A claim that needs code run to settle is left for the verifier. Only confirmed findings survive the adversarial verify pass.</p>
         </div>
         <div class="edge">
           <div class="n">risk-classify</div>
@@ -306,7 +306,7 @@ section.vis{opacity:1;transform:none;}
           <tr>
             <td class="slash">/lens:review [target]</td>
             <td><span class="tag auto">user + auto</span></td>
-            <td>Intent-grounded review. Runs the full five-stage pipeline against the session diff (or an explicit target — a path, ref, or range). Sets up a per-stage task list for in-session visibility. Writes the review artifact and updates <span class="cell-mono">.claude/lens/review-state.json</span>.</td>
+            <td>Intent-grounded review, its trigger anchored on checking work against its spec and plan, so a generic "review my changes" doesn't compete with the built-in <code>/code-review</code>. Runs the full five-stage pipeline against the session diff (or an explicit target — a path, ref, or range). Sets up a per-stage task list for in-session visibility. Writes the review artifact and updates <span class="cell-mono">.claude/lens/review-state.json</span>.</td>
           </tr>
           <tr>
             <td class="slash">engine</td>
@@ -326,7 +326,7 @@ section.vis{opacity:1;transform:none;}
         </tbody>
       </table>
       <p style="margin-top:1rem">The five built-in finders run in parallel during Stage 3: <strong>spec-adherence</strong>, <strong>plan-adherence</strong>, <strong>correctness</strong>, <strong>risk-classify</strong>, and <strong>test-gaps</strong>. Each emits structured findings tagged with its dimension. The verify stage then routes each finding to the <strong>verifier</strong> skeptic agent.</p>
-      <p>Settings live at <code>.claude/lens/settings.md</code>. Review state and finding history live at <code>.claude/lens/review-state.json</code>. These are the only files lens ever writes.</p>
+      <p>Settings live at <code>.claude/lens/settings.md</code>. Review state and finding history live at <code>.claude/lens/review-state.json</code>. With the review document, these are the only files lens writes, plus <code>.gitignore</code> entries for <code>.claude/lens/</code> if you accept the first-run offer.</p>
     </section>
 
     <section id="isnt">
@@ -346,8 +346,8 @@ section.vis{opacity:1;transform:none;}
         </div>
         <div class="edge">
           <div class="n">it is ✓</div>
-          <div class="t">Read-only by contract</div>
-          <p>lens never edits, stages, commits, or deletes code. Its only writes are the review artifact and <code>review-state.json</code>. Adapters are constrained to the same contract.</p>
+          <div class="t">Never touches your code</div>
+          <p>lens never edits, stages, or commits your code. It writes only its own files: <code>.claude/lens/settings.md</code>, the review document, <code>review-state.json</code>, and <code>.gitignore</code> entries only if you accept the first-run offer. Adapters are constrained to report-only.</p>
         </div>
         <div class="edge">
           <div class="n">it isn't ✗</div>
@@ -372,7 +372,7 @@ section.vis{opacity:1;transform:none;}
         <a href="../">← marketplace</a>
         <a href="https://github.com/ApurvBazari/claude-plugins/tree/main/lens">source on GitHub</a>
       </div>
-      <div class="meta">lens · v1.5.2 · MIT · by Apurv Bazari</div>
+      <div class="meta">lens · v1.5.3 · MIT · by Apurv Bazari</div>
     </div>
   </main>
 
@@ -387,8 +387,8 @@ const DET={
  scope:{k:"Stage 1",h:"Resolve scope",summary:"With no argument, lens reviews the working tree plus this branch's commits against the merge-base with the default branch. The optional [target] overrides the diff scope — a path, a ref, or a range. This stage produces the diff context that all downstream stages operate on.",where:[]},
  intent:{k:"Stage 2",h:"Resolve intent",summary:"Reads the spec and plan for the change — one or many. For each spec and plan found, builds a per-item adherence checklist. This is what no diff-only tool can do: reconstruct what the code was supposed to build and check it against what was actually written. Supports multiple specs and plans via per-spec / per-plan adherence fan-out.",where:[]},
  analyze:{k:"Stage 3",h:"Run finders",summary:"Five built-in finders run in parallel: spec-adherence, plan-adherence, correctness, risk-classify, and test-gaps. Optional adapters (e.g. pr-review-toolkit agents) can plug in as read-only adapters, constrained to report-only — never edit, stage, commit, or block. Each finder emits structured candidate findings tagged with its dimension.",where:[]},
- verify:{k:"Stage 4",h:"Adversarial verify",summary:"An independent skeptic agent attempts to refute each candidate finding against the real source. Only unrefuted findings survive to the report. Correctness, security, and test claims default to refuted unless the skeptic can prove them from source; spec and plan judgment calls are kept. This is the filter that keeps the signal-to-noise high.",where:[]},
- render:{k:"Stage 5",h:"Render review",summary:"lens hands the structured review model to walkthrough:render, which produces an interactive HTML review document in the house style. If walkthrough is not installed, lens degrades to a self-contained markdown report with the same content. The rendered artifact and .claude/lens/review-state.json are the only things lens ever writes.",where:[]}
+ verify:{k:"Stage 4",h:"Adversarial verify",summary:"An independent skeptic agent attempts to refute each candidate finding against the real source. Only unrefuted findings survive to the report. Correctness, security, and test claims default to refuted unless the skeptic can prove them from source; spec and plan judgment calls are kept. The verifier may run read-only git, search, and the project's typecheck or test command scoped to the changed code; it never installs packages, changes git state, or uses the network. This is the filter that keeps the signal-to-noise high.",where:[]},
+ render:{k:"Stage 5",h:"Render review",summary:"lens hands the structured review model to walkthrough:render, which produces an interactive HTML review document in the house style. If walkthrough is not installed, lens degrades to a self-contained markdown report with the same content. Besides the rendered artifact and .claude/lens/review-state.json, lens writes only .claude/lens/settings.md and, if you accept the first-run offer, .gitignore entries. It never edits your code.",where:[]}
 };
 const SURF={scope:'pane',intent:'pane',analyze:'pane',verify:'pane',render:'pane'};
 function renderSurface(d,host){if(!d||!host)return;let h='';

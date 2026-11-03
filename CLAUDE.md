@@ -20,7 +20,7 @@ Claude Code plugin marketplace by Apurv Bazari. Five plugins — all markdown + 
          │      └── scripts/ (detect-{config,dep,structure}-changes, detect-{lsp,mcp}-signals, audit-tooling, install-plugins,
          │                    maintain-{detect,guard,write} + maintain-lib/)
          │
-         ├──→ notify/                    ← cross-platform system notifications
+         ├──→ notify/                    ← macOS and Linux desktop notifications
          │      ├── skills/ (setup, check, uninstall, wizard)
          │      └── scripts/ (notify, install-notifier)
          │
