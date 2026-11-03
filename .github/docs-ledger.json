@@ -66,6 +66,7 @@
     "onboard@3.4.0#742c8ce1": {"disposition": "not-user-facing", "reason": "manifest listing URLs and a LICENSE copy for the plugin directory"},
     "onboard@3.4.0#5650c30e": {"disposition": "covered", "at": ["site/index.html#plugins"]},
     "onboard@3.4.0#72170953": {"disposition": "not-user-facing", "reason": "a listing icon and display name for Anthropic's plugin directory; no doc page describes the listing"},
+    "onboard@3.4.0#e92adc07": {"disposition": "covered", "at": ["onboard/README.md#example", "site/onboard/index.html#example"]},
     "notify@2.1.0#d899f3ad": {"disposition": "covered", "at": ["notify/README.md#what-it-does", "site/notify/index.html#flow", "site/notify/index.html#skills"]},
     "notify@2.1.0#aa9fb19f": {"disposition": "covered", "at": ["notify/README.md#prerequisites", "site/notify/index.html#platform", "site/notify/index.html#skills"]},
     "notify@2.1.0#5effbc40": {"disposition": "covered", "at": ["site/notify/index.html#config"]},

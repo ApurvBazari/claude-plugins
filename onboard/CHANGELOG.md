@@ -19,6 +19,9 @@ Prepares onboard for the claude.ai plugin directory's validation and security sc
 ### Fixed — built-in skills
 - **onboard recommended commands that don't exist.** `/pr-summary` and `/codebase-visualizer` are examples in the Claude Code skills docs, and `/explain-code` doesn't exist; all three are removed. `/debug` was described as general bug-hunting; it turns on Claude Code's own debug log, and is now described that way. `/code-review` joins the core set and `/security-review` the extras, both checked against the commands reference. `/schedule` is described as cloud scheduled tasks (formerly routines). `update` and `evolve` flag a removed name in an existing `CLAUDE.md` so you can delete the line.
 
+### Fixed — MCP sign-in
+- **The OAuth sign-in step named a command that doesn't exist.** The summary after setup, the generated `.claude/rules/mcp-setup.md` and the README told you to run `claude mcp auth <name>`. Claude Code's command is `claude mcp login <name>`, and all three now say so. The wrong name dates from 3.0.0; it matters more now, because every server onboard writes signs in with OAuth. A `mcp-setup.md` from an older onboard keeps the old name until `update` or `evolve` regenerates it, which they do when they add a server that signs in.
+
 ### Changed — runtime self-containment
 - **The AskUserQuestion single-option guard ships with onboard** at `references/ask-user-question-guard.md`. Skills cited the repository's `.claude/rules/` copy, which installed users don't have. Two other development-only citations are gone from the generation references.
 - **The drift scripts use `jq` instead of inline `python3 -c` programs.** `detect-dep-changes.sh`, `detect-config-changes.sh` and `detect-structure-changes.sh` write the same drift-log entries; without `jq` they skip logging. `audit-tooling.sh`'s two inline checks use `jq` as well.

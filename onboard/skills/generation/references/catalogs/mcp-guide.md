@@ -62,7 +62,7 @@ Frontend frameworks that trigger `chrome-devtools-mcp`: React, Next.js, Vue, Sve
 Field rules:
 
 - Required: `type` (`"http"`) and `url` (the catalog's absolute `https://` URL).
-- Never written: `headers`, `env`, `command`, `args`. Onboard writes no credentials, no `${VAR}` references to the user's environment, and no package launchers. A server that signs in does so with OAuth through Claude Code (`claude mcp auth <name>`).
+- Never written: `headers`, `env`, `command`, `args`. Onboard writes no credentials, no `${VAR}` references to the user's environment, and no package launchers. A server that signs in does so with OAuth through Claude Code (`claude mcp login <name>`).
 
 ## Pre-existing .mcp.json
 
@@ -135,7 +135,7 @@ After emission Step 1 completes, emit a stdout block summarizing what happened �
 ```
 MCP servers configured:
   ✓ vercel (http) — OAuth required
-    → run `claude mcp auth vercel` to complete setup
+    → run `claude mcp login vercel` to complete setup
 
 Plugins:
   ✓ vercel — installed (you accepted it)
@@ -179,7 +179,7 @@ stack signals. Some servers need additional setup before they will work.
 Run the Claude Code OAuth flow:
 
 ```bash
-claude mcp auth {{name}}
+claude mcp login {{name}}
 ```
 
 This opens a browser window to complete authentication. The resulting
