@@ -1,6 +1,6 @@
 ---
 name: spec-adherence
-description: Built-in lens finder. Checks the session diff against its spec: met, partial or missing per item, plus scope creep. Read-only.
+description: "Built-in lens finder. Checks the session diff against its spec: met, partial or missing per item, plus scope creep. Read-only."
 color: blue
 tools: Read, Grep, Glob
 model: opus

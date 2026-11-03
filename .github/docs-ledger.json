@@ -101,6 +101,7 @@
     "walkthrough@1.7.0#148899ca": {"disposition": "not-user-facing", "reason": "a listing icon and display name for Anthropic's plugin directory; no doc page describes the listing"},
     "walkthrough@1.7.0#22b0b443": {"disposition": "not-user-facing", "reason": "moves an internal reference into the plugin folder so installed skills can load it; the behaviour it governs is unchanged"},
     "walkthrough@1.7.0#8b16e90b": {"disposition": "not-user-facing", "reason": "manifest listing URLs and a LICENSE copy for the plugin directory"},
+    "lens@1.5.4#0f34486b": {"disposition": "not-user-facing", "reason": "YAML quoting of three frontmatter descriptions with wording unchanged; no command, behaviour or documented text changes"},
     "lens@1.5.3#10207105": {"disposition": "covered", "at": ["lens/README.md#what-it-reads-writes-and-sends", "site/lens/index.html#skills", "site/lens/index.html#isnt"]},
     "lens@1.5.3#997e5325": {"disposition": "covered", "at": ["site/lens/index.html#what", "site/lens/index.html#pipeline"]},
     "lens@1.5.3#66025f47": {"disposition": "covered", "at": ["site/lens/index.html#skills"]},

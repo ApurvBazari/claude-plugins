@@ -1102,6 +1102,33 @@
       "status": "queued",
       "rationale": "The script began (#78) as the guard that onboard's start and generate flows delegate notify setup to /notify:setup and never wire notify per repo. #149 added a second, unrelated check to it: no onboard file may probe a sibling plugin's folder through ${CLAUDE_PLUGIN_ROOT}/../. #152 widened that check to every plugin and then made it read the plugin folders from .claude-plugin/marketplace.json. The two checks share nothing but the fail flag. The file name, its header comment (lines 1-16) and its pass line still describe only the notify check, so the sibling-probe guard can't be found by name. Besides the script itself, four files name it: .github/workflows/validate.yml (the CI step 'Notify-delegation guard', line 136, and its run line, 137); tests/release-gate/run-automated-checks.sh lines 790-794, whose fail message says 'per-repo notify emission detected' even when a sibling probe is what failed; the docs bot's gate list in .claude/skills/release-docs/scripts/post-checks.sh line 242; and notify/CONVENTIONS.md line 42, which says the script 'guards both rules' (onboard delegates notify setup, and never reads notify's files through a sibling path). It was left out of #152 because a rename touches CI, the release-gate runner and the docs bot's post-checks while release #151 is open, and the review rated it fine for a later PR.",
       "resolution": "Split it in two: check-notify-delegation.sh keeps the onboard checks, and a new script (for example check-sibling-probes.sh) holds the sibling scan with its own header and pass line. Or rename the one script to a name that covers both; splitting fits better, since the checks share no state. Then update the CI step's name and run line, the release-gate runner's call and its pass and fail messages, the post-checks.sh gate list, and the notify/CONVENTIONS.md sentence (after a split it names both scripts, one per rule). Run tests/run-all.sh, the release-gate runner and the docs bot's post-checks, and grep for the old name, so nothing still calls it. Do it after release #151 merges, in its own PR to develop."
+    },
+    {
+      "id": "DIR-7",
+      "title": "handoff 1.1.0 is held by the plugin directory for a credential forward it doesn't have",
+      "source": "Developer portal, handoff v1.1.0 at c3f8fa5, read 2026-11-03; owner's call in the session that opened this PR",
+      "raisedAt": "2026-11-03",
+      "status": "deferred",
+      "rationale": "The portal holds handoff 1.1.0 for one reason, 'Update adds credential forward'. That is the MCP_FORWARDS_CREDENTIAL_ENV warning ('Uses a credential from the user's machine'), pinned to .claude-plugin/plugin.json and new against the serving v1.0.3 at bb7a897. handoff ships no MCP config and reads no token or API key: its scripts read only CLAUDE_PLUGIN_ROOT, BASH_SOURCE and their own state paths. The live v1.0.3 keeps serving. 'Publish update' is offered only on approved versions, so a held one clears through a push that removes the finding or through a reviewer. The owner chose to wait until lens 1.5.4 has been scanned, in case that scan shows how the warning clears, before asking a reviewer.",
+      "resolution": "After the next main release is scanned: if handoff's newest row still gives 'Update adds credential forward', the owner asks a reviewer from handoff's menu in the portal (Get help or Contact Anthropic) to confirm that no part of handoff reads a credential. DIR-8 covers the rule itself."
+    },
+    {
+      "id": "DIR-8",
+      "title": "The plugin directory flags lens, handoff and notify as forwarding a credential, citing only plugin.json",
+      "source": "Developer portal, newest versions of lens, handoff and notify at c3f8fa5, read 2026-11-03",
+      "raisedAt": "2026-11-03",
+      "status": "queued",
+      "rationale": "MCP_FORWARDS_CREDENTIAL_ENV appears on the c3f8fa5 versions of lens, handoff and notify, pinned only to .claude-plugin/plugin.json with a link to the MCP docs; it names no other file. None of the three ships an MCP server or reads a credential. The release did add listing data to all three manifests (displayName, author.url, homepage, documentationUrl, supportUrl, privacyPolicyUrl, icon), but that isn't shown to be the trigger: DIR-2 records the same plugin-wide flag on onboard 3.2.0, whose manifest had none of those fields. The rule is in neither Claude Code 2.1.317's binary nor the docs. notify 2.1.0 was approved with the warning ('Meets directory policy, with warnings'), while lens and handoff were held. The likely reason, not confirmed: the warning moves a plugin out of the directory's 'contained' class (lens's hold also says 'Update leaves contained'), and notify, whose installer downloads a tool, was never in it. walkthrough 1.7.0's findings weren't read.",
+      "resolution": "Ask the directory team what the plugin-wide flag matches, through the portal's Get help or directory@anthropic.com, naming the rule id and the four listings it has hit (onboard, lens, handoff, notify). Don't remove listing fields by trial and error: onboard 3.2.0 shows they aren't needed to trigger it, and each guess costs a release."
+    },
+    {
+      "id": "DIR-9",
+      "title": "The plugin directory reads handoff's eval of its own progress script as a download-and-run command",
+      "source": "Developer portal, handoff v1.1.0 at c3f8fa5, read 2026-11-03",
+      "raisedAt": "2026-11-03",
+      "status": "deferred",
+      "rationale": "handoff 1.1.0 carries RUNTIME_FETCH_EXEC ('Contains a download-and-run command') for skills/check/SKILL.md, skills/pickup/SKILL.md and scripts/compute-progress.sh. The matched text is eval \"$(bash \"${CLAUDE_PLUGIN_ROOT}/scripts/compute-progress.sh\" \"$(pwd)\")\", which runs a script shipped inside the plugin and fetches nothing; compute-progress.sh emits every value through printf '%q' so the eval can't expand anything. It is a warning, not one of the hold's reasons, and the finding itself says nothing needs to change when the command runs a file the plugin ships. DIR-3 is the same rule on onboard's sample hook commands.",
+      "resolution": "Nothing, unless a reviewer asks. If one does, have compute-progress.sh write its key=value lines to a file the two skills read, which drops the eval-of-command-output shape the rule matches."
     }
   ]
 }
