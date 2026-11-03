@@ -1,6 +1,6 @@
 ---
 name: capability
-description: Internal. An orchestrator's compatibility check: reports the installed lens version and the capabilities it supports.
+description: "Internal. An orchestrator's compatibility check: reports the installed lens version and the capabilities it supports."
 user-invocable: false
 ---
 

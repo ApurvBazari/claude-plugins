@@ -1,6 +1,6 @@
 ---
 name: plan-adherence
-description: Built-in lens finder. Checks the session diff against its plan: each step followed or deviated, with a finding per deviation. Read-only.
+description: "Built-in lens finder. Checks the session diff against its plan: each step followed or deviated, with a finding per deviation. Read-only."
 color: blue
 tools: Read, Grep, Glob
 model: opus

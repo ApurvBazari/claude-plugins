@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.4 — 2026-11-03
+
+### Fixed
+- **Three descriptions now parse as YAML.** The `plan-adherence` and `spec-adherence` agents and the `capability` skill each had a bare `: ` in their one-line description, which YAML reads as a second key. Claude Code loaded them anyway, but Anthropic's plugin directory couldn't read those files and held 1.5.3. The three descriptions are now in double quotes, with their wording unchanged.
+
 ## 1.5.3 — 2026-10-31
 
 ### Changed
