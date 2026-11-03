@@ -1,6 +1,6 @@
 ---
 name: research-verifier
-description: Adversarial skeptic for the onboard:research VERIFY stage — takes the union of specialist claims and tries to REFUTE each against the real codebase, refute-by-default and dimension-tuned. Verification errors keep the claim (never silently dropped). Emits per-claim votes {id, refuted, reason}; the engine owns flipping verified and building droppedClaims[]. Read-only. Hard-fails if invoked without dispatchedAsAgent=true.
+description: Tries to refute each research claim against the real code and returns a vote per claim, without editing anything. Dispatched only by onboard's research engine.
 color: red
 tools: Read, Glob, Grep, Bash
 model: opus

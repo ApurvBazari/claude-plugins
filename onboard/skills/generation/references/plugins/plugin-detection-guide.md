@@ -4,37 +4,27 @@ Canonical source of truth for detecting installed Claude Code plugins and derivi
 
 ## Known Plugin Probe List
 
-A plugin may live in one of two places on disk:
+Ask Claude Code which plugins are installed. `claude plugin list --json` reports every install source with its real folder: marketplace installs (`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`), plugins added from Anthropic's directory and synced from claude.ai (`~/.claude/plugins/synced/…`), and skills-directory plugins. Each entry carries `"id": "<plugin>@<source>"`, `"enabled"` and `"installPath"`.
 
-1. **Sibling** to the running plugin — e.g., in a development monorepo like `claude-plugins/` where `onboard/`, `notify/`, `handoff/` live side-by-side under one parent. Path: `${CLAUDE_PLUGIN_ROOT}/../<plugin-name>/`.
-2. **Marketplace cache** — the standard install location populated by `claude plugin install`. Path: `~/.claude/plugins/cache/<marketplace>/<plugin-name>/<version>/` where `<marketplace>` is typically `claude-plugins-official` and `<version>` is often the literal string `unknown` (not a semver).
-
-Probing only siblings misses marketplace-installed plugins entirely (release-gate finding B8, 2026-04-17 — Standard + Minimal presets detected 2 plugins when 14+ were actually installed). Probe **both** locations:
+Probing the marketplace cache alone misses directory installs, and probing a sibling folder (`${CLAUDE_PLUGIN_ROOT}/../<plugin>`) only works in a development checkout of this repo (release-gate finding B8, 2026-04-17, was the sibling-only version of this miss). Never probe a sibling folder: a directory-submitted plugin may not point outside its own folder.
 
 ```bash
+# One call for the whole catalog.
+INSTALLED_JSON="$(claude plugin list --json 2>/dev/null || echo '[]')"
+
 # For each plugin name in the catalog below:
 P="<plugin-name>"
-FOUND=0
+ROOT="$(printf '%s' "$INSTALLED_JSON" \
+  | jq -r --arg p "$P" '[.[] | select((.id | startswith($p + "@")) and (.enabled != false))][0].installPath // empty' 2>/dev/null)"
 
-# (1) Sibling location (dev repo monorepo layout)
-if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -d "${CLAUDE_PLUGIN_ROOT}/../${P}" ]; then
-  FOUND=1
+# Fallback only when the CLI or jq can't answer: the marketplace cache.
+if [ -z "$ROOT" ]; then
+  ROOT="$(ls -d "$HOME/.claude/plugins/cache"/*/"${P}"/*/ 2>/dev/null | head -1)"
+  ROOT="${ROOT%/}"
 fi
 
-# (2) Marketplace cache (standard install)
-# Use globbing via [ -d <path>/*/<p> ] — the <marketplace> and <version>
-# dir names vary by install, so don't hardcode them.
-if [ $FOUND -eq 0 ] && ls -d "$HOME/.claude/plugins/cache"/*/"${P}"/ >/dev/null 2>&1; then
-  FOUND=1
-fi
-
-# Also accept a versioned cache dir: ~/.claude/plugins/cache/<mkt>/<p>/<ver>/
-if [ $FOUND -eq 0 ] && ls -d "$HOME/.claude/plugins/cache"/*/"${P}"/*/ >/dev/null 2>&1; then
-  FOUND=1
-fi
-
-if [ $FOUND -eq 1 ]; then
-  # Plugin is installed. Add to installedPlugins.
+if [ -n "$ROOT" ]; then
+  # Plugin is installed and enabled. Add P to installedPlugins and keep ROOT for the surface probe.
   :
 fi
 ```
@@ -52,29 +42,29 @@ fi
 | `feature-dev` | Stack-conditional | `feature-development`, `code-review` | — | — | — |
 | `code-review` | Workflow-conditional | `code-review` | — | — | — |
 | `pr-review-toolkit` | Workflow-conditional | `code-review`, `code-simplification` | — | — | — |
-| `context7` | Stack-conditional | `docs-lookup` | `@upstash/context7-mcp` | stdio | none |
-| `github` | Workflow-conditional | `vcs-integration` | `api.githubcopilot.com` | http | token |
+| `context7` | Stack-conditional | `docs-lookup` | ships in the plugin | plugin | set up by the plugin |
+| `github` | Workflow-conditional | `vcs-integration` | ships in the plugin | plugin | set up by the plugin |
 | `gitlab` | Workflow-conditional | `vcs-integration` | — | — | — |
 | `playwright` | Stack-conditional | `e2e-testing` | — | — | — |
 | `vercel` | Stack-conditional | `deploy-verification`, `platform-integration` | `mcp.vercel.com` | http | oauth |
-| `prisma` | Stack-conditional | `database-orm` | `prisma` | stdio + http | none |
+| `prisma` | Stack-conditional | `database-orm` | ships in the plugin | plugin | set up by the plugin |
 | `supabase` | Stack-conditional | `backend-as-a-service` | `mcp.supabase.com` | http | oauth |
-| `chrome-devtools-mcp` | Stack-conditional | `frontend-debugging`, `browser-automation` | `chrome-devtools-mcp` | stdio | none |
+| `chrome-devtools-mcp` | Stack-conditional | `frontend-debugging`, `browser-automation` | ships in the plugin | plugin | set up by the plugin |
 
 ## MCP Auto-Emit Signals
 
-The `MCP Server` column above describes what each plugin maps to. `.mcp.json` emission is driven by **stack signals**, not just plugin installation — we emit when the project's detected stack unambiguously benefits, whether or not the user has installed the corresponding plugin. When we emit and the plugin is not installed, the plugin is **offered by name** and installed only if the person accepts (see `../catalogs/mcp-guide.md` § Install accepted plugins). The rule is in `../../../../references/plugin-install-consent.md`.
+The `MCP Server` column above describes what each plugin maps to. MCP handling is driven by **stack signals**, not just plugin installation. For a server with a catalog URL (`vercel`, `supabase`), onboard writes a remote `https` entry into `.mcp.json` when the stack unambiguously benefits. For a plugin-delivered server (`context7`, `github`, `prisma`, `chrome-devtools-mcp`), the server ships inside the plugin, so onboard writes no `.mcp.json` entry. In both cases the plugin is **offered by name** and installed only if the person accepts (see `../catalogs/mcp-guide.md` § Install accepted plugins). The rule is in `../../../../references/plugin-install-consent.md`.
 
-| Stack signal | Emits MCP server | Confidence tier |
-|---|---|---|
-| Any project | `context7` | always |
-| `.github/workflows/` present | `github` | high |
-| `vercel.json` or `@vercel/*` in package.json | `vercel` | high |
-| `prisma/` dir or `@prisma/client`/`prisma` in deps | `prisma` | high |
-| `@supabase/*` in deps or `supabase/` config dir | `supabase` | high |
-| Frontend framework detected (React, Next.js, Vue, Svelte, Astro, Remix, SolidJS) | `chrome-devtools-mcp` | high |
+| Stack signal | MCP server | Delivery | Confidence tier |
+|---|---|---|---|
+| Any project | `context7` | plugin offer | any-project |
+| `.github/workflows/` present | `github` | plugin offer | high |
+| `vercel.json` or `@vercel/*` in package.json | `vercel` | `.mcp.json` entry + plugin offer | high |
+| `prisma/` dir or `@prisma/client`/`prisma` in deps | `prisma` | plugin offer | high |
+| `@supabase/*` in deps or `supabase/` config dir | `supabase` | `.mcp.json` entry + plugin offer | high |
+| Frontend framework detected (React, Next.js, Vue, Svelte, Astro, Remix, SolidJS) | `chrome-devtools-mcp` | plugin offer | high |
 
-Env-var requirements and OAuth steps are documented in the generated `.claude/rules/mcp-setup.md`.
+OAuth steps for the servers onboard writes are documented in the generated `.claude/rules/mcp-setup.md`.
 
 ## CLAUDE_PLUGIN_ROOT Fallback
 

@@ -166,12 +166,12 @@ The `mcpStatus`, `skillStatus`, `agentStatus`, `outputStyleStatus`, `lspStatus`,
 Run the same drift classification as `../update/SKILL.md` § 4b.4 MCP Drift:
 
 1. Read `.mcp.json`, `.claude/onboard-mcp-snapshot.json`, and fresh output from `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh"`.
-2. Classify each server as `userEdited` / `userRemoved` / `newlySuggested` / `staleCandidate` / `inSync`. A plugin-delivered candidate (no command or URL in the catalog) is none of these and is not drift; it only feeds the plugin offer below.
+2. Classify each server as `userEdited` / `userRemoved` / `newlySuggested` / `staleCandidate` / `inSync`. A plugin-delivered candidate (no URL in the catalog) is none of these and is not drift; it only feeds the plugin offer below. A `context7`, `github` or `chrome-devtools-mcp` entry written by onboard before 3.4.0 is a `legacyEntry`: leave it untouched, log it once, and include its plugin in the offer below.
 3. Respect the pre-existing guard — if `onboard-meta.json.mcpStatus.existedPreOnboard` is true, the whole file is user-owned; only additions may be applied.
 
 **Auto-apply rules** (evolve's "drain drift without asking" philosophy applies to the server entry, with two hard floors: user-owned edits are never touched, and no plugin is installed without an accepted, named offer):
 
-- `newlySuggested` → merge the server into `.mcp.json` and `.claude/onboard-mcp-snapshot.json`. A plugin-delivered server (no command or URL in the catalog) has no entry to merge. Install nothing here; the plugin goes through the offer below.
+- `newlySuggested` → merge the server into `.mcp.json` and `.claude/onboard-mcp-snapshot.json`. A plugin-delivered server (no URL in the catalog) has no entry to merge. Install nothing here; the plugin goes through the offer below.
 - `staleCandidate` → DO NOT auto-remove. Log as "stale MCP candidate surfaced — run `/onboard:update` to review". Drift stays flagged.
 - `userEdited` / `userRemoved` → no action. Log once.
 - Regenerate `.claude/rules/mcp-setup.md` if any newly-applied server needs auth.
@@ -182,7 +182,7 @@ Run the same drift classification as `../update/SKILL.md` § 4b.4 MCP Drift:
 2. Build the offer set: the `plugin` of each server onboard manages (snapshot servers, plus plugin-delivered candidates from the fresh scan) that is not in `pluginOffers.offered` and is not currently installed.
 3. Empty set → skip the offer.
 4. Otherwise ask once with `AskUserQuestion` (`multiSelect: true`, every row unchecked): "New MCP server(s) since last run: `<list>`. Install the plugins that go with them?" One option per plugin: label = the plugin name, description = what it adds and the server it belongs to. Apply the option-count rule from the reference.
-5. Accepted plugins → `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <accepted>`; add them to `pluginOffers.offered` and `pluginOffers.accepted`; merge the results into `mcpStatus.autoInstalled[]` / `mcpStatus.autoInstallFailed[]`.
+5. Accepted plugins → `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <accepted>@claude-plugins-official ...`; add them to `pluginOffers.offered` and `pluginOffers.accepted`; merge the results into `mcpStatus.autoInstalled[]` / `mcpStatus.autoInstallFailed[]`.
 6. Declined plugins → add to `pluginOffers.offered` only. They are not asked about again.
 7. If the prompt cannot be shown, is dismissed, or returns no selection (for example Claude started evolve with nobody at the keyboard): install nothing and record nothing for those plugins (the seed from item 1 stays written). List each plugin under "Not auto-applied" in Step 3 with its manual command.
 
@@ -256,7 +256,7 @@ Run the same drift classification as `../update/SKILL.md` § 4b.8 LSP Plugin Dri
 
 **Auto-apply rules** (evolve's "drain drift without asking" philosophy — bounded by explicit-consent floor for new plugin installs):
 
-- **newLanguage** → **re-prompt** via a single `AskUserQuestion` multiSelect (reuse wizard Step 6 phrasing): "Detected new languages since last run: `<list>`. Install these LSP plugins?". Pre-check entries with `fileCount ≥ 10`, unchecked below. User accepts → invoke `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugins>`, append to `onboard-lsp-snapshot.json.recommended[]` AND `accepted[]` (preserve alphabetical sort), and merge install results into `lspStatus.autoInstalled[]` / `lspStatus.autoInstallFailed[]`. User declines individual entries → still append to `recommended[]` so subsequent drift runs don't re-surface (but omit from `accepted[]`). This respects the user's earlier choice: "prompt during wizard" posture carries through to evolve — never silent install of net-new plugins.
+- **newLanguage** → **re-prompt** via a single `AskUserQuestion` multiSelect (reuse wizard Step 6 phrasing): "Detected new languages since last run: `<list>`. Install these LSP plugins?". Pre-check entries with `fileCount ≥ 10`, unchecked below. User accepts → invoke `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugins, each as name@claude-plugins-official>`, append to `onboard-lsp-snapshot.json.recommended[]` AND `accepted[]` (preserve alphabetical sort), and merge install results into `lspStatus.autoInstalled[]` / `lspStatus.autoInstallFailed[]`. User declines individual entries → still append to `recommended[]` so subsequent drift runs don't re-surface (but omit from `accepted[]`). This respects the user's earlier choice: "prompt during wizard" posture carries through to evolve — never silent install of net-new plugins.
 - **uninstalled** → no action. Log once: "LSP plugin `<name>` was uninstalled since last run — leaving it out of snapshot.accepted on next update." Do NOT reinstall.
 - **stillValid** → no action.
 - **staleCandidate** → no action. Log once.
@@ -336,7 +336,7 @@ After applying all updates (both FileChanged and plugin integration), show what 
 > **Not auto-applied** (needs your input):
 > - New directory src/services/ — want me to create a CLAUDE.md for it?
 > - Significant research drift (would need a full re-research) — run `/onboard:update` to re-ground
-> - Plugin `supabase` (goes with the new supabase MCP server) was not installed: nobody answered the offer. Add it with `claude plugin install supabase`, or run `/onboard:evolve` again
+> - Plugin `supabase` (goes with the new supabase MCP server) was not installed: nobody answered the offer. Add it with `claude plugin install supabase@claude-plugins-official`, or run `/onboard:evolve` again
 >
 > **Note**: Subdirectory skill-annotation blocks (wrapped in `<!-- onboard:skill-recommendations:start/end -->` markers) are refreshed automatically via the role-attribute strategy. Subdirectory files that predate markered blocks are not auto-created — run `/onboard:update` to have those offered as new best-practice additions.
 

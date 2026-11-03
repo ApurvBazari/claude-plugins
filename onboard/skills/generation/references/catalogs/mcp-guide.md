@@ -12,7 +12,7 @@ Server entries are emitted from stack signals: no wizard prompt decides which se
 
 ## Trust boundary
 
-The catalog above is **hardcoded**. Server URLs and commands are NEVER read from the user's project, package metadata, or any external source. A malicious package with a spoofed name (e.g., a typosquat matching `@supabase/*`) can cause a false-positive signal fire — but the resulting `.mcp.json` entry always points to the legitimate URL from this catalog, not to any attacker-controlled endpoint. The blast radius of a spoofed signal is "user gets an unexpected-but-real MCP server wired up," not "user gets a malicious MCP server wired up."
+The catalog below is **hardcoded**. Server URLs and plugin names are NEVER read from the user's project, package metadata, or any external source. A malicious package with a spoofed name (e.g., a typosquat matching `@supabase/*`) can cause a false-positive signal fire — but the resulting `.mcp.json` entry always points to the legitimate URL from this catalog, and a plugin offer always names a plugin from `claude-plugins-official`, never an attacker-controlled endpoint or package. The blast radius of a spoofed signal is "user gets an unexpected-but-real MCP server or plugin offer," not "user gets a malicious MCP server wired up."
 
 To keep spoofed signals rare:
 
@@ -23,53 +23,46 @@ To keep spoofed signals rare:
 
 ## Catalog
 
-The initial catalog has **6 entries**:
+The catalog has **6 entries**. Every plugin named here is in Anthropic's `claude-plugins-official` marketplace and is installed as `<plugin>@claude-plugins-official`.
 
-| Signal | Server name | Transport | URL / command | Auth | Required env | Plugin |
-|---|---|---|---|---|---|---|
-| Any project | `context7` | stdio | `npx -y @upstash/context7-mcp` | none | — | `context7` |
-| `.github/workflows/` present | `github` | http | `https://api.githubcopilot.com/mcp/` | token | `GITHUB_PERSONAL_ACCESS_TOKEN` | `github` |
-| `vercel.json` OR `@vercel/*` dep | `vercel` | http | `https://mcp.vercel.com` | oauth | — | `vercel` |
-| `prisma/` dir OR `@prisma/client` / `prisma` dep | `prisma` | stdio + http | none — **plugin-delivered** (the server ships inside the `prisma` plugin; no `.mcp.json` entry) | none | — | `prisma` |
-| `@supabase/*` dep OR `supabase/` dir | `supabase` | http | `https://mcp.supabase.com` | oauth | — | `supabase` |
-| Frontend framework detected | `chrome-devtools-mcp` | stdio | `npx -y chrome-devtools-mcp` | none | — | `chrome-devtools-mcp` |
+| Signal | Server name | Transport | URL | Auth | Plugin |
+|---|---|---|---|---|---|
+| Any project | `context7` | — | none — **plugin-delivered** (the server ships inside the `context7` plugin; no `.mcp.json` entry) | set up by the plugin | `context7` |
+| `.github/workflows/` present | `github` | — | none — **plugin-delivered** (the server ships inside the `github` plugin; no `.mcp.json` entry) | set up by the plugin | `github` |
+| `vercel.json` OR `@vercel/*` dep | `vercel` | http | `https://mcp.vercel.com` | oauth | `vercel` |
+| `prisma/` dir OR `@prisma/client` / `prisma` dep | `prisma` | — | none — **plugin-delivered** (the server ships inside the `prisma` plugin; no `.mcp.json` entry) | set up by the plugin | `prisma` |
+| `@supabase/*` dep OR `supabase/` dir | `supabase` | http | `https://mcp.supabase.com` | oauth | `supabase` |
+| Frontend framework detected | `chrome-devtools-mcp` | — | none — **plugin-delivered** (the server ships inside the `chrome-devtools-mcp` plugin; no `.mcp.json` entry) | set up by the plugin | `chrome-devtools-mcp` |
 
 Frontend frameworks that trigger `chrome-devtools-mcp`: React, Next.js, Vue, Svelte, SvelteKit, Astro, Remix, SolidJS, Nuxt, Qwik. Detection uses `framework` fingerprints from `analysis.stack.frameworks[]`.
 
-**Plugin-delivered servers.** A row with no command or URL of its own is plugin-delivered: onboard never writes a `.mcp.json` entry for it, and it exists only as a plugin offer. Today that is `prisma`.
+**Plugin-delivered servers.** A row with no URL of its own is plugin-delivered: onboard never writes a `.mcp.json` entry for it, and it exists only as a plugin offer. Today that is `context7`, `github`, `prisma` and `chrome-devtools-mcp`. Onboard never writes a server that runs a package launcher (`npx`, `uvx`) or that reads a credential from the user's environment; those servers reach the project only through their official plugin, and only when the person accepts the offer.
 
 ## Confidence Tiers
 
-- **always** — emit regardless of other signals. Today: `context7` only (zero-auth, universally useful for docs lookup).
-- **high** — emit when the signal is unambiguous (e.g., `vercel.json` present, OR `@vercel/*` in deps). Dedupe by server name across signals.
+- **any-project** — a candidate on every project. Today: `context7` only (plugin-delivered, so this only puts it in the offer list; its row starts unchecked like every MCP-plugin row).
+- **high** — emit (or offer, for a plugin-delivered row) when the signal is unambiguous (e.g., `vercel.json` present, OR `@vercel/*` in deps). Dedupe by server name across signals.
 - **skip-on-uncertainty** — never guess. If the signal matches a fingerprint loosely (e.g., a stray `vercel` string in a README), skip. Record in `mcpStatus.skipped[]` with reason.
 
 ## Config Shape
 
-`.mcp.json` lives at project root. Schema:
+`.mcp.json` lives at project root. Every entry onboard writes is a remote server with a fixed `https` URL from the catalog:
 
 ```json
 {
   "mcpServers": {
     "<server-name>": {
-      "type": "http" | "stdio" | "sse",
-      "url": "https://...",
-      "headers": { "Authorization": "Bearer ${ENV_VAR}" },
-      "command": "npx",
-      "args": ["-y", "package"],
-      "env": { "KEY": "${HOST_ENV_VAR}" }
+      "type": "http",
+      "url": "https://..."
     }
   }
 }
 ```
 
-Field rules per transport:
+Field rules:
 
-- **http**: required `type`, `url`; optional `headers`
-- **sse**: same as http
-- **stdio**: required `command`, `args`; optional `env`. No `type` field needed (stdio is the default when `command` is present).
-
-Env-var references always use the `${VAR}` substitution syntax supported by Claude Code — never inline real secrets.
+- Required: `type` (`"http"`) and `url` (the catalog's absolute `https://` URL).
+- Never written: `headers`, `env`, `command`, `args`. Onboard writes no credentials, no `${VAR}` references to the user's environment, and no package launchers. A server that signs in does so with OAuth through Claude Code (`claude mcp login <name>`).
 
 ## Pre-existing .mcp.json
 
@@ -95,7 +88,7 @@ Because `.mcp.json` is pure JSON (no comments / markers possible), drift detecti
 After `.mcp.json` is written and metadata is updated, install the plugins the person accepted, and only those. The procedure is in `../emission/mcp-emission.md` § Install accepted plugins. The rule is in `../../../../references/plugin-install-consent.md`. In short:
 
 1. The accepted list comes from the wizard's MCP-plugin offer, or from a programmatic caller's explicit list. Absent or empty means no install.
-2. `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <accepted names>` probes installed plugins once and skips those already installed.
+2. `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <name>@claude-plugins-official ...` probes installed plugins once and skips those already installed. Every name is passed qualified with its marketplace, so the install never resolves against another marketplace that happens to use the same name.
 3. Failures (offline, plugin renamed) are logged and NEVER fail the generation phase.
 4. A `regenerateOnly` or `reResearch` generation skips this step.
 
@@ -107,8 +100,9 @@ Parallel to `hookStatus`. Added to `onboard-meta.json`:
 {
   "mcpStatus": {
     "planned": ["context7", "vercel"],           // evaluated from signals
-    "generated": ["context7", "vercel"],         // actually written into .mcp.json
+    "generated": ["vercel"],                     // actually written into .mcp.json
     "skipped": [                                  // why anything was not emitted
+      { "server": "context7", "reason": "plugin-declined" },
       { "server": "github", "reason": "no-github-workflows-detected" }
     ],
     "pluginOffers": { "offered": ["context7", "vercel"], "accepted": ["vercel"] }, // what was offered, and what the person took
@@ -140,13 +134,12 @@ After emission Step 1 completes, emit a stdout block summarizing what happened �
 
 ```
 MCP servers configured:
-  ✓ context7 (stdio) — no auth required
   ✓ vercel (http) — OAuth required
-    → run `claude mcp auth vercel` to complete setup
+    → run `claude mcp login vercel` to complete setup
 
 Plugins:
   ✓ vercel — installed (you accepted it)
-  · context7 — not installed; add it with `claude plugin install context7`
+  · context7 — not installed; add it with `claude plugin install context7@claude-plugins-official`
 
 See .claude/rules/mcp-setup.md for full details.
 ```
@@ -182,21 +175,11 @@ stack signals. Some servers need additional setup before they will work.
 {{#each serversNeedingAuth}}
 ### `{{name}}`
 
-{{#if needsEnvVar}}
-Set the following environment variable before starting Claude Code:
-
-```bash
-export {{envVar}}="<your-token>"
-```
-
-Token source: {{envVarSourceUrl}}
-{{/if}}
-
 {{#if needsOAuth}}
 Run the Claude Code OAuth flow:
 
 ```bash
-claude mcp auth {{name}}
+claude mcp login {{name}}
 ```
 
 This opens a browser window to complete authentication. The resulting
@@ -222,4 +205,4 @@ never auto-apply changes — you stay in control.
 Rendering notes:
 - Omit empty sections (e.g., no "Pre-existing" section if not applicable)
 - When no server needs auth AND no pre-existing file existed, onboard does NOT write this rule at all — the stdout summary is sufficient
-- Token source URLs live in the catalog: `github` → `https://github.com/settings/tokens`
+- Every server onboard writes signs in with OAuth; onboard never asks for a token or an environment variable

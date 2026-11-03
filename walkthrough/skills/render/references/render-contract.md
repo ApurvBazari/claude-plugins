@@ -38,8 +38,8 @@ is materialized there once) — then fill its slots from the components you sele
   The engine itself goes in after write (see "insert the system-map engine" below). No other line of the
   page may be exactly the marker: if the page's own content has to show the marker text, write its first
   slash as `&#47;`.
-Keep it self-contained: tokens only, all CSS/JS/SVG inline, no `<script src>`, no `<img>`, only the one
-Google Fonts `@import`.
+Keep it self-contained: tokens only, all CSS/JS/SVG inline, no `<script src>`, no `<img>`, no `@import`
+— the page loads nothing from the network.
 
 ### self-check
 Run `../../create/references/self-check.md` against the assembled HTML (self-contained, tokens, ASCII CSS,

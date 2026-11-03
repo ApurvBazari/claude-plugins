@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"><title>walkthrough</title><rect width="512" height="512" rx="112" fill="#faf8f4"/><rect x="3" y="3" width="506" height="506" rx="109" fill="none" stroke="#e4ddd2" stroke-width="6"/>
+  <rect x="92" y="116" width="328" height="280" rx="26" fill="none" stroke="#2a2520" stroke-width="24"/>
+  <path d="M92 172 H420" stroke="#2a2520" stroke-width="24"/>
+  <circle cx="128" cy="144" r="8" fill="#2a2520"/><circle cx="156" cy="144" r="8" fill="#2a2520"/><circle cx="184" cy="144" r="8" fill="#2a2520"/>
+  <path d="M198 234 H314 M168 254 V330 H222 M344 254 V330 H290" fill="none" stroke="#2a2520" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" opacity=".6"/>
+  <rect x="130" y="212" width="76" height="46" rx="12" fill="none" stroke="#2a2520" stroke-width="16"/>
+  <rect x="306" y="212" width="76" height="46" rx="12" fill="none" stroke="#2a2520" stroke-width="16"/>
+  <rect x="218" y="308" width="76" height="46" rx="12" fill="#c05e2b"/></svg>

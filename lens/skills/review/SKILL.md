@@ -1,12 +1,13 @@
 ---
 name: review
-description: Review the current session's changes against their spec and plan, adversarially verify the findings, and render an interactive review document. Use when the user wants to review what was just built before it ships, runs /lens:review, or asks to "review my changes / review this before I commit". Reviews Claude's own work; read-only.
+description: Check the current session's changes against the spec and plan they were meant to follow, verify each finding, and write a review document. Use when the user runs /lens:review or asks whether the work matches its spec or plan before it ships. Never edits your code; writes only the review document and its own files in .claude/lens/.
 ---
 
 # Review — Intent-Grounded Review of the Current Session
 
-You are invoked via `/lens:review [target]`. Run the engine, then render. You are **read-only**:
-never commit, edit, or block — produce the artifact; the human decides.
+You are invoked via `/lens:review [target]`. Run the engine, then render. You **never touch the
+user's code**: never commit, edit, stage, or block — produce the artifact; the human decides. Your only
+writes are lens's own files (see Key Rules).
 
 ## Step 0: Create the task list (standalone only)
 Create the in-session progress task list per `references/task-tracking.md` — one `TaskCreate` per stage,
@@ -72,7 +73,7 @@ the render failed **is** the report). Then (on success) tell the user the path +
 the iteration delta (e.g. "2 fixed · 1 new"); offer to open (never auto-open).
 
 ## Key Rules
-- **Read-only (except `review-state.json`).** Never commit, edit, stage, or block; the only write is the state file + the rendered doc.
+- **Never touches the user's code.** Never commit, edit, stage, or block. lens writes only its own files: `.claude/lens/settings.md` (first-run setup), `.gitignore` entries for `.claude/lens/` only when the user accepts that setup offer, the rendered review document, and `.claude/lens/review-state.json`.
 - **Engine owns judgment; review owns rendering + state.** Keep the boundary clean — this skill adds no findings, the engine holds no state.
 - **State-aware.** Re-running reconciles vs `review-state.json` (fixed/open/new); never re-flag a finding as new just because lines moved.
 - **walkthrough optional.** Markdown fallback when absent (announce the degrade).

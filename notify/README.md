@@ -1,134 +1,137 @@
 # notify
 
-> Part of [`claude-plugins`](../README.md) — see also [`onboard`](../onboard/) and [`handoff`](../handoff/).
+Desktop notifications for Claude Code on macOS and Linux: know when a task finishes or Claude needs you, without watching the terminal.
 
-Cross-platform system notifications for Claude Code. Get notified when tasks complete or Claude needs your attention. Intentionally minimal — see the root README's [notify section](../README.md#notify) for an honest comparison against richer community alternatives.
+**Works in:** Claude Code on macOS and Linux ✓ · Cowork ✗ · claude.ai chat ✗ — notify works by adding hooks to Claude Code's own `settings.json` and running a notifier on your computer.
 
 ## Install
 
+From Anthropic's plugin directory: open **Customize → Plugins** on claude.ai, or run `/plugin directory` in Claude Code. A plugin added on claude.ai reaches Claude Code through account sync.
+
+From this repository's marketplace:
+
 ```bash
+claude plugin marketplace add ApurvBazari/claude-plugins
 claude plugin install notify@apurvbazari-plugins
 ```
 
-Then run `/notify:setup` to install the platform backend (`terminal-notifier` on macOS, `notify-send` on Linux) and configure hooks.
+Then run `/notify:setup` in Claude Code. Nothing happens until you do.
 
-## Skills
+## What it does
 
-All skills are invoked with the `/notify:<name>` slash syntax. `check` is auto-invocable; `setup` and `uninstall` require explicit invocation.
+- Sends a desktop notification when Claude finishes a response, when Claude needs your permission or input, and (if you turn it on) when a subagent finishes.
+- Shows which project it came from (`repo / branch`) and a short excerpt of Claude's reply. You can hide the excerpt.
+- Holds back rapid repeats with an optional cooldown (`minDurationSeconds`), so a burst of replies notifies once.
+- Runs in the background: the hooks are async, so a notification never delays Claude.
 
-### `/notify:setup` *(destructive — user-invoked only)*
+## Commands
 
-Installs the platform backend (`terminal-notifier` via Homebrew on macOS, or `notify-send` from `libnotify` on Linux), detects your editor + bundle ID for click-to-focus, asks whether to install global or per-project, configures hooks for the chosen events, and sends a test notification.
+| Command | What it does |
+|---|---|
+| `/notify:setup` | Destructive, user-invoked only. Checks the notifier, asks where to install (all projects or this one), walks through preferences, writes the hook entries and config, and sends a test notification. |
+| `/notify:check` | Read-only health check: notifier, `jq`, installed script, hook entries, current settings. Claude may run it when you ask whether notifications work. Sends a test notification only if you say yes. |
+| `/notify:uninstall` | Destructive, user-invoked only. Removes notify's hook entries, `notify.sh` and `notify-config.json` from one scope. Leaves your other settings alone. |
 
-**When to use:** first-time install on a new machine, or when adding per-project overrides on a project that already has global notify configured.
+## What it reads, writes, and sends
 
-**Edge cases:**
-- **Partial completion** — if a previous setup was interrupted (no `notify-config.json` written, but hooks added to `settings.json`), re-running `/notify:setup` detects the partial state and offers to repair, replace, or roll back.
-- **Existing global config + new per-project request** — setup reads global as the base and layers your per-project answers as overrides. Doesn't blow away global.
-- **Permission prompts (macOS)** — first notification after `terminal-notifier` install triggers a macOS Notification permission prompt; setup warns about this before sending the test notification.
+| | |
+|---|---|
+| **Reads** | The hook input Claude Code passes on each event: the session id, the first 80 characters of Claude's last message (or the text of an attention prompt) and the subagent type. Your `notify-config.json`. The repository name and branch (`git rev-parse`) for the subtitle. |
+| **Writes** | During setup, in the scope you choose (`~/.claude/` or `<project>/.claude/`): `hooks/notify.sh` (a copy of the plugin's script), three hook entries merged into `settings.json`, and `notify-config.json`. On each notification: a one-line cooldown timestamp in your temp folder (`$TMPDIR/claude-notify-…`). |
+| **Runs** | `terminal-notifier` (macOS) or `notify-send` (Linux), plus `jq`, `git` and standard shell tools. Setup also runs `uname`, `ps` (to spot your editor for click-to-focus), `mdfind` and `ls /System/Library/Sounds` (to check a bundle ID or sound name). |
+| **Installs** | Only after you say yes: `brew install terminal-notifier` on macOS. On Linux it prints the install command for your distribution. It never installs `jq`. |
+| **Network** | None. notify sends nothing anywhere. (Homebrew downloads `terminal-notifier` if you accept the install.) |
+| **Changes to your Claude settings** | Adds three hook entries (Stop, Notification, SubagentStop) to the `settings.json` of the scope you pick. It changes no permissions. `/notify:uninstall` removes them. |
+| **Shown on screen** | The excerpt of Claude's reply appears in your OS notifications and their history. If your screen is shared or notifications show on your lock screen, set `"showMessage": false` and only the fallback text is shown. |
 
-### `/notify:check`
+The installed `notify.sh` is a copy. It doesn't change when the plugin updates: after updating notify, run `/notify:setup` and choose **Update**. `/notify:check` tells you when the copy is out of date.
 
-Health check. Reports which scopes have notify installed (global / per-project / both) and the current event configuration (sounds, cooldowns, enabled flags) for each. Offers to send a test notification on request.
+## Where it works
 
-**When to use:** after editing `notify-config.json` by hand, after changing editors, when notifications stop firing for an unclear reason, or as a sanity check before relying on notify for a long task.
+| Surface | Works? | Why |
+|---|---|---|
+| Claude Code (terminal, IDE, desktop Code tab) on macOS or Linux | ✓ | notify wires Claude Code's own hooks and runs a local notifier |
+| Cowork | ✗ | Not supported: notify relies on hooks in Claude Code's `settings.json` and a notifier on your computer |
+| claude.ai chat | ✗ | Chat has no hooks and no access to your computer |
+| Windows | ✗ | No Windows notifier; see [Platform support](#platform-support) for WSL |
 
-### `/notify:uninstall` *(destructive — user-invoked only)*
-
-Removes notify hooks from `settings.json` and deletes `notify-config.json`. The platform backend (`terminal-notifier` / `notify-send`) is left installed.
-
-**When to use:** decommissioning notify, switching to a richer alternative (see [the root README's notify section](../README.md#notify) for community options), or troubleshooting a broken setup by starting clean.
-
-**Side effects:**
-- Removes hook entries that match notify's command line; **does not** touch unrelated hooks in the same `settings.json`.
-- Per-project uninstall does not affect global config, and vice versa — they're independent scopes.
-
-## Hook event model
-
-Three notification events, each independently configurable:
+## Events
 
 | Event | When | Default |
 |---|---|---|
-| `stop` | Claude finishes a response | Enabled · `Hero` sound · `minDurationSeconds: 0` (no cooldown) |
-| `notification` | Claude needs user attention | Enabled · `Glass` sound · `minDurationSeconds: 0` |
-| `subagentStop` | A subagent finishes work | Disabled (too noisy) |
+| `stop` | Claude finishes a response | On · `Hero` sound · no cooldown |
+| `notification` | Claude needs your permission or input | On · `Glass` sound · never held back by the cooldown |
+| `subagentStop` | A subagent finishes | Off (too noisy) |
 
-Notification content is extracted from Claude's actual last message — not generic static text. Each notification carries a contextual subtitle (`repo / branch`) so you know which project the alert is from when several Claude sessions are running.
+The `notification` event fires on `permission_prompt|idle_prompt` by default. That matcher lives in `settings.json`; change it by re-running `/notify:setup`.
+
+## Command details
+
+### `/notify:setup`
+
+- **Before writing anything** it shows hooks from other tools on the same events (notify's are added alongside, never replacing them) and asks what to do if notify is already installed: **Update**, **Replace** or **Cancel**. Update replaces the old hook entries and re-copies `notify.sh`.
+- **`jq`.** Setup tells you if `jq` is missing. notify still fires without it, but can't read your settings or Claude's reply, so every notification uses the defaults and a generic message.
+- **Dry run.** `/notify:setup --dry-run` shows the script, hook entries and config it would write, and writes nothing.
+- **Scopes.** Global hooks fire in every project; project hooks fire only in that project. If you install both, both fire and you get two notifications per event. To move scopes, run setup with the new scope, then `/notify:uninstall` on the old one.
+
+### `/notify:check`
+
+Reports each installed scope, warns about hook entries from notify before 2.1.0 (not async) and an outdated `notify.sh`, and shows your settings. Run it after editing `notify-config.json` by hand or when notifications stop.
+
+### `/notify:uninstall`
+
+Removes entries whose command contains `notify.sh` from that scope's `settings.json`, then deletes `hooks/notify.sh` and `notify-config.json`. `terminal-notifier`, `notify-send` and `jq` stay installed. Each scope is removed on its own.
 
 ## Example
 
-`/notify:setup` on macOS with a `30`-second cooldown set on `stop`, then two Stop hooks close together — the second suppressed by the cooldown, the first delivered:
+`/notify:setup` on macOS with a 30-second cooldown on `stop`, then two replies close together:
 
 ```
 > /notify:setup
 
 Detecting platform … macOS
-Checking for terminal-notifier … installing via Homebrew
+terminal-notifier … not found. Install it with Homebrew? (yes)
+jq … found
 Editor detected: VS Code (com.microsoft.VSCode)
 
-Where should notifications be installed?
-  (a) Global — fire in every Claude Code session
-  (b) This project only
+Where should notifications be configured?
+  1. Global — every project (~/.claude/)
+  2. This project only
 
-> a
+> 1
 
-Configuring three events:
-  stop          enabled   sound: Hero    minDurationSeconds: 30
-  notification  enabled   sound: Glass   minDurationSeconds: 0
-  subagentStop  disabled  (too noisy by default)
+  stop          on    sound: Hero    cooldown: 30s
+  notification  on    sound: Glass
+  subagentStop  off
+  Claude's text in notifications: shown
 
-Writing notify-config.json to ~/.claude/
-Adding hooks to ~/.claude/settings.json (Stop, Notification)
+Copying notify.sh to ~/.claude/hooks/
+Adding 3 async hooks to ~/.claude/settings.json
+Writing ~/.claude/notify-config.json
 Sending test notification … ✓
 
-Setup complete. Edit ~/.claude/notify-config.json anytime — changes take effect immediately.
-
-# ── first stop fires ────────────────────────
-[Stop hook fires]
-[notify.sh: no recent notification → notify; cooldown clock starts]
-
+# first reply finishes → notification
   ┌──────────────────────────────────────┐
   │ Claude Code                          │
   │ feedback-saas / feat/onboarding-flow │
   │ Refactored auth middleware …         │
   └──────────────────────────────────────┘
 
-  Sound: Hero · Click brings VS Code to front
-
-# ── second stop, 8s later ───────────────────
-[Stop hook fires]
-[notify.sh: 8s < 30s cooldown → silently skip]
-(no notification — within the cooldown window)
+# second reply 8 seconds later → held back (8s < 30s cooldown)
 ```
-
-## Install scopes
-
-Notifications can be installed globally or per-project:
-
-| Scope | Path | When hooks fire |
-|---|---|---|
-| **Global** (default) | `~/.claude/` | Every Claude Code session |
-| **Per-project** | `<project>/.claude/` | Only when running in that project directory |
-
-Both scopes can coexist — per-project hooks add to global, they don't replace.
 
 ## Configuration
 
-Settings live in `notify-config.json` within the chosen scope directory. Edit the file directly — changes take effect immediately, no need to re-run `/notify:setup`. The only setting that requires re-running setup is the `Notification` matcher (which is in `settings.json`, not `notify-config.json`).
+Settings live in `notify-config.json` in the scope folder. Edit it directly; changes apply on the next event. Each installed copy of `notify.sh` reads the config in its own scope — there is no merge between global and project.
 
-### Scope resolution
-
-The runtime hook reads exactly one config: the **project-local** `notify-config.json` when it exists, otherwise the **global** one. There is no key-level merge between scopes — each scope's config stands alone. To change project behaviour, edit that project's `notify-config.json`; to change the default everywhere, edit the global one.
-
-## Customisation
-
-Per event you can configure:
-
-- **Fallback message** — shown when contextual content can't be extracted from Claude's response
-- **Sound** — Hero, Glass, Ping, Purr, Pop, Submarine, and more (macOS); urgency level (Linux)
-- **App to activate** — VS Code, Cursor, Terminal, iTerm2, or none (macOS click-to-focus)
-- **Enabled / disabled** — toggle any event without re-running setup
-- **`minDurationSeconds` (notification cooldown)** — a leading-edge cooldown. After a `stop`/`subagentStop` notification fires, further ones are suppressed until this many seconds have elapsed since the one that fired — so at most one notification per `N` seconds. The cooldown clock is tracked per session in a temp file (`$TMPDIR/claude-notify-session-<id>`, or a per-user key when no session id is available). Default `0` (no cooldown). `notification` events are never cooldown-filtered, so attention prompts always fire.
+| Key | Where | Default | Meaning |
+|---|---|---|---|
+| `enabled` | per event | on (`subagentStop` off) | Turn an event on or off |
+| `message` | per event | "Task completed" etc. | Fallback text: used when Claude's text isn't available or is hidden |
+| `sound` | per event | `Hero` / `Glass` / `Ping` | macOS sound name, or `none`. On Linux it maps to urgency |
+| `activate` | per event | your editor | macOS app brought forward on click, or `none` |
+| `minDurationSeconds` | per event | `0` | Cooldown: after a `stop`/`subagentStop` notification fires, hold further ones for this many seconds. Tracked per session |
+| `showMessage` | top level or per event | `true` | `false` hides Claude's text; only `message` is shown. A per-event value wins |
 
 ## Platform support
 
@@ -137,32 +140,38 @@ Per event you can configure:
 | macOS | `terminal-notifier` | 14 system sounds | Yes (bundle ID) | Yes |
 | Linux | `notify-send` (libnotify) | Urgency levels only | No | Yes |
 
-- **WSL.** Under WSL, `notify-send` reaches the Linux desktop only if a notification daemon is running; for Windows-side toasts, route through a Windows notifier (e.g. `wsl-notify-send`) or run Claude Code natively on Windows.
+**WSL.** `notify-send` reaches the Linux desktop only if a notification daemon is running. For Windows toasts, use a Windows notifier or one of the alternatives below.
 
 ## Troubleshooting
 
-- **No notifications appearing (macOS)** — Open System Settings → Notifications → terminal-notifier, ensure notifications are allowed. Check that Do Not Disturb / Focus mode is off.
-- **Wrong app activates on click** — Edit `notify-config.json`, update the `activate` bundle ID for the affected event, then run `/notify:setup` to re-apply.
-- **Notification sound not playing (macOS)** — Verify the sound name is valid: `terminal-notifier -title Test -message Test -sound <SoundName>`. See `/System/Library/Sounds/` for available names.
-- **Setup partially completed** — Re-run `/notify:setup`. It detects existing config and offers to update or replace.
-- **Permissions issues** — If `terminal-notifier` was installed but notifications don't appear, try `brew reinstall terminal-notifier`, then open it once from Finder to trigger the macOS permission prompt.
+- **No notifications (macOS)** — System Settings → Notifications → terminal-notifier: allow notifications, and check Focus / Do Not Disturb. The first notification after installing `terminal-notifier` may trigger the macOS permission prompt; if nothing appears, open it once from Finder or run `brew reinstall terminal-notifier`.
+- **Generic text instead of Claude's reply** — `jq` is missing, or `showMessage` is `false`. Run `/notify:check`.
+- **Wrong app comes forward on click** — change `activate` for that event in `notify-config.json`.
+- **Sound doesn't play (macOS)** — test the name: `terminal-notifier -title Test -message Test -sound <Name>`. Names are in `/System/Library/Sounds/`.
+- **Two notifications per event** — notify is installed both globally and in this project. Uninstall one scope.
+- **Setup was interrupted** — re-run `/notify:setup`; it finds the partial install and offers Update or Replace.
 
 ## Prerequisites
 
-**macOS:**
-- [Homebrew](https://brew.sh) (for installing `terminal-notifier`)
-- `jq` (recommended, installed during setup) or `python3` (fallback for JSON parsing)
+- **macOS:** [Homebrew](https://brew.sh) to install `terminal-notifier`, or install it yourself.
+- **Linux:** `notify-send` (package `libnotify-bin`, `libnotify`) and a running notification daemon.
+- **Both:** `jq` (recommended; macOS 15 and later include it), `git` for the `repo / branch` subtitle, Bash.
 
-**Linux:**
-- `notify-send` (from `libnotify`, available on most distributions)
-- `jq` (recommended) or `python3` (fallback)
+## Alternatives
 
-**Both platforms:** Claude Code, `git` (used to build the `repo / branch` subtitle).
+notify is deliberately small: a hook script, a cooldown and a subtitle. If you need Windows support, webhooks (Slack, Discord, Telegram) or more event types, these community projects do more:
 
-## Internals
+- [`777genius/claude-notifications-go`](https://github.com/777genius/claude-notifications-go) — Windows and webhooks, one Go binary
+- [`cfngc4594/agent-notify`](https://github.com/cfngc4594/agent-notify) — Claude Code, Cursor and Codex from one config
+- [`dazuiba/CCNotify`](https://github.com/dazuiba/CCNotify) and [`mylee04/code-notify`](https://github.com/mylee04/code-notify) — focused macOS options
 
-For the hook event model, JSON parsing pattern, script safety rules, and detection logic used by `/onboard:start` to probe whether notify is already configured, see [`notify/CONVENTIONS.md`](./CONVENTIONS.md).
+## More
+
+- Documentation: [apurvbazari.github.io/claude-plugins/notify](https://apurvbazari.github.io/claude-plugins/notify/)
+- Internals (event model, parsing, script safety): [`CONVENTIONS.md`](https://github.com/ApurvBazari/claude-plugins/blob/main/notify/CONVENTIONS.md)
+- Issues: [github.com/ApurvBazari/claude-plugins/issues](https://github.com/ApurvBazari/claude-plugins/issues)
+- Other plugins in this collection: [ApurvBazari/claude-plugins](https://github.com/ApurvBazari/claude-plugins)
 
 ## License
 
-[MIT](../LICENSE)
+MIT — see [LICENSE](https://github.com/ApurvBazari/claude-plugins/blob/main/notify/LICENSE).

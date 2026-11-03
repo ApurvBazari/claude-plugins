@@ -839,13 +839,13 @@ echo ""
 # (pins the custom-specialist agent-path-traversal + prompt-size guards). check-schemas.py exits 2
 # when the jsonschema dev dep is absent — treat that as a skip (warn), not a failure.
 schema_rc=0
-schema_err="$(python3 onboard/schemas/check-schemas.py 2>&1 >/dev/null)" || schema_rc=$?
+schema_err="$(python3 tests/onboard/schemas/check-schemas.py 2>&1 >/dev/null)" || schema_rc=$?
 if [[ "$schema_rc" -eq 0 ]]; then
-  pass "schemas: example fixtures validate + reject fixtures rejected (onboard/schemas/check-schemas.py)"
+  pass "schemas: example fixtures validate + reject fixtures rejected (tests/onboard/schemas/check-schemas.py)"
 elif [[ "$schema_rc" -eq 2 ]]; then
   warn "schemas: full suite skipped — jsonschema dev dep absent; dep-free security pin still ran (pip install --user jsonschema for the full suite)"
 else
-  fail "schemas: fixture validation failed — run python3 onboard/schemas/check-schemas.py"
+  fail "schemas: fixture validation failed — run python3 tests/onboard/schemas/check-schemas.py"
   # shellcheck disable=SC2001  # sed is the clearest way to indent each diagnostic line
   echo "$schema_err" | sed 's/^/    /'
 fi

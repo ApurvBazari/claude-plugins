@@ -56,9 +56,9 @@ Only **additions** are applied, and only the ones the developer selected. Remova
    - Merge the new server entry into `mcpServers` per the schema in `../../generation/references/catalogs/mcp-guide.md` § Config Shape. Preserve every other key verbatim. A plugin-delivered server has no entry to merge.
    - Append the server to `.claude/onboard-mcp-snapshot.json` as well so subsequent drift checks use the new baseline.
    - Approving a server does NOT install its plugin.
-2. For the approved `install-plugin-<plugin>` offers, and only those, run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugin> [<plugin> ...]` once with every selected name, per `../../../references/plugin-install-consent.md`. A plugin whose offer was shown and not selected is recorded as offered and is not installed.
+2. For the approved `install-plugin-<plugin>` offers, and only those, run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugin>@claude-plugins-official [...]` once with every selected name, per `../../../references/plugin-install-consent.md`. A plugin whose offer was shown and not selected is recorded as offered and is not installed.
 3. For each `staleCandidate`: display the removal suggestion but do NOT auto-apply. If the user explicitly says "yes remove X", delete the entry from `.mcp.json` AND the snapshot.
-4. For `userEdited` / `userRemoved`: no action. The findings report already informed the user.
+4. For `userEdited` / `userRemoved` / `legacyEntries`: no action. The findings report already informed the user. A legacy entry is removed only when the user explicitly says "yes remove X" (then delete it from `.mcp.json` AND the snapshot).
 5. If `.claude/rules/mcp-setup.md` needs regeneration (new server added needing auth), invoke `generate` with `callerExtras.regenerateOnly` scoped to `.claude/rules/mcp-setup.md`.
 
 ---
@@ -104,7 +104,7 @@ Only **additions** and **legacy migrations** are applied on user approval. User-
 Only **new-language additions** are applied on user approval. Uninstalls and stale candidates are informational only — onboard never auto-reinstalls or auto-removes LSP plugins.
 
 1. For each approved `newLanguage` candidate:
-   - Invoke `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugin-name>`. The offer the developer selected is the acceptance (`../../../references/plugin-install-consent.md`). Merge results into `lspStatus.autoInstalled[]` and `lspStatus.autoInstallFailed[]`.
+   - Invoke `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugin-name>@claude-plugins-official`. The offer the developer selected is the acceptance (`../../../references/plugin-install-consent.md`). Merge results into `lspStatus.autoInstalled[]` and `lspStatus.autoInstallFailed[]`.
    - Append the plugin to `.claude/onboard-lsp-snapshot.json` `recommended[]` AND `accepted[]`, preserving alphabetical sort.
    - Append the plugin to `lspStatus.generated[]`.
 2. For `uninstalled` findings: no action. Log once: "LSP plugin `<name>` was uninstalled since last run — rerun `/onboard:evolve` if you want to reinstall."

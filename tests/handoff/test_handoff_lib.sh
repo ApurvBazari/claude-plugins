@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Unit tests for handoff/scripts/handoff-lib.sh — the single source of truth for
-# frontmatter reading, body extraction, ISO parsing, and retention normalization.
+# frontmatter reading, ISO parsing, retention normalization, and whole-number settings.
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$HERE/../.." && pwd)"
@@ -32,10 +32,9 @@ assert_eq "2026-07-02T09:00:00Z" "$(hf_get_fm_value "$tmp" deferred-at)"  "fm: d
 assert_eq ""                     "$(hf_get_fm_value "$tmp" missing-key)"  "fm: absent key → empty"
 assert_eq ""                     "$(hf_get_fm_value /no/such/file key)"   "fm: missing file → empty"
 
-# get_body returns text after the closing --- and is NOT polluted by the body `---`
-body="$(hf_get_body "$tmp")"
-assert_contains "Intro paragraph." "$body" "body: includes first line after fm"
-assert_contains "More body text."  "$body" "body: includes text past the body hr"
+# hf_get_body was removed in 1.1.0 with the hook's directive injection; nothing
+# extracts the body in shell any more (pickup reads the file with the Read tool).
+assert_eq "" "$(type -t hf_get_body)" "lib: hf_get_body is gone (no shell body extraction)"
 
 # iso_to_epoch: valid → >0; garbage/empty → 0
 assert_eq "1"  "$([[ "$(hf_iso_to_epoch 2026-07-01T10:00:00Z)" -gt 0 ]] && echo 1 || echo 0)" "iso: valid → >0"
@@ -50,6 +49,16 @@ assert_eq "0"         "$(hf_normalize_retention 0)"         "ret: 0 stays 0 (del
 assert_eq "5"         "$(hf_normalize_retention 5)"         "ret: positive int"
 assert_eq "10"        "$(hf_normalize_retention '')"        "ret: empty → default 10"
 assert_eq "10"        "$(hf_normalize_retention 'x;rm -rf')" "ret: hostile non-numeric → 10"
+
+# int_setting: whole numbers read as decimal (never octal), capped at max; junk → default
+assert_eq "0"    "$(hf_int_setting 000 24 8760)"                  "int: 000 → 0 (all zeros)"
+assert_eq "8"    "$(hf_int_setting 08 24 8760)"                   "int: 08 → 8 (not an octal error)"
+assert_eq "10"   "$(hf_int_setting 0010 24 8760)"                 "int: 0010 → 10 (not octal 8)"
+assert_eq "8760" "$(hf_int_setting 8761 24 8760)"                 "int: over max → max"
+# 2^64 + 1: bash arithmetic wraps it to 1, so only the length check keeps it from slipping past the cap.
+assert_eq "8760" "$(hf_int_setting 18446744073709551617 24 8760)" "int: longer than max → max (no overflow)"
+assert_eq "24"   "$(hf_int_setting abc 24 8760)"                  "int: non-digits → default"
+assert_eq "24"   "$(hf_int_setting '' 24 8760)"                   "int: empty → default"
 
 rm -f "$tmp"
 summary

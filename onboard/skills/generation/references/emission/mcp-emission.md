@@ -12,7 +12,7 @@ Follow `../catalogs/mcp-guide.md` for emission rules, catalog, and transport sha
 |---|---|---|
 | **Path A — wizard answer** | `wizardAnswers` contains MCP server preferences (rare; MCP is signal-driven, not wizard-gated) | Emit per wizard. |
 | **Path B — internal generation default** | wizard absent AND no candidate signals | Emit `mcpStatus: { status: "skipped", reason: "no-candidates" }`. No `.mcp.json`, no snapshot. |
-| **Path C — signal-driven (default)** | `${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh` returns ≥1 candidate | Emit `.mcp.json` + snapshot + telemetry. **This path fires regardless of wizard or programmatic mode** unless `callerExtras.disableMCP === true`. |
+| **Path C — signal-driven (default)** | `${CLAUDE_PLUGIN_ROOT}/scripts/detect-mcp-signals.sh` returns ≥1 candidate | Emit `.mcp.json` + snapshot when at least one candidate has a catalog URL; always write telemetry. A run whose candidates are all plugin-delivered writes no `.mcp.json` and no snapshot. **This path fires regardless of wizard or programmatic mode** unless `callerExtras.disableMCP === true`. |
 | **Path SKIP — caller-disabled** | `callerExtras.disableMCP === true` | No `.mcp.json`, no snapshot. Telemetry: `mcpStatus: { status: "skipped", reason: "caller-disabled", planned: [], generated: [] }`. **Telemetry IS still written.** |
 
 **Inputs**:
@@ -22,7 +22,7 @@ Follow `../catalogs/mcp-guide.md` for emission rules, catalog, and transport sha
 
 **Telemetry contract**: `mcpStatus` MUST be present in `onboard-meta.json` after every generation, regardless of which path fired. Use the `status` enum (`emitted | documented | skipped | declined | failed`) per the Default behavior matrix in `../../../generate/SKILL.md`.
 
-**Step 1 — Detect candidates**. Run the detection script; parse JSON output. Candidates marked `confidence: "always"` (context7) emit unconditionally. Candidates marked `confidence: "high"` emit when the signal evaluates unambiguously (see `../catalogs/mcp-guide.md` § Confidence Tiers). Dedupe by server name.
+**Step 1 — Detect candidates**. Run the detection script; parse JSON output. Each candidate carries `delivery`: `"mcp-json"` (a catalog row with a URL — `vercel`, `supabase`) or `"plugin"` (plugin-delivered — `context7`, `github`, `prisma`, `chrome-devtools-mcp`). The `confidence: "any-project"` candidate (`context7`) is in the list on every project; `confidence: "high"` candidates count when the signal evaluates unambiguously (see `../catalogs/mcp-guide.md` § Confidence Tiers). Dedupe by server name.
 
 **Step 2 — Pre-existing file check**. If `.mcp.json` already exists at project root:
 - Do NOT overwrite
@@ -30,7 +30,7 @@ Follow `../catalogs/mcp-guide.md` for emission rules, catalog, and transport sha
 - Still emit `.claude/rules/mcp-setup.md` describing servers we *would* have emitted, so the user can reconcile manually
 - Skip the write in Step 3 and Step 4
 
-**Step 3 — Write `.mcp.json`**. Use the schema in `../catalogs/mcp-guide.md` § Config Shape. Secret references use the `${VAR}` substitution form — never inline real values. A catalog row with no command or URL of its own (today: `prisma`) is **plugin-delivered**: never write a `.mcp.json` entry for it. Record it in `mcpStatus.skipped` as `{ "server": "<name>", "reason": "plugin-delivered" }` when its plugin is in the accepted list, or with reason `"plugin-declined"` when it is not.
+**Step 3 — Write `.mcp.json`**. Use the schema in `../catalogs/mcp-guide.md` § Config Shape: `type: "http"` plus the catalog's `https` URL, nothing else — no `headers`, `env`, `command` or `args`, no credentials and no `${VAR}` references. A catalog row with no URL of its own (today: `context7`, `github`, `prisma`, `chrome-devtools-mcp`) is **plugin-delivered**: never write a `.mcp.json` entry for it. Record it in `mcpStatus.skipped` as `{ "server": "<name>", "reason": "plugin-delivered" }` when its plugin is in the accepted list, or with reason `"plugin-declined"` when it is not.
 
 **Step 4 — Write drift snapshot**. Write `.claude/onboard-mcp-snapshot.json` with the exact contents of `.mcp.json` as written. This is the baseline that `onboard:update` / `onboard:evolve` diff against. Do not include a maintenance header — the snapshot is pure JSON consumed by tooling.
 
@@ -39,8 +39,11 @@ Follow `../catalogs/mcp-guide.md` for emission rules, catalog, and transport sha
 {
   "mcpStatus": {
     "planned": ["context7", "vercel"],
-    "generated": ["context7", "vercel"],
-    "skipped": [{ "server": "github", "reason": "no-github-workflows-detected" }],
+    "generated": ["vercel"],
+    "skipped": [
+      { "server": "context7", "reason": "plugin-declined" },
+      { "server": "github", "reason": "no-github-workflows-detected" }
+    ],
     "pluginOffers": { "offered": ["context7", "vercel"], "accepted": ["vercel"] },
     "autoInstalled": [],
     "autoInstallFailed": [],
@@ -51,7 +54,7 @@ Follow `../catalogs/mcp-guide.md` for emission rules, catalog, and transport sha
 
 Write `pluginOffers` here on every full `write` run, whether or not anything was accepted: a declined offer has to be remembered. What goes in it is defined under § Install accepted plugins below. On a `regenerateOnly` or `reResearch` run, leave the stored `pluginOffers` exactly as it is.
 
-**Step 6 — Write `.claude/rules/mcp-setup.md`** (conditional on at least one server requiring auth OR on `existedPreOnboard: true`). Use the template in `../catalogs/mcp-guide.md` § mcp-setup.md Template. Include per-server env-var requirements and OAuth steps. Omit when no auth is needed and no pre-existing file existed.
+**Step 6 — Write `.claude/rules/mcp-setup.md`** (conditional on at least one server requiring auth OR on `existedPreOnboard: true`). Use the template in `../catalogs/mcp-guide.md` § mcp-setup.md Template. Include the per-server OAuth steps. Omit when no auth is needed and no pre-existing file existed.
 
 **Step 7 — Install accepted plugins** (after the metadata-write step, see § Install accepted plugins below). Running after metadata ensures telemetry is persisted even if an install fails.
 
@@ -65,7 +68,7 @@ Follow `../../../../references/plugin-install-consent.md`: the rule (R1 to R4), 
 2. Keep only names that are the `plugin` of a server in `../catalogs/mcp-guide.md` § Catalog. Drop anything else and add a warning.
 3. If the context carries `callerExtras.regenerateOnly` or `callerExtras.reResearch`, stop here. A repair run never installs.
 4. If the list is empty, stop here. Nothing was accepted, so nothing is installed.
-5. After the metadata file is written, invoke `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <accepted1> <accepted2> ...`. The script probes `claude plugin list --json` once, skips plugins already installed, installs the rest, and always exits 0: an install failure must never fail emission Step 1.
+5. After the metadata file is written, invoke `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <accepted1>@claude-plugins-official <accepted2>@claude-plugins-official ...`. Every MCP-catalog plugin lives in `claude-plugins-official`; always pass the qualified name. The script probes `claude plugin list --json` once, skips plugins already installed, installs the rest, and always exits 0: an install failure must never fail emission Step 1.
 6. Update `onboard-meta.json`, re-writing the install results only: `mcpStatus.autoInstalled`, `mcpStatus.autoInstallFailed`. `mcpStatus.pluginOffers` was already written in Step 5 and is not touched here.
 
 `mcpStatus.pluginOffers.offered` is the plugins a person was actually asked about: `callerExtras.mcpPluginsOffered` → `wizardAnswers.mcpPluginsOffered`, the rows the wizard displayed in a question the developer submitted, plus every accepted name. A plugin whose row was never shown (the group was dropped, the wizard was skipped or dismissed, the plugin was already installed) is not in `offered`, so `evolve` can offer it later. `accepted` is the list from step 2. Both arrays are sorted alphabetically.

@@ -1,15 +1,19 @@
 #!/usr/bin/env bash
-# detect-mcp-signals.sh — Detect which MCP servers should be emitted based on project signals
+# detect-mcp-signals.sh — Detect which MCP servers fit a project, from project signals
 # Usage: bash detect-mcp-signals.sh [project-root]
 # Output: JSON array on stdout, one object per candidate MCP server.
 #
 # Schema:
 #   [
-#     { "server": "context7", "confidence": "always", "plugin": "context7",
-#       "transport": "stdio", "signal": "any-project" },
-#     { "server": "vercel",   "confidence": "high",   "plugin": "vercel",
-#       "transport": "http",  "signal": "vercel.json" }
+#     { "server": "context7", "confidence": "any-project", "plugin": "context7",
+#       "delivery": "plugin", "transport": "plugin", "signal": "any-project" },
+#     { "server": "vercel",   "confidence": "high",        "plugin": "vercel",
+#       "delivery": "mcp-json", "transport": "http", "signal": "vercel-config-or-dep" }
 #   ]
+#
+# delivery "mcp-json": onboard may write a remote https entry for it into .mcp.json.
+# delivery "plugin":   the server ships inside its official plugin; onboard writes no
+#                      .mcp.json entry and only offers the plugin (installed on acceptance).
 #
 # Reads stack fingerprints from the project directory. Does NOT read analysis JSON —
 # the caller (config-generator) can merge this script's output with analysis results.
@@ -24,12 +28,12 @@ PROJECT_ROOT="$(cd "$PROJECT_ROOT" && pwd -P)"
 
 candidates=()
 
-# Always emit context7 — universally useful for docs lookup, zero auth, zero cost
-candidates+=('{"server":"context7","confidence":"always","plugin":"context7","transport":"stdio","signal":"any-project"}')
+# context7 fits any project (docs lookup). Plugin-delivered: offered, never written to .mcp.json.
+candidates+=('{"server":"context7","confidence":"any-project","plugin":"context7","delivery":"plugin","transport":"plugin","signal":"any-project"}')
 
 # GitHub: signal is .github/workflows/
 if [[ -d "${PROJECT_ROOT}/.github/workflows" ]]; then
-  candidates+=('{"server":"github","confidence":"high","plugin":"github","transport":"http","signal":".github/workflows"}')
+  candidates+=('{"server":"github","confidence":"high","plugin":"github","delivery":"plugin","transport":"plugin","signal":".github/workflows"}')
 fi
 
 # Vercel: signal is vercel.json OR @vercel/* in package.json
@@ -43,7 +47,7 @@ if ! $vercel_hit && [[ -f "${PROJECT_ROOT}/package.json" ]]; then
   fi
 fi
 if $vercel_hit; then
-  candidates+=('{"server":"vercel","confidence":"high","plugin":"vercel","transport":"http","signal":"vercel-config-or-dep"}')
+  candidates+=('{"server":"vercel","confidence":"high","plugin":"vercel","delivery":"mcp-json","transport":"http","signal":"vercel-config-or-dep"}')
 fi
 
 # Prisma: signal is prisma/ directory OR @prisma/client / prisma in deps
@@ -57,7 +61,7 @@ if ! $prisma_hit && [[ -f "${PROJECT_ROOT}/package.json" ]]; then
   fi
 fi
 if $prisma_hit; then
-  candidates+=('{"server":"prisma","confidence":"high","plugin":"prisma","transport":"stdio","signal":"prisma-dir-or-dep"}')
+  candidates+=('{"server":"prisma","confidence":"high","plugin":"prisma","delivery":"plugin","transport":"plugin","signal":"prisma-dir-or-dep"}')
 fi
 
 # Supabase: signal is supabase/ config directory OR @supabase/* in deps
@@ -71,7 +75,7 @@ if ! $supabase_hit && [[ -f "${PROJECT_ROOT}/package.json" ]]; then
   fi
 fi
 if $supabase_hit; then
-  candidates+=('{"server":"supabase","confidence":"high","plugin":"supabase","transport":"http","signal":"supabase-dir-or-dep"}')
+  candidates+=('{"server":"supabase","confidence":"high","plugin":"supabase","delivery":"mcp-json","transport":"http","signal":"supabase-dir-or-dep"}')
 fi
 
 # Frontend framework: signal is any of the known frontend framework fingerprints in package.json
@@ -82,7 +86,7 @@ if [[ -f "${PROJECT_ROOT}/package.json" ]]; then
   fi
 fi
 if $frontend_hit; then
-  candidates+=('{"server":"chrome-devtools-mcp","confidence":"high","plugin":"chrome-devtools-mcp","transport":"stdio","signal":"frontend-framework"}')
+  candidates+=('{"server":"chrome-devtools-mcp","confidence":"high","plugin":"chrome-devtools-mcp","delivery":"plugin","transport":"plugin","signal":"frontend-framework"}')
 fi
 
 # Emit JSON array

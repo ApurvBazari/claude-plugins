@@ -1,6 +1,6 @@
 ---
 name: wizard
-description: Interactive Q&A for customizing notification preferences (sounds, durations, matcher regex, per-event toggles). Internal building block invoked by the notify setup skill — not user-invocable.
+description: Internal Q&A step of /notify:setup for notification preferences (sounds, cooldown, matcher, per-event toggles, whether Claude's text is shown). Not user-invocable.
 user-invocable: false
 ---
 
@@ -89,6 +89,16 @@ After configuring Event 1, ask about the notification cooldown:
 
 Apply the chosen `minDurationSeconds` to the `stop` event. The `notification` event should keep `minDurationSeconds: 0` since attention prompts should always fire immediately.
 
+### Show Claude's Text
+
+In the same exchange as the cooldown question, ask:
+
+> **Show Claude's text in notifications?** (default: yes)
+>
+> Notifications show the first 80 characters of Claude's last message, or of Claude Code's attention prompt. Choose **no** if your screen is shared or notifications appear on your lock screen — you'll see only the fallback message instead.
+
+Store the answer as the top-level `showMessage` (`true` / `false`). A per-event `showMessage` overrides it; set one only if the developer asks for a different choice on one event.
+
 ### Event 2: Needs Attention (Notification hook)
 
 Present:
@@ -131,6 +141,7 @@ After all three events are configured, compile the settings into the notify-conf
 ```json
 {
   "version": "1.0.0",
+  "showMessage": true,
   "events": {
     "stop": {
       "enabled": true,
@@ -168,6 +179,8 @@ Present a summary table before confirming:
 > | Needs attention | ... | ... | ... | — | ... |
 > | Subagent done | ... | ... | ... | — | ... |
 >
+> Claude's text in notifications: shown / hidden
+>
 > Look good?
 
 On Linux, replace the "App" column with "Urgency" and show the mapped urgency level instead.
@@ -178,5 +191,5 @@ Wait for confirmation before returning to the setup command.
 
 1. **Always show defaults** — Never assume. Let the developer see what they're getting.
 2. **Respect "keep defaults"** — If they say defaults are fine, move on immediately.
-3. **4 exchanges max** — The wizard should complete in at most 4 back-and-forth exchanges (events + duration, or fewer if defaults are accepted).
+3. **4 exchanges max** — The wizard should complete in at most 4 back-and-forth exchanges (events + cooldown + showMessage, or fewer if defaults are accepted).
 4. **Platform-aware** — On Linux, skip sound selection (show urgency mapping), skip `activate` config, skip `mdfind` validation. On macOS, full customization.

@@ -218,23 +218,23 @@ Generated root CLAUDE.md includes a built-in skills subsection when onboard has 
 
 - **Accepted skills** (from `builtInSkillsStatus.generated`): skill name, one-line description, and a project-specific usage example matched to the detected stack.
 - **Placement**: inside Plugin Integration (as `### Built-in Claude Code skills`) when plugins are installed, or as a standalone `## Built-in Claude Code skills` section when no plugins are present.
-- **Not plugin-dependent**: these are Anthropic-provided skills available in every Claude Code session — no install required.
+- **Not plugin-dependent**: these ship with Claude Code — no install required. Only names listed in the Claude Code commands reference qualify (see `../catalogs/built-in-skills-catalog.md`).
 
 Example rendered subsection:
 
 ```markdown
 ### Built-in Claude Code skills
 
-These Anthropic-provided skills are available in every Claude Code session — no plugin install required.
+These ship with Claude Code — no plugin install required.
 
-- `/loop` — run a prompt on a recurring interval.
+- `/loop` — run a prompt repeatedly while the session stays open.
   Example: `/loop 5m npm test` to watch for regressions during refactoring.
-- `/simplify` — review and simplify recently changed code.
+- `/simplify` — clean up recently changed code (reuse, simplification, efficiency).
   Example: after landing a feature, run `/simplify` to clean up before PR.
-- `/debug` — systematic debugging of bugs and test failures.
-  Example: paste a stack trace and run `/debug` to trace the root cause.
-- `/schedule` — create scheduled remote agents on a cron schedule.
-  Example: schedule a weekly dependency-audit agent to check for vulnerabilities.
+- `/code-review` — find correctness bugs in the current diff.
+  Example: run `/code-review` before committing.
+- `/schedule` — create cloud scheduled tasks that run a prompt on a cron schedule.
+  Example: schedule a weekly dependency audit to check for vulnerabilities.
 ```
 
 Omit the subsection entirely when `builtInSkillsStatus.generated` is empty (developer declined all candidates). Keep the subsection under 15 lines.

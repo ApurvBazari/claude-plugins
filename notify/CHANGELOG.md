@@ -1,5 +1,31 @@
 # Changelog
 
+## 2.1.0 — 2026-10-31
+
+### Changed
+- **Notifications no longer hold Claude up.** `/notify:setup` now writes all three hook entries with `"async": true`, so Claude keeps working while the notification is sent. Re-run `/notify:setup` and choose **Update** to convert an existing install; `/notify:check` warns about entries without `async`, and `/notify:uninstall` removes both kinds.
+- **`jq` only, no `python3`.** `notify.sh` dropped its inline `python3 -c` JSON fallback. It parses the hook input once and the config once (one `jq` call each, instead of about eleven). Without `jq` it still fires, using the built-in per-event defaults and the fallback message. Setup and check now report a missing `jq` (a warning, never a stop).
+- A config key an event leaves out now falls back to that event's own default (for example `Hero` for `stop`) instead of a generic `Ping` / "Notification".
+- `notify.sh` prints nothing to stdout; notifier output goes to `/dev/null`.
+- Plain description: macOS and Linux, not "cross-platform".
+
+### Added
+- **Listing icon and display name.** A 512 px PNG icon for Anthropic's plugin directory, drawn from what notify does (its SVG source sits beside it in the assets folder), and the display name "Notify".
+- **`showMessage`** in `notify-config.json` (top level, or per event; default `true`). Set it to `false` to keep Claude's text out of notifications — useful when your screen is shared or notifications show on a lock screen. The wizard asks about it.
+- `/notify:check` compares the installed `notify.sh` with the plugin's copy and warns when it is out of date. The installed script is a copy; re-run `/notify:setup` → **Update** after updating the plugin.
+- `LICENSE` file inside the plugin folder; `author.url`, `homepage`, `documentationUrl`, `supportUrl` and `privacyPolicyUrl` in `plugin.json`.
+
+### Fixed
+- Notification text no longer ends with a stray trailing space.
+
+### Docs
+- README: what notify reads, writes, runs and changes in your Claude settings; where it works (Claude Code only); the community alternatives moved here from the root README. Absolute links, so the README reads correctly as a directory listing.
+- `CONVENTIONS.md`: scope resolution now matches the code (each installed copy reads the config in its own scope; both scopes installed means two notifications), and the stale onboard detection probe is replaced by the delegation rule.
+- Description shortened to under 120 characters, as the repo's manifest rule requires. `CONVENTIONS.md` now describes how onboard really checks for notify (`claude plugin list --json`), not the old sibling-folder probe.
+
+### Tests
+- `test_json_get_bool.sh` (python3-fallback booleans) is replaced by `test_config_parse.sh`: `enabled: false` is still honoured (N1), the no-`jq` path fires on defaults without parsing the input, stdout stays empty, and `notify.sh` contains no `python3`. New `test_show_message.sh`. The harness now puts `jq` on the curated `PATH` (opt out with `NT_NO_JQ=1`) and no longer links `python3`.
+
 ## 2.0.3 — 2026-09-15
 
 ### Changed

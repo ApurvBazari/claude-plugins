@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # handoff-lib.sh — shared functions for the handoff plugin.
 #
-# Sourced by hooks/session-start.sh, scripts/compute-progress.sh, and
-# scripts/prune-archive.sh. This is the SINGLE source of truth for frontmatter
-# reading, body extraction, ISO→epoch parsing, and retention normalization —
-# it exists so those three consumers cannot drift (audit H2/H6/H7).
+# Sourced by scripts/compute-progress.sh, scripts/prune-archive.sh and
+# scripts/snooze.sh. This is the SINGLE source of truth for frontmatter reading,
+# ISO→epoch parsing, and retention normalization — it exists so those consumers
+# cannot drift (audit H2/H6/H7). The SessionStart hook deliberately does NOT
+# source it: the hook reads no file contents at all.
 #
 # Contract: pure functions only. NO `set -e`, NO top-level side effects, NO
 # `exit`. Safe to source into a hook that must always exit 0.
@@ -33,19 +34,6 @@ hf_get_fm_value() {
   return 0
 }
 
-# Extract the body (everything after the closing `---` of frontmatter).
-# Usage: hf_get_body <file>
-hf_get_body() {
-  local file="$1"
-  [[ -f "$file" ]] || { printf ''; return 0; }
-  awk '
-    BEGIN { fm_count = 0 }
-    /^---[[:space:]]*$/ && fm_count < 2 { fm_count++; next }
-    fm_count >= 2 { print }
-  ' "$file" 2>/dev/null
-  return 0
-}
-
 # Parse an ISO-8601 timestamp to Unix seconds. Prints 0 (never non-zero) on
 # empty / non-ISO-shaped / unparseable input. GNU date first, then BSD date.
 # Usage: hf_iso_to_epoch <iso>
@@ -70,5 +58,19 @@ hf_normalize_retention() {
     ''|*[!0-9]*)       printf '10' ;;
     *)                 printf '%s' "$raw" ;;  # non-negative integer, incl. 0
   esac
+  return 0
+}
+
+# Read a non-negative whole-number setting from frontmatter. Prints <default> when the value
+# isn't all digits. Leading zeros are stripped first, because bash arithmetic reads them as
+# octal (`08` is an error, `010` is 8). The result is capped at <max>.
+# Usage: hf_int_setting <raw> <default> <max>
+hf_int_setting() {
+  local raw="$1" def="$2" max="$3"
+  [[ "$raw" =~ ^[0-9]+$ ]] || { printf '%s' "$def"; return 0; }
+  raw="${raw#"${raw%%[!0]*}"}"
+  [[ -n "$raw" ]] || raw=0
+  if (( ${#raw} > ${#max} )) || (( raw > max )); then raw="$max"; fi
+  printf '%s' "$raw"
   return 0
 }

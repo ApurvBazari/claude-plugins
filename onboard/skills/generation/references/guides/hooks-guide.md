@@ -797,7 +797,7 @@ All scripts follow the shared conventions already documented:
 
 **Payload**: common fields only (no matcher support). Useful for final state flush or log rotation.
 **Matcher**: not supported — omit.
-**Inference trigger**: always emit (safe stub with no side effects by default).
+**Inference trigger**: none — emitted only when the caller (`qualityGates.sessionEnd`) or the wizard's advanced-hooks step asks for it. By default the script has nothing to do, so onboard doesn't add it on its own.
 
 **Script** (`${CLAUDE_PROJECT_DIR}/.claude/hooks/session-end.sh`):
 

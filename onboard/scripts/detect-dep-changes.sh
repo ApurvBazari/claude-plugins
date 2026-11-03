@@ -15,7 +15,7 @@ fi
 
 # Defensive: FileChanged hook payload should be a workspace-relative or
 # absolute path. Refuse option-flag-looking input or shell metacharacters.
-# Hook scripts must always exit 0 (see .claude/rules/shell-scripts.md).
+# Hook scripts must always exit 0: a non-zero exit would surface as a hook error in the user's session.
 case "$FILE_PATH" in
   /*|./*|[a-zA-Z0-9_]*) ;;
   *) exit 0 ;;
@@ -31,26 +31,29 @@ fi
 CHANGES=""
 BASENAME=$(basename "$FILE_PATH")
 
+# Append one entry to the drift log with jq; skip quietly when jq is absent.
+# Writes to a temp file first so a failed write never truncates the log.
+append_entry() { # <jq-entry-filter> [jq args...]
+  local filter="$1"; shift
+  command -v jq >/dev/null 2>&1 || return 0
+  local tmp
+  tmp="$(mktemp "${DRIFT_FILE}.XXXXXX" 2>/dev/null)" || return 0
+  if jq "$@" ".entries += [${filter}]" "$DRIFT_FILE" > "$tmp" 2>/dev/null; then
+    mv "$tmp" "$DRIFT_FILE" 2>/dev/null || rm -f "$tmp"
+  else
+    rm -f "$tmp"
+  fi
+}
+
 case "$BASENAME" in
   package.json)
     # Compare current deps against what's in the project metadata (if available)
-    if command -v python3 >/dev/null 2>&1 && [ -f "$FILE_PATH" ]; then
-      CHANGES=$(python3 -c "
-import json, sys
-try:
-    pkg = json.load(open(sys.argv[1]))
-    deps = list(pkg.get('dependencies', {}).keys())
-    dev_deps = list(pkg.get('devDependencies', {}).keys())
-    scripts = list(pkg.get('scripts', {}).keys())
-    changes = []
-    for d in deps + dev_deps:
-        changes.append({'action': 'present', 'name': d, 'type': 'dependency'})
-    for s in scripts:
-        changes.append({'action': 'present', 'name': s, 'type': 'script'})
-    print(json.dumps(changes))
-except Exception:
-    print('[]')
-" "$FILE_PATH" 2>/dev/null || echo "[]")
+    if command -v jq >/dev/null 2>&1 && [ -f "$FILE_PATH" ]; then
+      CHANGES=$(jq -c '
+        [ ((.dependencies // {}) | keys_unsorted[] | {action: "present", name: ., type: "dependency"}),
+          ((.devDependencies // {}) | keys_unsorted[] | {action: "present", name: ., type: "dependency"}),
+          ((.scripts // {}) | keys_unsorted[] | {action: "present", name: ., type: "script"}) ]
+      ' "$FILE_PATH" 2>/dev/null || echo "[]")
     fi
     ;;
   pyproject.toml)
@@ -75,20 +78,8 @@ if [ -z "$CHANGES" ] || [ "$CHANGES" = "[]" ]; then
 fi
 
 # Append entry to drift file
-if command -v python3 >/dev/null 2>&1; then
-  python3 -c "
-import json, sys
-drift_file, timestamp, basename, changes_json = sys.argv[1:5]
-drift = json.load(open(drift_file))
-drift['entries'].append({
-    'timestamp': timestamp,
-    'file': basename,
-    'type': 'dependency',
-    'changes': json.loads(changes_json)
-})
-with open(drift_file, 'w') as f:
-    json.dump(drift, f, indent=2)
-" "$DRIFT_FILE" "$TIMESTAMP" "$BASENAME" "$CHANGES" 2>/dev/null || true
-fi
+# shellcheck disable=SC2016  # jq variables, not shell expansions
+append_entry '{timestamp: $ts, file: $bn, type: "dependency", changes: $changes}' \
+  --arg ts "$TIMESTAMP" --arg bn "$BASENAME" --argjson changes "$CHANGES"
 
 exit 0

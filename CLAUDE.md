@@ -17,21 +17,25 @@ Claude Code plugin marketplace by Apurv Bazari. Five plugins — all markdown + 
          │      │           research, wizard, generation, maintain)
          │      ├── agents/ (codebase-analyzer, config-generator, feature-evaluator,
          │      │           research-specialist, research-verifier)
-         │      └── scripts/ (detect-{config,dep,structure}-changes, detect-{lsp,mcp}-signals, audit-tooling, install-plugins,
-         │                    maintain-{detect,guard,write} + maintain-lib/)
+         │      ├── scripts/ (detect-{config,dep,structure}-changes, detect-{lsp,mcp}-signals, audit-tooling, install-plugins,
+         │      │             maintain-{detect,guard,write} + maintain-lib/)
+         │      └── references/ (plugin-install-consent, ask-user-question-guard, …)
          │
-         ├──→ notify/                    ← cross-platform system notifications
+         ├──→ notify/                    ← macOS and Linux desktop notifications
          │      ├── skills/ (setup, check, uninstall, wizard)
          │      └── scripts/ (notify, install-notifier)
          │
          ├──→ handoff/                   ← session handoff continuity
-         │      └── skills/ (save, pickup, check, discard)
+         │      ├── skills/ (save, pickup, check, discard)
+         │      ├── hooks/ (hooks.json, session-start.sh)   ← announce-only; no variables
+         │      └── scripts/ (handoff-lib, compute-progress, snooze, archive-active,
+         │                    prune-archive, merge-fm-key)
          │
          ├──→ walkthrough/               ← session or subject → self-contained interactive HTML
          │      ├── skills/ (create, update, document, render)
          │      │           └── create/references/system-map-engine.js  ← in-page layout engine
          │      ├── agents/ (system-analyzer, system-verifier)          ← read-only, for document's code reading
-         │      └── references/ (system-reading)                        ← the two agents' shared rules
+         │      └── references/ (system-reading, ask-user-question-guard) ← shared rules
          │
          └──→ lens/                      ← intent-grounded review companion (brain; renders via walkthrough)
                 ├── skills/ (review, engine, render-review, capability)
@@ -44,11 +48,23 @@ Claude Code plugin marketplace by Apurv Bazari. Five plugins — all markdown + 
 ## Plugin Structure Convention
 
 Every plugin must have:
-- `.claude-plugin/plugin.json` — manifest with name, version, description, author, license, keywords
-- `README.md` — user-facing documentation
+- `.claude-plugin/plugin.json` — manifest with name, version, description, author, license, keywords, plus the directory listing fields `homepage`, `documentationUrl`, `supportUrl`, `privacyPolicyUrl`
+- `README.md` — user-facing documentation; Anthropic's directory shows it as the listing description (see below)
+- `LICENSE` — a copy of the root `LICENSE`, because people who install a plugin receive only its folder
 - At least one of: `skills/`, `agents/`
 
 Components live at the plugin root, NOT inside `.claude-plugin/`. Only `plugin.json` goes in `.claude-plugin/`.
+
+### Directory submission rules
+
+Each plugin folder is submitted to Anthropic's plugin directory on its own ([pre-submission checklist](https://claude.com/docs/plugins/pre-submission-checklist.md)). Keep these true:
+
+- **Self-contained.** Nothing a plugin loads may point outside its folder. Never cite repo-root files such as `.claude/rules/*.md` from a skill, agent or reference; ship a copy in the plugin's `references/` instead (e.g. `<plugin>/references/ask-user-question-guard.md`).
+- **Hook scripts stay plain.** Every plugin here is a subfolder of the repo, so a script that a hook runs must use no shell variables other than `${CLAUDE_PLUGIN_ROOT}`, no `$(…)`, and no calls to other files. Anything else is held for a reviewer. Put real logic in a skill-invoked script instead (see `handoff/hooks/session-start.sh`).
+- **No credentials from the environment, no unpinned launchers.** Never write a config that reads a token from the user's environment and sends it to a server, and never emit an unpinned `npx`/`uvx` command, even into generated project files.
+- **README top section**, in this order: one-line tagline, a **Works in** line (Claude Code / Cowork / claude.ai chat, per the [platform-support table](https://claude.com/docs/plugins/platform-support.md)), install (directory and this marketplace), what it does, commands, **What it reads, writes, and sends** (verified against the code), where it works, then detail, then license. Every non-anchor link absolute (`https://github.com/ApurvBazari/claude-plugins/blob/main/...`); never write an image path in backticks.
+- **Icon and display name.** `assets/icon.png`, square, 512–2048 px, under 2 MB (the directory rejects SVG), referenced as `"icon": "./assets/icon.png"`, plus a `displayName` in `plugin.json` (relabel with `displayName`, never by changing `name`). The directory captures it once, at the first portal save, so it must exist before a plugin is first submitted. Keep the SVG source beside it.
+- Run `claude plugin validate ./<plugin> --strict` (CI does, on CLI 2.1.314).
 
 Skills are the authoring form for all user-facing entrypoints and internal orchestration. Legacy `commands/` directories are no longer used — per [Claude Code docs](https://code.claude.com/docs/en/skills.md), commands have been merged into skills. A file at `commands/<name>.md` and a skill at `skills/<name>/SKILL.md` both create the `/<plugin>:<name>` slash entry, but only skills support frontmatter (`user-invocable`, `disable-model-invocation`), reference directories, and model-driven auto-invocation.
 

@@ -50,7 +50,7 @@ Before creating a fresh task list, probe for a prior interrupted run. The cross-
 2. **Probe 2 — research dossier, no meta** → research completed, generation never ran. Offer **Resume into Phase 3** (the wizard re-confirms from the dossier's `research.wizardInferences` — continue forward through context → plan-gate → generation) or **Restart**.
 3. **Probe 3 — neither** → fresh start; skip the prompt and create the list below.
 
-Both offer options are **fixed** (Resume / Restart, header `"Resume?"`), so the single-option guard in `.claude/rules/ask-user-question-guard.md` does **not** apply. On **Resume**, rehydrate from the checkpoint artifact(s), re-create the list with already-completed phases marked `completed`, and jump to the resume target (Phase 7 for probe 1, Phase 3 for probe 2); on **Restart** (or probe 3), mark any leftover incomplete tasks `deleted` and continue below.
+Both offer options are **fixed** (Resume / Restart, header `"Resume?"`), so the single-option guard in `../../references/ask-user-question-guard.md` does **not** apply. On **Resume**, rehydrate from the checkpoint artifact(s), re-create the list with already-completed phases marked `completed`, and jump to the resume target (Phase 7 for probe 1, Phase 3 for probe 2); on **Restart** (or probe 3), mark any leftover incomplete tasks `deleted` and continue below.
 
 ### Step: Create the phase-task list
 
@@ -103,7 +103,7 @@ Dispatch on the choice:
 - **Start fresh** → continue to the analysis step below; note that existing files will be overwritten at generation.
 - **Cancel** → stop.
 
-**Guard Usage:** four fixed options (≥2), so the single-option guard in `.claude/rules/ask-user-question-guard.md` does not apply.
+**Guard Usage:** four fixed options (≥2), so the single-option guard in `../../references/ask-user-question-guard.md` does not apply.
 
 **If minimal or no Claude config exists**, proceed directly to analysis.
 
@@ -216,7 +216,7 @@ After all questions are answered, present a summary:
 
 Before generation, detect installed Claude Code plugins so the output is plugin-aware (Plugin Integration section, per-directory skill annotations, plugin-aware agent skipping, quality-gate hooks). The canonical procedures live under `../generation/references/plugins/`:
 
-- **Probe both locations** — the dev-sibling path (`${CLAUDE_PLUGIN_ROOT}/../<plugin>/`) and the marketplace cache (`~/.claude/plugins/cache/*/<plugin>/`) — per `../generation/references/plugins/plugin-detection-guide.md` § Known Plugin Probe List. Build `installedPlugins` across the full catalog; continue past misses; only report "no plugins detected" when BOTH locations are empty (the cache probe still runs off `$HOME` when `CLAUDE_PLUGIN_ROOT` is unset).
+- **Find installed plugins** — ask Claude Code (`claude plugin list --json`, which covers marketplace installs, plugins synced from claude.ai and skills-directory plugins), falling back to the marketplace cache (`~/.claude/plugins/cache/*/<plugin>/`) only when the CLI can't answer — per `../generation/references/plugins/plugin-detection-guide.md` § Known Plugin Probe List. Never probe a sibling `${CLAUDE_PLUGIN_ROOT}/../<plugin>` folder. Build `installedPlugins` across the full catalog; continue past misses; only report "no plugins detected" when the lookup finds none of the catalog.
 - **Classify each surface** via `../generation/references/plugins/plugin-surface-probe.md` — tag every installed plugin `command-or-skill` / `hooks-only` / `agent-only`; the resulting `pluginSurfaces` map prevents fabricated slash refs (release-gate finding G.3, 2026-04-17).
 - **Derive** `coveredCapabilities`, `qualityGates`, and `phaseSkills` per the derivation rules in `../generation/references/plugins/plugin-detection-guide.md` — dedup capabilities; filter gates/skills by `installedPlugins`; downgrade `preCommit[].mode` per `wizardAnswers.autonomyLevel`; drop empty phases.
 
@@ -282,7 +282,7 @@ This is the review-before-implementation gate. **Nothing has been written yet.**
 
 1. **Render.** Map `previewModel` → a walkthrough `session-model` per `../research/references/render-adapter.md`, then invoke `walkthrough:render` with `{ model, outputPath: ".claude/walkthrough/<YYYY-MM-DD-HHMM>-onboard-plan.html" }`.
    - **walkthrough absent** (render skill unavailable) → offer install via AskUserQuestion (single-select, header `"Walkthrough"`): **Install now (Recommended)** ("render this preview as an interactive page") / **Skip — markdown preview**.
-     - Install now → `claude plugin install walkthrough@apurvbazari-plugins` via Bash; re-probe; success → render as above; failure → markdown fallback.
+     - Install now → `claude plugin install walkthrough@apurvbazari-plugins` via Bash (if `apurvbazari-plugins` isn't an added marketplace, don't add it: tell the developer to run `claude plugin marketplace add ApurvBazari/claude-plugins` later and take the markdown fallback); re-probe; success → render as above; failure → markdown fallback.
      - Skip / failure → **markdown gate**: present `previewModel` inline as markdown (Overview · What I learned · What I'll build grouped by tier with each artifact's purpose+outline · Key decisions · Risks). Optionally also write `.claude/onboard-plan.md`.
    - **`walkthrough:render` present but fails at runtime** → don't abort the gate; announce the degrade and fall through to the **markdown gate** above. (Invoking the skill is itself the presence test: an uninstalled skill surfaces as *absent* above; a runtime render error lands here.)
    - This degrades the HTML render only — never the gate.
@@ -292,7 +292,7 @@ This is the review-before-implementation gate. **Nothing has been written yet.**
    - **Cancel** → the user declined → nothing was written (the gate precedes the only write phase). Per § Cancel → `deleted`: mark the gate task **and every later phase task** `deleted` — `TaskUpdate(plan-gate → deleted)`, `TaskUpdate(generation → deleted)`, `TaskUpdate(handoff → deleted)`. Leave the already-`completed` tasks 0–4 as `completed` (they really ran). Then stop. Write nothing. Print: "Cancelled — no files were created."
 3. Only **Approve** advances to Phase 6 Generation. Until then, nothing is written to disk.
 
-**Guard Usage:** the install offer and the gate both use fixed-option single-selects (≥2 options), so the single-option guard in `.claude/rules/ask-user-question-guard.md` does not apply.
+**Guard Usage:** the install offer and the gate both use fixed-option single-selects (≥2 options), so the single-option guard in `../../references/ask-user-question-guard.md` does not apply.
 
 ---
 
@@ -371,7 +371,7 @@ Below the table, list the plugins that were installed (from `mcpStatus.autoInsta
 
 ### Step: ecosystem-plugin-install
 
-If the wizard answers include `ecosystemPlugins`, set up the requested plugins following the canonical procedure in `references/ecosystem-plugin-install.md` — it owns the per-plugin install-probe (`ls "${CLAUDE_PLUGIN_ROOT}/../notify/scripts/notify.sh"`), the never-silent inline-install offer for anything missing, and the skip/report messaging. If no plugins were requested or available, skip this step entirely.
+If the wizard answers include `ecosystemPlugins`, set up the requested plugins following the canonical procedure in `references/ecosystem-plugin-install.md` — it owns the per-plugin install check (`claude plugin list --json`), the never-silent inline-install offer for anything missing, and the skip/report messaging. If no plugins were requested or available, skip this step entirely.
 
 **Notify is delegated, never wired per-repo:** when `ecosystemPlugins.notify` is `true` and notify is installed, direct the developer to run `/notify:setup` — onboard never copies `notify.sh`, writes a `notify-config.json`, runs `install-notifier.sh`, or merges notify hooks; `/notify:setup` owns scope selection and global-config detection.
 

@@ -14,7 +14,7 @@ The visual layer (`create/references/`: `design-system.md`, `interactivity.md`, 
 | **Design system** | ONE house style, tokens only | Consistent look across every walkthrough; no per-run theming drift |
 | **Themes** | Dark + warm-light, in-document toggle | Two `:root` blocks; viewer picks per-view, no rebuild |
 | **Component system** | Open — catalog is a floor, not a ceiling | Bespoke components composed from primitives when content fits no catalog entry |
-| **Rendering** | Inline everything (CSS/JS/SVG); only external is a Google Fonts `@import` | Self-containment is the core promise — no CDN scripts, no `<img>`, no `<script src>` |
+| **Rendering** | Inline everything (CSS/JS/SVG); system font stacks; no external resource at all | Self-containment is the core promise — no CDN scripts, no `<img>`, no `<script src>` |
 | **Storage** | `<base>/<ts>-<slug>.html`; `<base>` = `.claude/walkthrough/` in a git repo (gitignore prompt on first run) or a first-run-chosen `walkthroughs/` ∣ `.claude/walkthrough/` in a non-git folder | Git-repo behavior unchanged; non-git (Cowork) folders pick a visible-or-hidden base, remembered in `<base>/settings.md` |
 
 ## The 5-stage pipeline
@@ -67,7 +67,7 @@ following that contract rather than restating them here.
 └─────────────┘   └────────┘   └─────────────────────────────────────────────────┘
 ```
 
-- **Target picker is the overwrite safety gate.** `update` always confirms which `.claude/walkthrough/*.html` to refresh (yes/no when one exists; a 2–4-option list, plus the tool's built-in "Other", otherwise), even when model-invoked. No silent-overwrite path. Picker option lists are fixed-length per `.claude/rules/ask-user-question-guard.md`.
+- **Target picker is the overwrite safety gate.** `update` always confirms which `.claude/walkthrough/*.html` to refresh (yes/no when one exists; a 2–4-option list, plus the tool's built-in "Other", otherwise), even when model-invoked. No silent-overwrite path. Picker option lists are fixed-length per `references/ask-user-question-guard.md`.
 - **Reconstruct from HTML.** Part A of `references/reconstruct-and-merge.md` maps rendered anchors back to the `session-model` schema; the trailing `const DET={…}` store is the high-fidelity source for `details{}`. No model island, no sidecar — `create` is untouched.
 - **Named files drive, conversation frames.** The command arguments are the changed spec/source files; no automatic git discovery. No args → `update` asks which files changed. The nav kicker is session metadata (date · type · scope), not git.
 - **Merge into one coherent doc.** Part B: revise superseded content, merge overlaps, add new, keep `sections[].id` / `details{}` keys stable, then hand to create's renderer.
@@ -79,7 +79,7 @@ following that contract rather than restating them here.
 These two invariants are non-negotiable — they are what make every walkthrough recognizably the same artifact and portable.
 
 - **Tokens only.** Reproduce the signature patterns from `references/design-system.md`. Never emit a raw hex value, raw font name, or raw spacing literal — go through the CSS custom properties. Both the dark and warm-light themes are expressed as `:root` token blocks; the toggle swaps token sets, not stylesheets.
-- **Self-contained.** All CSS, JS, and SVG are inlined into the single HTML file. The **only** permitted external resource is the Google Fonts `@import` at the top of the style block. No `<script src>`, no `<link rel=stylesheet>`, no `<img>`, no CDN libraries. The file must render with no network beyond that one font fetch.
+- **Self-contained.** All CSS, JS, and SVG are inlined into the single HTML file. The page loads **no** external resource: no `@import`, no web font, no `<script src>`, no `<link rel=stylesheet>`, no `<img>`, no CDN libraries. Fonts are system stacks (`references/design-system.md`). The file must render with no network at all.
 - **Section kickers are auto-numbered.** A CSS counter on `.sec-label` increments automatically — authors write only the label text, never a hard-coded number.
 
 ## Pre-write gates
@@ -183,4 +183,4 @@ PERFORM the shared terminal stages by following `skills/render/references/render
 
 ## AskUserQuestion usage
 
-`create` makes up to four `AskUserQuestion` calls: the thin-session prompt (2 options), the first-run output-location prompt (2 options, non-git folder only), the first-run gitignore prompt (3 options), and — conditionally — a proliferation-guard prompt (3 options) triggered when a same-subject slug already exists in `<base>`. `update` adds the target picker, whose options are built **dynamically** from the `.claude/walkthrough/` listing — kept fixed-length per the guard: a yes/no confirm when a single doc exists, and a 2–4-option list (plus the tool's built-in "Other") otherwise. Because the list is dynamic, the guard's single-option case is handled by the yes/no form. Both skills reference `.claude/rules/ask-user-question-guard.md` per the convention for any skill that uses the tool.
+`create` makes up to four `AskUserQuestion` calls: the thin-session prompt (2 options), the first-run output-location prompt (2 options, non-git folder only), the first-run gitignore prompt (3 options), and — conditionally — a proliferation-guard prompt (3 options) triggered when a same-subject slug already exists in `<base>`. `update` adds the target picker, whose options are built **dynamically** from the `.claude/walkthrough/` listing — kept fixed-length per the guard: a yes/no confirm when a single doc exists, and a 2–4-option list (plus the tool's built-in "Other") otherwise. Because the list is dynamic, the guard's single-option case is handled by the yes/no form. Both skills reference `references/ask-user-question-guard.md` per the convention for any skill that uses the tool.

@@ -1,6 +1,6 @@
 ---
 name: codebase-analyzer
-description: Performs deep, read-only analysis of a software project and produces a structured report with stack detection, file inventories, complexity metrics, and pattern discovery. Invoked by /onboard:start Phase 1 before generation.
+description: "Analyzes a project without editing it: stack, file inventory, complexity and patterns. Dispatched by /onboard:start before generation."
 color: yellow
 tools: Read, Glob, Grep, Bash
 model: opus

@@ -15,7 +15,7 @@ fi
 
 # Defensive: FileChanged hook payload should be a workspace-relative or
 # absolute path. Refuse option-flag-looking input or shell metacharacters.
-# Hook scripts must always exit 0 (see .claude/rules/shell-scripts.md).
+# Hook scripts must always exit 0: a non-zero exit would surface as a hook error in the user's session.
 case "$FILE_PATH" in
   /*|./*|[a-zA-Z0-9_]*) ;;
   *) exit 0 ;;
@@ -59,39 +59,36 @@ if [ ! -f "$DRIFT_FILE" ]; then
   printf '{"lastAuditedAt":null,"entries":[]}\n' > "$DRIFT_FILE"
 fi
 
-# Check if we already logged this directory in a recent entry (avoid duplicates)
-if command -v python3 >/dev/null 2>&1; then
-  ALREADY_LOGGED=$(python3 -c "
-import json, sys
-drift_file, file_dir = sys.argv[1], sys.argv[2]
-drift = json.load(open(drift_file))
-for entry in drift.get('entries', []):
-    if entry.get('type') == 'structure':
-        for change in entry.get('changes', []):
-            if change.get('path') == file_dir:
-                print('true')
-                exit()
-print('false')
-" "$DRIFT_FILE" "$FILE_DIR" 2>/dev/null || echo "false")
-
-  if [ "$ALREADY_LOGGED" = "true" ]; then
-    exit 0
+# Append one entry to the drift log with jq; skip quietly when jq is absent.
+# Writes to a temp file first so a failed write never truncates the log.
+append_entry() { # <jq-entry-filter> [jq args...]
+  local filter="$1"; shift
+  command -v jq >/dev/null 2>&1 || return 0
+  local tmp
+  tmp="$(mktemp "${DRIFT_FILE}.XXXXXX" 2>/dev/null)" || return 0
+  if jq "$@" ".entries += [${filter}]" "$DRIFT_FILE" > "$tmp" 2>/dev/null; then
+    mv "$tmp" "$DRIFT_FILE" 2>/dev/null || rm -f "$tmp"
+  else
+    rm -f "$tmp"
   fi
+}
 
-  # Append entry to drift file
-  python3 -c "
-import json, sys
-drift_file, file_dir, timestamp, source_count = sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4])
-drift = json.load(open(drift_file))
-drift['entries'].append({
-    'timestamp': timestamp,
-    'file': file_dir + '/',
-    'type': 'structure',
-    'changes': [{'action': 'new-directory', 'path': file_dir, 'fileCount': source_count}]
-})
-with open(drift_file, 'w') as f:
-    json.dump(drift, f, indent=2)
-" "$DRIFT_FILE" "$FILE_DIR" "$TIMESTAMP" "$SOURCE_COUNT" 2>/dev/null || true
+# jq does the JSON work; without it, drift logging is skipped.
+command -v jq >/dev/null 2>&1 || exit 0
+
+# Check if we already logged this directory in a recent entry (avoid duplicates)
+ALREADY_LOGGED=$(jq -r --arg d "$FILE_DIR" '
+  [ (.entries // [])[] | select(.type == "structure") | (.changes // [])[] | select(.path == $d) ]
+  | if length > 0 then "true" else "false" end
+' "$DRIFT_FILE" 2>/dev/null || echo "false")
+
+if [ "$ALREADY_LOGGED" = "true" ]; then
+  exit 0
 fi
+
+# Append entry to drift file
+# shellcheck disable=SC2016  # jq variables, not shell expansions
+append_entry '{timestamp: $ts, file: ($d + "/"), type: "structure", changes: [{action: "new-directory", path: $d, fileCount: $n}]}' \
+  --arg ts "$TIMESTAMP" --arg d "$FILE_DIR" --argjson n "$SOURCE_COUNT"
 
 exit 0

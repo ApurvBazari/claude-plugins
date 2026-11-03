@@ -71,13 +71,14 @@ Compare `.mcp.json`, the drift snapshot `.claude/onboard-mcp-snapshot.json`, and
    - **newly-suggested** — in the fresh candidate list but neither in snapshot nor `.mcp.json`. Surface as a suggested addition.
    - **stale-candidate** — in snapshot/`.mcp.json` but the underlying signal no longer fires (e.g., `vercel.json` was deleted). Surface as a suggested removal.
    - **in-sync** — present in all three and unchanged. No action.
-   - **plugin-delivered** — a candidate whose catalog row has no command or URL of its own (today: `prisma`). It never has a `.mcp.json` or snapshot entry, so it is never `newly-suggested` and is never counted as MCP drift (it does not make `evolve`'s Guard proceed). It only feeds the install offer in item 5.
+   - **plugin-delivered** — a candidate whose catalog row has no URL of its own (today: `context7`, `github`, `prisma`, `chrome-devtools-mcp`). It never gets a new `.mcp.json` or snapshot entry, so it is never `newly-suggested` and is never counted as MCP drift (it does not make `evolve`'s Guard proceed). It only feeds the install offer in item 5.
+   - **legacy-entry** — a `context7`, `github` or `chrome-devtools-mcp` entry that onboard wrote into `.mcp.json` and the snapshot before 3.4.0 (an `npx` command or a `GITHUB_PERSONAL_ACCESS_TOKEN` header). These servers are plugin-delivered now. Inform only: say the entry can be replaced by the official plugin, and include that plugin in the item 5 offer if it isn't installed. Never edit or remove the entry without an explicit "yes, remove it" from the developer.
 3. **Pre-existing guard** — if `mcpStatus.existedPreOnboard: true`, onboard treats the whole file as user-owned. Suggest only additions (`newly-suggested`), never removals or edits. In `mode:"retrofit"` repos, `.mcp.json` is always treated as user-owned regardless of `mcpStatus.existedPreOnboard` — adopt only catalogs it; update suggests additions only, never rewrites or removals.
 
 4. **Offer ledger** — read `onboard-meta.json.mcpStatus.pluginOffers` (`{ offered, accepted }`). If it is absent (a project onboarded before 3.3.0), treat every plugin of an existing server as already offered: seed `offered` with the `plugin` of each server in `mcpStatus.generated` and `accepted` with `[]`, and write the seed back in Step 8. Those plugins were installed without an offer at the time; seeding stops onboard asking about them again or reinstalling one the developer removed.
-5. **Derive install offers** — for each `newly-suggested` server, and each plugin-delivered candidate, whose catalog row has a `plugin`: if the plugin is not in `pluginOffers.offered` and is not currently installed (`claude plugin list --json`, best-effort), record an install-offer candidate `{ plugin, server }`. A plugin-delivered server (no command or URL in the catalog; see `../../generation/references/catalogs/mcp-guide.md` § Catalog) produces only the install offer, never a server addition.
+5. **Derive install offers** — for each `newly-suggested` server, each plugin-delivered candidate, and each `legacy-entry`, whose catalog row has a `plugin`: if the plugin is not in `pluginOffers.offered` and is not currently installed (`claude plugin list --json`, best-effort), record an install-offer candidate `{ plugin, server }`. A plugin-delivered server (no URL in the catalog; see `../../generation/references/catalogs/mcp-guide.md` § Catalog) produces only the install offer, never a server addition.
 
-Record the classification as `mcpDrift.{userEdited, userRemoved, newlySuggested, staleCandidate, pluginOffers}[]` for Step 7.
+Record the classification as `mcpDrift.{userEdited, userRemoved, newlySuggested, staleCandidate, legacyEntries, pluginOffers}[]` for Step 7.
 
 ---
 
@@ -184,12 +185,12 @@ Re-run detection against the current codebase analysis to identify which built-i
 
 1. **Read the inputs**:
    - `.claude/onboard-builtin-skills-snapshot.json` — `{ recommended, accepted }`. Missing file → treat as `recommended: [], accepted: []` (pre-1.9.0 project).
-   - Fresh detection against the current codebase: check each extra skill's detection signal per `../../generation/references/catalogs/built-in-skills-catalog.md`. Core skills (`/loop`, `/simplify`, `/debug`, `/pr-summary`) are always candidates.
+   - Fresh detection against the current codebase: check each extra skill's detection signal per `../../generation/references/catalogs/built-in-skills-catalog.md`. Core skills (`/loop`, `/simplify`, `/code-review`, `/debug`) are always candidates.
 
 2. **Classify** per candidate skill from the fresh detection:
    - **newSkill** — skill name in fresh candidates but not in `snapshot.recommended`. A new detection signal fired since last onboard/evolve run (e.g., `@anthropic-ai/sdk` added to dependencies → `/claude-api` detected). Surface as a suggested addition.
-   - **newlyRelevant** — skill in `snapshot.recommended` but not in `snapshot.accepted` (developer previously declined), and the detection signal now has a stronger basis (e.g., file count grew from 30 to 200 → `/codebase-visualizer` crosses threshold). Surface as a suggestion, not an action.
-   - **staleCandidate** — skill in `snapshot.recommended` but fresh detection no longer fires the signal (e.g., `@anthropic-ai/sdk` removed from dependencies). Informational — do NOT auto-suggest removal.
+   - **newlyRelevant** — skill in `snapshot.recommended` but not in `snapshot.accepted` (developer previously declined), and the detection signal now has a stronger basis (e.g., file count grew from 30 to 80 → `/batch` crosses its threshold). Surface as a suggestion, not an action.
+   - **staleCandidate** — skill in `snapshot.recommended` but fresh detection no longer fires the signal (e.g., `@anthropic-ai/sdk` removed from dependencies). Informational — do NOT auto-suggest removal. Also a snapshot skill that is no longer in the catalog at all: `/pr-summary`, `/explain-code` and `/codebase-visualizer` were dropped in onboard 3.4.0 because they are not Claude Code built-ins. Surface those with a note that the generated CLAUDE.md names a command that doesn't exist, so the developer can remove the line.
    - **in-sync** — no changes between snapshot and fresh detection. No action.
 
 3. **Pre-1.9.0 projects** (snapshot missing) — surface every fresh candidate (core + fired extras) as `newSkill`. First update run acts like an initial 1.9.0 prompt.

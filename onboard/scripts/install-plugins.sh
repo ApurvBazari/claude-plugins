@@ -1,59 +1,74 @@
 #!/usr/bin/env bash
-# install-plugins.sh — Install Claude Code plugins by name (shared by MCP + LSP emission)
-# Usage: bash install-plugins.sh <plugin1> [plugin2] ...
+# install-plugins.sh — Install Claude Code plugins by qualified name (shared by MCP + LSP emission)
+# Usage: bash install-plugins.sh <plugin>[@<marketplace>] [<plugin>[@<marketplace>] ...]
 # Output: JSON object on stdout summarizing install results.
 #
 # Callers pass ONLY names a person accepted in an offer that named them, or a programmatic
 # caller's explicit list. This script does not ask. The rule, the offer shape and what happens
 # when nobody answers live in references/plugin-install-consent.md.
 #
+# Every install is qualified with its marketplace, so a name can never resolve against some other
+# marketplace that happens to list a plugin with the same name:
+#   - A bare name means claude-plugins-official (every catalog LSP and MCP plugin lives there).
+#   - Any other marketplace must be named explicitly (e.g. walkthrough@apurvbazari-plugins) and must
+#     already be added; the script never adds a marketplace. If it is missing, the plugin is
+#     reported as failed with reason "marketplace-not-added" and nothing is installed.
+# Plugins install at Claude Code's default scope (user).
+#
 # Schema:
 #   {
 #     "installed": ["vercel"],
 #     "alreadyInstalled": ["context7"],
-#     "failed": [{"plugin": "supabase", "reason": "exit-code-1"}]
+#     "failed": [{"plugin": "supabase", "marketplace": "claude-plugins-official", "reason": "exit-code-1"}]
 #   }
 #
-# Never exits non-zero — install layer must not fail MCP emission. Failures
-# are reported via the JSON output for the caller to surface in stdout summary
-# and mcpStatus telemetry.
+# Never exits non-zero — the install layer must not fail MCP emission. Failures are reported via
+# the JSON output for the caller to surface in its stdout summary and mcpStatus telemetry.
 
 # NOTE: utility script, but intentionally hook-style error handling — this is a
 # best-effort installer whose failure must NEVER abort onboard generation.
-# It reports per-plugin status via JSON and always exits 0. See .claude/rules/shell-scripts.md.
+# It reports per-plugin status via JSON and always exits 0.
 set -uo pipefail
+
+OFFICIAL="claude-plugins-official"
 
 if [[ $# -lt 1 ]]; then
   echo '{"installed":[],"alreadyInstalled":[],"failed":[]}'
   exit 0
 fi
 
+have_claude=false
+command -v claude &>/dev/null && have_claude=true
+
+# Probe once each; tolerate failure (older CLIs may lack --json).
 installed_plugins=""
-if command -v claude &>/dev/null; then
-  # Probe once; tolerate failure (claude CLI may not support --json in all versions)
+marketplaces=""
+if $have_claude; then
   installed_plugins=$(claude plugin list --json 2>/dev/null | tr -d '\n' || true)
+  marketplaces=$(claude plugin marketplace list --json 2>/dev/null | tr -d '\n' || true)
 fi
 
-# Validate plugin names against a strict charset before any use in regex/JSON/shell.
-# Claude Code plugin names are kebab-case alphanumerics; anything else is rejected.
-# Closes M1 (regex injection) and M2 (JSON string injection) — both trace back to
-# unsanitized $plugin values. Names failing validation are recorded as failures and
-# never flow into grep patterns, JSON output, or install invocations.
-is_valid_plugin_name() {
+# Strict charset for both halves, checked before either value reaches a grep pattern, the JSON
+# output or the install command (closes regex and JSON-string injection, audit M1/M2).
+is_valid_part() {
   [[ "$1" =~ ^[a-z0-9][a-z0-9._-]*$ ]]
 }
 
+# Installed under this name from ANY source (a marketplace, claude.ai sync, a skills dir).
+# `claude plugin list --json` reports each install as "id": "<name>@<source>". Fixed-string match.
 is_installed() {
   local plugin="$1"
-  # Fixed-string match on the JSON fragment `"name":"<plugin>"`. Use grep -F so
-  # regex metacharacters in plugin names can't produce false positives. Tolerant
-  # of whitespace variants by trying both compact and spaced forms.
-  if echo "$installed_plugins" | grep -qF "\"name\":\"${plugin}\""; then
-    return 0
-  fi
-  if echo "$installed_plugins" | grep -qF "\"name\": \"${plugin}\""; then
-    return 0
-  fi
+  printf '%s' "$installed_plugins" | grep -qF "\"id\":\"${plugin}@" && return 0
+  printf '%s' "$installed_plugins" | grep -qF "\"id\": \"${plugin}@" && return 0
+  return 1
+}
+
+# claude-plugins-official is always available; any other marketplace must already be added.
+marketplace_added() {
+  local mkt="$1"
+  [[ "$mkt" == "$OFFICIAL" ]] && return 0
+  printf '%s' "$marketplaces" | grep -qF "\"name\":\"${mkt}\"" && return 0
+  printf '%s' "$marketplaces" | grep -qF "\"name\": \"${mkt}\"" && return 0
   return 1
 }
 
@@ -61,8 +76,19 @@ installed_list=()
 already_list=()
 failed_list=()
 
-for plugin in "$@"; do
-  if ! is_valid_plugin_name "$plugin"; then
+fail_entry() { # <plugin> <marketplace> <reason>
+  failed_list+=("{\"plugin\":\"$1\",\"marketplace\":\"$2\",\"reason\":\"$3\"}")
+}
+
+for arg in "$@"; do
+  plugin="${arg%%@*}"
+  if [[ "$arg" == *@* ]]; then
+    marketplace="${arg#*@}"
+  else
+    marketplace="$OFFICIAL"
+  fi
+
+  if ! is_valid_part "$plugin" || ! is_valid_part "$marketplace"; then
     failed_list+=('{"plugin":"<invalid>","reason":"invalid-plugin-name"}')
     continue
   fi
@@ -72,20 +98,24 @@ for plugin in "$@"; do
     continue
   fi
 
-  if ! command -v claude &>/dev/null; then
-    failed_list+=("{\"plugin\":\"$plugin\",\"reason\":\"claude-cli-not-found\"}")
+  if ! $have_claude; then
+    fail_entry "$plugin" "$marketplace" "claude-cli-not-found"
+    continue
+  fi
+
+  if ! marketplace_added "$marketplace"; then
+    fail_entry "$plugin" "$marketplace" "marketplace-not-added"
     continue
   fi
 
   # Capture the install exit code BEFORE any if/test construct so $? isn't
-  # clobbered by the if-test's own exit status (L1 fix — previously reported
-  # a constant exit-code-1 regardless of actual failure).
-  claude plugin install "$plugin" >/dev/null 2>&1
+  # clobbered by the if-test's own exit status (L1 fix).
+  claude plugin install "${plugin}@${marketplace}" >/dev/null 2>&1
   rc=$?
   if [[ "$rc" -eq 0 ]]; then
     installed_list+=("$plugin")
   else
-    failed_list+=("{\"plugin\":\"$plugin\",\"reason\":\"exit-code-$rc\"}")
+    fail_entry "$plugin" "$marketplace" "exit-code-$rc"
   fi
 done
 

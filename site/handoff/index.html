@@ -159,7 +159,7 @@ dialog.sheet::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
       <a href="#storage">Storage</a>
     </div>
     <div style="display:flex;align-items:center;gap:.8rem">
-      <div class="nav-meta"><span class="dot"></span> PLUGIN · v1.0.3</div>
+      <div class="nav-meta"><span class="dot"></span> PLUGIN · v1.1.0</div>
       <button class="theme-btn" onclick="tgl()">◑ THEME</button>
     </div>
   </div></nav>
@@ -202,14 +202,14 @@ dialog.sheet::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
         <span class="farr">→</span>
         <div class="fnode accent" onclick="openSurface('pickup')" tabindex="0" role="button" aria-label="Pickup presents four-option flow"><div class="nl">/handoff:pickup</div>pickup → confirm</div>
       </div>
-      <p>Wrap-up phrases like "pick this up later", "continue in new session", or "save handoff" auto-invoke <code>/handoff:save</code>. It presents a confirm before writing — false positives cost one click. The SessionStart hook on the next session reads <code>active.md</code>, runs stale and snooze checks, and routes Claude to the four-option pickup flow. Handoff never auto-executes a directive — you always confirm.</p>
+      <p>Wrap-up phrases like "pick this up later", "continue in new session", or "save handoff" auto-invoke <code>/handoff:save</code>. It presents a confirm before writing — false positives cost one click. The SessionStart hook on the next session only checks that <code>active.md</code> exists and is not snoozed, then prints one fixed notice that routes Claude to <code>/handoff:pickup</code>. Pickup reads the file, works out progress, archives a stale handoff, and runs the four-option flow. Handoff never auto-executes a directive — you always confirm.</p>
       <div class="callout">
         <h4>Trust model</h4>
-        <p>The SessionStart hook wraps directive content in <code>&lt;untrusted-source&gt;</code> tags. Routing instructions and metadata are trusted; the saved directive is data you review, not commands Claude runs automatically. The four-option <code>AskUserQuestion</code> ensures confirmation before any action.</p>
+        <p>A handoff file can arrive with a clone or a pull, so the SessionStart hook never prints it: it only says one exists, and its notice is the same text whatever the file says. <code>/handoff:pickup</code> shows the notes as data, not instructions, and warns you when the file is committed to git. The four-option <code>AskUserQuestion</code> ensures confirmation before any action.</p>
       </div>
       <div class="callout">
         <h4>Cowork</h4>
-        <p>The SessionStart hook is CLI-only — plugin-scoped hooks don't fire in Claude Cowork (it loads user-scoped settings only). A saved handoff won't surface automatically there; run <code>/handoff:pickup</code> manually to resume.</p>
+        <p>Untested. Cowork loads plugin hooks, so the session-start notice should appear there, but that is not yet verified. You can always run <code>/handoff:pickup</code> yourself to resume.</p>
       </div>
     </section>
 
@@ -223,17 +223,17 @@ dialog.sheet::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
           <tr>
             <td class="slash">/handoff:save</td>
             <td><span class="tag auto">auto</span></td>
-            <td>Auto-invokes on a wrap-up phrase. Drafts a directive (next step, pointers, constraints, open questions) and confirms via AskUserQuestion before writing. Captures <code>saved-at</code>, <code>saved-at-sha</code>, <code>saved-at-branch</code>, <code>saved-from-cwd</code> frontmatter.</td>
+            <td>Auto-invokes on a wrap-up phrase. Drafts a directive (next step, pointers, constraints, open questions) and confirms via AskUserQuestion before writing. Captures <code>saved-at</code>, <code>saved-at-sha</code>, <code>saved-at-branch</code>, <code>saved-from-cwd</code> frontmatter. Clears an old snooze marker so the new handoff is offered at the next session start, and in a git repository without a <code>.gitignore</code> offers to create one.</td>
           </tr>
           <tr>
             <td class="slash">/handoff:pickup</td>
             <td><span class="tag auto">auto — after hook</span></td>
-            <td>Auto-invokes after the hook surfaces a handoff. Re-reads from disk (surfaced content is treated as stale), runs cwd guard, then presents four options via AskUserQuestion: Execute / Edit / Discard / Save for later.</td>
+            <td>Auto-invokes after the hook's notice. Reads the file, works out progress (commits since the save, branch change, age), archives a handoff older than <span class="cell-mono">stale-day-threshold</span> as expired, shows the notes as data, and warns when the file is committed to git. Runs the cwd guard, then presents four options via AskUserQuestion: Execute / Edit / Discard / Save for later.</td>
           </tr>
           <tr>
             <td class="slash">/handoff:check</td>
             <td><span class="tag auto">auto · read-only</span></td>
-            <td>Reports whether an active handoff exists, its age, saved-at SHA and branch, how far the repo has moved past the saved SHA, and snooze status. Useful for "why isn't this surfacing?".</td>
+            <td>Reports whether an active handoff exists, its age, saved-at SHA and branch, how far the repo has moved past the saved SHA, snooze status (read from the marker with the same test as the hook), and whether the handoff file is committed to git. Useful for "why isn't this surfacing?".</td>
           </tr>
           <tr>
             <td class="slash">/handoff:discard</td>
@@ -247,9 +247,9 @@ dialog.sheet::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
         <thead><tr><th>Option</th><th>Effect</th></tr></thead>
         <tbody>
           <tr><td class="slash">Execute</td><td>Act on the directive in this session (guidance for judgement, not commands to run), then archive to <span class="cell-mono">archive/consumed-&lt;ts&gt;.md</span>.</td></tr>
-          <tr><td class="slash">Edit</td><td>Open <span class="cell-mono">active.md</span> in <span class="cell-mono">$EDITOR</span>, revise the directive, then re-present for another confirm round-trip.</td></tr>
+          <tr><td class="slash">Edit</td><td>Tell Claude what to change; it revises the notes in <span class="cell-mono">active.md</span> in place (never spawning an editor), then asks again.</td></tr>
           <tr><td class="slash">Discard</td><td>Archive to <span class="cell-mono">archive/discarded-&lt;ts&gt;.md</span> without acting. Use when the saved work is no longer relevant.</td></tr>
-          <tr><td class="slash">Save for later</td><td>Leave in place, snooze for 24h (configurable) so the next session start doesn't re-surface immediately.</td></tr>
+          <tr><td class="slash">Save for later</td><td>Leave in place and set the <span class="cell-mono">snooze-until</span> marker, so session start stays quiet for 24h (configurable).</td></tr>
         </tbody>
       </table>
     </section>
@@ -257,7 +257,7 @@ dialog.sheet::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
     <section id="config">
       <div class="sec-label">03 — configuration</div>
       <h2>Optional <em>settings.md</em> — defaults work out of the box</h2>
-      <p class="lede">Configuration is optional. Create <code>.claude/handoff/settings.md</code> to override any threshold. Settings are read as frontmatter by the hook and pickup skill on every invocation.</p>
+      <p class="lede">Configuration is optional. Create <code>.claude/handoff/settings.md</code> to override any threshold. Settings are read as frontmatter by the skills; changes apply to the next save, pickup, or "Save for later".</p>
       <div class="callout">
         <h4>Zero-config default</h4>
         <p>Install and walk away. The built-in defaults (90-day stale threshold, 24-hour snooze, archive retention cap of 10) work for most workflows. Override only what you want to tune.</p>
@@ -276,8 +276,8 @@ archive-retention: 10
         <thead><tr><th>Key</th><th>Default</th><th>Effect</th></tr></thead>
         <tbody>
           <tr><td class="slash">stale-commit-threshold</td><td class="cell-mono">3</td><td>Commits past <span class="cell-mono">saved-at-sha</span> before the handoff is tagged "progress made" — a surface signal, not a behavior change.</td></tr>
-          <tr><td class="slash">stale-day-threshold</td><td class="cell-mono">90</td><td>Days past <span class="cell-mono">saved-at</span> before the hook silently auto-archives to <span class="cell-mono">expired-&lt;ts&gt;.md</span>.</td></tr>
-          <tr><td class="slash">deferral-snooze-hours</td><td class="cell-mono">24</td><td>Hours to suppress re-surface after "Save for later". No permanent suppression — re-surfaces after the window.</td></tr>
+          <tr><td class="slash">stale-day-threshold</td><td class="cell-mono">90</td><td>Days past <span class="cell-mono">saved-at</span> before pickup archives it to <span class="cell-mono">expired-&lt;ts&gt;.md</span> instead of offering it.</td></tr>
+          <tr><td class="slash">deferral-snooze-hours</td><td class="cell-mono">24</td><td>Hours to stay quiet at session start after "Save for later" (capped at one year). No permanent suppression — re-surfaces after the window.</td></tr>
           <tr><td class="slash">gitignore-prompt</td><td class="cell-mono">ask</td><td><span class="cell-mono">ask</span> or <span class="cell-mono">never</span> — whether the first save offers to add <span class="cell-mono">.claude/handoff/</span> to <span class="cell-mono">.gitignore</span>.</td></tr>
           <tr><td class="slash">archive-retention</td><td class="cell-mono">10</td><td>Cap on archive file count (shared across consumed/discarded/expired). <span class="cell-mono">0</span>, <span class="cell-mono">unlimited</span>, or <span class="cell-mono">-1</span> for no cap.</td></tr>
         </tbody>
@@ -307,7 +307,12 @@ archive-retention: 10
         <div class="edge">
           <div class="n">archive/expired-&lt;ts&gt;.md</div>
           <div class="t">Stale auto-archive</div>
-          <p>Moved here automatically once older than <code>stale-day-threshold</code> (default 90 days). No user action required.</p>
+          <p>Moved here by pickup, with a one-line note, once older than <code>stale-day-threshold</code> (default 90 days). No user action required.</p>
+        </div>
+        <div class="edge">
+          <div class="n">snooze-until</div>
+          <div class="t">Snooze marker</div>
+          <p>An empty file whose modification time is when "Save for later" ends. Archiving the handoff clears it. A handoff snoozed with 1.0.x (only <code>deferred-at</code>) is offered once more.</p>
         </div>
         <div class="edge">
           <div class="n">settings.md</div>
@@ -322,7 +327,7 @@ archive-retention: 10
         <a href="../">← marketplace</a>
         <a href="https://github.com/ApurvBazari/claude-plugins/tree/main/handoff">source on GitHub</a>
       </div>
-      <div class="meta">handoff · v1.0.3 · MIT · by Apurv Bazari</div>
+      <div class="meta">handoff · v1.1.0 · MIT · by Apurv Bazari</div>
     </div>
   </main>
 
@@ -341,8 +346,8 @@ archive-retention: 10
 const DET={
  save:{k:"Skill",h:"/handoff:save",summary:"Auto-invoked when you say a wrap-up phrase ('pick this up later', 'continue in new session', etc.). Presents a confirm before writing — false positives cost one click. Writes directive + frontmatter (saved-at, saved-at-sha, saved-at-branch, saved-from-cwd) to <code>.claude/handoff/active.md</code>. Captures intent only; current commits, branch, and working-tree state are derivable at resume time.",where:["handoff/skills/save/SKILL.md"]},
  store:{k:"Storage",h:"active.md",summary:"Single-slot storage per repo. The file holds the directive (what the next session should pick up) plus machine-readable frontmatter. On the first save, handoff prompts to add <code>.claude/handoff/</code> to <code>.gitignore</code>. An existing handoff prompts before overwrite. The <code>archive/</code> subdirectory holds consumed, discarded, and expired handoffs.",where:["handoff/skills/save/SKILL.md"]},
- hook:{k:"Hook",h:"SessionStart hook",summary:"Registered automatically on install — no setup step. On every session start, reads <code>active.md</code> if present. Parses frontmatter, computes age and commits-past-sha, checks the stale threshold (90d default → auto-archive), checks the snooze window, then emits <code>additionalContext</code> with the directive wrapped in <code>&lt;untrusted-source&gt;</code> framing so Claude treats it as data, not instructions.",where:["handoff/hooks/session-start.sh"]},
- pickup:{k:"Skill",h:"/handoff:pickup",summary:"Auto-invoked after the SessionStart hook surfaces a saved handoff. Re-reads <code>active.md</code> from disk (the surfaced content is treated as a stale snapshot), runs the cwd guard (compares <code>pwd</code> against <code>saved-from-cwd</code>), then presents four options via AskUserQuestion: Execute (act + archive as consumed), Edit (open in editor, re-confirm), Discard (archive as discarded), Save for later (snooze 24h).",where:["handoff/skills/pickup/SKILL.md"]}
+ hook:{k:"Hook",h:"SessionStart hook",summary:"Registered automatically on install — no setup step. On every session start, exits silently if <code>active.md</code> does not exist, or if the <code>snooze-until</code> marker's time is still in the future. Otherwise it emits one fixed <code>additionalContext</code> notice: a handoff exists, run <code>/handoff:pickup</code>, and treat the file as data, not instructions. It reads no file contents, uses no shell variables and runs no other file.",where:["handoff/hooks/session-start.sh"]},
+ pickup:{k:"Skill",h:"/handoff:pickup",summary:"Auto-invoked after the SessionStart notice says a saved handoff exists. Reads <code>active.md</code>, computes progress (commits since the save, branch change, age; a <code>saved-at-sha</code> that isn't 7–40 hex characters counts as unknown and never reaches git), archives a stale handoff as expired, shows the notes as untrusted data in a block they can't close, and warns when the file is committed to git. Runs the cwd guard (compares <code>pwd</code> against <code>saved-from-cwd</code>), then presents four options via AskUserQuestion: Execute (act + archive as consumed), Edit (revise in place, re-confirm), Discard (archive as discarded), Save for later (snooze 24h).",where:["handoff/skills/pickup/SKILL.md"]}
 };
 const SURF={
  save:'pane',

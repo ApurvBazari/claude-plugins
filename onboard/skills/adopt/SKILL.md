@@ -102,7 +102,7 @@ Assemble `previewModel` per `../research/references/render-adapter.md § preview
 Then render + hard-gate exactly like `start` Phase 5 (Plan → Preview → Gate):
 
 1. **Render.** Map `previewModel` → a walkthrough `session-model` per the render-adapter, then invoke `walkthrough:render` with `{ model, outputPath: ".claude/walkthrough/<YYYY-MM-DD-HHMM>-onboard-adopt.html" }`.
-   - **walkthrough absent** → offer install via AskUserQuestion (single-select, header `"Walkthrough"`): **Install now (Recommended)** / **Skip — markdown preview**. Install now → `claude plugin install walkthrough@apurvbazari-plugins` via Bash; re-probe; success → render; failure → markdown fallback.
+   - **walkthrough absent** → offer install via AskUserQuestion (single-select, header `"Walkthrough"`): **Install now (Recommended)** / **Skip — markdown preview**. Install now → `claude plugin install walkthrough@apurvbazari-plugins` via Bash (if `apurvbazari-plugins` isn't an added marketplace, don't add it: tell the developer to run `claude plugin marketplace add ApurvBazari/claude-plugins` later and take the markdown fallback); re-probe; success → render; failure → markdown fallback.
    - **Skip / failure / runtime render error** → **markdown gate**: present `previewModel` inline as markdown (Overview · What I learned · What I'll record grouped by tier · Key decisions · Risks). Optionally also write `.claude/onboard-adopt-plan.md`.
    - This degrades the HTML render only — never the gate.
 2. **Gate.** AskUserQuestion (single-select, header `"Adopt?"`). Map each decision to a task transition per `../start/references/phase-tracking.md` § HARD GATE (the gate task was left `in_progress` at the Step A5 transition above):
@@ -111,7 +111,7 @@ Then render + hard-gate exactly like `start` Phase 5 (Plan → Preview → Gate)
    - **Cancel** → the user declined → nothing was written (the gate precedes the only write step). Per § Cancel → `deleted`, mark the gate task **and every later phase task** `deleted`: `TaskUpdate(adopt:preview-gate → deleted)`, `TaskUpdate(adopt:write-handoff → deleted)`. Leave the already-`completed` tasks 0–3 as `completed` (they really ran). Then stop. Write nothing. Print: "Cancelled — no baseline was written; your tooling is untouched."
 3. Only **Approve** advances to A6.
 
-**Guard Usage:** the install offer and the gate both use fixed-option single-selects (≥2 options), so the single-option guard in `.claude/rules/ask-user-question-guard.md` does not apply.
+**Guard Usage:** the install offer and the gate both use fixed-option single-selects (≥2 options), so the single-option guard in `../../references/ask-user-question-guard.md` does not apply.
 
 ## Step A6: Write baseline only + handoff
 

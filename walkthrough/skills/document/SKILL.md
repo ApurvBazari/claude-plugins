@@ -1,6 +1,6 @@
 ---
 name: document
-description: Render any SUBJECT (a plugin, library, subsystem, or the marketplace) as a self-contained interactive HTML document in the walkthrough house style. Use when the user asks to "document this plugin", "make a docs page for <subject>", "generate the plugin landing page", "map this codebase's architecture", "draw a system map of this repo", or runs /walkthrough:document <subject>. Reads README + manifest as canonical source; for a codebase's architecture it reads the code itself and shows where each part was seen. Writes to the path given, default .claude/walkthrough/.
+description: Render a subject (a plugin, library, subsystem, path, or the marketplace) as a self-contained interactive HTML page in the walkthrough house style. Use when the user asks for a page — "document this plugin", "make a docs page for <subject>", "generate the plugin landing page", "draw a system map of this repo" — or runs /walkthrough:document <subject>. Reads the README and manifest as canonical (the code itself for a codebase map). Writes one HTML file, default .claude/walkthrough/.
 ---
 
 # Document — Render a Subject as an Interactive Document
@@ -75,7 +75,7 @@ Assemble per the shared **assemble** stage of `../render/references/render-contr
 canonical source for the select→assemble→self-check→write mechanics (copy
 `../create/references/page-scaffold.md` verbatim, fill its component slots from the selected recipes,
 inline `../create/references/interactivity.md`, emit the inert `{{DATA_JSON}}` island, generate
-`{{NAV_LINKS}}` deterministically; self-contained, only the one Google Fonts `@import`). When the page
+`{{NAV_LINKS}}` deterministically; self-contained, no `@import`). When the page
 has a system map, fill `{{SYSMAP_ENGINE}}` with the engine block holding its marker line; otherwise
 delete that slot.
 **Document-specific:** internal links MUST be relative (`./onboard/`, `../`) — never root-absolute.
@@ -132,7 +132,7 @@ end in `.html`, in case one of them was meant as the path.
 
 ## Key Rules
 - **One look-and-feel.** Tokens only — never raw hex. Reproduce `design-system.md` patterns.
-- **Self-contained.** All CSS/JS/SVG inline; only the Google Fonts `@import` is external.
+- **Self-contained.** All CSS/JS/SVG inline; system fonts only. Nothing is loaded from the network.
 - **README is canonical.** Never invent content not grounded in the subject's source files. For the system adapter the canon is the machine-read files instead: manifests beat prose.
 - **No evidence, no box.** On a code-read map every box and wire shows where it was seen, or is marked inferred. Refuted claims are not drawn, gaps are listed, and no environment-variable value reaches the page.
 - **Engine by the contract.** A page with a system map gets its engine through the insert step of `render-contract.md`; never offer a page that still holds the marker line.

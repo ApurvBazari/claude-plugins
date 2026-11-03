@@ -77,14 +77,18 @@ lens does not call walkthrough's `create` / `update` / `document` skills — onl
 
 ## Read-only contract
 
-lens **reads** the diff + source, **produces** an artifact, and the **human decides**. It never commits, edits, stages, or blocks — there is no write path through any finder, adapter, or verify agent. The **only** writes lens performs are:
+lens **reads** the diff + source, **produces** an artifact, and the **human decides**. It never commits, edits, stages, or blocks — there is no write path through any finder, adapter, or verify agent. The **only** writes lens performs are its own files:
 
-1. the rendered review artifact (HTML via walkthrough, or the markdown fallback), and
-2. `.claude/lens/review-state.json`.
+1. `.claude/lens/settings.md`, written once by first-run setup;
+2. `.gitignore` entries for `.claude/lens/`, only when the user accepts that setup offer;
+3. the rendered review artifact (HTML via walkthrough, or the markdown fallback); and
+4. `.claude/lens/review-state.json`.
+
+Tools follow the same line. Every finder agent has `Read`, `Grep` and `Glob` only. The `verifier` alone also has `Bash`, limited in its own file to read-only git, search, and the project's scoped typecheck/test command; it never edits, installs, touches git state, or uses the network. The README's "What it reads, writes, and sends" table is the user-facing statement of this contract — keep the two in step.
 
 Read-only is **enforced at the finder boundary**: every finder and adapter emits findings only. Adapters that inherit write tools from their source plugin must be explicitly instructed to operate findings-only (see § Finder registry).
 
-**Untrusted intent content.** The intent doc handed to the adherence agents (injected `content` or a read spec/plan file) is wrapped in `<untrusted-user-input>` fences at dispatch (engine `skills/engine/references/pipeline.md` §3) — data, not instructions. Following onboard's *framing, not filtering* model: `\r` is stripped, but content is **not** length-capped (injectedIntent is verbatim by contract) and **not** content-filtered; the read-only finder toolset (`Read/Grep/Glob`) is the backstop.
+**Untrusted intent content.** The intent doc handed to the adherence agents (injected `content` or a read spec/plan file) is wrapped in `<untrusted-user-input>` fences at dispatch (engine `skills/engine/references/pipeline.md` §3) — data, not instructions. Following onboard's *framing, not filtering* model: `\r` is stripped, but content is **not** length-capped (injectedIntent is verbatim by contract) and **not** content-filtered; the finders' read-only toolset (`Read/Grep/Glob`) is the backstop.
 
 ## Error posture
 

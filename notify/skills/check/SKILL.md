@@ -1,6 +1,6 @@
 ---
 name: check
-description: Health check for notify — verifies terminal-notifier/notify-send installed, notify.sh script exists, hook entries in settings.json, and notify-config.json. Use when user asks whether notifications are working, wants to verify notify setup, or mentions missing notifications.
+description: Read-only health check for notify — verifies terminal-notifier/notify-send and jq are installed, the installed notify.sh is present and current, the async hook entries in settings.json, and notify-config.json. Use when the user asks whether notifications are working, wants to verify notify setup, or mentions missing notifications.
 ---
 
 # Check Skill — Health Check
@@ -35,6 +35,10 @@ Detect the platform first with `uname -s`, then check the matching backend:
 
 On Linux, note that sounds map to urgency levels and click-to-focus is unavailable.
 
+**`jq` (shared, recommended):** run `command -v jq`.
+- **Pass**: `jq` found at [path]
+- **Warn**: `jq` is not installed. Notifications still fire, but `notify.sh` can't read `notify-config.json` or Claude's message, so every notification uses the built-in defaults and a generic message. Install `jq` (`brew install jq`; `sudo apt install jq` / `dnf` / `pacman`).
+
 ### 2. Notification Script
 
 For each discovered scope (`$SCOPE_DIR` = the base directory):
@@ -44,14 +48,22 @@ Check if `$SCOPE_DIR/hooks/notify.sh` exists and is executable.
 - **Pass**: `notify.sh` exists and is executable
 - **Fail**: `notify.sh` is missing or not executable. Run `/notify:setup` to create it.
 
+Then compare it with the plugin's copy: `cmp -s "$SCOPE_DIR/hooks/notify.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/notify.sh"`.
+
+- **Pass**: the installed script matches this version of notify
+- **Warn**: the installed script differs — it was copied by an older notify version (or edited by hand). Run `/notify:setup` and choose **Update** to refresh it.
+
 ### 3. Hook Configuration
 
 Read `$SCOPE_DIR/settings.json` and check for notification hooks (Stop, Notification, SubagentStop events referencing `notify.sh`).
 
 Validate that hook commands use the new simplified format (`notify.sh stop`, `notify.sh notification`, `notify.sh subagentStop`) rather than the old format with positional args (`notify.sh 'Claude Code' 'Task completed' ...`).
 
-- **Pass**: Found hooks for [list events] with dynamic command format
+Also check that each notify hook entry has `"async": true` (written by notify 2.1.0 and later).
+
+- **Pass**: Found async hooks for [list events] with dynamic command format
 - **Warn**: Found hooks but using old static format — re-run `/notify:setup` to upgrade
+- **Warn**: Found hooks without `"async": true` — written by notify before 2.1.0, so each notification briefly holds Claude up. Re-run `/notify:setup` and choose **Update**
 - **Fail**: No notification hooks found in settings.json. Run `/notify:setup` to configure them.
 
 ### 4. Config File
@@ -62,13 +74,15 @@ Read `$SCOPE_DIR/notify-config.json` and display current settings.
 
 > **Current notification settings:**
 >
-> | Event | Enabled | Fallback Message | Sound | App |
-> |-------|---------|------------------|-------|-----|
-> | Task completed | ... | ... | ... | ... |
-> | Needs attention | ... | ... | ... | ... |
-> | Subagent done | ... | ... | ... | ... |
+> | Event | Enabled | Fallback Message | Sound | App | Shows Claude's text |
+> |-------|---------|------------------|-------|-----|---------------------|
+> | Task completed | ... | ... | ... | ... | ... |
+> | Needs attention | ... | ... | ... | ... | ... |
+> | Subagent done | ... | ... | ... | ... | ... |
 >
 > Edit `notify-config.json` to change these — changes take effect immediately.
+
+"Shows Claude's text" is the event's `showMessage`, else the top-level `showMessage`, else yes.
 
 - **Fail**: Config file not found. The script will use hardcoded defaults. Run `/notify:setup` to generate a config file.
 
@@ -81,7 +95,8 @@ Present a summary. When both scopes are active, include a Scope column:
 > | Component | Status |
 > |-----------|--------|
 > | notifier backend | Pass/Fail |
-> | notify.sh | Pass/Fail |
+> | jq | Pass/Warn |
+> | notify.sh | Pass/Warn/Fail |
 > | Hook config | Pass/Fail |
 > | notify-config.json | Pass/Fail |
 
@@ -90,8 +105,9 @@ Present a summary. When both scopes are active, include a Scope column:
 > | Component | Scope | Status |
 > |-----------|-------|--------|
 > | notifier backend | Shared | Pass/Fail |
-> | notify.sh | Global | Pass/Fail |
-> | notify.sh | Project | Pass/Fail |
+> | jq | Shared | Pass/Warn |
+> | notify.sh | Global | Pass/Warn/Fail |
+> | notify.sh | Project | Pass/Warn/Fail |
 > | Hook config | Global | Pass/Fail |
 > | Hook config | Project | Pass/Fail |
 > | notify-config.json | Global | Pass/Fail |
@@ -126,6 +142,7 @@ Report whether it succeeded.
 
 - **Never write any file** — this skill is fully read-only. All Steps are observation and reporting only; no config or hook files are created or modified.
 - **Scope detection always runs first** — check both `$HOME/.claude/hooks/notify.sh` and `$PWD/.claude/hooks/notify.sh` before running any per-scope checks. If neither is found, report "no installation found" and stop; do not guess at a scope.
-- **Hook format validation is mandatory** — distinguish old static-arg format from the current dynamic format (Step 3). Report an upgrade warning for old format hooks; do not silently accept them as passing.
+- **Hook format validation is mandatory** — distinguish old static-arg format from the current dynamic format, and entries without `"async": true` from async ones (Step 3). Report an upgrade warning for either; do not silently accept them as passing.
+- **A missing `jq` is a warning, not a failure** — notify still fires without it, on defaults only.
 - **Test notification is opt-in, not automatic** — only run the test notification when the developer explicitly requests it after seeing the summary. Never send a system notification without user confirmation.
 - **Both-scope test requires explicit scope selection** — when both global and project scopes are active, use `AskUserQuestion` to confirm which scope(s) to test. Never run tests against both scopes without the developer choosing "Both" explicitly.

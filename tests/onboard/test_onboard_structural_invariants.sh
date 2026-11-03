@@ -166,7 +166,7 @@ fi
 # skip when the dependency is missing.
 if command -v python3 >/dev/null 2>&1; then
   cs_out=""; cs_rc=0
-  cs_out="$(python3 onboard/schemas/check-schemas.py 2>&1)" || cs_rc=$?
+  cs_out="$(python3 tests/onboard/schemas/check-schemas.py 2>&1)" || cs_rc=$?
   case "$cs_rc" in
     0) ok "check-schemas.py validated every fixture (exit 0)" ;;
     2) bad "check-schemas.py SKIPPED its suite (exit 2 — jsonschema absent); install it: pip install jsonschema" ;;
@@ -176,7 +176,7 @@ else
   bad "python3 unavailable — cannot run check-schemas.py"
 fi
 
-if grep -q 'context-shape-v3' onboard/schemas/check-schemas.py 2>/dev/null; then
+if grep -q 'context-shape-v3' tests/onboard/schemas/check-schemas.py 2>/dev/null; then
   bad "check-schemas.py still contains a context-shape-v3 name special-case"
 else
   ok "check-schemas.py has no context-shape-v3 special-case (falls to the default path rule)"

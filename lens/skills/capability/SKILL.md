@@ -1,6 +1,6 @@
 ---
 name: capability
-description: Internal capability-declaration surface for a programmatic caller's compatibility gate — answers "which lens is installed, and does it support X?" before any review is sent. Returns the manifest version, the advertised capability tokens, and the input keys and resolution rules a caller may rely on; a requested token lens does not advertise comes back as a named error instead of a silent partial run.
+description: Internal. An orchestrator's compatibility check: reports the installed lens version and the capabilities it supports.
 user-invocable: false
 ---
 

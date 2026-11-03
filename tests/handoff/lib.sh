@@ -4,6 +4,12 @@
 
 set -uo pipefail
 
+# A fixed identity for the fixture repos. CI runners have no git identity, so without
+# this `git commit` fails there, the fixture repo has no commits, and every git-backed
+# assertion quietly sees an empty history.
+export GIT_AUTHOR_NAME="handoff-test" GIT_AUTHOR_EMAIL="handoff-test@example.invalid"
+export GIT_COMMITTER_NAME="handoff-test" GIT_COMMITTER_EMAIL="handoff-test@example.invalid"
+
 FIXTURE_ROOT=""
 PASS_COUNT=0
 FAIL_COUNT=0
@@ -82,4 +88,23 @@ summary() {
   echo "Pass: $PASS_COUNT  Fail: $FAIL_COUNT"
   [[ "$FAIL_COUNT" -gt 0 ]] && exit 1
   exit 0
+}
+
+# Run the SessionStart hook the way Claude Code does: from the project directory,
+# with the hook's stdin JSON. The hook reads nothing but relative paths.
+# Usage: run_hook_in <project-root>
+run_hook_in() {
+  local root="$1"
+  local hook
+  hook="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/handoff/hooks/session-start.sh"
+  (cd "$root" && printf '{"cwd":"%s"}' "$root" | bash "$hook" 2>/dev/null)
+}
+
+# Set the snooze marker's mtime <seconds> from now (negative = in the past).
+# Usage: set_snooze_marker <project-root> <seconds-offset>
+set_snooze_marker() {
+  local root="$1" off="$2" when
+  when="$(date -u -d "@$(( $(date +%s) + off ))" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null \
+          || date -u -r "$(( $(date +%s) + off ))" +%Y-%m-%dT%H:%M:%SZ)"
+  touch -d "$when" "$root/.claude/handoff/snooze-until"
 }

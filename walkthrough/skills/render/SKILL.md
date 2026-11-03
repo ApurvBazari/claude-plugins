@@ -1,6 +1,6 @@
 ---
 name: render
-description: Render a structured model already present in this conversation into the house-style HTML, as-is (no session synthesis). Internal building block invoked by other skills/plugins (e.g. lens) that have already assembled a model. Not for users — for a synthesized session recap use /walkthrough:create.
+description: Internal building block. Renders a model that another skill or plugin (e.g. lens) already built into the house-style HTML, as-is. Not for users — for a session recap use /walkthrough:create.
 user-invocable: false
 ---
 

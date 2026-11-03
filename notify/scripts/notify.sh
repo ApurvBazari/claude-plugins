@@ -4,6 +4,7 @@ set -uo pipefail
 # Usage: echo '<stdin_json>' | notify.sh <event>
 # Events: stop, notification, subagentStop
 # Supports: macOS (terminal-notifier) and Linux (notify-send)
+# Runs as an async Claude Code hook: it prints nothing to stdout and always exits 0.
 
 EVENT="${1:-stop}"
 
@@ -24,41 +25,24 @@ case "$(uname -s)" in
   Linux)  PLATFORM="linux" ;;
 esac
 
-# --- JSON helper: tries jq, falls back to python3 ---
-json_get() {
-  local json="$1" path="$2"
-  local result=""
+# --- JSON parsing: jq only, one call per document ---
+# jq is a recommended dependency (/notify:setup and /notify:check report it).
+# Without jq the hook still runs: it skips parsing, uses the per-event defaults
+# below and the generic fallback message, and never fails.
+HAVE_JQ=false
+command -v jq &>/dev/null && HAVE_JQ=true
 
-  if command -v jq &>/dev/null; then
-    result="$(echo "$json" | jq -r "$path" 2>/dev/null)"
-  elif command -v python3 &>/dev/null; then
-    result="$(echo "$json" | python3 -c "
-import sys, json
-try:
-    data = json.load(sys.stdin)
-    keys = sys.argv[1].strip('.').split('.')
-    val = data
-    for k in keys:
-        val = val[k]
-    if val is None:
-        print('')
-    elif val is True:
-        print('true')
-    elif val is False:
-        print('false')
-    else:
-        print(val)
-except Exception:
-    print('')
-" "$path" 2>/dev/null)"
-  fi
-
-  # jq returns "null" for missing keys
-  if [[ "$result" = "null" ]] || [[ -z "$result" ]]; then
-    echo ""
-  else
-    echo "$result"
-  fi
+# json_fields <json> <jq-filter> [jq args...] — run ONE jq call whose filter emits
+# a stream of values; print each as a NUL-terminated string (null → "", booleans
+# and numbers → their text). Callers read the fields back with `read -d ''`.
+json_fields() {
+  local json="$1" filter="$2"
+  shift 2
+  [[ "$HAVE_JQ" = "true" ]] || return 0
+  printf '%s' "$json" | jq -j "$@" \
+    "$filter | (if . == null then \"\" else tostring end | gsub(\"\\u0000\"; \"\")) + \"\\u0000\"" \
+    2>/dev/null
+  return 0
 }
 
 # --- Read stdin JSON early (Claude Code passes hook context via stdin) ---
@@ -68,11 +52,19 @@ if ! [[ -t 0 ]]; then
   STDIN_JSON="$(cat)"
 fi
 
+# Parse the hook input once: session_id, last_assistant_message, agent_type, message.
+SESSION_ID=""; IN_LAST_MESSAGE=""; IN_AGENT_TYPE=""; IN_MESSAGE=""
+{
+  IFS= read -r -d '' SESSION_ID
+  IFS= read -r -d '' IN_LAST_MESSAGE
+  IFS= read -r -d '' IN_AGENT_TYPE
+  IFS= read -r -d '' IN_MESSAGE
+} < <(json_fields "$STDIN_JSON" '(.session_id, .last_assistant_message, .agent_type, .message)')
+
 # --- Per-session cooldown timestamp file ---
 # Key by the hook's session_id when present so concurrent Claude sessions keep
 # independent cooldown clocks; fall back to a per-user key otherwise (N2).
 # Sanitize the id to a safe filename fragment.
-SESSION_ID="$(json_get "$STDIN_JSON" ".session_id")"
 if [[ -n "$SESSION_ID" ]]; then
   SESSION_KEY="session-$(printf '%s' "$SESSION_ID" | tr -c 'A-Za-z0-9._-' '_')"
 else
@@ -89,35 +81,41 @@ if [[ -L "$TIMESTAMP_FILE" ]] || { [[ -e "$TIMESTAMP_FILE" ]] && [[ ! -f "$TIMES
 fi
 
 # --- Read config ---
-ENABLED="true"
-SOUND="Ping"
-ACTIVATE="com.microsoft.VSCode"
-FALLBACK_MESSAGE="Notification"
-MIN_DURATION=0
+# Per-event defaults, used when there is no config file, no jq, or a key is absent.
+ENABLED="true"; SOUND="Ping"; ACTIVATE="com.microsoft.VSCode"
+FALLBACK_MESSAGE="Notification"; MIN_DURATION=0; SHOW_MESSAGE="true"
+case "$EVENT" in
+  stop)
+    ENABLED="true";  SOUND="Hero";  FALLBACK_MESSAGE="Task completed" ;;
+  notification)
+    ENABLED="true";  SOUND="Glass"; FALLBACK_MESSAGE="Needs your attention" ;;
+  subagentStop)
+    ENABLED="false"; SOUND="Ping";  FALLBACK_MESSAGE="Subagent task completed" ;;
+esac
 
-if [[ -f "$CONFIG_FILE" ]]; then
-  CONFIG="$(cat "$CONFIG_FILE")"
-  EVENT_ENABLED="$(json_get "$CONFIG" ".events.${EVENT}.enabled")"
-  EVENT_SOUND="$(json_get "$CONFIG" ".events.${EVENT}.sound")"
-  EVENT_ACTIVATE="$(json_get "$CONFIG" ".events.${EVENT}.activate")"
-  EVENT_MESSAGE="$(json_get "$CONFIG" ".events.${EVENT}.message")"
-  EVENT_MIN_DURATION="$(json_get "$CONFIG" ".events.${EVENT}.minDurationSeconds")"
+if [[ -f "$CONFIG_FILE" ]] && [[ "$HAVE_JQ" = "true" ]]; then
+  CONFIG="$(cat "$CONFIG_FILE" 2>/dev/null)"
+  EVENT_ENABLED=""; EVENT_SOUND=""; EVENT_ACTIVATE=""; EVENT_MESSAGE=""
+  EVENT_MIN_DURATION=""; EVENT_SHOW_MESSAGE=""
+  # One jq call for every config value this event needs. showMessage is read
+  # per event first, then from the top level of the config.
+  # shellcheck disable=SC2016  # $e and $ev are jq variables, not shell ones
+  CONFIG_FILTER='(.events[$e] // {}) as $ev | ($ev.enabled, $ev.sound, $ev.activate, $ev.message, $ev.minDurationSeconds, (if $ev.showMessage != null then $ev.showMessage else .showMessage end))'
+  {
+    IFS= read -r -d '' EVENT_ENABLED
+    IFS= read -r -d '' EVENT_SOUND
+    IFS= read -r -d '' EVENT_ACTIVATE
+    IFS= read -r -d '' EVENT_MESSAGE
+    IFS= read -r -d '' EVENT_MIN_DURATION
+    IFS= read -r -d '' EVENT_SHOW_MESSAGE
+  } < <(json_fields "$CONFIG" "$CONFIG_FILTER" --arg e "$EVENT")
 
   [[ -n "$EVENT_ENABLED" ]] && ENABLED="$EVENT_ENABLED"
   [[ -n "$EVENT_SOUND" ]] && SOUND="$EVENT_SOUND"
   [[ -n "$EVENT_ACTIVATE" ]] && ACTIVATE="$EVENT_ACTIVATE"
   [[ -n "$EVENT_MESSAGE" ]] && FALLBACK_MESSAGE="$EVENT_MESSAGE"
   [[ -n "$EVENT_MIN_DURATION" ]] && MIN_DURATION="$EVENT_MIN_DURATION"
-else
-  # No config file — use hardcoded defaults per event
-  case "$EVENT" in
-    stop)
-      ENABLED="true"; SOUND="Hero"; FALLBACK_MESSAGE="Task completed" ;;
-    notification)
-      ENABLED="true"; SOUND="Glass"; FALLBACK_MESSAGE="Needs your attention" ;;
-    subagentStop)
-      ENABLED="false"; SOUND="Ping"; FALLBACK_MESSAGE="Subagent task completed" ;;
-  esac
+  [[ -n "$EVENT_SHOW_MESSAGE" ]] && SHOW_MESSAGE="$EVENT_SHOW_MESSAGE"
 fi
 
 # Exit silently if disabled
@@ -166,24 +164,29 @@ if tmp="$(mktemp "${TIMESTAMP_FILE}.XXXXXX" 2>/dev/null)"; then
 fi
 
 # --- Extract contextual message ---
+# showMessage:false keeps Claude's text out of the notification: only the
+# configured fallback message is shown.
 MESSAGE=""
 TITLE="Claude Code"
 
 case "$EVENT" in
   stop)
-    MESSAGE="$(json_get "$STDIN_JSON" ".last_assistant_message")"
+    MESSAGE="$IN_LAST_MESSAGE"
     ;;
   subagentStop)
-    MESSAGE="$(json_get "$STDIN_JSON" ".last_assistant_message")"
-    AGENT_TYPE="$(json_get "$STDIN_JSON" ".agent_type")"
-    if [[ -n "$AGENT_TYPE" ]]; then
-      TITLE="Claude Code ($AGENT_TYPE)"
+    MESSAGE="$IN_LAST_MESSAGE"
+    if [[ -n "$IN_AGENT_TYPE" ]]; then
+      TITLE="Claude Code ($IN_AGENT_TYPE)"
     fi
     ;;
   notification)
-    MESSAGE="$(json_get "$STDIN_JSON" ".message")"
+    MESSAGE="$IN_MESSAGE"
     ;;
 esac
+
+if [[ "$SHOW_MESSAGE" = "false" ]]; then
+  MESSAGE=""
+fi
 
 # Fall back to config message if extraction failed
 if [[ -z "$MESSAGE" ]]; then
@@ -191,7 +194,7 @@ if [[ -z "$MESSAGE" ]]; then
 fi
 
 # Sanitize: replace newlines with spaces
-MESSAGE="$(echo "$MESSAGE" | tr '\n' ' ' | tr '\r' ' ')"
+MESSAGE="$(printf '%s' "$MESSAGE" | tr '\n\r' '  ')"
 
 # Truncate to 80 chars
 if [[ "${#MESSAGE}" -gt 80 ]]; then
@@ -218,7 +221,8 @@ if [[ "$PLATFORM" = "macos" ]]; then
     tn_args=( -title "$TITLE" -subtitle "$SUBTITLE" -message "$MESSAGE" )
     [[ -n "$SOUND"    && "$SOUND"    != "none" ]] && tn_args+=( -sound "$SOUND" )
     [[ -n "$ACTIVATE" && "$ACTIVATE" != "none" ]] && tn_args+=( -activate "$ACTIVATE" )
-    terminal-notifier "${tn_args[@]}"
+    # Async hooks may hand stdout back to Claude — keep the notifier silent.
+    terminal-notifier "${tn_args[@]}" >/dev/null 2>&1
   fi
 elif [[ "$PLATFORM" = "linux" ]]; then
   if command -v notify-send &>/dev/null; then
@@ -231,7 +235,7 @@ elif [[ "$PLATFORM" = "linux" ]]; then
       --app-name "$TITLE" \
       --urgency "$URGENCY" \
       "$SUBTITLE" \
-      "$MESSAGE"
+      "$MESSAGE" >/dev/null 2>&1
   fi
 fi
 

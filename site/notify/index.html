@@ -161,7 +161,7 @@ dialog.sheet::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
       <a href="#platform">Platform</a>
     </div>
     <div style="display:flex;align-items:center;gap:.8rem">
-      <div class="nav-meta"><span class="dot"></span> PLUGIN · v2.0.3</div>
+      <div class="nav-meta"><span class="dot"></span> PLUGIN · v2.1.0</div>
       <button class="theme-btn" onclick="tgl()">◑ THEME</button>
     </div>
   </div></nav>
@@ -204,10 +204,10 @@ dialog.sheet::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
         <span class="farr">→</span>
         <div class="fnode" onclick="openSurface('notify')" tabindex="0" role="button" aria-label="System notification posted"><div class="nl">output</div>system notification</div>
       </div>
-      <p>The cooldown is the key primitive — each event carries its own <code>minDurationSeconds</code> value: at most one <code>stop</code> or <code>subagentStop</code> notification per that many seconds. Inside the window, the script exits silently. Otherwise it builds a <code>repo / branch</code> subtitle from git and extracts Claude's actual last message as notification content. The script always exits <code>0</code>, so a missing backend or failed notification can never block Claude.</p>
+      <p>The cooldown is the key primitive — each event carries its own <code>minDurationSeconds</code> value: at most one <code>stop</code> or <code>subagentStop</code> notification per that many seconds. Inside the window, the script exits silently. Otherwise it builds a <code>repo / branch</code> subtitle from git and extracts Claude's actual last message as notification content. The script always exits <code>0</code> and prints nothing to stdout, so a missing backend or failed notification can never block Claude. Setup writes every hook entry with <code>"async": true</code>, so Claude keeps working while the notification is sent.</p>
       <div class="callout">
         <h4>Intentionally minimal</h4>
-        <p>notify does one thing well: native desktop alerts, with a cooldown and project context. Install globally to get alerts across every Claude Code session, or per-project to tune settings per repo. Both scopes can coexist; the hook reads one config, the project's own when it has one.</p>
+        <p>notify does one thing well: native desktop alerts, with a cooldown and project context. Install globally to get alerts across every Claude Code session, or per-project to tune settings per repo. Each installed copy reads the config in its own scope, so if you install both, both fire and you get two notifications per event.</p>
       </div>
     </section>
 
@@ -254,17 +254,17 @@ dialog.sheet::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
           <tr>
             <td class="slash">/notify:setup</td>
             <td><span class="tag lock">user-only</span></td>
-            <td>Detects platform, installs the backend (<code>terminal-notifier</code> via Homebrew on macOS, <code>notify-send</code> from libnotify on Linux), detects your editor for click-to-focus, asks global vs per-project, configures all three events, and sends a test notification.</td>
+            <td>Detects platform, installs the backend (<code>terminal-notifier</code> via Homebrew on macOS, <code>notify-send</code> from libnotify on Linux), detects your editor for click-to-focus, tells you if <code>jq</code> is missing (a warning, never a stop), asks global vs per-project, configures all three events as async hooks, and sends a test notification. Re-run it and choose <strong>Update</strong> after updating the plugin: the installed <code>notify.sh</code> is a copy.</td>
           </tr>
           <tr>
             <td class="slash">/notify:check</td>
             <td><span class="tag auto">auto</span></td>
-            <td>Health check — reports which scopes are installed and the current event configuration (sounds, cooldowns, enabled flags) for each, and offers to send a test notification on request.</td>
+            <td>Health check — reports which scopes are installed, whether <code>jq</code> is present, and the current event configuration (sounds, cooldowns, enabled flags) for each. Warns about hook entries from notify before 2.1.0 (not async) and an installed <code>notify.sh</code> that differs from the plugin's copy. Offers to send a test notification on request.</td>
           </tr>
           <tr>
             <td class="slash">/notify:uninstall</td>
             <td><span class="tag lock">user-only</span></td>
-            <td>Surgically removes notify-owned hooks from <span class="cell-mono">settings.json</span> and deletes <span class="cell-mono">notify-config.json</span>. Leaves unrelated hooks untouched, and leaves the backend installed.</td>
+            <td>Surgically removes notify-owned hooks from <span class="cell-mono">settings.json</span> (async or not), then deletes <span class="cell-mono">hooks/notify.sh</span> and <span class="cell-mono">notify-config.json</span>. Leaves unrelated hooks untouched, and leaves the backend and <code>jq</code> installed.</td>
           </tr>
           <tr>
             <td class="slash">wizard</td>
@@ -278,7 +278,7 @@ dialog.sheet::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
     <section id="config">
       <div class="sec-label">04 — configuration</div>
       <h2>Per-event <em>knobs</em> in <code>notify-config.json</code></h2>
-      <p class="lede">All configuration lives in <code>notify-config.json</code>, written by <code>/notify:setup</code>. Both scopes can coexist, but the hook reads exactly one file: the project-local one when it exists, otherwise the global one. Edit directly after setup; the hook reads it on every invocation.</p>
+      <p class="lede">All configuration lives in <code>notify-config.json</code>, written by <code>/notify:setup</code>. Each installed copy of <code>notify.sh</code> reads the config in its own scope. Edit directly after setup; the hook reads it on every invocation. A key an event leaves out falls back to that event's own default (for example <code>Hero</code> for <code>stop</code>).</p>
       <div class="edge-grid">
         <div class="edge">
           <div class="n">enabled</div>
@@ -303,25 +303,30 @@ dialog.sheet::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
         <div class="edge">
           <div class="n">message</div>
           <div class="t">Fallback text</div>
-          <p>Shown when contextual content can't be extracted from Claude's response. Static safety net.</p>
+          <p>Shown when contextual content can't be extracted from Claude's response, when <code>jq</code> is missing, or when <code>showMessage</code> is <code>false</code>. Static safety net.</p>
+        </div>
+        <div class="edge">
+          <div class="n">showMessage</div>
+          <div class="t">Hide Claude's text</div>
+          <p>Top level or per event; default <code>true</code>. Set it to <code>false</code> to keep Claude's text out of notifications when your screen is shared or notifications show on a lock screen. A per-event value wins. The wizard asks about it.</p>
         </div>
         <div class="edge">
           <div class="n">scope resolution</div>
           <div class="t">Global or per-project</div>
-          <p>Install globally for all sessions, per-project to override. The project-local file is used whole when it exists — there is no key-level merge with the global one.</p>
+          <p>Global hooks fire in every project; project hooks fire only in that project. Each copy reads the config in its own scope, with no merge between global and project. Install both and both fire.</p>
         </div>
       </div>
     </section>
 
     <section id="platform">
       <div class="sec-label">05 — platform support</div>
-      <h2>Cross-platform: <em>macOS</em> and <em>Linux</em></h2>
+      <h2>Two platforms: <em>macOS</em> and <em>Linux</em></h2>
       <p class="lede">Same hook, two backends. Cooldown and <code>repo / branch</code> subtitle work everywhere. Sounds and click-to-focus are richer on macOS.</p>
       <div class="edge-grid">
         <div class="edge">
           <div class="n">macOS</div>
           <div class="t">terminal-notifier</div>
-          <p>14 system sounds, click-to-focus via bundle ID, title + subtitle + message, Homebrew install. JSON parsed via <code>jq</code> with <code>python3</code> fallback.</p>
+          <p>14 system sounds, click-to-focus via bundle ID, title + subtitle + message, Homebrew install. JSON parsed with <code>jq</code> only; without it notify still fires, on the per-event defaults and the fallback message.</p>
         </div>
         <div class="edge">
           <div class="n">Linux</div>
@@ -341,7 +346,7 @@ dialog.sheet::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
         <a href="../">← marketplace</a>
         <a href="https://github.com/ApurvBazari/claude-plugins/tree/main/notify">source on GitHub</a>
       </div>
-      <div class="meta">notify · v2.0.3 · MIT · by Apurv Bazari</div>
+      <div class="meta">notify · v2.1.0 · MIT · by Apurv Bazari</div>
     </div>
   </main>
 
@@ -359,7 +364,7 @@ dialog.sheet::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
   <script>
 const DET={
  'claude-stop':{k:"Trigger",h:"Claude stops",summary:"The Stop hook fires whenever Claude finishes a response. <code>notify.sh</code> keeps its cooldown clock per session, in <code>$TMPDIR/claude-notify-session-&lt;id&gt;</code> (a per-user key when no session id is available). Works for all three events: stop, notification, and subagentStop."},
- hook:{k:"Hook",h:"notify.sh",summary:"The core script — reads <code>notify-config.json</code> (the project-local one when it exists, otherwise the global one), checks the event's enabled flag and the cooldown, extracts Claude's last message as notification content, builds the <code>repo / branch</code> subtitle from git, and posts via <code>terminal-notifier</code> or <code>notify-send</code>. Always exits 0.",where:["notify/scripts/notify.sh"],related:['filter']},
+ hook:{k:"Hook",h:"notify.sh",summary:"The core script — runs as an async hook, reads the <code>notify-config.json</code> in its own scope with one <code>jq</code> call, checks the event's enabled flag and the cooldown, extracts Claude's last message as notification content, builds the <code>repo / branch</code> subtitle from git, and posts via <code>terminal-notifier</code> or <code>notify-send</code>. Always exits 0.",where:["notify/scripts/notify.sh"],related:['filter']},
  filter:{k:"Filter",h:"Notification cooldown",summary:"<code>minDurationSeconds</code> is read per-event from <code>notify-config.json</code>. For <code>stop</code> and <code>subagentStop</code>, the script compares the time since the last notification that fired against it — inside the window, it exits 0 silently. Only a notification that fires restarts the clock, so it is at most one per N seconds. The default is <code>0</code> (no cooldown); <code>notification</code> (Claude attention) is never cooldown-filtered.",where:["notify/scripts/notify.sh"],related:['hook']},
  notify:{k:"Output",h:"System notification",summary:"On macOS: <code>terminal-notifier</code> with the configured sound, a <code>repo / branch</code> subtitle, Claude's actual last message as the body, and click-to-focus via the configured bundle ID. On Linux: <code>notify-send</code> with urgency level and message. A missing backend fails silently — never blocks Claude.",where:[]}
 };

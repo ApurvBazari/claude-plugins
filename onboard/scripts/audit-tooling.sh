@@ -22,11 +22,11 @@ echo ""
 # --- Check 1: CLAUDE.md commands still exist ---
 echo "### Checking CLAUDE.md commands..."
 if [ -f "CLAUDE.md" ]; then
-  # Extract npm script references from CLAUDE.md
-  if [ -f "package.json" ]; then
+  # Extract npm script references from CLAUDE.md (needs jq to read package.json; skipped without it)
+  if [ -f "package.json" ] && command -v jq >/dev/null 2>&1; then
     while IFS= read -r script_name; do
       if [ -n "$script_name" ]; then
-        if ! python3 -c "import json,sys; d=json.load(open('package.json')); sys.exit(0 if sys.argv[1] in d.get('scripts',{}) else 1)" "$script_name" 2>/dev/null; then
+        if ! jq -e --arg s "$script_name" '(.scripts // {}) | has($s)' package.json >/dev/null 2>&1; then
           add_drift "CLAUDE.md references 'npm run $script_name' but script not found in package.json"
         fi
       fi
@@ -288,7 +288,7 @@ if [ -f "package.json" ] && [ -f "CLAUDE.md" ]; then
         *) add_drift "Dependency '$dep' in package.json not mentioned in CLAUDE.md" ;;
       esac
     fi
-  done < <(python3 -c "import json; d=json.load(open('package.json')); [print(k) for k in {**d.get('dependencies',{}), **d.get('devDependencies',{})}.keys()]" 2>/dev/null || true)
+  done < <(jq -r '((.dependencies // {}) + (.devDependencies // {})) | keys_unsorted[]' package.json 2>/dev/null || true)
 fi
 
 # --- Output ---

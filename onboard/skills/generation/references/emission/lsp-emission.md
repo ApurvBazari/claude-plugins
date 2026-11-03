@@ -49,7 +49,7 @@ Always preserve the full detected list as `recommended`, independent of what was
 
 1. Add `lspStatus` placeholder to `onboard-meta.json`: `{ planned: [...], generated: [...], accepted: [...], autoInstalled: [], autoInstallFailed: [], skipped: [...] }` with install fields empty.
 2. Wait for the metadata-write step to complete.
-3. If the accepted list is empty, or the context carries `callerExtras.regenerateOnly` or `callerExtras.reResearch`, skip the install; a repair run never installs (`../../../../references/plugin-install-consent.md`, R3). Otherwise invoke `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugin1> <plugin2> ...` with the accepted list, each name checked against `../catalogs/lsp-plugin-catalog.md`.
+3. If the accepted list is empty, or the context carries `callerExtras.regenerateOnly` or `callerExtras.reResearch`, skip the install; a repair run never installs (`../../../../references/plugin-install-consent.md`, R3). Otherwise invoke `bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-plugins.sh" <plugin1>@claude-plugins-official <plugin2>@claude-plugins-official ...` with the accepted list, each name checked against `../catalogs/lsp-plugin-catalog.md`.
 4. Update `onboard-meta.json.lspStatus.autoInstalled` and `.autoInstallFailed` from the install script's JSON output (single-field read-modify-write; don't touch other keys).
 
 Rationale: if `claude plugin install` hangs or errors, telemetry must already be persisted. Same contract as emission Step 1.
